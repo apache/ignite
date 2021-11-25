@@ -40,6 +40,9 @@ public class ClientMessage implements Message, Externalizable {
     private static final int MAX_FIRST_MESSAGE_SIZE = 1024 * 1024;
 
     /** */
+    private static final int FIRST_MESSAGE_HEADER = 1 + (1 << 8);
+
+    /** */
     private final boolean isFirstMessage;
 
     /** */
@@ -55,7 +58,7 @@ public class ClientMessage implements Message, Externalizable {
     private int msgSize;
 
     /** */
-    private byte[] firstBytes = new byte[3];
+    private int firstMessageHeader = 0;
 
     /** */
     public ClientMessage() {
@@ -156,11 +159,11 @@ public class ClientMessage implements Message, Externalizable {
                 int len = Math.min(missing, remaining);
 
                 if (isFirstMessage) {
-                    // Sanity check: first 3 bytes in the handshake are always 1, 1, 0 (handshake = 1, major version = 1).
+                    // Sanity check: first 3 bytes in handshake are always 1 1 0 (handshake = 1, major version = 1).
                     // Do not allocate the buffer before validating the header to protect us from garbage data sent by unrelated application
                     // connecting on our port by accident.
                     while (len > 0 && cnt < 3) {
-                        firstBytes[cnt] = buf.get();
+                        firstMessageHeader |= (buf.get() & 0xFF) << (8 * cnt);
                         cnt++;
                         len--;
                     }
@@ -168,10 +171,11 @@ public class ClientMessage implements Message, Externalizable {
                     if (cnt < 3)
                         return false;
 
-                    if (firstBytes[0] != 1 || firstBytes[1] != 1 || firstBytes[2] != 0)
-                        throw new IgniteException("Invalid handshake bytes, expected 1 1 0, but was "
-                                + firstBytes[0] + " " + firstBytes[1] + " " + firstBytes[2]);
+                    if (firstMessageHeader != FIRST_MESSAGE_HEADER)
+                        throw new IgniteException("Invalid handshake first 3 bytes, expected " + FIRST_MESSAGE_HEADER + ", but was "
+                                + firstMessageHeader);
 
+                    // Header is valid, create buffer and set first 3 bytes to 1 1 0.
                     data = new byte[msgSize];
                     data[0] = 1;
                     data[1] = 1;
