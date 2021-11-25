@@ -1536,15 +1536,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0, removeTimeTotal.value());
 
         // 1. Check remove of a non-existing key.
-        cache.remove(-1);
-
-        assertTrue(removeTimeTotal.value() > 0);
-
-        removeTimeTotal.reset();
-
         cache.removeAsync(-1).get();
+        cache.remove(-2);
 
-        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+        assertEquals(0, removeTimeTotal.value());
 
         removeTimeTotal.reset();
 
