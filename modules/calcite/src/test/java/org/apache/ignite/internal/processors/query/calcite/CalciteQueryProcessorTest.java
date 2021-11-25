@@ -1148,21 +1148,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .check();
     }
 
-    /**
-     * Checks correlates are assigned before access.
-     */
-    @Test
-    public void testCorrelatesAssignedBeforeAccess() throws IgniteInterruptedCheckedException {
-        sql("create table test_tbl(v INTEGER)", true);
-
-        sql("INSERT INTO test_tbl VALUES (1)", true);
-
-        List<List<?>> res = sql("SELECT t0.v, (SELECT t0.v + t1.v FROM test_tbl t1) AS j FROM test_tbl t0");
-
-        assertEquals(res.size(), 1);
-        assertEquals((Integer)res.get(0).get(0) * 2, res.get(0).get(1));
-    }
-
     /** */
     private static List<String> deriveColumnNamesFromCursor(FieldsQueryCursor cursor) {
         List<String> names = new ArrayList<>(cursor.getColumnsCount());
