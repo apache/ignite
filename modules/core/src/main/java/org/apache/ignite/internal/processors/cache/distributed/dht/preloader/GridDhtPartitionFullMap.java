@@ -203,6 +203,9 @@ public class GridDhtPartitionFullMap
         if (this == o)
             return true;
 
+        if (o == null || GridDhtPartitionFullMap.class != o.getClass())
+            return false;
+
         GridDhtPartitionFullMap other = (GridDhtPartitionFullMap)o;
 
         return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq;

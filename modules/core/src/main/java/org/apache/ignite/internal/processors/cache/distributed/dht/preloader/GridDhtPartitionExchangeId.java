@@ -211,11 +211,11 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (o == null)
-            return false;
-
         if (o == this)
             return true;
+
+        if (o == null || GridDhtPartitionExchangeId.class != o.getClass())
+            return false;
 
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;
 

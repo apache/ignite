@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -148,26 +149,15 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-//            if (this == obj)
-//                return true;
-//
-//            if (obj == null)
-//                return false;
-//
-//            if (getClass() != obj.getClass())
-//                return false;
-//
-//            MyStringKey other = (MyStringKey) obj;
-//
-//            if (str == null) {
-//                if (other.str != null)
-//                    return false;
-//            }
-//            else if (!str.equals(other.str))
-//                return false;
-//
-//            return true;
-            return toString().equals(obj.toString());
+            if (this == obj)
+                return true;
+
+            if (obj == null || MyStringKey.class != obj.getClass())
+                return false;
+
+            MyStringKey key = (MyStringKey)obj;
+
+            return Objects.equals(str, key.str);
         }
 
         /** {@inheritDoc} */

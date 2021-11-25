@@ -286,13 +286,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T1.class) {
-                T1 that = (T1)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id.equals(that.id);
-            }
+            if (obj == null || T1.class != obj.getClass())
+                return false;
 
-            return false;
+            T1 that = (T1)obj;
+
+            return topic == that.topic && id.equals(that.id);
         }
 
         /** {@inheritDoc} */
@@ -354,13 +356,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T2.class) {
-                T2 that = (T2)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2);
-            }
+            if (obj == null || T2.class != obj.getClass())
+                return false;
 
-            return false;
+            T2 that = (T2)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2);
         }
 
         /** {@inheritDoc} */
@@ -419,13 +423,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T3.class) {
-                T3 that = (T3)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1);
-            }
+            if (obj == null || T3.class != obj.getClass())
+                return false;
 
-            return false;
+            T3 that = (T3)obj;
+
+            return topic == that.topic && id1.equals(that.id1);
         }
 
         /** {@inheritDoc} */
@@ -492,13 +498,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T4.class) {
-                T4 that = (T4)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2) && id3 == that.id3;
-            }
+            if (obj == null || T4.class != obj.getClass())
+                return false;
 
-            return false;
+            T4 that = (T4)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2) && id3 == that.id3;
         }
 
         /** {@inheritDoc} */
@@ -569,13 +577,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T5.class) {
-                T5 that = (T5)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2 == that.id2 && id3 == that.id3;
-            }
+            if (obj == null || T5.class != obj.getClass())
+                return false;
 
-            return false;
+            T5 that = (T5)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2 == that.id2 && id3 == that.id3;
         }
 
         /** {@inheritDoc} */
@@ -641,13 +651,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T6.class) {
-                T6 that = (T6)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2 == that.id2;
-            }
+            if (obj == null || T6.class != obj.getClass())
+                return false;
 
-            return false;
+            T6 that = (T6)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2 == that.id2;
         }
 
         /** {@inheritDoc} */
@@ -721,14 +733,16 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T7.class) {
-                T7 that = (T7)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2) && id3 == that.id3 &&
-                    id4 == that.id4;
-            }
+            if (obj == null || T7.class != obj.getClass())
+                return false;
 
-            return false;
+            T7 that = (T7)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2) && id3 == that.id3 &&
+                id4 == that.id4;
         }
 
         /** {@inheritDoc} */
@@ -796,13 +810,15 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T8.class) {
-                T8 that = (T8)obj;
+            if (this == obj)
+                return true;
 
-                return topic == that.topic && id1.equals(that.id1) && id2 == that.id2;
-            }
+            if (obj == null || T8.class != obj.getClass())
+                return false;
 
-            return false;
+            T8 that = (T8)obj;
+
+            return topic == that.topic && id1.equals(that.id1) && id2 == that.id2;
         }
 
         /** {@inheritDoc} */

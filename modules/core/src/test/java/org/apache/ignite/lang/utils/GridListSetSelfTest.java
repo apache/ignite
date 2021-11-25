@@ -200,7 +200,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class V1 {
+    static class V1 {
         /** */
         private final int val;
 
@@ -210,7 +210,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
         /**
          * @param val Value.
          */
-        private V1(int val) {
+        V1(int val) {
             this.val = val;
 
             other = 0;
@@ -246,6 +246,12 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || V1.class != o.getClass())
+                return false;
+
             V1 v = (V1)o;
 
             return v.val == val;
@@ -260,11 +266,11 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class V2 extends V1 {
+    static class V2 extends V1 {
         /**
          * @param val Value.
          */
-        private V2(int val) {
+        V2(int val) {
             super(val);
         }
 
@@ -279,9 +285,15 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            V1 v = (V1)o;
+            if (this == o)
+                return true;
 
-            return v.val == value() && v.other == other();
+            if (o == null || V2.class != o.getClass())
+                return false;
+
+            V2 v = (V2)o;
+
+            return v.value() == value() && v.other() == other();
         }
 
         /** {@inheritDoc} */

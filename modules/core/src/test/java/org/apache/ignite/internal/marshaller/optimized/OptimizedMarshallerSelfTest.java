@@ -170,7 +170,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     }
 
     /** */
-    private static class TestObject2 {
+    static class TestObject2 {
         /** */
         private final int i;
 
@@ -179,12 +179,18 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
          *
          * @param i Integer value to hold.
          */
-        private TestObject2(int i) {
+        TestObject2(int i) {
             this.i = i;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || TestObject2.class != o.getClass())
+                return false;
+
             return i == ((TestObject2)o).i;
         }
 

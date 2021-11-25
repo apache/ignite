@@ -1750,6 +1750,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object another) {
+        if (this == another)
+            return true;
+
+        if (another == null || GatewayProtectedCacheProxy.class != another.getClass())
+            return false;
+
         GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;
 
         return delegate.equals(anotherProxy.delegate);
