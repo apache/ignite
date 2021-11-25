@@ -682,6 +682,7 @@ public class QueryEntity implements Serializable {
      * Sets INLINE_SIZE for PK index. Implemented at the child.
      *
      * @param pkInlineSize INLINE_SIZE for PK index.
+     * @return {@code this} for chaining.
      */
     public QueryEntity setPrimaryKeyInlineSize(int pkInlineSize) {
         return this;
@@ -700,6 +701,7 @@ public class QueryEntity implements Serializable {
      * Sets INLINE_SIZE for AFFINITY_KEY index. Implemented at the child.
      *
      * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index.
+     * @return {@code this} for chaining.
      */
     public QueryEntity setAffinityKeyInlineSize(int affFieldInlineSize) {
         return this;
@@ -723,6 +725,7 @@ public class QueryEntity implements Serializable {
      *                             {@code false} in case the PK index is created on the whole key (composite binary object).
      *                             {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key
      *                             for a table created by API).
+     * @return {@code this} for chaining.
      */
     public QueryEntity setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
         return this;
