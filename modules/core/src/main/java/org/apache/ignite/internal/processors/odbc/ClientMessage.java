@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +37,12 @@ public class ClientMessage implements Message, Externalizable {
     private static final long serialVersionUID = -4609408156037304495L;
 
     /** */
+    private static final int MAX_FIRST_MESSAGE_SIZE = 10 * 1024 * 1024;
+
+    /** */
+    private final boolean isFirstMessage;
+
+    /** */
     private byte[] data;
 
     /** */
@@ -48,16 +55,26 @@ public class ClientMessage implements Message, Externalizable {
     private int msgSize;
 
     /** */
-    public ClientMessage() {}
+    public ClientMessage() {
+        isFirstMessage = false;
+    }
+
+    /** */
+    public ClientMessage(boolean isFirstMessage) {
+        this.isFirstMessage = isFirstMessage;
+    }
 
     /** */
     public ClientMessage(byte[] data) {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
         this.data = data;
+        isFirstMessage = false;
     }
 
     /** */
     public ClientMessage(BinaryHeapOutputStream stream) {
         this.stream = stream;
+        isFirstMessage = false;
     }
 
     /** {@inheritDoc} */
@@ -115,6 +132,11 @@ public class ClientMessage implements Message, Externalizable {
 
             if (cnt < 0)
                 return false;
+
+            if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE) {
+                // TODO: How should we handle this?
+                throw new IgniteException("TODO");
+            }
 
             data = new byte[msgSize];
         }

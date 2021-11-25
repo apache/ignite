@@ -42,8 +42,8 @@ public class ClientListenerNioMessageParser implements GridNioParser {
     /** Message metadata key. */
     static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Reader metadata key. */
-    static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** First message key. */
+    static final int FIRST_MESSAGE_RECEIVED_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private final IgniteLogger log;
@@ -55,11 +55,11 @@ public class ClientListenerNioMessageParser implements GridNioParser {
 
     /** {@inheritDoc} */
     @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        Message msg = ses.removeMeta(MSG_META_KEY);
+        ClientMessage msg = ses.removeMeta(MSG_META_KEY);
 
         try {
             if (msg == null)
-                msg = new ClientMessage();
+                msg = new ClientMessage(ses.meta(FIRST_MESSAGE_RECEIVED_KEY) == null);
 
             boolean finished = false;
 
