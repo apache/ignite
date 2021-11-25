@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * This class implements stream parser.
@@ -66,8 +65,11 @@ public class ClientListenerNioMessageParser implements GridNioParser {
             if (buf.hasRemaining())
                 finished = msg.readFrom(buf, null);
 
-            if (finished)
+            if (finished) {
+                ses.addMeta(FIRST_MESSAGE_RECEIVED_KEY, true);
+
                 return msg;
+            }
             else {
                 ses.addMeta(MSG_META_KEY, msg);
 

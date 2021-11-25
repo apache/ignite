@@ -37,7 +37,7 @@ public class ClientMessage implements Message, Externalizable {
     private static final long serialVersionUID = -4609408156037304495L;
 
     /** */
-    private static final int MAX_FIRST_MESSAGE_SIZE = 10 * 1024 * 1024;
+    private static final int MAX_FIRST_MESSAGE_SIZE = 1024 * 1024;
 
     /** */
     private final boolean isFirstMessage;
@@ -53,6 +53,9 @@ public class ClientMessage implements Message, Externalizable {
 
     /** */
     private int msgSize;
+
+    /** */
+    private int firstBytes = 0;
 
     /** */
     public ClientMessage() {
@@ -127,6 +130,7 @@ public class ClientMessage implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         if (cnt < 0) {
+            // TODO: Can msgSize be negative here? Write a test.
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
 
@@ -134,17 +138,14 @@ public class ClientMessage implements Message, Externalizable {
                 return false;
 
             // TODO: Validate some handshake bytes to exit early on garbage data.
+            // First 3 bytes are always 1, 1, 0 (handshake, major protocol version).
             if (isFirstMessage) {
                 if (msgSize > MAX_FIRST_MESSAGE_SIZE) {
                     throw new IgniteException("Client handshake size exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
                 }
             }
-
-            // TODO: Can msgSize be negative here?
-            data = new byte[msgSize];
         }
 
-        assert data != null;
         assert cnt >= 0;
         assert msgSize > 0;
 
@@ -155,6 +156,9 @@ public class ClientMessage implements Message, Externalizable {
 
             if (missing > 0) {
                 int len = Math.min(missing, remaining);
+
+                if (data == null)
+                    data = new byte[msgSize];
 
                 buf.get(data, cnt, len);
 
