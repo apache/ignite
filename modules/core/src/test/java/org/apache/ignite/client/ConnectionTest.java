@@ -17,14 +17,14 @@
 
 package org.apache.ignite.client;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Checks if it can connect to a valid address from the node address list.

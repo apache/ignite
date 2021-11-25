@@ -134,7 +134,12 @@ public class ClientMessage implements Message, Externalizable {
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reads this message from provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @return Whether message was fully read.
+     */
     public boolean readFrom(ByteBuffer buf) throws IOException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
