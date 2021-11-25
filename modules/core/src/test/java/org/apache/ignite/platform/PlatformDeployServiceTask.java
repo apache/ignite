@@ -416,7 +416,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public BinaryObject[] testBinaryObjectArray(Object arg0) {
             Object[] arg;
 
-            if (BinaryArray.useTypedArrays()) {
+            if (BinaryArray.useBinaryArrays()) {
                 assertTrue(arg0 instanceof BinaryArray);
 
                 arg = ((BinaryArray)arg0).array();

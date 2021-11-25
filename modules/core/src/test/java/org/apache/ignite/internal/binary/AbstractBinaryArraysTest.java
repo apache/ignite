@@ -23,25 +23,25 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
-/** Base test to check both mode for {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
+/** Base test to check both mode for {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
 @RunWith(Parameterized.class)
-public abstract class AbstractTypedArrayTest extends GridCommonAbstractTest {
-    /** Generates values for the {@link #useTypedArrays} parameter. */
-    @Parameterized.Parameters(name = "useTypedArrays = {0}")
-    public static Iterable<Object[]> useTypedArrays() {
+public abstract class AbstractBinaryArraysTest extends GridCommonAbstractTest {
+    /** Generates values for the {@link #useBinaryArrays} parameter. */
+    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
+    public static Iterable<Object[]> useBinaryArrays() {
         return Arrays.asList(new Object[][] {{true}, {false}});
     }
 
-    /** @see IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS */
+    /** @see IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS */
     @Parameterized.Parameter
-    public boolean useTypedArrays;
+    public boolean useBinaryArrays;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-        BinaryArray.initUseTypedArrays();
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
+        BinaryArray.initUseBinaryArrays();
 
         super.beforeTest();
     }
@@ -50,7 +50,7 @@ public abstract class AbstractTypedArrayTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-        BinaryArray.initUseTypedArrays();
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+        BinaryArray.initUseBinaryArrays();
     }
 }

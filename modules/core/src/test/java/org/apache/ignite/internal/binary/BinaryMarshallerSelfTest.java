@@ -118,7 +118,7 @@ import static org.junit.Assert.assertNotEquals;
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
-public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
+public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     /**
      * @throws Exception If failed.
      */
@@ -503,7 +503,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
     /** */
     @Test
-    public void testTypedArray() throws IgniteCheckedException {
+    public void testBinaryArray() throws IgniteCheckedException {
         TestClass1[] arr = new TestClass1[] {new TestClass1(), new TestClass1()};
 
         assertArrayEquals(arr, marshalUnmarshal(arr));
@@ -833,7 +833,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
+            useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
         );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
@@ -871,7 +871,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
         assertArrayEquals(
             obj.inner.objArr,
-            useTypedArrays ? innerPo.<BinaryArray>field("objArr").array() : innerPo.field("objArr")
+            useBinaryArrays ? innerPo.<BinaryArray>field("objArr").array() : innerPo.field("objArr")
         );
         assertEquals(obj.inner.col, innerPo.field("col"));
         assertEquals(obj.inner.map, innerPo.field("map"));
@@ -923,7 +923,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("_objArr").array() : po.field("_objArr")
+            useBinaryArrays ? po.<BinaryArray>field("_objArr").array() : po.field("_objArr")
         );
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
@@ -961,7 +961,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
         assertArrayEquals(
             obj.simple.objArr,
-            useTypedArrays ? simplePo.<BinaryArray>field("objArr").array() : simplePo.field("objArr")
+            useBinaryArrays ? simplePo.<BinaryArray>field("objArr").array() : simplePo.field("objArr")
         );
         assertEquals(obj.simple.col, simplePo.field("col"));
         assertEquals(obj.simple.map, simplePo.field("map"));
@@ -1001,7 +1001,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
         assertArrayEquals(
             obj.binary.objArr,
-            useTypedArrays ? binaryPo.<BinaryArray>field("_objArr").array() : binaryPo.field("_objArr")
+            useBinaryArrays ? binaryPo.<BinaryArray>field("_objArr").array() : binaryPo.field("_objArr")
         );
         assertEquals(obj.binary.col, binaryPo.field("_col"));
         assertEquals(obj.binary.map, binaryPo.field("_map"));
@@ -1311,7 +1311,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
+            useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
         );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
@@ -1705,7 +1705,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        Object[] arr0 = useTypedArrays ? po.<BinaryArray>field("arr").array() : po.field("arr");
+        Object[] arr0 = useBinaryArrays ? po.<BinaryArray>field("arr").array() : po.field("arr");
 
         assertEquals(3, arr0.length);
 

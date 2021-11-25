@@ -37,18 +37,18 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Binary object representing array.
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
-    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = false;
+    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
 
-    /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    private static boolean USE_TYPED_ARRAYS =
-        IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
+    /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    private static boolean USE_BINARY_ARRAYS =
+        IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -259,17 +259,17 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
-    public static boolean useTypedArrays() {
-        return USE_TYPED_ARRAYS;
+    public static boolean useBinaryArrays() {
+        return USE_BINARY_ARRAYS;
     }
 
     /**
-     * Initialize {@link #USE_TYPED_ARRAYS} value with
-     * {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS} system property value.
+     * Initialize {@link #USE_BINARY_ARRAYS} value with
+     * {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
      *
      * This method invoked using reflection in tests.
      */
-    public static void initUseTypedArrays() {
-        USE_TYPED_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
+    public static void initUseBinaryArrays() {
+        USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
     }
 }

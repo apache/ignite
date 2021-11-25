@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary builder test.
  */
-public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArrayTest {
+public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArraysTest {
     /** */
     private static IgniteConfiguration cfg;
 
@@ -631,7 +631,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        Object[] arr = useTypedArrays ? po.<BinaryArray>field("objectArrayField").array() : po.field("objectArrayField");
+        Object[] arr = useBinaryArrays ? po.<BinaryArray>field("objectArrayField").array() : po.field("objectArrayField");
 
         assertEquals(2, arr.length);
 
@@ -843,7 +843,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
      */
     @Test
     public void testMetaData() throws Exception {
-        String cls = "org.test.MetaTest" + (useTypedArrays ? "0" : "");
+        String cls = "org.test.MetaTest" + (useBinaryArrays ? "0" : "");
 
         BinaryObjectBuilder builder = builder(cls);
 

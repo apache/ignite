@@ -220,7 +220,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                         "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
                         "\"primitiveIntsCol\" = ?, " +  //(3)
                         "\"bytesCol\" = ?" + // (4)
-                        (useTypedArrays ? ",\"personCol\" = ?" : "") // (5)
+                        (useBinaryArrays ? ",\"personCol\" = ?" : "") // (5)
             ).setArgs(
                 5,
                 new AllTypes.InnerType(80L),
@@ -240,7 +240,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             assertEquals("3.141592653589793", res.strCol);
             assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
             assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
-            if (useTypedArrays) {
+            if (useBinaryArrays) {
                 assertTrue(Arrays.equals(
                     new Person[] {new Person(1, "John", " Connor"), new Person(2, "Sarah", "Connor")},
                     res.personCol

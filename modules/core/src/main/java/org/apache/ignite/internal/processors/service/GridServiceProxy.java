@@ -331,7 +331,7 @@ public class GridServiceProxy<T> implements Serializable {
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
         Marshaller marsh = ctx.config().getMarshaller();
 
-        if (KEEP_BINARY.get() && BinaryArray.useTypedArrays() && marsh instanceof BinaryMarshaller) {
+        if (KEEP_BINARY.get() && BinaryArray.useBinaryArrays() && marsh instanceof BinaryMarshaller) {
             // To avoid deserializing of enum types and BinaryArrays.
             return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
         }

@@ -1872,7 +1872,7 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
-            BinaryArray.initUseTypedArrays();
+            BinaryArray.initUseBinaryArrays();
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 

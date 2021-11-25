@@ -629,7 +629,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                     Method mtd = getMethod(serviceClass, mthdName, args);
 
-                    if (!BinaryArray.useTypedArrays())
+                    if (!BinaryArray.useBinaryArrays())
                         convertArrayArgs(args, mtd);
 
                     return ((GridServiceProxy)proxy)

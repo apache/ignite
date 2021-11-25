@@ -501,7 +501,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            if (!BinaryArray.useTypedArrays())
+            if (!BinaryArray.useBinaryArrays())
                 return pArr;
 
             Class<?> compCls = obj.getClass().getComponentType();

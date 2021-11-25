@@ -37,7 +37,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Checks service invocation for thin client.
@@ -53,14 +53,14 @@ public class ServicesTest extends AbstractThinClientTest {
     private static final String CLUSTER_SINGLTON_SERVICE_NAME = "cluster_svc";
 
     /** */
-    protected boolean useTypedArrays;
+    protected boolean useBinaryArrays;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-        BinaryArray.initUseTypedArrays();
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
+        BinaryArray.initUseBinaryArrays();
 
         startGrids(3);
 
@@ -85,8 +85,8 @@ public class ServicesTest extends AbstractThinClientTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-        BinaryArray.initUseTypedArrays();
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+        BinaryArray.initUseBinaryArrays();
     }
 
     /**

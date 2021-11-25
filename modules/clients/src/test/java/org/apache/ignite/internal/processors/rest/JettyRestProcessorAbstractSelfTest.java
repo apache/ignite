@@ -144,7 +144,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -176,11 +176,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** */
     @Parameterized.Parameter
-    public boolean useTypedArrays;
+    public boolean useBinaryArrays;
 
-    /** Generates values for the {@link #useTypedArrays} parameter. */
-    @Parameterized.Parameters(name = "useTypedArrays = {0}")
-    public static Iterable<Object[]> useTypedArrays() {
+    /** Generates values for the {@link #useBinaryArrays} parameter. */
+    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
+    public static Iterable<Object[]> useBinaryArrays() {
         return Arrays.asList(new Object[][] {{true}, {false}});
     }
 
@@ -188,7 +188,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected void beforeTestsStarted() throws Exception {
         String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
 
         super.beforeTestsStarted();
 
@@ -198,7 +198,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
 
         super.afterTestsStopped();
     }

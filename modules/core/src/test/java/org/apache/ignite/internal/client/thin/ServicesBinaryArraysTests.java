@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.client.thin;
 
 /** */
-public class ServicesTypedArrayTests extends ServicesTest {
+public class ServicesBinaryArraysTests extends ServicesTest {
     /** */
-    public ServicesTypedArrayTests() {
-        useTypedArrays = true;
+    public ServicesBinaryArraysTests() {
+        useBinaryArrays = true;
     }
 }

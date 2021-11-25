@@ -41,7 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.client.Config.SERVER;
 
 /**
@@ -177,14 +177,14 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
 
     /** */
     @Test
-    public void shouldSupportTableExpressionsWithTypedArrays() throws Exception {
+    public void shouldSupportTableExpressionsWithBinaryArrays() throws Exception {
         checkTableExpression(true);
     }
 
     /** */
     private void checkTableExpression(boolean useTypedArrays) throws Exception {
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-        BinaryArray.initUseTypedArrays();
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useTypedArrays));
+        BinaryArray.initUseBinaryArrays();
 
         try (IgniteEx ex = startGrid(0);
              IgniteEx cli = startClientGrid(1);
@@ -219,8 +219,8 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
             checker.accept(thinCli.query(new SqlFieldsQuery(select).setArgs(arg)).getAll());
         }
         finally {
-            System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-            BinaryArray.initUseTypedArrays();
+            System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+            BinaryArray.initUseBinaryArrays();
         }
     }
 

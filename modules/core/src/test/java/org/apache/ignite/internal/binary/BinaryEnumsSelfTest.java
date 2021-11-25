@@ -43,7 +43,7 @@ import org.junit.Test;
  * Contains tests for binary enums.
  */
 @SuppressWarnings("unchecked")
-public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
+public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";
 
@@ -623,10 +623,10 @@ public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
         Object arr1 = cacheBinary1.get(1);
         Object arr2 = cacheBinary2.get(1);
 
-        Object[] arrBinary1 = useTypedArrays
+        Object[] arrBinary1 = useBinaryArrays
             ? ((BinaryArray)arr1).array()
             : (Object[])arr1;
-        Object[] arrBinary2 = useTypedArrays
+        Object[] arrBinary2 = useBinaryArrays
             ? ((BinaryArray)arr2).array()
             : (Object[])arr2;
 

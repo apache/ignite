@@ -175,7 +175,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                if (!BinaryArray.useTypedArrays())
+                if (!BinaryArray.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
                 res = proxy.invokeMethod(method, args, null);

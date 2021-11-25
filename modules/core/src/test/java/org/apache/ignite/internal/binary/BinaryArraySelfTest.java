@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** */
-public class BinaryArraySelfTest extends AbstractTypedArrayTest {
+public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     /** */
     private static Ignite server;
 
@@ -155,11 +155,11 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         Object val2 = c.get(2);
         Object val3 = c.get(3);
 
-        assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, val1.getClass());
-        assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, val2.getClass());
-        assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, val3.getClass());
+        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val1.getClass());
+        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val2.getClass());
+        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val3.getClass());
 
-        if (useTypedArrays) {
+        if (useBinaryArrays) {
             assertTrue(c.replace(1, val1, val2));
             assertTrue(c.replace(2, val2, val3));
             assertTrue(c.replace(3, val3, val1));
@@ -184,7 +184,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(0, val2.getArr().length);
         assertEquals(1, val3.getArr().length);
 
-        if (useTypedArrays) {
+        if (useBinaryArrays) {
             assertTrue(c.replace(1, val1, val2));
             assertTrue(c.replace(2, val2, val3));
             assertTrue(c.replace(3, val3, val1));
@@ -200,9 +200,9 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
 
-        assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, obj.getClass());
+        assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, obj.getClass());
 
-        if (useTypedArrays)
+        if (useBinaryArrays)
             assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
 
         assertTrue(c.remove(1));
@@ -241,7 +241,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
                 }
             );
 
-            assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, src.getClass());
+            assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, src.getClass());
 
             c.withKeepBinary().put(1, src);
 
@@ -267,12 +267,12 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
 
             Object item0 = c.get(1);
 
-            if (useTypedArrays)
+            if (useBinaryArrays)
                 assertTrue(c.replace(1, item, item));
 
             assertTrue(c.remove(1));
 
-            if (useTypedArrays)
+            if (useBinaryArrays)
                 assertEquals(item.getClass(), item0.getClass());
 
             assertTrue(Arrays.equals((Object[])item, (Object[])item0));
@@ -281,7 +281,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
 
             assertEquals(1, c.get(item));
 
-            if (useTypedArrays)
+            if (useBinaryArrays)
                 assertTrue(c.replace(item, 1, 2));
 
             assertTrue(c.remove(item));
@@ -300,7 +300,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
 
         Object deser;
 
-        if (useTypedArrays) {
+        if (useBinaryArrays) {
             assertTrue(obj instanceof BinaryArray);
 
             deser = ((BinaryArray)obj).deserialize();
@@ -329,7 +329,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
 
         Object deser;
 
-        if (useTypedArrays) {
+        if (useBinaryArrays) {
             assertEquals(BinaryArray.class, obj.getClass());
 
             deser = ((BinaryArray)obj).deserialize();
@@ -359,7 +359,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         BinaryObject simpleObj = obj.field("obj");
         Object objArr = simpleObj.field("objArr");
 
-        assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, objArr.getClass());
+        assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, objArr.getClass());
 
         Object deser = obj.deserialize();
 
@@ -388,7 +388,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         Object res = server.binary().toBinary(arr);
         Object[] res0;
 
-        if (useTypedArrays) {
+        if (useBinaryArrays) {
             assertTrue(res instanceof BinaryArray);
 
             res0 = ((BinaryArray)res).deserialize();

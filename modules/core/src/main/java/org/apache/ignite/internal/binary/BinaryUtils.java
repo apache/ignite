@@ -2006,7 +2006,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                if (BinaryArray.useTypedArrays() && !deserialize)
+                if (BinaryArray.useBinaryArrays() && !deserialize)
                     return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize);
                 else
                     return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
@@ -2068,7 +2068,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++) {
             Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-            if (deserialize && BinaryArray.useTypedArrays() && res instanceof BinaryObject)
+            if (deserialize && BinaryArray.useBinaryArrays() && res instanceof BinaryObject)
                 arr[i] = ((BinaryObject)res).deserialize(ldr);
             else
                 arr[i] = res;

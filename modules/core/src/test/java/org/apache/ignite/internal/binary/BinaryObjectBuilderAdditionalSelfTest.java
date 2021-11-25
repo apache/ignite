@@ -75,7 +75,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTest {
+public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -1610,7 +1610,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
 
         builder = extObj.toBuilder();
@@ -1620,7 +1620,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
@@ -1631,7 +1631,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
