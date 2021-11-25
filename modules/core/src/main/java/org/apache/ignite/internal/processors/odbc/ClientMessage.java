@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,10 +36,10 @@ public class ClientMessage implements Message, Externalizable {
     private static final long serialVersionUID = -4609408156037304495L;
 
     /** */
-    private static final int MAX_FIRST_MESSAGE_SIZE = 1024 * 1024;
+    private static final int MAX_HANDSHAKE_SIZE = 1024 * 1024;
 
-    /** */
-    private static final int FIRST_MESSAGE_HEADER = 1 + (1 << 8);
+    /** First 3 bytes in handshake are always 1 1 0 (handshake = 1, major version = 1). */
+    private static final int HANDSHAKE_HEADER = 1 + (1 << 8);
 
     /** */
     private final boolean isFirstMessage;
@@ -58,7 +57,7 @@ public class ClientMessage implements Message, Externalizable {
     private int msgSize;
 
     /** */
-    private int firstMessageHeader = 0;
+    private int firstMessageHeader;
 
     /** */
     public ClientMessage() {
@@ -147,8 +146,8 @@ public class ClientMessage implements Message, Externalizable {
             if (msgSize <= 0)
                 throw new IOException("Message size must be greater than 0: " + msgSize);
 
-            if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE)
-                throw new IOException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
+            if (isFirstMessage && msgSize > MAX_HANDSHAKE_SIZE)
+                throw new IOException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_HANDSHAKE_SIZE);
         }
 
         assert cnt >= 0;
@@ -175,8 +174,8 @@ public class ClientMessage implements Message, Externalizable {
                     if (cnt < 3)
                         return false;
 
-                    if (firstMessageHeader != FIRST_MESSAGE_HEADER)
-                        throw new IOException("Invalid handshake first 3 bytes, expected " + FIRST_MESSAGE_HEADER + ", but was "
+                    if (firstMessageHeader != HANDSHAKE_HEADER)
+                        throw new IOException("Invalid handshake first 3 bytes, expected " + HANDSHAKE_HEADER + ", but was "
                                 + firstMessageHeader);
 
                     // Header is valid, create buffer and set first 3 bytes to 1 1 0.
