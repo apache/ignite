@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Services
         private bool _cancelled;
 
         /** */
+        private IServiceContext _context;
+
+        /** */
         public PlatformTestService()
         {
             // No-Op.
@@ -60,6 +63,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Init(IServiceContext context)
         {
+            _context = context;
             _initialized = true;
         }
 
@@ -635,22 +639,28 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             throw new NotImplementedException();
         }
-        
+
         public void putValsForCache()
         {
             _ignite.GetOrCreateCache<int, V9>("V9").Put(1, new V9 {Name = "1"});
-            
+
             var v10 = _ignite.GetOrCreateCache<int, V10>("V10");
-            
+
             v10.Put(1, new V10 {Name = "1"});
             v10.Put(2, new V10 {Name = "2"});
-            
+
             _ignite.GetOrCreateCache<int, V11>("V11").Put(1, new V11 {Name = "1"});
-            
+
             var v12 = _ignite.GetOrCreateCache<int, V12>("V12");
-            
+
             v12.Put(1, new V12 {Name = "1"});
             v12.Put(2, new V12 {Name = "2"});
+        }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _context.CurrentCallContext.GetAttribute(name);
         }
     }
 }

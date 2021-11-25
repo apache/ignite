@@ -221,5 +221,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         void testSendMessage();
+
+        /** */
+        object contextAttribute(string name);
     }
 }

@@ -288,7 +288,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(),
-            "The check procedure has finished, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
+            "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
     }
 
     /** @throws Exception If fails. */
@@ -466,7 +466,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(),
-            "The check procedure has finished, conflict partitions has been found: [counterConflicts=0, hashConflicts=1]");
+            "The check procedure has failed, conflict partitions has been found: [counterConflicts=0, hashConflicts=1]");
     }
 
     /** @throws Exception If fails. */
@@ -598,6 +598,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
+            encryption,
             mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
 
         snpFut.get();

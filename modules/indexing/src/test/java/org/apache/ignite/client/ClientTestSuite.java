@@ -22,6 +22,7 @@ import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
+import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
@@ -64,7 +65,8 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessDiscoveryTest.class,
     ReliableChannelTest.class,
     CacheAsyncTest.class,
-    TimeoutTest.class
+    TimeoutTest.class,
+    OptimizedMarshallerClassesCachedTest.class,
 })
 public class ClientTestSuite {
     // No-op.
