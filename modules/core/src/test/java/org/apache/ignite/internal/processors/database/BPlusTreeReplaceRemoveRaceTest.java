@@ -230,7 +230,7 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Pair getLookupRow(BPlusTree<Pair,?> tree, long pageAddr, int idx) {
+        @Override public Pair getLookupRow(BPlusTree<Pair, ?> tree, long pageAddr, int idx) {
             int key = PageUtils.getInt(pageAddr, offset(idx));
             int val = PageUtils.getInt(pageAddr, offset(idx) + 4);
 
@@ -264,7 +264,7 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Pair getLookupRow(BPlusTree<Pair,?> tree, long pageAddr, int idx) {
+        @Override public Pair getLookupRow(BPlusTree<Pair, ?> tree, long pageAddr, int idx) {
             int key = PageUtils.getInt(pageAddr, offset(idx));
             int val = PageUtils.getInt(pageAddr, offset(idx) + 4);
 

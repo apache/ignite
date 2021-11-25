@@ -3634,7 +3634,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override protected Result finishOrLockTail(long pageId, long page, long backId, long fwdId, int lvl) throws IgniteCheckedException {
+        @Override protected Result finishOrLockTail(long pageId, long page, long backId, long fwdId, int lvl)
+            throws IgniteCheckedException {
             if (btmLvl == lvl) {
                 // Insert for the split.
                 return tryInsert(pageId, page, fwdId, lvl);
