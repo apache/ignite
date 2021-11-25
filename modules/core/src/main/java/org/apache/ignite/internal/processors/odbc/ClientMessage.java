@@ -55,7 +55,7 @@ public class ClientMessage implements Message, Externalizable {
     private int msgSize;
 
     /** */
-    private int firstBytes = 0;
+    private byte[] firstBytes = new byte[3];
 
     /** */
     public ClientMessage() {
@@ -137,8 +137,6 @@ public class ClientMessage implements Message, Externalizable {
             if (cnt < 0)
                 return false;
 
-            // TODO: Validate some handshake bytes to exit early on garbage data.
-            // First 3 bytes are always 1, 1, 0 (handshake, major protocol version).
             if (isFirstMessage) {
                 if (msgSize > MAX_FIRST_MESSAGE_SIZE) {
                     throw new IgniteException("Client handshake size exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
@@ -156,6 +154,27 @@ public class ClientMessage implements Message, Externalizable {
 
             if (missing > 0) {
                 int len = Math.min(missing, remaining);
+
+                if (isFirstMessage) {
+                    while (len > 0 && cnt < 3) {
+                        firstBytes[cnt] = buf.get();
+                        cnt++;
+                        len--;
+                    }
+
+                    if (cnt < 3)
+                        return false;
+
+                    // Sanity check: first 3 bytes in handshake are always 1, 1, 0 (handshake = 1, major version = 1).
+                    // Do not allocate the buffer before validating the header.
+                    if (firstBytes[0] != 1 || firstBytes[1] != 1 || firstBytes[2] != 0)
+                        throw new IgniteException("Invalid handshake bytes, expected 1 1 0, but was "
+                                + firstBytes[0] + " " + firstBytes[1] + " " + firstBytes[2]);
+
+                    data = new byte[msgSize];
+                    data[0] = 1;
+                    data[1] = 1;
+                }
 
                 if (data == null)
                     data = new byte[msgSize];
