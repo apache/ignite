@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Services
 {
     using System;
     using System.Collections;
-    using System.Linq;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
@@ -32,7 +31,7 @@ namespace Apache.Ignite.Core.Services
     {
         /** Context attributes. */
         private readonly Hashtable _attrs = new Hashtable();
-        
+
         /// <summary>
         /// Set string attribute.
         /// </summary>
@@ -63,7 +62,7 @@ namespace Apache.Ignite.Core.Services
             IgniteArgumentCheck.NotNull(value, "value");
 
             _attrs[name] = value;
-            
+
             return this;
         }
 
