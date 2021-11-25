@@ -864,7 +864,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
      */
-    protected void setIos(IOVersions<? extends BPlusInnerIO<L>> innerIos,
+    public void setIos(IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos) {
         assert innerIos != null;
         assert leafIos != null;
@@ -5396,14 +5396,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @return Latest version of inner page IO.
      */
-    protected final BPlusInnerIO<L> latestInnerIO() {
+    public final BPlusInnerIO<L> latestInnerIO() {
         return innerIos.latest();
     }
 
     /**
      * @return Latest version of leaf page IO.
      */
-    protected final BPlusLeafIO<L> latestLeafIO() {
+    public final BPlusLeafIO<L> latestLeafIO() {
         return leafIos.latest();
     }
 
