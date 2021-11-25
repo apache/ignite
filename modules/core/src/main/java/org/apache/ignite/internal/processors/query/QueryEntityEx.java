@@ -110,47 +110,40 @@ public class QueryEntityEx extends QueryEntity {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int getPrimaryKeyInlineSize() {
+    @Override public int getPrimaryKeyInlineSize() {
         return pkInlineSize != null ? pkInlineSize : -1;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public QueryEntityEx setPrimaryKeyInlineSize(int pkInlineSize) {
+    @Override public QueryEntityEx setPrimaryKeyInlineSize(int pkInlineSize) {
         this.pkInlineSize = pkInlineSize;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int getAffinityFieldInlineSize() {
+    @Override public int getAffinityFieldInlineSize() {
         return affFieldInlineSize != null ? affFieldInlineSize : -1;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public QueryEntityEx setAffinityKeyInlineSize(int affFieldInlineSize) {
+    @Override public QueryEntityEx setAffinityKeyInlineSize(int affFieldInlineSize) {
         this.affFieldInlineSize = affFieldInlineSize;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Boolean isUnwrapPrimaryKeyFields() {
+    @Override public Boolean isUnwrapPrimaryKeyFields() {
         return unwrapPk;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public QueryEntityEx setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
+    @Override public QueryEntityEx setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
         this.unwrapPk = unwrapPk;
 
         return this;
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
