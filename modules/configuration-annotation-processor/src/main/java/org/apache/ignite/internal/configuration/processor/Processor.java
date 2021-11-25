@@ -95,6 +95,9 @@ public class Processor extends AbstractProcessor {
     
     /** Error format for an empty field. */
     private static final String EMPTY_FIELD_ERROR_FORMAT = "Field %s cannot be empty: %s";
+
+    /** Postfix with which any configuration schema class name must end. */
+    private static final String CONFIGURATION_SCHEMA_POSTFIX = "ConfigurationSchema";
     
     /** {@inheritDoc} */
     @Override
@@ -395,7 +398,7 @@ public class Processor extends AbstractProcessor {
             TypeName schemaFieldTypeName = TypeName.get(schemaFieldType);
             
             boolean leafField = isPrimitiveOrArray(schemaFieldType)
-                    || !((ClassName) schemaFieldTypeName).simpleName().contains("ConfigurationSchema");
+                    || !((ClassName) schemaFieldTypeName).simpleName().contains(CONFIGURATION_SCHEMA_POSTFIX);
             
             boolean namedListField = field.getAnnotation(NamedConfigValue.class) != null;
             
@@ -550,86 +553,123 @@ public class Processor extends AbstractProcessor {
      * @throws ProcessorException If the class validation fails.
      */
     private void validate(TypeElement clazz, List<VariableElement> fields) {
+        String simpleName = clazz.getSimpleName().toString();
+
+        if (!simpleName.endsWith(CONFIGURATION_SCHEMA_POSTFIX)) {
+            throw new ProcessorException(
+                    String.format("%s must end with '%s'", clazz.getQualifiedName(), CONFIGURATION_SCHEMA_POSTFIX));
+        }
+
         if (clazz.getAnnotation(InternalConfiguration.class) != null) {
-            checkIncompatibleClassAnnotations(
-                    clazz,
-                    InternalConfiguration.class,
-                    Config.class, PolymorphicConfig.class, PolymorphicConfigInstance.class
-            );
-            
-            checkNotContainsPolymorphicIdField(clazz, InternalConfiguration.class, fields);
-    
-            if (clazz.getAnnotation(ConfigurationRoot.class) != null) {
-                checkNotExistSuperClass(clazz, InternalConfiguration.class);
-            } else {
-                checkExistSuperClass(clazz, InternalConfiguration.class);
-        
-                TypeElement superClazz = superClass(clazz);
-        
-                if (superClazz.getAnnotation(InternalConfiguration.class) != null) {
-                    throw new ProcessorException(String.format(
-                            "Superclass must not have %s: %s",
-                            simpleName(InternalConfiguration.class),
-                            clazz.getQualifiedName()
-                    ));
-                }
-        
-                checkSuperclassContainAnyAnnotation(clazz, superClazz, ConfigurationRoot.class, Config.class);
-        
-                checkNoConflictFieldNames(clazz, superClazz, fields, fields(superClazz));
-            }
+            validateInternalConfigurationSchemaClass(clazz, fields);
         } else if (clazz.getAnnotation(PolymorphicConfig.class) != null) {
-            checkIncompatibleClassAnnotations(
-                    clazz,
-                    PolymorphicConfig.class,
-                    ConfigurationRoot.class, Config.class, PolymorphicConfigInstance.class
-            );
-            
-            checkNotExistSuperClass(clazz, PolymorphicConfig.class);
-            
-            List<VariableElement> typeIdFields = collectAnnotatedFields(fields, PolymorphicId.class);
-            
-            if (typeIdFields.size() != 1 || fields.indexOf(typeIdFields.get(0)) != 0) {
-                throw new ProcessorException(String.format(
-                        "Class with %s must contain one field with %s and it should be the first in the schema: %s",
-                        simpleName(PolymorphicConfig.class),
-                        simpleName(PolymorphicId.class),
-                        clazz.getQualifiedName()
-                ));
-            }
+            validatePolymorphicConfigSchemaClass(clazz, fields);
         } else if (clazz.getAnnotation(PolymorphicConfigInstance.class) != null) {
-            checkIncompatibleClassAnnotations(
-                    clazz,
-                    PolymorphicConfigInstance.class,
-                    ConfigurationRoot.class, Config.class
-            );
-            
-            checkNotContainsPolymorphicIdField(clazz, PolymorphicConfigInstance.class, fields);
-            
-            String id = clazz.getAnnotation(PolymorphicConfigInstance.class).value();
-            
-            if (id == null || id.isBlank()) {
-                throw new ProcessorException(String.format(
-                        EMPTY_FIELD_ERROR_FORMAT,
-                        simpleName(PolymorphicConfigInstance.class) + ".id()",
-                        clazz.getQualifiedName()
-                ));
-            }
-            
-            checkExistSuperClass(clazz, PolymorphicConfigInstance.class);
-            
-            TypeElement superClazz = superClass(clazz);
-            
-            checkSuperclassContainAnyAnnotation(clazz, superClazz, PolymorphicConfig.class);
-            
-            checkNoConflictFieldNames(clazz, superClazz, fields, fields(superClazz));
+            validatePolymorphicConfigInstanceSchemaClass(clazz, fields);
         } else if (clazz.getAnnotation(ConfigurationRoot.class) != null) {
             checkNotContainsPolymorphicIdField(clazz, ConfigurationRoot.class, fields);
         } else if (clazz.getAnnotation(Config.class) != null) {
             checkNotContainsPolymorphicIdField(clazz, Config.class, fields);
         }
     }
-    
+
+    /**
+     * Checks configuration schema with {@link InternalConfiguration}.
+     *
+     * @param clazz  type element under validation
+     * @param fields non-static fields of the class under validation
+     */
+    private void validateInternalConfigurationSchemaClass(TypeElement clazz, List<VariableElement> fields) {
+        checkIncompatibleClassAnnotations(
+                clazz,
+                InternalConfiguration.class,
+                Config.class, PolymorphicConfig.class, PolymorphicConfigInstance.class
+        );
+
+        checkNotContainsPolymorphicIdField(clazz, InternalConfiguration.class, fields);
+
+        if (clazz.getAnnotation(ConfigurationRoot.class) != null) {
+            checkNotExistSuperClass(clazz, InternalConfiguration.class);
+        } else {
+            checkExistSuperClass(clazz, InternalConfiguration.class);
+
+            TypeElement superClazz = superClass(clazz);
+
+            if (superClazz.getAnnotation(InternalConfiguration.class) != null) {
+                throw new ProcessorException(String.format(
+                        "Superclass must not have %s: %s",
+                        simpleName(InternalConfiguration.class),
+                        clazz.getQualifiedName()
+                ));
+            }
+
+            checkSuperclassContainAnyAnnotation(clazz, superClazz, ConfigurationRoot.class, Config.class);
+
+            checkNoConflictFieldNames(clazz, superClazz, fields, fields(superClazz));
+        }
+    }
+
+    /**
+     * Checks configuration schema with {@link PolymorphicConfig}.
+     *
+     * @param clazz  type element under validation
+     * @param fields non-static fields of the class under validation
+     */
+    private void validatePolymorphicConfigSchemaClass(TypeElement clazz, List<VariableElement> fields) {
+        checkIncompatibleClassAnnotations(
+                clazz,
+                PolymorphicConfig.class,
+                ConfigurationRoot.class, Config.class, PolymorphicConfigInstance.class
+        );
+
+        checkNotExistSuperClass(clazz, PolymorphicConfig.class);
+
+        List<VariableElement> typeIdFields = collectAnnotatedFields(fields, PolymorphicId.class);
+
+        if (typeIdFields.size() != 1 || fields.indexOf(typeIdFields.get(0)) != 0) {
+            throw new ProcessorException(String.format(
+                    "Class with %s must contain one field with %s and it should be the first in the schema: %s",
+                    simpleName(PolymorphicConfig.class),
+                    simpleName(PolymorphicId.class),
+                    clazz.getQualifiedName()
+            ));
+        }
+    }
+
+    /**
+     * Checks configuration schema with {@link PolymorphicConfigInstance}.
+     *
+     * @param clazz  type element under validation
+     * @param fields non-static fields of the class under validation
+     */
+    private void validatePolymorphicConfigInstanceSchemaClass(TypeElement clazz, List<VariableElement> fields) {
+        checkIncompatibleClassAnnotations(
+                clazz,
+                PolymorphicConfigInstance.class,
+                ConfigurationRoot.class, Config.class
+        );
+
+        checkNotContainsPolymorphicIdField(clazz, PolymorphicConfigInstance.class, fields);
+
+        String id = clazz.getAnnotation(PolymorphicConfigInstance.class).value();
+
+        if (id == null || id.isBlank()) {
+            throw new ProcessorException(String.format(
+                    EMPTY_FIELD_ERROR_FORMAT,
+                    simpleName(PolymorphicConfigInstance.class) + ".id()",
+                    clazz.getQualifiedName()
+            ));
+        }
+
+        checkExistSuperClass(clazz, PolymorphicConfigInstance.class);
+
+        TypeElement superClazz = superClass(clazz);
+
+        checkSuperclassContainAnyAnnotation(clazz, superClazz, PolymorphicConfig.class);
+
+        checkNoConflictFieldNames(clazz, superClazz, fields, fields(superClazz));
+    }
+
     /** {@inheritDoc} */
     @Override
     public Set<String> getSupportedAnnotationTypes() {
@@ -782,6 +822,7 @@ public class Processor extends AbstractProcessor {
      * @param incompatibleAnnotations Incompatible class annotations with {@code clazzAnnotation}.
      * @throws ProcessorException If there is an incompatible class annotation with {@code clazzAnnotation}.
      */
+    @SafeVarargs
     private void checkIncompatibleClassAnnotations(
             TypeElement clazz,
             Class<? extends Annotation> clazzAnnotation,
@@ -900,6 +941,7 @@ public class Processor extends AbstractProcessor {
      * @param superClazzAnnotations Superclass annotations.
      * @throws ProcessorException If the superclass has none of the annotations from {@code superClazzAnnotations}.
      */
+    @SafeVarargs
     private void checkSuperclassContainAnyAnnotation(
             TypeElement clazz,
             TypeElement superClazz,

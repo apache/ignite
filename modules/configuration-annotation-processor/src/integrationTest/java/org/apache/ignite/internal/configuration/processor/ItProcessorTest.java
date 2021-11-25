@@ -292,4 +292,16 @@ public class ItProcessorTest extends AbstractProcessorTest {
 
         return batchCompile(classes);
     }
+
+    @Test
+    void wrongSchemaPostfix() {
+        String packageName = "org.apache.ignite.internal.configuration.processor";
+
+        ClassName schema = ClassName.get(packageName, "ConfigurationSchemaWithWrongPostfix");
+
+        Compilation compilation = compile(schema);
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(schema + " must end with 'ConfigurationSchema'");
+    }
 }

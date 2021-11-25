@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.configuration;
 
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
-
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 import java.lang.annotation.Annotation;
@@ -63,8 +61,6 @@ public class ConfigurationManager implements IgniteComponent {
             Collection<Class<?>> internalSchemaExtensions,
             Collection<Class<?>> polymorphicSchemaExtensions
     ) {
-        checkConfigurationType(rootKeys, storage);
-        
         registry = new ConfigurationRegistry(
                 rootKeys,
                 validators,

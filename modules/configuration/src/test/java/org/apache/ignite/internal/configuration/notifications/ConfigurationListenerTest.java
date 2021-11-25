@@ -27,6 +27,8 @@ import static org.apache.ignite.internal.configuration.notifications.Configurati
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnRename;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnUpdate;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.doNothingConsumer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,10 +42,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
+import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
@@ -68,6 +74,9 @@ public class ConfigurationListenerTest {
         
         @NamedConfigValue
         public ChildConfigurationSchema elements;
+
+        @ConfigValue
+        public PolyConfigurationSchema polymorph;
     }
     
     /**
@@ -78,7 +87,40 @@ public class ConfigurationListenerTest {
         @Value(hasDefault = true)
         public String str = "default";
     }
-    
+
+    /**
+     * Base class for polymorhphic configs.
+     */
+    @PolymorphicConfig
+    public static class PolyConfigurationSchema {
+        public static final String STRING = "string";
+        public static final String LONG = "long";
+
+        @PolymorphicId(hasDefault = true)
+        public String type = STRING;
+
+        @Value(hasDefault = true)
+        public int commonIntVal = 11;
+    }
+
+    /**
+     * String-based variant of a polymorphic config.
+     */
+    @PolymorphicConfigInstance(PolyConfigurationSchema.STRING)
+    public static class StringPolyConfigurationSchema extends PolyConfigurationSchema {
+        @Value(hasDefault = true)
+        public String specificVal = "original";
+    }
+
+    /**
+     * Long-based variant of a polymorphic config.
+     */
+    @PolymorphicConfigInstance(PolyConfigurationSchema.LONG)
+    public static class LongPolyConfigurationSchema extends PolyConfigurationSchema {
+        @Value(hasDefault = true)
+        public long specificVal = 12;
+    }
+
     private ConfigurationRegistry registry;
     
     private ParentConfiguration configuration;
@@ -95,7 +137,7 @@ public class ConfigurationListenerTest {
                 Map.of(),
                 testConfigurationStorage,
                 List.of(),
-                List.of()
+                List.of(StringPolyConfigurationSchema.class, LongPolyConfigurationSchema.class)
         );
         
         registry.start();
@@ -914,5 +956,19 @@ public class ConfigurationListenerTest {
         }));
         
         configuration.elements().get(key).str().update(newVal).get(1, SECONDS);
+    }
+
+    @Test
+    void polymorphicParentFieldChangeNotificationHappens() throws Exception {
+        AtomicInteger intHolder = new AtomicInteger();
+
+        configuration.polymorph().commonIntVal().listen(event -> {
+            intHolder.set(event.newValue());
+            return CompletableFuture.completedFuture(null);
+        });
+
+        configuration.polymorph().commonIntVal().update(42).get(1, SECONDS);
+
+        assertThat(intHolder.get(), is(42));
     }
 }

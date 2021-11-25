@@ -496,13 +496,18 @@ public class ConfigurationUtil {
         while (!queue.isEmpty()) {
             Class<?> cls = queue.poll();
             
-            if (!cls.isAnnotationPresent(ConfigurationRoot.class) && !cls.isAnnotationPresent(Config.class)
-                    && !cls.isAnnotationPresent(PolymorphicConfig.class)) {
+            if (!cls.isAnnotationPresent(ConfigurationRoot.class)
+                    && !cls.isAnnotationPresent(Config.class)
+                    && !cls.isAnnotationPresent(InternalConfiguration.class)
+                    && !cls.isAnnotationPresent(PolymorphicConfig.class)
+                    && !cls.isAnnotationPresent(PolymorphicConfigInstance.class)) {
                 throw new IllegalArgumentException(String.format(
-                        "Configuration schema must contain @%s or @%s or @%s: %s",
+                        "Configuration schema must contain one of @%s, @%s, @%s, @%s, @%s: %s",
                         ConfigurationRoot.class.getSimpleName(),
                         Config.class.getSimpleName(),
+                        InternalConfiguration.class.getSimpleName(),
                         PolymorphicConfig.class.getSimpleName(),
+                        PolymorphicConfigInstance.class.getSimpleName(),
                         cls.getName()
                 ));
             } else {

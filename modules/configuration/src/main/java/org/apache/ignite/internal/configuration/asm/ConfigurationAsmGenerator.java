@@ -392,7 +392,11 @@ public class ConfigurationAsmGenerator {
             
             assert internalExtensions.isEmpty() || polymorphicExtensions.isEmpty() :
                     "Internal and polymorphic extensions are not allowed at the same time: " + schemaClass;
-            
+            if (isPolymorphicConfig(schemaClass) && polymorphicExtensions.isEmpty()) {
+                throw new IllegalArgumentException(schemaClass
+                        + " is polymorphic but polymorphic extensions are absent");
+            }
+
             List<Field> schemaFields = schemaFields(schemaClass);
             Collection<Field> internalExtensionsFields = extensionsFields(internalExtensions, true);
             Collection<Field> polymorphicExtensionsFields = extensionsFields(polymorphicExtensions, false);
@@ -1324,7 +1328,7 @@ public class ConfigurationAsmGenerator {
                     .ret();
         }
     }
-    
+
     /**
      * Implements {@link InnerNode#constructDefault(String)} method.
      *
@@ -2560,8 +2564,8 @@ public class ConfigurationAsmGenerator {
                                                 .condition(isNull(thisField.getField(polymorphicIdField.getName(), String.class)))
                                                 .ifTrue(throwException(
                                                         IllegalStateException.class,
-                                                        constantString("Polymorphic configuration type is not defined: "
-                                                                + polymorphicIdField.getDeclaringClass().getName())
+                                                        constantString(polymorphicTypeNotDefinedErrorMessage(
+                                                                polymorphicIdField))
                                                 ))
                                         )
                                 )
@@ -2611,7 +2615,13 @@ public class ConfigurationAsmGenerator {
         
         return codeBlock;
     }
-    
+
+    private String polymorphicTypeNotDefinedErrorMessage(Field polymorphicIdField) {
+        return "Polymorphic configuration type is not defined: "
+                + polymorphicIdField.getDeclaringClass().getName()
+                + ". See @" + PolymorphicConfig.class.getSimpleName() + " documentation.";
+    }
+
     /**
      * Creates a bytecode block of code that sets the default value for a field from the schema for {@link
      * InnerNode#constructDefault(String)}.

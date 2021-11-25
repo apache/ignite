@@ -28,11 +28,11 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
     public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {
         return visitor.visitInnerNode(key, this);
     }
-    
+
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
-     * {@literal @}Override public void traverseChildren(ConfigurationVisitor visitor, boolean includeInternal) {
+     * {@literal @}Override public &lt;T&gt; void traverseChildren(ConfigurationVisitor visitor, boolean includeInternal) {
      *     visitor.visitInnerNode("pojoField1", this.pojoField1);
      *
      *     visitor.visitNamedListNode("pojoField2", this.pojoField2);
@@ -52,29 +52,25 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * @param <T>             Parameter type of the passed visitor.
      */
     public abstract <T> void traverseChildren(ConfigurationVisitor<T> visitor, boolean includeInternal);
-    
+
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
-     * {@literal @}Override public void traverseChild(String key, ConfigurationVisitor visitor, boolean includeInternal) throws
+     * {@literal @}Override public &lt;T&gt; T traverseChild(String key, ConfigurationVisitor visitor, boolean includeInternal) throws
      *     NoSuchElementException {
-     *     if (boolean includeInternal) {
+     *     if (includeInternal) {
      *         switch (key) {
      *             case "pojoField1":
-     *                 visitor.visitInnerNode("pojoField1", this.pojoField1);
-     *                 break;
+     *                 return visitor.visitInnerNode("pojoField1", this.pojoField1);
      *
      *             case "pojoField2":
-     *                 visitor.visitNamedListNode("pojoField2", this.pojoField2);
-     *                 break;
+     *                 return visitor.visitNamedListNode("pojoField2", this.pojoField2);
      *
      *             case "primitiveField1":
-     *                 visitor.visitLeafNode("primitiveField1", this.primitiveField1);
-     *                 break;
+     *                 return visitor.visitLeafNode("primitiveField1", this.primitiveField1);
      *
      *             case "primitiveField2":
-     *                 visitor.visitLeafNode("primitiveField2", this.primitiveField2);
-     *                 break;
+     *                 return visitor.visitLeafNode("primitiveField2", this.primitiveField2);
      *
      *             default:
      *                 throw new NoSuchElementException(key);
@@ -83,8 +79,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *     else {
      *         switch (key) {
      *             case "primitiveField2":
-     *                  visitor.visitLeafNode("primitiveField2", this.primitiveField2);
-     *                  break;
+     *                  return visitor.visitLeafNode("primitiveField2", this.primitiveField2);
      *             default:
      *                  throw new NoSuchElementException(key);
      *         }
@@ -104,7 +99,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
             ConfigurationVisitor<T> visitor,
             boolean includeInternal
     ) throws NoSuchElementException;
-    
+
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
@@ -156,7 +151,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
             ConfigurationSource src,
             boolean includeInternal
     ) throws NoSuchElementException;
-    
+
     /**
      * Assigns default value to the corresponding leaf. Defaults are gathered from configuration schema class.
      *
@@ -164,14 +159,14 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * @throws NoSuchElementException If there's no such field or it is not a leaf value.
      */
     public abstract void constructDefault(String fieldName) throws NoSuchElementException;
-    
+
     /**
      * Returns class of corresponding configuration schema.
      *
      * @return Class of corresponding configuration schema.
      */
     public abstract Class<?> schemaType();
-    
+
     /** {@inheritDoc} */
     @Override
     public InnerNode copy() {
@@ -181,7 +176,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
             throw new IllegalStateException(e);
         }
     }
-    
+
     /**
      * Returns specific {@code Node} of the value. Overridden for polymorphic configuration to get a specific polymorphic configuration
      * instance.

@@ -112,9 +112,9 @@ public class ConfigurationRegistry implements IgniteComponent {
             Collection<Class<?>> polymorphicSchemaExtensions
     ) {
         checkConfigurationType(rootKeys, storage);
-        
-        Set<Class<?>> allSchemas = collectSchemas(viewReadOnly(rootKeys, RootKey::schemaClass));
-        
+
+        Set<Class<?>> allSchemas = collectAllSchemas(rootKeys, internalSchemaExtensions, polymorphicSchemaExtensions);
+
         final Map<Class<?>, Set<Class<?>>> internalExtensions = internalExtensionsWithCheck(allSchemas, internalSchemaExtensions);
         
         final Map<Class<?>, Set<Class<?>>> polymorphicExtensions = polymorphicExtensionsWithCheck(allSchemas, polymorphicSchemaExtensions);
@@ -145,7 +145,27 @@ public class ConfigurationRegistry implements IgniteComponent {
             configs.put(rootKey.key(), cfg);
         });
     }
-    
+
+    /**
+     * Collects all schemas and subschemas (recursively) from root keys, internal and polymorphic schema extensions.
+     *
+     * @param rootKeys                    root keys
+     * @param internalSchemaExtensions    internal schema extensions
+     * @param polymorphicSchemaExtensions polymorphic schema extensions
+     * @return set of all schema classes
+     */
+    private Set<Class<?>> collectAllSchemas(Collection<RootKey<?, ?>> rootKeys,
+                                            Collection<Class<?>> internalSchemaExtensions,
+                                            Collection<Class<?>> polymorphicSchemaExtensions) {
+        Set<Class<?>> allSchemas = new HashSet<>();
+
+        allSchemas.addAll(collectSchemas(viewReadOnly(rootKeys, RootKey::schemaClass)));
+        allSchemas.addAll(collectSchemas(internalSchemaExtensions));
+        allSchemas.addAll(collectSchemas(polymorphicSchemaExtensions));
+
+        return allSchemas;
+    }
+
     /**
      * Registers default validator implementation to the validators map.
      *
@@ -321,13 +341,9 @@ public class ConfigurationRegistry implements IgniteComponent {
             Set<Class<?>> allSchemas,
             Collection<Class<?>> polymorphicSchemaExtensions
     ) {
-        if (polymorphicSchemaExtensions.isEmpty()) {
-            return Map.of();
-        }
+        Map<Class<?>, Set<Class<?>>> polymorphicExtensionsByParent = polymorphicSchemaExtensions(polymorphicSchemaExtensions);
         
-        Map<Class<?>, Set<Class<?>>> polymorphicExtensions = polymorphicSchemaExtensions(polymorphicSchemaExtensions);
-        
-        Set<Class<?>> notInAllSchemas = difference(polymorphicExtensions.keySet(), allSchemas);
+        Set<Class<?>> notInAllSchemas = difference(polymorphicExtensionsByParent.keySet(), allSchemas);
         
         if (!notInAllSchemas.isEmpty()) {
             throw new IllegalArgumentException(
@@ -337,7 +353,7 @@ public class ConfigurationRegistry implements IgniteComponent {
         
         Collection<Class<?>> noPolymorphicExtensionsSchemas = allSchemas.stream()
                 .filter(ConfigurationUtil::isPolymorphicConfig)
-                .filter(not(polymorphicExtensions::containsKey))
+                .filter(not(polymorphicExtensionsByParent::containsKey))
                 .collect(toList());
         
         if (!noPolymorphicExtensionsSchemas.isEmpty()) {
@@ -346,9 +362,9 @@ public class ConfigurationRegistry implements IgniteComponent {
             );
         }
         
-        checkPolymorphicConfigIds(polymorphicExtensions);
+        checkPolymorphicConfigIds(polymorphicExtensionsByParent);
         
-        for (Map.Entry<Class<?>, Set<Class<?>>> e : polymorphicExtensions.entrySet()) {
+        for (Map.Entry<Class<?>, Set<Class<?>>> e : polymorphicExtensionsByParent.entrySet()) {
             Class<?> schemaClass = e.getKey();
             
             Field typeIdField = schemaFields(schemaClass).get(0);
@@ -362,7 +378,7 @@ public class ConfigurationRegistry implements IgniteComponent {
             }
         }
         
-        return polymorphicExtensions;
+        return polymorphicExtensionsByParent;
     }
     
     /**

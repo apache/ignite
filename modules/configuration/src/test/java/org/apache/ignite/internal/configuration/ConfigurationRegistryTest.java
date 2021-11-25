@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.configuration;
 
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
@@ -103,6 +105,23 @@ public class ConfigurationRegistryTest {
         );
         
         configRegistry.stop();
+    }
+
+    @Test
+    void missingPolymorphicExtension() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> new ConfigurationRegistry(
+                        List.of(ThirdRootConfiguration.KEY),
+                        Map.of(),
+                        new TestConfigurationStorage(LOCAL),
+                        List.of(),
+                        List.of()
+                )
+        );
+        assertThat(ex.getMessage(), is("Polymorphic configuration schemas for which no extensions were found: "
+                + "[class org.apache.ignite.internal.configuration.ConfigurationRegistryTest$"
+                + "FirstPolymorphicConfigurationSchema]"));
     }
     
     /**

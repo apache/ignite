@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.ConfigurationListenOnlyException;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.annotation.Config;
@@ -104,7 +104,7 @@ public class ConfigurationAnyListenerTest {
     private RootConfiguration rootConfig;
     
     /** Notification events. */
-    private final List<String> events = new ArrayList<>();
+    private final List<String> events = new CopyOnWriteArrayList<>();
     
     /**
      * Before each.

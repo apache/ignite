@@ -110,7 +110,7 @@ public class ConfigurationFlattener {
         @Override
         public Void doVisitLeafNode(String key, Serializable newVal) {
             // Read same value from old tree.
-            Serializable oldVal = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.leafNodeVisitor(), true);
+            Serializable oldVal = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.leafNodeVisitor(), true);
             
             // Do not put duplicates into the resulting map.
             if (singleTreeTraversal || !Objects.deepEquals(oldVal, newVal)) {
@@ -119,12 +119,12 @@ public class ConfigurationFlattener {
             
             return null;
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public Void doVisitInnerNode(String key, InnerNode newNode) {
             // Read same node from old tree.
-            InnerNode oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.innerNodeVisitor(), true);
+            InnerNode oldNode = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.innerNodeVisitor(), true);
             
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal) {
@@ -155,7 +155,7 @@ public class ConfigurationFlattener {
         @Override
         public Void doVisitNamedListNode(String key, NamedListNode<?> newNode) {
             // Read same named list node from old tree.
-            NamedListNode<?> oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.namedListNodeVisitor(), true);
+            NamedListNode<?> oldNode = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.namedListNodeVisitor(), true);
             
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal) {
@@ -211,7 +211,7 @@ public class ConfigurationFlattener {
                     Integer oldIdx = oldKeysToOrderIdxMap == null ? null : oldKeysToOrderIdxMap.get(newNodeKey);
                     
                     // We should "persist" changed indexes only.
-                    if (newIdx != oldIdx || singleTreeTraversal || newNamedElement == null) {
+                    if (!Objects.equals(newIdx, oldIdx) || singleTreeTraversal || newNamedElement == null) {
                         String orderKey = currentKey() + NamedListNode.ORDER_IDX;
                         
                         resMap.put(orderKey, deletion || newNamedElement == null ? null : newIdx);

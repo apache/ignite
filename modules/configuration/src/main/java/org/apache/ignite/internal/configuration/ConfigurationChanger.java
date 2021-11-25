@@ -385,24 +385,24 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
         return CompletableFuture
                 .supplyAsync(() -> {
                     SuperRoot curRoots = localRoots.roots;
-                    
+
                     SuperRoot changes = curRoots.copy();
-                    
+
                     src.reset();
-                    
+
                     src.descend(changes);
-                    
+
                     addDefaults(changes);
-                    
+
                     Map<String, Serializable> allChanges = createFlattenedUpdatesMap(curRoots, changes);
-                    
+
                     // Unlikely but still possible.
                     if (allChanges.isEmpty()) {
                         return null;
                     }
-                    
+
                     dropNulls(changes);
-                    
+
                     List<ValidationIssue> validationIssues = ValidationUtil.validate(
                             curRoots,
                             changes,
@@ -410,23 +410,25 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                             cachedAnnotations,
                             validators
                     );
-    
+
                     if (!validationIssues.isEmpty()) {
                         throw new ConfigurationValidationException(validationIssues);
                     }
-                    
+
                     return allChanges;
                 }, pool)
                 .thenCompose(allChanges -> {
                     if (allChanges == null) {
                         return completedFuture(null);
                     }
-                    
+
                     return storage.write(allChanges, localRoots.version)
-                            .thenCompose(casResult -> {
-                                if (casResult) {
+                            .thenCompose(casWroteSuccessfully -> {
+                                if (casWroteSuccessfully) {
                                     return localRoots.changeFuture;
                                 } else {
+                                    // Here we go to next iteration of an implicit spin loop; we have to do it via recursion
+                                    // because we work with async code (futures).
                                     return localRoots.changeFuture.thenCompose(v -> changeInternally(src));
                                 }
                             })
@@ -435,7 +437,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                             });
                 });
     }
-    
+
     /**
      * Updates configuration from storage listener.
      *
