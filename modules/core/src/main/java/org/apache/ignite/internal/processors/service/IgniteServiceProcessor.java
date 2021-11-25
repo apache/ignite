@@ -106,9 +106,9 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**
  * Ignite service processor.
@@ -134,7 +134,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SERVICE_METRIC_REGISTRY = "Services";
 
     /** Description for the service method invocation metric. */
-    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration of service method in milliseconds for ";
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration in milliseconds of ";
 
     /** Default bounds of invocation histogram in nanoseconds. */
     public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
@@ -1005,7 +1005,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
                         throw new IgniteException("Service does not implement specified interface [srvcCls="
-                            + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
+                                + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
                     }
                 }
             }
