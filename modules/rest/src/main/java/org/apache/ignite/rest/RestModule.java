@@ -24,11 +24,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import java.net.BindException;
@@ -41,6 +36,7 @@ import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.rest.netty.RestApiHttpRequest;
 import org.apache.ignite.rest.netty.RestApiHttpResponse;
 import org.apache.ignite.rest.netty.RestApiInitializer;
@@ -79,23 +75,29 @@ public class RestModule implements IgniteComponent {
     /** Presentation of cluster configuration. */
     private final ConfigurationPresentation<String> clusterCfgPresentation;
 
+    /** Netty bootstrap factory. */
+    private final NettyBootstrapFactory bootstrapFactory;
+
     /** Netty channel. */
     private volatile Channel channel;
 
     /**
      * Creates a new instance of REST module.
      *
-     * @param nodeCfgMgr    Node configuration manager.
-     * @param clusterCfgMgr Cluster configuration manager.
+     * @param nodeCfgMgr       Node configuration manager.
+     * @param clusterCfgMgr    Cluster configuration manager.
+     * @param bootstrapFactory Netty bootstrap factory.
      */
     public RestModule(
             ConfigurationManager nodeCfgMgr,
-            ConfigurationManager clusterCfgMgr
-    ) {
+            ConfigurationManager clusterCfgMgr,
+            NettyBootstrapFactory bootstrapFactory) {
         nodeCfgRegistry = nodeCfgMgr.configurationRegistry();
 
         nodeCfgPresentation = new HoconPresentation(nodeCfgMgr.configurationRegistry());
         clusterCfgPresentation = new HoconPresentation(clusterCfgMgr.configurationRegistry());
+
+        this.bootstrapFactory = bootstrapFactory;
     }
 
     /** {@inheritDoc} */
@@ -155,16 +157,9 @@ public class RestModule implements IgniteComponent {
 
         Channel ch = null;
 
-        EventLoopGroup parentGrp = new NioEventLoopGroup();
-        EventLoopGroup childGrp = new NioEventLoopGroup();
-
         var hnd = new RestApiInitializer(router);
 
-        // TODO: IGNITE-15132 Rest module must reuse netty infrastructure from network module
-        ServerBootstrap b = new ServerBootstrap()
-                .option(ChannelOption.SO_BACKLOG, 1024)
-                .group(parentGrp, childGrp)
-                .channel(NioServerSocketChannel.class)
+        ServerBootstrap b = bootstrapFactory.createServerBootstrap()
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(hnd);
 
@@ -173,24 +168,9 @@ public class RestModule implements IgniteComponent {
 
             if (bindRes.isSuccess()) {
                 ch = bindRes.channel();
-
-                ch.closeFuture().addListener(new ChannelFutureListener() {
-                    /** {@inheritDoc} */
-                    @Override
-                    public void operationComplete(ChannelFuture fut) {
-                        parentGrp.shutdownGracefully();
-                        childGrp.shutdownGracefully();
-
-                        log.error("REST component was stopped", fut.cause());
-                    }
-                });
-
                 port = portCandidate;
                 break;
             } else if (!(bindRes.cause() instanceof BindException)) {
-                parentGrp.shutdownGracefully();
-                childGrp.shutdownGracefully();
-
                 throw new RuntimeException(bindRes.cause());
             }
         }
@@ -200,9 +180,6 @@ public class RestModule implements IgniteComponent {
                     + "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
 
             log.error(msg);
-
-            parentGrp.shutdownGracefully();
-            childGrp.shutdownGracefully();
 
             throw new RuntimeException(msg);
         }
