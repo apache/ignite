@@ -41,7 +41,7 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
      * Check that correlates can't be moved under the table spool.
      */
     @Test
-    public void testCorrelatesWithTableSpool()  {
+    public void testCorrelatesWithTableSpool() {
         sql("CREATE TABLE test(i1 INT, i2 INT)");
         sql("INSERT INTO test VALUES (1, 1), (2, 2)");
 
