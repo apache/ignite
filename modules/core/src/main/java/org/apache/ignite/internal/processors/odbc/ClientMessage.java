@@ -156,6 +156,9 @@ public class ClientMessage implements Message, Externalizable {
                 int len = Math.min(missing, remaining);
 
                 if (isFirstMessage) {
+                    // Sanity check: first 3 bytes in the handshake are always 1, 1, 0 (handshake = 1, major version = 1).
+                    // Do not allocate the buffer before validating the header to protect us from garbage data sent by unrelated application
+                    // connecting on our port by accident.
                     while (len > 0 && cnt < 3) {
                         firstBytes[cnt] = buf.get();
                         cnt++;
@@ -165,8 +168,6 @@ public class ClientMessage implements Message, Externalizable {
                     if (cnt < 3)
                         return false;
 
-                    // Sanity check: first 3 bytes in handshake are always 1, 1, 0 (handshake = 1, major version = 1).
-                    // Do not allocate the buffer before validating the header.
                     if (firstBytes[0] != 1 || firstBytes[1] != 1 || firstBytes[2] != 0)
                         throw new IgniteException("Invalid handshake bytes, expected 1 1 0, but was "
                                 + firstBytes[0] + " " + firstBytes[1] + " " + firstBytes[2]);
