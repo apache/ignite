@@ -99,7 +99,7 @@ public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibil
         IgniteCache<Object, Object> cache = newGrid.getOrCreateCache(cacheName).withKeepBinary();
 
         // check that binary object is still available in new version of grid
-        BinaryObject obj = (BinaryObject) cache.get(objKey);
+        BinaryObject obj = (BinaryObject)cache.get(objKey);
 
         assertTrue(obj.hasField(fieldName));
 

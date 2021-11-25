@@ -118,7 +118,7 @@ public class GridMarshallerTestBean extends GridMarshallerResourceBean {
         int res = 1;
 
         res = prime * res + ((buf == null) ? 0 : buf.hashCode());
-        res = prime * res + (int) (longField ^ (longField >>> 32));
+        res = prime * res + (int)(longField ^ (longField >>> 32));
         res = prime * res + ((objField == null) ? 0 : objField.hashCode());
         res = prime * res + ((strField == null) ? 0 : strField.hashCode());
 

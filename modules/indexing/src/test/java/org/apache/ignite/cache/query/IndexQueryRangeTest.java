@@ -243,7 +243,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         for (int i = from; i != to; i = op.applyAsInt(i)) {
             for (int j = 0; j < duplicates; j++) {
                 expOrderedValues.add(i);
-                expKeys.add((long) CNT * j + i);
+                expKeys.add((long)CNT * j + i);
             }
         }
 
@@ -272,7 +272,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             for (int persId = 0; persId < CNT; persId++) {
                 // Create duplicates of data.
                 for (int i = 0; i < duplicates; i++)
-                    streamer.addData((long) CNT * i + persId, new Person(persId));
+                    streamer.addData((long)CNT * i + persId, new Person(persId));
             }
         }
     }
@@ -315,7 +315,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id)
                 && Objects.equals(descId, person.descId)

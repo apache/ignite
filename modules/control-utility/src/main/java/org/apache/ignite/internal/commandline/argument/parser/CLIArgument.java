@@ -67,7 +67,7 @@ public class CLIArgument<T> {
         this.isOptional = isOptional;
         this.type = type;
         this.dfltValSupplier = dfltValSupplier == null
-            ? (type.equals(Boolean.class) ? p -> (T) Boolean.FALSE : p -> null)
+            ? (type.equals(Boolean.class) ? p -> (T)Boolean.FALSE : p -> null)
             : dfltValSupplier;
     }
 

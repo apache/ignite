@@ -98,7 +98,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testValidationIfPartitionCountersAreInconsistent() throws Exception {
-        IgniteEx ignite = (IgniteEx) startGrids(2);
+        IgniteEx ignite = (IgniteEx)startGrids(2);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -159,7 +159,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         for (int it = 0; it < 10; it++) {
             SingleMessageInterceptorCommunicationSpi spi =
-                (SingleMessageInterceptorCommunicationSpi) ignite.configuration().getCommunicationSpi();
+                (SingleMessageInterceptorCommunicationSpi)ignite.configuration().getCommunicationSpi();
             spi.clear();
 
             // Stop load future.
@@ -274,8 +274,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) ((GridIoMessage) msg).message();
+            if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)((GridIoMessage)msg).message();
 
                 // We're interesting for only exchange messages and when node is stopped.
                 if (singleMsg.exchangeId() != null && singleMsg.exchangeId().isLeft() && !singleMsg.client()) {
@@ -287,7 +287,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             }
 
             try {
-                if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsFullMessage) {
+                if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
                     if (blockFullMsgLatch != null)
                         blockFullMsgLatch.await();
                 }

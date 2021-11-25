@@ -325,8 +325,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      */
     private void validateNested(int key, EnumType val, boolean registered) throws Exception {
         if (registered) {
-            EnumHolder res1 = (EnumHolder) cache1.get(key);
-            EnumHolder res2 = (EnumHolder) cache2.get(key);
+            EnumHolder res1 = (EnumHolder)cache1.get(key);
+            EnumHolder res2 = (EnumHolder)cache2.get(key);
 
             assertEquals(val, res1.val);
             assertEquals(val, res2.val);
@@ -593,8 +593,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(DeclaredBodyEnum.ONE, cache2.get(1));
         }
 
-        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnum.ONE);
-        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary1.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary2.get(1), DeclaredBodyEnum.ONE);
     }
 
     /**
@@ -623,11 +623,11 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         assertEquals(2, arrBinary1.length);
         assertEquals(2, arrBinary2.length);
 
-        validate((BinaryObject) arrBinary1[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary1[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary1[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary1[1], EnumType.TWO);
 
-        validate((BinaryObject) arrBinary2[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary2[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary2[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary2[1], EnumType.TWO);
     }
 
     /**
@@ -644,8 +644,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(val, cache2.get(key));
         }
 
-        validate((BinaryObject) cacheBinary1.get(key), val);
-        validate((BinaryObject) cacheBinary2.get(key), val);
+        validate((BinaryObject)cacheBinary1.get(key), val);
+        validate((BinaryObject)cacheBinary2.get(key), val);
     }
 
     /**

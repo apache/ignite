@@ -418,7 +418,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             maxSize = 3 + 5;
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
 
             savedBytesCnt = keyType.put(pageAddr, off,
                 idxKey(ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), keyTypeSettings), maxSize);
@@ -427,7 +427,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(savedBytesCnt <= maxSize);
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
         }
         finally {
             if (page != 0L)
@@ -485,7 +485,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 Arrays.copyOf(exp.getBytesNoCopy(), 3),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
 
             savedBytesCnt = keyType.put(pageAddr, off, idxKey(ValueJavaObject.getNoCopy(null, exp.getBytesNoCopy(), null)), maxSize);
 
@@ -495,7 +495,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 exp.getBytesNoCopy(),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
         }
         finally {
             if (page != 0L)

@@ -60,7 +60,7 @@ public class DatasetAffinityFunctionWrapper implements AffinityFunction {
      * @return Partition index.
      */
     @Override public int partition(Object key) {
-        return (Integer) key;
+        return (Integer)key;
     }
 
     /** {@inheritDoc} */

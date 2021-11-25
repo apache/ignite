@@ -76,8 +76,8 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
      */
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) operationCheck()),
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) operationCheck()).get(),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable)operationCheck()),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable)operationCheck()).get(),
             () -> {
                 for (UUID id : nodesToCheckIds())
                     compute(id).call(operationCheck());

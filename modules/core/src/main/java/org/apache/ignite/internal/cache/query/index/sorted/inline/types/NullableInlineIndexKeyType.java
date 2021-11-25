@@ -85,7 +85,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         ensureKeyType(key);
 
-        return inlineSize0((T) key);
+        return inlineSize0((T)key);
     }
 
     /**
@@ -130,18 +130,18 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         if (keySize < 0 && maxSize < 4) {
             // Can't fit vartype field.
-            PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.UNKNOWN);
+            PageUtils.putByte(pageAddr, off, (byte)IndexKeyTypes.UNKNOWN);
             return 0;
         }
 
         if (key == NullIndexKey.INSTANCE) {
-            PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.NULL);
+            PageUtils.putByte(pageAddr, off, (byte)IndexKeyTypes.NULL);
             return 1;
         }
 
         ensureKeyType(key);
 
-        return put0(pageAddr, off, (T) key, maxSize);
+        return put0(pageAddr, off, (T)key, maxSize);
     }
 
     /**
@@ -178,7 +178,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         if ((keySize > 0 && keySize + 1 > maxSize)
             || maxSize < 1
-            || (type = PageUtils.getByte(pageAddr, off)) == (byte) IndexKeyTypes.UNKNOWN)
+            || (type = PageUtils.getByte(pageAddr, off)) == (byte)IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
         if (type == IndexKeyTypes.NULL) {
@@ -194,7 +194,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         if (key == NullIndexKey.INSTANCE)
             return 1;
 
-        return compare0(pageAddr, off, (T) key);
+        return compare0(pageAddr, off, (T)key);
     }
 
     /**

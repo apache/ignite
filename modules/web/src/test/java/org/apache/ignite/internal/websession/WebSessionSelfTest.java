@@ -252,7 +252,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 HttpSession ses = cache.get(sesId);
 
                 assertNotNull(ses);
-                assertEquals(reqMarker, ((Profile) ses.getAttribute("profile")).getMarker());
+                assertEquals(reqMarker, ((Profile)ses.getAttribute("profile")).getMarker());
             }
             else {
                 IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
@@ -388,7 +388,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
 
-            HttpURLConnection con = (HttpURLConnection) conn2;
+            HttpURLConnection con = (HttpURLConnection)conn2;
 
             con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
 
@@ -556,7 +556,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
 
-            HttpURLConnection con = (HttpURLConnection) conn2;
+            HttpURLConnection con = (HttpURLConnection)conn2;
 
             con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
 
@@ -1260,7 +1260,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 ses.setAttribute("key2", "val2");
                 ses.setAttribute("mkey", new TestObj());
 
-                Profile p = (Profile) ses.getAttribute("profile");
+                Profile p = (Profile)ses.getAttribute("profile");
 
                 if (p == null) {
                     p = new Profile();
@@ -1396,7 +1396,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final TestObj testObj = (TestObj) o;
+            final TestObj testObj = (TestObj)o;
 
             if (keepBinaryFlag != testObj.keepBinaryFlag) return false;
             return val != null ? val.equals(testObj.val) : testObj.val == null;
