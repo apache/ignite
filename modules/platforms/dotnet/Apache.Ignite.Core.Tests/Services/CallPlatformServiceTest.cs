@@ -165,6 +165,7 @@ namespace Apache.Ignite.Core.Tests.Services
             BinarizableTestValue AddOne(BinarizableTestValue val);
 
             /** */
+            // ReSharper disable once InconsistentNaming
             string contextAttribute(string name);
         }
 
