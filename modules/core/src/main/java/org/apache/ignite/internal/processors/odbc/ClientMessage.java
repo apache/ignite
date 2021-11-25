@@ -134,11 +134,13 @@ public class ClientMessage implements Message, Externalizable {
                 return false;
 
             // TODO: Validate some handshake bytes to exit early on garbage data.
-            if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE) {
-                // TODO: How should we handle this?
-                throw new IgniteException("TODO");
+            if (isFirstMessage) {
+                if (msgSize > MAX_FIRST_MESSAGE_SIZE) {
+                    throw new IgniteException("Client handshake size exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
+                }
             }
 
+            // TODO: Can msgSize be negative here?
             data = new byte[msgSize];
         }
 
