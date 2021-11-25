@@ -23,14 +23,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.cache.CacheException;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -45,9 +47,12 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1517,6 +1522,103 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             .rowDescriptor().tableDescriptor();
 
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
+    }
+
+    /** */
+    @Test
+    public void testCreateSystemIndexWithSpecifiedInlineSizeByApi() throws Exception {
+        inlineSize = 10;
+
+        final int pkInlineSize = 22;
+        final int affInlineSize = 23;
+
+        IgniteEx ign = startGrid();
+
+        ign.createCache(
+            new CacheConfiguration<>()
+                    .setName("test")
+                    .setQueryEntities(Collections.singleton(
+                            new QueryEntityEx(
+                                    new QueryEntity()
+                                            .setKeyType("TestKeyType")
+                                            .setValueType("TestValType")
+                                            .addQueryField("ID", String.class.getName(), null)
+                                            .addQueryField("ID_AFF", Integer.class.getName(), null)
+                                            .addQueryField("VAL", Integer.class.getName(), null)
+                                            .setKeyFields(new LinkedHashSet<>(Arrays.asList("ID", "ID_AFF")))
+                                            .setTableName("TEST")
+                            )
+                                    .setPrimaryKeyInlineSize(pkInlineSize)
+                                    .setAffinityKeyInlineSize(affInlineSize)
+                                    .setUnwrapPrimaryKeyFields(true)
+                    ))
+                    .setSqlSchema("PUBLIC")
+                    .setKeyConfiguration(new CacheKeyConfiguration("TestKeyType", "ID_AFF"))
+        );
+
+        GridH2Table tbl = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager().dataTable("PUBLIC", "TEST");
+
+        assertEquals(pkInlineSize, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
+        assertEquals(affInlineSize, ((H2TreeIndex)tbl.getIndex("AFFINITY_KEY")).inlineSize());
+    }
+
+    /** */
+    @Test
+    public void testCreateSystemIndexWithSpecifiedInlineSizeByDdl() throws Exception {
+        inlineSize = 10;
+
+        final int pkInlineSize = 22;
+        final int affInlineSize = 23;
+
+        IgniteEx ign = startGrid();
+
+        sql("CREATE TABLE TEST (ID VARCHAR, ID_AFF INT, VAL INT, "
+                + "PRIMARY KEY (ID, ID_AFF)) WITH"
+                + "\""
+                + "AFFINITY_KEY=ID_AFF,"
+                + "PK_INLINE_SIZE=" + pkInlineSize + ","
+                + "AFFINITY_INDEX_INLINE_SIZE=" + affInlineSize
+                + "\""
+        );
+
+        GridH2Table tbl = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager().dataTable("PUBLIC", "TEST");
+
+        assertEquals(pkInlineSize, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
+        assertEquals(affInlineSize, ((H2TreeIndex)tbl.getIndex("AFFINITY_KEY")).inlineSize());
+    }
+
+    /** */
+    @Test
+    public void testCreateWrappedPkIndexByDdl() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ign = startGrid();
+
+        sql("CREATE TABLE TEST_WRAP (ID0 VARCHAR, ID1 INT, VAL INT, "
+                + "PRIMARY KEY (ID0, ID1)) WITH"
+                + "\""
+                + "PK_INDEX_UNWRAP_FILEDS=false"
+                + "\""
+        );
+
+        sql("CREATE TABLE TEST_UNWRAP_EXPLICIT (ID0 VARCHAR, ID1 INT, VAL INT, "
+                + "PRIMARY KEY (ID0, ID1)) WITH"
+                + "\""
+                + "PK_INDEX_UNWRAP_FILEDS=true"
+                + "\""
+        );
+
+        GridH2Table tblWrap = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager()
+                .dataTable("PUBLIC", "TEST_WRAP");
+        GridH2Table tblUnwrapExplicit = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager()
+                .dataTable("PUBLIC", "TEST_UNWRAP_EXPLICIT");
+
+        assertEquals(1, tblWrap.getIndex("_key_PK").getColumns().length);
+        assertEquals("_KEY", tblWrap.getIndex("_key_PK").getColumns()[0].getName());
+
+        assertEquals(2, tblUnwrapExplicit.getIndex("_key_PK").getColumns().length);
+        assertEquals("ID0", tblUnwrapExplicit.getIndex("_key_PK").getColumns()[0].getName());
+        assertEquals("ID1", tblUnwrapExplicit.getIndex("_key_PK").getColumns()[1].getName());
     }
 
     /** */

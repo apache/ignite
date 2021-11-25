@@ -670,6 +670,54 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Returns INLINE_SIZE for PK index.
+     */
+    public int getPrimaryKeyInlineSize() {
+        return -1;
+    }
+
+    /**
+     * Sets INLINE_SIZE for PK index. Implemented at the child.
+     */
+    public QueryEntity setPrimaryKeyInlineSize(int pkInlineSize) {
+        return this;
+    }
+
+    /**
+     * Returns INLINE_SIZE for affinity field index.
+     */
+    public int getAffinityFieldInlineSize() {
+        return -1;
+    }
+
+    /**
+     * Sets INLINE_SIZE for AFFINITY_KEY index. Implemented at the child.
+     */
+    public QueryEntity setAffinityKeyInlineSize(int affFieldInlineSize) {
+        return this;
+    }
+
+    /**
+     * The property is used for compisite primary key.
+     * @return  {@code true} if the PK index is created on fields of PK;
+     *  {@code false} in case the PK index is created on the whole key (composite binary object).
+     *  {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
+     */
+    public Boolean isUnwrapPrimaryKeyFields() {
+        return null;
+    }
+
+    /**
+     * The property is used for compisite primary key.
+     * {@code true} if the PK index is created on fields of PK;
+     * {@code false} in case the PK index is created on the whole key (composite binary object).
+     * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
+     */
+    public QueryEntity setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
+        return this;
+    }
+
+    /**
      * @param desc Type descriptor.
      * @return Type metadata.
      */

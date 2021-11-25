@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,6 +91,15 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** See {@link CacheConfiguration#getQueryParallelism()}. */
     private Integer parallelism;
+
+    /** See {@link QueryEntity#isUnwrapPrimaryKeyFields()}. */
+    private Boolean unwrapPk;
+
+    /** See {@link QueryEntity#getPrimaryKeyInlineSize()}. */
+    private Integer pkInlineSize;
+
+    /** See {@link QueryEntity#getAffinityFieldInlineSize()}. */
+    private Integer affInlineSize;
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -369,6 +379,36 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void parallelism(Integer parallelism) {
         this.parallelism = parallelism;
+    }
+
+    /** */
+    public Boolean unwrapPrimaryKeyFields() {
+        return unwrapPk;
+    }
+
+    /** */
+    public void unwrapPrimaryKeyFields(Boolean unwrapPk) {
+        this.unwrapPk = unwrapPk;
+    }
+
+    /** */
+    public Integer primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** */
+    public void primaryKeyInlineSize(Integer pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** */
+    public Integer affinityKeyInlineSize() {
+        return affInlineSize;
+    }
+
+    /** */
+    public void affinityKeyInlineSize(Integer affInlineSize) {
+        this.affInlineSize = affInlineSize;
     }
 
     /** {@inheritDoc} */
