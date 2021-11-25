@@ -1,7 +1,7 @@
 # name: test/sql/subquery/scalar/test_scalar_subquery_cte.test
 # description: Test subqueries with CTEs
 # group: [scalar]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15603
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15992
 
 statement ok
 PRAGMA enable_verification
@@ -115,29 +115,25 @@ SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN 22 ELSE NULL END) SELECT
 12	NULL
 13	NULL
 
-query II
+statement error
 SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test tsub) SELECT * FROM cte) FROM test ORDER BY a
+
+query II
+SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test tsub ORDER BY 1 LIMIT 1) SELECT * FROM cte) FROM test ORDER BY a
 ----
-11	22
+11	21
 12	NULL
 13	NULL
 
 query II
-SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test tsub LIMIT 1) SELECT * FROM cte) FROM test ORDER BY a
-----
-11	22
-12	NULL
-13	NULL
-
-query II
-SELECT * from test where a=(WITH cte AS (SELECT a FROM test t WHERE t.b=test.b) SELECT min(a) FROM cte)
+SELECT * from test where a=(WITH cte AS (SELECT a FROM test t WHERE t.b=test.b) SELECT min(a) FROM cte) ORDER BY 1
 ----
 11	22
 12	21
 
 # exists / in / any subqueries
 query II
-SELECT * FROM test WHERE EXISTS (WITH cte AS (SELECT * FROM test ts WHERE ts.a = test.a AND b>21) SELECT a FROM cte)
+SELECT * FROM test WHERE EXISTS (WITH cte AS (SELECT * FROM test ts WHERE ts.a = test.a AND b>21) SELECT a FROM cte) ORDER BY 1
 ----
 11	22
 13	22

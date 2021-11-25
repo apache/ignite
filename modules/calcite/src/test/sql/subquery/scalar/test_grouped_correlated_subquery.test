@@ -24,3 +24,15 @@ true
 false
 false
 false
+
+query T
+SELECT col1 IN (SELECT ColID + col1 FROM tbl_ProductSales) FROM another_T;
+----
+false
+false
+false
+false
+
+# this should fail, col1 + 42 is not a grouping column
+statement error
+SELECT col1+1, col1+42 FROM another_T GROUP BY col1+1;

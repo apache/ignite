@@ -63,6 +63,15 @@ SELECT i FROM integers WHERE i <= ALL(SELECT i FROM integers WHERE i IS NOT NULL
 ----
 1
 
+query I
+SELECT i FROM integers WHERE i = ALL(SELECT i FROM integers WHERE i=1)
+----
+1
+
+query I
+SELECT i FROM integers WHERE i = ALL(SELECT i FROM integers WHERE i IS NOT NULL)
+----
+
 query I rowsort
 SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i=1)
 ----
@@ -124,12 +133,25 @@ NULL	false
 3	false
 
 query IT
+SELECT i, i <> ANY(SELECT i FROM integers WHERE i>10) FROM integers ORDER BY i NULLS FIRST;
+----
+NULL	false
+1	false
+2	false
+3	false
+
+query IT
 SELECT i, i < ANY(SELECT i FROM integers WHERE i>10) FROM integers ORDER BY i NULLS FIRST;
 ----
 NULL	false
 1	false
 2	false
 3	false
+
+query IR
+SELECT (SELECT MAX(i) FROM integers) AS k, SUM(i) FROM integers GROUP BY 1;
+----
+3	6.000000
 
 # nested uncorrelated subqueries
 query I
