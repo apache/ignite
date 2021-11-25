@@ -65,7 +65,7 @@ public class DefaultModelStorage implements ModelStorage {
                 throw new IllegalArgumentException("Cannot create file because parent is not a directory [path="
                     + path + "]");
 
-            Directory dir = (Directory) parent;
+            Directory dir = (Directory)parent;
             // Update parent if it's a new file.
             if (!dir.getFiles().contains(path)) {
                 dir.getFiles().add(path);
@@ -92,7 +92,7 @@ public class DefaultModelStorage implements ModelStorage {
             if (!fileOrDir.isFile())
                 throw new IllegalArgumentException("File is not a regular file [path=" + path + "]");
 
-            return ((File) fileOrDir).getData();
+            return ((File)fileOrDir).getData();
         }, pathLock);
     }
 
@@ -129,7 +129,7 @@ public class DefaultModelStorage implements ModelStorage {
                 throw new IllegalArgumentException("Cannot create directory because parent is not a directory [path="
                     + path + "]");
 
-            Directory dir = (Directory) parent;
+            Directory dir = (Directory)parent;
             dir.getFiles().add(path);
 
             // Update parent and save directory into cache.
@@ -207,7 +207,7 @@ public class DefaultModelStorage implements ModelStorage {
                 throw new IllegalArgumentException("Specified path is not associated with directory [path=" + path
                     + "]");
 
-            return ((Directory) dir).getFiles();
+            return ((Directory)dir).getFiles();
         }, pathLock);
     }
 
@@ -220,7 +220,7 @@ public class DefaultModelStorage implements ModelStorage {
             storageProvider.remove(path);
 
             if (file.isDirectory()) {
-                for (String s : ((Directory) file).getFiles())
+                for (String s : ((Directory)file).getFiles())
                     remove(s);
             }
         }, pathLock);

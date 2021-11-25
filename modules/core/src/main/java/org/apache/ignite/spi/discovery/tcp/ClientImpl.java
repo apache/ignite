@@ -797,7 +797,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msg.client(true);
 
                 if (msg instanceof TraceableMessage)
-                    tracing.messages().beforeSend((TraceableMessage) msg);
+                    tracing.messages().beforeSend((TraceableMessage)msg);
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
@@ -2167,7 +2167,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingStarted(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
@@ -2191,7 +2191,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingFinished(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().finishProcessing((TraceableMessage) msg);
+                tracing.messages().finishProcessing((TraceableMessage)msg);
 
             if (spi.ensured(msg)
                     && state == CONNECTED

@@ -902,9 +902,9 @@ public class GridToStringBuilder {
             if (cls.isArray())
                 addArray(buf, cls, val);
             else if (val instanceof Collection)
-                addCollection(buf, (Collection) val);
+                addCollection(buf, (Collection)val);
             else if (val instanceof Map)
-                addMap(buf, (Map<?, ?>) val);
+                addMap(buf, (Map<?, ?>)val);
             else
                 buf.a(val);
         }
@@ -927,7 +927,7 @@ public class GridToStringBuilder {
             return;
         }
 
-        Object[] arr = (Object[]) obj;
+        Object[] arr = (Object[])obj;
 
         buf.a(arrType.getSimpleName()).a(" [");
 

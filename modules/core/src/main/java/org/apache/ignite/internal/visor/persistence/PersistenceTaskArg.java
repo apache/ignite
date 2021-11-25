@@ -77,6 +77,6 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         op = PersistenceOperation.fromOrdinal(in.readByte());
-        cleanAndBackupSettings = (PersistenceCleanAndBackupSettings) in.readObject();
+        cleanAndBackupSettings = (PersistenceCleanAndBackupSettings)in.readObject();
     }
 }

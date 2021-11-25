@@ -1997,7 +1997,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
 
             return;
         }
@@ -2342,7 +2342,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
         }
     }
 

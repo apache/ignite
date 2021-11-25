@@ -108,7 +108,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         for (int i = 0; i < 10; i++)
             cache1.put(i, i);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ((IgniteEx)srv).context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)((IgniteEx)srv).context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
 

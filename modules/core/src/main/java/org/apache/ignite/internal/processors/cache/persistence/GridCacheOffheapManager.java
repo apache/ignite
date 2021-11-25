@@ -2005,7 +2005,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             GridCacheSharedContext ctx = grp.shared();
 
-            AtomicLong pageListCacheLimit = ((GridCacheDatabaseSharedManager) ctx.database()).pageListCacheLimitHolder(grp.dataRegion());
+            AtomicLong pageListCacheLimit = ((GridCacheDatabaseSharedManager)ctx.database()).pageListCacheLimitHolder(grp.dataRegion());
 
             IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
@@ -2121,7 +2121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
-                    PageMemoryEx pageMem = (PageMemoryEx) grp.dataRegion().pageMemory();
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     int grpId = grp.groupId();
 

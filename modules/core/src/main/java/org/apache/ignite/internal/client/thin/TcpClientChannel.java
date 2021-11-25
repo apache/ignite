@@ -580,7 +580,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size
-            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+            writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
             writer.writeShort(proposedVer.major());
             writer.writeShort(proposedVer.minor());

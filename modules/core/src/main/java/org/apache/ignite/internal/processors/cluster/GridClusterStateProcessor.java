@@ -498,7 +498,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         ctx.event().addLocalEventListener(
             event -> {
-                DiscoveryEvent discoEvt = (DiscoveryEvent) event;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)event;
 
                 if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
                     return;

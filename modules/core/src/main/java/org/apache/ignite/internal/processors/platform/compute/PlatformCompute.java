@@ -150,7 +150,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             }
 
             case OP_EXEC_ASYNC:
-                return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
+                return wrapListenable((PlatformListenable)executeJavaTask(reader, true));
 
             case OP_WITH_EXECUTOR: {
                 String executorName = reader.readString();

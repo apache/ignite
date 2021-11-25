@@ -6264,7 +6264,7 @@ public abstract class IgniteUtils {
             return -1;
         }
 
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return (attr instanceof Long) ? (Long)attr : -1;
     }
 
     /**
