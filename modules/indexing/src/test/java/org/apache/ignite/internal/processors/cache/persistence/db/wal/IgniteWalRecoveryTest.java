@@ -1753,7 +1753,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(CACHE_2);
                 }
@@ -1813,7 +1813,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(CACHE_2);
                 }

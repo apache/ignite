@@ -198,12 +198,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldName);
+        return (F)reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldId);
+        return (F)reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */

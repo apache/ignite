@@ -330,7 +330,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person) o;
+            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person)o;
 
             return id == person.id && (name != null ? name.equals(person.name) : person.name == null);
 

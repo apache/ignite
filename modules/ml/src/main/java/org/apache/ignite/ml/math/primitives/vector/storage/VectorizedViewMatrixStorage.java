@@ -189,7 +189,7 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public <T extends Serializable> T getRaw(int i) {
         Double v = parent.get(row + i * rowStride, col + i * colStride);
-        return (T) v;
+        return (T)v;
     }
 
     /** {@inheritDoc} */
@@ -197,6 +197,6 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
         if (!(v instanceof Number))
             throw new IllegalStateException("Matrices don't support non-Number values");
 
-        parent.set(row + i * rowStride, col + i * colStride, ((Number) v).doubleValue());
+        parent.set(row + i * rowStride, col + i * colStride, ((Number)v).doubleValue());
     }
 }

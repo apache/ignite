@@ -263,7 +263,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
         assertTrue("Unable to wait statistics by " + schema + "." + obj + " if null=" + isNull,
             GridTestUtils.waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx) node).context().query().getIndexing();
+                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 
                 ObjectStatistics localStat = indexing.statsManager().getLocalStatistics(new StatisticsKey(schema, obj));
 
@@ -283,7 +283,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     private void testStatisticsVersion(String schema, String obj, Predicate<Long> verChecker) throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx) node).context().query().getIndexing();
+                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 
                 ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(
                     new StatisticsKey(schema, obj)

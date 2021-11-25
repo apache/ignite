@@ -333,9 +333,9 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         Runnable runnable = new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
+                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
 
-                GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                 fut.onDone(true);
             }
         };
@@ -377,9 +377,9 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
                     @Override public void run() {
                         try {
                             Thread.sleep(1000);
-                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
+                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
 
-                            GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                            GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                             fut.onDone(true);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e.getMessage());

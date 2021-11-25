@@ -532,7 +532,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         else {
             if (data.hasJoiningNodeData())
-                onDiscoveryDataReceivedV1((DiscoveryData) data.joiningNodeData());
+                onDiscoveryDataReceivedV1((DiscoveryData)data.joiningNodeData());
         }
     }
 
@@ -561,7 +561,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (nodeSpecData != null) {
                 for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedV1((DiscoveryData) e.getValue());
+                    onDiscoveryDataReceivedV1((DiscoveryData)e.getValue());
             }
         }
     }

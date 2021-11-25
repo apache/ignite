@@ -136,7 +136,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     byte[] msg = new byte[MSG_SIZE];
 
                     for (int i = 0; i < msg.length; i++)
-                        msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                        msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                     for (int i = 0; i < RECONNECT_MSG_CNT; i++)
                         validateSendMessage(srvr.port(), msg);
@@ -293,7 +293,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         byte[] msg = new byte[MSG_SIZE];
 
                         for (int i = 0; i < msg.length; i++)
-                            msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                            msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                         try (Socket s = createSocket()) {
                             s.connect(new InetSocketAddress(U.getLocalHost(), srvr.port()), 1000);
@@ -1127,7 +1127,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             int rangeMax = (int)((i + 1) * guessedMaxDuration / durationRange.length);
 
-            float percents = (float) durationRange[i] * 100 / overall.count();
+            float percents = (float)durationRange[i] * 100 / overall.count();
 
             info(">>> [" + rangeMin + '-' + rangeMax + "] ms: " + String.format("%.2f", percents) + "% (" +
                 durationRange[i] + " messages)");

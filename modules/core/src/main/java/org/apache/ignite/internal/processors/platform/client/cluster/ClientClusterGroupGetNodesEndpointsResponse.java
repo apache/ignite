@@ -128,7 +128,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             return false; // No client connector.
 
         writeUuid(writer, node.id());
-        writer.writeInt((int) port);
+        writer.writeInt((int)port);
 
         Collection<String> addrs = node.addresses();
         Collection<String> hosts = node.hostNames();

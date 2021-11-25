@@ -560,7 +560,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         int key = 1;
 
-        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        List<ClusterNode> affNodes = (List<ClusterNode>)ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         assert affNodes.size() == 2;
 
@@ -646,7 +646,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         int key = 1;
 
-        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        List<ClusterNode> affNodes = (List<ClusterNode>)ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         assert affNodes.size() == 2;
 
@@ -724,7 +724,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        affNodes = (List<ClusterNode>)ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         assertEquals(primary.localNode(), affNodes.get(0));
         assertEquals(backup.localNode(), affNodes.get(1));
