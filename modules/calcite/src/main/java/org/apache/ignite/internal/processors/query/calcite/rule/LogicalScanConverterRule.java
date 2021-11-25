@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
@@ -81,6 +83,12 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     .replace(collation);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+
+                if (!F.isEmpty(rel.projects())) {
+                    corrIds = new HashSet<>(corrIds);
+                    corrIds.addAll(RexUtils.extractCorrelationIds(rel.projects()));
+                }
+
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
@@ -125,6 +133,12 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     .replace(distribution);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+
+                if (!F.isEmpty(rel.projects())) {
+                    corrIds = new HashSet<>(corrIds);
+                    corrIds.addAll(RexUtils.extractCorrelationIds(rel.projects()));
+                }
+
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
