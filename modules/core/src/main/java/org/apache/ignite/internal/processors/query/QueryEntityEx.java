@@ -80,6 +80,24 @@ public class QueryEntityEx extends QueryEntity {
         }
     }
 
+    /**
+     * Copy all members of the class (doesn't copy the member of the parent class).
+     *
+     * @param other Instance to copy.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntityEx copyExtended(QueryEntityEx other) {
+        notNullFields = other.notNullFields != null ? new HashSet<>(other.notNullFields) : null;
+
+        preserveKeysOrder = other.preserveKeysOrder;
+
+        unwrapPk = other.unwrapPk;
+        pkInlineSize = other.pkInlineSize != null ? other.pkInlineSize : -1;
+        affFieldInlineSize = other.affFieldInlineSize != null ? other.affFieldInlineSize : -1;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public Set<String> getNotNullFields() {
         return notNullFields;
@@ -114,8 +132,13 @@ public class QueryEntityEx extends QueryEntity {
         return pkInlineSize != null ? pkInlineSize : -1;
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryEntityEx setPrimaryKeyInlineSize(int pkInlineSize) {
+    /**
+     * Sets INLINE_SIZE for PK index. Implemented at the child.
+     *
+     * @param pkInlineSize INLINE_SIZE for PK index.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntityEx setPrimaryKeyInlineSize(int pkInlineSize) {
         this.pkInlineSize = pkInlineSize;
 
         return this;
@@ -126,8 +149,13 @@ public class QueryEntityEx extends QueryEntity {
         return affFieldInlineSize != null ? affFieldInlineSize : -1;
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryEntityEx setAffinityKeyInlineSize(int affFieldInlineSize) {
+    /**
+     * Sets INLINE_SIZE for AFFINITY_KEY index. Implemented at the child.
+     *
+     * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntityEx setAffinityKeyInlineSize(int affFieldInlineSize) {
         this.affFieldInlineSize = affFieldInlineSize;
 
         return this;
@@ -138,8 +166,16 @@ public class QueryEntityEx extends QueryEntity {
         return unwrapPk;
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryEntityEx setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
+    /**
+     * The property is used for compisite primary key.
+     *
+     * @param unwrapPk {@code true} if the PK index is created on fields of PK;
+     *                             {@code false} in case the PK index is created on the whole key (composite binary object).
+     *                             {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key
+     *                             for a table created by API).
+     * @return {@code this} for chaining.
+     */
+    public QueryEntityEx setUnwrapPrimaryKeyFields(Boolean unwrapPk) {
         this.unwrapPk = unwrapPk;
 
         return this;
