@@ -109,8 +109,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
         final MetaPageInfo oldInfo = oldIdx.segment(segmentNum).metaInfo();
 
         // Set IO wrappers for the new tree.
-        BPlusInnerIO<IndexRow> innerIO = (BPlusInnerIO<IndexRow>) wrap(tree.latestInnerIO(), tree.rowHandler());
-        BPlusLeafIO<IndexRow> leafIo = (BPlusLeafIO<IndexRow>) wrap(tree.latestLeafIO(), tree.rowHandler());
+        BPlusInnerIO<IndexRow> innerIO = (BPlusInnerIO<IndexRow>)wrap(tree.latestInnerIO(), tree.rowHandler());
+        BPlusLeafIO<IndexRow> leafIo = (BPlusLeafIO<IndexRow>)wrap(tree.latestLeafIO(), tree.rowHandler());
         tree.setIos(new IOVersions<>(innerIO), new IOVersions<>(leafIo));
 
         tree.copyMetaInfo(oldInfo);
@@ -242,7 +242,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
-            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl) row);
+            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 
         /** {@inheritDoc} */
@@ -306,7 +306,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
-            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl) row);
+            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 
         /** {@inheritDoc} */
