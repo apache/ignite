@@ -188,7 +188,7 @@ public class ClientMessage implements Message, Externalizable {
                     // Header is valid, create buffer and set first bytes.
                     data = new byte[msgSize];
                     data[0] = 1;
-                    data[1] = (byte) (firstMessageHeader >> 8);
+                    data[1] = (byte)(firstMessageHeader >> 8);
                 }
 
                 if (data == null)
