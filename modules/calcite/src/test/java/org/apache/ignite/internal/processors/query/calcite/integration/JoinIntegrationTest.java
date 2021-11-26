@@ -671,6 +671,19 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
+    /**
+     *
+     */
+    @Test
+    public void testJoinWithUsing() {
+        //Object res = sql("SELECT c1, t1.c2 FROM t1 JOIN t2 USING (c1)");
+        //Object res = sql("SELECT * FROM t1 JOIN t1 as t2 USING (c1)");
+        //Object res = sql("SELECT * FROM (select * from t1) JOIN (select * from t2) USING (c1)");
+        Object res = sql("SELECT * FROM t1 JOIN t2 ON (t1.c1=t2.c1)");
+        System.out.println(res);
+        //assertQuery("SELECT c1 FROM t1 JOIN t2 USING (c1)").check();
+    }
+
     /** {@inheritDoc} */
     @Override protected QueryChecker assertQuery(String qry) {
         return super.assertQuery(qry.replace("select", "select "

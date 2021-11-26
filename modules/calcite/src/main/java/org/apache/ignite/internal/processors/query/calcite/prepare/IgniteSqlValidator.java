@@ -28,12 +28,14 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -262,6 +264,96 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateAggregateFunction(aggCall, (SqlAggFunction)aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateJoin(SqlJoin join, SqlValidatorScope scope) {
+        if (join.isNatural() || join.getConditionType() == JoinConditionType.USING) {
+            // Default Calcite validator can't expand "star" for NATURAL joins and joins with USING if some columns
+            // of join sources are filtered out by addToSelectList method, and count of columns in selectList not equal
+            // to count of fields in corresponding rowType. Since we do filtering in addToSelectList method
+            // (exclude _KEY and _VAL columns), to workaround expandStar limitation we can wrap each table to subquery,
+            // in this case columns will be filtered out on subquery level and rowType of subquery will have the same
+            // cardinality as selectList.
+            join.setLeft(wrapTableToQuery(join.getLeft(), scope));
+            join.setRight(wrapTableToQuery(join.getRight(), scope));
+        }
+
+        super.validateJoin(join, scope);
+    }
+
+    /** Wrap table to subquery "SELECT * FROM table". */
+    private SqlNode wrapTableToQuery(SqlNode from, SqlValidatorScope parentScope) {
+        // Alias for table should be already derived at registerForm() method before validation.
+        if (from.getKind() == SqlKind.AS) {
+            SqlNode src = ((SqlCall)from).getOperandList().get(0);
+
+            if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
+                String alias = deriveAlias(from, 0);
+
+                SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
+                    SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
+                    null, null, null, null, null);
+
+                from = SqlValidatorUtil.addAlias(expandedQry, alias);
+
+                registerNamespace(parentScope, alias, createSelectNamespace(expandedQry, from), false);
+
+                // TODO remove old child from scope
+/*
+                SelectScope selectScope = new SelectScope(parentScope, parentScope, expandedQry);
+                registerNamespace(selectScope, alias, getNamespace(src), false);
+                scopes.put(expandedQry, selectScope);
+*/
+
+                scopes.put(expandedQry, parentScope);
+            }
+        }
+
+        return from;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlJoin)
+            node = performJoinRewrites((SqlJoin)node);
+
+        return super.performUnconditionalRewrites(node, underFrom);
+    }
+
+    /**  */
+    private SqlNode performJoinRewrites(SqlJoin join) {
+        if (join.isNatural() || join.getConditionType() == JoinConditionType.USING) {
+            // Default Calcite validator can't expand "star" for NATURAL joins and joins with USING if some columns
+            // of join sources are filtered out by addToSelectList method, and count of columns in selectList not equal
+            // to count of fields in corresponding rowType. Since we do filtering in addToSelectList method
+            // (exclude _KEY and _VAL columns), to workaround expandStar limitation we can wrap each table to subquery,
+            // in this case columns will be filtered out on subquery level and rowType of subquery will have the same
+            // cardinality as selectList.
+            join.setLeft(rewriteTableToQuery(join.getLeft()));
+            join.setRight(rewriteTableToQuery(join.getRight()));
+        }
+
+        return join;
+    }
+
+    /** Wrap table to subquery "SELECT * FROM table". */
+    private SqlNode rewriteTableToQuery(SqlNode from) {
+        if (from.getKind() == SqlKind.AS) {
+            SqlNode src = ((SqlCall)from).getOperandList().get(0);
+
+            if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
+                String alias = deriveAlias(from, 0);
+
+                SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
+                    SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
+                    null, null, null, null, null);
+
+                from = SqlValidatorUtil.addAlias(expandedQry, alias);
+            }
+        }
+
+        return from;
     }
 
     /** {@inheritDoc} */
