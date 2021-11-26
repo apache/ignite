@@ -2242,6 +2242,8 @@ public class PlatformConfigurationUtils {
                 w.writeBoolean(true);
                 writeSystemDataRegionConfiguration(w, cfg.getSystemDataRegionConfiguration());
             }
+            else
+                w.writeBoolean(false);
         }
         else
             w.writeBoolean(false);
