@@ -1228,6 +1228,8 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                             }
                         }
                     }
+                    else
+                        log.warning("The service " + cfg.getName() + " was not have assigned nodes.");
                 }
 
                 assigns.assigns(cnts);
