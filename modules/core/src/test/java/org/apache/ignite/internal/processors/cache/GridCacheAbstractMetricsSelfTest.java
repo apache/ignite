@@ -1537,7 +1537,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // 1. Check remove of a non-existing key.
         cache.removeAsync(-1).get();
-        cache.remove(-2);
+        cache.remove(-1);
 
         assertEquals(0, removeTimeTotal.value());
 
@@ -1554,6 +1554,33 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.put(1, 1);
         cache.removeAsync(1).get();
 
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testGetAndRemoveTimeTotal() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        LongMetric getTimeTotal = metric("GetTimeTotal");
+        LongMetric removeTimeTotal = metric("RemoveTimeTotal");
+
+        assertEquals(0, getTimeTotal.value());
+        assertEquals(0, removeTimeTotal.value());
+
+        cache.put(1, 1);
+        cache.getAndRemove(1);
+
+        assertTrue(getTimeTotal.value() > 0);
+        assertTrue(removeTimeTotal.value() > 0);
+
+        getTimeTotal.reset();
+        removeTimeTotal.reset();
+
+        cache.put(1, 1);
+        cache.getAndRemoveAsync(1).get();
+
+        assertTrue(waitForCondition(() -> getTimeTotal.value() > 0, getTestTimeout()));
         assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
     }
 

@@ -3209,7 +3209,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<V> fut = getAndRemoveAsync0(key);
 
         if (statsEnabled)
-            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateGetAndRemoveTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
             fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start));
@@ -3433,7 +3433,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<Boolean> fut = removeAsync0(key, filter);
 
         if (statsEnabled)
-            fut.listen(new UpdateSingleRemoveTimeStatClosure(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure(metrics0(), start));
 
         if (performanceStatsEnabled)
             fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE, start));
@@ -6681,7 +6681,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class UpdateRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+    protected static class UpdateGetAndRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param metrics Metrics.
+         * @param start Start time.
+         */
+        public UpdateGetAndRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat(T res) {
+            metrics.addRemoveAndGetTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdateRemoveTimeStatClosure extends UpdateTimeStatClosure<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6690,27 +6711,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param start Start time.
          */
         public UpdateRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
-            super(metrics, start);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void updateTimeStat(T res) {
-            metrics.addRemoveTimeNanos(System.nanoTime() - start);
-        }
-    }
-
-    /**
-     *
-     */
-    protected static class UpdateSingleRemoveTimeStatClosure extends UpdateTimeStatClosure<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param metrics Metrics.
-         * @param start Start time.
-         */
-        public UpdateSingleRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
         }
 
