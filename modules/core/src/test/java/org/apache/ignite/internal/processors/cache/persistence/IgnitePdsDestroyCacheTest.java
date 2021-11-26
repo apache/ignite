@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -241,10 +245,10 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
 
         spi.blockMessages(GridDhtTxPrepareRequest.class, getTestIgniteInstanceName(1));
 
-        for (Integer pkey : pkeys)
-            crd.cache(DEFAULT_CACHE_NAME).removeAsync(pkey);
+        List<IgniteFuture<Boolean>> asyncRmFut = new ArrayList<>(100);
 
-        spi.waitForBlocked();
+        for (Integer pkey : pkeys)
+            asyncRmFut.add(crd.cache(DEFAULT_CACHE_NAME).removeAsync(pkey));
 
         spi.blockMessages(GridDhtPartitionsFullMessage.class, getTestIgniteInstanceName(1));
 
@@ -259,5 +263,12 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
         destr.get();
 
         assertFalse(GridTestUtils.waitForCondition(() -> G.allGrids().size() < 3, 5_000));
+
+        try {
+            asyncRmFut.forEach(f -> f.get(getTestTimeout() / 2));
+        }
+        catch (CacheException ignore) {
+            // No op.
+        }
     }
 }
