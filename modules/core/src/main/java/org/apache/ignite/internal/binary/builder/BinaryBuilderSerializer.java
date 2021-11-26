@@ -183,7 +183,10 @@ class BinaryBuilderSerializer {
         if (val instanceof BinaryArray) {
             BinaryArray val0 = (BinaryArray)val;
 
-            writeArray(writer, GridBinaryMarshaller.OBJ_ARR, val0.array(), val0.componentTypeId());
+            if (val0.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                writeArray(writer, GridBinaryMarshaller.OBJ_ARR, val0.array(), val0.componentClassName());
+            else
+                writeArray(writer, GridBinaryMarshaller.OBJ_ARR, val0.array(), val0.componentTypeId());
 
             return;
         }
