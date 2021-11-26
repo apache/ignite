@@ -380,7 +380,7 @@ public class GridBinaryTestClasses {
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Address address = (Address) o;
+            Address address = (Address)o;
             return streetNumber == address.streetNumber && flatNumber == address.flatNumber
                     && Objects.equals(city, address.city) && Objects.equals(street, address.street);
         }

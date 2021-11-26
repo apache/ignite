@@ -2086,7 +2086,7 @@ public class BinaryUtils {
         Object obj = handles.getHandle(hPos);
 
         if (obj != null)
-            return (Collection<?>) obj;
+            return (Collection<?>)obj;
 
         int size = in.readInt();
 
@@ -2163,7 +2163,7 @@ public class BinaryUtils {
         Object obj = handles.getHandle(hPos);
 
         if (obj != null)
-            return (Map<?, ?>) obj;
+            return (Map<?, ?>)obj;
 
         int size = in.readInt();
 
