@@ -49,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+
 /**
  * Test for IgniteWalConverter
  */
@@ -179,18 +180,31 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     private void testIgniteWalConverter(ProcessSensitiveData sensitiveData) throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
+        final String workDir = U.defaultWorkDirectory();
+
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false),
+            walDir,
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
             null, null, null, sensitiveData, true, true, Collections.emptyList()
@@ -272,9 +286,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final String workDir = U.defaultWorkDirectory();
+
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false),
+            walDir,
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
             null,
             null,
@@ -333,11 +354,13 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH, false);
+        final String workDir = U.defaultWorkDirectory();
 
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File wal = new File(walDir, nodeDir + File.separator + "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -389,12 +412,21 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false),
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
             null, null, null, null, true, true, Collections.emptyList()
@@ -452,11 +484,13 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH, false);
+        final String workDir = U.defaultWorkDirectory();
 
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File wal = new File(walDir, nodeDir + File.separator + "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -494,12 +528,21 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false),
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
             null, null, null, null, true, true, Collections.emptyList()
