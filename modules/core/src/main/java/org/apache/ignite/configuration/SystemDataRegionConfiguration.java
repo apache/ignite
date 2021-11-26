@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * This class is similiar to {@link DataRegionConfiguration}, but with restricted set of properties.
  */
 public class SystemDataRegionConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Default initial size of a memory chunk for the system cache (40 MB). */
     private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
 
