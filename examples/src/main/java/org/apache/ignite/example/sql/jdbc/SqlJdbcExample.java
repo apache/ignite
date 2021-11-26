@@ -213,7 +213,7 @@ public class SqlJdbcExample {
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery(
                             "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a "
-                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID ORDER BY a.ACCOUNT_ID")) {
                         while (rs.next()) {
                             System.out.println("    "
                                     + rs.getString(1) + ", "
@@ -233,7 +233,8 @@ public class SqlJdbcExample {
 
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery(
-                            "SELECT a.FIRST_NAME, a.LAST_NAME, a.BALANCE FROM ACCOUNTS a WHERE a.BALANCE < 1500.0")) {
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, a.BALANCE FROM ACCOUNTS a WHERE a.BALANCE < 1500.0 "
+                                    + "ORDER BY a.ACCOUNT_ID")) {
                         while (rs.next()) {
                             System.out.println("    "
                                     + rs.getString(1) + ", "
@@ -268,7 +269,7 @@ public class SqlJdbcExample {
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery(
                             "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a "
-                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID ORDER BY a.ACCOUNT_ID")) {
                         while (rs.next()) {
                             System.out.println("    "
                                     + rs.getString(1) + ", "

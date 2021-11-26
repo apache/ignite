@@ -27,7 +27,6 @@ import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -45,7 +44,6 @@ public class SqlExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16005")
     public void testSqlJdbcExample() throws Exception {
         ExampleTestUtils.assertConsoleOutputContains(SqlJdbcExample::main, EMPTY_ARGS,
                 "\nAll accounts:\n"
@@ -88,7 +86,7 @@ public class SqlExamplesTest {
     }
 
     /**
-     * Removes a previously created work directory.
+     * Removes a work directory created by {@link SqlExamplesTest}.
      */
     @BeforeEach
     @AfterEach
