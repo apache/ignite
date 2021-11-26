@@ -172,7 +172,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                     }
 
                     @Override public void write(BinaryRawWriterEx writer, Object result) {
-                        writer.writeString((String) result);
+                        writer.writeString((String)result);
                     }
                 };
             }
@@ -227,7 +227,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                 if (pluginCfg instanceof PlatformTestPluginConfiguration) {
-                    return (PlatformTestPluginConfiguration) pluginCfg;
+                    return (PlatformTestPluginConfiguration)pluginCfg;
                 }
             }
         }

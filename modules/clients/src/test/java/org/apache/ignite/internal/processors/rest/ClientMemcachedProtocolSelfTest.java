@@ -349,9 +349,9 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
 
         Assert.assertEquals(now, client.get("dateKey"));
 
-        Assert.assertTrue(client.set("byteKey", 0, (byte) 1).get());
+        Assert.assertTrue(client.set("byteKey", 0, (byte)1).get());
 
-        Assert.assertEquals((byte) 1, client.get("byteKey"));
+        Assert.assertEquals((byte)1, client.get("byteKey"));
 
         Assert.assertTrue(client.set("floatKey", 0, 1.1).get());
 
@@ -370,9 +370,9 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
 
         assertArrayEquals(arr, (byte[])client.get("arrKey"));
 
-        Assert.assertTrue(client.set("shortKey", 0, (short) 1).get());
+        Assert.assertTrue(client.set("shortKey", 0, (short)1).get());
 
-        Assert.assertEquals((short) 1, client.get("shortKey"));
+        Assert.assertEquals((short)1, client.get("shortKey"));
     }
 
     /**

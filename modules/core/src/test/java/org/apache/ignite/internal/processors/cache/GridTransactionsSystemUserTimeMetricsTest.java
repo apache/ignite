@@ -277,7 +277,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             igniteEx.context().distributedMetastorage().listen(
                     (key) -> key.startsWith(DIST_CONF_PREFIX),
                     (String key, Serializable oldVal, Serializable newVal) -> {
-                        if (key.endsWith("longTransactionTimeDumpThreshold") && (long) newVal == threshold)
+                        if (key.endsWith("longTransactionTimeDumpThreshold") && (long)newVal == threshold)
                             thresholdLatch.countDown();
                     });
 
@@ -288,7 +288,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             igniteEx.context().distributedMetastorage().listen(
                     (key) -> key.startsWith(DIST_CONF_PREFIX),
                     (String key, Serializable oldVal, Serializable newVal) -> {
-                        if (key.endsWith("transactionTimeDumpSamplesCoefficient") && (double) newVal == coefficient)
+                        if (key.endsWith("transactionTimeDumpSamplesCoefficient") && (double)newVal == coefficient)
                             coefficientLatch.countDown();
                     });
 
@@ -299,7 +299,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             igniteEx.context().distributedMetastorage().listen(
                     (key) -> key.startsWith(DIST_CONF_PREFIX),
                     (String key, Serializable oldVal, Serializable newVal) -> {
-                        if (key.endsWith("longTransactionTimeDumpSamplesPerSecondLimit") && (int) newVal == limit)
+                        if (key.endsWith("longTransactionTimeDumpSamplesPerSecondLimit") && (int)newVal == limit)
                             limitLatch.countDown();
                     });
 

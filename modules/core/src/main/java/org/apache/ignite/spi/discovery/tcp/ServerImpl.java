@@ -3032,7 +3032,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 // If we read this message from socket.
                 if (fromSocket)
@@ -3165,7 +3165,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             notifiedDiscovery.set(false);
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().afterReceive(tMsg);
             }
@@ -3181,7 +3181,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             "ignoring message [msg=" + msg + ", locNode=" + locNode + ']');
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Ring failed")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3216,7 +3216,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Local node order not initialized")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3292,7 +3292,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 (msg instanceof TcpDiscoveryNodeAddedMessage
                     || msg instanceof TcpDiscoveryJoinRequestMessage
                     || notifiedDiscovery.get())) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().finishProcessing(tMsg);
             }
@@ -3396,7 +3396,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msgLsnr.apply(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             sendMessageToClients(msg);
 

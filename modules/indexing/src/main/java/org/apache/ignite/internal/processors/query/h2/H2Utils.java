@@ -329,7 +329,7 @@ public class H2Utils {
 
             Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
 
-            return (GridH2IndexBase) fctMethod.invoke(null, tbl, idxName, cols);
+            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxName, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);

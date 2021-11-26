@@ -626,7 +626,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         cfg2.getDataStorageConfiguration()
             .setFileIOFactory(new HaltJvmFileIOFactory(new RandomAccessFileIOFactory(),
-                (Predicate<File> & Serializable) file -> {
+                (Predicate<File> & Serializable)file -> {
                     // Trying to create FileIO over partition file.
                     return file.getAbsolutePath().contains(SNAPSHOT_NAME);
                 }));

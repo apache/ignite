@@ -2004,7 +2004,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
@@ -2351,7 +2351,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int) n);
+        return skipBytes((int)n);
     }
 
     /** {@inheritDoc} */

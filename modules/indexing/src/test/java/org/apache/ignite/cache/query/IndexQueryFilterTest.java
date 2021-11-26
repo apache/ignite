@@ -324,7 +324,7 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id) && Objects.equals(age, person.age) && Objects.equals(name, person.name);
         }

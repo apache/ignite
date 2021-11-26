@@ -106,7 +106,7 @@ public class FunctionalTest {
     /** Per test timeout */
     @SuppressWarnings("deprecation")
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * Tested API:
@@ -1192,7 +1192,7 @@ public class FunctionalTest {
                 fail();
             }
             catch (ClientException e) {
-                ClientServerError cause = (ClientServerError) e.getCause();
+                ClientServerError cause = (ClientServerError)e.getCause();
                 assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, cause.getCode());
             }
 

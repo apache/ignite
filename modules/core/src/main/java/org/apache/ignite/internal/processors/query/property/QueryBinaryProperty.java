@@ -115,7 +115,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
             obj = isKeyProp ? key : val;
 
         if (obj instanceof BinaryObject) {
-            BinaryObject obj0 = (BinaryObject) obj;
+            BinaryObject obj0 = (BinaryObject)obj;
 
             return fieldValue(obj0);
         }
@@ -157,15 +157,15 @@ public class QueryBinaryProperty implements GridQueryProperty {
         if (!(obj instanceof BinaryObjectBuilder))
             throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-        setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
+        setValue0((BinaryObjectBuilder)obj, propName, propVal, type());
 
         if (needsBuild) {
-            obj = ((BinaryObjectBuilder) obj).build();
+            obj = ((BinaryObjectBuilder)obj).build();
 
             assert parent != null;
 
             // And now let's set this newly constructed object to parent
-            setValue0((BinaryObjectBuilder) srcObj, parent.propName, obj, obj.getClass());
+            setValue0((BinaryObjectBuilder)srcObj, parent.propName, obj, obj.getClass());
         }
     }
 
