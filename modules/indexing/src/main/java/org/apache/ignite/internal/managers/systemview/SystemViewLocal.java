@@ -95,20 +95,20 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
         CLS_TO_VAL.put(String.class, val -> ValueString.get(Objects.toString(val)));
         CLS_TO_VAL.put(IgniteUuid.class, val -> ValueString.get(Objects.toString(val)));
-        CLS_TO_VAL.put(UUID.class, val -> ValueUuid.get((UUID) val));
-        CLS_TO_VAL.put(Class.class, val -> ValueString.get(((Class<?>) val).getName()));
+        CLS_TO_VAL.put(UUID.class, val -> ValueUuid.get((UUID)val));
+        CLS_TO_VAL.put(Class.class, val -> ValueString.get(((Class<?>)val).getName()));
         CLS_TO_VAL.put(InetSocketAddress.class, val -> ValueString.get(Objects.toString(val)));
-        CLS_TO_VAL.put(BigDecimal.class, val -> ValueDecimal.get((BigDecimal) val));
-        CLS_TO_VAL.put(BigInteger.class, val -> ValueDecimal.get(new BigDecimal((BigInteger) val)));
-        CLS_TO_VAL.put(Date.class, val -> ValueTimestamp.fromMillis(((Date) val).getTime()));
-        CLS_TO_VAL.put(Boolean.class, val -> ValueBoolean.get((Boolean) val));
-        CLS_TO_VAL.put(Byte.class, val -> ValueByte.get((Byte) val));
-        CLS_TO_VAL.put(Short.class, val -> ValueShort.get((Short) val));
-        CLS_TO_VAL.put(Integer.class, val -> ValueInt.get((Integer) val));
-        CLS_TO_VAL.put(Long.class, val -> ValueLong.get((Long) val));
+        CLS_TO_VAL.put(BigDecimal.class, val -> ValueDecimal.get((BigDecimal)val));
+        CLS_TO_VAL.put(BigInteger.class, val -> ValueDecimal.get(new BigDecimal((BigInteger)val)));
+        CLS_TO_VAL.put(Date.class, val -> ValueTimestamp.fromMillis(((Date)val).getTime()));
+        CLS_TO_VAL.put(Boolean.class, val -> ValueBoolean.get((Boolean)val));
+        CLS_TO_VAL.put(Byte.class, val -> ValueByte.get((Byte)val));
+        CLS_TO_VAL.put(Short.class, val -> ValueShort.get((Short)val));
+        CLS_TO_VAL.put(Integer.class, val -> ValueInt.get((Integer)val));
+        CLS_TO_VAL.put(Long.class, val -> ValueLong.get((Long)val));
         CLS_TO_VAL.put(Character.class, val -> ValueString.get(Objects.toString(val)));
-        CLS_TO_VAL.put(Float.class, val -> ValueFloat.get((Float) val));
-        CLS_TO_VAL.put(Double.class, val -> ValueDouble.get((Double) val));
+        CLS_TO_VAL.put(Float.class, val -> ValueFloat.get((Float)val));
+        CLS_TO_VAL.put(Double.class, val -> ValueDouble.get((Double)val));
     }
 
     /** System view for export. */

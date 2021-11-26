@@ -2009,7 +2009,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final V1 v;
 
         if (!needVer)
-            v = (V1) val;
+            v = (V1)val;
         else if (getRes == null) {
             v = expireTime != 0 || ttl != 0
                 ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)

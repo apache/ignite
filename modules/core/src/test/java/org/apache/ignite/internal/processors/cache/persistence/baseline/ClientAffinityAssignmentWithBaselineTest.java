@@ -937,7 +937,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      */
     private void awaitTopology(Throwable e) throws IgniteCheckedException {
         if (e instanceof TransactionRollbackException) {
-            TransactionRollbackException e0 = (TransactionRollbackException) e;
+            TransactionRollbackException e0 = (TransactionRollbackException)e;
 
             ClusterTopologyCheckedException e00 = X.cause(e0, ClusterTopologyCheckedException.class);
             IgniteInternalFuture f;

@@ -46,8 +46,8 @@ public class PopulationTest {
         population = new Population(100);
         Double[] chromosomeData = new Double[2];
         for (int i = 0; i < population.size(); i++) {
-            chromosomeData[0] = (double) i;
-            chromosomeData[1] = (double) i;
+            chromosomeData[0] = (double)i;
+            chromosomeData[1] = (double)i;
             population.setChromosome(i, new Chromosome(chromosomeData));
         }
     }

@@ -27,10 +27,12 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
-    using NUnit.Framework;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Platform.Model;
+    using NUnit.Framework;
 
     /// <summary>
     /// Services tests.
@@ -263,6 +265,58 @@ namespace Apache.Ignite.Core.Tests.Services
 
             for (var i = 0; i < 10; i++)
                 AssertNoService(SvcName + i);
+        }
+
+        /// <summary>
+        /// Tests service call context.
+        /// </summary>
+        [Test]
+        public void TestServiceCallContext([Values(true, false)] bool binarizable)
+        {
+            var svc = binarizable
+                ? new TestIgniteServiceBinarizable {TestProperty = 17}
+                : new TestIgniteServiceSerializable {TestProperty = 17};
+
+            Services.DeployClusterSingleton(SvcName, svc);
+
+            foreach (var grid in Grids)
+            {
+                var nodeId = grid.GetCluster().ForLocal().GetNode().Id;
+
+                var attrName = grid.Name;
+                var attrBinName = "bin-" + grid.Name;
+                var attrValue = nodeId.ToString();
+                var attrBinValue = nodeId.ToByteArray();
+
+                var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
+
+                if (svc0 != null)
+                    Assert.IsNull(svc0.ContextAttribute(attrName));
+
+                var ctx = new ServiceCallContextBuilder()
+                    .Set(attrName, attrValue)
+                    .Set(attrBinName, attrBinValue)
+                    .Build();
+
+                var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
+                
+                Assert.IsNull(proxy.ContextAttribute("not-exist-attribute"));
+                Assert.IsNull(proxy.ContextBinaryAttribute("not-exist-attribute"));
+
+                var stickyProxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true, ctx);
+                var dynamicProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, false, ctx);
+                var dynamicStickyProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, true, ctx);
+
+                Assert.AreEqual(attrValue, proxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+                
+                Assert.AreEqual(attrBinValue, proxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
+            }
         }
 
         /// <summary>
@@ -872,7 +926,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false, callContext());
             var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
@@ -898,7 +952,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
-            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
+            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false, callContext());
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
@@ -920,7 +974,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true, callContext()));
 
             DoTestService(svc);
 
@@ -954,7 +1008,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
 
-            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName, false, callContext());
 
             DoTestService(svc);
 
@@ -1092,6 +1146,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+            Assert.AreEqual("value", svc.contextAttribute("attr"));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
@@ -1114,6 +1169,15 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(9, now);
             Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
 #endif
+        }
+
+        /// <summary>
+        /// Creates a test caller context.
+        /// </summary>
+        /// <returns>Caller context.</returns>
+        private IServiceCallContext callContext()
+        {
+            return new ServiceCallContextBuilder().Set("attr", "value").Build();
         }
 
         /// <summary>
@@ -1290,7 +1354,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             if (!CompactFooter)
             {
-                springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
             }
 
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -1461,6 +1525,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             int TestOverload(int count, Parameter[] param);
+
+            /** */
+            object ContextAttribute(string name);
+            
+            /** */
+            object ContextBinaryAttribute(string name);
         }
 
         /// <summary>
@@ -1491,6 +1561,9 @@ namespace Apache.Ignite.Core.Tests.Services
             [InstanceResource]
             // ReSharper disable once UnassignedField.Local
             private IIgnite _grid;
+
+            // Service context.
+            private IServiceContext _context;
 
             /** <inheritdoc /> */
             public int TestProperty { get; set; }
@@ -1584,6 +1657,22 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
+            public object ContextAttribute(string name)
+            {
+                IServiceCallContext ctx = _context.CurrentCallContext;
+                
+                return ctx == null ? null : ctx.GetAttribute(name);
+            }
+            
+            /** <inheritdoc /> */
+            public object ContextBinaryAttribute(string name)
+            {
+                IServiceCallContext ctx = _context.CurrentCallContext;
+                
+                return ctx == null ? null : ctx.GetBinaryAttribute(name);
+            }
+
+            /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
                 lock (this)
@@ -1596,6 +1685,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     Assert.IsFalse(context.IsCancelled);
                     Initialized = true;
                 }
+
+                _context = context;
             }
 
             /** <inheritdoc /> */
@@ -1773,14 +1864,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (date.Kind == DateTimeKind.Local)
                     date = date.ToUniversalTime();
 
-                Impl.Binary.BinaryUtils.ToJavaDate(date, out high, out low);
+                BinaryUtils.ToJavaDate(date, out high, out low);
             }
 
             /** <inheritdoc /> */
             public DateTime FromJavaTicks(long high, int low)
             {
                 return new DateTime(
-                    Impl.Binary.BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
                     DateTimeKind.Utc);
             }
         }

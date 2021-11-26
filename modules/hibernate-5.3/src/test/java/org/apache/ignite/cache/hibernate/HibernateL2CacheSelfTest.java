@@ -578,7 +578,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 assertEquals(idToChildCnt.size(), list.size());
 
                 for (Entity e : list)
-                    assertEquals((int) idToChildCnt.get(e.getId()), e.getChildren().size());
+                    assertEquals((int)idToChildCnt.get(e.getId()), e.getChildren().size());
             }
             finally {
                 ses.close();
@@ -1162,7 +1162,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
             try {
                 for (Map.Entry<String, Integer> e : nameToId.entrySet())
-                    ((Entity) ses.bySimpleNaturalId(Entity.class).load(e.getKey())).getId();
+                    ((Entity)ses.bySimpleNaturalId(Entity.class).load(e.getKey())).getId();
             }
             finally {
                 ses.close();
@@ -1384,7 +1384,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 tx = ses.beginTransaction();
 
-                ses.save(new ParentEntity(0, (Entity) ses.load(Entity.class, 0)));
+                ses.save(new ParentEntity(0, (Entity)ses.load(Entity.class, 0)));
 
                 tx.commit();
             }
@@ -1774,7 +1774,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         try {
             for (Map.Entry<String, Integer> e : nameToId.entrySet())
-                assertEquals((int) e.getValue(), ((Entity) ses.bySimpleNaturalId(Entity.class).load(e.getKey())).getId());
+                assertEquals((int)e.getValue(), ((Entity)ses.bySimpleNaturalId(Entity.class).load(e.getKey())).getId());
 
             for (String name : absentNames)
                 assertNull((ses.bySimpleNaturalId(Entity.class).load(name)));
@@ -1861,20 +1861,20 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         try {
             if (entity1) {
                 for (Map.Entry<Integer, String> e : idToName.entrySet())
-                    assertEquals(e.getValue(), ((Entity) ses.load(Entity.class, e.getKey())).getName());
+                    assertEquals(e.getValue(), ((Entity)ses.load(Entity.class, e.getKey())).getName());
                 }
             else {
                 for (Map.Entry<Integer, String> e : idToName.entrySet())
-                    assertEquals(e.getValue(), ((Entity2) ses.load(Entity2.class, e.getKey())).getName());
+                    assertEquals(e.getValue(), ((Entity2)ses.load(Entity2.class, e.getKey())).getName());
             }
 
             for (final int id : absentIds) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         if (entity1)
-                            ((Entity) ses.load(Entity.class, id)).getName();
+                            ((Entity)ses.load(Entity.class, id)).getName();
                         else
-                            ((Entity2) ses.load(Entity2.class, id)).getName();
+                            ((Entity2)ses.load(Entity2.class, id)).getName();
 
                         return null;
                     }
@@ -1929,7 +1929,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
             if (!entityBinding.isInherited())
-                ((RootClass) entityBinding).setCacheConcurrencyStrategy(accessType.getExternalName());
+                ((RootClass)entityBinding).setCacheConcurrencyStrategy(accessType.getExternalName());
         }
 
         for (org.hibernate.mapping.Collection collectionBinding : metadata.getCollectionBindings())

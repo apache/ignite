@@ -864,7 +864,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
                 assertTrue(e.exists());
 
-                assertEquals(val + 1, (int) e.getValue());
+                assertEquals(val + 1, (int)e.getValue());
 
                 return val;
             }
@@ -987,7 +987,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testVal = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
             return val.equals(testVal.val);
 

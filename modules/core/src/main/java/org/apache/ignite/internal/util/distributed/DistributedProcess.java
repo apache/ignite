@@ -453,6 +453,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
 
         /**
+         * Cache group restore preload phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+
+        /**
          * Cache group restore cache start phase.
          */
         RESTORE_CACHE_GROUP_SNAPSHOT_START,

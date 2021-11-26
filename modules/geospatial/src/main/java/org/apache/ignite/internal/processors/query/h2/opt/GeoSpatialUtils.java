@@ -42,7 +42,7 @@ public class GeoSpatialUtils {
     private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
 
     static {
-        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry) k));
+        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry)k));
     }
 
     /** */

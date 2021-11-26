@@ -28,7 +28,7 @@ public class TimeIndexKey extends AbstractTimeIndexKey implements H2ValueWrapper
 
     /** */
     public TimeIndexKey(Object obj) {
-        time = (ValueTime) wrapToValue(obj, type());
+        time = (ValueTime)wrapToValue(obj, type());
     }
 
     /** */

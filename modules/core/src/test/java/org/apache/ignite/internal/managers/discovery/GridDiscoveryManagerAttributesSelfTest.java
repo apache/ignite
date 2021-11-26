@@ -119,7 +119,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
-            checkIsClientFlag((IgniteEx) g);
+            checkIsClientFlag((IgniteEx)g);
         }
 
         System.setProperty(PREFER_IPV4, "false");
@@ -397,7 +397,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
-            checkIsClientFlag((IgniteEx) g);
+            checkIsClientFlag((IgniteEx)g);
         }
     }
 

@@ -78,7 +78,7 @@ public class PlatformLocalEventListener implements IgnitePredicate<Event> {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return this == o || o != null && getClass() == o.getClass() && id == ((PlatformLocalEventListener) o).id;
+        return this == o || o != null && getClass() == o.getClass() && id == ((PlatformLocalEventListener)o).id;
     }
 
     /** {@inheritDoc} */

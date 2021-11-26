@@ -63,7 +63,7 @@ public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess impleme
 
     /** {@inheritDoc} */
     @Override public Object getCacheKeyId(Object cacheKey) {
-        return ((HibernateKeyWrapper) cacheKey).id();
+        return ((HibernateKeyWrapper)cacheKey).id();
     }
 
     /** {@inheritDoc} */
