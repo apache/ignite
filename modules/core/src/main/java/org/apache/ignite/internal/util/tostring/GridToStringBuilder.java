@@ -118,7 +118,10 @@ public class GridToStringBuilder {
                         sensitiveDataLogging = SensitiveDataLogging.NONE;
                 }
                 else
-                    sensitiveDataLogging = SensitiveDataLogging.convertSensitiveDataLogging(IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash"));
+                    sensitiveDataLogging =
+                        SensitiveDataLogging.convertSensitiveDataLogging(
+                            IgniteSystemProperties.getString(
+                                IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash"));
             }
 
             /** {@inheritDoc} */
