@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -33,7 +35,6 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -119,10 +120,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return rel.estimateRowCount(mq);
     }
 
-    /**
-     * Estimation of row count for set op (MINUS, INTERSECT).
-     */
-    public double getRowCount(IgniteSetOp rel, RelMetadataQuery mq) {
+    /** {@inheritDoc} */
+    @Override public Double getRowCount(Intersect rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Double getRowCount(Minus rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 
