@@ -509,7 +509,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param sysDataRegConf System data region configuration.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setDefaultDataRegionConfiguration(SystemDataRegionConfiguration sysDataRegConf) {
+    public DataStorageConfiguration setSystemDataRegionConfiguration(SystemDataRegionConfiguration sysDataRegConf) {
         this.sysDataRegConf = sysDataRegConf;
 
         return this;
