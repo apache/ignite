@@ -108,10 +108,15 @@ public class GridToStringBuilder {
             final SensitiveDataLogging sensitiveDataLogging;
 
             {
-                String sysStrToStringIncludeSensitive = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE);
+                String sysStrToStringIncludeSensitive =
+                    IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE);
 
-                if (sysStrToStringIncludeSensitive != null)
-                    sensitiveDataLogging = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE) ? SensitiveDataLogging.PLAIN : SensitiveDataLogging.NONE;
+                if (sysStrToStringIncludeSensitive != null) {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE))
+                        sensitiveDataLogging = SensitiveDataLogging.PLAIN;
+                    else
+                        sensitiveDataLogging = SensitiveDataLogging.NONE;
+                }
                 else
                     sensitiveDataLogging = SensitiveDataLogging.convertSensitiveDataLogging(IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash"));
             }

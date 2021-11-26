@@ -206,7 +206,8 @@ public class SensitiveDataToStringTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
     public void testBinaryEnumObjectImplWithHashSensitive() {
-        testBinaryEnumObjectImpl((strToCheck, object) -> assertTrue(strToCheck, strToCheck.equals(String.valueOf(IgniteUtils.hash(object)))));
+        testBinaryEnumObjectImpl((strToCheck, object) ->
+            assertTrue(strToCheck, strToCheck.equals(String.valueOf(IgniteUtils.hash(object)))));
     }
 
     /** */
@@ -281,7 +282,8 @@ public class SensitiveDataToStringTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
     public void testCacheObjectByteArrayImplWithHashSensitive() {
-        testCacheObjectByteArrayImpl((strToCheck, object) -> assertTrue(strToCheck, strToCheck.equals(String.valueOf(IgniteUtils.hash(rndArray)))));
+        testCacheObjectByteArrayImpl((strToCheck, object) ->
+            assertTrue(strToCheck, strToCheck.equals(String.valueOf(IgniteUtils.hash(rndArray)))));
     }
 
     /** */
