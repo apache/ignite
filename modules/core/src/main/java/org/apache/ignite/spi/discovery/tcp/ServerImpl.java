@@ -6662,7 +6662,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     blockingSectionBegin();
 
                     try {
-                        sock = srvrSock.accept();
+                        sock = IgniteUtils.acceptServerSocket(srvrSock);
                     }
                     finally {
                         blockingSectionEnd();
