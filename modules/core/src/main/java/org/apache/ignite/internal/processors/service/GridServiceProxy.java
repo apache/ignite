@@ -43,6 +43,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -123,6 +124,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      * @param callCtxProvider Caller context provider.
+     * @param keepBinary {@code True} if results should be in binary form.
      */
     public GridServiceProxy(ClusterGroup prj,
         String name,
@@ -332,7 +334,7 @@ public class GridServiceProxy<T> implements Serializable {
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
         Marshaller marsh = ctx.config().getMarshaller();
 
-        if (keepBinary && marsh instanceof BinaryMarshaller) {
+        if (keepBinary && BinaryArray.useBinaryArrays() && marsh instanceof BinaryMarshaller) {
             // To avoid deserializing of enum types and BinaryArrays.
             return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
         }

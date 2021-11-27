@@ -396,7 +396,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final long timeout,
         final boolean keepBinary
     ) throws IgniteException {
-        return (T)serviceProxy(name, svcItf, sticky, (Supplier<ServiceCallContext>)null, timeout);
+        return (T)serviceProxy(name, svcItf, sticky, null, timeout, keepBinary);
     }
 
     /** {@inheritDoc} */
