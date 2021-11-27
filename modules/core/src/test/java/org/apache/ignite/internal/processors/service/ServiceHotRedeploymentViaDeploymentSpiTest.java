@@ -40,9 +40,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -65,12 +63,6 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
         return cfg;
-    }
-
-    /** */
-    @BeforeClass
-    public static void check() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** */
