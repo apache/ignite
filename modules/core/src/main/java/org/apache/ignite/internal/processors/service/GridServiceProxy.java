@@ -71,9 +71,6 @@ public class GridServiceProxy<T> implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARY = ThreadLocal.withInitial(() -> false);
-
-    /** */
     private static final Method PLATFORM_SERVICE_INVOKE_METHOD;
 
     static {
@@ -115,6 +112,9 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
+    /** */
+    private final boolean keepBinary;
+
     /**
      * @param prj Grid projection.
      * @param name Service name.
@@ -130,7 +130,8 @@ public class GridServiceProxy<T> implements Serializable {
         boolean sticky,
         long timeout,
         GridKernalContext ctx,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        boolean keepBinary
     ) {
         assert timeout >= 0 : timeout;
 
@@ -138,6 +139,7 @@ public class GridServiceProxy<T> implements Serializable {
         this.ctx = ctx;
         this.name = name;
         this.sticky = sticky;
+        this.keepBinary = keepBinary;
 
         waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
@@ -330,7 +332,7 @@ public class GridServiceProxy<T> implements Serializable {
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
         Marshaller marsh = ctx.config().getMarshaller();
 
-        if (KEEP_BINARY.get() && marsh instanceof BinaryMarshaller) {
+        if (keepBinary && marsh instanceof BinaryMarshaller) {
             // To avoid deserializing of enum types and BinaryArrays.
             return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
         }

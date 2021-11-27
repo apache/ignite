@@ -125,6 +125,7 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param callCtxProvider Caller context provider.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
+     * @param keepBinary {@code True} if results should be keeped in binary form.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
@@ -134,7 +135,8 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
         Class<? super T> srvcCls,
         boolean sticky,
         @Nullable Supplier<ServiceCallContext> callCtxProvider,
-        long timeout
+        long timeout,
+        boolean keepBinary
     ) throws IgniteException;
 
     /**

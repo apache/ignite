@@ -1029,7 +1029,8 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         Class<? super T> srvcCls,
         boolean sticky,
         @Nullable Supplier<ServiceCallContext> callCtxProvider,
-        long timeout
+        long timeout,
+        boolean keepBinary
     ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -1050,7 +1051,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider, keepBinary).proxy();
     }
 
     /**
