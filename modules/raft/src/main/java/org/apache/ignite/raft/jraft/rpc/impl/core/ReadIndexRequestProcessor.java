@@ -28,11 +28,8 @@ import org.apache.ignite.raft.jraft.rpc.RpcResponseClosureAdapter;
 
 /**
  * Handle read index request.
- *
- * @author jiachun.fjc
  */
 public class ReadIndexRequestProcessor extends NodeRequestProcessor<ReadIndexRequest> {
-
     public ReadIndexRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
         super(executor, msgFactory);
     }

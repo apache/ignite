@@ -33,8 +33,8 @@ public class ClientTupleDeleteAllExactRequest {
     /**
      * Processes the request.
      *
-     * @param in     Unpacker.
-     * @param out    Packer.
+     * @param in Unpacker.
+     * @param out Packer.
      * @param tables Ignite tables.
      * @return Future.
      */
@@ -46,6 +46,7 @@ public class ClientTupleDeleteAllExactRequest {
         var table = readTable(in, tables);
         var tuples = readTuples(in, table, false);
 
-        return table.recordView().deleteAllExactAsync(tuples).thenAccept(skippedTuples -> writeTuples(out, skippedTuples));
+        return table.recordView().deleteAllExactAsync(tuples)
+                .thenAccept(skippedTuples -> writeTuples(out, skippedTuples, table.schemaView()));
     }
 }

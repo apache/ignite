@@ -231,7 +231,7 @@ public enum RaftError {
     EIO(1014),
 
     /**
-     * Invalid value.
+     * Invalid value
      */
     EINVAL(1015),
 

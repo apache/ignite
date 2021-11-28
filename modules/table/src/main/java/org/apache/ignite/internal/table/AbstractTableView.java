@@ -20,6 +20,7 @@ package org.apache.ignite.internal.table;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.tx.InternalTransaction;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.tx.Transaction;
@@ -31,13 +32,13 @@ import org.jetbrains.annotations.Nullable;
 abstract class AbstractTableView {
     /** Internal table. */
     protected final InternalTable tbl;
-    
+
     /** Schema registry. */
     protected final SchemaRegistry schemaReg;
-    
+
     /** The transaction. */
-    protected final @Nullable Transaction tx;
-    
+    protected final @Nullable InternalTransaction tx;
+
     /**
      * Constructor.
      *
@@ -48,9 +49,9 @@ abstract class AbstractTableView {
     protected AbstractTableView(InternalTable tbl, SchemaRegistry schemaReg, @Nullable Transaction tx) {
         this.tbl = tbl;
         this.schemaReg = schemaReg;
-        this.tx = tx;
+        this.tx = (InternalTransaction) tx;
     }
-    
+
     /**
      * Waits for operation completion.
      *
@@ -63,7 +64,7 @@ abstract class AbstractTableView {
             return fut.get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore interrupt flag.
-            
+
             throw convertException(e);
         } catch (ExecutionException e) {
             throw convertException(e.getCause());
@@ -71,14 +72,23 @@ abstract class AbstractTableView {
             throw convertException(e);
         }
     }
-    
+
     /**
      * Returns current transaction.
      */
     public @Nullable Transaction transaction() {
         return tx;
     }
-    
+
+    /**
+     * Enlists a table into a transaction.
+     *
+     * @param tx The transaction.
+     * @return Transactional view.
+     * @deprecated TODO IGNITE-15930 remove and replace with expicit TX argument in table API calls.
+     */
+    public abstract AbstractTableView withTransaction(Transaction tx);
+
     /**
      * Converts an internal exception to a public one.
      *

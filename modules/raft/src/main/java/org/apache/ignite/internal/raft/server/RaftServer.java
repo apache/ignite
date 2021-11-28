@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.raft.server;
 
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * The RAFT protocol based replication server. Supports multiple RAFT groups. The server listens for client commands, submits them to a
@@ -60,4 +62,12 @@ public interface RaftServer extends IgniteComponent {
      * @return Local peer or null if the group is not started.
      */
     @Nullable Peer localPeer(String groupId);
+
+    /**
+     * Returns a set of started partition groups.
+     *
+     * @return Started groups.
+     */
+    @TestOnly
+    Set<String> startedGroups();
 }

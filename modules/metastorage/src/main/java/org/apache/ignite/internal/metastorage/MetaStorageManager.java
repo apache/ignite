@@ -969,9 +969,7 @@ public class MetaStorageManager implements IgniteComponent {
          *
          * @param innerCursorFut Inner cursor future.
          */
-        CursorWrapper(
-                CompletableFuture<Cursor<T>> innerCursorFut
-        ) {
+        CursorWrapper(CompletableFuture<Cursor<T>> innerCursorFut) {
             this.innerCursorFut = innerCursorFut;
             this.innerIterFut = innerCursorFut.thenApply(Iterable::iterator);
         }

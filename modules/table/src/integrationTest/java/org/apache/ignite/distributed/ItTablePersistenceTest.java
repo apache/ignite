@@ -17,34 +17,41 @@
 
 package org.apache.ignite.distributed;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.internal.raft.server.impl.JraftServerImpl;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
-import org.apache.ignite.internal.storage.DataRow;
-import org.apache.ignite.internal.storage.PartitionStorage;
 import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorage;
-import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.storage.engine.TableStorage;
+import org.apache.ignite.internal.table.distributed.TableTxManagerImpl;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
+import org.apache.ignite.internal.tx.TxManager;
+import org.apache.ignite.internal.tx.impl.HeapLockManager;
+import org.apache.ignite.internal.tx.impl.TxManagerImpl;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.service.ItAbstractListenerSnapshotTest;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * Persistent partitions raft group snapshots tests.
@@ -64,18 +71,39 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
 
     private static final Row SECOND_VALUE = createKeyValueRow(1, 1);
 
-    /** Paths for created partition listeners. */
+    /**
+     * Paths for created partition listeners.
+     */
     private final Map<PartitionListener, Path> paths = new ConcurrentHashMap<>();
+
+    private final List<TxManager> managers = new ArrayList<>();
+
+    @AfterEach
+    @Override
+    public void afterTest() throws Exception {
+        super.afterTest();
+
+        for (TxManager txManager : managers) {
+            txManager.stop();
+        }
+    }
 
     /** {@inheritDoc} */
     @Override
     public void beforeFollowerStop(RaftGroupService service) throws Exception {
+        TxManagerImpl txManager = new TxManagerImpl(clientService(), new HeapLockManager());
+
+        managers.add(txManager);
+
+        txManager.start();
+
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
                 Map.of(0, service),
                 1,
                 NetworkAddress::toString,
+                txManager,
                 mock(TableStorage.class)
         );
 
@@ -85,12 +113,19 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
     /** {@inheritDoc} */
     @Override
     public void afterFollowerStop(RaftGroupService service) throws Exception {
+        TxManagerImpl txManager = new TxManagerImpl(clientService(), new HeapLockManager());
+
+        managers.add(txManager);
+
+        txManager.start();
+
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
                 Map.of(0, service),
                 1,
                 NetworkAddress::toString,
+                txManager,
                 mock(TableStorage.class)
         );
 
@@ -99,41 +134,52 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
 
         // Put deleted data again
         table.upsert(FIRST_VALUE, null).get();
+
+        txManager.stop();
     }
 
     /** {@inheritDoc} */
     @Override
     public void afterSnapshot(RaftGroupService service) throws Exception {
+        TxManager txManager = new TxManagerImpl(clientService(), new HeapLockManager());
+
+        managers.add(txManager);
+
+        txManager.start();
+
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
                 Map.of(0, service),
                 1,
                 NetworkAddress::toString,
+                txManager,
                 mock(TableStorage.class)
         );
 
         table.upsert(SECOND_VALUE, null).get();
+
+        assertNotNull(table.get(SECOND_KEY, null).join());
+
+        txManager.stop();
     }
 
     /** {@inheritDoc} */
     @Override
     public BooleanSupplier snapshotCheckClosure(JraftServerImpl restarted, boolean interactedAfterSnapshot) {
-        PartitionStorage storage = getListener(restarted, raftGroupId()).getStorage();
+        VersionedRowStore storage = getListener(restarted, raftGroupId()).getStorage();
 
         Row key = interactedAfterSnapshot ? SECOND_KEY : FIRST_KEY;
         Row value = interactedAfterSnapshot ? SECOND_VALUE : FIRST_VALUE;
 
-        ByteBuffer buffer = key.keySlice();
-        byte[] keyBytes = new byte[buffer.capacity()];
-        buffer.get(keyBytes);
-
-        SimpleDataRow finalRow = new SimpleDataRow(keyBytes, null);
-        SimpleDataRow finalValue = new SimpleDataRow(keyBytes, value.bytes());
-
         return () -> {
-            DataRow read = storage.read(finalRow);
-            return Objects.equals(finalValue, read);
+            BinaryRow read = storage.get(key, null);
+
+            if (read == null) {
+                return false;
+            }
+
+            return Arrays.equals(value.bytes(), read.bytes());
         };
     }
 
@@ -145,13 +191,19 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override
-    public RaftGroupListener createListener(Path workDir) {
+    public RaftGroupListener createListener(ClusterService service, Path workDir) {
         return paths.entrySet().stream()
                 .filter(entry -> entry.getValue().equals(workDir))
                 .map(Map.Entry::getKey)
                 .findAny()
                 .orElseGet(() -> {
-                    PartitionListener listener = new PartitionListener(new ConcurrentHashMapPartitionStorage());
+                    TableTxManagerImpl txManager = new TableTxManagerImpl(service, new HeapLockManager());
+
+                    txManager.start(); // Init listener.
+
+                    PartitionListener listener = new PartitionListener(
+                            new IgniteUuid(UUID.randomUUID(), 0),
+                            new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager));
 
                     paths.put(listener, workDir);
 

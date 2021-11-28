@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import com.codahale.metrics.ConsoleReporter;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
-import com.codahale.metrics.ConsoleReporter;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.IgniteLogger;
@@ -71,6 +72,7 @@ import org.apache.ignite.raft.jraft.error.RaftException;
 import org.apache.ignite.raft.jraft.option.BootstrapOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
+import org.apache.ignite.raft.jraft.option.ReadOnlyOption;
 import org.apache.ignite.raft.jraft.rpc.RpcClientEx;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcServer;
@@ -3330,6 +3332,62 @@ public class ItNodeTest {
         cluster.waitLeader();
         leader = cluster.getLeader();
         LOG.info("Elect new leader is {}, curTerm={}", leader.getLeaderId(), ((NodeImpl) leader).getCurrentTerm());
+    }
+
+    /**
+     * Tests if a read using leader leases works correctly after previous leader segmentation.
+     */
+    @Test
+    public void testLeaseReadAfterSegmentation() throws Exception {
+        List<PeerId> peers = TestUtils.generatePeers(3);
+        cluster = new TestCluster("unittest", dataPath, peers, 3_000, testInfo);
+
+        for (PeerId peer : peers) {
+            RaftOptions opts = new RaftOptions();
+            opts.setElectionHeartbeatFactor(2); // Election timeout divisor.
+            opts.setReadOnlyOptions(ReadOnlyOption.ReadOnlyLeaseBased);
+            assertTrue(cluster.start(peer.getEndpoint(), false, 300, false, null, opts));
+        }
+
+        cluster.waitLeader();
+
+        NodeImpl leader = (NodeImpl) cluster.getLeader();
+        assertNotNull(leader);
+        cluster.ensureLeader(leader);
+
+        sendTestTaskAndWait(leader);
+        cluster.ensureSame();
+
+        DefaultRaftClientService rpcService = (DefaultRaftClientService) leader.getRpcClientService();
+        RpcClientEx rpcClientEx = (RpcClientEx) rpcService.getRpcClient();
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        rpcClientEx.blockMessages((msg, nodeId) -> {
+            assertTrue(msg instanceof RpcRequests.AppendEntriesRequest);
+
+            if (cnt.get() >= 2)
+                return true;
+
+            LOG.info("Send heartbeat: " + msg + " to " + nodeId);
+
+            cnt.incrementAndGet();
+
+            return false;
+        });
+
+        assertTrue(waitForCondition(() -> cluster.getLeader() != null &&
+            !leader.getNodeId().equals(cluster.getLeader().getNodeId()), 10_000));
+
+        CompletableFuture<Status> res = new CompletableFuture<>();
+
+        cluster.getLeader().readIndex(null, new ReadIndexClosure() {
+            @Override public void run(Status status, long index, byte[] reqCtx) {
+                res.complete(status);
+            }
+        });
+
+        assertTrue(res.get().isOk());
     }
 
     private NodeOptions createNodeOptions() {

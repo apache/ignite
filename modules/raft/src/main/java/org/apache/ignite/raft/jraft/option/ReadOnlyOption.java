@@ -20,7 +20,6 @@ package org.apache.ignite.raft.jraft.option;
  * Read only options.
  */
 public enum ReadOnlyOption {
-
     // ReadOnlySafe guarantees the linearizability of the read only request by
     // communicating with the quorum. It is the default and suggested option.
     ReadOnlySafe,

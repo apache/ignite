@@ -23,11 +23,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.ThreadPoolUtil;
+import org.jctools.queues.MpscBlockingConsumerArrayQueue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -40,8 +42,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-//import io.netty.util.concurrent.DefaultEventExecutor;
 
 /**
  *
@@ -104,6 +104,21 @@ public class SingleThreadExecutorBenchmark {
     @Benchmark
     public void defaultSingleThreadPollExecutor() throws InterruptedException {
         execute(new DefaultSingleThreadExecutor("default", TIMES));
+    }
+
+    @Benchmark
+    public void defaultSingleThreadPollExecutorWithMpscBlockingQueue() throws InterruptedException {
+        ThreadPoolExecutor pool = ThreadPoolUtil.newBuilder() //
+            .coreThreads(1) //
+            .maximumThreads(1) //
+            .poolName("default") //
+            .enableMetric(false) //
+            .workQueue(new MpscBlockingConsumerArrayQueue<>(TIMES)) // TODO asch IGNITE-15997
+            .keepAliveSeconds(60L) //
+            .threadFactory(new NamedThreadFactory("default", true)) //
+            .build();
+
+        execute(new DefaultSingleThreadExecutor(pool));
     }
 
     @Benchmark

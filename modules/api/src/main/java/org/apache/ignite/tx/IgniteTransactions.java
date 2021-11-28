@@ -19,24 +19,59 @@ package org.apache.ignite.tx;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Ignite Transactions facade.
  */
 public interface IgniteTransactions {
     /**
+     * Returns a facade with new default timeout.
+     *
+     * @param timeout The timeout in milliseconds.
+     *
+     * @return A facade using a new timeout.
+     */
+    IgniteTransactions withTimeout(long timeout);
+
+    /**
      * Begins a transaction.
      *
-     * @return The future.
+     * @return The started transaction.
+     */
+    Transaction begin();
+
+    /**
+     * Begins an async transaction.
+     *
+     * @return The future holding the started transaction.
      */
     CompletableFuture<Transaction> beginAsync();
 
     /**
-     * Synchronously executes a closure within a transaction.
+     * Executes a closure within a transaction.
      *
-     * <p>If the closure is executed normally (no exceptions), the transaction is automatically committed.
+     * <p>If the closure is executed normally (no exceptions) the transaction is automatically committed.
      *
      * @param clo The closure.
+     *
+     * @throws TransactionException If a transaction can't be finished successfully.
      */
-    void runInTransaction(Consumer<Transaction> clo);
+    void runInTransaction(Consumer<Transaction> clo) throws TransactionException;
+
+    /**
+     * Executes a closure within a transaction and returns a result.
+     *
+     * <p>If the closure is executed normally (no exceptions) the transaction is automatically committed.
+     *
+     * <p>This method will automatically enlist all tables into the transaction, but the execution of
+     * the transaction shouldn't leave starting thread or an exception will be thrown.
+     *
+     * @param clo The closure.
+     * @param <T> Closure result type.
+     * @return The result.
+     *
+     * @throws TransactionException If a transaction can't be finished successfully.
+     */
+    <T> T runInTransaction(Function<Transaction, T> clo) throws TransactionException;
 }

@@ -411,6 +411,10 @@ public class ClientTable implements Table {
     }
     
     static IgniteBiTuple<Tuple, Tuple> readKvTuple(ClientSchema schema, ClientMessageUnpacker in) {
+        if (in.tryUnpackNil()) {
+            return null;
+        }
+        
         var keyColCnt = schema.keyColumnCount();
         var colCnt = schema.columns().length;
         
@@ -444,7 +448,9 @@ public class ClientTable implements Table {
         
         for (int i = 0; i < cnt; i++) {
             var pair = readKvTuple(schema, in);
-            res.put(pair.get1(), pair.get2());
+            if (pair != null) {
+                res.put(pair.get1(), pair.get2());
+            }
         }
         
         return res;

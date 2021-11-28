@@ -17,93 +17,127 @@
 
 package org.apache.ignite.internal.table.impl;
 
-import java.util.Arrays;
-import java.util.Collection;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Flow.Publisher;
-import java.util.stream.Collectors;
+import java.util.concurrent.Flow;
+import java.util.function.BiFunction;
 import javax.naming.OperationNotSupportedException;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.storage.engine.TableStorage;
-import org.apache.ignite.internal.table.InternalTable;
+import org.apache.ignite.internal.table.distributed.command.GetAllCommand;
+import org.apache.ignite.internal.table.distributed.command.GetCommand;
+import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
+import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
+import org.apache.ignite.internal.tx.InternalTransaction;
+import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.tx.Transaction;
+import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.raft.client.Command;
+import org.apache.ignite.raft.client.Peer;
+import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
+import org.apache.ignite.raft.client.service.CommandClosure;
+import org.apache.ignite.raft.client.service.RaftGroupService;
+import org.apache.ignite.tx.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.mockito.Mockito;
 
 /**
  * Dummy table storage implementation.
  */
-public class DummyInternalTableImpl implements InternalTable {
-    /** In-memory dummy store. */
-    private final Map<KeyWrapper, BinaryRow> store = new ConcurrentHashMap<>();
+public class DummyInternalTableImpl extends InternalTableImpl {
+    public static final NetworkAddress ADDR = new NetworkAddress("127.0.0.1", 2004);
 
-    /** {@inheritDoc} */
-    @Override
-    public void close() throws Exception {
-        // No-op.
-    }
+    private PartitionListener partitionListener;
 
     /**
-     * Wrapper provides correct byte[] comparison.
+     * Creates a new local table.
+     *
+     * @param store The store.
+     * @param txManager Transaction manager.
      */
-    private static class KeyWrapper {
-        /** Data. */
-        private final byte[] data;
+    public DummyInternalTableImpl(VersionedRowStore store, TxManager txManager) {
+        super("test", new IgniteUuid(UUID.randomUUID(), 0), Map.of(0, mock(RaftGroupService.class)),
+                1, null, txManager, mock(TableStorage.class));
 
-        /** Hash. */
-        private final int hash;
+        RaftGroupService svc = partitionMap.get(0);
 
-        /**
-         * Constructor.
-         *
-         * @param data Wrapped data.
-         */
-        KeyWrapper(byte[] data, int hash) {
-            assert data != null;
+        Mockito.doReturn("testGrp").when(svc).groupId();
+        Mockito.doReturn(new Peer(ADDR)).when(svc).leader();
 
-            this.data = data;
-            this.hash = hash;
-        }
+        // Delegate directly to listener.
+        doAnswer(
+                invocationClose -> {
+                    Command cmd = invocationClose.getArgument(0);
 
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
+                    CompletableFuture res = new CompletableFuture();
 
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
+                    CompletableFuture<Void> fut = partitionListener.onBeforeApply(cmd);
 
-            KeyWrapper wrapper = (KeyWrapper) o;
-            return Arrays.equals(data, wrapper.data);
-        }
+                    fut.handle(new BiFunction<Void, Throwable, Void>() {
+                        @Override
+                        public Void apply(Void ignored, Throwable err) {
+                            if (err == null) {
+                                if (cmd instanceof GetCommand || cmd instanceof GetAllCommand) {
+                                    CommandClosure<ReadCommand> clo = new CommandClosure<>() {
+                                        @Override
+                                        public ReadCommand command() {
+                                            return (ReadCommand) cmd;
+                                        }
 
-        /** {@inheritDoc} */
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
+                                        @Override
+                                        public void result(@Nullable Serializable r) {
+                                            res.complete(r);
+                                        }
+                                    };
 
-    /** {@inheritDoc} */
-    @Override
-    public @NotNull TableStorage storage() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
+                                    try {
+                                        partitionListener.onRead(List.of(clo).iterator());
+                                    } catch (Throwable e) {
+                                        res.completeExceptionally(new TransactionException(e));
+                                    }
+                                } else {
+                                    CommandClosure<WriteCommand> clo = new CommandClosure<>() {
+                                        @Override
+                                        public WriteCommand command() {
+                                            return (WriteCommand) cmd;
+                                        }
 
-    /** {@inheritDoc} */
-    @Override
-    public int partitions() {
-        return 1;
+                                        @Override
+                                        public void result(@Nullable Serializable r) {
+                                            res.complete(r);
+                                        }
+                                    };
+
+                                    try {
+                                        partitionListener.onWrite(List.of(clo).iterator());
+                                    } catch (Throwable e) {
+                                        res.completeExceptionally(new TransactionException(e));
+                                    }
+                                }
+                            } else {
+                                res.completeExceptionally(err);
+                            }
+
+                            return null;
+                        }
+                    });
+
+                    return res;
+                }
+        ).when(svc).run(any());
+
+        partitionListener = new PartitionListener(new IgniteUuid(UUID.randomUUID(), 0), store);
     }
 
     /** {@inheritDoc} */
@@ -120,165 +154,13 @@ public class DummyInternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BinaryRow> get(@NotNull BinaryRow row, Transaction tx) {
-        assert row != null;
-
-        return CompletableFuture.completedFuture(store.get(extractAndWrapKey(row)));
+    public CompletableFuture<BinaryRow> get(BinaryRow keyRow, InternalTransaction tx) {
+        return super.get(keyRow, tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Void> upsert(@NotNull BinaryRow row, Transaction tx) {
-        assert row != null;
-
-        store.put(extractAndWrapKey(row), row);
-
-        return CompletableFuture.completedFuture(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<BinaryRow> getAndUpsert(@NotNull BinaryRow row,
-            Transaction tx) {
-        assert row != null;
-
-        final BinaryRow old = store.put(extractAndWrapKey(row), row);
-
-        return CompletableFuture.completedFuture(old);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Boolean> delete(BinaryRow row, Transaction tx) {
-        assert row != null;
-
-        final KeyWrapper key = extractAndWrapKey(row);
-        final BinaryRow oldVal = store.get(key);
-
-        return CompletableFuture.completedFuture(oldVal != null && oldVal.hasValue() && store.remove(key, oldVal));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows,
-            Transaction tx) {
-        assert keyRows != null && !keyRows.isEmpty();
-
-        final List<BinaryRow> res = keyRows.stream()
-                .map(this::extractAndWrapKey)
-                .map(store::get)
-                .collect(Collectors.toList());
-
-        return CompletableFuture.completedFuture(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, Transaction tx) {
-        assert rows != null && !rows.isEmpty();
-
-        rows.stream()
-                .map(k -> store.put(extractAndWrapKey(k), k));
-
-        return CompletableFuture.completedFuture(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Boolean> insert(BinaryRow row, Transaction tx) {
-        assert row != null;
-
-        return CompletableFuture.completedFuture(store.putIfAbsent(extractAndWrapKey(row), row) == null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, Transaction tx) {
-        assert rows != null && !rows.isEmpty();
-
-        final List<BinaryRow> res = rows.stream()
-                .map(k -> store.putIfAbsent(extractAndWrapKey(k), k) == null ? null : k)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        return CompletableFuture.completedFuture(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Boolean> replace(BinaryRow row, Transaction tx) {
-        assert row != null;
-
-        final KeyWrapper key = extractAndWrapKey(row);
-        final BinaryRow oldRow = store.get(key);
-
-        if (oldRow == null || !oldRow.hasValue()) {
-            return CompletableFuture.completedFuture(false);
-        }
-
-        return CompletableFuture.completedFuture(store.put(key, row) == oldRow);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow, Transaction tx) {
-        assert oldRow != null;
-        assert newRow != null;
-
-        final KeyWrapper key = extractAndWrapKey(oldRow);
-        final BinaryRow row = store.get(key);
-
-        if (row == null) {
-            return CompletableFuture.completedFuture(!oldRow.hasValue() && store.put(key, newRow) == null);
-        }
-
-        return CompletableFuture.completedFuture(equalValues(row, oldRow) && store.put(key, newRow) != null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, Transaction tx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Boolean> deleteExact(BinaryRow row, Transaction tx) {
-        assert row != null;
-        assert row.hasValue();
-
-        final KeyWrapper key = extractAndWrapKey(row);
-        final BinaryRow old = store.get(key);
-
-        if (old == null || !old.hasValue()) {
-            return CompletableFuture.completedFuture(false);
-        }
-
-        return CompletableFuture.completedFuture(equalValues(row, old) && store.remove(key) != null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, Transaction tx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows, Transaction tx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows,
-            Transaction tx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
+    public Flow.Publisher<BinaryRow> scan(int p, InternalTransaction tx) {
         throw new IgniteInternalException(new OperationNotSupportedException());
     }
 
@@ -288,30 +170,9 @@ public class DummyInternalTableImpl implements InternalTable {
         throw new IgniteInternalException(new OperationNotSupportedException());
     }
 
-    /**
-     * Returns extracted key.
-     *
-     * @param row Row.
-     */
-    @NotNull
-    private DummyInternalTableImpl.KeyWrapper extractAndWrapKey(@NotNull BinaryRow row) {
-        final byte[] bytes = new byte[row.keySlice().capacity()];
-        row.keySlice().get(bytes);
-
-        return new KeyWrapper(bytes, row.hash());
-    }
-
-    /**
-     * Returns extracted key.
-     *
-     * @param row Row.
-     */
-    @NotNull
-    private boolean equalValues(@NotNull BinaryRow row, @NotNull BinaryRow row2) {
-        if (row.hasValue() ^ row2.hasValue()) {
-            return false;
-        }
-
-        return row.valueSlice().compareTo(row2.valueSlice()) == 0;
+    /** {@inheritDoc} */
+    @Override
+    public int partition(BinaryRow keyRow) {
+        return 0;
     }
 }

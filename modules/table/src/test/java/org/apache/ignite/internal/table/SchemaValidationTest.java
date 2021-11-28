@@ -19,25 +19,51 @@ package org.apache.ignite.internal.table;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
+import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorage;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
+import org.apache.ignite.internal.tx.impl.HeapLockManager;
+import org.apache.ignite.internal.tx.impl.TxManagerImpl;
 import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mockito;
 
 /**
  * Checks if data compliant with the schema, otherwise the correct exception is thrown.
  */
 public class SchemaValidationTest {
+    /** Table ID test value. */
+    public final java.util.UUID tableId = java.util.UUID.randomUUID();
+    
+    private ClusterService clusterService;
+    
+    /**
+     * Creates a table for tests.
+     *
+     * @return The test table.
+     */
+    private InternalTable createTable() {
+        clusterService = Mockito.mock(ClusterService.class, RETURNS_DEEP_STUBS);
+        Mockito.when(clusterService.topologyService().localMember().address()).thenReturn(DummyInternalTableImpl.ADDR);
+        
+        TxManagerImpl txManager = new TxManagerImpl(clusterService, new HeapLockManager());
+        
+        return new DummyInternalTableImpl(new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
+    }
+    
     @Test
     public void columnNotExist() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -152,7 +178,7 @@ public class SchemaValidationTest {
     }
 
     private TableImpl createTableImpl(SchemaDescriptor schema) {
-        return new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
+        return new TableImpl(createTable(), new DummySchemaManagerImpl(schema), null);
     }
 
     private <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {

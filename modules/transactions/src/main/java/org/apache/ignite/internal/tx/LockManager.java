@@ -19,9 +19,12 @@ package org.apache.ignite.internal.tx;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Lock manager allows to acquire locks in shared and exclusive mode and supports deadlock prevention by timestamp ordering.
+ *
+ * @see Timestamp
  */
 public interface LockManager {
     /**
@@ -32,7 +35,7 @@ public interface LockManager {
      * @return The future that will be completed when a lock is successfully acquired.
      * @throws LockException When a lock can't be taken due to possible deadlock.
      */
-    public CompletableFuture<Void> tryAcquire(Object key, Timestamp timestamp) throws LockException;
+    public CompletableFuture<Void> tryAcquire(Object key, Timestamp timestamp);
 
     /**
      * Attempts to release a lock for the specified {@code key} in exclusive mode.
@@ -51,7 +54,7 @@ public interface LockManager {
      * @return The future that will be completed when a lock is successfully acquired.
      * @throws LockException When a lock can't be taken due to possible deadlock.
      */
-    public CompletableFuture<Void> tryAcquireShared(Object key, Timestamp timestamp) throws LockException;
+    public CompletableFuture<Void> tryAcquireShared(Object key, Timestamp timestamp);
 
     /**
      * Attempts to release a lock for the specified {@code key} in shared mode.
@@ -68,6 +71,7 @@ public interface LockManager {
      * @param key The key.
      * @return The waiters queue.
      */
+    @TestOnly
     public Collection<Timestamp> queue(Object key);
 
     /**
@@ -77,5 +81,14 @@ public interface LockManager {
      * @param timestamp The timestamp.
      * @return The waiter.
      */
+    @TestOnly
     public Waiter waiter(Object key, Timestamp timestamp);
+
+    /**
+     * Returns {@code true} if no locks have been held.
+     *
+     * @return {@code true} if no locks have been held.
+     */
+    @TestOnly
+    public boolean isEmpty();
 }

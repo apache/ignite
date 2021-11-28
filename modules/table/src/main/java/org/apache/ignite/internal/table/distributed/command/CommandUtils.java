@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,34 +42,32 @@ public class CommandUtils {
      * Writes a list of rows to byte array.
      *
      * @param rows     Collection of rows.
-     * @param consumer Byte array consumer.
+     * @return         Rows data.
      */
-    public static void rowsToBytes(Collection<BinaryRow> rows, Consumer<byte[]> consumer) {
+    public static byte[] rowsToBytes(Collection<BinaryRow> rows) {
         if (rows == null || rows.isEmpty()) {
-            return;
+            return null;
         }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             for (BinaryRow row : rows) {
-                rowToBytes(row, bytes -> {
-                    try {
-                        baos.write(intToBytes(bytes.length));
+                if (row == null) {
+                    baos.write(intToBytes(0));
+                } else {
+                    byte[] bytes = rowToBytes(row);
 
-                        baos.write(bytes);
-                    } catch (IOException e) {
-                        LOG.error("Could not write row to stream [row=" + row + ']', e);
-                    }
-
-                });
+                    baos.write(intToBytes(bytes.length));
+                    baos.write(bytes);
+                }
             }
 
             baos.flush();
 
-            consumer.accept(baos.toByteArray());
+            return baos.toByteArray();
         } catch (IOException e) {
             LOG.error("Could not write rows to stream [rows=" + rows.size() + ']', e);
 
-            consumer.accept(null);
+            throw new IgniteInternalException(e);
         }
     }
 
@@ -76,11 +75,11 @@ public class CommandUtils {
      * Writes a row to byte array.
      *
      * @param row      Row.
-     * @param consumer Byte array consumer.
+     * @return         Row bytes.
      */
-    public static void rowToBytes(@Nullable BinaryRow row, Consumer<byte[]> consumer) {
+    public static byte[] rowToBytes(@Nullable BinaryRow row) {
         if (row == null) {
-            return;
+            return null;
         }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -88,11 +87,11 @@ public class CommandUtils {
 
             baos.flush();
 
-            consumer.accept(baos.toByteArray());
+            return baos.toByteArray();
         } catch (IOException e) {
             LOG.error("Could not write row to stream [row=" + row + ']', e);
 
-            consumer.accept(null);
+            throw new IgniteInternalException(e);
         }
     }
 
@@ -119,7 +118,11 @@ public class CommandUtils {
 
                 int len = bytesToInt(lenBytes);
 
-                assert len > 0;
+                if (len == 0) {
+                    consumer.accept(null);
+
+                    continue;
+                }
 
                 rowBytes = new byte[len];
 

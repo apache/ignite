@@ -75,8 +75,10 @@ import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
+import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.IgniteSpinBusyLock;
 import org.apache.ignite.lang.IgniteException;
@@ -124,6 +126,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Storage engine instance. Only one type is available right now, which is the {@link RocksDbStorageEngine}. */
     private final StorageEngine engine;
 
+    /** Transaction manager. */
+    private final TxManager txManager;
+
     /** Partitions store directory. */
     private final Path partitionsStoreDir;
 
@@ -153,6 +158,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @param raftMgr            Raft manager.
      * @param baselineMgr        Baseline manager.
      * @param partitionsStoreDir Partitions store directory.
+     * @param txManager          TX manager.
      */
     public TableManager(
             TablesConfiguration tablesCfg,
@@ -160,13 +166,15 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             Loza raftMgr,
             BaselineManager baselineMgr,
             TopologyService topologyService,
-            Path partitionsStoreDir
+            Path partitionsStoreDir,
+            TxManager txManager
     ) {
         this.tablesCfg = tablesCfg;
         this.dataStorageCfg = dataStorageCfg;
         this.raftMgr = raftMgr;
         this.baselineMgr = baselineMgr;
         this.partitionsStoreDir = partitionsStoreDir;
+        this.txManager = txManager;
 
         netAddrResolver = addr -> {
             ClusterNode node = topologyService.getByAddress(addr);
@@ -324,7 +332,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                     raftGroupName(tblId, partId),
                                     newPartitionAssignment,
                                     toAdd,
-                                    () -> new PartitionListener(internalTable.storage().getOrCreatePartition(partId))
+                                    () -> new PartitionListener(tblId,
+                                            new VersionedRowStore(internalTable.storage().getOrCreatePartition(partId), txManager))
                             ).thenAccept(
                                     updatedRaftGroupService -> ((InternalTableImpl) internalTable).updateInternalTableRaftGroupService(
                                             partId, updatedRaftGroupService)
@@ -425,8 +434,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Creates local structures for a table.
      *
-     * @param name       Table name.
-     * @param tblId      Table id.
+     * @param name  Table name.
+     * @param tblId Table id.
      * @param assignment Affinity assignment.
      */
     private void createTableLocally(
@@ -488,7 +497,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     raftMgr.prepareRaftGroup(
                             raftGroupName(tblId, p),
                             assignment.get(p),
-                            () -> new PartitionListener(tableStorage.getOrCreatePartition(partId))
+                            () -> new PartitionListener(tblId, new VersionedRowStore(tableStorage.getOrCreatePartition(partId), txManager))
                     )
             );
         }
@@ -506,15 +515,15 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
                     partitionMap.put(p, service);
                 }
-    
-                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap,
-                        partitions, netAddrResolver, tableStorage);
-    
+
+                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions, netAddrResolver,
+                        txManager, tableStorage);
+
                 var schemaRegistry = new SchemaRegistryImpl(v -> {
                     if (!busyLock.enterBusy()) {
                         throw new IgniteException(new NodeStoppingException());
                     }
-        
+
                     try {
                         return tableSchema(tblId, v);
                     } finally {
@@ -524,7 +533,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     if (!busyLock.enterBusy()) {
                         throw new IgniteException(new NodeStoppingException());
                     }
-        
+
                     try {
                         return latestSchemaVersion(tblId);
                     } finally {
@@ -553,7 +562,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Return table schema of certain version from history.
      *
-     * @param tblId Table id.
+     * @param tblId     Table id.
      * @param schemaVer Schema version.
      * @return Schema descriptor.
      */
@@ -583,7 +592,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     return false;
                 }
 
-                @Override public void remove(@NotNull Throwable exception) {
+                @Override
+                public void remove(@NotNull Throwable exception) {
                     fur.completeExceptionally(exception);
                 }
             };
@@ -608,10 +618,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * Gets a schema descriptor from the local node configuration storage.
      *
      * @param schemaVer Schema version.
-     * @param tblCfg Table configuration.
+     * @param tblCfg    Table configuration.
      * @return Schema descriptor.
      */
-    @NotNull private SchemaDescriptor getSchemaDescriptorLocally(int schemaVer, ExtendedTableConfiguration tblCfg) {
+    @NotNull
+    private SchemaDescriptor getSchemaDescriptorLocally(int schemaVer, ExtendedTableConfiguration tblCfg) {
         SchemaConfiguration schemaCfg = tblCfg.schemas().get(String.valueOf(schemaVer));
 
         assert schemaCfg != null;
@@ -622,8 +633,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Drops local structures for a table.
      *
-     * @param name       Table name.
-     * @param tblId      Table id.
+     * @param name  Table name.
+     * @param tblId Table id.
      * @param assignment Affinity assignment.
      */
     private void dropTableLocally(String name, IgniteUuid tblId, List<List<ClusterNode>> assignment) {
@@ -652,7 +663,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Compounds a RAFT group unique name.
      *
-     * @param tblId     Table identifier.
+     * @param tblId Table identifier.
      * @param partition Number of table partitions.
      * @return A RAFT group name.
      */
@@ -683,10 +694,10 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Creates a new table with the specified name or returns an existing table with the same name.
      *
-     * @param name               Table name.
-     * @param tableInitChange    Table configuration.
-     * @param exceptionWhenExist If the value is {@code true}, an exception will be thrown when the table already exists, {@code false}
-     *                           means the existing table will be returned.
+     * @param name Table name.
+     * @param tableInitChange Table configuration.
+     * @param exceptionWhenExist If the value is {@code true}, an exception will be thrown when the table already exists, {@code
+     *         false} means the existing table will be returned.
      * @return A table instance.
      */
     private CompletableFuture<Table> createTableAsync(
@@ -826,7 +837,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /**
      * Internal method for creating table asynchronously.
      *
-     * @param name        Table name.
+     * @param name Table name.
      * @param tableChange Table cahnger.
      * @return Future representing pending completion of the operation.
      */
@@ -1053,11 +1064,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     private List<String> tableNamesConfigured() {
         return ConfigurationUtil.directValue(tablesCfg.tables()).namedListKeys();
     }
-    
+
     /**
      * Checks that the schema is configured in the Metasorage consensus.
      *
-     * @param tblId     Table id.
+     * @param tblId Table id.
      * @param schemaVer Schema version.
      * @return True when the schema configured, false otherwise.
      */
@@ -1065,7 +1076,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     private boolean isSchemaExists(IgniteUuid tblId, int schemaVer) {
         return latestSchemaVersion(tblId) >= schemaVer;
     }
-    
+
     /**
      * Gets the latest version of the table schema which available in Metastore.
      *
@@ -1075,34 +1086,34 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     private int latestSchemaVersion(IgniteUuid tblId) {
         NamedListView<TableView> directTablesCfg = ((DirectConfigurationProperty<NamedListView<TableView>>) tablesCfg
                 .tables()).directValue();
-        
+
         ExtendedTableView viewForId = null;
-        
+
         // TODO: IGNITE-15721 Need to review this approach after the ticket would be fixed.
         // Probably, it won't be required getting configuration of all tables from Metastor.
         for (String name : directTablesCfg.namedListKeys()) {
             ExtendedTableView tblView = (ExtendedTableView) directTablesCfg.get(name);
-            
+
             if (tblView != null && tblId.equals(IgniteUuid.fromString(tblView.id()))) {
                 viewForId = tblView;
-                
+
                 break;
             }
         }
-        
+
         int lastVer = INITIAL_SCHEMA_VERSION;
-        
+
         for (String schemaVerAsStr : viewForId.schemas().namedListKeys()) {
             int ver = Integer.parseInt(schemaVerAsStr);
-            
+
             if (ver > lastVer) {
                 lastVer = ver;
             }
         }
-        
+
         return lastVer;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Table table(String name) {
@@ -1428,7 +1439,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      *
      * @param oldAssignments Old assignment.
      * @param newAssignments New assignment.
-     * @param tblId          Table ID.
+     * @param tblId Table ID.
      * @return Future, which completes, when update finished.
      */
     private CompletableFuture<Void> updateRaftTopology(

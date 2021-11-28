@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.table;
 
+import java.util.Objects;
 import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.schema.marshaller.TupleMarshallerException;
+import org.apache.ignite.internal.schema.marshaller.TupleMarshallerImpl;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
@@ -26,6 +31,7 @@ import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.mapper.Mapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Table view implementation for binary objects.
@@ -43,9 +49,9 @@ public class TableImpl implements Table {
     /**
      * Constructor.
      *
-     * @param tbl Table.
+     * @param tbl       The table.
      * @param schemaReg Table schema registry.
-     * @param tblMgr Table manager.
+     * @param tblMgr    Table manager.
      */
     public TableImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr) {
         this.tbl = tbl;
@@ -82,22 +88,45 @@ public class TableImpl implements Table {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> RecordView<R> recordView(Mapper<R> recMapper) {
+    @Override
+    public <R> RecordView<R> recordView(Mapper<R> recMapper) {
         return new RecordViewImpl<>(tbl, schemaReg, recMapper, null);
     }
 
     /** {@inheritDoc} */
-    @Override public RecordView<Tuple> recordView() {
+    @Override
+    public RecordView<Tuple> recordView() {
         return new RecordBinaryViewImpl(tbl, schemaReg, tblMgr, null);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper) {
+    @Override
+    public <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper) {
         return new KeyValueViewImpl<>(tbl, schemaReg, keyMapper, valMapper, null);
     }
 
     /** {@inheritDoc} */
-    @Override public KeyValueView<Tuple, Tuple> keyValueView() {
+    @Override
+    public KeyValueView<Tuple, Tuple> keyValueView() {
         return new KeyValueBinaryViewImpl(tbl, schemaReg, tblMgr, null);
+    }
+
+    /**
+     * Returns a partition for a tuple.
+     *
+     * @param t The tuple.
+     * @return The partition.
+     */
+    @TestOnly
+    public int partition(Tuple t) {
+        Objects.requireNonNull(t);
+
+        try {
+            final Row keyRow = new TupleMarshallerImpl(schemaReg).marshalKey(t);
+
+            return tbl.partition(keyRow);
+        } catch (TupleMarshallerException e) {
+            throw new IgniteInternalException(e);
+        }
     }
 }

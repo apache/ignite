@@ -25,11 +25,8 @@ import org.apache.ignite.raft.jraft.rpc.RpcRequests.TimeoutNowRequest;
 
 /**
  * TimeoutNow request processor.
- *
- * @author jiachun.fjc
  */
 public class TimeoutNowRequestProcessor extends NodeRequestProcessor<TimeoutNowRequest> {
-
     public TimeoutNowRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {
         super(executor, msgFactory);
     }

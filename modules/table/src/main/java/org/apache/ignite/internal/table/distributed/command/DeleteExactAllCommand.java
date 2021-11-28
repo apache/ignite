@@ -17,52 +17,26 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * The command deletes entries that exact the same as the rows passed.
  */
-public class DeleteExactAllCommand implements WriteCommand {
-    /** Binary rows. */
-    private transient Set<BinaryRow> rows;
-
-    /*
-     * Row bytes.
-     * It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after (IGNITE-14793).
-     */
-    private byte[] rowsBytes;
-
+public class DeleteExactAllCommand extends MultiKeyCommand implements WriteCommand {
     /**
      * Creates a new instance of DeleteExactAllCommand with the given set of rows to be deleted. The {@code rows} should not be {@code null}
      * or empty.
      *
-     * @param rows Binary rows.
-     */
-    public DeleteExactAllCommand(@NotNull Set<BinaryRow> rows) {
-        assert rows != null && !rows.isEmpty();
-
-        this.rows = rows;
-
-        CommandUtils.rowsToBytes(rows, bytes -> rowsBytes = bytes);
-    }
-
-    /**
-     * Gets a set of binary rows to be deleted.
+     * @param rows      Binary rows.
+     * @param timestamp The timestamp.
      *
-     * @return Binary rows.
+     * @see TransactionalCommand
      */
-    public Set<BinaryRow> getRows() {
-        if (rows == null && rowsBytes != null) {
-            rows = new HashSet<>();
-
-            CommandUtils.readRows(rowsBytes, rows::add);
-        }
-
-        return rows;
+    public DeleteExactAllCommand(@NotNull Collection<BinaryRow> rows, @NotNull Timestamp timestamp) {
+        super(rows, timestamp);
     }
 }

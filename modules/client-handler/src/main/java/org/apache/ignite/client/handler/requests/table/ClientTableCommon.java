@@ -35,6 +35,7 @@ import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.lang.IgniteException;
@@ -193,10 +194,11 @@ class ClientTableCommon {
      *
      * @param packer Packer.
      * @param tuples Tuples.
+     * @param schemaRegistry The registry.
      * @throws IgniteException on failed serialization.
      */
-    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples) {
-        writeTuples(packer, tuples, TuplePart.KEY_AND_VAL);
+    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples, SchemaRegistry schemaRegistry) {
+        writeTuples(packer, tuples, TuplePart.KEY_AND_VAL, schemaRegistry);
     }
     
     /**
@@ -205,27 +207,31 @@ class ClientTableCommon {
      * @param packer Packer.
      * @param tuples Tuples.
      * @param part   Which part of tuple to write.
+     * @param schemaRegistry The registry.
      * @throws IgniteException on failed serialization.
      */
-    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples, TuplePart part) {
+    public static void writeTuples(
+            ClientMessagePacker packer,
+            Collection<Tuple> tuples,
+            TuplePart part,
+            SchemaRegistry schemaRegistry
+    ) {
         if (tuples == null || tuples.isEmpty()) {
             packer.packNil();
-            
+        
             return;
         }
-        
-        SchemaDescriptor schema = null;
-        
-        for (Tuple tuple : tuples) {
-            if (schema == null) {
-                schema = ((SchemaAware) tuple).schema();
     
-                packer.packInt(schema.version());
-                packer.packInt(tuples.size());
-            } else {
+        SchemaDescriptor schema = schemaRegistry.schema();
+    
+        packer.packInt(schema.version());
+        packer.packInt(tuples.size());
+    
+        for (Tuple tuple : tuples) {
+            if (tuple != null) {
                 assert schema.version() == ((SchemaAware) tuple).schema().version();
             }
-            
+        
             writeTuple(packer, tuple, schema, true, part);
         }
     }

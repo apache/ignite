@@ -54,7 +54,7 @@ public class MultiRowsResponse implements Serializable {
     public MultiRowsResponse(List<BinaryRow> rows) {
         this.rows = rows;
 
-        CommandUtils.rowsToBytes(rows, bytes -> rowsBytes = bytes);
+        rowsBytes = CommandUtils.rowsToBytes(rows);
     }
 
     /**

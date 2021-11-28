@@ -29,8 +29,6 @@ import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
 
 /**
  * AddLearners request processor.
- *
- * @author jiachun.fjc
  */
 public class AddLearnersRequestProcessor extends BaseCliRequestProcessor<AddLearnersRequest> {
     public AddLearnersRequestProcessor(Executor executor, RaftMessagesFactory msgFactory) {

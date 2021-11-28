@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.tx;
 
 /**
- * The waiter.
+ * The lock waiter.
  */
 public interface Waiter {
     /**
@@ -27,7 +27,16 @@ public interface Waiter {
     Timestamp timestamp();
 
     /**
-     * Returns {@code true} if the waiter holds the lock.
+     * Returns lock state.
+     *
+     * @return {@code true} if a waiter holds the lock.
      */
     boolean locked();
+
+    /**
+     * Returns lock type.
+     *
+     * @return {@code True} if a read request.
+     */
+    boolean isForRead();
 }

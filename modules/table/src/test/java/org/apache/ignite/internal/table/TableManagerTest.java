@@ -58,6 +58,8 @@ import org.apache.ignite.internal.schema.SchemaUtils;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
+import org.apache.ignite.internal.tx.LockManager;
+import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IgniteUuidGenerator;
@@ -119,6 +121,14 @@ public class TableManagerTest extends IgniteAbstractTest {
     @Mock
     private Loza rm;
 
+    /** TX manager. */
+    @Mock(lenient = true)
+    private TxManager tm;
+
+    /** TX manager. */
+    @Mock(lenient = true)
+    private LockManager lm;
+
     /** Tables configuration. */
     @InjectConfiguration(
             internalExtensions = ExtendedTableConfigurationSchema.class,
@@ -169,7 +179,8 @@ public class TableManagerTest extends IgniteAbstractTest {
                 rm,
                 bm,
                 ts,
-                workDir
+                workDir,
+                tm
         );
 
         assertEquals(1, tableManager.tables().size());
@@ -483,7 +494,8 @@ public class TableManagerTest extends IgniteAbstractTest {
                 rm,
                 bm,
                 ts,
-                workDir
+                workDir,
+                tm
         );
 
         tableManager.start();

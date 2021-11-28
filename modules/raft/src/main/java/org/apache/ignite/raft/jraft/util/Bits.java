@@ -18,11 +18,8 @@ package org.apache.ignite.raft.jraft.util;
 
 /**
  * Bits util.
- *
- * @author jiachun.fjc
  */
 public class Bits {
-
     public static int getInt(final byte[] b, final int off) {
         return HeapByteBufUtil.getInt(b, off);
     }

@@ -18,48 +18,24 @@
 package org.apache.ignite.internal.table.distributed.command;
 
 import org.apache.ignite.internal.schema.BinaryRow;
-import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This is a command to get a value before delete it.
  */
-public class GetAndDeleteCommand implements WriteCommand {
-    /** Binary key row. */
-    private transient BinaryRow keyRow;
-
-    /*
-     * Row bytes.
-     * It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after (IGNITE-14793).
-     */
-    private byte[] keyRowBytes;
-
+public class GetAndDeleteCommand extends SingleKeyCommand implements WriteCommand {
     /**
      * Creates a new instance of GetAndDeleteCommand with the given key to be got and deleted. The {@code keyRow} should not be {@code
      * null}.
      *
-     * @param keyRow Binary key row.
-     */
-    public GetAndDeleteCommand(@NotNull BinaryRow keyRow) {
-        assert keyRow != null;
-
-        this.keyRow = keyRow;
-
-        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
-    }
-
-    /**
-     * Gets a binary key row to be got and deleted.
+     * @param keyRow    Binary key row.
+     * @param timestamp The timestamp.
      *
-     * @return Binary key.
+     * @see TransactionalCommand
      */
-    public BinaryRow getKeyRow() {
-        if (keyRow == null) {
-            keyRow = new ByteBufferRow(keyRowBytes);
-        }
-
-        return keyRow;
+    public GetAndDeleteCommand(@NotNull BinaryRow keyRow, @NotNull Timestamp timestamp) {
+        super(keyRow, timestamp);
     }
 }

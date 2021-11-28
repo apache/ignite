@@ -54,7 +54,7 @@ public class SingleRowResponse implements Serializable {
     public SingleRowResponse(@Nullable BinaryRow row) {
         this.row = row;
 
-        CommandUtils.rowToBytes(row, bytes -> rowBytes = bytes);
+        rowBytes = CommandUtils.rowToBytes(row);
     }
 
     /**

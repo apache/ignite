@@ -18,46 +18,23 @@
 package org.apache.ignite.internal.table.distributed.command;
 
 import org.apache.ignite.internal.schema.BinaryRow;
-import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * The command replaces an old entry to a new one.
  */
-public class ReplaceIfExistCommand implements WriteCommand {
-    /** Binary row. */
-    private transient BinaryRow row;
-
-    /**
-     * Row bytes. It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after (IGNITE-14793).
-     */
-    private byte[] rowBytes;
-
+public class ReplaceIfExistCommand extends SingleKeyCommand implements WriteCommand {
     /**
      * Creates a new instance of ReplaceIfExistCommand with the given row to be replaced. The {@code row} should not be {@code null}.
      *
-     * @param row Binary row.
-     */
-    public ReplaceIfExistCommand(@NotNull BinaryRow row) {
-        assert row != null;
-
-        this.row = row;
-
-        CommandUtils.rowToBytes(row, bytes -> rowBytes = bytes);
-    }
-
-    /**
-     * Gets a binary row to be replaced.
+     * @param row       Binary row.
+     * @param timestamp The timestamp.
      *
-     * @return Binary row.
+     * @see TransactionalCommand
      */
-    public BinaryRow getRow() {
-        if (row == null) {
-            row = new ByteBufferRow(rowBytes);
-        }
-
-        return row;
+    public ReplaceIfExistCommand(@NotNull BinaryRow row, @NotNull Timestamp timestamp) {
+        super(row, timestamp);
     }
 }

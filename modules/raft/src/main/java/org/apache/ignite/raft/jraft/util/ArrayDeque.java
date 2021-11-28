@@ -21,9 +21,6 @@ import java.util.List;
 /**
  * Extend array list to add peek/poll first/last element.
  *
- *
- * 2018-Apr-11 11:14:38 AM
- *
  * @param <E>
  */
 public class ArrayDeque<E> extends java.util.ArrayList<E> {

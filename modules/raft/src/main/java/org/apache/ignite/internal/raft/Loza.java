@@ -20,6 +20,7 @@ package org.apache.ignite.internal.raft;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -42,6 +43,7 @@ import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.jetbrains.annotations.ApiStatus.Experimental;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Best raft manager ever since 1982.
@@ -53,9 +55,7 @@ public class Loza implements IgniteComponent {
     /** Raft client pool name. */
     public static final String CLIENT_POOL_NAME = "Raft-Group-Client";
 
-    /**
-     * Raft client pool size. Size was taken from jraft's TimeManager.
-     */
+    /** Raft client pool size. Size was taken from jraft's TimeManager. */
     private static final int CLIENT_POOL_SIZE = Math.min(Utils.cpus() * 3, 20);
 
     /** Timeout. */
@@ -79,14 +79,33 @@ public class Loza implements IgniteComponent {
     private final ScheduledExecutorService executor;
 
     /**
-     * Constructor.
+     * The constructor.
      *
      * @param clusterNetSvc Cluster network service.
+     * @param dataPath      Data path.
      */
     public Loza(ClusterService clusterNetSvc, Path dataPath) {
         this.clusterNetSvc = clusterNetSvc;
 
         this.raftServer = new JraftServerImpl(clusterNetSvc, dataPath);
+
+        this.executor = new ScheduledThreadPoolExecutor(CLIENT_POOL_SIZE,
+                new NamedThreadFactory(NamedThreadFactory.threadPrefix(clusterNetSvc.localConfiguration().getName(),
+                        CLIENT_POOL_NAME)
+                )
+        );
+    }
+
+    /**
+     * The constructor. Used for testing purposes.
+     *
+     * @param srv Pre-started raft server.
+     */
+    @TestOnly
+    public Loza(JraftServerImpl srv) {
+        this.clusterNetSvc = srv.clusterService();
+
+        this.raftServer = srv;
 
         this.executor = new ScheduledThreadPoolExecutor(CLIENT_POOL_SIZE,
                 new NamedThreadFactory(NamedThreadFactory.threadPrefix(clusterNetSvc.localConfiguration().getName(),
@@ -237,5 +256,35 @@ public class Loza implements IgniteComponent {
      */
     public void stopRaftGroup(String groupId) {
         raftServer.stopRaftGroup(groupId);
+    }
+
+    /**
+     * Returns a cluster service.
+     *
+     * @return An underlying network service.
+     */
+    @TestOnly
+    public ClusterService service() {
+        return clusterNetSvc;
+    }
+
+    /**
+     * Returns a raft server.
+     *
+     * @return An underlying raft server.
+     */
+    @TestOnly
+    public RaftServer server() {
+        return raftServer;
+    }
+
+    /**
+     * Returns started groups.
+     *
+     * @return Started groups.
+     */
+    @TestOnly
+    public Set<String> startedGroups() {
+        return raftServer.startedGroups();
     }
 }

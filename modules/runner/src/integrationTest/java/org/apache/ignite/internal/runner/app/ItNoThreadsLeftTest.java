@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.runner.app;
 
+import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter.convert;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCondition;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,19 +84,10 @@ public class ItNoThreadsLeftTest extends IgniteAbstractTest {
 
         assertNotNull(tbl);
 
-        Set<Thread> threadsInTime = getCurrentThreads();
-
-        assertTrue(threadsBefore.size() < threadsInTime.size(), threadsBefore.stream()
-                .filter(thread -> !threadsInTime.contains(thread)).map(Thread::getName)
-                .collect(Collectors.joining(",")));
-
         ignite.close();
 
-        Set<Thread> threadsAfter = getCurrentThreads();
-    
-        assertEquals(threadsBefore.size(), threadsAfter.size(), threadsAfter.stream()
-                .filter(thread -> !threadsBefore.contains(thread)).map(Thread::getName)
-                .collect(Collectors.joining(", ")));
+        assertTrue(waitForCondition(() -> threadsBefore.size() == getCurrentThreads().size(), 3_000),
+                getCurrentThreads().stream().filter(thread -> !threadsBefore.contains(thread)).map(Thread::getName).collect(joining(", ")));
     }
 
     /**

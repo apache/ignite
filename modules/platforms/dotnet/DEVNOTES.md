@@ -16,6 +16,9 @@ In this dir: `dotnet test`
 * cd `modules/runner`
 * `mvn exec:java@platform-test-node-runner`
 
+To debug or profile Java side of the tests, run `org.apache.ignite.internal.runner.app.PlatformTestNodeRunner` class in IDEA with a debugger or profiler,
+then run .NET tests with `dotnet test` or `dotnet test --filter TEST_NAME`. When a server node is present, .NET tests will use it instead of starting a new one.
+
 ## .NET Core 3.1 and .NET Standard 2.1
 
 * Library project target `netstandard2.1`

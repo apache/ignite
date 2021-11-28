@@ -19,7 +19,9 @@ package org.apache.ignite.raft.jraft.rpc.impl;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import org.apache.ignite.internal.raft.server.impl.JraftServerImpl;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.client.Command;
@@ -59,7 +61,8 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     }
 
     /** {@inheritDoc} */
-    @Override public void handleRequest(RpcContext rpcCtx, ActionRequest request) {
+    @Override
+    public void handleRequest(RpcContext rpcCtx, ActionRequest request) {
         Node node = rpcCtx.getNodeManager().get(request.groupId(), new PeerId(rpcCtx.getLocalAddress()));
 
         if (node == null) {
@@ -68,10 +71,48 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
             return;
         }
 
-        if (request.command() instanceof WriteCommand) {
-            node.apply(new Task(ByteBuffer.wrap(JDKMarshaller.DEFAULT.marshall(request.command())),
+        JraftServerImpl.DelegatingStateMachine fsm = (JraftServerImpl.DelegatingStateMachine) node.getOptions().getFsm();
+
+        // Apply a filter before commiting to STM.
+        CompletableFuture<Void> fut = fsm.getListener().onBeforeApply(request.command());
+
+        if (fut != null) {
+            fut.handle(new BiFunction<Void, Throwable, Void>() {
+                @Override
+                public Void apply(Void ignored, Throwable err) {
+                    if (err == null) {
+                        if (request.command() instanceof WriteCommand) {
+                            applyWrite(node, request, rpcCtx);
+                        } else {
+                            applyRead(node, request, rpcCtx);
+                        }
+                    } else {
+                        sendSMError(rpcCtx, err, false);
+                    }
+
+                    return null;
+                }
+            });
+        } else {
+            if (request.command() instanceof WriteCommand) {
+                applyWrite(node, request, rpcCtx);
+            } else {
+                applyRead(node, request, rpcCtx);
+            }
+        }
+    }
+
+    /**
+     * @param node    The node.
+     * @param request The request.
+     * @param rpcCtx  The context.
+     */
+    private void applyWrite(Node node, ActionRequest request, RpcContext rpcCtx) {
+        // TODO asch get rid of JDK marshaller IGNITE-14832
+        node.apply(new Task(ByteBuffer.wrap(JDKMarshaller.DEFAULT.marshall(request.command())),
                 new CommandClosureImpl<>(request.command()) {
-                    @Override public void result(Serializable res) {
+                    @Override
+                    public void result(Serializable res) {
                         if (res instanceof Throwable) {
                             sendSMError(rpcCtx, (Throwable)res, true);
 
@@ -81,71 +122,76 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
                         rpcCtx.sendResponse(factory.actionResponse().result(res).build());
                     }
 
-                    @Override public void run(Status status) {
+                    @Override
+                    public void run(Status status) {
                         assert !status.isOk() : status;
 
                         sendRaftError(rpcCtx, status, node);
                     }
                 }));
-        }
-        else {
-            if (request.readOnlySafe()) {
-                node.readIndex(BytesUtil.EMPTY_BYTES, new ReadIndexClosure() {
-                    @Override public void run(Status status, long index, byte[] reqCtx) {
-                        if (status.isOk()) {
-                            JraftServerImpl.DelegatingStateMachine fsm =
+    }
+
+    /**
+     * @param node    The node.
+     * @param request The request.
+     * @param rpcCtx  The context.
+     */
+    private void applyRead(Node node, ActionRequest request, RpcContext rpcCtx) {
+        if (request.readOnlySafe()) {
+            node.readIndex(BytesUtil.EMPTY_BYTES, new ReadIndexClosure() {
+                @Override public void run(Status status, long index, byte[] reqCtx) {
+                    if (status.isOk()) {
+                        JraftServerImpl.DelegatingStateMachine fsm =
                                 (JraftServerImpl.DelegatingStateMachine) node.getOptions().getFsm();
 
-                            try {
-                                fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
-                                    @Override public ReadCommand command() {
-                                        return (ReadCommand)request.command();
+                        try {
+                            fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
+                                @Override public ReadCommand command() {
+                                    return (ReadCommand)request.command();
+                                }
+
+                                @Override public void result(Serializable res) {
+                                    if (res instanceof Throwable) {
+                                        sendSMError(rpcCtx, (Throwable)res, true);
+
+                                        return;
                                     }
 
-                                    @Override public void result(Serializable res) {
-                                        if (res instanceof Throwable) {
-                                            sendSMError(rpcCtx, (Throwable)res, true);
-
-                                            return;
-                                        }
-
-                                        rpcCtx.sendResponse(factory.actionResponse().result(res).build());
-                                    }
-                                }).iterator());
-                            }
-                            catch (Exception e) {
-                                sendRaftError(rpcCtx, RaftError.ESTATEMACHINE, e.getMessage());
-                            }
+                                    rpcCtx.sendResponse(factory.actionResponse().result(res).build());
+                                }
+                            }).iterator());
                         }
-                        else
-                            sendRaftError(rpcCtx, status, node);
+                        catch (Exception e) {
+                            sendRaftError(rpcCtx, RaftError.ESTATEMACHINE, e.getMessage());
+                        }
                     }
-                });
-            }
-            else {
-                // TODO asch remove copy paste, batching https://issues.apache.org/jira/browse/IGNITE-14832
-                JraftServerImpl.DelegatingStateMachine fsm =
+                    else
+                        sendRaftError(rpcCtx, status, node);
+                }
+            });
+        } else {
+            // TODO asch remove copy paste, batching https://issues.apache.org/jira/browse/IGNITE-14832
+            JraftServerImpl.DelegatingStateMachine fsm =
                     (JraftServerImpl.DelegatingStateMachine) node.getOptions().getFsm();
 
-                try {
-                    fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
-                        @Override public ReadCommand command() {
-                            return (ReadCommand)request.command();
-                        }
+            try {
+                fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
+                    @Override public ReadCommand command() {
+                        return (ReadCommand)request.command();
+                    }
 
-                        @Override public void result(Serializable res) {
-                            if (res instanceof Throwable) {
-                                sendSMError(rpcCtx, (Throwable)res, true);
+                    @Override public void result(Serializable res) {
+                        if (res instanceof Throwable) {
+                            sendSMError(rpcCtx, (Throwable)res, true);
 
-                                return;
-                            }
-                            rpcCtx.sendResponse(factory.actionResponse().result(res).build());
+                            return;
                         }
-                    }).iterator());
-                }
-                catch (Exception e) {
-                    sendRaftError(rpcCtx, RaftError.ESTATEMACHINE, e.getMessage());
-                }
+                        rpcCtx.sendResponse(factory.actionResponse().result(res).build());
+                    }
+                }).iterator());
+            }
+            catch (Exception e) {
+                sendRaftError(rpcCtx, RaftError.ESTATEMACHINE, e.getMessage());
             }
         }
     }
@@ -163,9 +209,9 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     /**
      * Sends raft error response with raft error code and message.
      *
-     * @param ctx Context.
+     * @param ctx   Context.
      * @param error RaftError code.
-     * @param msg Message.
+     * @param msg   Message.
      */
     private void sendRaftError(RpcContext ctx, RaftError error, String msg) {
         RpcRequests.ErrorResponse resp = factory.errorResponse()
@@ -179,8 +225,8 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     /**
      * Sends client's state machine error response with passed throwable.
      *
-     * @param ctx Context.
-     * @param th Throwable that must be passes to response.
+     * @param ctx       The context.
+     * @param th        Throwable that must be passes to response.
      * @param compacted {@code true} if throwable must be changed to compacted version of throwable.
      * See {@link SMCompactedThrowable}
      */
@@ -195,9 +241,9 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     }
 
     /**
-     * @param ctx The context.
+     * @param ctx    The context.
      * @param status The status.
-     * @param node Raft node.
+     * @param node   Raft node.
      */
     private void sendRaftError(RpcContext ctx, Status status, Node node) {
         RaftError raftError = status.getRaftError();
@@ -214,19 +260,14 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
         ctx.sendResponse(response);
     }
 
-    /**
-     *
-     */
+    /** The implementation. */
     private abstract static class CommandClosureImpl<T extends Command> implements Closure, CommandClosure<T> {
-        /**
-         *
-         */
         private final T command;
 
         /**
          * @param command The command.
          */
-        CommandClosureImpl(T command) {
+        public CommandClosureImpl(T command) {
             this.command = command;
         }
 

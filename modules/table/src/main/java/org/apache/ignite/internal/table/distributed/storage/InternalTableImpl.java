@@ -17,20 +17,22 @@
 
 package org.apache.ignite.internal.table.distributed.storage;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -56,16 +58,20 @@ import org.apache.ignite.internal.table.distributed.command.response.SingleRowRe
 import org.apache.ignite.internal.table.distributed.command.scan.ScanCloseCommand;
 import org.apache.ignite.internal.table.distributed.command.scan.ScanInitCommand;
 import org.apache.ignite.internal.table.distributed.command.scan.ScanRetrieveBatchCommand;
+import org.apache.ignite.internal.tx.InternalTransaction;
+import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupService;
-import org.apache.ignite.tx.Transaction;
+import org.apache.ignite.tx.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Storage of table rows.
@@ -79,7 +85,7 @@ public class InternalTableImpl implements InternalTable {
 
     //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
     /** Partition map. */
-    private final Map<Integer, RaftGroupService> partitionMap;
+    protected final Map<Integer, RaftGroupService> partitionMap;
 
     /** Partitions. */
     private final int partitions;
@@ -93,16 +99,21 @@ public class InternalTableImpl implements InternalTable {
     /** Resolver that resolves a network address to node id. */
     private final Function<NetworkAddress, String> netAddrResolver;
 
+    /** Transactional manager. */
+    private final TxManager txManager;
+
     /** Storage for table data. */
     private final TableStorage tableStorage;
 
     /**
      * Constructor.
      *
-     * @param tableName  Table name.
-     * @param tableId    Table id.
-     * @param partMap    Map partition id to raft group.
+     * @param tableName Table name.
+     * @param tableId Table id.
+     * @param partMap Map partition id to raft group.
      * @param partitions Partitions.
+     * @param txManager Transaction manager.
+     * @param tableStorage Table storage.
      */
     public InternalTableImpl(
             String tableName,
@@ -110,6 +121,7 @@ public class InternalTableImpl implements InternalTable {
             Map<Integer, RaftGroupService> partMap,
             int partitions,
             Function<NetworkAddress, String> netAddrResolver,
+            TxManager txManager,
             TableStorage tableStorage
     ) {
         this.tableName = tableName;
@@ -117,6 +129,7 @@ public class InternalTableImpl implements InternalTable {
         this.partitionMap = partMap;
         this.partitions = partitions;
         this.netAddrResolver = netAddrResolver;
+        this.txManager = txManager;
         this.tableStorage = tableStorage;
     }
 
@@ -144,167 +157,212 @@ public class InternalTableImpl implements InternalTable {
         return tableName;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<BinaryRow> get(BinaryRow keyRow, Transaction tx) {
-        return partitionMap.get(partId(keyRow)).<SingleRowResponse>run(new GetCommand(keyRow))
-                .thenApply(SingleRowResponse::getValue);
-    }
+    /**
+     * Enlists multiple rows into a transaction.
+     *
+     * @param keyRows Rows.
+     * @param tx The transaction.
+     * @param op Command factory.
+     * @param reducer The reducer.
+     * @param <R> Reducer's input.
+     * @param <T> Reducer's output.
+     * @return The future.
+     */
+    private <R, T> CompletableFuture<T> enlistInTx(
+            Collection<BinaryRow> keyRows,
+            InternalTransaction tx,
+            BiFunction<Collection<BinaryRow>, InternalTransaction, Command> op,
+            Function<CompletableFuture<R>[], CompletableFuture<T>> reducer
+    ) {
+        if (tx == null) {
+            try {
+                tx = txManager.tx();
+            } catch (TransactionException e) {
+                return failedFuture(e);
+            }
+        }
 
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows, Transaction tx) {
-        Map<Integer, Set<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(keyRows);
+        final boolean implicit = tx == null;
 
-        CompletableFuture<MultiRowsResponse>[] futures = new CompletableFuture[keyRowsByPartition.size()];
+        final InternalTransaction tx0 = implicit ? txManager.begin() : tx;
+
+        Map<Integer, List<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(keyRows);
+
+        CompletableFuture<R>[] futures = new CompletableFuture[keyRowsByPartition.size()];
 
         int batchNum = 0;
 
-        for (Map.Entry<Integer, Set<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            futures[batchNum] = partitionMap.get(partToRows.getKey()).run(new GetAllCommand(partToRows.getValue()));
+        for (Map.Entry<Integer, List<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
+            CompletableFuture<RaftGroupService> fut = enlist(partToRows.getKey(), tx0);
 
-            batchNum++;
+            futures[batchNum++] = fut.thenCompose(svc -> svc.run(op.apply(partToRows.getValue(), tx0)));
         }
 
-        return collectMultiRowsResponses(futures);
+        CompletableFuture<T> fut = reducer.apply(futures);
+
+        return postEnlist(fut, implicit, tx0);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Void> upsert(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).run(new UpsertCommand(row));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, Transaction tx) {
-        Map<Integer, Set<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(rows);
-
-        CompletableFuture<Void>[] futures = new CompletableFuture[keyRowsByPartition.size()];
-
-        int batchNum = 0;
-
-        for (Map.Entry<Integer, Set<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            futures[batchNum] = partitionMap.get(partToRows.getKey()).run(new UpsertAllCommand(partToRows.getValue()));
-
-            batchNum++;
+    /**
+     * Enlists a single row into a transaction.
+     *
+     * @param row The row.
+     * @param tx The transaction.
+     * @param op Command factory.
+     * @param trans Transform closure.
+     * @param <R> Transform input.
+     * @param <T> Transform output.
+     * @return The future.
+     */
+    private <R, T> CompletableFuture<T> enlistInTx(
+            BinaryRow row,
+            InternalTransaction tx,
+            Function<InternalTransaction, Command> op,
+            Function<R, T> trans
+    ) {
+        if (tx == null) {
+            try {
+                tx = txManager.tx();
+            } catch (TransactionException e) {
+                return failedFuture(e);
+            }
         }
 
-        return CompletableFuture.allOf(futures);
+        final boolean implicit = tx == null;
+
+        final InternalTransaction tx0 = implicit ? txManager.begin() : tx;
+
+        int partId = partId(row);
+
+        CompletableFuture<T> fut = enlist(partId, tx0).thenCompose(svc -> svc.<R>run(op.apply(tx0)).thenApply(trans::apply));
+
+        return postEnlist(fut, implicit, tx0);
+    }
+
+    /**
+     * Performs post enlist operation.
+     *
+     * @param fut The future.
+     * @param implicit {@code true} for implicit tx.
+     * @param tx0 The transaction.
+     * @param <T> Operation return type.
+     * @return The future.
+     */
+    private <T> CompletableFuture<T> postEnlist(CompletableFuture<T> fut, boolean implicit, InternalTransaction tx0) {
+        return fut.handle(new BiFunction<T, Throwable, CompletableFuture<T>>() {
+            @Override
+            public CompletableFuture<T> apply(T r, Throwable e) {
+                if (e != null) {
+                    return tx0.rollbackAsync().handle((ignored, err) -> {
+                        if (err != null) {
+                            e.addSuppressed(err);
+                        }
+
+                        throw (RuntimeException) e;
+                    }); // Preserve failed state.
+                } else {
+                    return implicit ? tx0.commitAsync().thenApply(ignored -> r) : completedFuture(r);
+                }
+            }
+        }).thenCompose(x -> x);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BinaryRow> getAndUpsert(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).<SingleRowResponse>run(new GetAndUpsertCommand(row))
-                .thenApply(SingleRowResponse::getValue);
+    public CompletableFuture<BinaryRow> get(BinaryRow keyRow, InternalTransaction tx) {
+        return enlistInTx(keyRow, tx, tx0 -> new GetCommand(keyRow, tx0.timestamp()), SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> insert(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).run(new InsertCommand(row));
+    public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows, InternalTransaction tx) {
+        return enlistInTx(keyRows, tx, (rows0, tx0) -> new GetAllCommand(rows0, tx0.timestamp()), this::collectMultiRowsResponses);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, Transaction tx) {
-        Map<Integer, Set<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(rows);
-
-        CompletableFuture<MultiRowsResponse>[] futures = new CompletableFuture[keyRowsByPartition.size()];
-
-        int batchNum = 0;
-
-        for (Map.Entry<Integer, Set<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            futures[batchNum] = partitionMap.get(partToRows.getKey()).run(new InsertAllCommand(partToRows.getValue()));
-
-            batchNum++;
-        }
-
-        return collectMultiRowsResponses(futures);
+    public CompletableFuture<Void> upsert(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new UpsertCommand(row, tx0.timestamp()), ignored -> null);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> replace(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).<Boolean>run(new ReplaceIfExistCommand(row));
+    public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, InternalTransaction tx) {
+        return enlistInTx(rows, tx, (rows0, tx0) -> new UpsertAllCommand(rows0, tx0.timestamp()), CompletableFuture::allOf);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow,
-            Transaction tx) {
-        return partitionMap.get(partId(oldRow)).run(new ReplaceCommand(oldRow, newRow));
+    public CompletableFuture<BinaryRow> getAndUpsert(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new GetAndUpsertCommand(row, tx0.timestamp()), SingleRowResponse::getValue);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).<SingleRowResponse>run(new GetAndReplaceCommand(row))
-                .thenApply(SingleRowResponse::getValue);
+    public CompletableFuture<Boolean> insert(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new InsertCommand(row, tx0.timestamp()), r -> (Boolean) r);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> delete(BinaryRow keyRow, Transaction tx) {
-        return partitionMap.get(partId(keyRow)).run(new DeleteCommand(keyRow));
+    public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, InternalTransaction tx) {
+        return enlistInTx(rows, tx, (rows0, tx0) -> new InsertAllCommand(rows0, tx0.timestamp()), this::collectMultiRowsResponses);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> deleteExact(BinaryRow oldRow, Transaction tx) {
-        return partitionMap.get(partId(oldRow)).<Boolean>run(new DeleteExactCommand(oldRow));
+    public CompletableFuture<Boolean> replace(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new ReplaceIfExistCommand(row, tx0.timestamp()), r -> (Boolean) r);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, Transaction tx) {
-        return partitionMap.get(partId(row)).<SingleRowResponse>run(new GetAndDeleteCommand(row))
-                .thenApply(SingleRowResponse::getValue);
+    public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow, InternalTransaction tx) {
+        return enlistInTx(oldRow, tx, tx0 -> new ReplaceCommand(oldRow, newRow, tx0.timestamp()), r -> (Boolean) r);
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows, Transaction tx) {
-        Map<Integer, Set<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(rows);
+    public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new GetAndReplaceCommand(row, tx0.timestamp()), SingleRowResponse::getValue);
+    }
 
-        CompletableFuture<MultiRowsResponse>[] futures = new CompletableFuture[keyRowsByPartition.size()];
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<Boolean> delete(BinaryRow keyRow, InternalTransaction tx) {
+        return enlistInTx(keyRow, tx, tx0 -> new DeleteCommand(keyRow, tx0.timestamp()), r -> (Boolean) r);
+    }
 
-        int batchNum = 0;
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<Boolean> deleteExact(BinaryRow oldRow, InternalTransaction tx) {
+        return enlistInTx(oldRow, tx, tx0 -> new DeleteExactCommand(oldRow, tx0.timestamp()), r -> (Boolean) r);
+    }
 
-        for (Map.Entry<Integer, Set<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            futures[batchNum] = partitionMap.get(partToRows.getKey()).run(new DeleteAllCommand(partToRows.getValue()));
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, InternalTransaction tx) {
+        return enlistInTx(row, tx, tx0 -> new GetAndDeleteCommand(row, tx0.timestamp()), SingleRowResponse::getValue);
+    }
 
-            batchNum++;
-        }
-
-        return collectMultiRowsResponses(futures);
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows, InternalTransaction tx) {
+        return enlistInTx(rows, tx, (rows0, tx0) -> new DeleteAllCommand(rows0, tx0.timestamp()), this::collectMultiRowsResponses);
     }
 
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Collection<BinaryRow>> deleteAllExact(
             Collection<BinaryRow> rows,
-            Transaction tx
+            InternalTransaction tx
     ) {
-        Map<Integer, Set<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(rows);
-
-        CompletableFuture<MultiRowsResponse>[] futures = new CompletableFuture[keyRowsByPartition.size()];
-
-        int batchNum = 0;
-
-        for (Map.Entry<Integer, Set<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            futures[batchNum] = partitionMap.get(partToRows.getKey()).run(new DeleteExactAllCommand(partToRows.getValue()));
-
-            batchNum++;
-        }
-
-        return collectMultiRowsResponses(futures);
+        return enlistInTx(rows, tx, (rows0, tx0) -> new DeleteExactAllCommand(rows0, tx0.timestamp()), this::collectMultiRowsResponses);
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
+    public @NotNull Publisher<BinaryRow> scan(int p, @Nullable InternalTransaction tx) {
         if (p < 0 || p >= partitions) {
             throw new IllegalArgumentException(
                     LoggerMessageHelper.format(
@@ -325,12 +383,12 @@ public class InternalTableImpl implements InternalTable {
      * @param rows Rows.
      * @return Partition -%gt; rows mapping.
      */
-    private Map<Integer, Set<BinaryRow>> mapRowsToPartitions(Collection<BinaryRow> rows) {
+    private Map<Integer, List<BinaryRow>> mapRowsToPartitions(Collection<BinaryRow> rows) {
         //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
-        HashMap<Integer, Set<BinaryRow>> keyRowsByPartition = new HashMap<>();
+        HashMap<Integer, List<BinaryRow>> keyRowsByPartition = new HashMap<>();
 
         for (BinaryRow keyRow : rows) {
-            keyRowsByPartition.computeIfAbsent(partId(keyRow), k -> new HashSet<>()).add(keyRow);
+            keyRowsByPartition.computeIfAbsent(partId(keyRow), k -> new ArrayList<>()).add(keyRow);
         }
 
         return keyRowsByPartition;
@@ -362,6 +420,13 @@ public class InternalTableImpl implements InternalTable {
         CompletableFuture.allOf(futs.toArray(CompletableFuture[]::new)).join();
     }
 
+    /** {@inheritDoc} */
+    @TestOnly
+    @Override
+    public int partition(BinaryRow keyRow) {
+        return partId(keyRow);
+    }
+
     /**
      * Get partition id by key row.
      *
@@ -375,19 +440,30 @@ public class InternalTableImpl implements InternalTable {
     }
 
     /**
-     * Collects multirow responses from multiple futures into a single collection.
+     * Returns a transaction manager.
      *
-     * @param futures Futures.
+     * @return Transaction manager.
+     */
+    @TestOnly
+    public TxManager transactionManager() {
+        return txManager;
+    }
+
+    /**
+     * TODO asch keep the same order as for keys Collects multirow responses from multiple futures into a single collection IGNITE-16004.
+     *
+     * @param futs Futures.
      * @return Row collection.
      */
-    private CompletableFuture<Collection<BinaryRow>> collectMultiRowsResponses(
-            CompletableFuture<MultiRowsResponse>[] futures) {
-        return CompletableFuture.allOf(futures)
+    private CompletableFuture<Collection<BinaryRow>> collectMultiRowsResponses(CompletableFuture<?>[] futs) {
+        return CompletableFuture.allOf(futs)
                 .thenApply(response -> {
-                    List<BinaryRow> list = new ArrayList<>(futures.length);
+                    List<BinaryRow> list = new ArrayList<>(futs.length);
 
-                    for (CompletableFuture<MultiRowsResponse> future : futures) {
-                        Collection<BinaryRow> values = future.join().getValues();
+                    for (CompletableFuture<?> future : futs) {
+                        MultiRowsResponse ret = (MultiRowsResponse) future.join();
+
+                        List<BinaryRow> values = ret.getValues();
 
                         if (values != null) {
                             list.addAll(values);
@@ -401,7 +477,7 @@ public class InternalTableImpl implements InternalTable {
     /**
      * Updates internal table raft group service for given partition.
      *
-     * @param p          Partition.
+     * @param p Partition.
      * @param raftGrpSvc Raft group service.
      */
     public void updateInternalTableRaftGroupService(int p, RaftGroupService raftGrpSvc) {
@@ -412,8 +488,27 @@ public class InternalTableImpl implements InternalTable {
         }
     }
 
-    /** Partition scan publisher. */
-    private class PartitionScanPublisher implements Publisher<BinaryRow> {
+    /**
+     * Enlists a partition.
+     *
+     * @param partId Partition id.
+     * @param tx     The transaction.
+     * @return The enlist future (then will a leader become known).
+     */
+    protected CompletableFuture<RaftGroupService> enlist(int partId, InternalTransaction tx) {
+        RaftGroupService svc = partitionMap.get(partId);
+
+        CompletableFuture<Void> fut0 = svc.leader() == null ? svc.refreshLeader() : completedFuture(null);
+
+        // TODO asch IGNITE-15091 fixme need to map to the same leaseholder.
+        // TODO asch a leader race is possible when enlisting different keys from the same partition.
+        return fut0.thenAccept(ignored -> tx.enlist(svc)).thenApply(ignored -> svc); // Enlist the leaseholder.
+    }
+
+    /**
+     * Partition scan publisher.
+     */
+    private static class PartitionScanPublisher implements Publisher<BinaryRow> {
         /** {@link Publisher} that relatively notifies about partition rows. */
         private final RaftGroupService raftGrpSvc;
 
@@ -453,10 +548,14 @@ public class InternalTableImpl implements InternalTable {
 
             private final AtomicBoolean canceled;
 
-            /** Scan id to uniquely identify it on server side. */
+            /**
+             * Scan id to uniquely identify it on server side.
+             */
             private final IgniteUuid scanId;
 
-            /** Scan initial operation that created server cursor. */
+            /**
+             * Scan initial operation that created server cursor.
+             */
             private final CompletableFuture<Void> scanInitOp;
 
             /**

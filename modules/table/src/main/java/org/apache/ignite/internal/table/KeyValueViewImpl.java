@@ -223,9 +223,8 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
      * {@inheritDoc}
      */
     @Override
-    public @NotNull
-    CompletableFuture<Boolean> removeAsync(@NotNull K key, @NotNull V val) {
-        BinaryRow keyRow = marshal(Objects.requireNonNull(key), val);
+    public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull K key, @NotNull V val) {
+        BinaryRow keyRow = marshal(Objects.requireNonNull(key), Objects.requireNonNull(val));
         
         return tbl.deleteExact(keyRow, tx);
     }
@@ -278,7 +277,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
      * {@inheritDoc}
      */
     @Override
-    public boolean replace(@NotNull K key, V oldVal, V newVal) {
+    public boolean replace(@NotNull K key, @NotNull V oldVal, @NotNull V newVal) {
         return sync(replaceAsync(key, oldVal, newVal));
     }
     
@@ -286,9 +285,8 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
      * {@inheritDoc}
      */
     @Override
-    public @NotNull
-    CompletableFuture<Boolean> replaceAsync(@NotNull K key, V val) {
-        BinaryRow row = marshal(key, val);
+    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull K key, @NotNull V val) {
+        BinaryRow row = marshal(Objects.requireNonNull(key), Objects.requireNonNull(val));
         
         return tbl.replace(row, tx);
     }
@@ -297,10 +295,11 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
      * {@inheritDoc}
      */
     @Override
-    public @NotNull
-    CompletableFuture<Boolean> replaceAsync(@NotNull K key, V oldVal, V newVal) {
-        BinaryRow oldRow = marshal(key, oldVal);
-        BinaryRow newRow = marshal(key, newVal);
+    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull K key, @NotNull V oldVal, @NotNull V newVal) {
+        Objects.requireNonNull(key);
+        
+        BinaryRow oldRow = marshal(key, Objects.requireNonNull(oldVal));
+        BinaryRow newRow = marshal(key, Objects.requireNonNull(newVal));
         
         return tbl.replace(oldRow, newRow, tx);
     }

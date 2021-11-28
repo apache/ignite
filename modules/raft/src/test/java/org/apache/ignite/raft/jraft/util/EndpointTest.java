@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EndpointTest {
-
     @Test
     public void testToStringReset() {
         final Endpoint ep = new Endpoint("192.168.1.1", 8080);

@@ -336,14 +336,19 @@ public final class IgniteTestUtils {
 
         return sb.toString();
     }
-
+    
     /**
      * Creates a unique Ignite node name for the given test.
+     *
+     * @param testInfo Test info.
+     * @param idx Node index.
+     *
+     * @return Node name.
      */
     public static String testNodeName(TestInfo testInfo, int idx) {
         return LoggerMessageHelper.format("{}_{}_{}",
-            testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "null"),
-            testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "null"),
-            idx);
+                testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "null"),
+                testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "null"),
+                idx);
     }
 }

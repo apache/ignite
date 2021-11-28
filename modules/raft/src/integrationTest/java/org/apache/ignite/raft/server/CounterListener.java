@@ -21,17 +21,20 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.raft.jraft.util.Utils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The counter listener implementation.
@@ -111,6 +114,11 @@ public class CounterListener implements RaftGroupListener {
     @Override
     public void onShutdown() {
         ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable CompletableFuture<Void> onBeforeApply(Command command) {
+        return null;
     }
 
     /**

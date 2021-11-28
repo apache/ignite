@@ -56,8 +56,8 @@ public class TableRow extends MutableRowTupleAdapter {
      * @param row Row.
      * @return Tuple.
      */
-    public static @NotNull Tuple tuple(@NotNull Row row) {
-        return new TableRow(row);
+    public static @Nullable Tuple tuple(@Nullable Row row) {
+        return row == null ? null : new TableRow(row);
     }
 
     /**

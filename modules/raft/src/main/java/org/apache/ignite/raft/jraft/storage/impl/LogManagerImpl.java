@@ -205,6 +205,9 @@ public class LogManagerImpl implements LogManager {
     }
 
     private void stopDiskThread() {
+        if (this.diskQueue == null)
+            return; // Was not started.
+        
         this.shutDownLatch = new CountDownLatch(1);
         Utils.runInThread(nodeOptions.getCommonExecutor(), () -> this.diskQueue.publishEvent((event, sequence) -> {
             event.reset();

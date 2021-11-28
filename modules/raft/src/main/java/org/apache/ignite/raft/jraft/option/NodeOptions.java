@@ -351,6 +351,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     }
 
     public int getLeaderLeaseTimeoutMs() {
+        // TODO asch precompute IGNITE-14832
         return this.electionTimeoutMs * this.leaderLeaseTimeRatio / 100;
     }
 

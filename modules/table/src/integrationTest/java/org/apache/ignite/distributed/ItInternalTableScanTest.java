@@ -50,6 +50,7 @@ import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.RaftServerImpl;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.PartitionStorage;
 import org.apache.ignite.internal.storage.StorageException;
@@ -58,11 +59,17 @@ import org.apache.ignite.internal.storage.engine.TableStorage;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
+import org.apache.ignite.internal.tx.Timestamp;
+import org.apache.ignite.internal.tx.TxManager;
+import org.apache.ignite.internal.tx.impl.HeapLockManager;
+import org.apache.ignite.internal.tx.impl.TxManagerImpl;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteUuidGenerator;
+import org.apache.ignite.internal.util.Pair;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
@@ -75,6 +82,7 @@ import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +92,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for {@link InternalTable#scan(int, org.apache.ignite.tx.Transaction)}.
+ * Tests for {@link InternalTable#scan(int, org.apache.ignite.internal.tx.InternalTransaction)}.
  */
 @ExtendWith(MockitoExtension.class)
 public class ItInternalTableScanTest {
@@ -106,6 +114,8 @@ public class ItInternalTableScanTest {
     private ClusterService network;
 
     private RaftServer raftSrv;
+
+    private TxManager txManager;
 
     /** Internal table to test. */
     private InternalTable internalTbl;
@@ -143,13 +153,26 @@ public class ItInternalTableScanTest {
 
         raftSrv.start();
 
+        String grpName = "test_part_grp";
+
         List<Peer> conf = List.of(new Peer(nodeNetworkAddress));
 
         mockStorage = mock(PartitionStorage.class);
 
+        txManager = new TxManagerImpl(network, new HeapLockManager());
+
+        txManager.start();
+
+        IgniteUuid tblId = new IgniteUuid(UUID.randomUUID(), 0);
+
         raftSrv.startRaftGroup(
-                RAFT_GRP_ID,
-                new PartitionListener(mockStorage),
+                grpName,
+                new PartitionListener(tblId, new VersionedRowStore(mockStorage, txManager) {
+                    @Override
+                    protected Pair<BinaryRow, BinaryRow> versionedRow(@Nullable DataRow row, Timestamp timestamp) {
+                        return new Pair<>(new ByteBufferRow(row.valueBytes()), null); // Return as is.
+                    }
+                }),
                 conf
         );
 
@@ -168,10 +191,11 @@ public class ItInternalTableScanTest {
 
         internalTbl = new InternalTableImpl(
                 TEST_TABLE_NAME,
-                new IgniteUuidGenerator(UUID.randomUUID(), 0).randomUuid(),
+                tblId,
                 Map.of(0, raftGrpSvc),
                 1,
                 NetworkAddress::toString,
+                txManager,
                 mock(TableStorage.class)
         );
     }
@@ -201,6 +225,10 @@ public class ItInternalTableScanTest {
 
         if (network != null) {
             network.stop();
+        }
+
+        if (txManager != null) {
+            txManager.stop();
         }
     }
 

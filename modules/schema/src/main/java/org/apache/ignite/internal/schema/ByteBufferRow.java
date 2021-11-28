@@ -169,8 +169,13 @@ public class ByteBufferRow implements BinaryRow {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public byte[] bytes() {
-        return buf.array();
+    @Override public byte[] bytes() {
+        // TODO IGNITE-15934 avoid copy.
+        byte[] tmp = new byte[buf.limit()];
+
+        buf.get(tmp);
+        buf.rewind();
+
+        return tmp;
     }
 }

@@ -1538,11 +1538,10 @@ public class NodeImpl implements Node, RaftServerService {
         final long lastCommittedIndex = this.ballotBox.getLastCommittedIndex();
         if (this.logManager.getTerm(lastCommittedIndex) != this.currTerm) {
             // Reject read only request when this leader has not committed any log entry at its term
-            closure
-                .run(new Status(
-                    RaftError.EAGAIN,
-                    "ReadIndex request rejected because leader has not committed any log entry at its term, logIndex=%d, currTerm=%d.",
-                    lastCommittedIndex, this.currTerm));
+            closure.run(new Status(
+                RaftError.EAGAIN,
+                "ReadIndex request rejected because leader has not committed any log entry at its term, logIndex=%d, currTerm=%d.",
+                lastCommittedIndex, this.currTerm));
             return;
         }
         respBuilder.index(lastCommittedIndex);
@@ -1707,9 +1706,11 @@ public class NodeImpl implements Node, RaftServerService {
     // in read_lock
     private boolean isLeaderLeaseValid() {
         final long monotonicNowMs = Utils.monotonicMs();
+        // Test with a current start lease timestamp.
         if (checkLeaderLease(monotonicNowMs)) {
             return true;
         }
+        // Refresh start lease timestamp and try again.
         checkDeadNodes0(this.conf.getConf().getPeers(), monotonicNowMs, false, null);
         return checkLeaderLease(monotonicNowMs);
     }
@@ -1719,7 +1720,7 @@ public class NodeImpl implements Node, RaftServerService {
     }
 
     private boolean isCurrentLeaderValid() {
-        return Utils.monotonicMs() - this.lastLeaderTimestamp < this.options.getElectionTimeoutMs();
+        return checkLeaderLease(Utils.monotonicMs());
     }
 
     private void updateLastLeaderTimestamp(final long lastLeaderTimestamp) {
@@ -1770,6 +1771,7 @@ public class NodeImpl implements Node, RaftServerService {
                         request.serverId(), request.term(), this.currTerm);
                     break;
                 }
+
                 doUnlock = false;
                 this.writeLock.unlock();
 
@@ -1777,6 +1779,7 @@ public class NodeImpl implements Node, RaftServerService {
 
                 doUnlock = true;
                 this.writeLock.lock();
+
                 // vote need ABA check after unlock&writeLock
                 if (request.term() != this.currTerm) {
                     LOG.warn("Node {} raise term {} when get lastLogId.", getNodeId(), this.currTerm);
@@ -2198,7 +2201,6 @@ public class NodeImpl implements Node, RaftServerService {
     }
 
     /**
-     * TODO asch https://issues.apache.org/jira/browse/IGNITE-14843
      * @param peers Peers list.
      * @param monotonicNowMs The timestamp.
      * @param checkReplicator {@code True} to check replicator.

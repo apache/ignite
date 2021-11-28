@@ -17,51 +17,25 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This is a command for the batch get operation.
  */
-public class GetAllCommand implements ReadCommand {
-    /** Binary key rows. */
-    private transient Set<BinaryRow> keyRows;
-
-    /*
-     * Row bytes.
-     * It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after (IGNITE-14793).
-     */
-    private byte[] keyRowsBytes;
-
+public class GetAllCommand extends MultiKeyCommand implements ReadCommand {
     /**
      * Creates a new instance of GetAllCommand with the given keys to be got. The {@code keyRows} should not be {@code null} or empty.
      *
-     * @param keyRows Binary key rows.
-     */
-    public GetAllCommand(@NotNull Set<BinaryRow> keyRows) {
-        assert keyRows != null && !keyRows.isEmpty();
-
-        this.keyRows = keyRows;
-
-        CommandUtils.rowsToBytes(keyRows, bytes -> keyRowsBytes = bytes);
-    }
-
-    /**
-     * Gets a set of binary key rows to be got.
+     * @param keyRows   Binary key rows.
+     * @param timestamp The timestamp.
      *
-     * @return Binary keys.
+     * @see TransactionalCommand
      */
-    public Set<BinaryRow> getKeyRows() {
-        if (keyRows == null && keyRowsBytes != null) {
-            keyRows = new HashSet<>();
-
-            CommandUtils.readRows(keyRowsBytes, keyRows::add);
-        }
-
-        return keyRows;
+    public GetAllCommand(@NotNull Collection<BinaryRow> keyRows, @NotNull Timestamp timestamp) {
+        super(keyRows, timestamp);
     }
 }

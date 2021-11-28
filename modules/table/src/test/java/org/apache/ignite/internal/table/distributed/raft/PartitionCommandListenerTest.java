@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.when;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,11 +58,19 @@ import org.apache.ignite.internal.table.distributed.command.UpsertAllCommand;
 import org.apache.ignite.internal.table.distributed.command.UpsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.MultiRowsResponse;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
+import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
+import org.apache.ignite.internal.tx.Timestamp;
+import org.apache.ignite.internal.tx.impl.HeapLockManager;
+import org.apache.ignite.internal.tx.impl.TxManagerImpl;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Tests for the table command listener.
@@ -84,7 +94,12 @@ public class PartitionCommandListenerTest {
      */
     @BeforeEach
     public void before() {
-        commandListener = new PartitionListener(new ConcurrentHashMapPartitionStorage());
+        ClusterService clusterService = Mockito.mock(ClusterService.class, RETURNS_DEEP_STUBS);
+        NetworkAddress addr = new NetworkAddress("127.0.0.1", 5003);
+        Mockito.when(clusterService.topologyService().localMember().address()).thenReturn(addr);
+
+        commandListener = new PartitionListener(new IgniteUuid(UUID.randomUUID(), 0),
+                new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), new TxManagerImpl(clusterService, new HeapLockManager())));
     }
 
     /**
@@ -326,7 +341,7 @@ public class PartitionCommandListenerTest {
                 rows.add(getTestRow(i, i));
             }
 
-            when(clo.command()).thenReturn(new InsertAllCommand(rows));
+            when(clo.command()).thenReturn(new InsertAllCommand(rows, Timestamp.nextVersion()));
         }));
     }
 
@@ -347,7 +362,7 @@ public class PartitionCommandListenerTest {
                 rows.add(getTestRow(i, i));
             }
 
-            when(clo.command()).thenReturn(new UpsertAllCommand(rows));
+            when(clo.command()).thenReturn(new UpsertAllCommand(rows, Timestamp.nextVersion()));
         }));
     }
 
@@ -384,7 +399,7 @@ public class PartitionCommandListenerTest {
                 keyRows.add(getTestKey(i));
             }
 
-            when(clo.command()).thenReturn(new DeleteAllCommand(keyRows));
+            when(clo.command()).thenReturn(new DeleteAllCommand(keyRows, Timestamp.nextVersion()));
         }));
     }
 
@@ -410,7 +425,8 @@ public class PartitionCommandListenerTest {
                         assertEquals(keyVal, row.intValue(1));
                     }
                 } else {
-                    assertTrue(resp.getValues().isEmpty());
+                    assertTrue(resp.getValues().isEmpty() || resp.getValues().stream()
+                            .allMatch(r -> r == null));
                 }
 
                 return null;
@@ -422,7 +438,7 @@ public class PartitionCommandListenerTest {
                 keyRows.add(getTestKey(i));
             }
 
-            when(clo.command()).thenReturn(new GetAllCommand(keyRows));
+            when(clo.command()).thenReturn(new GetAllCommand(keyRows, Timestamp.nextVersion()));
         }));
     }
 
@@ -430,8 +446,10 @@ public class PartitionCommandListenerTest {
      * Upserts rows.
      */
     private void upsert() {
+        Timestamp ts = Timestamp.nextVersion();
+
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new UpsertCommand(getTestRow(i, i)));
+            when(clo.command()).thenReturn(new UpsertCommand(getTestRow(i, i), ts));
 
             doAnswer(invocation -> {
                 assertNull(invocation.getArgument(0));
@@ -448,7 +466,7 @@ public class PartitionCommandListenerTest {
      */
     private void delete(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new DeleteCommand(getTestKey(i)));
+            when(clo.command()).thenReturn(new DeleteCommand(getTestKey(i), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 assertEquals(existed, invocation.getArgument(0));
@@ -475,7 +493,7 @@ public class PartitionCommandListenerTest {
      */
     private void readAndCheck(boolean existed, Function<Integer, Integer> keyValueMapper) {
         commandListener.onRead(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new GetCommand(getTestKey(i)));
+            when(clo.command()).thenReturn(new GetCommand(getTestKey(i), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 SingleRowResponse resp = invocation.getArgument(0);
@@ -505,7 +523,7 @@ public class PartitionCommandListenerTest {
      */
     private void insert(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new InsertCommand(getTestRow(i, i)));
+            when(clo.command()).thenReturn(new InsertCommand(getTestRow(i, i), Timestamp.nextVersion()));
 
             doAnswer(mock -> {
                 assertEquals(!existed, mock.getArgument(0));
@@ -528,7 +546,7 @@ public class PartitionCommandListenerTest {
                 rows.add(getTestRow(i, i));
             }
 
-            when(clo.command()).thenReturn(new DeleteExactAllCommand(rows));
+            when(clo.command()).thenReturn(new DeleteExactAllCommand(rows, Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 MultiRowsResponse resp = invocation.getArgument(0);
@@ -561,7 +579,7 @@ public class PartitionCommandListenerTest {
      */
     private void getAndReplaceValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new GetAndReplaceCommand(getTestRow(i, i + 1)));
+            when(clo.command()).thenReturn(new GetAndReplaceCommand(getTestRow(i, i + 1), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 SingleRowResponse resp = invocation.getArgument(0);
@@ -587,7 +605,7 @@ public class PartitionCommandListenerTest {
      */
     private void getAndUpsertValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new GetAndUpsertCommand(getTestRow(i, i)));
+            when(clo.command()).thenReturn(new GetAndUpsertCommand(getTestRow(i, i), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 SingleRowResponse resp = invocation.getArgument(0);
@@ -613,7 +631,7 @@ public class PartitionCommandListenerTest {
      */
     private void getAndDeleteValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new GetAndDeleteCommand(getTestKey(i)));
+            when(clo.command()).thenReturn(new GetAndDeleteCommand(getTestKey(i), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 SingleRowResponse resp = invocation.getArgument(0);
@@ -640,7 +658,7 @@ public class PartitionCommandListenerTest {
      */
     private void putIfExistValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new ReplaceIfExistCommand(getTestRow(i, i + 1)));
+            when(clo.command()).thenReturn(new ReplaceIfExistCommand(getTestRow(i, i + 1), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 boolean result = invocation.getArgument(0);
@@ -659,7 +677,7 @@ public class PartitionCommandListenerTest {
      */
     private void deleteExactValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new DeleteExactCommand(getTestRow(i, i + 1)));
+            when(clo.command()).thenReturn(new DeleteExactCommand(getTestRow(i, i + 1), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 boolean result = invocation.getArgument(0);
@@ -678,7 +696,7 @@ public class PartitionCommandListenerTest {
      */
     private void replaceValues(boolean existed) {
         commandListener.onWrite(iterator((i, clo) -> {
-            when(clo.command()).thenReturn(new ReplaceCommand(getTestRow(i, i), getTestRow(i, i + 1)));
+            when(clo.command()).thenReturn(new ReplaceCommand(getTestRow(i, i), getTestRow(i, i + 1), Timestamp.nextVersion()));
 
             doAnswer(invocation -> {
                 assertTrue(invocation.getArgument(0) instanceof Boolean);

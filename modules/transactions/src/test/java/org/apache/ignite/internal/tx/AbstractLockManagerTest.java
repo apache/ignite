@@ -25,10 +25,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
+import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -175,10 +179,10 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
         assertTrue(fut0.isDone());
 
         try {
-            lockManager.tryAcquire(key, ts0);
+            lockManager.tryAcquire(key, ts0).join();
 
             fail();
-        } catch (LockException e) {
+        } catch (CompletionException e) {
             // Expected.
         }
     }
@@ -251,6 +255,37 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
     }
 
     @Test
+    public void testSingleKeyReadWriteConflict5() throws LockException {
+        Timestamp ts0 = Timestamp.nextVersion();
+        Timestamp ts1 = Timestamp.nextVersion();
+        Object key = new String("test");
+
+        lockManager.tryAcquire(key, ts1).join();
+
+        expectConflict(lockManager.tryAcquire(key, ts0));
+    }
+
+    @Test
+    public void testSingleKeyReadWriteConflict6() throws LockException {
+        Timestamp ts0 = Timestamp.nextVersion();
+        Timestamp ts1 = Timestamp.nextVersion();
+        Object key = new String("test");
+
+        lockManager.tryAcquireShared(key, ts0).join();
+
+        lockManager.tryAcquireShared(key, ts1).join();
+
+        CompletableFuture<Void> fut = lockManager.tryAcquire(key, ts1);
+        assertFalse(fut.isDone());
+
+        lockManager.tryAcquire(key, ts0).join();
+
+        lockManager.tryRelease(key, ts0);
+
+        expectConflict(fut);
+    }
+
+    @Test
     public void testSingleKeyWriteWriteConflict() throws LockException {
         Timestamp ts0 = Timestamp.nextVersion();
         Timestamp ts1 = Timestamp.nextVersion();
@@ -265,10 +300,10 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
         assertFalse(fut1.isDone());
 
         try {
-            lockManager.tryAcquire(key, ts0);
+            lockManager.tryAcquire(key, ts0).join();
 
             fail();
-        } catch (LockException e) {
+        } catch (CompletionException e) {
             // Expected.
         }
     }
@@ -324,57 +359,119 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
     }
 
     @Test
-    public void testDeadlock() throws LockException {
+    public void testLockUpgrade() throws LockException {
         Timestamp ts0 = Timestamp.nextVersion();
         Timestamp ts1 = Timestamp.nextVersion();
         Object key = new String("test");
 
-        CompletableFuture<Void> fut0 = lockManager.tryAcquireShared(key, ts0);
-        assertTrue(fut0.isDone());
+        lockManager.tryAcquireShared(key, ts1).join();
 
-        CompletableFuture<Void> fut1 = lockManager.tryAcquireShared(key, ts1);
-        assertTrue(fut1.isDone());
+        lockManager.tryAcquireShared(key, ts0).join();
+
+        CompletableFuture<Void> fut = lockManager.tryAcquire(key, ts1);
+        assertFalse(fut.isDone());
+
+        lockManager.tryReleaseShared(key, ts0);
+
+        fut.join();
+
+        lockManager.tryRelease(key, ts1);
+
+        assertTrue(lockManager.queue(key).isEmpty());
+    }
+
+    @Test
+    public void testLockUpgrade2() throws LockException {
+        Timestamp ts0 = Timestamp.nextVersion();
+        Timestamp ts1 = Timestamp.nextVersion();
+        Object key = new String("test");
+
+        lockManager.tryAcquireShared(key, ts0).join();
+
+        lockManager.tryAcquireShared(key, ts1).join();
+
+        expectConflict(lockManager.tryAcquire(key, ts0));
+    }
+
+    @Test
+    public void testLockUpgrade3() throws LockException {
+        Timestamp ts0 = Timestamp.nextVersion();
+        Timestamp ts1 = Timestamp.nextVersion();
+        Timestamp ts2 = Timestamp.nextVersion();
+        Object key = new String("test");
+
+        lockManager.tryAcquireShared(key, ts1).join();
+
+        lockManager.tryAcquireShared(key, ts0).join();
+
+        lockManager.tryAcquireShared(key, ts2).join();
 
         try {
-            lockManager.tryAcquire(key, ts0);
-
-            fail();
-        } catch (LockException e) {
+            lockManager.tryAcquire(key, ts1).join();
+        } catch (CompletionException e) {
             // Expected.
         }
     }
 
     @Test
-    public void testDeadlock2() throws LockException {
+    public void testLockUpgrade4() throws LockException {
         Timestamp ts0 = Timestamp.nextVersion();
         Timestamp ts1 = Timestamp.nextVersion();
-        Object key1 = new String("test");
-        Object key2 = new String("test2");
+        Object key = new String("test");
 
-        CompletableFuture<Void> fut0 = lockManager.tryAcquire(key1, ts0);
-        assertTrue(fut0.isDone());
+        lockManager.tryAcquireShared(key, ts1).join();
 
-        CompletableFuture<Void> fut1 = lockManager.tryAcquire(key2, ts1);
-        assertTrue(fut1.isDone());
+        lockManager.tryAcquireShared(key, ts0).join();
 
-        try {
-            lockManager.tryAcquire(key2, ts0);
+        CompletableFuture<Void> fut = lockManager.tryAcquire(key, ts1);
 
-            fail();
-        } catch (LockException e) {
-            // Expected.
-        }
+        assertFalse(fut.isDone());
 
+        lockManager.tryReleaseShared(key, ts0);
+
+        fut.join();
+
+        assertTrue(lockManager.queue(key).size() == 1);
+    }
+
+    @Test
+    public void testReenter() throws LockException {
+        Timestamp ts = Timestamp.nextVersion();
+        Object key = new String("test");
+
+        CompletableFuture<Void> fut = lockManager.tryAcquire(key, ts);
+        assertTrue(fut.isDone());
+
+        fut = lockManager.tryAcquire(key, ts);
+        assertTrue(fut.isDone());
+
+        assertTrue(lockManager.queue(key).size() == 1);
+
+        lockManager.tryRelease(key, ts);
+
+        assertTrue(lockManager.queue(key).isEmpty());
+
+        fut = lockManager.tryAcquireShared(key, ts);
+        assertTrue(fut.isDone());
+
+        fut = lockManager.tryAcquireShared(key, ts);
+        assertTrue(fut.isDone());
+
+        assertTrue(lockManager.queue(key).size() == 1);
+
+        lockManager.tryReleaseShared(key, ts);
+
+        assertTrue(lockManager.queue(key).isEmpty());
     }
 
     /**
      * Do test single key multithreaded.
      *
      * @param duration The duration.
-     * @param readLocks   Read lock accumulator.
-     * @param writeLocks   Write lock accumulator.
-     * @param failedLocks   Failed lock accumulator.
-     * @param mode     Mode: 0 - read only, 1 - write only, 2 - mixed random.
+     * @param readLocks Read lock accumulator.
+     * @param writeLocks Write lock accumulator.
+     * @param failedLocks Failed lock accumulator.
+     * @param mode Mode: 0 - read only, 1 - write only, 2 - mixed random.
      * @throws InterruptedException If interrupted while waiting.
      */
     private void doTestSingleKeyMultithreaded(
@@ -387,13 +484,14 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
         Object key = new String("test");
 
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
-        ;
 
         CyclicBarrier startBar = new CyclicBarrier(threads.length, () -> log.info("Before test"));
 
         AtomicBoolean stop = new AtomicBoolean();
 
         Random r = new Random();
+
+        AtomicReference<Throwable> firstErr = new AtomicReference<>();
 
         try {
             for (int i = 0; i < threads.length; i++) {
@@ -404,19 +502,15 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
                         fail();
                     }
 
-                    while (!stop.get()) {
+                    while (!stop.get() && firstErr.get() == null) {
                         Timestamp timestamp = Timestamp.nextVersion();
 
                         if (mode == 0 ? false : mode == 1 ? true : r.nextBoolean()) {
                             try {
-                                CompletableFuture<Void> fut = lockManager.tryAcquire(key, timestamp);
-                                try {
-                                    fut.get();
-                                    writeLocks.increment();
-                                } catch (Exception e) {
-                                    fail("Expected normal execution");
-                                }
-                            } catch (LockException e) {
+                                lockManager.tryAcquire(key, timestamp).join();
+
+                                writeLocks.increment();
+                            } catch (CompletionException e) {
                                 failedLocks.increment();
                                 continue;
                             }
@@ -428,15 +522,16 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
                             }
                         } else {
                             try {
-                                CompletableFuture<Void> fut = lockManager.tryAcquireShared(key, timestamp);
-                                try {
-                                    fut.get();
-                                    readLocks.increment();
-                                } catch (Exception e) {
-                                    fail("Expected normal execution");
+                                lockManager.tryAcquireShared(key, timestamp).join();
+
+                                readLocks.increment();
+                            } catch (CompletionException e) {
+                                if (mode == 0) {
+                                    fail("Unexpected exception for read only locking mode");
                                 }
-                            } catch (LockException e) {
+
                                 failedLocks.increment();
+
                                 continue;
                             }
 
@@ -450,6 +545,14 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
                 });
 
                 threads[i].setName("Worker" + i);
+
+                threads[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        firstErr.compareAndExchange(null, e);
+                    }
+                });
+
                 threads[i].start();
             }
 
@@ -462,7 +565,12 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
             }
         }
 
-        log.info("After test rLocks={} wLocks={} fLocks={}", readLocks.sum(), writeLocks.sum(), failedLocks.sum());
+        if (firstErr.get() != null) {
+            throw new IgniteException(firstErr.get());
+        }
+
+        log.info("After test readLocks={} writeLocks={} failedLocks={}", readLocks.sum(), writeLocks.sum(),
+                failedLocks.sum());
 
         assertTrue(lockManager.queue(key).isEmpty());
     }
@@ -479,5 +587,16 @@ public abstract class AbstractLockManagerTest extends IgniteAbstractTest {
         }
 
         return tmp;
+    }
+
+    private void expectConflict(CompletableFuture<Void> fut) {
+        try {
+            fut.join();
+
+            fail();
+        } catch (CompletionException e) {
+            assertTrue(IgniteTestUtils.hasCause(e, LockException.class, null),
+                    "Wrong exception type, expecting LockException");
+        }
     }
 }

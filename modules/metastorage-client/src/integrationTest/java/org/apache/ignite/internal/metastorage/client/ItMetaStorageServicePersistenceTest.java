@@ -30,6 +30,7 @@ import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.raft.server.impl.JraftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.service.ItAbstractListenerSnapshotTest;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
@@ -53,9 +54,7 @@ public class ItMetaStorageServicePersistenceTest extends ItAbstractListenerSnaps
 
     private KeyValueStorage storage;
 
-    /**
-     * After each.
-     */
+    /** After each. */
     @AfterEach
     void tearDown() throws Exception {
         if (storage != null) {
@@ -73,7 +72,6 @@ public class ItMetaStorageServicePersistenceTest extends ItAbstractListenerSnaps
 
         // Check that data has been written successfully
         check(metaStorage, new EntryImpl(FIRST_KEY, FIRST_VALUE, 1, 1));
-        ;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +128,7 @@ public class ItMetaStorageServicePersistenceTest extends ItAbstractListenerSnaps
 
     /** {@inheritDoc} */
     @Override
-    public RaftGroupListener createListener(Path listenerPersistencePath) {
+    public RaftGroupListener createListener(ClusterService service, Path listenerPersistencePath) {
         storage = new RocksDbKeyValueStorage(listenerPersistencePath);
 
         storage.start();

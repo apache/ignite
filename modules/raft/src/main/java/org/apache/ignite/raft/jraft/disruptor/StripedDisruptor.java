@@ -224,14 +224,14 @@ public class StripedDisruptor<T extends GroupAware> {
         private final String name;
 
         /** There are exception handlers per group. */
-        private final ConcurrentHashMap<String, BiConsumer<T, Throwable>> subscrivers;
+        private final ConcurrentHashMap<String, BiConsumer<T, Throwable>> subscribers;
 
         /**
          * @param name Name of the Disruptor instance.
          */
         StripeExceptionHandler(String name) {
             this.name = name;
-            this.subscrivers = new ConcurrentHashMap<>();
+            this.subscribers = new ConcurrentHashMap<>();
         }
 
         /**
@@ -241,7 +241,7 @@ public class StripedDisruptor<T extends GroupAware> {
          * @param handler Exception handler.
          */
         void subscribe(String group, BiConsumer<T, Throwable> handler) {
-            subscrivers.put(group, handler);
+            subscribers.put(group, handler);
         }
 
         /**
@@ -250,7 +250,7 @@ public class StripedDisruptor<T extends GroupAware> {
          * @param group Group id.
          */
         void unsubscribe(String group) {
-            subscrivers.remove(group);
+            subscribers.remove(group);
         }
 
         /** {@inheritDoc} */
@@ -266,7 +266,7 @@ public class StripedDisruptor<T extends GroupAware> {
 
         /** {@inheritDoc} */
         @Override public void handleEventException(Throwable ex, long sequence, T event) {
-            BiConsumer<T, Throwable> handler = subscrivers.get(event.groupId());
+            BiConsumer<T, Throwable> handler = subscribers.get(event.groupId());
 
             LOG.error("Handle disruptor event error [name={}, event={}, hasHandler={}]", ex, name, event, handler != null);
 

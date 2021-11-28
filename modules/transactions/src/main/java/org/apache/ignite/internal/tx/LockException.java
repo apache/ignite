@@ -24,7 +24,7 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
  */
 public class LockException extends IgniteInternalCheckedException {
     /**
-     * Constructor.
+     * The constructor.
      *
      * @param msg The message.
      */

@@ -351,6 +351,7 @@ namespace Apache.Ignite.Tests.Table
         }
 
         [Test]
+        [Ignore("IGNITE-15939 TODO asch read null tuples")]
         public async Task TestGetAllReturnsRecordsForExistingKeys()
         {
             var records = Enumerable
@@ -362,7 +363,7 @@ namespace Apache.Ignite.Tests.Table
             var res = await Table.GetAllAsync(Enumerable.Range(9, 4).Select(x => GetTuple(x)));
             var resArr = res.OrderBy(x => x[0]).ToArray();
 
-            Assert.AreEqual(2, res.Count);
+            Assert.AreEqual(4, res.Count);
 
             Assert.AreEqual(9, resArr[0][0]);
             Assert.AreEqual("9", resArr[0][1]);
@@ -372,6 +373,7 @@ namespace Apache.Ignite.Tests.Table
         }
 
         [Test]
+        [Ignore("IGNITE-15939 TODO asch read null tuples")]
         public async Task TestGetAllNonExistentKeysReturnsEmptyList()
         {
             var res = await Table.GetAllAsync(new[] { GetTuple(-100) });

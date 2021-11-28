@@ -30,10 +30,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.storage.DataRow;
@@ -55,7 +56,7 @@ public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
     private static final String SNAPSHOT_FILE = "snapshot_file";
 
     /** Storage content. */
-    private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
+    private final ConcurrentSkipListMap<ByteArray, byte[]> map = new ConcurrentSkipListMap<>();
 
     /** {@inheritDoc} */
     @Override
@@ -174,10 +175,10 @@ public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
                 map.remove(mapKey);
 
                 break;
-    
+
             case NOOP:
                 break;
-    
+
             default:
                 throw new UnsupportedOperationException(String.valueOf(clo.operationType()));
         }
@@ -261,5 +262,36 @@ public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
     @Override
     public void close() throws Exception {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ConcurrentHashMapPartitionStorage that = (ConcurrentHashMapPartitionStorage) o;
+
+        if (!map.equals(that.map)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        int hash = 0;
+
+        for (Map.Entry<ByteArray, byte[]> entry : map.entrySet()) {
+            hash += entry.getKey().hashCode() ^ Arrays.hashCode(entry.getValue());
+        }
+
+        return hash;
     }
 }

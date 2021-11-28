@@ -121,9 +121,9 @@ public class ItDistributedConfigurationPropertiesTest {
                     new MessageSerializationRegistryImpl(),
                     new TestScaleCubeClusterServiceFactory()
             );
-            
+
             raftManager = new Loza(clusterService, workDir);
-            
+
             cfgManager = new ConfigurationManager(
                     List.of(NodeConfiguration.KEY),
                     Map.of(),

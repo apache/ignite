@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -92,7 +93,7 @@ public class JraftServerImpl implements RaftServer {
     private ExecutorService requestExecutor;
 
     /**
-     * Constructor.
+     * The constructor.
      *
      * @param service  Cluster service.
      * @param dataPath Data path.
@@ -102,17 +103,13 @@ public class JraftServerImpl implements RaftServer {
     }
 
     /**
-     * Constructor.
+     * The constructor.
      *
      * @param service  Cluster service.
      * @param dataPath Data path.
      * @param opts     Default node options.
      */
-    public JraftServerImpl(
-            ClusterService service,
-            Path dataPath,
-            NodeOptions opts
-    ) {
+    public JraftServerImpl(ClusterService service, Path dataPath, NodeOptions opts) {
         this.service = service;
         this.dataPath = dataPath;
         this.nodeManager = new NodeManager();
@@ -250,8 +247,7 @@ public class JraftServerImpl implements RaftServer {
 
     /** {@inheritDoc} */
     @Override
-    public synchronized boolean startRaftGroup(String groupId, RaftGroupListener lsnr,
-            @Nullable List<Peer> initialConf) {
+    public synchronized boolean startRaftGroup(String groupId, RaftGroupListener lsnr, @Nullable List<Peer> initialConf) {
         if (groups.containsKey(groupId)) {
             return false;
         }
@@ -332,6 +328,12 @@ public class JraftServerImpl implements RaftServer {
      */
     public RaftGroupService raftGroupService(String groupId) {
         return groups.get(groupId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<String> startedGroups() {
+        return groups.keySet();
     }
 
     /**
