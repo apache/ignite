@@ -69,12 +69,10 @@ public class NumaAllocUtil {
 
             try (FileOutputStream out = new FileOutputStream(nativeLib)) {
                 byte[] buf = new byte[4096];
+
                 int bytesRead;
-                while (true) {
-                    bytesRead = in.read(buf);
-                    if (bytesRead == -1) break;
+                while ((bytesRead = in.read(buf)) > 0)
                     out.write(buf, 0, bytesRead);
-                }
             }
 
             System.load(nativeLib.getAbsolutePath());

@@ -138,23 +138,43 @@ namespace numa {
         return os;
     }
 
+    int NumaNodesCount() {
+        return numa_max_node() + 1;
+    }
+
+    /**
+     *  Memory layout:
+     *  +-------------------------------+------------------------+
+     *  | Header (sizeof(max_align_t))  |  Application memory    |
+     *  +------------------------------ +------------------------+
+     *                                  ^
+     *                                  |
+     *                          Result pointer
+     * Size of application memory chunk is written to header.
+     * Total allocated size equals to size of application memory chunk plus sizeof(max_align_t).
+     */
     union region_size {
         size_t size;
         max_align_t a;
     };
 
-    int NumaNodesCount() {
-        return numa_max_node() + 1;
-    }
-
     template<typename Func, typename ...Args>
-    void *NumaAllocHelper(Func f, size_t size, Args ...args) {
+    inline void *NumaAllocHelper(Func f, size_t size, Args ...args) {
         auto ptr = static_cast<region_size *>(f(size + sizeof(region_size), args...));
         if (ptr) {
             ptr->size = size;
             ptr++;
         }
         return ptr;
+    }
+
+    inline region_size* ConvertPointer(void* buf) {
+        if (buf) {
+            auto *ptr = static_cast<region_size *>(buf);
+            ptr--;
+            return ptr;
+        }
+        return nullptr;
     }
 
     void *Alloc(size_t size) {
@@ -178,18 +198,16 @@ namespace numa {
     }
 
     size_t Size(void *buf) {
-        if (buf) {
-            auto *ptr = static_cast<region_size *>(buf);
-            ptr--;
+        auto ptr = ConvertPointer(buf);
+        if (ptr) {
             return ptr->size;
         }
         return 0;
     }
 
     void Free(void *buf) {
-        if (buf) {
-            auto *ptr = static_cast<region_size *>(buf);
-            ptr--;
+        auto ptr = ConvertPointer(buf);
+        if (ptr) {
             numa_free(ptr, ptr->size + sizeof(region_size));
         }
     }
