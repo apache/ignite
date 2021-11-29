@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -383,7 +384,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         ArrayList<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
 
-        SecurityException err = checkDeployServicePermission(node, svcs);
+        SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
 
         if (err != null)
             return new IgniteNodeValidationResult(node.id(), err.getMessage());
@@ -1616,7 +1617,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
             if (ctx.security().enabled()) {
-                SecurityException err = checkDeployServicePermission(evt.node(), staticServicesInfo);
+                SecurityException err = checkDeployPermissionDuringJoin(evt.node(), staticServicesInfo);
 
                 if (err != null)
                     throw err;
@@ -1936,11 +1937,16 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     }
 
     /**
+     * Checks {@link SecurityPermission#SERVICE_DEPLOY} for each service.
+     * This method must use {@link SecurityContext} from node attributes because join not finished in time of validation.
+     * This mean SecurityProcessor doesn't know about joining node and can't return it security context based on node id.
+     *
      * @param node Node to check.
      * @param svcs Statically configured services.
      * @return {@code SecurityException} in case node permissions not enough.
+     * @see ValidationOnNodeJoinUtils
      */
-    private SecurityException checkDeployServicePermission(ClusterNode node, ArrayList<ServiceInfo> svcs) {
+    private SecurityException checkDeployPermissionDuringJoin(ClusterNode node, ArrayList<ServiceInfo> svcs) {
         SecurityContext secCtx;
 
         try {
@@ -1952,9 +1958,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             return err;
         }
 
-        // Must use security context from node attributes because join not finished in time of validation.
-        // This mean SecurityProcessor doesn't know about joining node
-        // and can't return it security context based on node id.
         try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
             for (ServiceInfo desc : svcs) {
                 SecurityException err = checkPermissions(desc.name(), SERVICE_DEPLOY);
