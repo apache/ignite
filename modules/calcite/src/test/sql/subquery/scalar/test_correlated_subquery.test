@@ -29,6 +29,28 @@ NULL
 2
 1
 
+# subquery returning multiple results
+statement error
+SELECT i, (SELECT 42+i1.i FROM integers) AS j FROM integers i1 ORDER BY i;
+
+# subquery with LIMIT
+query II
+SELECT i, (SELECT 42+i1.i FROM integers LIMIT 1) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	43
+2	44
+3	45
+
+# subquery with LIMIT 0
+query II
+SELECT i, (SELECT 42+i1.i FROM integers LIMIT 0) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	NULL
+2	NULL
+3	NULL
+
 # subquery with WHERE clause that is always FALSE
 query II
 SELECT i, (SELECT i FROM integers WHERE 1=0 AND i1.i=i) AS j FROM integers i1 ORDER BY i;
@@ -40,7 +62,7 @@ NULL	NULL
 
 # correlated EXISTS with WHERE clause that is always FALSE
 query IT
-SELECT i, EXISTS(SELECT i FROM integers WHERE 1=0 AND i1.i=i) AS j FROM integers i1 ORDER BY i NULLS FIRST;
+SELECT i, EXISTS(SELECT i FROM integers WHERE 1=0 AND i1.i=i) AS j FROM integers i1 ORDER BY i;
 ----
 NULL	false
 1	false
@@ -49,7 +71,7 @@ NULL	false
 
 # correlated ANY with WHERE clause that is always FALSE
 query IT
-SELECT i, i=ANY(SELECT i FROM integers WHERE 1=0 AND i1.i=i) AS j FROM integers i1 ORDER BY i NULLS FIRST;
+SELECT i, i=ANY(SELECT i FROM integers WHERE 1=0 AND i1.i=i) AS j FROM integers i1 ORDER BY i;
 ----
 NULL	false
 1	false
@@ -64,9 +86,13 @@ SELECT i, (SELECT i+i1.i FROM integers LIMIT 1 OFFSET 1) AS j FROM integers i1 O
 statement error
 SELECT i, (SELECT i+i1.i FROM integers ORDER BY 1 LIMIT 1 OFFSET 1) AS j FROM integers i1 ORDER BY i;
 
+# correlated filter without FROM clause
+statement error
+SELECT i, (SELECT 42 WHERE i1.i>2) AS j FROM integers i1 ORDER BY i;
+
 # scalar select with correlation in projection
 query II
-SELECT i, (SELECT i+i1.i FROM integers WHERE i=1) AS j FROM integers i1 ORDER BY i NULLS FIRST;
+SELECT i, (SELECT i+i1.i FROM integers WHERE i=1) AS j FROM integers i1 ORDER BY i;
 ----
 NULL	NULL
 1	2
@@ -75,7 +101,7 @@ NULL	NULL
 
 # scalar select with correlation in filter
 query II
-SELECT i, (SELECT i FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i NULLS FIRST;
+SELECT i, (SELECT i FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i;
 ----
 NULL	NULL
 1	1
@@ -84,7 +110,7 @@ NULL	NULL
 
 # scalar select with operation in projection
 query II
-SELECT i, (SELECT i+1 FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i NULLS FIRST;
+SELECT i, (SELECT i+1 FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i;
 ----
 NULL	NULL
 1	2

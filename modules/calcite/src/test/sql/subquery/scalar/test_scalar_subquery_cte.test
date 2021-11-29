@@ -107,3 +107,24 @@ SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN 22 ELSE NULL END) SELECT
 11	22
 12	NULL
 13	NULL
+
+statement error
+SELECT a, (WITH cte AS (SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test tsub) SELECT * FROM cte) FROM test ORDER BY a
+
+query II
+SELECT * from test where a=(WITH cte AS (SELECT a FROM test t WHERE t.b=test.b) SELECT min(a) FROM cte) ORDER BY 1
+----
+11	22
+12	21
+
+# exists / in / any subqueries
+query II
+SELECT * FROM test WHERE EXISTS (WITH cte AS (SELECT * FROM test ts WHERE ts.a = test.a AND b>21) SELECT a FROM cte) ORDER BY 1
+----
+11	22
+13	22
+
+# duplicate name in subquery
+statement error
+SELECT * FROM (WITH cte AS (SELECT 42 AS a, 44 AS a) SELECT * FROM cte) tbl1
+

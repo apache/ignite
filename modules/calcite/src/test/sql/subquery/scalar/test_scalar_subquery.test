@@ -107,3 +107,21 @@ SELECT a, (SELECT CASE WHEN test.a=11 THEN 22 ELSE NULL END) FROM test ORDER BY 
 11	22
 12	NULL
 13	NULL
+
+query II
+SELECT * from test where a=(SELECT MIN(a) FROM test t WHERE t.b=test.b) ORDER BY 1
+----
+11	22
+12	21
+
+# exists / in / any subqueries
+query II
+SELECT * FROM test WHERE EXISTS (SELECT a FROM test ts WHERE ts.a = test.a AND b>21) ORDER BY 1
+----
+11	22
+13	22
+
+# duplicate name in subquery
+statement error
+SELECT * FROM (SELECT 42 AS a, 44 AS a) tbl1
+
