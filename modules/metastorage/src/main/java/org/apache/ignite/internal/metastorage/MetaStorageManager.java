@@ -198,13 +198,17 @@ public class MetaStorageManager implements IgniteComponent {
             }
 
             storage.start();
-
-            raftGroupServiceFut = raftMgr.prepareRaftGroup(
-                    METASTORAGE_RAFT_GROUP_NAME,
-                    metaStorageMembers,
-                    () -> new MetaStorageListener(storage)
-            );
-
+    
+            try {
+                raftGroupServiceFut = raftMgr.prepareRaftGroup(
+                        METASTORAGE_RAFT_GROUP_NAME,
+                        metaStorageMembers,
+                        () -> new MetaStorageListener(storage)
+                );
+            } catch (NodeStoppingException e) {
+                throw new AssertionError("Loza was stopped before Meta Storage manager", e);
+            }
+    
             this.metaStorageSvcFut = raftGroupServiceFut.thenApply(service ->
                     new MetaStorageServiceImpl(service, clusterNetSvc.topologyService().localMember().id())
             );
@@ -283,6 +287,8 @@ public class MetaStorageManager implements IgniteComponent {
             LOG.error("Failed to get meta storage raft group service.");
 
             throw new IgniteInternalException(e);
+        } catch (NodeStoppingException e) {
+            throw new AssertionError("Loza was stopped before Meta Storage manager", e);
         }
 
         try {
