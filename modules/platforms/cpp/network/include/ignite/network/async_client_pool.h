@@ -23,6 +23,8 @@
 #include <vector>
 
 #include <ignite/future.h>
+#include <ignite/impl/interop/interop_memory.h>
+
 #include <ignite/network/async_handler.h>
 #include <ignite/network/tcp_range.h>
 
@@ -49,9 +51,11 @@ namespace ignite
              * @param addrs Addresses to connect to.
              * @param handler Async event handler.
              * @param timeout Connection establishment timeout.
+             * @param connectionLimit Connection upper limit. Zero means limit is disabled.
              * @throw IgniteError on error.
              */
-            virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, int32_t timeout) = 0;
+            virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connectionLimit,
+                int32_t timeout) = 0;
 
             /**
              * Close all established connections and stops handling thread.
@@ -62,24 +66,33 @@ namespace ignite
              * Send data to specific established connection.
              *
              * @param id Client ID.
-             * @param data Pointer to data to be sent.
-             * @param size Size of the data in bytes.
+             * @param mem Data to be sent.
              * @param timeout Timeout.
              * @return @c true if connection is present and @c false otherwise.
              * @throw IgniteError on error.
              */
-            virtual bool Send(uint64_t id, const int8_t* data, size_t size, int32_t timeout) = 0;
+            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem, int32_t timeout) = 0;
 
             /**
              * Send data using randomly chosen established connection.
              *
-             * @param data Pointer to data to be sent.
-             * @param size Size of the data in bytes.
+             * @param mem Data to be sent.
              * @param timeout Timeout.
+             * @return ID of the client that has been used to send data. Zero if no clients are connected.
              * @throw IgniteError on error.
              */
-            virtual void Send(const int8_t* data, size_t size, int32_t timeout) = 0;
+            virtual uint64_t Send(impl::interop::SP_InteropMemory mem, int32_t timeout) = 0;
+
+            /**
+             * Closes specified connection if it's established. Connection to the specified address will is planned
+             * for re-connect.
+             *
+             * @param id Client ID.
+             */
+            virtual void Reset(uint64_t id) = 0;
         };
+
+        typedef common::concurrent::SharedPointer<network::AsyncClientPool> SP_AsyncClientPool;
     }
 }
 

@@ -48,10 +48,10 @@ namespace ignite
             return new TcpSocketClient;
         }
 
-        IGNITE_IMPORT_EXPORT AsyncClientPool* MakeAsyncClientPool()
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool()
         {
             // TODO: Implement me.
-            return 0;
+            return SP_AsyncClientPool();
         }
     }
 }

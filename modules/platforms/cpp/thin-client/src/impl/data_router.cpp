@@ -37,8 +37,6 @@ namespace ignite
         namespace thin
         {
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
-                ioTimeout(DEFAULT_IO_TIMEOUT),
-                connectionTimeout(DEFAULT_CONNECT_TIMEOUT),
                 config(cfg)
             {
                 srand(common::GetRandSeed());
@@ -62,80 +60,85 @@ namespace ignite
                 if (ranges.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
 
-                ChannelsVector newLegacyChannels;
-                newLegacyChannels.reserve(ranges.size());
+                asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit(), config.GetConnectionTimeout());
 
-                for (std::vector<network::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
-                {
-                    network::TcpRange& range = *it;
-
-                    for (uint16_t port = range.port; port <= range.port + range.range; ++port)
-                    {
-                        SP_DataChannel channel(new DataChannel(config, typeMgr));
-
-                        bool connected = false;
-
-                        try
-                        {
-                            connected = channel.Get()->Connect(range.host, port, connectionTimeout);
-                        }
-                        catch (const IgniteError&)
-                        {
-                            // No-op.
-                        }
-
-                        if (connected)
-                        {
-                            const IgniteNode& newNode = channel.Get()->GetNode();
-
-                            if (newNode.IsLegacy())
-                            {
-                                newLegacyChannels.push_back(channel);
-                            }
-                            else
-                            {
-                                common::concurrent::CsLockGuard lock(channelsMutex);
-
-                                // Insertion takes place if no channel with the GUID is already present.
-                                std::pair<ChannelsGuidMap::iterator, bool> res =
-                                    channels.insert(std::make_pair(newNode.GetGuid(), channel));
-
-                                bool inserted = res.second;
-                                SP_DataChannel& oldChannel = res.first->second;
-
-                                if (!inserted && !oldChannel.Get()->IsConnected())
-                                    oldChannel.Swap(channel);
-                            }
-
-                            break;
-                        }
-                    }
-
-                    if (config.GetConnectionsLimit())
-                    {
-                        common::concurrent::CsLockGuard lock(channelsMutex);
-
-                        size_t connectionsNum = newLegacyChannels.size() + channels.size();
-
-                        if (connectionsNum >= config.GetConnectionsLimit())
-                            break;
-                    }
-                }
-
-                common::concurrent::CsLockGuard lock(channelsMutex);
-
-                legacyChannels.swap(newLegacyChannels);
-
-                if (channels.empty() && legacyChannels.empty())
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+                EnsureConnected(config.GetConnectionTimeout());
             }
 
             void DataRouter::Close()
             {
+                asyncPool.Get()->Close();
+            }
+
+            bool DataRouter::EnsureConnected(int32_t timeout)
+            {
+                //TODO: implement me.
+                //throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+            }
+
+            void DataRouter::OnConnectionSuccess(const network::EndPoint&, uint64_t id)
+            {
+                SP_DataChannel channel(new DataChannel(id, asyncPool, config, typeMgr, *this));
+
+                {
+                    common::concurrent::CsLockGuard lock(channelsMutex);
+
+                    channels[id] = channel;
+                }
+
+                channel.Get()->StartHandshake();
+            }
+
+            void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
+            {
+                //TODO: implement me.
+            }
+
+            void DataRouter::OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg)
+            {
+                SP_DataChannel channel;
+
+                {
+                    common::concurrent::CsLockGuard lock(channelsMutex);
+
+                    ChannelsIdMap::iterator it = channels.find(id);
+                    if (it != channels.end())
+                        channel = it->second;
+                }
+
+                if (channel.IsValid())
+                    channel.Get()->ProcessMessage(msg);
+            }
+
+            void DataRouter::OnConnectionBroken(uint64_t id, const IgniteError& err)
+            {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                channels.clear();
-                legacyChannels.clear();
+                SP_DataChannel channel;
+
+                ChannelsIdMap::iterator it = channels.find(id);
+                if (it != channels.end())
+                    channel = it->second;
+
+                InvalidateChannel(channel);
+            }
+
+            void DataRouter::OnHandshakeComplete(uint32_t id)
+            {
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                SP_DataChannel channel;
+
+                ChannelsIdMap::iterator it = channels.find(id);
+                if (it != channels.end())
+                    channel = it->second;
+
+                if (channel.IsValid())
+                {
+                    const IgniteNode& node = channel.Get()->GetNode();
+                    if (!node.IsLegacy())
+                        partChannels[node.GetGuid()] = channel;
+                }
             }
 
             void DataRouter::ProcessMeta(int32_t metaVer)
@@ -181,29 +184,11 @@ namespace ignite
                 if (!channel.IsValid())
                     return;
 
-                const IgniteNode& node = channel.Get()->GetNode();
-
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                if (!node.IsLegacy())
-                {
-                    channels.erase(node.GetGuid());
-                }
-                else
-                {
-                    const network::EndPoint& ep1 = node.GetEndPoint();
-                    for (ChannelsVector::iterator it = legacyChannels.begin(); it != legacyChannels.end(); ++it)
-                    {
-                        const network::EndPoint& ep2 = it->Get()->GetNode().GetEndPoint();
-
-                        if (ep1 == ep2)
-                        {
-                            legacyChannels.erase(it);
-
-                            break;
-                        }
-                    }
-                }
+                DataChannel& channel0 = *channel.Get();
+                channels.erase(channel0.GetId());
+                partChannels.erase(channel0.GetNode().GetGuid());
 
                 channel = SP_DataChannel();
             }
@@ -217,21 +202,14 @@ namespace ignite
 
             SP_DataChannel DataRouter::GetRandomChannelUnsafe()
             {
-                if (channels.empty() && legacyChannels.empty())
+                if (channels.empty())
                     return SP_DataChannel();
 
                 int r = rand();
 
-                size_t idx = r % (channels.size() + legacyChannels.size());
+                size_t idx = r % channels.size();
 
-                if (idx >= channels.size())
-                {
-                    size_t legacyIdx = idx - channels.size();
-
-                    return legacyChannels[legacyIdx];
-                }
-
-                ChannelsGuidMap::iterator it = channels.begin();
+                ChannelsIdMap::iterator it = channels.begin();
 
                 std::advance(it, idx);
 
@@ -242,9 +220,9 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                ChannelsGuidMap::iterator itChannel = channels.find(hint);
+                ChannelsGuidMap::iterator itChannel = partChannels.find(hint);
 
-                if (itChannel != channels.end())
+                if (itChannel != partChannels.end())
                     return itChannel->second;
 
                 return GetRandomChannelUnsafe();

@@ -33,6 +33,7 @@
 #include "impl/protocol_version.h"
 #include "impl/ignite_node.h"
 #include "impl/response_status.h"
+#include "impl/channel_state_handler.h"
 
 namespace ignite
 {
@@ -95,10 +96,15 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param id Connection ID.
+                 * @param asyncPool Async pool for connection.
                  * @param cfg Configuration.
                  * @param typeMgr Type manager.
+                 * @param stateHandler State handler.
                  */
-                DataChannel(const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr);
+                DataChannel(uint64_t id, network::SP_AsyncClientPool& asyncPool,
+                    const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
+                    ChannelStateHandler& stateHandler);
 
                 /**
                  * Destructor.
@@ -106,14 +112,11 @@ namespace ignite
                 ~DataChannel();
 
                 /**
-                 * Establish connection to cluster.
+                 * Perform handshake.
                  *
-                 * @param host Host.
-                 * @param port Port.
-                 * @param timeout Timeout.
                  * @return @c true on success.
                  */
-                bool Connect(const std::string& host, uint16_t port, int32_t timeout);
+                void StartHandshake();
 
                 /**
                  * Close connection.
@@ -130,95 +133,77 @@ namespace ignite
                  * @param timeout Timeout.
                  * @throw IgniteError on error.
                  */
-                template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
-                {
-                    // Allocating 64KB to lessen number of re-allocations.
-                    enum { BUFFER_SIZE = 1024 * 64 };
-
-                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-
-                    int64_t id = GenerateRequestMessage(req, mem);
-
-                    InternalSyncMessage(mem, timeout);
-
-                    interop::InteropInputStream inStream(&mem);
-
-                    inStream.Position(4);
-
-                    int64_t rspId = inStream.ReadInt64();
-
-                    if (id != rspId)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Protocol error: Response message ID does not equal Request ID");
-
-                    binary::BinaryReaderImpl reader(&inStream);
-
-                    rsp.Read(reader, currentVersion);
-                }
+                void AsyncMessage(const Request& req, Response& rsp, int32_t timeout);
 
                 /**
-                 * Synchronously send request message, receive response and get a notification.
+                 * Process received message.
                  *
-                 * @param req Request message.
-                 * @param notification Notification message.
-                 * @param timeout Timeout.
-                 * @return Channel that was used for request.
-                 * @throw IgniteError on error.
+                 * @param msg Message.
                  */
-                template<typename ReqT, typename NotT>
-                void SyncMessageWithNotification(const ReqT& req, NotT& notification, int32_t timeout)
-                {
-                    // Allocating 64KB to lessen number of re-allocations.
-                    enum { BUFFER_SIZE = 1024 * 64 };
+                void ProcessMessage(impl::interop::SP_InteropMemory msg);
 
-                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-
-                    int64_t id = GenerateRequestMessage(req, mem);
-
-                    common::concurrent::CsLockGuard lock(ioMutex);
-
-                    InternalSyncMessageUnguarded(mem, timeout);
-
-                    interop::InteropInputStream inStream(&mem);
-
-                    inStream.Position(4);
-
-                    int64_t rspId = inStream.ReadInt64();
-
-                    if (id != rspId)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Protocol error: Response message ID does not equal Request ID");
-
-                    binary::BinaryReaderImpl reader(&inStream);
-
-                    typedef typename NotT::ResponseType RspT;
-                    RspT rsp;
-
-                    rsp.Read(reader, currentVersion);
-
-                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED, rsp.GetError().c_str());
-
-                    bool success = Receive(mem, 0);
-
-                    if (!success)
-                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not receive message response from the remote host: timeout");
-
-                    inStream.Position(4);
-                    inStream.Synchronize();
-
-                    int64_t notificationId = inStream.ReadInt64();
-
-                    if (notificationId != rsp.GetNotificationId())
-                    {
-                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification ID",
-                            "expected", rsp.GetNotificationId(), "actual", notificationId)
-                    }
-
-                    notification.Read(reader, currentVersion);
-                }
+//                /**
+//                 * Synchronously send request message, receive response and get a notification.
+//                 *
+//                 * @param req Request message.
+//                 * @param notification Notification message.
+//                 * @param timeout Timeout.
+//                 * @return Channel that was used for request.
+//                 * @throw IgniteError on error.
+//                 */
+//                template<typename ReqT, typename NotT>
+//                void SyncMessageWithNotification(const ReqT& req, NotT& notification, int32_t timeout)
+//                {
+//                    // Allocating 64KB to lessen number of re-allocations.
+//                    enum { BUFFER_SIZE = 1024 * 64 };
+//
+//                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
+//
+//                    int64_t id = GenerateRequestMessage(req, mem);
+//
+//                    common::concurrent::CsLockGuard lock(ioMutex);
+//
+//                    InternalSyncMessageUnguarded(mem, timeout);
+//
+//                    interop::InteropInputStream inStream(&mem);
+//
+//                    inStream.Position(4);
+//
+//                    int64_t rspId = inStream.ReadInt64();
+//
+//                    if (id != rspId)
+//                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+//                            "Protocol error: Response message ID does not equal Request ID");
+//
+//                    binary::BinaryReaderImpl reader(&inStream);
+//
+//                    typedef typename NotT::ResponseType RspT;
+//                    RspT rsp;
+//
+//                    rsp.Read(reader, currentVersion);
+//
+//                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+//                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED, rsp.GetError().c_str());
+//
+//                    bool success = Receive(mem, 0);
+//
+//                    if (!success)
+//                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+//                            "Can not receive message response from the remote host: timeout");
+//
+//                    inStream.Position(4);
+//                    inStream.Synchronize();
+//
+//                    int64_t notificationId = inStream.ReadInt64();
+//
+//                    if (notificationId != rsp.GetNotificationId())
+//                    {
+//                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification ID",
+//                            "expected", rsp.GetNotificationId(), "actual", notificationId)
+//                    }
+//
+//                    notification.Read(reader, currentVersion);
+//                }
 
                 /**
                  * Get remote node.
@@ -230,13 +215,12 @@ namespace ignite
                 }
 
                 /**
-                 * Check if the connection established.
-                 *
-                 * @return @true if connected.
+                 * Get connection ID.
+                 * @return Connection ID.
                  */
-                bool IsConnected() const
+                uint64_t GetId() const
                 {
-                    return socket.get() != 0;
+                    return id;
                 }
 
             private:
@@ -279,27 +263,7 @@ namespace ignite
                  * @param mem Memory to write request to.
                  * @return Message ID.
                  */
-                template<typename ReqT>
-                int64_t GenerateRequestMessage(const ReqT& req, interop::InteropUnpooledMemory& mem)
-                {
-                    interop::InteropOutputStream outStream(&mem);
-                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
-
-                    // Space for RequestSize + OperationCode + RequestID.
-                    outStream.Reserve(4 + 2 + 8);
-
-                    req.Write(writer, currentVersion);
-
-                    int64_t id = GenerateRequestId();
-
-                    outStream.WriteInt32(0, outStream.Position() - 4);
-                    outStream.WriteInt16(4, ReqT::GetOperationCode());
-                    outStream.WriteInt64(6, id);
-
-                    outStream.Synchronize();
-
-                    return id;
-                }
+                int64_t GenerateRequestMessage(const Request& req, interop::InteropUnpooledMemory& mem);
 
                 /**
                  * Send data by established connection.
@@ -346,48 +310,25 @@ namespace ignite
                  * Perform handshake request.
                  *
                  * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @param timeout Timeout.
                  * @return @c true on success and @c false otherwise.
                  */
-                bool MakeRequestHandshake(const ProtocolVersion& propVer, ProtocolVersion& resVer, int32_t timeout);
+                bool DoHandshake(const ProtocolVersion& propVer);
 
                 /**
-                 * Synchronously send handshake request message and receive
-                 * handshake response. Uses provided timeout. Does not try to
-                 * restore connection on fail.
+                 * Synchronously send handshake request message and receive handshake response. Uses provided timeout.
+                 * Does not try to restore connection on fail.
                  *
                  * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @param timeout Timeout.
                  * @return @c true if accepted.
                  * @throw IgniteError on error.
                  */
-                bool Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer, int32_t timeout);
+                bool Handshake(const ProtocolVersion& propVer);
 
                 /**
-                 * Ensure there is a connection to the cluster.
-                 *
-                 * @param timeout Timeout.
-                 * @return @c false on error.
+                 * Handle handshake response.
+                 * @param msg Message.
                  */
-                bool EnsureConnected(int32_t timeout);
-
-                /**
-                 * Negotiate protocol version with current host
-                 *
-                 * @param timeout Timeout.
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool NegotiateProtocolVersion(int32_t timeout);
-
-                /**
-                 * Try to restore connection to the cluster.
-                 *
-                 * @param timeout Timeout.
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool TryRestoreConnection(int32_t timeout);
+                void OnHandshakeResponse(impl::interop::SP_InteropMemory msg);
 
                 /**
                  * Check if the version is supported.
@@ -400,8 +341,20 @@ namespace ignite
                 /** Set of supported versions. */
                 const static VersionSet supportedVersions;
 
-                /** Sync IO mutex. */
-                common::concurrent::CriticalSection ioMutex;
+//                /** Sync IO mutex. */
+//                common::concurrent::CriticalSection ioMutex;
+
+                /** State handler. */
+                ChannelStateHandler& stateHandler;
+
+                /** Indicates whether handshake has been performed. */
+                bool handshakePerformed;
+
+                /** Connection ID */
+                uint64_t id;
+
+                /** Async pool. */
+                network::SP_AsyncClientPool& asyncPool;
 
                 /** Remote node data. */
                 IgniteNode node;
@@ -417,9 +370,6 @@ namespace ignite
 
                 /** Request ID counter. */
                 int64_t reqIdCounter;
-
-                /** Client Socket. */
-                std::auto_ptr<network::SocketClient> socket;
             };
 
             /** Shared pointer type. */

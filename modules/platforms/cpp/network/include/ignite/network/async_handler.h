@@ -63,7 +63,7 @@ namespace ignite
              * @param id Async client ID.
              * @param msg Received message.
              */
-            virtual void OnMessageReceived(uint64_t id, const std::vector<int8_t>& msg) = 0;
+            virtual void OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg) = 0;
 
             /**
              * Callback that called on error during connection establishment.

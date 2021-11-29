@@ -31,10 +31,12 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/tcp_range.h>
+#include <ignite/network/async_client_pool.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/affinity/affinity_assignment.h"
 #include "impl/affinity/affinity_manager.h"
+#include "impl/channel_state_handler.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -52,18 +54,12 @@ namespace ignite
              * Ensures there is a connection between client and one of the servers
              * and routes data between them.
              */
-            class DataRouter
+            class DataRouter : public network::AsyncHandler, public ChannelStateHandler
             {
                 typedef std::map<Guid, SP_DataChannel> ChannelsGuidMap;
-                typedef std::vector<SP_DataChannel> ChannelsVector;
+                typedef std::map<uint64_t, SP_DataChannel> ChannelsIdMap;
 
             public:
-                /** Connection establishment timeout in seconds. */
-                enum { DEFAULT_CONNECT_TIMEOUT = 5 };
-
-                /** Network IO operation timeout in seconds. */
-                enum { DEFAULT_IO_TIMEOUT = 5 };
-
                 /** Default port. */
                 enum { DEFAULT_PORT = 10800 };
 
@@ -88,6 +84,66 @@ namespace ignite
                  * Close connection.
                  */
                 void Close();
+
+                /**
+                 * Callback that called on successful connection establishment.
+                 *
+                 * @param addr Address of the new connection.
+                 * @param id Connection ID.
+                 */
+                virtual void OnConnectionSuccess(const network::EndPoint& addr, uint64_t id);
+
+                /**
+                 * Callback that called on error during connection establishment.
+                 *
+                 * @param addr Connection address.
+                 * @param err Error.
+                 */
+                virtual void OnConnectionError(const network::EndPoint& addr, const IgniteError& err);
+
+                /**
+                 * Callback that called when new message is received.
+                 *
+                 * @param id Async client ID.
+                 * @param msg Received message.
+                 */
+                virtual void OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg);
+
+                /**
+                 * Callback that called on error during connection establishment.
+                 *
+                 * @param id Async client ID.
+                 * @param err Error.
+                 */
+                virtual void OnConnectionBroken(uint64_t id, const IgniteError& err);
+
+                /**
+                 * Channel handshake completion callback.
+                 *
+                 * @param id Channel ID.
+                 */
+                virtual void OnHandshakeComplete(uint32_t id);
+
+                /**
+                 * Asynchronously send request message and receive response.
+                 *
+                 * @param req Request message.
+                 * @return Channel that was used for request.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename RspT>
+                SP_DataChannel AsyncMessage(const ReqT& req)
+                {
+                    SP_DataChannel channel = GetRandomChannel();
+
+                    int32_t metaVer = typeMgr.GetVersion();
+
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+
+                    ProcessMeta(metaVer);
+
+                    return channel;
+                }
 
                 /**
                  * Synchronously send request message and receive response.
@@ -170,7 +226,7 @@ namespace ignite
                     if (!channel.IsValid())
                     {
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                                          "Can not connect to any available cluster node. Please restart client");
+                            "Can not connect to any available cluster node. Please restart client");
                     }
 
                     int32_t metaVer = typeMgr.GetVersion();
@@ -238,6 +294,13 @@ namespace ignite
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
+
+                /**
+                 * Make sure that there is at least one connection to a cluster. Wait for specified timeout.
+                 * @param timeout Timeout.
+                 * @return @c true if connected, @c false otherwise.
+                 */
+                bool EnsureConnected(int32_t timeout);
 
                 /**
                  * Invalidate provided data channel.
@@ -340,17 +403,14 @@ namespace ignite
                  */
                 static void CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges);
 
-                /** IO timeout in seconds. */
-                int32_t ioTimeout;
-
-                /** Connection timeout in seconds. */
-                int32_t connectionTimeout;
-
                 /** Configuration. */
                 ignite::thin::IgniteClientConfiguration config;
 
                 /** Address ranges. */
                 std::vector<network::TcpRange> ranges;
+
+                /** Async client pool */
+                network::SP_AsyncClientPool asyncPool;
 
                 /** Type updater. */
                 std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;
@@ -358,11 +418,11 @@ namespace ignite
                 /** Metadata manager. */
                 binary::BinaryTypeManager typeMgr;
 
-                /** Data channels. */
-                ChannelsGuidMap channels;
+                /** All data channels. */
+                ChannelsIdMap channels;
 
-                /** Data channels. */
-                ChannelsVector legacyChannels;
+                /** Partition awareness data channels. */
+                ChannelsGuidMap partChannels;
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;

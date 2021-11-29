@@ -260,6 +260,8 @@ namespace ignite
                 int8_t* memPtr; 
             };
 
+            typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
+
             /**
              * Interop unpooled memory.
              */

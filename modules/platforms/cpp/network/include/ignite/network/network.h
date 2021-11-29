@@ -58,8 +58,11 @@ namespace ignite
          */
         IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient();
 
-
-        IGNITE_IMPORT_EXPORT AsyncClientPool* MakeAsyncClientPool();
+        /**
+         * Make asynchronous client pool.
+         * @return Async client pool.
+         */
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool();
     }
 }
 
