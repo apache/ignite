@@ -137,7 +137,10 @@ public class GridToStringBuilder {
     private static final int COLLECTION_LIMIT =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
-    /** */
+    /**
+     * Boolean flag indicating whether in a situation where an exception when building string representation
+     * of an object necessary throw or should just print information about exception into the log and proceed.
+     */
     private static final boolean THROW_RUNTIME_EXCEPTION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION, false);
 
@@ -1222,7 +1225,7 @@ public class GridToStringBuilder {
                 switch (fd.type()) {
                     case GridToStringFieldDescriptor.FIELD_TYPE_OBJECT:
                         try {
-                        toString(buf, fd.fieldClass(), GridUnsafe.getObjectField(obj, fd.offset()));
+                            toString(buf, fd.fieldClass(), GridUnsafe.getObjectField(obj, fd.offset()));
                         }
                         catch (RuntimeException e) {
                             if (THROW_RUNTIME_EXCEPTION)

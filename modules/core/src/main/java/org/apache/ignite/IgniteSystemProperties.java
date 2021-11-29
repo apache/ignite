@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -352,6 +353,8 @@ public final class IgniteSystemProperties {
      * "true" -> "plain",
      * "false" -> "none".
      */
+    @SystemProperty(value = "Setting writing sensitive information in toString() output",
+        defaults = "hash")
     public static final String IGNITE_SENSITIVE_DATA_LOGGING = "IGNITE_SENSITIVE_DATA_LOGGING";
 
     /** Maximum length for {@code toString()} result. */
@@ -366,6 +369,10 @@ public final class IgniteSystemProperties {
      *
      * {@code False} by default.
      */
+    @SystemProperty(value = "Boolean flag indicating whether in a situation where an exception " +
+        "when building string representation of an object necessary throw " +
+        "or should just print information about exception into the log and proceed",
+        defaults = "false")
     public static final String IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION = "IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION";
 
     /**
