@@ -1028,13 +1028,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param upper Upper bound.
+     * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(null, upper, c, x);
+    private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(null, upper, true, upIncl, c, x);
 
         long firstPageId;
 
@@ -1097,13 +1098,33 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+        return find(lower, upper, true, true, c, x);
+    }
+
+    /**
+     * @param lower Lower bound or {@code null} if unbounded.
+     * @param upper Upper bound or {@code null} if unbounded.
+     * @param lowIncl {@code true} if lower bound is inclusive.
+     * @param upIncl {@code true} if upper bound is inclusive.
+     * @param c Filter closure.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCursor<T> find(
+        L lower,
+        L upper,
+        boolean lowIncl,
+        boolean upIncl,
+        TreeRowClosure<L, T> c, Object x
+    ) throws IgniteCheckedException {
         checkDestroyed();
 
-        ForwardCursor cursor = new ForwardCursor(lower, upper, c, x);
+        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, x);
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper, c, x);
+                return findLowerUnbounded(upper, upIncl, c, x);
 
             cursor.find();
 
@@ -5465,11 +5486,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         L lowerBound;
 
-        /** */
-        private int lowerShift = -1; // Initially it is -1 to handle multiple equal rows.
+        /** Handle multiple equal rows on lower side. */
+        private int lowerShift;
 
         /** */
         final L upperBound;
+
+        /** Handle multiple equal rows on upper side. */
+        private final int upperShift;
 
         /** Cached value for retrieving diagnosting info in case of failure. */
         public GetCursor getCursor;
@@ -5477,10 +5501,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
+         * @param lowIncl {@code true} if lower bound is inclusive.
+         * @param upIncl {@code true} if upper bound is inclusive.
          */
-        AbstractForwardCursor(L lowerBound, L upperBound) {
+        AbstractForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl) {
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
+
+            lowerShift = lowIncl ? -1 : 1;
+            upperShift = upIncl ? 1 : -1;
         }
 
         /**
@@ -5571,8 +5600,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Compare with the last row on the page.
             int cmp = compare(0, io, pageAddr, cnt - 1, upperBound);
 
-            if (cmp > 0) {
-                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upperBound, 1);
+            if (cmp > 0 || (cmp == 0 && upperShift == -1)) {
+                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upperBound, upperShift);
 
                 assert idx < 0;
 
@@ -5703,12 +5732,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private L lastRow;
 
         /**
-         * @param lowerBound Lower bound.
-         * @param upperBound Upper bound.
+         * @param lowerBound Lower bound inclusive.
+         * @param upperBound Upper bound inclusive.
          * @param p Row predicate.
          */
         ClosureCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> p) {
-            super(lowerBound, upperBound);
+            super(lowerBound, upperBound, true, true);
 
             assert lowerBound != null;
             assert upperBound != null;
@@ -5806,11 +5835,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
+         * @param lowIncl {@code true} if lower bound is inclusive.
+         * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> c, Object x) {
-            super(lowerBound, upperBound);
+        ForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+            super(lowerBound, upperBound, lowIncl, upIncl);
 
             this.c = c;
             this.x = x;
