@@ -110,7 +110,7 @@ class DataEntryWrapper extends DataEntry {
         if (sensitiveData == HIDE)
             return "";
 
-        if (sensitiveData == HASH)
+        if (sensitiveData==null || sensitiveData == HASH)
             if (value != null)
                 return Integer.toString(value.hashCode());
             else

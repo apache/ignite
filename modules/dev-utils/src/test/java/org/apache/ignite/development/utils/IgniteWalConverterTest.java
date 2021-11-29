@@ -234,7 +234,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                     if (index > 0) {
                         index = result.indexOf("id=" + person.getId(), index + 9);
-
+                    }
                     if (index > 0) {
                         index = result.indexOf("name=" + person.getName(), index + 4);
 
@@ -255,7 +255,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                     find = index > 0;
                 }
-            }
             }
 
             assertTrue("DataRecord for Person(id=" + person.getId() + ") not found", find);
@@ -301,7 +300,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null,
             false,
             null,
-            null, null, null, null, true, true, Collections.emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
@@ -429,7 +428,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             marshallerDir,
             false,
             null,
-            null, null, null, null, true, true, Collections.emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);
@@ -545,7 +544,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             marshallerDir,
             false,
             null,
-            null, null, null, null, true, true, Collections.emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
         IgniteWalConverter.convert(out, arg);

@@ -78,8 +78,10 @@ public class IgniteWalConverter {
         AbstractInlineInnerIO.register();
         AbstractInlineLeafIO.register();
 
-        if (params.getProcessSensitiveData() == null)
+        System.clearProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE);
+        if (params.getProcessSensitiveData() == null) {
             System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
+        }
         else {
             switch (params.getProcessSensitiveData()) {
                 case SHOW:
