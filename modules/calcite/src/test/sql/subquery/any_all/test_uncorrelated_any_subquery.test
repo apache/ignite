@@ -122,7 +122,7 @@ NULL	NULL
 3	true
 
 query IT
-SELECT i, i >= ANY(SELECT i1.i FROM integers i1, integers i2, integers i3, integers i4, integers i5, integers i6 WHERE i1.i IS NOT NULL AND i1.i <> 1 LIMIT 1) FROM integers ORDER BY i NULLS FIRST
+SELECT i, i >= ANY(SELECT i1.i FROM integers i1, integers i2, integers i3, integers i4, integers i5, integers i6 WHERE i1.i IS NOT NULL AND i1.i <> 1 ORDER BY 1 LIMIT 1) FROM integers ORDER BY i NULLS FIRST
 ----
 NULL	NULL
 1	false
