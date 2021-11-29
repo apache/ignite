@@ -3112,7 +3112,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<?> fut = putAllAsync0(m);
 
         if (statsEnabled)
-            fut.listen(new UpdatePutAllTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutAllTimeStatClosure<>(metrics0(), start));
 
         if (performanceStatsEnabled)
             fut.listen(f -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
@@ -3209,7 +3209,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<V> fut = getAndRemoveAsync0(key);
 
         if (statsEnabled)
-            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateGetAndRemoveTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
             fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start));
@@ -3373,7 +3373,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         boolean rmv = remove0(key, filter);
 
-        if (statsEnabled)
+        if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
@@ -3433,7 +3433,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<Boolean> fut = removeAsync0(key, filter);
 
         if (statsEnabled)
-            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure(metrics0(), start));
 
         if (performanceStatsEnabled)
             fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE, start));
@@ -6618,9 +6618,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public void apply(IgniteInternalFuture<T> fut) {
             try {
                 if (!fut.isCancelled()) {
-                    fut.get();
+                    T res = fut.get();
 
-                    updateTimeStat();
+                    updateTimeStat(res);
                 }
             }
             catch (IgniteCheckedException ignore) {
@@ -6630,8 +6630,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * Updates statistics.
+         *
+         * @param res Result of operation.
          */
-        protected abstract void updateTimeStat();
+        protected abstract void updateTimeStat(T res);
     }
 
     /**
@@ -6650,7 +6652,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addGetTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6671,7 +6673,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addGetAllTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6679,7 +6681,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class UpdateRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+    protected static class UpdateGetAndRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param metrics Metrics.
+         * @param start Start time.
+         */
+        public UpdateGetAndRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat(T res) {
+            metrics.addRemoveAndGetTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdateRemoveTimeStatClosure extends UpdateTimeStatClosure<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6692,8 +6715,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
-            metrics.addRemoveTimeNanos(System.nanoTime() - start);
+        @Override protected void updateTimeStat(Boolean res) {
+            if (res)
+                metrics.addRemoveTimeNanos(System.nanoTime() - start);
         }
     }
 
@@ -6713,7 +6737,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addRemoveAllTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6721,7 +6745,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure {
+    protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6734,7 +6758,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addPutTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6742,7 +6766,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class UpdatePutAllTimeStatClosure<T> extends UpdateTimeStatClosure {
+    protected static class UpdatePutAllTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6755,7 +6779,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addPutAllTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6763,7 +6787,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class UpdatePutAndGetTimeStatClosure<T> extends UpdateTimeStatClosure {
+    protected static class UpdatePutAndGetTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6776,7 +6800,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addPutAndGetTimeNanos(System.nanoTime() - start);
         }
     }
@@ -6784,7 +6808,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    protected static class InvokeAllTimeStatClosure<T> extends UpdateTimeStatClosure {
+    protected static class InvokeAllTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6797,7 +6821,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void updateTimeStat() {
+        @Override protected void updateTimeStat(T res) {
             metrics.addInvokeTimeNanos(System.nanoTime() - start);
         }
     }
