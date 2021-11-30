@@ -19,7 +19,6 @@ package org.apache.ignite.client.handler.requests.table;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
@@ -47,6 +46,7 @@ public class ClientTupleGetAndDeleteRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, true);
 
-        return table.recordView().getAndDeleteAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple, TuplePart.VAL));
+        return table.recordView().getAndDeleteAsync(tuple).thenAccept(
+                resTuple -> ClientTableCommon.writeTupleOrNil(out, resTuple, TuplePart.VAL));
     }
 }

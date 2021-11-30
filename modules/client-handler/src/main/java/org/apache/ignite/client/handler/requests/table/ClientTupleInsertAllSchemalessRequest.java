@@ -47,6 +47,6 @@ public class ClientTupleInsertAllSchemalessRequest {
         var tuples = readTuplesSchemaless(in);
 
         return table.recordView().insertAllAsync(tuples).thenAccept(skippedTuples ->
-            writeTuples(out, skippedTuples, table.schemaView()));
+            writeTuples(out, skippedTuples, table.schemaView(), true));
     }
 }

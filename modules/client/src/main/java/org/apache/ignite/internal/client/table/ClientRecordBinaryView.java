@@ -81,7 +81,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_ALL,
                 (s, w) -> tbl.writeTuples(keyRecs, s, w, true),
-                tbl::readTuples,
+                tbl::readTuplesNullable,
                 Collections.emptyList());
     }
 

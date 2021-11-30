@@ -19,11 +19,12 @@ package org.apache.ignite.client.handler.requests.table;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuples;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuples;
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuplesNullable;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.internal.client.proto.TuplePart;
 import org.apache.ignite.table.manager.IgniteTables;
 
 /**
@@ -47,6 +48,6 @@ public class ClientTupleGetAllRequest {
         var keyTuples = readTuples(in, table, true);
 
         return table.recordView().getAllAsync(keyTuples).thenAccept(tuples ->
-            writeTuples(out, tuples, table.schemaView()));
+            writeTuplesNullable(out, tuples, TuplePart.KEY_AND_VAL, table.schemaView(), true));
     }
 }

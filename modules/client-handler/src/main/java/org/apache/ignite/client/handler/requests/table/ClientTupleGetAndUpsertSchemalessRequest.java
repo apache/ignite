@@ -19,7 +19,6 @@ package org.apache.ignite.client.handler.requests.table;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTupleSchemaless;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.writeTuple;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
@@ -46,6 +45,6 @@ public class ClientTupleGetAndUpsertSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.recordView().getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
+        return table.recordView().getAndUpsertAsync(tuple).thenAccept(resTuple -> ClientTableCommon.writeTupleOrNil(out, resTuple));
     }
 }

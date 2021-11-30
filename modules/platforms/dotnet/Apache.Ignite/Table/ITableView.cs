@@ -45,9 +45,11 @@ namespace Apache.Ignite.Table
         /// <param name="keys">Collection of records with key columns set.</param>
         /// <returns>
         /// A <see cref="Task"/> representing the asynchronous operation.
-        /// The task result contains matching records with all columns.
+        /// The task result contains matching records with all columns filled from the table. The order of collection
+        /// elements is guaranteed to be the same as the order of <paramref name="keys"/>. If a record does not exist,
+        /// the element at the corresponding index of the resulting collection will be <c>null</c>.
         /// </returns>
-        Task<IList<T>> GetAllAsync(IEnumerable<T> keys);
+        Task<IList<T?>> GetAllAsync(IEnumerable<T> keys);
 
         /// <summary>
         /// Inserts a record into the table if it does not exist or replaces the existing one.

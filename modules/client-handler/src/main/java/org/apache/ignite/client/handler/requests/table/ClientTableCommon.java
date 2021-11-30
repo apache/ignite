@@ -85,7 +85,7 @@ class ClientTableCommon {
      * @param packer Packer.
      * @param tuple  Tuple.
      */
-    public static void writeTuple(ClientMessagePacker packer, Tuple tuple) {
+    public static void writeTupleOrNil(ClientMessagePacker packer, Tuple tuple) {
         if (tuple == null) {
             packer.packNil();
             
@@ -103,7 +103,7 @@ class ClientTableCommon {
      * @param packer Packer.
      * @param tuple  Tuple.
      */
-    public static void writeTuple(ClientMessagePacker packer, Tuple tuple, TuplePart part) {
+    public static void writeTupleOrNil(ClientMessagePacker packer, Tuple tuple, TuplePart part) {
         if (tuple == null) {
             packer.packNil();
             
@@ -166,12 +166,8 @@ class ClientTableCommon {
             boolean skipHeader,
             TuplePart part
     ) {
-        if (tuple == null) {
-            packer.packNil();
-            
-            return;
-        }
-    
+        assert tuple != null;
+
         if (!skipHeader) {
             packer.packInt(schema.version());
         }
@@ -192,29 +188,36 @@ class ClientTableCommon {
     /**
      * Writes multiple tuples.
      *
-     * @param packer Packer.
-     * @param tuples Tuples.
+     * @param packer         Packer.
+     * @param tuples         Tuples.
      * @param schemaRegistry The registry.
+     * @param skipHeader     Whether to skip the tuple header.
      * @throws IgniteException on failed serialization.
      */
-    public static void writeTuples(ClientMessagePacker packer, Collection<Tuple> tuples, SchemaRegistry schemaRegistry) {
-        writeTuples(packer, tuples, TuplePart.KEY_AND_VAL, schemaRegistry);
+    public static void writeTuples(
+            ClientMessagePacker packer,
+            Collection<Tuple> tuples,
+            SchemaRegistry schemaRegistry,
+            boolean skipHeader) {
+        writeTuples(packer, tuples, TuplePart.KEY_AND_VAL, schemaRegistry, skipHeader);
     }
     
     /**
      * Writes multiple tuples.
      *
-     * @param packer Packer.
-     * @param tuples Tuples.
-     * @param part   Which part of tuple to write.
+     * @param packer         Packer.
+     * @param tuples         Tuples.
+     * @param part           Which part of tuple to write.
      * @param schemaRegistry The registry.
+     * @param skipHeader     Whether to skip the tuple header.
      * @throws IgniteException on failed serialization.
      */
     public static void writeTuples(
             ClientMessagePacker packer,
             Collection<Tuple> tuples,
             TuplePart part,
-            SchemaRegistry schemaRegistry
+            SchemaRegistry schemaRegistry,
+            boolean skipHeader
     ) {
         if (tuples == null || tuples.isEmpty()) {
             packer.packNil();
@@ -228,14 +231,54 @@ class ClientTableCommon {
         packer.packInt(tuples.size());
     
         for (Tuple tuple : tuples) {
-            if (tuple != null) {
-                assert schema.version() == ((SchemaAware) tuple).schema().version();
-            }
-        
-            writeTuple(packer, tuple, schema, true, part);
+            assert tuple != null;
+            assert schema.version() == ((SchemaAware) tuple).schema().version();
+
+            writeTuple(packer, tuple, schema, skipHeader, part);
         }
     }
     
+    /**
+     * Writes multiple tuples with null flags.
+     *
+     * @param packer         Packer.
+     * @param tuples         Tuples.
+     * @param part           Which part of tuple to write.
+     * @param schemaRegistry The registry.
+     * @param skipHeader     Whether to skip the tuple header.
+     * @throws IgniteException on failed serialization.
+     */
+    public static void writeTuplesNullable(
+            ClientMessagePacker packer,
+            Collection<Tuple> tuples,
+            TuplePart part,
+            SchemaRegistry schemaRegistry,
+            boolean skipHeader
+    ) {
+        if (tuples == null || tuples.isEmpty()) {
+            packer.packNil();
+
+            return;
+        }
+
+        SchemaDescriptor schema = schemaRegistry.schema();
+
+        packer.packInt(schema.version());
+        packer.packInt(tuples.size());
+
+        for (Tuple tuple : tuples) {
+            if (tuple == null) {
+                packer.packBoolean(false);
+                continue;
+            }
+
+            assert schema.version() == ((SchemaAware) tuple).schema().version();
+
+            packer.packBoolean(true);
+            writeTuple(packer, tuple, schema, skipHeader, part);
+        }
+    }
+
     /**
      * Reads a tuple.
      *

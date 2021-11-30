@@ -83,7 +83,7 @@ namespace Apache.Ignite.Internal.Table
         }
 
         /// <inheritdoc/>
-        public async Task<IList<IIgniteTuple>> GetAllAsync(IEnumerable<IIgniteTuple> keys)
+        public async Task<IList<IIgniteTuple?>> GetAllAsync(IEnumerable<IIgniteTuple> keys)
         {
             IgniteArgumentCheck.NotNull(keys, nameof(keys));
 
@@ -102,7 +102,8 @@ namespace Apache.Ignite.Internal.Table
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGetAll, writer).ConfigureAwait(false);
             var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
 
-            return ReadTuples(resBuf, resSchema);
+            // TODO: Read value parts only (IGNITE-16022).
+            return ReadTuplesNullable(resBuf, resSchema);
         }
 
         /// <inheritdoc/>
@@ -188,6 +189,7 @@ namespace Apache.Ignite.Internal.Table
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleInsertAll, writer).ConfigureAwait(false);
             var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
 
+            // TODO: Read value parts only (IGNITE-16022).
             return ReadTuples(resBuf, resSchema);
         }
 
@@ -299,6 +301,7 @@ namespace Apache.Ignite.Internal.Table
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleDeleteAll, writer).ConfigureAwait(false);
             var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
 
+            // TODO: Read value parts only (IGNITE-16022).
             return ReadTuples(resBuf, resSchema, keyOnly: true);
         }
 
@@ -388,6 +391,30 @@ namespace Apache.Ignite.Internal.Table
             for (var i = 0; i < count; i++)
             {
                 res.Add(ReadTuple(ref r, schema, keyOnly));
+            }
+
+            return res;
+        }
+
+        private static IList<IIgniteTuple?> ReadTuplesNullable(PooledBuffer buf, Schema? schema, bool keyOnly = false)
+        {
+            if (schema == null)
+            {
+                return Array.Empty<IIgniteTuple?>();
+            }
+
+            // Skip schema version.
+            var r = buf.GetReader();
+            r.Skip();
+
+            var count = r.ReadInt32();
+            var res = new List<IIgniteTuple?>(count);
+
+            for (var i = 0; i < count; i++)
+            {
+                var hasValue = r.ReadBoolean();
+
+                res.Add(hasValue ? ReadTuple(ref r, schema, keyOnly) : null);
             }
 
             return res;

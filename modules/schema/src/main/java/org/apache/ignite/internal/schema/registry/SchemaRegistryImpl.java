@@ -32,7 +32,6 @@ import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.internal.schema.row.Row;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -160,8 +159,12 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * @param curSchema The latest available local schema.
      * @return Schema-aware rows.
      */
-    @NotNull
+    @Nullable
     private Row resolveInternal(BinaryRow row, SchemaDescriptor curSchema) {
+        if (row == null) {
+            return null;
+        }
+        
         final SchemaDescriptor rowSchema = schema(row.schemaVersion());
 
         if (curSchema.version() == rowSchema.version()) {

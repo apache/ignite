@@ -47,6 +47,6 @@ public class ClientTupleDeleteAllExactRequest {
         var tuples = readTuples(in, table, false);
 
         return table.recordView().deleteAllExactAsync(tuples)
-                .thenAccept(skippedTuples -> writeTuples(out, skippedTuples, table.schemaView()));
+                .thenAccept(skippedTuples -> writeTuples(out, skippedTuples, table.schemaView(), true));
     }
 }
