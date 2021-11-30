@@ -260,6 +260,11 @@ namespace Apache.Ignite.Core.Configuration
             {
                 DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
             }
+
+            if (reader.ReadBoolean())
+            {
+                SystemDataRegionConfiguration = new SystemDataRegionConfiguration(reader);
+            }
         }
 
         /// <summary>
@@ -327,6 +332,16 @@ namespace Apache.Ignite.Core.Configuration
             {
                 writer.WriteBoolean(true);
                 DefaultDataRegionConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            if (SystemDataRegionConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                SystemDataRegionConfiguration.Write(writer);
             }
             else
             {
@@ -477,14 +492,40 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.
         /// </summary>
+        [Obsolete("Use SystemDataRegionConfiguration.")]
         [DefaultValue(DefaultSystemRegionInitialSize)]
-        public long SystemRegionInitialSize { get; set; }
+        public long SystemRegionInitialSize
+        {
+            get => SystemDataRegionConfiguration?.InitialSize ?? SystemDataRegionConfiguration.DefaultInitialSize;
+            set
+            {
+                if (SystemDataRegionConfiguration == null)
+                {
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration();
+                }
+
+                SystemDataRegionConfiguration.InitialSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum memory region size reserved for system needs.
         /// </summary>
+        [Obsolete("Use SystemDataRegionConfiguration.")]
         [DefaultValue(DefaultSystemRegionMaxSize)]
-        public long SystemRegionMaxSize { get; set; }
+        public long SystemRegionMaxSize
+        {
+            get => SystemDataRegionConfiguration?.MaxSize ?? SystemDataRegionConfiguration.DefaultMaxSize;
+            set
+            {
+                if (SystemDataRegionConfiguration == null)
+                {
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration();
+                }
+
+                SystemDataRegionConfiguration.MaxSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the size of the memory page.
@@ -534,5 +575,10 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the default region configuration.
         /// </summary>
         public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the system region configuration.
+        /// </summary>
+        public SystemDataRegionConfiguration SystemDataRegionConfiguration { get; set; }
     }
 }
