@@ -872,7 +872,7 @@ public class RowAssembler {
         Column col = curCols.column(curCol);
 
         if (col.type().spec() != type) {
-            throw new SchemaMismatchException("Failed to set column (int was passed, but column is of different "
+            throw new SchemaMismatchException("Failed to set column (" + type.name() + " was passed, but column is of different "
                     + "type): " + col);
         }
     }

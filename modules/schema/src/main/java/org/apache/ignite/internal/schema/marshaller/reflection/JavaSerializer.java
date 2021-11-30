@@ -60,9 +60,9 @@ public class JavaSerializer extends AbstractSerializer {
         super(schema);
         this.keyClass = keyClass;
         this.valClass = valClass;
-        
-        keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), keyClass);
-        valMarsh = Marshaller.createMarshaller(schema.valueColumns(), valClass);
+
+        keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), keyClass, true);
+        valMarsh = Marshaller.createMarshaller(schema.valueColumns(), valClass, false);
     }
     
     /** {@inheritDoc} */

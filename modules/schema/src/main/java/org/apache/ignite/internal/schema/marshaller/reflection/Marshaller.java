@@ -39,9 +39,10 @@ public abstract class Marshaller {
      *
      * @param cols   Columns.
      * @param mapper Mapper.
+     * @param requireAllFields If specified class should contain fields for all columns.
      * @return Marshaller.
      */
-    public static <T> Marshaller createMarshaller(Column[] cols, Mapper<T> mapper) {
+    public static <T> Marshaller createMarshaller(Column[] cols, Mapper<T> mapper, boolean requireAllFields) {
         final BinaryMode mode = MarshallerUtil.mode(mapper.targetType());
         
         if (mode != null) {
@@ -57,16 +58,20 @@ public abstract class Marshaller {
         FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length];
         
         // Build handlers.
+        
         for (int i = 0; i < cols.length; i++) {
             final Column col = cols[i];
             
             String fieldName = mapper.columnToField(col.name());
-            
-            // TODO: IGNITE-15785 validate key marshaller has no NoopAccessors.
+    
+            if (requireAllFields && fieldName == null) {
+                throw new IllegalArgumentException("No field found for column " + col.name());
+            }
+
             fieldAccessors[i] = (fieldName == null) ? FieldAccessor.noopAccessor(col) :
                     FieldAccessor.create(mapper.targetType(), fieldName, col, col.schemaIndex());
         }
-        
+
         return new PojoMarshaller(new ObjectFactory<>(mapper.targetType()), fieldAccessors);
     }
     
@@ -75,11 +80,12 @@ public abstract class Marshaller {
      *
      * @param cols Columns.
      * @param cls  Type.
+     * @param requireAllFields If specified class should contain fields for all columns.
      * @return Marshaller.
      */
     //TODO: IGNITE-15907 drop
     @Deprecated
-    public static Marshaller createMarshaller(Columns cols, Class<? extends Object> cls) {
+    public static Marshaller createMarshaller(Columns cols, Class<? extends Object> cls, boolean requireAllFields) {
         final BinaryMode mode = MarshallerUtil.mode(cls);
         
         if (mode != null) {
@@ -97,10 +103,18 @@ public abstract class Marshaller {
         // Build accessors
         for (int i = 0; i < cols.length(); i++) {
             final Column col = cols.column(i);
-            
+
+            if (requireAllFields) {
+                try {
+                    cls.getDeclaredField(col.name());
+                } catch (NoSuchFieldException e) {
+                    throw new IllegalArgumentException("No field found for column " + col.name());
+                }
+            }
+
             fieldAccessors[i] = FieldAccessor.create(cls, col.name(), col, col.schemaIndex());
         }
-        
+
         return new PojoMarshaller(new ObjectFactory<>(cls), fieldAccessors);
     }
     
@@ -162,7 +176,6 @@ public abstract class Marshaller {
             return fieldAccessor.read(reader);
         }
         
-        
         /** {@inheritDoc} */
         @Override
         public void writeObject(Object obj, RowAssembler writer) throws MarshallerException {
@@ -179,7 +192,7 @@ public abstract class Marshaller {
         
         /** Object factory. */
         private final Factory<?> factory;
-        
+
         /**
          * Creates a marshaller for POJOs.
          *
@@ -213,8 +226,7 @@ public abstract class Marshaller {
         
         /** {@inheritDoc} */
         @Override
-        public void writeObject(Object obj, RowAssembler writer)
-                throws MarshallerException {
+        public void writeObject(Object obj, RowAssembler writer) throws MarshallerException {
             for (int fldIdx = 0; fldIdx < fieldAccessors.length; fldIdx++) {
                 fieldAccessors[fldIdx].write(writer, obj);
             }

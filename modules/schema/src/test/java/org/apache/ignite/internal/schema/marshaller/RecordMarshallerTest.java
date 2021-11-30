@@ -462,6 +462,14 @@ public class RecordMarshallerTest {
      */
     @SuppressWarnings("InstanceVariableMayNotBeInitialized")
     public static class TestObject {
+        private long id;
+    
+        private int intCol;
+    
+        private Long longCol2;
+    
+        private String stringCol;
+        
         static TestObject randomObject(Random rnd) {
             final TestObject obj = new TestObject();
             
@@ -473,20 +481,12 @@ public class RecordMarshallerTest {
             return obj;
         }
         
-        private long id;
-        
-        private int intCol;
-        
-        private Long longCol2;
-        
-        private String stringCol;
-        
         @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
-            
+
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
@@ -510,9 +510,24 @@ public class RecordMarshallerTest {
      */
     @SuppressWarnings("InstanceVariableMayNotBeInitialized")
     public static class TestTruncatedObject {
+        private Integer intCol;
+    
+        // Primitive typed
+        private int primitiveIntCol;
+    
+        private long primitiveLongCol;
+    
+        private float primitiveFloatCol;
+    
+        private double primitiveDoubleCol;
+    
+        private String stringCol;
+    
+        private java.util.UUID uuidCol;
+        
         static TestTruncatedObject randomObject(Random rnd) {
             final TestTruncatedObject obj = new TestTruncatedObject();
-            
+
             obj.primitiveIntCol = rnd.nextInt();
             obj.primitiveLongCol = rnd.nextLong();
             obj.primitiveDoubleCol = rnd.nextDouble();
@@ -522,19 +537,6 @@ public class RecordMarshallerTest {
             
             return obj;
         }
-        
-        // Primitive typed
-        private int primitiveIntCol;
-        
-        private long primitiveLongCol;
-        
-        private float primitiveFloatCol;
-        
-        private double primitiveDoubleCol;
-        
-        private String stringCol;
-        
-        private java.util.UUID uuidCol;
         
         @Override
         public boolean equals(Object o) {
@@ -552,7 +554,8 @@ public class RecordMarshallerTest {
                     && Float.compare(object.primitiveFloatCol, primitiveFloatCol) == 0
                     && Double.compare(object.primitiveDoubleCol, primitiveDoubleCol) == 0
                     && Objects.equals(stringCol, ((TestTruncatedObject) o).stringCol)
-                    && Objects.equals(uuidCol, ((TestTruncatedObject) o).uuidCol);
+                    && Objects.equals(uuidCol, ((TestTruncatedObject) o).uuidCol)
+                    && Objects.equals(intCol, ((TestTruncatedObject) o).intCol);
         }
         
         @Override

@@ -63,15 +63,15 @@ public class SchemaDescriptorTest {
     @Test
     public void columnOrder() {
         Column[] keyColumns = {
-                new Column(0, "columnA", NativeTypes.INT8, false, () -> null),
-                new Column(1, "columnB", NativeTypes.UUID, false, () -> null),
-                new Column(2, "columnC", NativeTypes.INT32, false, () -> null),
+                new Column(0, "columnA", NativeTypes.INT8, false),
+                new Column(1, "columnB", NativeTypes.UUID, false),
+                new Column(2, "columnC", NativeTypes.INT32, false),
         };
 
         Column[] valColumns = {
-                new Column(3, "columnD", NativeTypes.INT8, false, () -> null),
-                new Column(4, "columnE", NativeTypes.UUID, false, () -> null),
-                new Column(5, "columnF", NativeTypes.INT32, false, () -> null),
+                new Column(3, "columnD", NativeTypes.INT8, false),
+                new Column(4, "columnE", NativeTypes.UUID, false),
+                new Column(5, "columnF", NativeTypes.INT32, false),
         };
 
         List<Column> columns = new ArrayList<>();

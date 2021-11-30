@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.schema.mapping;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.schema.Column;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Column mapper interface.
  */
-public interface ColumnMapper extends Serializable {
+public interface ColumnMapper {
     /**
      * Add new column.
      *

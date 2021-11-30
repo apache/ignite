@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.schema.mapping;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +84,7 @@ public class ColumnMapping {
     /**
      * Identity column mapper.
      */
-    private static class IdentityMapper implements ColumnMapper, Serializable {
+    private static class IdentityMapper implements ColumnMapper {
         /** {@inheritDoc} */
         @Override
         public ColumnMapper add(@NotNull Column col) {

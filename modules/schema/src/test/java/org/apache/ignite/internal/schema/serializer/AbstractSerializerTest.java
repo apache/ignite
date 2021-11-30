@@ -88,14 +88,14 @@ public class AbstractSerializerTest {
         AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
 
         Column[] keyCols = {
-            new Column(0, "A", NativeTypes.UUID, false, () -> null),
-            new Column(1, "B", NativeTypes.INT64, false, () -> null),
-            new Column(2, "C", NativeTypes.INT8, false, () -> null),
+            new Column(0, "A", NativeTypes.UUID, false),
+            new Column(1, "B", NativeTypes.INT64, false),
+            new Column(2, "C", NativeTypes.INT8, false),
         };
 
         Column[] valCols = {
-            new Column(3, "A1", NativeTypes.stringOf(128), false, () -> null),
-            new Column(4, "B1", NativeTypes.INT64, false, () -> null),
+            new Column(3, "A1", NativeTypes.stringOf(128), false),
+            new Column(4, "B1", NativeTypes.INT64, false),
         };
 
         SchemaDescriptor desc = new SchemaDescriptor(100500, keyCols, valCols);
