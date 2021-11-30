@@ -61,11 +61,13 @@ import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -83,6 +85,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -97,6 +100,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**
@@ -364,6 +368,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
+        ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData data
+    ) {
+        if (data.joiningNodeData() == null || !ctx.security().enabled())
+            return null;
+
+        List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
+
+        SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
+
+        if (err != null)
+            return new IgniteNodeValidationResult(node.id(), err.getMessage());
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
         if (data.joiningNodeData() == null)
             return;
@@ -372,16 +394,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
-
-            try (OperationSecurityContext ignored = ctx.security().withContext(data.joiningNodeId())) {
-                if (checkPermissions(desc.name(), SERVICE_DEPLOY) != null) {
-                    U.warn(log, "Failed to register service configuration received from joining node :" +
-                        " [nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]." +
-                        " Joining node is not authorized to deploy the service.");
-
-                    continue;
-                }
-            }
 
             ServiceInfo oldDesc = registeredServices.get(desc.serviceId());
 
@@ -598,9 +610,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 err = e;
             }
-
-            if (err == null && (isLocalNodeCoordinator() || ctx.discovery().localJoinFuture().isDone()))
-                err = checkPermissions(cfg.getName(), SERVICE_DEPLOY);
 
             if (err == null) {
                 try {
@@ -1526,6 +1535,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
+            if (ctx.security().enabled()) {
+                SecurityException err = checkDeployPermissionDuringJoin(evt.node(), staticServicesInfo);
+
+                if (err != null)
+                    throw err;
+            }
+
             staticServicesInfo.forEach(this::registerService);
         }
 
@@ -1614,7 +1630,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
 
             if (req instanceof ServiceDeploymentRequest) {
-                IgniteCheckedException err = null;
+                Exception err = null;
 
                 if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
                     err = new IgniteCheckedException("Failed to deploy service. Service with generated id already" +
@@ -1623,36 +1639,41 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 else {
                     ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
-                    oldDesc = lookupInRegisteredServices(cfg.getName());
+                    if (ctx.security().enabled())
+                        err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
 
-                    if (oldDesc == null) {
-                        if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
-                            err = new IgniteCheckedException("Failed to deploy service, " +
-                                "affinity cache is not found, cfg=" + cfg);
+                    if (err == null) {
+                        oldDesc = lookupInRegisteredServices(cfg.getName());
+
+                        if (oldDesc == null) {
+                            if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
+                                err = new IgniteCheckedException("Failed to deploy service, " +
+                                    "affinity cache is not found, cfg=" + cfg);
+                            }
+                            else {
+                                ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+
+                                registerService(desc);
+
+                                toDeploy.put(reqSrvcId, desc);
+                            }
                         }
                         else {
-                            ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+                            if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
+                                err = new IgniteCheckedException("Failed to deploy service " +
+                                    "(service already exists with different configuration) : " +
+                                    "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
+                            }
+                            else {
+                                GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
 
-                            registerService(desc);
+                                if (fut != null) {
+                                    fut.onDone();
 
-                            toDeploy.put(reqSrvcId, desc);
-                        }
-                    }
-                    else {
-                        if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
-                            err = new IgniteCheckedException("Failed to deploy service " +
-                                "(service already exists with different configuration) : " +
-                                "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
-                        }
-                        else {
-                            GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
-
-                            if (fut != null) {
-                                fut.onDone();
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Service sent to deploy is already deployed : " +
-                                        "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Service sent to deploy is already deployed : " +
+                                            "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
+                                    }
                                 }
                             }
                         }
@@ -1832,5 +1853,39 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void leaveBusy() {
         opsLock.readLock().unlock();
+    }
+
+    /**
+     * Checks {@link SecurityPermission#SERVICE_DEPLOY} for each service.
+     * This method must use {@link SecurityContext} from node attributes because join not finished in time of validation.
+     * This mean SecurityProcessor doesn't know about joining node and can't return it security context based on node id.
+     *
+     * @param node Node to check.
+     * @param svcs Statically configured services.
+     * @return {@code SecurityException} in case node permissions not enough.
+     * @see ValidationOnNodeJoinUtils
+     */
+    private SecurityException checkDeployPermissionDuringJoin(ClusterNode node, List<ServiceInfo> svcs) {
+        SecurityContext secCtx;
+
+        try {
+            secCtx = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
+
+            assert secCtx != null;
+        }
+        catch (SecurityException err) {
+            return err;
+        }
+
+        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+            for (ServiceInfo desc : svcs) {
+                SecurityException err = checkPermissions(desc.name(), SERVICE_DEPLOY);
+
+                if (err != null)
+                    return err;
+            }
+        }
+
+        return null;
     }
 }
