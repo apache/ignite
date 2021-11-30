@@ -43,7 +43,7 @@ namespace ignite
                  *
                  * @param id Channel ID.
                  */
-                virtual void OnHandshakeComplete(uint32_t id) = 0;
+                virtual void OnHandshakeComplete(uint64_t id) = 0;
             };
         }
     }

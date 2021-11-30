@@ -128,7 +128,7 @@ namespace ignite
                  *
                  * @param id Channel ID.
                  */
-                virtual void OnHandshakeComplete(uint32_t id);
+                virtual void OnHandshakeComplete(uint64_t id);
 
                 /**
                  * Synchronously send request message and receive response.

@@ -51,7 +51,7 @@ namespace ignite
             const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
                 supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-            DataChannel::DataChannel(uint64_t id, network::SP_AsyncClientPool& asyncPool,
+            DataChannel::DataChannel(uint64_t id, ignite::network::SP_AsyncClientPool asyncPool,
                 const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
                 ChannelStateHandler& stateHandler) :
                 stateHandler(stateHandler),

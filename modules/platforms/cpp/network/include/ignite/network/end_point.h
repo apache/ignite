@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <sstream>
 
 namespace ignite
 {

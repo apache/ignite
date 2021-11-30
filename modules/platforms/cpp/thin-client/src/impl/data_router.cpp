@@ -74,6 +74,8 @@ namespace ignite
             {
                 //TODO: implement me.
                 //throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+
+                return false;
             }
 
             void DataRouter::OnConnectionSuccess(const network::EndPoint&, uint64_t id)
@@ -123,7 +125,7 @@ namespace ignite
                 InvalidateChannel(channel);
             }
 
-            void DataRouter::OnHandshakeComplete(uint32_t id)
+            void DataRouter::OnHandshakeComplete(uint64_t id)
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 

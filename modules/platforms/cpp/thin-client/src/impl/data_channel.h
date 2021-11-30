@@ -27,6 +27,7 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/network/socket_client.h>
+#include <ignite/network/async_client_pool.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
@@ -48,6 +49,12 @@ namespace ignite
 
         namespace thin
         {
+            // Forward declaration.
+            class Request;
+
+            // Forward declaration.
+            class Response;
+
             /**
              * Data router.
              *
@@ -93,7 +100,7 @@ namespace ignite
                  * @param typeMgr Type manager.
                  * @param stateHandler State handler.
                  */
-                DataChannel(uint64_t id, network::SP_AsyncClientPool& asyncPool,
+                DataChannel(uint64_t id, ignite::network::SP_AsyncClientPool asyncPool,
                     const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
                     ChannelStateHandler& stateHandler);
 
@@ -236,7 +243,7 @@ namespace ignite
                 uint64_t id;
 
                 /** Async pool. */
-                network::SP_AsyncClientPool& asyncPool;
+                ignite::network::SP_AsyncClientPool asyncPool;
 
                 /** Remote node data. */
                 IgniteNode node;

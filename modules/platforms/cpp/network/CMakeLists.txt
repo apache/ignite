@@ -60,9 +60,9 @@ foreach(_target_lib IN LISTS _target_libs)
     if (${_target_lib} STREQUAL ${TARGET}-objlib)
         set_target_properties(${_target_lib} PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
-        target_link_libraries(${_target_lib} ignite-common-objlib)
+        target_link_libraries(${_target_lib} ignite-common-objlib ignite-binary-objlib)
     else()
-        target_link_libraries(${_target_lib} ignite-common)
+        target_link_libraries(${_target_lib} ignite-common ignite-binary)
     endif()
 
     if (WIN32)

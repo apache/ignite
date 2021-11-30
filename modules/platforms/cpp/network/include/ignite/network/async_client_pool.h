@@ -101,6 +101,7 @@ namespace ignite
             virtual void CloseWithError(uint64_t id, const IgniteError& err) = 0;
         };
 
+        // Type alias
         typedef common::concurrent::SharedPointer<network::AsyncClientPool> SP_AsyncClientPool;
     }
 }

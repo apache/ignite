@@ -355,7 +355,7 @@ namespace ignite
          * @throw IgniteError if error has been set.
          * @return Value that has been set on success.
          */
-        const SP_ValueType& GetValue() const
+        SP_ValueType GetValue() const
         {
             const common::SharedState<SP_ValueType>* state0 = state.Get();
 

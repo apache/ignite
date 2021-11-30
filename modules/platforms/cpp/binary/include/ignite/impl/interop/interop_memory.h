@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite 
 {
