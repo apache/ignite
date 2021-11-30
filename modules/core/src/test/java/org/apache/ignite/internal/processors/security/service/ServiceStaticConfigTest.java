@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.service;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,6 +32,9 @@ import org.junit.Test;
 
 /** */
 public class ServiceStaticConfigTest extends AbstractSecurityTest {
+    /** */
+    private static final String SVC_NAME = "CounterService";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -42,10 +47,9 @@ public class ServiceStaticConfigTest extends AbstractSecurityTest {
 
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
-        srvcCfg.setName("CounterService");
+        srvcCfg.setName(SVC_NAME);
         srvcCfg.setMaxPerNodeCount(1);
-        srvcCfg.setTotalCount(1);
-        srvcCfg.setService(new CounterServiceImpl());
+        srvcCfg.setService(new CounterService());
 
         cfg.setServiceConfiguration(srvcCfg);
 
@@ -56,9 +60,18 @@ public class ServiceStaticConfigTest extends AbstractSecurityTest {
     @Test
     public void testNodeStarted() throws Exception {
         startGrid(0);
-        startGrid(1);
+
+        startGrid(1).cluster().state(ClusterState.ACTIVE);
 
         assertEquals(2, G.allGrids().size());
+
+        for (Ignite ignite : G.allGrids()) {
+            CounterService svc = ignite.services().service(SVC_NAME);
+
+            assertNotNull(svc);
+            assertNotNull(svc.execLatch);
+            assertTrue(svc.execLatch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     /** {@inheritDoc} */
@@ -69,30 +82,18 @@ public class ServiceStaticConfigTest extends AbstractSecurityTest {
     }
 
     /** */
-    public static class CounterServiceImpl implements Service {
-        /** Cntr. */
-        private final AtomicInteger cntr = new AtomicInteger();
-
-        /** Is started. */
-        volatile boolean isStarted;
+    public static class CounterService implements Service {
+        /** */
+        transient CountDownLatch execLatch;
 
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
-            isStarted = true;
+            execLatch = new CountDownLatch(1);
         }
 
         /** {@inheritDoc} */
         @Override public void execute() throws Exception {
-            while (isStarted) {
-                cntr.incrementAndGet();
-
-                TimeUnit.SECONDS.sleep(1);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            isStarted = false;
+            execLatch.countDown();
         }
     }
 }

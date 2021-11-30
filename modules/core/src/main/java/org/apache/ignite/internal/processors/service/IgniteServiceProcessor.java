@@ -376,13 +376,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData data
     ) {
-        if (data.joiningNodeData() == null)
+        if (data.joiningNodeData() == null || !ctx.security().enabled())
             return null;
 
-        if (!ctx.security().enabled())
-            return null;
-
-        ArrayList<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
+        List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
 
         SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
 
@@ -1946,7 +1943,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return {@code SecurityException} in case node permissions not enough.
      * @see ValidationOnNodeJoinUtils
      */
-    private SecurityException checkDeployPermissionDuringJoin(ClusterNode node, ArrayList<ServiceInfo> svcs) {
+    private SecurityException checkDeployPermissionDuringJoin(ClusterNode node, List<ServiceInfo> svcs) {
         SecurityContext secCtx;
 
         try {
