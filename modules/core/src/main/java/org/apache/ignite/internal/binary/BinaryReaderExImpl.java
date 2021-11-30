@@ -1364,16 +1364,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                if (BinaryArray.useBinaryArrays())
-                    return BinaryUtils.doReadBinaryArray(in, ctx, ldr, this, false, true).deserialize(ldr);
-                else
-                    return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
-                if (BinaryArray.useBinaryArrays())
-                    return ((BinaryArray)readHandleField()).deserialize(ldr);
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
                 else
-                    return readHandleField();
+                    return (Object[])arr;
 
             default:
                 return null;
