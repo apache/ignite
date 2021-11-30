@@ -35,8 +35,8 @@ public class ClientMessage implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = -4609408156037304495L;
 
-    /** */
-    private static final int MAX_HANDSHAKE_SIZE = 1024 * 1024;
+    /** Limit handshake size to 64 MiB. */
+    private static final int MAX_HANDSHAKE_SIZE = 64 * 1024 * 1024;
 
     /** First 3 bytes in handshake are either 1 1 0 (handshake = 1, major version = 1)... */
     private static final int HANDSHAKE_HEADER = 1 + (1 << 8);
