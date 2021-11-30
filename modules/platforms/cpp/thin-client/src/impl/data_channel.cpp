@@ -205,7 +205,7 @@ namespace ignite
 
             bool DataChannel::Handshake(const ProtocolVersion& propVer)
             {
-                // Allocating 4KB just in case.
+                // Allocating 4 KB just in case.
                 enum {
                     BUFFER_SIZE = 1024 * 4
                 };

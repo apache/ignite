@@ -141,6 +141,41 @@ namespace ignite
                 }
             }
 
+            SP_DataChannel DataRouter::SyncMessage(const Request &req, Response &rsp)
+            {
+                SP_DataChannel channel = GetRandomChannel();
+
+                int32_t metaVer = typeMgr.GetVersion();
+
+                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+
+                ProcessMeta(metaVer);
+
+                return channel;
+            }
+
+            SP_DataChannel DataRouter::SyncMessage(const Request &req, Response &rsp, const Guid &hint)
+            {
+                SP_DataChannel channel = GetBestChannel(hint);
+
+                int32_t metaVer = typeMgr.GetVersion();
+
+                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+
+                ProcessMeta(metaVer);
+
+                return channel;
+            }
+
+            SP_DataChannel DataRouter::SyncMessageNoMetaUpdate(const Request &req, Response &rsp)
+            {
+                SP_DataChannel channel = GetRandomChannel();
+
+                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+
+                return channel;
+            }
+
             void DataRouter::ProcessMeta(int32_t metaVer)
             {
                 if (typeMgr.IsUpdatedSince(metaVer))
@@ -150,6 +185,45 @@ namespace ignite
                     if (!typeMgr.ProcessPendingUpdates(err))
                         throw IgniteError(err);
                 }
+            }
+
+            void DataRouter::CheckAffinity(Response &rsp)
+            {
+                const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
+
+                if (ver != 0 && config.IsPartitionAwareness())
+                    affinityManager.UpdateAffinity(*ver);
+            }
+
+            void DataRouter::SyncMessagePreferredChannelNoMetaUpdate(const Request &req, Response &rsp,
+                const SP_DataChannel &preferred)
+            {
+                SP_DataChannel channel = preferred;
+
+                if (!channel.IsValid())
+                    channel = GetRandomChannel();
+
+                if (!channel.IsValid())
+                {
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                        "Can not connect to any available cluster node. Please restart client");
+                }
+
+                try
+                {
+                    channel.Get()->SyncMessage(req, rsp, config.GetConnectionTimeout());
+                }
+                catch (IgniteError& err)
+                {
+                    InvalidateChannel(channel);
+
+                    std::string msg("Connection failure during command processing. Please re-run command. Cause: ");
+                    msg += err.GetText();
+
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+                }
+
+                CheckAffinity(rsp);
             }
 
             void DataRouter::RefreshAffinityMapping(int32_t cacheId)
