@@ -235,6 +235,7 @@ public class ClientMessage implements Message, Externalizable {
             stream = null;
         }
 
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
         return data;
     }
 
