@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collections;
@@ -31,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -66,6 +69,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -79,6 +83,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** Listenning logger. */
     private ListeningTestLogger listenLog;
 
+    /** Number of threads being used to perform snapshot operation. */
+    private int snapshotThreadPoolSize;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -89,6 +96,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         if (listenLog != null)
             cfg.setGridLogger(listenLog);
+
+        if (snapshotThreadPoolSize != IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE)
+            cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
     }
@@ -537,6 +547,23 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotThreadPoolSizeUsage() throws Exception {
+        snapshotThreadPoolSize = 6;
+
+        IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
+
+        long snpRunningThreads = LongStream.of(tMb.getAllThreadIds()).mapToObj(tMb::getThreadInfo)
+            .filter(info -> info.getThreadName().startsWith(SNAPSHOT_RUNNER_THREAD_PREFIX)).count();
+
+        assertEquals(snapshotThreadPoolSize, snpRunningThreads);
     }
 
     /**

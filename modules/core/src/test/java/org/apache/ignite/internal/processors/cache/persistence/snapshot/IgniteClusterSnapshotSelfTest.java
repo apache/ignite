@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -107,7 +108,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** Cache configuration for test. */
     private static final CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-        .setBackups(2);
+        .setBackups(2)
+        .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
