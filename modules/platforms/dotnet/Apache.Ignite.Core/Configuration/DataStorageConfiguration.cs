@@ -195,8 +195,6 @@ namespace Apache.Ignite.Core.Configuration
             WalMode = DefaultWalMode;
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
             WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
-            WalCompactionEnabled = DefaultWalCompactionEnabled;
-            SystemRegionInitialSize = DefaultSystemRegionInitialSize;
             SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
