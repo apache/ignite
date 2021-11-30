@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
@@ -330,9 +331,21 @@ public class IgniteImpl implements Ignite {
      * Stops ignite node.
      */
     public void stop() {
-        if (status.getAndSet(Status.STOPPING) == Status.STARTED) {
-            doStopNode(List.of(vaultMgr, nodeCfgMgr, clusterSvc, raftMgr, metaStorageMgr, clusterCfgMgr, baselineMgr,
-                    distributedTblMgr, qryEngine, restModule, clientHandlerModule));
+        AtomicBoolean explicitStop = new AtomicBoolean();
+
+        status.getAndUpdate(status -> {
+            if (status == Status.STARTED) {
+                explicitStop.set(true);
+            } else {
+                explicitStop.set(false);
+            }
+
+            return Status.STOPPING;
+        });
+
+        if (explicitStop.get()) {
+            doStopNode(List.of(vaultMgr, nodeCfgMgr, clusterSvc, raftMgr, txManager, metaStorageMgr, clusterCfgMgr, baselineMgr,
+                    distributedTblMgr, qryEngine, restModule, clientHandlerModule, nettyBootstrapFactory));
         }
     }
 
