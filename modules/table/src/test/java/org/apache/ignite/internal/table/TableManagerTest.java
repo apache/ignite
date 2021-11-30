@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -190,9 +191,11 @@ public class TableManagerTest extends IgniteAbstractTest {
 
     /**
      * Tests create a table through public API.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void testCreateTable() {
+    public void testCreateTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_NAME).columns(
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
                 SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
@@ -207,9 +210,11 @@ public class TableManagerTest extends IgniteAbstractTest {
 
     /**
      * Tests drop a table through public API.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void testDropTable() {
+    public void testDropTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
                 SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
@@ -302,9 +307,11 @@ public class TableManagerTest extends IgniteAbstractTest {
 
     /**
      * Cheks that the all RAFT nodes will be stopped when Table manager is stopping.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void tableManagerStopTest() {
+    public void tableManagerStopTest() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
                 SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
@@ -330,12 +337,18 @@ public class TableManagerTest extends IgniteAbstractTest {
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
                 SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
         ).withPrimaryKey("key").build();
-
+    
         Phaser phaser = new Phaser(2);
-
-        CompletableFuture<Table> createFut = CompletableFuture.supplyAsync(() ->
-                mockManagersAndCreateTableWithDelay(scmTbl, tblManagerFut, phaser)
-        );
+    
+        CompletableFuture<Table> createFut = CompletableFuture.supplyAsync(() -> {
+            try {
+                return mockManagersAndCreateTableWithDelay(scmTbl, tblManagerFut, phaser);
+            } catch (NodeStoppingException e) {
+                fail(e.getMessage());
+            }
+            
+            return null;
+        });
 
         CompletableFuture<Table> getFut = CompletableFuture.supplyAsync(() -> {
             phaser.awaitAdvance(0);
@@ -362,9 +375,11 @@ public class TableManagerTest extends IgniteAbstractTest {
 
     /**
      * Tries to create a table that already exists.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void testDoubledCreateTable() {
+    public void testDoubledCreateTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_NAME)
                 .columns(
                         SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
@@ -393,11 +408,12 @@ public class TableManagerTest extends IgniteAbstractTest {
      * @param tableDefinition Configuration schema for a table.
      * @param tblManagerFut   Future for table manager.
      * @return Table.
+     * @throws NodeStoppingException If something went wrong.
      */
     private TableImpl mockManagersAndCreateTable(
             TableDefinition tableDefinition,
             CompletableFuture<TableManager> tblManagerFut
-    ) {
+    ) throws NodeStoppingException {
         return mockManagersAndCreateTableWithDelay(tableDefinition, tblManagerFut, null);
     }
 
@@ -408,13 +424,14 @@ public class TableManagerTest extends IgniteAbstractTest {
      * @param tblManagerFut   Future for table manager.
      * @param phaser          Phaser for the wait.
      * @return Table manager.
+     * @throws NodeStoppingException If something went wrong.
      */
     @NotNull
     private TableImpl mockManagersAndCreateTableWithDelay(
             TableDefinition tableDefinition,
             CompletableFuture<TableManager> tblManagerFut,
             Phaser phaser
-    ) {
+    ) throws NodeStoppingException {
         when(rm.prepareRaftGroup(any(), any(), any())).thenAnswer(mock -> {
             RaftGroupService raftGrpSrvcMock = mock(RaftGroupService.class);
 
