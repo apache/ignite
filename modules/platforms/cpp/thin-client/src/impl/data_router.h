@@ -125,27 +125,6 @@ namespace ignite
                 virtual void OnHandshakeComplete(uint32_t id);
 
                 /**
-                 * Asynchronously send request message and receive response.
-                 *
-                 * @param req Request message.
-                 * @return Channel that was used for request.
-                 * @throw IgniteError on error.
-                 */
-                template<typename ReqT, typename RspT>
-                SP_DataChannel AsyncMessage(const ReqT& req)
-                {
-                    SP_DataChannel channel = GetRandomChannel();
-
-                    int32_t metaVer = typeMgr.GetVersion();
-
-                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
-
-                    ProcessMeta(metaVer);
-
-                    return channel;
-                }
-
-                /**
                  * Synchronously send request message and receive response.
                  *
                  * @param req Request message.
@@ -233,7 +212,7 @@ namespace ignite
 
                     try
                     {
-                        channel.Get()->SyncMessageWithNotification(req, notification, ioTimeout);
+                        channel.Get()->SyncMessageWithNotification(req, notification, config.GetConnectionTimeout());
                     }
                     catch (IgniteError& err)
                     {
@@ -289,7 +268,7 @@ namespace ignite
                  */
                 int32_t GetIoTimeout() const
                 {
-                    return ioTimeout;
+                    return config.GetConnectionTimeout();
                 }
 
             private:
@@ -354,7 +333,7 @@ namespace ignite
 
                     try
                     {
-                        channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                        channel.Get()->SyncMessage(req, rsp, config.GetConnectionTimeout());
                     }
                     catch (IgniteError& err)
                     {
@@ -368,9 +347,6 @@ namespace ignite
 
                     CheckAffinity(rsp);
                 }
-
-                /** Shared pointer to end points. */
-                typedef common::concurrent::SharedPointer<network::EndPoints> SP_EndPoints;
 
                 /**
                  * Get random data channel.

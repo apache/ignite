@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include <ignite/future.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
@@ -59,6 +60,9 @@ namespace ignite
                 /** Version set type. */
                 typedef std::set<ProtocolVersion> VersionSet;
 
+                /** Response map. */
+                typedef std::map< int64_t, common::Promise<interop::SP_InteropMemory> > ResponseMap;
+
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
 
@@ -79,19 +83,6 @@ namespace ignite
 
                 /** Current version. */
                 static const ProtocolVersion VERSION_DEFAULT;
-
-                /**
-                 * Operation with timeout result.
-                 */
-                struct OperationResult
-                {
-                    enum T
-                    {
-                        SUCCESS,
-                        FAIL,
-                        TIMEOUT
-                    };
-                };
 
                 /**
                  * Constructor.
@@ -124,86 +115,21 @@ namespace ignite
                 void Close();
 
                 /**
-                 * Synchronously send request message and receive response.
-                 * Uses provided timeout. Does not try to restore connection on
-                 * fail.
+                 * Synchronously send request message and receive response. Uses provided timeout.
                  *
                  * @param req Request message.
                  * @param rsp Response message.
                  * @param timeout Timeout.
                  * @throw IgniteError on error.
                  */
-                void AsyncMessage(const Request& req, Response& rsp, int32_t timeout);
+                void SyncMessage(const Request& req, Response& rsp, int32_t timeout);
 
                 /**
                  * Process received message.
                  *
                  * @param msg Message.
                  */
-                void ProcessMessage(impl::interop::SP_InteropMemory msg);
-
-//                /**
-//                 * Synchronously send request message, receive response and get a notification.
-//                 *
-//                 * @param req Request message.
-//                 * @param notification Notification message.
-//                 * @param timeout Timeout.
-//                 * @return Channel that was used for request.
-//                 * @throw IgniteError on error.
-//                 */
-//                template<typename ReqT, typename NotT>
-//                void SyncMessageWithNotification(const ReqT& req, NotT& notification, int32_t timeout)
-//                {
-//                    // Allocating 64KB to lessen number of re-allocations.
-//                    enum { BUFFER_SIZE = 1024 * 64 };
-//
-//                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-//
-//                    int64_t id = GenerateRequestMessage(req, mem);
-//
-//                    common::concurrent::CsLockGuard lock(ioMutex);
-//
-//                    InternalSyncMessageUnguarded(mem, timeout);
-//
-//                    interop::InteropInputStream inStream(&mem);
-//
-//                    inStream.Position(4);
-//
-//                    int64_t rspId = inStream.ReadInt64();
-//
-//                    if (id != rspId)
-//                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-//                            "Protocol error: Response message ID does not equal Request ID");
-//
-//                    binary::BinaryReaderImpl reader(&inStream);
-//
-//                    typedef typename NotT::ResponseType RspT;
-//                    RspT rsp;
-//
-//                    rsp.Read(reader, currentVersion);
-//
-//                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-//                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED, rsp.GetError().c_str());
-//
-//                    bool success = Receive(mem, 0);
-//
-//                    if (!success)
-//                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-//                            "Can not receive message response from the remote host: timeout");
-//
-//                    inStream.Position(4);
-//                    inStream.Synchronize();
-//
-//                    int64_t notificationId = inStream.ReadInt64();
-//
-//                    if (notificationId != rsp.GetNotificationId())
-//                    {
-//                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification ID",
-//                            "expected", rsp.GetNotificationId(), "actual", notificationId)
-//                    }
-//
-//                    notification.Read(reader, currentVersion);
-//                }
+                void ProcessMessage(interop::SP_InteropMemory msg);
 
                 /**
                  * Get remote node.
@@ -227,24 +153,6 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 
                 /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
-                 *
-                 * @param mem Memory.
-                 * @param timeout Operation timeout.
-                 */
-                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
-
-                /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
-                 *
-                 * @param mem Memory.
-                 * @param timeout Operation timeout.
-                 */
-                void InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout);
-
-                /**
                  * Generate request ID.
                  *
                  * Atomically generates and returns new Request ID.
@@ -263,48 +171,16 @@ namespace ignite
                  * @param mem Memory to write request to.
                  * @return Message ID.
                  */
-                int64_t GenerateRequestMessage(const Request& req, interop::InteropUnpooledMemory& mem);
+                int64_t GenerateRequestMessage(const Request& req, interop::InteropMemory& mem);
 
                 /**
-                 * Send data by established connection.
+                 * Asynchronously send request message and get a future for the response. Uses provided timeout.
                  *
-                 * @param data Data buffer.
-                 * @param len Data length.
+                 * @param req Request message.
                  * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
                  * @throw IgniteError on error.
                  */
-                bool Send(const int8_t* data, size_t len, int32_t timeout);
-
-                /**
-                 * Receive next message.
-                 *
-                 * @param msg Buffer for message.
-                 * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
-                 * @throw IgniteError on error.
-                 */
-                bool Receive(interop::InteropMemory& msg, int32_t timeout);
-
-                /**
-                 * Receive specified number of bytes.
-                 *
-                 * @param dst Buffer for data.
-                 * @param len Number of bytes to receive.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T ReceiveAll(void* dst, size_t len, int32_t timeout);
-
-                /**
-                 * Send specified number of bytes.
-                 *
-                 * @param data Data buffer.
-                 * @param len Data length.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T SendAll(const int8_t* data, size_t len, int32_t timeout);
+                Future<interop::SP_InteropMemory> AsyncMessage(const Request &req, int32_t timeout);
 
                 /**
                  * Perform handshake request.
@@ -326,9 +202,18 @@ namespace ignite
 
                 /**
                  * Handle handshake response.
+                 *
                  * @param msg Message.
                  */
-                void OnHandshakeResponse(impl::interop::SP_InteropMemory msg);
+                void OnHandshakeResponse(interop::SP_InteropMemory msg);
+
+                /**
+                 * Set channel error. To be used in async callbacks to invalidate channel.
+                 *
+                 * @param code Error code.
+                 * @param msg Error message.
+                 */
+                void SetChannelError(int32_t code, const std::string& msg);
 
                 /**
                  * Check if the version is supported.
@@ -340,9 +225,6 @@ namespace ignite
 
                 /** Set of supported versions. */
                 const static VersionSet supportedVersions;
-
-//                /** Sync IO mutex. */
-//                common::concurrent::CriticalSection ioMutex;
 
                 /** State handler. */
                 ChannelStateHandler& stateHandler;
@@ -370,6 +252,12 @@ namespace ignite
 
                 /** Request ID counter. */
                 int64_t reqIdCounter;
+
+                /** Response map mutex. */
+                common::concurrent::CriticalSection responseMutex;
+
+                /** Responses. */
+                ResponseMap responseMap;
             };
 
             /** Shared pointer type. */

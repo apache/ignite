@@ -53,6 +53,19 @@ namespace ignite
             }
 
             /**
+             * Convert to string.
+             *
+             * @return String form.
+             */
+            std::string ToString() const
+            {
+                std::stringstream ss;
+                ss << host << ':' << port;
+
+                return ss.str();
+            }
+
+            /**
              * Compare to another instance.
              *
              * @param other Another instance.

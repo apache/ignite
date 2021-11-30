@@ -22,7 +22,7 @@
 
 #include <vector>
 
-#include <ignite/future.h>
+#include <ignite/ignite_error.h>
 #include <ignite/impl/interop/interop_memory.h>
 
 #include <ignite/network/async_handler.h>
@@ -84,12 +84,21 @@ namespace ignite
             virtual uint64_t Send(impl::interop::SP_InteropMemory mem, int32_t timeout) = 0;
 
             /**
-             * Closes specified connection if it's established. Connection to the specified address will is planned
-             * for re-connect.
+             * Closes specified connection if it's established. Connection to the specified address is planned for
+             * re-connect. Error is not reported to handler.
              *
              * @param id Client ID.
              */
             virtual void Reset(uint64_t id) = 0;
+
+            /**
+             * Closes specified connection if it's established. Connection to the specified address is planned for
+             * re-connect. Error is reported to handler.
+             *
+             * @param id Client ID.
+             * @param err Error.
+             */
+            virtual void CloseWithError(uint64_t id, const IgniteError& err) = 0;
         };
 
         typedef common::concurrent::SharedPointer<network::AsyncClientPool> SP_AsyncClientPool;
