@@ -122,7 +122,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
             if (deserialized != null)
                 return (T)deserialized;
 
-            deserialized = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
+            deserialized = (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++) {
                 Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
