@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * This class represents a row in {@link SortedSegmentedIndex}.
@@ -124,7 +124,7 @@ public class IndexRowImpl implements IndexRow {
 
         v = rowHnd.cacheValue(cacheRow);
         sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.toString() :
-            "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
+            "Data hidden due to " + IGNITE_SENSITIVE_DATA_LOGGING + " flag."));
 
         sb.a(" ][ ");
 
