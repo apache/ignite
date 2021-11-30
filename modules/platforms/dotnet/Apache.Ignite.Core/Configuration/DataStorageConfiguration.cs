@@ -492,7 +492,6 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.
         /// </summary>
-        [Obsolete("Use SystemDataRegionConfiguration.")]
         [DefaultValue(DefaultSystemRegionInitialSize)]
         public long SystemRegionInitialSize
         {
@@ -511,7 +510,6 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the maximum memory region size reserved for system needs.
         /// </summary>
-        [Obsolete("Use SystemDataRegionConfiguration.")]
         [DefaultValue(DefaultSystemRegionMaxSize)]
         public long SystemRegionMaxSize
         {
