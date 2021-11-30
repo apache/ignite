@@ -154,6 +154,8 @@ public class ItCliServiceTest {
         cluster.stopAll();
         ExecutorServiceHelper.shutdownAndAwaitTermination(clientExecutor);
 
+        TestUtils.assertAllJraftThreadsStopped();
+
         LOG.info(">>>>>>>>>>>>>>> End test method: " + testInfo.getDisplayName());
     }
 
@@ -314,7 +316,8 @@ public class ItCliServiceTest {
         assertNotNull(oldLeaderNode);
         PeerId oldLeader = oldLeaderNode.getNodeId().getPeerId();
         assertNotNull(oldLeader);
-        assertTrue(cliService.changePeers(groupId, conf, new Configuration(newPeers)).isOk());
+        Status status = cliService.changePeers(groupId, conf, new Configuration(newPeers));
+        assertTrue(status.isOk(), status.getErrorMsg());
         cluster.waitLeader();
         PeerId newLeader = cluster.getLeader().getNodeId().getPeerId();
         assertNotEquals(oldLeader, newLeader);
@@ -479,7 +482,7 @@ public class ItCliServiceTest {
         for (Map.Entry<String, PeerId> entry : rebalancedLeaderIds.entrySet())
             ret.compute(entry.getValue(), (ignored, num) -> num == null ? 1 : num + 1);
         for (Map.Entry<PeerId, Integer> entry : ret.entrySet()) {
-            System.out.println(entry);
+            LOG.info(entry.toString());
             assertEquals(new PeerId("host_1", 8080), entry.getKey());
         }
     }

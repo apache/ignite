@@ -115,6 +115,11 @@ public class JraftServerImpl implements RaftServer {
         this.nodeManager = new NodeManager();
         this.opts = opts;
 
+        // Auto-adjust options.
+        this.opts.setRpcConnectTimeoutMs(this.opts.getElectionTimeoutMs() / 3);
+        this.opts.setRpcDefaultTimeout(this.opts.getElectionTimeoutMs() / 2);
+        this.opts.setSharedPools(true);
+
         if (opts.getServerName() == null) {
             opts.setServerName(service.localConfiguration().getName());
         }
@@ -123,6 +128,9 @@ public class JraftServerImpl implements RaftServer {
     /** {@inheritDoc} */
     @Override
     public void start() {
+        assert opts.isSharedPools() : "RAFT server is supposed to run in shared pools mode";
+
+        // Pre-create all pools in shared mode.
         if (opts.getCommonExecutor() == null) {
             opts.setCommonExecutor(JRaftUtils.createCommonExecutor(opts));
         }
@@ -137,6 +145,22 @@ public class JraftServerImpl implements RaftServer {
 
         if (opts.getClientExecutor() == null) {
             opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, opts.getServerName()));
+        }
+
+        if (opts.getVoteTimer() == null) {
+            opts.setVoteTimer(JRaftUtils.createTimer(opts, "JRaft-VoteTimer"));
+        }
+
+        if (opts.getElectionTimer() == null) {
+            opts.setElectionTimer(JRaftUtils.createTimer(opts, "JRaft-ElectionTimer"));
+        }
+
+        if (opts.getStepDownTimer() == null) {
+            opts.setStepDownTimer(JRaftUtils.createTimer(opts, "JRaft-StepDownTimer"));
+        }
+
+        if (opts.getSnapshotTimer() == null) {
+            opts.setSnapshotTimer(JRaftUtils.createTimer(opts, "JRaft-SnapshotTimer"));
         }
 
         requestExecutor = JRaftUtils.createRequestExecutor(opts);
@@ -216,6 +240,22 @@ public class JraftServerImpl implements RaftServer {
 
         if (opts.getScheduler() != null) {
             opts.getScheduler().shutdown();
+        }
+
+        if (opts.getElectionTimer() != null) {
+            opts.getElectionTimer().stop();
+        }
+
+        if (opts.getVoteTimer() != null) {
+            opts.getVoteTimer().stop();
+        }
+
+        if (opts.getStepDownTimer() != null) {
+            opts.getStepDownTimer().stop();
+        }
+
+        if (opts.getSnapshotTimer() != null) {
+            opts.getSnapshotTimer().stop();
         }
 
         if (opts.getClientExecutor() != null) {

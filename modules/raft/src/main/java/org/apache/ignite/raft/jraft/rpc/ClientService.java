@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.rpc;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.raft.jraft.Lifecycle;
 import org.apache.ignite.raft.jraft.option.RpcOptions;
 import org.apache.ignite.raft.jraft.util.Endpoint;
@@ -26,12 +26,20 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
  */
 public interface ClientService extends Lifecycle<RpcOptions> {
     /**
-     * Connect to endpoint, returns true when success. TODO asch rename to isAlive IGNITE-14832.
+     * Connect to endpoint, returns true when success. TODO asch it seems we don't need it IGNITE-14832.
      *
      * @param endpoint server address
      * @return true on connect success
      */
     boolean connect(final Endpoint endpoint);
+    
+    /**
+     * Connect to endpoint asynchronously, returns true when success.
+     *
+     * @param endpoint server address
+     * @return The future with the result.
+     */
+    CompletableFuture<Boolean> connectAsync(final Endpoint endpoint);
 
     /**
      * Send a requests and waits for response with callback, returns the request future.
@@ -42,6 +50,6 @@ public interface ClientService extends Lifecycle<RpcOptions> {
      * @param timeoutMs timeout millis
      * @return a future with operation result
      */
-    <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+    <T extends Message> CompletableFuture<Message> invokeWithDone(final Endpoint endpoint, final Message request,
         final RpcResponseClosure<T> done, final int timeoutMs);
 }

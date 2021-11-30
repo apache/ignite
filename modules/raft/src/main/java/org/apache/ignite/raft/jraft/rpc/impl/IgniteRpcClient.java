@@ -24,6 +24,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiPredicate;
+import org.apache.ignite.internal.tostring.S;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
@@ -41,6 +43,8 @@ import org.apache.ignite.raft.jraft.util.Utils;
 import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 
 public class IgniteRpcClient implements RpcClientEx {
+    private static final IgniteLogger LOG = IgniteLogger.forClass(IgniteRpcClient.class);
+    
     private volatile BiPredicate<Object, String> recordPred;
 
     private BiPredicate<Object, String> blockPred;
@@ -108,13 +112,17 @@ public class IgniteRpcClient implements RpcClientEx {
 
         synchronized (this) {
             if (blockPred != null && blockPred.test(request, endpoint.toString())) {
-                blockedMsgs.add(new Object[] {
-                    request,
-                    endpoint.toString(),
-                    fut.hashCode(),
-                    System.currentTimeMillis(),
-                    (Runnable)() -> send(endpoint, request, fut, timeoutMs)
-                });
+                Object[] msgData = {
+                        request,
+                        endpoint.toString(),
+                        fut.hashCode(),
+                        System.currentTimeMillis(),
+                        (Runnable) () -> send(endpoint, request, fut, timeoutMs)
+                };
+                
+                blockedMsgs.add(msgData);
+    
+                LOG.info("Blocked message to={} id={} msg={}", endpoint.toString(), msgData[2], S.toString(request));
 
                 return fut;
             }
@@ -163,7 +171,9 @@ public class IgniteRpcClient implements RpcClientEx {
 
         for (Object[] msg : msgs) {
             Runnable r = (Runnable) msg[4];
-
+    
+            LOG.info("Unblocked message to={} id={} msg={}", msg[1], msg[2], S.toString(msg[0]));
+            
             r.run();
         }
     }

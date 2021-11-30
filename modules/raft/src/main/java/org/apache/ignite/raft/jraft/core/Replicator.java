@@ -1026,7 +1026,7 @@ public class Replicator implements ThreadId.OnError {
                 this.catchUpClosure.getStatus().setError(code, RaftError.describeCode(code));
             }
             if (this.catchUpClosure.hasTimer()) {
-                if (!beforeDestroy && !this.catchUpClosure.getTimer().cancel(true)) {
+                if (!beforeDestroy && !this.catchUpClosure.getTimer().cancel(false)) { // Avoid interrupting a thread in the pool.
                     // There's running timer task, let timer task trigger
                     // on_caught_up to void ABA problem
                     return;

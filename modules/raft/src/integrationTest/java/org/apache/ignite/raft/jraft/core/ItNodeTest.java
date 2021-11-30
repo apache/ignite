@@ -60,7 +60,6 @@ import org.apache.ignite.raft.jraft.closure.ReadIndexClosure;
 import org.apache.ignite.raft.jraft.closure.SynchronizedClosure;
 import org.apache.ignite.raft.jraft.closure.TaskClosure;
 import org.apache.ignite.raft.jraft.conf.Configuration;
-import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.entity.Task;
@@ -81,7 +80,6 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
 import org.apache.ignite.raft.jraft.rpc.impl.core.DefaultRaftClientService;
 import org.apache.ignite.raft.jraft.storage.SnapshotThrottle;
-import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.ThroughputSnapshotThrottle;
 import org.apache.ignite.raft.jraft.test.TestUtils;
@@ -159,12 +157,7 @@ public class ItNodeTest {
     private final List<FixedThreadsExecutorGroup> appendEntriesExecutors = new ArrayList<>();
 
     /** Test info. */
-    private final TestInfo testInfo;
-
-    /** */
-    public ItNodeTest(TestInfo testInfo) {
-        this.testInfo = testInfo;
-    }
+    private TestInfo testInfo;
 
     @BeforeAll
     public static void setupNodeTest() {
@@ -182,9 +175,10 @@ public class ItNodeTest {
     }
 
     @BeforeEach
-    public void setup(@WorkDirectory Path workDir) throws Exception {
+    public void setup(TestInfo testInfo, @WorkDirectory Path workDir) throws Exception {
         LOG.info(">>>>>>>>>>>>>>> Start test method: " + testInfo.getDisplayName());
 
+        this.testInfo = testInfo;
         dataPath = workDir.toString();
 
         testStartMs = Utils.monotonicMs();
@@ -211,6 +205,9 @@ public class ItNodeTest {
 
         startedCounter.set(0);
         stoppedCounter.set(0);
+
+        TestUtils.assertAllJraftThreadsStopped();
+
         LOG.info(">>>>>>>>>>>>>>> End test method: " + testInfo.getDisplayName() + ", cost:"
             + (Utils.monotonicMs() - testStartMs) + " ms.");
     }
@@ -260,8 +257,9 @@ public class ItNodeTest {
         AtomicInteger c = new AtomicInteger(0);
         for (int i = 0; i < 10; i++) {
             ByteBuffer data = ByteBuffer.wrap(("hello" + i).getBytes());
+            int finalI = i;
             Task task = new Task(data, new JoinableClosure(status -> {
-                System.out.println(status);
+                LOG.info("{} i={}", status, finalI);
                 if (!status.isOk()) {
                     assertTrue(
                         status.getRaftError() == RaftError.EBUSY || status.getRaftError() == RaftError.EPERM);
@@ -1509,10 +1507,8 @@ public class ItNodeTest {
         PeerId oldLeader = leader.getNodeId().getPeerId();
         assertTrue(cluster.stop(leader.getNodeId().getPeerId().getEndpoint()));
 
-        // apply something when follower
-        //final List<Node> followers = cluster.getFollowers();
         assertFalse(followers.isEmpty());
-        sendTestTaskAndWait("follower apply ", followers.get(0), -1);
+        sendTestTaskAndWait("follower apply ", followers.get(0), -1); // Should fail, because no leader.
 
         for (Node follower : followers) {
             NodeImpl follower0 = (NodeImpl) follower;
@@ -1551,7 +1547,7 @@ public class ItNodeTest {
         cluster.clean(oldLeader.getEndpoint());
 
         // restart old leader
-        LOG.info("restart old leader {}", oldLeader);
+        LOG.info("Restart old leader with cleanup {}", oldLeader);
         assertTrue(cluster.start(oldLeader.getEndpoint()));
         cluster.ensureSame();
 
@@ -2976,7 +2972,8 @@ public class ItNodeTest {
         done.reset();
         // works
         leader.changePeers(conf, done);
-        assertTrue(done.await().isOk());
+        Status await = done.await();
+        assertTrue(await.isOk(), await.getErrorMsg());
 
         cluster.ensureSame();
         assertEquals(3, cluster.getFsms().size());
@@ -3391,16 +3388,7 @@ public class ItNodeTest {
     }
 
     private NodeOptions createNodeOptions() {
-        NodeOptions options = new NodeOptions();
-
-        ExecutorService executor = JRaftUtils.createCommonExecutor(options);
-        executors.add(executor);
-        options.setCommonExecutor(executor);
-        FixedThreadsExecutorGroup appendEntriesExecutor = JRaftUtils.createAppendEntriesExecutor(options);
-        appendEntriesExecutors.add(appendEntriesExecutor);
-        options.setStripedExecutor(appendEntriesExecutor);
-
-        return options;
+        return new NodeOptions();
     }
 
     /**
@@ -3478,35 +3466,6 @@ public class ItNodeTest {
         Configuration initialConf = nodeOptions.getInitialConf();
         nodeOptions.setStripes(1);
 
-        StripedDisruptor<FSMCallerImpl.ApplyTask> fsmCallerDusruptor;
-        StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeDisruptor;
-        StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor;
-        StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor;
-
-        nodeOptions.setfSMCallerExecutorDisruptor(fsmCallerDusruptor = new StripedDisruptor<>(
-            "JRaft-FSMCaller-Disruptor_ITNodeTest",
-            nodeOptions.getRaftOptions().getDisruptorBufferSize(),
-            () -> new FSMCallerImpl.ApplyTask(),
-            nodeOptions.getStripes()));
-
-        nodeOptions.setNodeApplyDisruptor(nodeDisruptor = new StripedDisruptor<>(
-            "JRaft-NodeImpl-Disruptor_ITNodeTest",
-            nodeOptions.getRaftOptions().getDisruptorBufferSize(),
-            () -> new NodeImpl.LogEntryAndClosure(),
-            nodeOptions.getStripes()));
-
-        nodeOptions.setReadOnlyServiceDisruptor(readOnlyServiceDisruptor = new StripedDisruptor<>(
-            "JRaft-ReadOnlyService-Disruptor_ITNodeTest",
-            nodeOptions.getRaftOptions().getDisruptorBufferSize(),
-            () -> new ReadOnlyServiceImpl.ReadIndexEvent(),
-            nodeOptions.getStripes()));
-
-        nodeOptions.setLogManagerDisruptor(logManagerDisruptor = new StripedDisruptor<>(
-            "JRaft-LogManager-Disruptor_ITNodeTest",
-            nodeOptions.getRaftOptions().getDisruptorBufferSize(),
-            () -> new LogManagerImpl.StableClosureEvent(),
-            nodeOptions.getStripes()));
-
         Stream<PeerId> peers = initialConf == null ?
             Stream.empty() :
             Stream.concat(initialConf.getPeers().stream(), initialConf.getLearners().stream());
@@ -3538,14 +3497,11 @@ public class ItNodeTest {
 
         var service = new RaftGroupService(groupId, peerId, nodeOptions, rpcServer, nodeManager) {
             @Override public synchronized void shutdown() {
+                rpcServer.shutdown();
+
                 super.shutdown();
-
+    
                 clusterService.stop();
-
-                fsmCallerDusruptor.shutdown();
-                nodeDisruptor.shutdown();
-                readOnlyServiceDisruptor.shutdown();
-                logManagerDisruptor.shutdown();
             }
         };
 

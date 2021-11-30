@@ -193,13 +193,13 @@ public class RaftServerImpl implements RaftServer {
     public @Nullable Peer localPeer(String groupId) {
         return new Peer(service.topologyService().localMember().address());
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Set<String> startedGroups() {
         return listeners.keySet();
     }
-    
+
     /**
      * Handle action request.
      *

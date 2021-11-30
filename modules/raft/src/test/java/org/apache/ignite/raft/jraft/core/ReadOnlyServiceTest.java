@@ -104,7 +104,6 @@ public class ReadOnlyServiceTest {
         nodeOptions.setScheduler(scheduler);
         Mockito.when(this.node.getNodeMetrics()).thenReturn(new NodeMetrics(false));
         Mockito.when(this.node.getGroupId()).thenReturn("test");
-        Mockito.when(this.node.getTimerManager()).thenReturn(nodeOptions.getScheduler());
         Mockito.when(this.node.getOptions()).thenReturn(nodeOptions);
         Mockito.when(this.node.getNodeId()).thenReturn(new NodeId("test", new PeerId("localhost:8081", 0)));
         Mockito.when(this.node.getServerId()).thenReturn(new PeerId("localhost:8081", 0));

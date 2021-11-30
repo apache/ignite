@@ -651,7 +651,7 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
         final SnapshotCopierOptions copierOpts = new SnapshotCopierOptions();
         copierOpts.setNodeOptions(this.node.getOptions());
         copierOpts.setRaftClientService(this.node.getRpcClientService());
-        copierOpts.setTimerManager(this.node.getTimerManager());
+        copierOpts.setTimerManager(this.node.getOptions().getScheduler());
         copierOpts.setRaftOptions(this.node.getRaftOptions());
         return copierOpts;
     }

@@ -31,6 +31,8 @@ import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
  * State machine adapter that implements all methods with default behavior except {@link #onApply(Iterator)}.
  */
 public abstract class StateMachineAdapter implements StateMachine {
+    protected volatile long leaderTerm = -1;
+
     /** The logger */
     private static final IgniteLogger LOG = IgniteLogger.forClass(StateMachineAdapter.class);
 
@@ -51,8 +53,13 @@ public abstract class StateMachineAdapter implements StateMachine {
         return false;
     }
 
+    public long getLeaderTerm() {
+        return this.leaderTerm;
+    }
+
     @Override
     public void onLeaderStart(final long term) {
+        this.leaderTerm = term;
         LOG.info("onLeaderStart: term={}.", term);
     }
 

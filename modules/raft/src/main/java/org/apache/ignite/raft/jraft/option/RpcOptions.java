@@ -16,42 +16,41 @@
  */
 package org.apache.ignite.raft.jraft.option;
 
-import com.codahale.metrics.MetricRegistry;
 import java.util.concurrent.ExecutorService;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
-import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
-import org.apache.ignite.raft.jraft.core.NodeImpl;
-import org.apache.ignite.raft.jraft.core.ReadOnlyServiceImpl;
-import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.rpc.RpcClient;
-import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 
 public class RpcOptions {
     /** Raft message factory. */
     private RaftMessagesFactory raftMessagesFactory = new RaftMessagesFactory();
 
     /**
-     * Rpc handshake timeout in milliseconds Default: 2000(1s)
+     * Rpc connect timeout in milliseconds.
+     * Default: 1200 (1.2s)
      */
-    private int rpcConnectTimeoutMs = 2000; // TODO asch rename to handshake timeout IGNITE-14832.
+    private int rpcConnectTimeoutMs = 1200;
 
     /**
-     * RPC request default timeout in milliseconds Default: 5000(5s)
+     * RPC request default timeout in milliseconds.
+     * Default: 5000 (5s)
      */
     private int rpcDefaultTimeout = 5000;
 
     /**
-     * Install snapshot RPC request default timeout in milliseconds Default: 5 * 60 * 1000(5min)
+     * Install snapshot RPC request default timeout in milliseconds.
+     * Default: 5m
      */
     private int rpcInstallSnapshotTimeout = 5 * 60 * 1000;
 
     /**
-     * RPC process thread pool size Default: 80
+     * RPC process thread pool size.
+     * Default: 80
      */
     private int rpcProcessorThreadPoolSize = 80;
 
     /**
-     * Whether to enable checksum for RPC. Default: false
+     * Whether to enable checksum for RPC.
      */
     private boolean enableRpcChecksum = false;
 
@@ -64,50 +63,6 @@ public class RpcOptions {
      * The client executor is used by RPC client.
      */
     private ExecutorService clientExecutor;
-
-    /** Striped disruptor for FSMCaller service. The queue serves of an Append entry requests in the RAFT state machine. */
-    private StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor;
-
-    /** Striped disruptor for Node apply service. */
-    private StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeApplyDisruptor;
-
-    /** Striped disruptor for Read only service. */
-    private StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor;
-
-    /** Striped disruptor for Log manager service. */
-    private StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor;
-
-    public StripedDisruptor<FSMCallerImpl.ApplyTask> getfSMCallerExecutorDisruptor() {
-        return fSMCallerExecutorDisruptor;
-    }
-
-    public void setfSMCallerExecutorDisruptor(StripedDisruptor<FSMCallerImpl.ApplyTask> fSMCallerExecutorDisruptor) {
-        this.fSMCallerExecutorDisruptor = fSMCallerExecutorDisruptor;
-    }
-
-    public StripedDisruptor<NodeImpl.LogEntryAndClosure> getNodeApplyDisruptor() {
-        return nodeApplyDisruptor;
-    }
-
-    public void setNodeApplyDisruptor(StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeApplyDisruptor) {
-        this.nodeApplyDisruptor = nodeApplyDisruptor;
-    }
-
-    public StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> getReadOnlyServiceDisruptor() {
-        return readOnlyServiceDisruptor;
-    }
-
-    public void setReadOnlyServiceDisruptor(StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor) {
-        this.readOnlyServiceDisruptor = readOnlyServiceDisruptor;
-    }
-
-    public StripedDisruptor<LogManagerImpl.StableClosureEvent> getLogManagerDisruptor() {
-        return logManagerDisruptor;
-    }
-
-    public void setLogManagerDisruptor(StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor) {
-        this.logManagerDisruptor = logManagerDisruptor;
-    }
 
     /**
      * Metric registry for RPC services, user should not use this field.

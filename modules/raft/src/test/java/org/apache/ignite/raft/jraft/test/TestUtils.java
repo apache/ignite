@@ -40,6 +40,9 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.mockito.ArgumentCaptor;
 
 import static java.lang.Thread.sleep;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test helper
@@ -182,5 +185,15 @@ public class TestUtils {
                 return false;
             }
         }, timeout);
+    }
+
+    /**
+     * Waits until all RAFT threads are stopped, throwing an AssertionException otherwise.
+     */
+    public static void assertAllJraftThreadsStopped() {
+        assertTrue(waitForCondition(() -> Thread.getAllStackTraces().keySet().stream().
+                noneMatch(t -> t.getName().contains("JRaft")), 5_000),
+            Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().contains("JRaft")).
+                sorted(comparing(Thread::getName)).collect(toList()).toString());
     }
 }

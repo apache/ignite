@@ -24,23 +24,21 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.jraft.conf.Configuration;
-import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
-import org.apache.ignite.raft.jraft.core.ReadOnlyServiceImpl;
 import org.apache.ignite.raft.jraft.core.Scheduler;
 import org.apache.ignite.raft.jraft.core.TimerManager;
-import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.option.BootstrapOptions;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RpcOptions;
-import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.ThreadPoolUtil;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.concurrent.DefaultFixedThreadsExecutorGroupFactory;
 import org.apache.ignite.raft.jraft.util.concurrent.FixedThreadsExecutorGroup;
+import org.apache.ignite.raft.jraft.util.timer.DefaultTimer;
+import org.apache.ignite.raft.jraft.util.timer.Timer;
 
 /**
  * Some helper methods for jraft usage.
@@ -59,43 +57,9 @@ public final class JRaftUtils {
 
         nodeOpts.setStripes(1);
 
-        StripedDisruptor<FSMCallerImpl.ApplyTask> fsmCallerDusruptor;
-        StripedDisruptor<NodeImpl.LogEntryAndClosure> nodeDisruptor;
-        StripedDisruptor<ReadOnlyServiceImpl.ReadIndexEvent> readOnlyServiceDisruptor;
-        StripedDisruptor<LogManagerImpl.StableClosureEvent> logManagerDisruptor;
-
-        nodeOpts.setfSMCallerExecutorDisruptor(fsmCallerDusruptor = new StripedDisruptor<>(
-            "JRaft-FSMCaller-Disruptor_bootstrap",
-            nodeOpts.getRaftOptions().getDisruptorBufferSize(),
-            () -> new FSMCallerImpl.ApplyTask(),
-            nodeOpts.getStripes()));
-
-        nodeOpts.setNodeApplyDisruptor(nodeDisruptor = new StripedDisruptor<>(
-            "JRaft-NodeImpl-Disruptor_bootstrap",
-            nodeOpts.getRaftOptions().getDisruptorBufferSize(),
-            () -> new NodeImpl.LogEntryAndClosure(),
-            nodeOpts.getStripes()));
-
-        nodeOpts.setReadOnlyServiceDisruptor(readOnlyServiceDisruptor = new StripedDisruptor<>(
-            "JRaft-ReadOnlyService-Disruptor_bootstrap",
-            nodeOpts.getRaftOptions().getDisruptorBufferSize(),
-            () -> new ReadOnlyServiceImpl.ReadIndexEvent(),
-            nodeOpts.getStripes()));
-
-        nodeOpts.setLogManagerDisruptor(logManagerDisruptor = new StripedDisruptor<>(
-            "JRaft-LogManager-Disruptor_bootstrap",
-            nodeOpts.getRaftOptions().getDisruptorBufferSize(),
-            () -> new LogManagerImpl.StableClosureEvent(),
-            nodeOpts.getStripes()));
-
         final boolean ret = node.bootstrap(opts);
         node.shutdown();
         node.join();
-
-        fsmCallerDusruptor.shutdown();
-        nodeDisruptor.shutdown();
-        readOnlyServiceDisruptor.shutdown();
-        logManagerDisruptor.shutdown();
 
         return ret;
     }
@@ -183,6 +147,18 @@ public final class JRaftUtils {
         return new TimerManager(
             opts.getTimerPoolSize(),
             NamedThreadFactory.threadPrefix(opts.getServerName(), "JRaft-Node-Scheduler")
+        );
+    }
+
+    /**
+     * @param opts Node options.
+     * @param name The name.
+     * @return The timer.
+     */
+    public static Timer createTimer(NodeOptions opts, String name) {
+        return new DefaultTimer(
+            opts.getTimerPoolSize(),
+            NamedThreadFactory.threadPrefix(opts.getServerName(), name)
         );
     }
 

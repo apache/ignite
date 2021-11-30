@@ -18,10 +18,10 @@ package org.apache.ignite.raft.jraft.rpc.impl;
 
 import java.net.ConnectException;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyEventHandler;
@@ -106,69 +106,71 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
 
     @Override
     public boolean connect(final Endpoint endpoint) {
+        try {
+            return connectAsync(endpoint).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+    
+            LOG.error("Interrupted while connecting to {}, exception: {}.", endpoint, e.getMessage());
+        } catch (ExecutionException e) {
+            LOG.error("Fail to connect {}, exception: {}.", endpoint, e.getMessage());
+        }
+        
+        return false;
+    }
+    
+    @Override
+    public CompletableFuture<Boolean> connectAsync(Endpoint endpoint) {
         final RpcClient rc = this.rpcClient;
         if (rc == null) {
             throw new IllegalStateException("Client service is uninitialized.");
         }
-
+    
         // Remote node is alive and pinged, safe to continue.
-        if (readyAddresses.contains(endpoint.toString()))
-            return true;
-
-        // Remote node must be pinged to make sure listeners are set.
-        synchronized (this) {
-            if (readyAddresses.contains(endpoint.toString()))
-                return true;
-
-            try {
-                final RpcRequests.PingRequest req = rpcOptions.getRaftMessagesFactory()
-                    .pingRequest()
-                    .sendTimestamp(System.currentTimeMillis())
-                    .build();
-
-                Future<Message> fut =
-                    invokeWithDone(endpoint, req, null, null, rpcOptions.getRpcConnectTimeoutMs(), rpcExecutor);
-
-                final ErrorResponse resp = (ErrorResponse) fut.get(); // Future will be certainly terminated by timeout.
-
-                if (resp != null && resp.errorCode() == 0) {
-                    readyAddresses.add(endpoint.toString());
-
-                    return true;
-                }
-                else
-                    return false;
-            }
-            catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            catch (final ExecutionException e) {
-                LOG.error("Fail to connect {}, exception: {}.", endpoint, e.getMessage());
-            }
+        if (readyAddresses.contains(endpoint.toString())) {
+            return CompletableFuture.completedFuture(true);
         }
-
-        return false;
+    
+        final RpcRequests.PingRequest req = rpcOptions.getRaftMessagesFactory()
+                .pingRequest()
+                .sendTimestamp(System.currentTimeMillis())
+                .build();
+    
+        CompletableFuture<Message> fut =
+                invokeWithDone(endpoint, req, null, null, rpcOptions.getRpcConnectTimeoutMs(), rpcExecutor);
+    
+        return fut.thenApply(msg -> {
+            ErrorResponse resp = (ErrorResponse) msg;
+        
+            if (resp != null && resp.errorCode() == 0) {
+                readyAddresses.add(endpoint.toString());
+            
+                return true;
+            } else {
+                return false;
+            }
+        });
     }
-
+    
     @Override
-    public <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+    public <T extends Message> CompletableFuture<Message> invokeWithDone(final Endpoint endpoint, final Message request,
         final RpcResponseClosure<T> done, final int timeoutMs) {
         return invokeWithDone(endpoint, request, done, timeoutMs, this.rpcExecutor);
     }
 
-    public <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+    public <T extends Message> CompletableFuture<Message> invokeWithDone(final Endpoint endpoint, final Message request,
         final RpcResponseClosure<T> done, final int timeoutMs,
         final Executor rpcExecutor) {
         return invokeWithDone(endpoint, request, null, done, timeoutMs, rpcExecutor);
     }
 
-    public <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+    public <T extends Message> CompletableFuture<Message> invokeWithDone(final Endpoint endpoint, final Message request,
         final InvokeContext ctx,
         final RpcResponseClosure<T> done, final int timeoutMs) {
         return invokeWithDone(endpoint, request, ctx, done, timeoutMs, this.rpcExecutor);
     }
 
-    public <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+    public <T extends Message> CompletableFuture<Message> invokeWithDone(final Endpoint endpoint, final Message request,
         final InvokeContext ctx,
         final RpcResponseClosure<T> done, final int timeoutMs,
         final Executor rpcExecutor) {
