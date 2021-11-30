@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
@@ -42,7 +44,9 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
@@ -163,10 +167,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             else
                 res = secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node));
 
-            if (res == null) {
-                throw new IllegalStateException("Failed to find security context " +
-                    "for subject with given ID : " + subjId);
-            }
+            if (res == null)
+                res = new UnknownUserSecurityContext(subjId);
 
             return withContext(res);
         }
@@ -230,6 +232,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         SecurityContext secCtx = securityContext();
 
         assert secCtx != null;
+
+        if (secCtx instanceof UnknownUserSecurityContext) {
+            throw new SecurityException("Failed to obtain user security context. The user has probably been deleted" +
+                " in the middle of Ignite operation execution [subjId=" + secCtx.subject().id() + ']');
+        }
 
         secPrc.authorize(name, perm, secCtx);
     }
@@ -424,5 +431,93 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** @return Security processor implementation to which current security facade delegates operations. */
     public GridSecurityProcessor securityProcessor() {
         return secPrc;
+    }
+
+    /**
+     * Security context implementation that is used to handle situation when user security context cannot be obtained
+     * based on the provided subject ID. It can happen if user information is dropped in the middle of Ignite
+     * operation or security plugin has incorrect implementation. This implementation throws exception on every attempt
+     * to get any specific user security information from it.
+     */
+    private static class UnknownUserSecurityContext implements SecurityContext, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final SecuritySubject secSubj;
+
+        /** */
+        public UnknownUserSecurityContext(UUID id) {
+            secSubj = new UnknownSecuritySubject(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject subject() {
+            return secSubj;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            return false;
+        }
+
+        /** */
+        private static class UnknownSecuritySubject implements SecuritySubject {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /** */
+            private final UUID secSubjId;
+
+            /** */
+            private final String errMsg;
+
+            /** */
+            public UnknownSecuritySubject(UUID secSubjId) {
+                this.secSubjId = secSubjId;
+
+                errMsg = "Failed to obtain security information for the current user [subjId=" + secSubjId + ']';
+            }
+
+            /** {@inheritDoc} */
+            @Override public UUID id() {
+                return secSubjId;
+            }
+
+            /** {@inheritDoc} */
+            @Override public SecuritySubjectType type() {
+                throw new SecurityException(errMsg);
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object login() {
+                throw new SecurityException(errMsg);
+            }
+
+            /** {@inheritDoc} */
+            @Override public InetSocketAddress address() {
+                throw new SecurityException(errMsg);
+            }
+
+            /** {@inheritDoc} */
+            @Override public SecurityPermissionSet permissions() {
+                throw new SecurityException(errMsg);
+            }
+        }
     }
 }
