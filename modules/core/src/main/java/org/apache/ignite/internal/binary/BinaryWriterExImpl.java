@@ -1902,7 +1902,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param obj Object to write.
      * @return {@code true} if the object has been written as a handle.
      */
-    boolean tryWriteAsHandle(Object obj) {
+    public boolean tryWriteAsHandle(Object obj) {
         assert obj != null;
 
         int pos = out.position();
