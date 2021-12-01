@@ -92,52 +92,84 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>linux-build</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <cmake.classifier>linux-x86_64</cmake.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.cmake-maven-project</groupId>
+                        <artifactId>cmake-maven-plugin</artifactId>
+                        <version>3.7.2-b1</version>
+                        <executions>
+                            <execution>
+                                <id>cmake-generate</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>${cmake.classifier}</classifier>
+                                    <sourcePath>${basedir}/src/main/cpp</sourcePath>
+                                    <targetPath>${project.build.directory}/cppbuild</targetPath>
+                                    <generator>Unix Makefiles</generator>
+                                    <options>
+                                        <option>-DCMAKE_BUILD_TYPE=Release</option>
+                                    </options>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>cmake-build</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>compile</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>${cmake.classifier}</classifier>
+                                    <projectDirectory>${project.build.directory}/cppbuild</projectDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-sources</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/classes/org/apache/ignite/internal/mem/linux/${os.arch}/</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}/cppbuild</directory>
+                                            <includes>
+                                                <include>*.so</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>build-cpp</id>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <tasks>
-                                <mkdir dir="${project.build.directory}/cppbuild"/>
-                                <exec os="Linux" executable="cmake" dir="${project.build.directory}/cppbuild" failonerror="true">
-                                    <arg line="-DCMAKE_BUILD_TYPE=Release"/>
-                                    <arg line="${basedir}/src/main/cpp"/>
-                                </exec>
-                                <exec os="Linux" executable="make" dir="${project.build.directory}/cppbuild" failonerror="true">
-                                    <arg line="VERBOSE=1"/>
-                                    <arg line="-j4"/>
-                                </exec>
-                                <copy failonerror="false"
-                                      file="${project.build.directory}/cppbuild/libnuma_alloc.so"
-                                      tofile="${project.build.directory}/classes/org/apache/ignite/internal/mem/linux/amd64/libnuma_alloc.so"/>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>clean-native</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <echo>Builddir: ${project.build.directory}</echo>
-                                <echo>Basedir: ${basedir}</echo>
-                                <delete dir="${project.build.directory}/cppbuild"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>

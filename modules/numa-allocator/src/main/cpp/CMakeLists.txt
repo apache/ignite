@@ -23,7 +23,6 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "-shared -D_FORTIFY_SOURCE=2 -z noexecstack -z,relro -z,now -fPIC -Wformat -Wformat-security -Werror=format-security")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pie")
 
-find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 find_package(Threads REQUIRED)
 include_directories(${CMAKE_THREAD_LIBS_INIT})
