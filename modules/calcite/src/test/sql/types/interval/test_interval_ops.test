@@ -20,7 +20,7 @@ statement ok
 UPDATE interval_ym SET t=INTERVAL '1' MONTH WHERE t=INTERVAL '20' MONTHS;
 
 query T
-SELECT i1.t FROM interval_ym i1 JOIN interval_ym i2 ON (i1.t = i2.t) ORDER BY 1
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 USING (t) ORDER BY 1
 ----
 P1M
 P1M

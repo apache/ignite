@@ -2,7 +2,6 @@
 # description: Test USING joins
 # group: [inner]
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15570
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15569
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15571
 
 statement ok

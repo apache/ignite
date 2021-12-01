@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -126,6 +128,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected static final int DEFAULT_TBL_SIZE = 500_000;
 
     /** */
+    protected static final String DEFAULT_SCHEMA = "PUBLIC";
+
+    /** */
     protected List<UUID> nodes;
 
     /** */
@@ -225,19 +230,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
+        return plannerCtx(sql, Collections.singleton(publicSchema), disabledRules);
+    }
 
+    /** */
+    protected PlanningContext plannerCtx(String sql, Collection<IgniteSchema> schemas, String... disabledRules) {
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(
-                    newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .build()
-                )
-                .logger(log)
-                .build()
-            )
+            .parentContext(baseQueryContext(schemas))
             .query(sql)
             .build();
 
@@ -253,6 +252,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
         return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+    }
+
+    /** */
+    protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
+        return physicalPlan(sql, plannerCtx(sql, schemas, disabledRules));
     }
 
     /** */
@@ -317,12 +321,14 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        checkSplitAndSerialization(rel, Collections.singleton(publicSchema));
+    }
+
+    /** */
+    protected void checkSplitAndSerialization(IgniteRel rel, Collection<IgniteSchema> schemas) {
         assertNotNull(rel);
 
         rel = Cloner.clone(rel);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
 
         List<Fragment> fragments = new Splitter().go(rel);
         List<String> serialized = new ArrayList<>(fragments.size());
@@ -332,14 +338,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        BaseQueryContext ctx = BaseQueryContext.builder()
-            .frameworkConfig(
-                newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build()
-            )
-            .logger(log)
-            .build();
+        BaseQueryContext ctx = baseQueryContext(schemas);
 
         List<RelNode> deserializedNodes = new ArrayList<>();
 
@@ -437,11 +436,25 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected <T extends RelNode> void assertPlan(String sql, IgniteSchema schema, Predicate<T> predicate,
-        String... disabledRules) throws Exception {
-        IgniteRel plan = physicalPlan(sql, schema, disabledRules);
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        IgniteSchema schema,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        assertPlan(sql, Collections.singleton(schema), predicate, disabledRules);
+    }
 
-        checkSplitAndSerialization(plan, schema);
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        IgniteRel plan = physicalPlan(sql, schemas, disabledRules);
+
+        checkSplitAndSerialization(plan, schemas);
 
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
@@ -542,6 +555,33 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Operator has column names" condition.
+     */
+    protected <T extends RelNode> Predicate<T> hasColumns(String... cols) {
+        return node -> {
+            RelDataType rowType = node.getRowType();
+
+            String err = "Unexpected columns [expected=" + Arrays.toString(cols) + ", actual=" + rowType.getFieldNames() + ']';
+
+            if (rowType.getFieldCount() != cols.length) {
+                lastErrorMsg = err;
+
+                return false;
+            }
+
+            for (int i = 0; i < cols.length; i++) {
+                if (!cols[i].equals(rowType.getFieldNames().get(i))) {
+                    lastErrorMsg = err;
+
+                    return false;
+                }
+            }
+
+            return true;
+        };
+    }
+
+    /**
      * Creates test table with given params.
      *
      * @param name Name of the table.
@@ -595,6 +635,28 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             schema.addTable(tbl.name(), tbl);
 
         return schema;
+    }
+
+    /** */
+    private BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
+        SchemaPlus rootSchema = createRootSchema(false);
+        SchemaPlus dfltSchema = null;
+
+        for (IgniteSchema igniteSchema : schemas) {
+            SchemaPlus schema = rootSchema.add(igniteSchema.getName(), igniteSchema);
+
+            if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
+                dfltSchema = schema;
+        }
+
+        return BaseQueryContext.builder()
+            .frameworkConfig(
+                newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(dfltSchema)
+                    .build()
+            )
+            .logger(log)
+            .build();
     }
 
     /** */

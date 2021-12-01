@@ -267,93 +267,64 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void validateJoin(SqlJoin join, SqlValidatorScope scope) {
-        if (join.isNatural() || join.getConditionType() == JoinConditionType.USING) {
-            // Default Calcite validator can't expand "star" for NATURAL joins and joins with USING if some columns
-            // of join sources are filtered out by addToSelectList method, and count of columns in selectList not equal
-            // to count of fields in corresponding rowType. Since we do filtering in addToSelectList method
-            // (exclude _KEY and _VAL columns), to workaround expandStar limitation we can wrap each table to subquery,
-            // in this case columns will be filtered out on subquery level and rowType of subquery will have the same
-            // cardinality as selectList.
-            join.setLeft(wrapTableToQuery(join.getLeft(), scope));
-            join.setRight(wrapTableToQuery(join.getRight(), scope));
-        }
+    @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        // Workaround for https://issues.apache.org/jira/browse/CALCITE-4923
+        if (node instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect)node;
 
-        super.validateJoin(join, scope);
-    }
+            if (select.getFrom() instanceof SqlJoin) {
+                boolean hasStar = false;
 
-    /** Wrap table to subquery "SELECT * FROM table". */
-    private SqlNode wrapTableToQuery(SqlNode from, SqlValidatorScope parentScope) {
-        // Alias for table should be already derived at registerForm() method before validation.
-        if (from.getKind() == SqlKind.AS) {
-            SqlNode src = ((SqlCall)from).getOperandList().get(0);
+                for (SqlNode expr : select.getSelectList()) {
+                    if (expr instanceof SqlIdentifier && ((SqlIdentifier)expr).isStar()
+                        && ((SqlIdentifier)expr).names.size() == 1)
+                        hasStar = true;
+                }
 
-            if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
-                String alias = deriveAlias(from, 0);
-
-                SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
-                    SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
-                    null, null, null, null, null);
-
-                from = SqlValidatorUtil.addAlias(expandedQry, alias);
-
-                registerNamespace(parentScope, alias, createSelectNamespace(expandedQry, from), false);
-
-                // TODO remove old child from scope
-/*
-                SelectScope selectScope = new SelectScope(parentScope, parentScope, expandedQry);
-                registerNamespace(selectScope, alias, getNamespace(src), false);
-                scopes.put(expandedQry, selectScope);
-*/
-
-                scopes.put(expandedQry, parentScope);
+                performJoinRewrites((SqlJoin)select.getFrom(), hasStar);
             }
         }
-
-        return from;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
-        if (node instanceof SqlJoin)
-            node = performJoinRewrites((SqlJoin)node);
 
         return super.performUnconditionalRewrites(node, underFrom);
     }
 
-    /**  */
-    private SqlNode performJoinRewrites(SqlJoin join) {
-        if (join.isNatural() || join.getConditionType() == JoinConditionType.USING) {
+    /** Rewrites JOIN clause if required */
+    private void performJoinRewrites(SqlJoin join, boolean hasStar) {
+        if (join.getLeft() instanceof SqlJoin)
+            performJoinRewrites((SqlJoin)join.getLeft(), hasStar || join.isNatural());
+
+        if (join.getRight() instanceof SqlJoin)
+            performJoinRewrites((SqlJoin)join.getRight(), hasStar || join.isNatural());
+
+        // Join with USING should be rewriten if SELECT conatins "star" in projects, NATURAL JOIN also has other issues
+        // and should be rewritten in any case.
+        if (join.isNatural() || (join.getConditionType() == JoinConditionType.USING && hasStar)) {
             // Default Calcite validator can't expand "star" for NATURAL joins and joins with USING if some columns
-            // of join sources are filtered out by addToSelectList method, and count of columns in selectList not equal
-            // to count of fields in corresponding rowType. Since we do filtering in addToSelectList method
-            // (exclude _KEY and _VAL columns), to workaround expandStar limitation we can wrap each table to subquery,
-            // in this case columns will be filtered out on subquery level and rowType of subquery will have the same
-            // cardinality as selectList.
+            // of join sources are filtered out by the addToSelectList method, and the count of columns in the
+            // selectList not equals to the count of fields in the corresponding rowType. Since we do filtering in the
+            // addToSelectList method (exclude _KEY and _VAL columns), to workaround the expandStar limitation we can
+            // wrap each table to a subquery. In this case columns will be filtered out on the subquery level and
+            // rowType of the subquery will have the same cardinality as selectList.
             join.setLeft(rewriteTableToQuery(join.getLeft()));
             join.setRight(rewriteTableToQuery(join.getRight()));
         }
-
-        return join;
     }
 
     /** Wrap table to subquery "SELECT * FROM table". */
     private SqlNode rewriteTableToQuery(SqlNode from) {
-        if (from.getKind() == SqlKind.AS) {
-            SqlNode src = ((SqlCall)from).getOperandList().get(0);
+        SqlNode src = from.getKind() == SqlKind.AS ? ((SqlCall)from).getOperandList().get(0) : from;
 
-            if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
-                String alias = deriveAlias(from, 0);
+        if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
+            String alias = deriveAlias(from, 0);
 
-                SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
-                    SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
-                    null, null, null, null, null);
+            SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
+                SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
+                null, null, null, null, null);
 
-                from = SqlValidatorUtil.addAlias(expandedQry, alias);
-            }
+            return SqlValidatorUtil.addAlias(expandedQry, alias);
         }
-
-        return from;
+        else
+            return from;
     }
 
     /** {@inheritDoc} */
