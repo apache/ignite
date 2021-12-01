@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
@@ -32,6 +33,9 @@ class PayloadOutputChannel implements AutoCloseable {
 
     /** Output stream. */
     private final BinaryOutputStream out;
+
+    /** Close guard. */
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * Constructor.
@@ -57,6 +61,7 @@ class PayloadOutputChannel implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        out.close();
+        if (closed.compareAndSet(false, true))
+            out.close();
     }
 }
