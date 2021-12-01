@@ -13,19 +13,15 @@ $ sudo apt install numactl
 ```
 
 ## Building from source
-`CMake 3.6`, `JDK`, `C++ 11` compatible compiler (`gcc >= 4.8.5`) and `libnuma` headers
+`JDK`, `C++ 11` compatible compiler (`gcc >= 4.8.5`) and `libnuma` headers
 1. `RHEL` or `Cent OS`
 ```bash
 $ sudo yum groupinstall 'Development Tools'
-$ sudo yum install java-1.8.0-openjdk numactl-devel cmake libstdc++-static
-```
-If you use older version of `RHEL` (i.e `7`), you should install `cmake3` package and do following
-```bash
-sudo ln -s /usr/bin/cmake3 /usr/bin/cmake
+$ sudo yum install java-1.8.0-openjdk numactl-devel libstdc++-static
 ```
 2. `Ubuntu` or `Debian`
 ```bash
-$ sudo apt install build-essential cmake libnuma-dev openjdk-8-jdk
+$ sudo apt install build-essential libnuma-dev openjdk-8-jdk
 ```
 ## Usage
 ### Simple allocation strategy
