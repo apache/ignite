@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
 
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +30,7 @@ public interface ClientConnection extends AutoCloseable {
      * Sends a message.
      *
      * @param msg Message buffer.
+     * @param onDone Callback to be invoked when asynchronous send operation completes.
      */
     void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException;
 
