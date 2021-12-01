@@ -315,9 +315,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ?
-                new QueryEntityEx().copyExtended((QueryEntityEx)entity)
-                : new QueryEntity();
+        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -330,6 +328,9 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
+        normalEntity.setUnwrapPrimaryKeyFields(entity.getUnwrapPrimaryKeyFields());
+        normalEntity.setPrimaryKeyInlineSize(entity.getPrimaryKeyInlineSize());
+        normalEntity.setAffinityKeyInlineSize(entity.getAffinityFieldInlineSize());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -600,9 +601,9 @@ public class QueryUtils {
 
         desc.typeId(valTypeId);
 
+        desc.unwrapPrimaryKeyFields(qryEntity.getUnwrapPrimaryKeyFields());
         desc.primaryKeyInlineSize(qryEntity.getPrimaryKeyInlineSize());
         desc.affinityFieldInlineSize(qryEntity.getAffinityFieldInlineSize());
-        desc.unwrapPrimaryKeyFields(qryEntity.isUnwrapPrimaryKeyFields());
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
