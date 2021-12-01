@@ -40,6 +40,8 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
 
         CacheConfiguration<Integer, CustomObject> cacheCfg = new CacheConfiguration<>("cache");
 
+        cacheCfg.setIndexedTypes(Integer.class, CustomObject.class);
+
         IgniteCache<Integer, CustomObject> cache = ignite.getOrCreateCache(cacheCfg);
 
         log.info(check ? "Checking..." : " Preparing...");
