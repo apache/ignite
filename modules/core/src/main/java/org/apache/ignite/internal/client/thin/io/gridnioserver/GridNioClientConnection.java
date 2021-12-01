@@ -64,7 +64,10 @@ class GridNioClientConnection implements ClientConnection {
 
     /** {@inheritDoc} */
     @Override public void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException {
-        ses.sendNoFuture(msg, onDone == null ? null : e -> onDone.run());
+        if (onDone != null)
+            ses.send(msg).listen(f -> onDone.run());
+        else
+            ses.sendNoFuture(msg, null);
     }
 
     /** {@inheritDoc} */
