@@ -1406,6 +1406,48 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
     /**
      *
      */
+    @Test
+    public void testSameArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[] arr1 = new Object[2];
+
+        arr1[0] = new Object[2];
+        arr1[0] = arr1[1];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])res.foo;
+
+        assertSame(resArr[0], resArr[1]);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSameMultiDimensionalArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[][] arr1 = new Object[1][2];
+
+        arr1[0][0] = new Object[2];
+        arr1[0][1] = arr1[0][0];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])((Object[])res.foo)[0];
+
+        assertSame(resArr[0], resArr[1]);
+    }
+
+    /**
+     *
+     */
     @SuppressWarnings("TypeMayBeWeakened")
     @Test
     public void testCyclicArrayList() {

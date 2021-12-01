@@ -510,15 +510,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
 
-            return new BinaryArray(
-                binaryCtx,
-                // In case of interface rely on class name, because interfaces not registered as binary types.
-                compCls.isInterface()
-                    ? GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-                    : binaryCtx.typeId(compClsName),
-                compClsName,
-                pArr
-            );
+            int typeId = GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
+
+            // In case of interface or multidimensional array rely on class name.
+            // Interfaces and array not registered as binary types.
+            if (!(compCls.isInterface() || compCls.isArray())) {
+                BinaryClassDescriptor desc = binaryCtx.registerClass(compCls, true, false);
+
+                typeId = desc.typeId();
+            }
+
+            return new BinaryArray(binaryCtx, typeId, compClsName, pArr);
         }
 
         if (obj instanceof IgniteBiTuple) {

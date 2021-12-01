@@ -21,14 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectContainer;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /** */
 public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
@@ -44,6 +49,11 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     /** */
     private static IgniteCache<Object, Object> cliCache;
 
+    /** */
+    private static final Function<Object, Object> TO_TEST_CLS = arr -> arr instanceof TestClass1[][]
+        ? new TestClass2(null, (TestClass1[][])arr)
+        : new TestClass2((TestClass1[])arr, null);
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -58,29 +68,62 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     /** */
     @Test
     public void testArrayKey() {
-        doTestArrayKey(srvCache);
-        doTestArrayKey(cliCache);
-    }
-
-    /** */
-    @Test
-    public void testArrayValue() {
-        doTestArrayValue(srvCache);
-        doTestArrayValue(cliCache);
+        doTestKeys(srvCache, arr -> arr);
+        doTestKeys(cliCache, arr -> arr);
     }
 
     /** */
     @Test
     public void testArrayFieldInKey() {
-        doTestArrayFieldInKey(srvCache);
-        doTestArrayFieldInKey(cliCache);
+        doTestKeys(srvCache, TO_TEST_CLS);
+        doTestKeys(cliCache, TO_TEST_CLS);
+    }
+
+    /** */
+    @Test
+    public void testArrayValue() {
+        doTestValue(srvCache, arr -> arr, false, false);
+        doTestValue(cliCache, arr -> arr, false, false);
+        doTestValue(srvCache, arr -> arr, true, false);
+        doTestValue(cliCache, arr -> arr, true, false);
     }
 
     /** */
     @Test
     public void testArrayFieldInValue() {
-        doTestArrayFieldInValue(srvCache);
-        doTestArrayFieldInValue(cliCache);
+        doTestValue(srvCache, TO_TEST_CLS, false, true);
+        doTestValue(cliCache, TO_TEST_CLS, false, true);
+        doTestValue(srvCache, TO_TEST_CLS, true, true);
+        doTestValue(cliCache, TO_TEST_CLS, true, true);
+    }
+
+    /** */
+    @Test
+    public void testArraySerDe() {
+        checkArraySerDe(arr -> {
+            Object obj = server.binary().toBinary(arr);
+
+            return useBinaryArrays
+                ? ((BinaryArray)obj).deserialize()
+                : PlatformUtils.unwrapBinariesInArray((Object[])obj);
+        }, false);
+    }
+
+    /** */
+    @Test
+    public void testArrayFieldSerDe() {
+        checkArraySerDe(arr -> {
+            BinaryObject bObj = server.binary().toBinary(new TestObjectContainer(arr));
+
+            return ((TestObjectContainer)bObj.deserialize()).foo;
+        }, true);
+    }
+
+    /** */
+    @Test
+    public void testBinaryModeArray() {
+        putInBinaryGetRegular(srvCache);
+        putInBinaryGetRegular(cliCache);
     }
 
     /** */
@@ -92,120 +135,195 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
     /** */
     @Test
-    public void testBinaryModeArray() {
-        putRegularGetInBinary(srvCache);
-        putRegularGetInBinary(cliCache);
-        putInBinaryGetRegular(srvCache);
-        putInBinaryGetRegular(cliCache);
+    public void testSimpleBinaryArrayFieldSerDe() {
+        TestClass1 src = new TestClass1();
+
+        BinaryMarshallerSelfTest.SimpleObject sobj = GridTestUtils.getFieldValue(src, "obj");
+
+        GridTestUtils.setFieldValue(sobj, "objArr", new Object[] {"string", 1L, null});
+
+        BinaryObject obj = server.binary().toBinary(src);
+
+        BinaryObject simpleObj = obj.field("obj");
+        Object objArr = simpleObj.field("objArr");
+
+        assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, objArr.getClass());
+
+        Object deser = obj.deserialize();
+
+        assertEquals(TestClass1.class, deser.getClass());
+
+        sobj = GridTestUtils.getFieldValue(deser, "obj");
+
+        Object[] arr = GridTestUtils.getFieldValue(sobj, "objArr");
+
+        assertNotNull(arr);
+        assertEquals(3, arr.length);
+        assertEquals("string", arr[0]);
+        assertEquals(1L, arr[1]);
+        assertNull(arr[2]);
     }
 
     /** */
-    private void doTestArrayKey(IgniteCache<Object, Object> c) {
-        TestClass1[] key1 = {new TestClass1(), new TestClass1()};
-        TestClass1[] key2 = {};
-        TestClass1[] key3 = new TestClass1[] {new TestClass1() {}};
+    @Test
+    public void testArrayOfCollectionSerDe() {
+        List<TestClass1> l1 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
+        List<TestClass1> l2 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
+        List<TestClass1> l3 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
 
-        c.put(key1, 1);
-        c.put(key2, 2);
-        c.put(key3, 3);
+        List[] arr = new List[] { l1, l2, l3 };
 
-        assertEquals(1, c.get(key1));
-        assertEquals(2, c.get(key2));
-        assertEquals(3, c.get(key3));
-
-        assertTrue(c.replace(key1, 1, 2));
-        assertTrue(c.replace(key2, 2, 3));
-        assertTrue(c.replace(key3, 3, 4));
-
-        assertTrue(c.remove(key1));
-        assertTrue(c.remove(key2));
-        assertTrue(c.remove(key3));
-    }
-
-    /** */
-    private void doTestArrayFieldInKey(IgniteCache<Object, Object> c) {
-        TestClass key1 = new TestClass(new TestClass1[] {new TestClass1(), new TestClass1()});
-        TestClass key2 = new TestClass(new TestClass1[] {});
-        TestClass key3 = new TestClass(new TestClass1[] {new TestClass1() {}});
-
-        c.put(key1, 1);
-        c.put(key2, 2);
-        c.put(key3, 3);
-
-        assertEquals(1, c.get(key1));
-        assertEquals(2, c.get(key2));
-        assertEquals(3, c.get(key3));
-
-        assertTrue(c.replace(key1, 1, 2));
-        assertTrue(c.replace(key2, 2, 3));
-        assertTrue(c.replace(key3, 3, 4));
-
-        assertTrue(c.remove(key1));
-        assertTrue(c.remove(key2));
-        assertTrue(c.remove(key3));
-    }
-
-    /** */
-    private void doTestArrayValue(IgniteCache<Object, Object> c) {
-        c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
-        c.put(2, new TestClass1[] {});
-        c.put(3, new TestClass1[] {new TestClass1() {}});
-
-        Object val1 = c.get(1);
-        Object val2 = c.get(2);
-        Object val3 = c.get(3);
-
-        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val1.getClass());
-        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val2.getClass());
-        assertEquals(useBinaryArrays ? TestClass1[].class : Object[].class, val3.getClass());
+        Object res = server.binary().toBinary(arr);
+        Object[] res0;
 
         if (useBinaryArrays) {
-            assertTrue(c.replace(1, val1, val2));
-            assertTrue(c.replace(2, val2, val3));
-            assertTrue(c.replace(3, val3, val1));
+            assertTrue(res instanceof BinaryArray);
+
+            res0 = ((BinaryArray)res).deserialize();
+        }
+        else {
+            assertTrue(res instanceof Object[]);
+
+            res0 = PlatformUtils.unwrapBinariesInArray((Object[])res);
         }
 
-        assertTrue(c.remove(1));
-        assertTrue(c.remove(2));
-        assertTrue(c.remove(3));
+        assertEquals(arr.length, res0.length);
+
+        for (int i = 0; i < arr.length; i++)
+            assertEqualsCollections(arr[i], (Collection<?>)res0[i]);
     }
 
     /** */
-    private void doTestArrayFieldInValue(IgniteCache<Object, Object> c) {
-        c.put(1, new TestClass(new TestClass1[] {new TestClass1(), new TestClass1()}));
-        c.put(2, new TestClass(new TestClass1[] {}));
-        c.put(3, new TestClass(new TestClass1[] {new TestClass1() {}}));
+    @Test
+    public void testArrayOfBinariesSerDe() {
+        BinaryObject[] arr = new BinaryObject[] {
+            server.binary().toBinary(new TestClass1()),
+            server.binary().toBinary(new TestClass1())
+        };
 
-        TestClass val1 = (TestClass)c.get(1);
-        TestClass val2 = (TestClass)c.get(2);
-        TestClass val3 = (TestClass)c.get(3);
+        Object obj = server.binary().toBinary(arr);
 
-        assertEquals(2, val1.getArr().length);
-        assertEquals(0, val2.getArr().length);
-        assertEquals(1, val3.getArr().length);
+        Object deser;
 
         if (useBinaryArrays) {
-            assertTrue(c.replace(1, val1, val2));
-            assertTrue(c.replace(2, val2, val3));
-            assertTrue(c.replace(3, val3, val1));
+            assertTrue(obj instanceof BinaryArray);
+
+            deser = ((BinaryArray)obj).deserialize();
+        }
+        else {
+            assertTrue(obj instanceof Object[]);
+
+            deser = PlatformUtils.unwrapBinariesInArray((Object[])obj);
         }
 
-        assertTrue(c.remove(1));
-        assertTrue(c.remove(2));
-        assertTrue(c.remove(3));
+        assertEquals(Object[].class, deser.getClass());
+
+        Object[] res = ((Object[])deser);
+
+        assertEquals(2, res.length);
+        assertTrue(res[0] instanceof TestClass1);
+        assertTrue(res[1] instanceof TestClass1);
+    }
+
+    /** */
+    private void doTestKeys(IgniteCache<Object, Object> c, Function<Object, Object> wrap) {
+        List<?> keys = dataToTest();
+
+        for (int i = 0; i < keys.size(); i++)
+            c.put(wrap.apply(keys.get(i)), i);
+
+        for (int i = 0; i < keys.size(); i++)
+            assertEquals(i, c.get(wrap.apply(keys.get(i))));
+
+        for (int i = 0; i < keys.size(); i++)
+            assertTrue(c.replace(wrap.apply(keys.get(i)), i, i + 1));
+
+        for (int i = 0; i < keys.size(); i++)
+            assertTrue(c.remove(wrap.apply(keys.get(i))));
+    }
+
+    /** */
+    private void doTestValue(
+        IgniteCache<Object, Object> c,
+        Function<Object, Object> wrap,
+        boolean keepBinary,
+        boolean alwaysSameType
+    ) {
+        AtomicInteger cntr = new AtomicInteger();
+
+        checkArraySerDe(arr -> {
+            c.put(cntr.getAndIncrement(), wrap.apply(arr));
+
+            Object obj;
+
+            if (keepBinary) {
+                obj = c.withKeepBinary().get(cntr.get() - 1);
+
+                if (obj instanceof BinaryObject)
+                    obj = ((BinaryObject)obj).deserialize();
+                else
+                    obj = PlatformUtils.unwrapBinariesInArray((Object[])obj);
+            }
+            else
+                obj = c.get(cntr.get() - 1);
+
+            if (obj instanceof Object[])
+                return obj;
+
+            TestClass2 cached = (TestClass2)obj;
+
+            return cached.arr != null ? cached.arr : cached.arr2;
+        }, alwaysSameType);
+
+        if (useBinaryArrays) {
+            List<?> vals = dataToTest();
+
+            for (int i = 0; i < vals.size(); i++)
+                assertTrue(c.replace(i, wrap.apply(vals.get(i)), wrap.apply(vals.get((i + 1) % vals.size()))));
+        }
+
+        for (int i = 0; i < cntr.get(); i++)
+            assertTrue(c.remove(i));
+    }
+
+    /** */
+    private List<?> dataToTest() {
+        TestClass1[][] arr5 = new TestClass1[3][2];
+        TestClass1[][] arr6 = new TestClass1[2][2];
+
+        arr5[0] = new TestClass1[] {new TestClass1() {}};
+        arr5[1] = new TestClass1[] {new TestClass1() {}};
+
+        // arr6[0] == arr6[1]
+        arr6[0] = new TestClass1[] {new TestClass1() {}};
+        arr6[1] = arr6[0];
+
+        return F.asList(
+            new TestClass1[0],
+            new TestClass1[1][2],
+            new TestClass1[] {new TestClass1(), new TestClass1()},
+            new TestClass1[] {new TestClass1() {}},
+            arr5,
+            arr6
+        );
     }
 
     /** */
     private void putRegularGetInBinary(IgniteCache<Object, Object> c) {
-        c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
-        Object obj = c.withKeepBinary().get(1);
+        List<?> vals = dataToTest();
 
-        assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, obj.getClass());
+        for (Object val : vals) {
+            c.put(1, val);
 
-        if (useBinaryArrays)
-            assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
+            Object obj = c.withKeepBinary().get(1);
 
-        assertTrue(c.remove(1));
+            assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, obj.getClass());
+
+            if (useBinaryArrays)
+                assertEquals(val.getClass(), ((BinaryObject)obj).deserialize().getClass());
+
+            assertTrue(c.remove(1));
+        }
     }
 
     /** */
@@ -289,135 +407,40 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    @Test
-    public void testArrayOfBinariesSerDe() {
-        BinaryObject[] arr = new BinaryObject[] {
-            server.binary().toBinary(new TestClass1()),
-            server.binary().toBinary(new TestClass1())
-        };
+    public void checkArraySerDe(Function<Object[], Object> serde, boolean sameArrType) {
+        List<Object[]> data = (List<Object[]>)dataToTest();
 
-        Object obj = server.binary().toBinary(arr);
+        for (Object[] arr : data) {
+            Object deser = serde.apply(arr);
 
-        Object deser;
+            assertEquals((useBinaryArrays || sameArrType) ? arr.getClass() : Object[].class, deser.getClass());
 
-        if (useBinaryArrays) {
-            assertTrue(obj instanceof BinaryArray);
+            assertEquals(arr.length, ((Object[])deser).length);
+            assertArrayEquals(arr, ((Object[])deser));
 
-            deser = ((BinaryArray)obj).deserialize();
+            if (arr instanceof TestClass1[][] && arr.length == 2) {
+                Object[] val = (Object[])deser;
+
+                // See dataToTest -> dataToTest -> arr6[0] == arr6[1]
+                // Check the sanity of test data.
+                assertSame(((TestClass1[][])arr)[0], ((TestClass1[][])arr)[1]);
+                assertSame(val[0], val[1]);
+            }
         }
-        else {
-            assertTrue(obj instanceof Object[]);
-
-            deser = PlatformUtils.unwrapBinariesInArray((Object[])obj);
-        }
-
-        assertEquals(Object[].class, deser.getClass());
-
-        Object[] res = ((Object[])deser);
-
-        assertEquals(2, res.length);
-        assertTrue(res[0] instanceof TestClass1);
-        assertTrue(res[1] instanceof TestClass1);
     }
 
     /** */
-    @Test
-    public void testBinaryArraySerDe() {
-        TestClass1[] arr = {new TestClass1(), new TestClass1()};
-
-        Object obj = server.binary().toBinary(arr);
-
-        Object deser;
-
-        if (useBinaryArrays) {
-            assertEquals(BinaryArray.class, obj.getClass());
-
-            deser = ((BinaryArray)obj).deserialize();
-
-            assertEquals(TestClass1[].class, deser.getClass());
-        }
-        else {
-            assertTrue(obj instanceof Object[]);
-
-            deser = PlatformUtils.unwrapBinariesInArray((Object[])obj);
-        }
-
-        assertEquals(2, ((Object[])deser).length);
-    }
-
-    /** */
-    @Test
-    public void testBinaryArrayFieldSerDe() {
-        TestClass1 src = new TestClass1();
-
-        BinaryMarshallerSelfTest.SimpleObject sobj = GridTestUtils.getFieldValue(src, "obj");
-
-        GridTestUtils.setFieldValue(sobj, "objArr", new Object[] {"string", 1L, null});
-
-        BinaryObject obj = server.binary().toBinary(src);
-
-        BinaryObject simpleObj = obj.field("obj");
-        Object objArr = simpleObj.field("objArr");
-
-        assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, objArr.getClass());
-
-        Object deser = obj.deserialize();
-
-        assertEquals(TestClass1.class, deser.getClass());
-
-        sobj = GridTestUtils.getFieldValue(deser, "obj");
-
-        Object[] arr = GridTestUtils.getFieldValue(sobj, "objArr");
-
-        assertNotNull(arr);
-        assertEquals(3, arr.length);
-        assertEquals("string", arr[0]);
-        assertEquals(1L, arr[1]);
-        assertNull(arr[2]);
-    }
-
-    /** */
-    @Test
-    public void testArrayOfCollectionSerDe() {
-        List<TestClass1> l1 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
-        List<TestClass1> l2 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
-        List<TestClass1> l3 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
-
-        List[] arr = new List[] { l1, l2, l3 };
-
-        Object res = server.binary().toBinary(arr);
-        Object[] res0;
-
-        if (useBinaryArrays) {
-            assertTrue(res instanceof BinaryArray);
-
-            res0 = ((BinaryArray)res).deserialize();
-        }
-        else {
-            assertTrue(res instanceof Object[]);
-
-            res0 = PlatformUtils.unwrapBinariesInArray((Object[])res);
-        }
-
-        assertEquals(arr.length, res0.length);
-
-        for (int i = 0; i < arr.length; i++)
-            assertEqualsCollections(arr[i], (Collection<?>)res0[i]);
-    }
-
-    /** */
-    public static class TestClass {
+    public static class TestClass2 {
         /** */
-        private final TestClass1[] arr;
+        final TestClass1[] arr;
 
         /** */
-        public TestClass(TestClass1[] arr) {
+        final TestClass1[][] arr2;
+
+        /** */
+        public TestClass2(TestClass1[] arr, TestClass1[][] arr2) {
             this.arr = arr;
-        }
-
-        /** */
-        public TestClass1[] getArr() {
-            return arr;
+            this.arr2 = arr2;
         }
     }
 }
