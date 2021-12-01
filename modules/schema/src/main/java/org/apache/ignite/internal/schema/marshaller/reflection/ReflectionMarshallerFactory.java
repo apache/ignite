@@ -31,7 +31,7 @@ public class ReflectionMarshallerFactory implements MarshallerFactory {
     @Override public <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Mapper<K> keyMapper, Mapper<V> valueMapper) {
         return new KvMarshallerImpl<>(schema, keyMapper, valueMapper);
     }
-    
+
     /** {@inheritDoc} */
     @Override public <R> RecordMarshaller<R> create(SchemaDescriptor schema, Mapper<R> mapper) {
         return new RecordMarshallerImpl<>(schema, mapper);

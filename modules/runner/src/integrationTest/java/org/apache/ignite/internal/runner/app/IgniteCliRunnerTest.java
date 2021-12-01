@@ -41,7 +41,7 @@ public class IgniteCliRunnerTest {
                         "node1"
                 }
         ));
-        
+
         assertNotNull(IgniteCliRunner.start(
                 new String[]{
                         "--work-dir", workDir.resolve("node2").toAbsolutePath().toString(),

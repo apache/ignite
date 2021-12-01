@@ -63,7 +63,7 @@ import org.junit.jupiter.api.Test;
 public class ConfigurationAsmGeneratorTest {
     /** Configuration generator. */
     private static ConfigurationAsmGenerator generator;
-    
+
     /** Configuration changer. */
     private ConfigurationChanger changer;
 
@@ -493,23 +493,23 @@ public class ConfigurationAsmGeneratorTest {
         /** Integer field. */
         @Value(hasDefault = true)
         public int i0 = 0;
-        
+
         /** String field. */
         @Value(hasDefault = true)
         public String str0 = "str0";
-        
+
         /** Sub configuration field. */
         @ConfigValue
         public TestConfigurationSchema subCfg;
-        
+
         /** Named configuration field. */
         @NamedConfigValue
         public TestConfigurationSchema namedCfg;
-        
+
         /** Polymorphic sub configuration field. */
         @ConfigValue
         public PolymorphicTestConfigurationSchema polymorphicSubCfg;
-        
+
         /** Polymorphic named configuration field. */
         @NamedConfigValue
         public PolymorphicNamedTestConfigurationSchema polymorphicNamedCfg;
@@ -543,7 +543,7 @@ public class ConfigurationAsmGeneratorTest {
         /** Integer field. */
         @Value(hasDefault = true)
         public int i0 = 0;
-        
+
         /** String field. */
         @Value(hasDefault = true)
         public String str2 = "str2";
@@ -577,7 +577,7 @@ public class ConfigurationAsmGeneratorTest {
         /** Polymorphic type id field. */
         @PolymorphicId(hasDefault = true)
         public String typeId = "first";
-        
+
         /** String value. */
         @Value(hasDefault = true)
         public String strVal = "strVal";
@@ -601,7 +601,7 @@ public class ConfigurationAsmGeneratorTest {
         /** Integer value. */
         @Value(hasDefault = true)
         public int intVal = 0;
-        
+
         /** Long value. */
         @Value(hasDefault = true)
         public long longVal = 0;
@@ -624,7 +624,7 @@ public class ConfigurationAsmGeneratorTest {
         /** Polymorphic type id field. */
         @PolymorphicId(hasDefault = true)
         public String typeId;
-        
+
         /** String value. */
         @Value(hasDefault = true)
         public String strVal = "strVal";
@@ -648,7 +648,7 @@ public class ConfigurationAsmGeneratorTest {
         /** Integer value. */
         @Value(hasDefault = true)
         public int intVal = 0;
-        
+
         /** Long value. */
         @Value(hasDefault = true)
         public long longVal = 0;

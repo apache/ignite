@@ -142,28 +142,28 @@ public class ColumnAccessCodeGenerator {
     public int columnIdx() {
         return colIdx;
     }
-    
+
     /**
      * Gets method name used to read POJO field.
      */
     public String readMethodName() {
         return readMethodName;
     }
-    
+
     /**
      * Gets method name used to write POJO field.
      */
     public String writeMethodName() {
         return writeMethodName;
     }
-    
+
     /**
      * Gets arg type of column write method.
      */
     public Class<?> writeArgType() {
         return writeArgType;
     }
-    
+
     /**
      * Gets read method return type.
      */

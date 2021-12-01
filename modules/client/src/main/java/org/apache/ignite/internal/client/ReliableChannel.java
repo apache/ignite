@@ -475,7 +475,7 @@ public final class ReliableChannel implements AutoCloseable {
         // TODO: Async startup IGNITE-15357.
         return CompletableFuture.completedFuture(null);
     }
-    
+
     private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function) {
         return applyOnDefaultChannel(function, getRetryLimit(), DO_NOTHING);
     }

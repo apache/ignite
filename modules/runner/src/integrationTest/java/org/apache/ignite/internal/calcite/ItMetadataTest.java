@@ -46,7 +46,7 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
     public void trimColumnNames() {
         String var300 = generate(() -> "X").limit(300).collect(joining());
         String var256 = "'" + var300.substring(0, 255);
-        
+
         assertQuery("select '" + var300 + "' from person").columnNames(var256).check();
     }
 
@@ -56,25 +56,25 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
                 .columnNames("EXPR$0", "EXPR$1").check();
         assertQuery("select (select count(*) from person) as subquery from person")
                 .columnNames("SUBQUERY").check();
-        
+
         assertQuery("select salary*2, salary/2, salary+2, salary-2, mod(salary, 2)  from person")
                 .columnNames("SALARY * 2", "SALARY / 2", "SALARY + 2", "SALARY - 2", "MOD(SALARY, 2)").check();
         assertQuery("select salary*2 as first, salary/2 as secOND from person").columnNames("FIRST", "SECOND").check();
-        
+
         assertQuery("select trim(name) tr_name from person").columnNames("TR_NAME").check();
         assertQuery("select trim(name) from person").columnNames("TRIM(BOTH ' ' FROM NAME)").check();
         assertQuery("select row(1), ceil(salary), floor(salary), position('text' IN salary) from person")
                 .columnNames("ROW(1)", "CEIL(SALARY)", "FLOOR(SALARY)", "POSITION('text' IN SALARY)").check();
-        
+
         assertQuery("select count(*) from person").columnNames("COUNT(*)").check();
         assertQuery("select count(name) from person").columnNames("COUNT(NAME)").check();
         assertQuery("select max(salary) from person").columnNames("MAX(SALARY)").check();
         assertQuery("select min(salary) from person").columnNames("MIN(SALARY)").check();
         assertQuery("select aVg(salary) from person").columnNames("AVG(SALARY)").check();
         assertQuery("select sum(salary) from person").columnNames("SUM(SALARY)").check();
-        
+
         assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(NAME)").check();
-        
+
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
     }
 
@@ -94,13 +94,13 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
                 SchemaBuilders.column("STRING_C", ColumnType.string()).asNullable().build(),
                 SchemaBuilders.column("INT_C", ColumnType.INT32).asNullable().build()
         ).withPrimaryKey("LONG_C").build();
-        
+
         CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
                 SchemaConfigurationConverter.convert(schTbl1, tblCh)
                         .changeReplicas(1)
                         .changePartitions(10)
         );
-        
+
         assertQuery("select * from column_order")
                 .columnNames("DOUBLE_C", "LONG_C", "STRING_C", "INT_C")
                 .check();

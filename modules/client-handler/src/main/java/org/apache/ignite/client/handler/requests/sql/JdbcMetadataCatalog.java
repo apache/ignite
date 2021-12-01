@@ -50,33 +50,33 @@ import org.apache.ignite.table.manager.IgniteTables;
 public class JdbcMetadataCatalog {
     /** Table name separator. */
     private static final String TABLE_NAME_SEPARATOR = "\\.";
-    
+
     /** Table schema. */
     private static final int TABLE_SCHEMA = 0;
-    
+
     /** Table name. */
     private static final int TABLE_NAME = 1;
-    
+
     /** Primary key identifier. */
     private static final String PK = "PK_";
-    
+
     /** Table type. */
     private static final String TBL_TYPE = "TABLE";
-    
+
     /** Default schema name. */
     private static final String DEFAULT_SCHEMA_NAME = "PUBLIC";
-    
+
     /** Ignite tables interface. Used to get all the database metadata. */
     private final IgniteTables tables;
-    
+
     /** Comparator for {@link Column} by schema then table name then column order. */
     private static final Comparator<Pair<String, Column>> bySchemaThenTabNameThenColOrder
             = Comparator.comparing((Function<Pair<String, Column>, String>) Pair::getFirst)
             .thenComparingInt(o -> o.getSecond().schemaIndex());
-    
+
     /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
     private static final Comparator<Table> byTblTypeThenSchemaThenTblName = Comparator.comparing(Table::name);
-    
+
     /**
      * Initializes info.
      *
@@ -85,7 +85,7 @@ public class JdbcMetadataCatalog {
     public JdbcMetadataCatalog(IgniteTables tables) {
         this.tables = tables;
     }
-    
+
     /**
      * See {@link DatabaseMetaData#getPrimaryKeys(String, String, String)} for details.
      *
@@ -97,22 +97,22 @@ public class JdbcMetadataCatalog {
      */
     public Collection<JdbcPrimaryKeyMeta> getPrimaryKeys(String schemaNamePtrn, String tblNamePtrn) {
         Collection<JdbcPrimaryKeyMeta> metaSet = new HashSet<>();
-        
+
         String schemaNameRegex = translateSqlWildcardsToRegex(schemaNamePtrn);
         String tlbNameRegex = translateSqlWildcardsToRegex(tblNamePtrn);
-        
+
         tables.tables().stream()
                 .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
                 .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .forEach(tbl -> {
                     JdbcPrimaryKeyMeta meta = createPrimaryKeyMeta(tbl);
-                    
+
                     metaSet.add(meta);
                 });
-        
+
         return metaSet;
     }
-    
+
     /**
      * See {@link DatabaseMetaData#getTables(String, String, String, String[])} for details.
      *
@@ -129,18 +129,18 @@ public class JdbcMetadataCatalog {
     public List<JdbcTableMeta> getTablesMeta(String schemaNamePtrn, String tblNamePtrn, String[] tblTypes) {
         String schemaNameRegex = translateSqlWildcardsToRegex(schemaNamePtrn);
         String tlbNameRegex = translateSqlWildcardsToRegex(tblNamePtrn);
-        
+
         List<Table> tblsMeta = tables.tables().stream()
                 .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
                 .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .collect(Collectors.toList());
-        
+
         return tblsMeta.stream()
                 .sorted(byTblTypeThenSchemaThenTblName)
                 .map(t -> new JdbcTableMeta(getTblSchema(t.name()), getTblName(t.name()), TBL_TYPE))
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * See {@link DatabaseMetaData#getColumns(String, String, String, String)} for details.
      *
@@ -153,43 +153,43 @@ public class JdbcMetadataCatalog {
      */
     public Collection<JdbcColumnMeta> getColumnsMeta(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn) {
         Collection<JdbcColumnMeta> metas = new LinkedHashSet<>();
-        
+
         String schemaNameRegex = translateSqlWildcardsToRegex(schemaNamePtrn);
         String tlbNameRegex = translateSqlWildcardsToRegex(tblNamePtrn);
         String colNameRegex = translateSqlWildcardsToRegex(colNamePtrn);
-        
+
         tables.tables().stream()
                 .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
                 .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .flatMap(
                         tbl -> {
                             SchemaDescriptor schema = ((TableImpl) tbl).schemaView().schema();
-                            
+
                             List<Pair<String, Column>> tblColPairs = new ArrayList<>();
-    
+
                             for (Column column : schema.keyColumns().columns()) {
                                 tblColPairs.add(new Pair<>(tbl.name(), column));
                             }
-    
+
                             for (Column column : schema.valueColumns().columns()) {
                                 tblColPairs.add(new Pair<>(tbl.name(), column));
                             }
-                            
+
                             return tblColPairs.stream();
                         })
                 .filter(e -> matches(e.getSecond().name(), colNameRegex))
                 .sorted(bySchemaThenTabNameThenColOrder)
                 .forEachOrdered(pair -> {
                     JdbcColumnMeta colMeta = createColumnMeta(pair.getFirst(), pair.getSecond());
-    
+
                     if (!metas.contains(colMeta)) {
                         metas.add(colMeta);
                     }
                 });
-        
+
         return metas;
     }
-    
+
     /**
      * See {@link DatabaseMetaData#getSchemas(String, String)} for details.
      *
@@ -200,21 +200,21 @@ public class JdbcMetadataCatalog {
      */
     public Collection<String> getSchemasMeta(String schemaNamePtrn) {
         SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
-        
+
         String schemaNameRegex = translateSqlWildcardsToRegex(schemaNamePtrn);
-    
+
         if (matches(DEFAULT_SCHEMA_NAME, schemaNameRegex)) {
             schemas.add(DEFAULT_SCHEMA_NAME);
         }
-        
+
         tables.tables().stream()
                 .map(tbl -> getTblSchema(tbl.name()))
                 .filter(schema -> matches(schema, schemaNameRegex))
                 .forEach(schemas::add);
-        
+
         return schemas;
     }
-    
+
     /**
      * Creates primary key metadata from table object.
      *
@@ -224,18 +224,18 @@ public class JdbcMetadataCatalog {
     private JdbcPrimaryKeyMeta createPrimaryKeyMeta(Table tbl) {
         String schemaName = getTblSchema(tbl.name());
         String tblName = getTblName(tbl.name());
-        
+
         final String keyName = PK + tblName;
-        
+
         SchemaRegistry registry = ((TableImpl) tbl).schemaView();
-        
+
         List<String> keyColNames = Arrays.stream(registry.schema().keyColumns().columns())
                 .map(Column::name)
                 .collect(Collectors.toList());
-        
+
         return new JdbcPrimaryKeyMeta(schemaName, tblName, keyName, keyColNames);
     }
-    
+
     /**
      * Creates column metadata from column and table name.
      *
@@ -245,7 +245,7 @@ public class JdbcMetadataCatalog {
      */
     private JdbcColumnMeta createColumnMeta(String tblName, Column col) {
         NativeType type = col.type();
-        
+
         return new JdbcColumnMeta(
                 col.name(),
                 getTblSchema(tblName),
@@ -257,7 +257,7 @@ public class JdbcMetadataCatalog {
                 col.nullable()
         );
     }
-    
+
     /**
      * Splits the tableName into schema and table name and returns the table name.
      *
@@ -267,7 +267,7 @@ public class JdbcMetadataCatalog {
     private String getTblName(String tblName) {
         return tblName.split(TABLE_NAME_SEPARATOR)[TABLE_NAME];
     }
-    
+
     /**
      * Splits the tableName into schema and table name and returns the table schema.
      *
@@ -277,7 +277,7 @@ public class JdbcMetadataCatalog {
     private String getTblSchema(String tblName) {
         return tblName.split(TABLE_NAME_SEPARATOR)[TABLE_SCHEMA];
     }
-    
+
     /**
      * Checks whether string matches SQL pattern.
      *
@@ -289,14 +289,14 @@ public class JdbcMetadataCatalog {
         if (str == null) {
             return false;
         }
-    
+
         if (sqlPtrn == null) {
             return true;
         }
-        
+
         return str.matches(sqlPtrn);
     }
-    
+
     /**
      * <p>Converts sql pattern wildcards into java regex wildcards.</p>
      * <p>Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").</p>
@@ -318,14 +318,14 @@ public class JdbcMetadataCatalog {
         if (sqlPtrn == null || sqlPtrn.isEmpty()) {
             return sqlPtrn;
         }
-        
+
         String toRegex = ' ' + sqlPtrn;
-        
+
         toRegex = toRegex.replaceAll("([\\[\\]{}()*+?.\\\\\\\\^$|])", "\\\\$1");
         toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)%", "$1$2.*");
         toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)_", "$1$2.");
         toRegex = toRegex.replaceAll("([^\\\\\\\\])(\\\\\\\\(?>\\\\\\\\\\\\\\\\)*\\\\\\\\)*\\\\\\\\([_|%])", "$1$2$3");
-        
+
         return toRegex.substring(1);
     }
 }

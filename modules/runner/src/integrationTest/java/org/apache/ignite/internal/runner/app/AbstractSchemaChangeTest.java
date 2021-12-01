@@ -58,20 +58,20 @@ import org.junit.jupiter.api.function.Executable;
 abstract class AbstractSchemaChangeTest {
     /** Table name. */
     public static final String TABLE = "PUBLIC.tbl1";
-    
+
     /** Network ports of the test nodes. */
     private static final int[] PORTS = {3344, 3345, 3346};
-    
+
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
-    
+
     /** Cluster nodes. */
     private final List<Ignite> clusterNodes = new ArrayList<>();
-    
+
     /** Work directory. */
     @WorkDirectory
     private Path workDir;
-    
+
     /**
      * Before each.
      */
@@ -80,7 +80,7 @@ abstract class AbstractSchemaChangeTest {
         String node0Name = testNodeName(testInfo, PORTS[0]);
         String node1Name = testNodeName(testInfo, PORTS[1]);
         String node2Name = testNodeName(testInfo, PORTS[2]);
-        
+
         nodesBootstrapCfg.put(
                 node0Name,
                 "{\n"
@@ -93,7 +93,7 @@ abstract class AbstractSchemaChangeTest {
                         + "  }\n"
                         + "}"
         );
-        
+
         nodesBootstrapCfg.put(
                 node1Name,
                 "{\n"
@@ -106,7 +106,7 @@ abstract class AbstractSchemaChangeTest {
                         + "  }\n"
                         + "}"
         );
-        
+
         nodesBootstrapCfg.put(
                 node2Name,
                 "{\n"
@@ -120,7 +120,7 @@ abstract class AbstractSchemaChangeTest {
                         + "}"
         );
     }
-    
+
     /**
      * After each.
      */
@@ -128,30 +128,30 @@ abstract class AbstractSchemaChangeTest {
     void afterEach() throws Exception {
         IgniteUtils.closeAll(ItUtils.reverse(clusterNodes));
     }
-    
+
     /**
      * Check unsupported column type change.
      */
     @Test
     public void testChangeColumnType() {
         List<Ignite> grid = startGrid();
-        
+
         createTable(grid);
-        
+
         assertColumnChangeFailed(grid, "valStr", c -> c.changeType(t -> t.changeType("UNKNOWN_TYPE")));
-        
+
         assertColumnChangeFailed(grid, "valInt",
                 colChanger -> colChanger.changeType(t -> t.changeType(ColumnType.blobOf().typeSpec().name())));
-        
+
         assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changePrecision(10)));
         assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changeScale(10)));
         assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changeLength(1)));
-        
+
         assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changePrecision(-1)));
         assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changePrecision(10)));
         assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changeScale(2)));
         assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changeLength(10)));
-        
+
         assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changePrecision(-1)));
         assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changePrecision(0)));
         assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeScale(-2)));
@@ -159,20 +159,20 @@ abstract class AbstractSchemaChangeTest {
         assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeScale(2)));
         assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeLength(10)));
     }
-    
+
     /**
      * Check unsupported nullability change.
      */
     @Test
     public void testChangeColumnsNullability() {
         List<Ignite> grid = startGrid();
-        
+
         createTable(grid);
-        
+
         assertColumnChangeFailed(grid, "valStr", colChanger -> colChanger.changeNullable(true));
         assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeNullable(false));
     }
-    
+
     /**
      * Returns grid nodes.
      */
@@ -181,10 +181,10 @@ abstract class AbstractSchemaChangeTest {
         nodesBootstrapCfg.forEach((nodeName, configStr) ->
                 clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
         );
-        
+
         return clusterNodes;
     }
-    
+
     /**
      * Creates tables.
      *
@@ -200,13 +200,13 @@ abstract class AbstractSchemaChangeTest {
                 SchemaBuilders.column("valBigInt", ColumnType.numberOf()).asNullable().build(),
                 SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
-        
+
         nodes.get(0).tables().createTable(
                 schTbl1.canonicalName(),
                 tblCh -> convert(schTbl1, tblCh).changeReplicas(1).changePartitions(10)
         );
     }
-    
+
     /**
      * Adds column.
      *
@@ -217,12 +217,12 @@ abstract class AbstractSchemaChangeTest {
         nodes.get(0).tables().alterTable(TABLE,
                 chng -> chng.changeColumns(cols -> {
                     int colIdx = chng.columns().namedListKeys().stream().mapToInt(Integer::parseInt).max().getAsInt() + 1;
-                    
+
                     cols.create(String.valueOf(colIdx), colChg -> convert(columnToAdd, colChg));
                 })
         );
     }
-    
+
     /**
      * Drops column.
      *
@@ -242,7 +242,7 @@ abstract class AbstractSchemaChangeTest {
                 })
         );
     }
-    
+
     /**
      * Renames column.
      *
@@ -259,14 +259,14 @@ abstract class AbstractSchemaChangeTest {
                             .orElseThrow(() -> {
                                 throw new IllegalStateException("Column not found.");
                             });
-                    
+
                     tblChanger.changeColumns(listChanger ->
                             listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeName(newName))
                     );
                 })
         );
     }
-    
+
     /**
      * Changes column default.
      *
@@ -283,14 +283,14 @@ abstract class AbstractSchemaChangeTest {
                             .orElseThrow(() -> {
                                 throw new IllegalStateException("Column not found.");
                             });
-                    
+
                     tblChanger.changeColumns(listChanger ->
                             listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
                     );
                 })
         );
     }
-    
+
     /**
      * Ensure configuration validation failed.
      *
@@ -306,7 +306,7 @@ abstract class AbstractSchemaChangeTest {
                                 .filter(c -> colName.equals(tblChanger.columns().get(c).name()))
                                 .findFirst()
                                 .orElseGet(() -> Assertions.fail("Column not found."));
-                        
+
                         tblChanger.changeColumns(listChanger -> listChanger.createOrUpdate(colKey, colChanger)
                         );
                     })
@@ -316,15 +316,15 @@ abstract class AbstractSchemaChangeTest {
 
     protected <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
         Throwable ex = assertThrows(IgniteException.class, executable);
-        
+
         while (ex.getCause() != null) {
             if (expectedType.isInstance(ex.getCause())) {
                 return;
             }
-            
+
             ex = ex.getCause();
         }
-        
+
         fail("Expected cause wasn't found.");
     }
 }

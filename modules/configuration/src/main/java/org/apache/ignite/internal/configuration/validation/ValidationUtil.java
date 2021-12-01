@@ -143,7 +143,7 @@ public class ValidationUtil {
 
         return issues;
     }
-    
+
     private static boolean assertValidatorTypesCoherence(
             Class<?> validatorClass,
             Class<? extends Annotation> annotationType,

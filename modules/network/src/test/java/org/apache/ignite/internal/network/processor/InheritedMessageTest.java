@@ -39,7 +39,7 @@ import org.mockito.InOrder;
  */
 public class InheritedMessageTest {
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
-    
+
     private final InheritedMessageSerializationFactory serializationFactory =
             new InheritedMessageSerializationFactory(messageFactory);
 

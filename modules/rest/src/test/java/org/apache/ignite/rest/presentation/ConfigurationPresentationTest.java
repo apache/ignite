@@ -49,13 +49,13 @@ import org.junit.jupiter.api.Test;
 public class ConfigurationPresentationTest {
     /** Configuration registry. */
     private static ConfigurationRegistry cfgRegistry;
-    
+
     /** Configuration presentation. */
     private static ConfigurationPresentation<String> cfgPresentation;
-    
+
     /** Test root configuration. */
     private static TestRootConfiguration cfg;
-    
+
     /**
      * Before all.
      */
@@ -70,7 +70,7 @@ public class ConfigurationPresentationTest {
                 }
             }
         };
-        
+
         cfgRegistry = new ConfigurationRegistry(
                 List.of(TestRootConfiguration.KEY),
                 Map.of(Value.class, Set.of(validator)),
@@ -78,14 +78,14 @@ public class ConfigurationPresentationTest {
                 List.of(),
                 List.of()
         );
-        
+
         cfgRegistry.start();
-        
+
         cfgPresentation = new HoconPresentation(cfgRegistry);
-        
+
         cfg = cfgRegistry.getConfiguration(TestRootConfiguration.KEY);
     }
-    
+
     /**
      * After all.
      */
@@ -93,12 +93,12 @@ public class ConfigurationPresentationTest {
     static void afterAll() {
         cfgRegistry.stop();
         cfgRegistry = null;
-        
+
         cfgPresentation = null;
-        
+
         cfg = null;
     }
-    
+
     /**
      * Before each.
      */
@@ -110,7 +110,7 @@ public class ConfigurationPresentationTest {
     @Test
     void testRepresentWholeCfg() {
         String s = "{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"bar\"}}}";
-        
+
         assertEquals(s, cfgPresentation.represent());
         assertEquals(s, cfgPresentation.representByPath(null));
     }
@@ -134,9 +134,9 @@ public class ConfigurationPresentationTest {
     @Test
     void testCorrectUpdateFullCfg() {
         String updateVal = "{\"root\":{\"foo\":\"bar\",\"subCfg\":{\"bar\":\"foo\"}}}";
-        
+
         cfgPresentation.update(updateVal);
-        
+
         assertEquals("bar", cfg.foo().value());
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals(updateVal, cfgPresentation.represent());
@@ -145,7 +145,7 @@ public class ConfigurationPresentationTest {
     @Test
     void testCorrectUpdateSubCfg() {
         cfgPresentation.update("{\"root\":{\"subCfg\":{\"bar\":\"foo\"}}}");
-        
+
         assertEquals("foo", cfg.foo().value());
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals("{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}", cfgPresentation.represent());
@@ -157,22 +157,22 @@ public class ConfigurationPresentationTest {
                 IllegalArgumentException.class,
                 () -> cfgPresentation.update("{\"root\":{\"foo\":100,\"subCfg\":{\"bar\":\"foo\"}}}")
         );
-        
+
         assertThrows(
                 IllegalArgumentException.class,
                 () -> cfgPresentation.update("{\"root0\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}")
         );
-        
+
         assertThrows(IllegalArgumentException.class, () -> cfgPresentation.update("{"));
-        
+
         assertThrows(IllegalArgumentException.class, () -> cfgPresentation.update(""));
-        
+
         assertThrows(
                 ConfigurationValidationException.class,
                 () -> cfgPresentation.update("{\"root\":{\"foo\":\"error\",\"subCfg\":{\"bar\":\"foo\"}}}")
         );
     }
-    
+
     /**
      * Test root configuration schema.
      */
@@ -181,12 +181,12 @@ public class ConfigurationPresentationTest {
         /** Foo field. */
         @Value(hasDefault = true)
         public String foo = "foo";
-        
+
         /** Sub configuration schema. */
         @ConfigValue
         public TestSubConfigurationSchema subCfg;
     }
-    
+
     /**
      * Test sub configuration schema.
      */

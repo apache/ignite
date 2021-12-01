@@ -47,7 +47,7 @@ import org.mockito.Mockito;
 public class NettyClientTest {
     /** Client. */
     private NettyClient client;
-    
+
     private final SocketAddress address = InetSocketAddress.createUnresolved("", 0);
 
     /**
@@ -219,7 +219,7 @@ public class NettyClientTest {
      */
     private static class ClientAndSender {
         private final NettyClient client;
-        
+
         private final CompletableFuture<NettySender> sender;
 
         /**

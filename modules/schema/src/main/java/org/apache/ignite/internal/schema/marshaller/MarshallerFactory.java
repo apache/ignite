@@ -34,7 +34,7 @@ public interface MarshallerFactory {
      */
     <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Mapper<K> keyMapper,
             Mapper<V> valueMapper);
-    
+
     /**
      * Shortcut method creates key-value marshaller for classes using identity mappers.
      *
@@ -48,7 +48,7 @@ public interface MarshallerFactory {
             Class<V> valueClass) {
         return create(schema, Mapper.identity(keyClass), Mapper.identity(valueClass));
     }
-    
+
     /**
      * Creates record marshaller using provided mapper.
      *
@@ -57,7 +57,7 @@ public interface MarshallerFactory {
      * @return Record marshaller.
      */
     <R> RecordMarshaller<R> create(SchemaDescriptor schema, Mapper<R> mapper);
-    
+
     /**
      * Shortcut method creates record marshaller for classes using identity mappers.
      *

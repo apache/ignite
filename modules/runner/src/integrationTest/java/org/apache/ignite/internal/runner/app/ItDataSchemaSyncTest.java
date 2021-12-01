@@ -84,7 +84,7 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
                     + "    }\n"
                     + "  }\n"
                     + "}");
-        
+
             put("node1", "{\n"
                     + "  \"node\": {\n"
                     + "    \"metastorageNodes\":[ \"node0\" ]\n"
@@ -96,7 +96,7 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
                     + "    }\n"
                     + "  }\n"
                     + "}");
-        
+
             put("node2", "{\n"
                     + "  \"node\": {\n"
                     + "    \"metastorageNodes\":[ \"node0\" ]\n"
@@ -142,13 +142,13 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
     public void test() throws Exception {
         Ignite ignite0 = clusterNodes.get(0);
         final IgniteImpl ignite1 = (IgniteImpl) clusterNodes.get(1);
-    
+
         createTable(ignite0, SCHEMA, SHORT_TABLE_NAME);
-    
+
         TableImpl table = (TableImpl) ignite0.tables().table(TABLE_NAME);
-    
+
         assertEquals(1, table.schemaView().schema().version());
-    
+
         for (int i = 0; i < 10; i++) {
             table.recordView().insert(Tuple.create()
                     .set("key", Long.valueOf(i))
@@ -160,12 +160,12 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
         WatchListenerInhibitor listenerInhibitor = WatchListenerInhibitor.metastorageEventsInhibitor(ignite1);
 
         listenerInhibitor.startInhibit();
-    
+
         ignite0.tables().alterTable(TABLE_NAME,
                 tblChanger -> tblChanger.changeColumns(cols -> {
                     int colIdx = tblChanger.columns().namedListKeys().stream()
                             .mapToInt(Integer::parseInt).max().getAsInt() + 1;
-                
+
                     cols.create(String.valueOf(colIdx),
                             colChg -> convert(SchemaBuilders.column("valStr2", ColumnType.string())
                                     .withDefaultValueExpression("default").build(), colChg));
@@ -200,11 +200,11 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
                         .set("valStr", "str_" + 0)
                         .set("valStr2", "str2_" + 0)
             ));
-    
+
         final CompletableFuture getFut = IgniteTestUtils.runAsync(() -> {
             table1.recordView().get(Tuple.create().set("key", Long.valueOf(10)));
         });
-    
+
         final CompletableFuture checkDefaultFut = IgniteTestUtils.runAsync(() -> {
             assertEquals("default",
                     table1.recordView().get(Tuple.create().set("key", Long.valueOf(0)))
@@ -252,7 +252,7 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
                 SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
                 SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
-    
+
         node.tables().createTable(
                 schTbl1.canonicalName(),
                 tblCh -> convert(schTbl1, tblCh).changeReplicas(2).changePartitions(10)

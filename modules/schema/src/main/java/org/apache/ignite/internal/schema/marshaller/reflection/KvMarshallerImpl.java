@@ -42,66 +42,66 @@ import org.jetbrains.annotations.Nullable;
 public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
     /** Schema. */
     private final SchemaDescriptor schema;
-    
+
     /** Key marshaller. */
     private final Marshaller keyMarsh;
-    
+
     /** Value marshaller. */
     private final Marshaller valMarsh;
-    
+
     /** Key type. */
     private final Class<K> keyClass;
-    
+
     /** Value type. */
     private final Class<V> valClass;
-    
+
     /**
      * Creates KV marshaller.
      */
     public KvMarshallerImpl(SchemaDescriptor schema, Mapper<K> keyMapper, Mapper<V> valueMapper) {
         this.schema = schema;
-        
+
         keyClass = keyMapper.targetType();
         valClass = valueMapper.targetType();
-        
+
         keyMarsh = Marshaller.createMarshaller(schema.keyColumns().columns(), keyMapper, true);
         valMarsh = Marshaller.createMarshaller(schema.valueColumns().columns(), valueMapper, false);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public int schemaVersion() {
         return schema.version();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public BinaryRow marshal(@NotNull K key, V val) throws MarshallerException {
         assert keyClass.isInstance(key);
         assert val == null || valClass.isInstance(val);
-        
+
         final RowAssembler asm = createAssembler(Objects.requireNonNull(key), val);
-        
+
         keyMarsh.writeObject(key, asm);
-        
+
         if (val != null) {
             valMarsh.writeObject(val, asm);
         }
-        
+
         return new ByteBufferRow(asm.toBytes());
     }
-    
+
     /** {@inheritDoc} */
     @NotNull
     @Override
     public K unmarshalKey(@NotNull Row row) throws MarshallerException {
         final Object o = keyMarsh.readObject(row);
-        
+
         assert keyClass.isInstance(o);
-        
+
         return (K) o;
     }
-    
+
     /** {@inheritDoc} */
     @Nullable
     @Override
@@ -109,14 +109,14 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
         if (!row.hasValue()) {
             return null;
         }
-        
+
         final Object o = valMarsh.readObject(row);
-        
+
         assert o == null || valClass.isInstance(o);
-        
+
         return (V) o;
     }
-    
+
     /**
      * Creates {@link RowAssembler} for key-value pair.
      *
@@ -127,11 +127,11 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
     private RowAssembler createAssembler(Object key, Object val) {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
-        
+
         return new RowAssembler(schema, keyStat.nonNullColsSize, keyStat.nonNullCols,
                 valStat.nonNullColsSize, valStat.nonNullCols);
     }
-    
+
     /**
      * Reads object fields and gather statistic.
      *
@@ -144,38 +144,38 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
         if (obj == null || !cols.hasVarlengthColumns()) {
             return ObjectStatistic.ZERO_VARLEN_STATISTICS;
         }
-        
+
         int cnt = 0;
         int size = 0;
-        
+
         for (int i = cols.firstVarlengthColumn(); i < cols.length(); i++) {
             final Object val = marsh.value(obj, i);
             final NativeType colType = cols.column(i).type();
-            
+
             if (val == null || colType.spec().fixedLength()) {
                 continue;
             }
-            
+
             size += getValueSize(val, colType);
             cnt++;
         }
-        
+
         return new ObjectStatistic(cnt, size);
     }
-    
+
     /**
      * Object statistic.
      */
     private static class ObjectStatistic {
         /** Cached zero statistics. */
         static final ObjectStatistic ZERO_VARLEN_STATISTICS = new ObjectStatistic(0, 0);
-        
+
         /** Non-null columns of varlen type. */
         int nonNullCols;
-        
+
         /** Length of all non-null columns of varlen types. */
         int nonNullColsSize;
-        
+
         /** Constructor. */
         ObjectStatistic(int nonNullCols, int nonNullColsSize) {
             this.nonNullCols = nonNullCols;

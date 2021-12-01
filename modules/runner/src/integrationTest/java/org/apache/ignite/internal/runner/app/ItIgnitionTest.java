@@ -207,7 +207,7 @@ class ItIgnitionTest {
             IgniteUtils.closeAll(ig2, ig1);
         }
     }
-    
+
     /**
      * Tests scenario when we try to start single-node cluster with several metastorage nodes in config.
      * TODO: test should be rewritten after init phase will be developed https://issues.apache.org/jira/browse/IGNITE-14414
@@ -233,7 +233,7 @@ class ItIgnitionTest {
                     + "because it is not allowed to start several metastorage nodes.");
         }
     }
-    
+
     /**
      * Tests scenario when we try to start node with invalid configuration.
      */

@@ -156,12 +156,12 @@ public class JavaSerializerTest {
                 new Column("nullLongCol", INT64, true),
                 new Column("floatCol", FLOAT, true),
                 new Column("doubleCol", DOUBLE, true),
-        
+
                 new Column("dateCol", DATE, false),
                 new Column("timeCol", time(), false),
                 new Column("dateTimeCol", datetime(), false),
                 new Column("timestampCol", timestamp(), false),
-        
+
                 new Column("uuidCol", UUID, true),
                 new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
                 new Column("stringCol", STRING, true),

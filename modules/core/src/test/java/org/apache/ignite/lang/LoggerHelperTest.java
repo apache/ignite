@@ -151,7 +151,7 @@ public class LoggerHelperTest {
         result = LoggerMessageHelper.format("Value \\{} is smaller than {}", i1, i2);
         assertEquals("Value {} is smaller than 1", result);
     }
-    
+
     @Test
     public void testExceptionIn_toString() {
         Object o = new Object() {
@@ -163,7 +163,7 @@ public class LoggerHelperTest {
         assertEquals("Troublesome object Failed toString() invocation on an object of type [cls=" + o.getClass().getName()
                 + ", errMsg=java.lang.IllegalStateException, errMsg=a]", result);
     }
-    
+
     @Test
     public void testNullArray() {
         String msg0 = "msg0";
@@ -212,7 +212,7 @@ public class LoggerHelperTest {
         result = LoggerMessageHelper.format("Val1={}, Val2={", ia0);
         assertEquals("Val1=1, Val2={", result);
     }
-    
+
     @Test
     public void testArrayValues() {
         Integer p0 = i1;
@@ -241,7 +241,7 @@ public class LoggerHelperTest {
         result = LoggerMessageHelper.format("{}{}", new Object[]{"a", new double[]{1, 2}});
         assertEquals("a[1.0, 2.0]", result);
     }
-    
+
     @Test
     public void testMultiDimensionalArrayValues() {
         Integer[][] multiIntegerA = new Integer[][]{ia0, ia1};
@@ -264,7 +264,7 @@ public class LoggerHelperTest {
         result = LoggerMessageHelper.format("{}{}", new Object[]{"a", multiOa3});
         assertEquals("a[[[1, 2, 3], [10, 20, 30]], [[1, 2, 3], [10, 20, 30]]]", result);
     }
-    
+
     @Test
     public void testCyclicArrays() {
         Object[] cyclicA = new Object[1];

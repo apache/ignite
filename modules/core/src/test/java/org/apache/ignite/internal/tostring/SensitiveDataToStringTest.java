@@ -45,55 +45,55 @@ public class SensitiveDataToStringTest extends IgniteAbstractTest {
 
     /** Random string. */
     private static final String rndString = "qwer";
-    
+
     @Test
     public void testSensitivePropertiesResolving0() {
         assertSame(HASH, S.getSensitiveDataLogging(), S.getSensitiveDataLogging().toString());
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testSensitivePropertiesResolving1() {
         assertSame(PLAIN, S.getSensitiveDataLogging(), S.getSensitiveDataLogging().toString());
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
     public void testSensitivePropertiesResolving2() {
         assertSame(HASH, S.getSensitiveDataLogging(), S.getSensitiveDataLogging().toString());
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
     public void testSensitivePropertiesResolving3() {
         assertSame(NONE, S.getSensitiveDataLogging(), S.getSensitiveDataLogging().toString());
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testTableObjectImplWithSensitive() {
         testTableObjectImpl((strToCheck, object) -> assertTrue(strToCheck.contains(object.toString()), strToCheck));
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
     public void testTableObjectImplWithHashSensitive() {
         testTableObjectImpl((strToCheck, object) -> assertTrue(strToCheck.contains(object.toString()), strToCheck));
     }
-    
+
     @Test
     @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
     public void testTableObjectImplWithoutSensitive() {
         testTableObjectImpl((strToCheck, object) -> assertEquals("TableObject", object.toString(), strToCheck));
     }
-    
+
     private void testTableObjectImpl(BiConsumer<String, Object> checker) {
         Person person = new Person(rndInt0, rndString);
 
         TableObject testObject = new TableObject(person);
         checker.accept(testObject.toString(), testObject);
     }
-    
+
     static class TableObject {
         @IgniteToStringInclude(sensitive = true)
         Person person;
@@ -118,7 +118,7 @@ public class SensitiveDataToStringTest extends IgniteAbstractTest {
             }
         }
     }
-    
+
     static class Person {
         /** Id organization. */
         int orgId;

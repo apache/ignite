@@ -41,7 +41,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
         implements ConfigurationTree<VIEWT, CHANGET> {
     /** Configuration members (leaves and nodes). */
     protected volatile Map<String, ConfigurationProperty<?>> members = new LinkedHashMap<>();
-    
+
     /**
      * Constructor.
      *
@@ -60,7 +60,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
     }
-    
+
     /**
      * Add new configuration member.
      *
@@ -70,22 +70,22 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     protected final <P extends ConfigurationProperty<?>> void add(P member) {
         addMember(members, member);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public final CompletableFuture<Void> change(Consumer<CHANGET> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
-    
+
         if (listenOnly) {
             throw listenOnlyException();
         }
-        
+
         assert keys instanceof RandomAccess;
-        
+
         ConfigurationSource src = new ConfigurationSource() {
             /** Current index in the {@code keys}. */
             private int level = 0;
-            
+
             /** {@inheritDoc} */
             @Override
             public void descend(ConstructableTreeNode node) {
@@ -101,47 +101,47 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
                     node.construct(keys.get(level++), this, true);
                 }
             }
-            
+
             /** {@inheritDoc} */
             @Override
             public void reset() {
                 level = 0;
             }
         };
-        
+
         // Use resulting tree as update request for the storage.
         return changer.change(src);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public final String key() {
         return key;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public VIEWT value() {
         // To support polymorphic configuration.
         return ((InnerNode) refreshValue()).specificNode();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     protected void beforeRefreshValue(VIEWT newValue, @Nullable VIEWT oldValue) {
         if (oldValue == null || ((InnerNode) oldValue).schemaType() != ((InnerNode) newValue).schemaType()) {
             Map<String, ConfigurationProperty<?>> newMembers = new LinkedHashMap<>(members);
-    
+
             if (oldValue != null) {
                 removeMembers(oldValue, newMembers);
             }
-            
+
             addMembers(newValue, newMembers);
-            
+
             members = newMembers;
         }
     }
-    
+
     /**
      * Returns all child nodes of the current configuration tree node.
      *
@@ -151,10 +151,10 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
         if (!listenOnly) {
             refreshValue();
         }
-        
+
         return Collections.unmodifiableMap(members);
     }
-    
+
     /**
      * Touches current Dynamic Configuration node. Currently this method makes sense for {@link NamedListConfiguration} class only, but this
      * will be changed in <a href="https://issues.apache.org/jira/browse/IGNITE-14645">IGNITE-14645
@@ -172,7 +172,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     public Map<String, ConfigurationProperty<?>> touchMembers() {
         return members();
     }
-    
+
     /**
      * Returns configuration interface.
      *
@@ -180,7 +180,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
      * @throws UnsupportedOperationException In the case of a named list.
      */
     public abstract Class<? extends ConfigurationProperty<VIEWT>> configType();
-    
+
     /**
      * Returns specific configuration tree.
      *
@@ -190,7 +190,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
         // To work with polymorphic configuration.
         return this;
     }
-    
+
     /**
      * Removes members of the previous instance of polymorphic configuration.
      *
@@ -200,7 +200,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     protected void removeMembers(VIEWT oldValue, Map<String, ConfigurationProperty<?>> members) {
         // No-op.
     }
-    
+
     /**
      * Adds members of the previous instance of polymorphic configuration.
      *
@@ -210,7 +210,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     protected void addMembers(VIEWT newValue, Map<String, ConfigurationProperty<?>> members) {
         // No-op.
     }
-    
+
     /**
      * Add configuration member.
      *
@@ -224,7 +224,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
     ) {
         members.put(member.key(), member);
     }
-    
+
     /**
      * Remove configuration member.
      *

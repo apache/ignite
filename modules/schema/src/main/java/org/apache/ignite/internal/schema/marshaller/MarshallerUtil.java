@@ -46,22 +46,22 @@ public final class MarshallerUtil {
         switch (type.spec()) {
             case BYTES:
                 return ((byte[]) val).length;
-            
+
             case STRING:
                 // Overestimating size here prevents from later unwanted row buffer expanding.
                 return ((CharSequence) val).length() << 1;
-            
+
             case NUMBER:
                 return RowAssembler.sizeInBytes((BigInteger) val);
-            
+
             case DECIMAL:
                 return RowAssembler.sizeInBytes((BigDecimal) val);
-            
+
             default:
                 throw new InvalidTypeException("Unsupported variable-length type: " + type);
         }
     }
-    
+
     /**
      * Gets binary read/write mode for given class.
      *
@@ -70,7 +70,7 @@ public final class MarshallerUtil {
      */
     public static BinaryMode mode(Class<?> cls) {
         assert cls != null;
-        
+
         // Primitives.
         if (cls == byte.class) {
             return BinaryMode.P_BYTE;
@@ -117,10 +117,10 @@ public final class MarshallerUtil {
         } else if (cls == BigDecimal.class) {
             return BinaryMode.DECIMAL;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Creates object factory for class.
      *
@@ -135,7 +135,7 @@ public final class MarshallerUtil {
             return null;
         }
     }
-    
+
     /**
      * Stub.
      */

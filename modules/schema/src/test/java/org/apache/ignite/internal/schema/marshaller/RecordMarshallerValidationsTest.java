@@ -127,7 +127,7 @@ public class RecordMarshallerValidationsTest {
 
         assertThrows(MarshallerException.class, () -> marshaller.marshal(restoredRec));
     }
-    
+
     @ParameterizedTest
     @MethodSource("marshallerFactoryProvider")
     public void truncatedKey(MarshallerFactory factory) throws MarshallerException {
@@ -137,18 +137,18 @@ public class RecordMarshallerValidationsTest {
                 new Column[]{new Column("v1", STRING, false)}
         );
         RecordMarshaller<TestK1K2V1> marshallerFull = factory.create(schema, TestK1K2V1.class);
-        
+
         TestK1K2V1 fullRec = new TestK1K2V1(1, 1, "v1");
-        
+
         BinaryRow row = marshallerFull.marshal(fullRec);
-        
+
         Object restoredRec = marshallerFull.unmarshal(new Row(schema, row));
-        
+
         assertTrue(fullRec.getClass().isInstance(restoredRec));
-        
+
         assertThrows(IllegalArgumentException. class, () -> factory.create(schema, TestK2V1.class), "No field found for column k1");
     }
-    
+
     /**
      * Test class with only one field.
      */
@@ -176,7 +176,7 @@ public class RecordMarshallerValidationsTest {
             return id == truncatedRecClass.id && fbyte1 == truncatedRecClass.fbyte1;
         }
     }
-    
+
     /**
      * Test class with all fields.
      */
@@ -207,31 +207,31 @@ public class RecordMarshallerValidationsTest {
             return id == that.id && fbyte1 == that.fbyte1 && fbyte2 == that.fbyte2;
         }
     }
-    
+
     private static class TestK1K2V1 {
         private int k1;
         private int k2;
         private String v1;
-        
+
         public TestK1K2V1() {
-        
+
         }
-        
+
         public TestK1K2V1(int k1, int k2, String v1) {
             this.k1 = k1;
             this.k2 = k2;
             this.v1 = v1;
         }
     }
-    
+
     private static class TestK2V1 {
         private int k2;
         private String v1;
-        
+
         public TestK2V1() {
-        
+
         }
-        
+
         public TestK2V1(int k2, String v1) {
             this.k2 = k2;
             this.v1 = v1;

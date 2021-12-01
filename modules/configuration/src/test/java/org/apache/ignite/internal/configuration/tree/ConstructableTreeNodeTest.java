@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  */
 public class ConstructableTreeNodeTest {
     private static ConfigurationAsmGenerator cgen;
-    
+
     /**
      * Before all.
      */
@@ -46,7 +46,7 @@ public class ConstructableTreeNodeTest {
 
         cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class, Map.of(), Map.of());
     }
-    
+
     /**
      * After all.
      */
@@ -62,14 +62,14 @@ public class ConstructableTreeNodeTest {
     public static <C extends InnerNode & ChildChange> C newChildInstance() {
         return (C) cgen.instantiateNode(TraversableTreeNodeTest.ChildConfigurationSchema.class);
     }
-    
+
     @Test
     public void noKey() {
         var childNode = newChildInstance();
 
         assertThrows(NoSuchElementException.class, () -> childNode.construct("foo", null, true));
     }
-    
+
     @Test
     public void nullSource() {
         var parentNode = newParentInstance();
@@ -125,7 +125,7 @@ public class ConstructableTreeNodeTest {
             return clazz.cast(constant);
         }
     }
-    
+
     @Test
     public void unwrap() {
         var childNode = newChildInstance();
@@ -142,7 +142,7 @@ public class ConstructableTreeNodeTest {
                 childNode.construct("intCfg", new ConstantConfigurationSource(new Object()), true)
         );
     }
-    
+
     @Test
     public void descend() {
         // Inner node.

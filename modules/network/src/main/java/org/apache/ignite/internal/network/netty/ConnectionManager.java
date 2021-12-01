@@ -53,40 +53,40 @@ import org.jetbrains.annotations.TestOnly;
 public class ConnectionManager {
     /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ConnectionManager.class);
-    
+
     /** Latest version of the direct marshalling protocol. */
     public static final byte DIRECT_PROTOCOL_VERSION = 1;
-    
+
     /** Client bootstrap. */
     private final Bootstrap clientBootstrap;
-    
+
     /** Server. */
     private final NettyServer server;
-    
+
     /** Channels map from consistentId to {@link NettySender}. */
     private final Map<String, NettySender> channels = new ConcurrentHashMap<>();
-    
+
     /** Clients. */
     private final Map<SocketAddress, NettyClient> clients = new ConcurrentHashMap<>();
-    
+
     /** Serialization registry. */
     private final MessageSerializationRegistry serializationRegistry;
-    
+
     /** Message listeners. */
     private final List<BiConsumer<SocketAddress, NetworkMessage>> listeners = new CopyOnWriteArrayList<>();
-    
+
     /** Node consistent id. */
     private final String consistentId;
-    
+
     /** Client handshake manager factory. */
     private final Supplier<HandshakeManager> clientHandshakeManagerFactory;
-    
+
     /** Start flag. */
     private final AtomicBoolean started = new AtomicBoolean(false);
-    
+
     /** Stop flag. */
     private final AtomicBoolean stopped = new AtomicBoolean(false);
-    
+
     /**
      * Constructor.
      *
@@ -118,10 +118,10 @@ public class ConnectionManager {
                 serializationRegistry,
                 bootstrapFactory
         );
-        
+
         this.clientBootstrap = bootstrapFactory.createClientBootstrap();
     }
-    
+
     /**
      * Starts the server.
      *
@@ -130,19 +130,19 @@ public class ConnectionManager {
     public void start() throws IgniteInternalException {
         try {
             boolean wasStarted = started.getAndSet(true);
-    
+
             if (wasStarted) {
                 throw new IgniteInternalException("Attempted to start an already started connection manager");
             }
-    
+
             if (stopped.get()) {
                 throw new IgniteInternalException("Attempted to start an already stopped connection manager");
             }
-            
+
             //TODO: timeout value should be extracted into common configuration
             // https://issues.apache.org/jira/browse/IGNITE-14538
             server.start().get(3, TimeUnit.SECONDS);
-            
+
             LOG.info("Connection created [address=" + server.address() + ']');
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -153,7 +153,7 @@ public class ConnectionManager {
             throw new IgniteInternalException("Interrupted while starting the connection manager", e);
         }
     }
-    
+
     /**
      * Returns server local address.
      *
@@ -162,7 +162,7 @@ public class ConnectionManager {
     public SocketAddress getLocalAddress() {
         return server.address();
     }
-    
+
     /**
      * Gets a {@link NettySender}, that sends data from this node to another node with the specified address.
      *
@@ -178,12 +178,12 @@ public class ConnectionManager {
                     consistentId,
                     (addr, sender) -> (sender == null || !sender.isOpen()) ? null : sender
             );
-    
+
             if (channel != null) {
                 return CompletableFuture.completedFuture(channel);
             }
         }
-        
+
         // Get an existing client or create a new one. NettyClient provides a CompletableFuture that resolves
         // when the client is ready for write operations, so previously started client, that didn't establish connection
         // or didn't perform the handhsake operaton, can be reused.
@@ -191,14 +191,14 @@ public class ConnectionManager {
                 existingClient != null && !existingClient.failedToConnect() && !existingClient.isDisconnected()
                         ? existingClient : connect(addr)
         );
-        
+
         CompletableFuture<NettySender> sender = client.sender();
-        
+
         assert sender != null;
-        
+
         return sender;
     }
-    
+
     /**
      * Callback that is called upon receiving a new message.
      *
@@ -208,7 +208,7 @@ public class ConnectionManager {
     private void onMessage(SocketAddress from, NetworkMessage message) {
         listeners.forEach(consumer -> consumer.accept(from, message));
     }
-    
+
     /**
      * Callback that is called upon new client connected to the server.
      *
@@ -217,7 +217,7 @@ public class ConnectionManager {
     private void onNewIncomingChannel(NettySender channel) {
         channels.put(channel.consistentId(), channel);
     }
-    
+
     /**
      * Create new client from this node to specified address.
      *
@@ -231,7 +231,7 @@ public class ConnectionManager {
                 clientHandshakeManagerFactory.get(),
                 this::onMessage
         );
-        
+
         client.start(clientBootstrap).whenComplete((sender, throwable) -> {
             if (throwable == null) {
                 channels.put(sender.consistentId(), sender);
@@ -239,10 +239,10 @@ public class ConnectionManager {
                 clients.remove(address);
             }
         });
-        
+
         return client;
     }
-    
+
     /**
      * Add incoming message listener.
      *
@@ -251,31 +251,31 @@ public class ConnectionManager {
     public void addListener(BiConsumer<SocketAddress, NetworkMessage> listener) {
         listeners.add(listener);
     }
-    
+
     /**
      * Stops the server and all clients.
      */
     public void stop() {
         boolean wasStopped = this.stopped.getAndSet(true);
-    
+
         if (wasStopped) {
             return;
         }
-        
+
         Stream<CompletableFuture<Void>> stream = Stream.concat(
                 clients.values().stream().map(NettyClient::stop),
                 Stream.of(server.stop())
         );
-        
+
         CompletableFuture<Void> stopFut = CompletableFuture.allOf(stream.toArray(CompletableFuture<?>[]::new));
-        
+
         try {
             stopFut.join();
         } catch (Exception e) {
             LOG.warn("Failed to stop the ConnectionManager: {}", e.getMessage());
         }
     }
-    
+
     /**
      * Returns connection manager's {@link #server}.
      *
@@ -285,7 +285,7 @@ public class ConnectionManager {
     public NettyServer server() {
         return server;
     }
-    
+
     /**
      * Returns this node's consistent id.
      *
@@ -295,7 +295,7 @@ public class ConnectionManager {
     public String consistentId() {
         return consistentId;
     }
-    
+
     /**
      * Returns collection of all the clients started by this connection manager.
      *
@@ -305,8 +305,8 @@ public class ConnectionManager {
     public Collection<NettyClient> clients() {
         return Collections.unmodifiableCollection(clients.values());
     }
-    
-    
+
+
     /**
      * Returns map of the channels.
      *
@@ -316,7 +316,7 @@ public class ConnectionManager {
     public Map<String, NettySender> channels() {
         return Collections.unmodifiableMap(channels);
     }
-    
+
     /**
      * Creates a {@link Bootstrap} for clients with channel options provided by a {@link OutboundView}.
      *
@@ -329,14 +329,14 @@ public class ConnectionManager {
             OutboundView clientConfiguration
     ) {
         Bootstrap clientBootstrap = new Bootstrap();
-        
+
         clientBootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
                 // See NettyServer#start for netty configuration details.
                 .option(ChannelOption.SO_KEEPALIVE, clientConfiguration.soKeepAlive())
                 .option(ChannelOption.SO_LINGER, clientConfiguration.soLinger())
                 .option(ChannelOption.TCP_NODELAY, clientConfiguration.tcpNoDelay());
-        
+
         return clientBootstrap;
     }
 }

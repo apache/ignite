@@ -336,7 +336,7 @@ public final class IgniteTestUtils {
 
         return sb.toString();
     }
-    
+
     /**
      * Creates a unique Ignite node name for the given test.
      *

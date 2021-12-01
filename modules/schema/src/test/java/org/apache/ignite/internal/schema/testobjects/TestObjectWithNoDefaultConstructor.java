@@ -30,11 +30,11 @@ public class TestObjectWithNoDefaultConstructor {
     public static TestObjectWithNoDefaultConstructor randomObject(Random rnd) {
         return new TestObjectWithNoDefaultConstructor(rnd.nextLong(), rnd.nextInt());
     }
-    
+
     private final long primLongCol;
-    
+
     private final int primIntCol;
-    
+
     /**
      * Private constructor.
      */
@@ -42,23 +42,23 @@ public class TestObjectWithNoDefaultConstructor {
         primLongCol = longVal;
         primIntCol = intVal;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        
+
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        
+
         TestObjectWithNoDefaultConstructor object = (TestObjectWithNoDefaultConstructor) o;
-        
+
         return primLongCol == object.primLongCol;
     }
-    
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(primLongCol);

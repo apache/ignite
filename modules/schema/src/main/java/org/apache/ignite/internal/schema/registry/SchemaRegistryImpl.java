@@ -164,7 +164,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
         if (row == null) {
             return null;
         }
-        
+
         final SchemaDescriptor rowSchema = schema(row.schemaVersion());
 
         if (curSchema.version() == rowSchema.version()) {

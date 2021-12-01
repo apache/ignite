@@ -36,31 +36,31 @@ import org.junit.jupiter.api.BeforeEach;
  */
 public abstract class AbstractClientTest {
     protected static final String DEFAULT_TABLE = "default_test_table";
-    
+
     protected static TestServer testServer;
-    
+
     protected static Ignite server;
-    
+
     protected static Ignite client;
-    
+
     protected static int serverPort;
-    
+
     /**
      * Before all.
      */
     @BeforeAll
     public static void beforeAll() {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
-        
+
         server = new FakeIgnite();
-        
+
         testServer = startServer(10800, 10, server);
-        
+
         serverPort = getPort(testServer.module());
-        
+
         client = startClient();
     }
-    
+
     /**
      * After all.
      */
@@ -69,7 +69,7 @@ public abstract class AbstractClientTest {
         client.close();
         testServer.close();
     }
-    
+
     /**
      * After each.
      */
@@ -79,7 +79,7 @@ public abstract class AbstractClientTest {
             server.tables().dropTable(t.name());
         }
     }
-    
+
     /**
      * Returns client.
      *
@@ -90,12 +90,12 @@ public abstract class AbstractClientTest {
         if (addrs == null || addrs.length == 0) {
             addrs = new String[]{"127.0.0.1:" + serverPort};
         }
-        
+
         var builder = IgniteClient.builder().addresses(addrs);
-        
+
         return builder.build();
     }
-    
+
     /**
      * Returns server.
      *
@@ -111,7 +111,7 @@ public abstract class AbstractClientTest {
     ) {
         return new TestServer(port, portRange, ignite);
     }
-    
+
     /**
      * Assertion of {@link Tuple} equality.
      *
@@ -123,21 +123,21 @@ public abstract class AbstractClientTest {
             assertNull(y);
             return;
         }
-        
+
         if (y == null) {
             //noinspection ConstantConditions
             assertNull(x);
             return;
         }
-        
+
         assertEquals(x.columnCount(), y.columnCount(), x + " != " + y);
-        
+
         for (var i = 0; i < x.columnCount(); i++) {
             assertEquals(x.columnName(i), y.columnName(i));
             assertEquals((Object) x.value(i), y.value(i));
         }
     }
-    
+
     public static int getPort(ClientHandlerModule hnd) {
         return ((InetSocketAddress) Objects.requireNonNull(hnd.localAddress())).getPort();
     }

@@ -33,10 +33,10 @@ import org.jetbrains.annotations.NotNull;
 public final class MapperBuilder<T> {
     /** Target type. */
     private Class<T> targetType;
-    
+
     /** Column-to-field name mapping. */
     private Map<String, String> columnToFields;
-    
+
     /**
      * Creates a mapper builder for a type.
      *
@@ -44,10 +44,10 @@ public final class MapperBuilder<T> {
      */
     MapperBuilder(@NotNull Class<T> targetType) {
         this.targetType = targetType;
-        
+
         columnToFields = new HashMap<>(targetType.getDeclaredFields().length);
     }
-    
+
     /**
      * Add mapping for a field to a column.
      *
@@ -61,14 +61,14 @@ public final class MapperBuilder<T> {
         if (columnToFields == null) {
             throw new IllegalStateException("Mapper builder can't be reused.");
         }
-        
+
         if (columnToFields.put(Objects.requireNonNull(columnName), Objects.requireNonNull(fieldName)) != null) {
             throw new IllegalArgumentException("Mapping for a column already exists: " + columnName);
         }
-        
+
         return this;
     }
-    
+
     /**
      * Map a field to a type of given class.
      *
@@ -79,7 +79,7 @@ public final class MapperBuilder<T> {
     public MapperBuilder<T> map(@NotNull String fieldName, Class<?> targetClass) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
-    
+
     /**
      * Adds a functional mapping for a field, the result depends on function call for every particular row.
      *
@@ -90,7 +90,7 @@ public final class MapperBuilder<T> {
     public MapperBuilder<T> map(@NotNull String fieldName, Function<Tuple, Object> mappingFunction) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
-    
+
     /**
      * Sets a target class to deserialize to.
      *
@@ -100,7 +100,7 @@ public final class MapperBuilder<T> {
     public MapperBuilder<T> deserializeTo(@NotNull Class<?> targetClass) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
-    
+
     /**
      * Builds mapper.
      *
@@ -111,19 +111,19 @@ public final class MapperBuilder<T> {
         if (columnToFields.isEmpty()) {
             throw new IllegalStateException("Empty mapping isn't allowed.");
         }
-        
+
         Map<String, String> mapping = this.columnToFields;
-        
+
         this.columnToFields = null;
-        
+
         HashSet<String> fields = new HashSet<>(mapping.size());
-        
+
         for (String f : mapping.values()) {
             if (!fields.add(f)) {
                 throw new IllegalStateException("More than one column is mapped to the field: field=" + f);
             }
         }
-        
+
         return new DefaultColumnMapper<>(targetType, mapping);
     }
 }

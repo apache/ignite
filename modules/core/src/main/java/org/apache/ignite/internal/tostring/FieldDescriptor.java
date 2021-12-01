@@ -28,28 +28,28 @@ import org.intellij.lang.annotations.MagicConstant;
 class FieldDescriptor {
     /** Field type: {@link Object}. */
     public static final int FIELD_TYPE_OBJECT = 0;
-    
+
     /** Field type: {@code byte}. */
     public static final int FIELD_TYPE_BYTE = 1;
-    
+
     /** Field type: {@code boolean}. */
     public static final int FIELD_TYPE_BOOLEAN = 2;
-    
+
     /** Field type: {@code char}. */
     public static final int FIELD_TYPE_CHAR = 3;
-    
+
     /** Field type: {@code short}. */
     public static final int FIELD_TYPE_SHORT = 4;
-    
+
     /** Field type: {@code int}. */
     public static final int FIELD_TYPE_INT = 5;
-    
+
     /** Field type: {@code float}. */
     public static final int FIELD_TYPE_FLOAT = 6;
-    
+
     /** Field type: {@code long}. */
     public static final int FIELD_TYPE_LONG = 7;
-    
+
     /** Field type: {@code double}. */
     public static final int FIELD_TYPE_DOUBLE = 8;
 

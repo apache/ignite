@@ -30,10 +30,10 @@ import org.jetbrains.annotations.NotNull;
 class IdentityMapper<T> implements Mapper<T> {
     /** Target type. */
     private final Class<T> targetType;
-    
+
     /** Class field names. */
     private final Set<String> fieldsNames;
-    
+
     /**
      * Creates a mapper for given class.
      *
@@ -41,21 +41,21 @@ class IdentityMapper<T> implements Mapper<T> {
      */
     IdentityMapper(Class<T> targetType) {
         this.targetType = targetType;
-        
+
         Field[] fields = targetType.getDeclaredFields();
         fieldsNames = new HashSet<>(fields.length);
-        
+
         for (int i = 0; i < fields.length; i++) {
             //TODO IGNITE-15787 Filter out 'transient' fields.
             fieldsNames.add(fields[i].getName());
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override public Class<T> targetType() {
         return targetType;
     }
-    
+
     /** {@inheritDoc} */
     @Override public String columnToField(@NotNull String columnName) {
         return fieldsNames.contains(columnName) ? columnName : null;

@@ -41,17 +41,17 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
      * Key that needs to be ignored by the source. Can be {@code null}.
      */
     private final String ignoredKey;
-    
+
     /**
      * Current path inside the top-level HOCON object.
      */
     private final List<String> path;
-    
+
     /**
      * HOCON object that this source has been created from.
      */
     private final ConfigObject hoconCfgObject;
-    
+
     /**
      * Creates a {@link ConfigurationSource} from the given HOCON object.
      *
@@ -65,55 +65,55 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
         this.path = path;
         this.hoconCfgObject = hoconCfgObject;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public <T> T unwrap(Class<T> clazz) {
         throw wrongTypeException(clazz, path, -1);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void descend(ConstructableTreeNode node) {
         for (Map.Entry<String, ConfigValue> entry : hoconCfgObject.entrySet()) {
             String key = entry.getKey();
-    
+
             if (key.equals(ignoredKey)) {
                 continue;
             }
-            
+
             ConfigValue hoconCfgValue = entry.getValue();
-            
+
             try {
                 switch (hoconCfgValue.valueType()) {
                     case NULL:
                         node.construct(key, null, false);
-                        
+
                         break;
-                    
+
                     case OBJECT: {
                         List<String> path = appendKey(this.path, key);
-                        
+
                         node.construct(
                                 key,
                                 new HoconObjectConfigurationSource(null, path, (ConfigObject) hoconCfgValue),
                                 false
                         );
-                        
+
                         break;
                     }
-                    
+
                     case LIST: {
                         List<String> path = appendKey(this.path, key);
-                        
+
                         node.construct(key, new HoconListConfigurationSource(path, (ConfigList) hoconCfgValue), false);
-                        
+
                         break;
                     }
-                    
+
                     default: {
                         List<String> path = appendKey(this.path, key);
-                        
+
                         node.construct(key, new HoconPrimitiveConfigurationSource(path, hoconCfgValue), false);
                     }
                 }

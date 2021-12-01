@@ -78,7 +78,7 @@ public class ItDistributedConfigurationPropertiesTest {
         @DirectAccess
         public String str = "foo";
     }
-    
+
     /**
      * An emulation of an Ignite node, that only contains components necessary for tests.
      */
@@ -96,10 +96,10 @@ public class ItDistributedConfigurationPropertiesTest {
         private final MetaStorageManager metaStorageManager;
 
         private final ConfigurationManager distributedCfgManager;
-        
+
         /** Flag that disables storage updates. */
         private volatile boolean receivesUpdates = true;
-        
+
         /**
          * Constructor that simply creates a subset of components of this node.
          */
@@ -111,9 +111,9 @@ public class ItDistributedConfigurationPropertiesTest {
                 List<String> metaStorageNodes
         ) {
             this.metaStorageNodes = metaStorageNodes;
-            
+
             vaultManager = new VaultManager(new InMemoryVaultService());
-            
+
             clusterService = ClusterServiceTestUtils.clusterService(
                     testInfo,
                     addr.port(),
@@ -131,7 +131,7 @@ public class ItDistributedConfigurationPropertiesTest {
                     List.of(),
                     List.of()
             );
-            
+
             metaStorageManager = new MetaStorageManager(
                     vaultManager,
                     cfgManager,
@@ -139,7 +139,7 @@ public class ItDistributedConfigurationPropertiesTest {
                     raftManager,
                     new SimpleInMemoryKeyValueStorage()
             );
-            
+
             // create a custom storage implementation that is able to "lose" some storage updates
             var distributedCfgStorage = new DistributedConfigurationStorage(metaStorageManager, vaultManager) {
                 /** {@inheritDoc} */
@@ -154,7 +154,7 @@ public class ItDistributedConfigurationPropertiesTest {
                     });
                 }
             };
-            
+
             distributedCfgManager = new ConfigurationManager(
                     List.of(DistributedConfiguration.KEY),
                     Map.of(),
@@ -163,35 +163,35 @@ public class ItDistributedConfigurationPropertiesTest {
                     List.of()
             );
         }
-        
+
         /**
          * Starts the created components.
          */
         void start() throws Exception {
             vaultManager.start();
-            
+
             cfgManager.start();
-            
+
             // metastorage configuration
             String metaStorageCfg = metaStorageNodes.stream()
                     .map(Object::toString)
                     .collect(joining("\", \"", "\"", "\""));
-            
+
             var config = String.format("{ node: { metastorageNodes : [ %s ] } }", metaStorageCfg);
-            
+
             cfgManager.bootstrap(config);
-            
+
             Stream.of(clusterService, raftManager, metaStorageManager)
                     .forEach(IgniteComponent::start);
-            
+
             // deploy watches to propagate data from the metastore into the vault
             metaStorageManager.deployWatches();
-            
+
             distributedCfgManager.start();
-            
+
             distributedCfgManager.configurationRegistry().initializeDefaults();
         }
-        
+
         /**
          * Stops the created components.
          */
@@ -199,16 +199,16 @@ public class ItDistributedConfigurationPropertiesTest {
             var components = List.of(
                     distributedCfgManager, metaStorageManager, raftManager, clusterService, cfgManager, vaultManager
             );
-    
+
             for (IgniteComponent igniteComponent : components) {
                 igniteComponent.beforeNodeStop();
             }
-    
+
             for (IgniteComponent component : components) {
                 component.stop();
             }
         }
-        
+
         /**
          * Disables the propagation of storage events on this node.
          */
@@ -220,18 +220,18 @@ public class ItDistributedConfigurationPropertiesTest {
     private Node firstNode;
 
     private Node secondNode;
-    
+
     /**
      * Before each.
      */
     @BeforeEach
     void setUp(@WorkDirectory Path workDir, TestInfo testInfo) throws Exception {
         var firstNodeAddr = new NetworkAddress("localhost", 10000);
-        
+
         String firstNodeName = testNodeName(testInfo, firstNodeAddr.port());
-        
+
         var secondNodeAddr = new NetworkAddress("localhost", 10001);
-        
+
         firstNode = new Node(
                 testInfo,
                 workDir.resolve("firstNode"),
@@ -239,7 +239,7 @@ public class ItDistributedConfigurationPropertiesTest {
                 List.of(firstNodeAddr, secondNodeAddr),
                 List.of(firstNodeName)
         );
-        
+
         secondNode = new Node(
                 testInfo,
                 workDir.resolve("secondNode"),
@@ -247,11 +247,11 @@ public class ItDistributedConfigurationPropertiesTest {
                 List.of(firstNodeAddr, secondNodeAddr),
                 List.of(firstNodeName)
         );
-        
+
         firstNode.start();
         secondNode.start();
     }
-    
+
     /**
      * After each.
      */
@@ -261,10 +261,10 @@ public class ItDistributedConfigurationPropertiesTest {
                 .filter(Objects::nonNull)
                 .map(n -> (AutoCloseable) n::stop)
                 .collect(toUnmodifiableList());
-        
+
         IgniteUtils.closeAll(closeables);
     }
-    
+
     /**
      * Tests a scenario when a distributed property is lagging behind the latest value (e.g. due to network delays. storage listeners logic,
      * etc.). In this case the "direct" value should always be in the up-to-date state.
@@ -276,35 +276,35 @@ public class ItDistributedConfigurationPropertiesTest {
         ConfigurationValue<String> firstValue = firstNode.distributedCfgManager.configurationRegistry()
                 .getConfiguration(DistributedConfiguration.KEY)
                 .str();
-        
+
         ConfigurationValue<String> secondValue = secondNode.distributedCfgManager.configurationRegistry()
                 .getConfiguration(DistributedConfiguration.KEY)
                 .str();
-        
+
         // check initial values
         assertThat(firstValue.value(), is("foo"));
         assertThat(directValue(secondValue), is("foo"));
         assertThat(secondValue.value(), is("foo"));
-        
+
         // update the property to a new value and check that the change is propagated to the second node
         CompletableFuture<Void> changeFuture = firstValue.update("bar");
-        
+
         assertThat(changeFuture, willBe(nullValue(Void.class)));
-        
+
         assertThat(firstValue.value(), is("bar"));
         assertThat(directValue(secondValue), is("bar"));
         assertTrue(waitForCondition(() -> "bar".equals(secondValue.value()), 100));
-        
+
         // disable storage updates on the second node. This way the new values will never be propagated into the
         // configuration storage
         secondNode.stopReceivingUpdates();
-        
+
         // update the property and check that only the "direct" value of the second property reflects the latest
         // state
         changeFuture = firstValue.update("baz");
-        
+
         assertThat(changeFuture, willBe(nullValue(Void.class)));
-        
+
         assertThat(firstValue.value(), is("baz"));
         assertThat(directValue(secondValue), is("baz"));
         assertFalse(waitForCondition(() -> "baz".equals(secondValue.value()), 100));

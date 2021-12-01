@@ -43,7 +43,7 @@ public class ItJoinTest extends AbstractBasicIntegrationTest {
                         SchemaBuilders.column("C3", ColumnType.INT32).asNullable().build()
                 ).withPrimaryKey("ID")
         );
-    
+
         createTable(
                 SchemaBuilders.tableBuilder("PUBLIC", "T2").columns(
                         SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
@@ -65,7 +65,7 @@ public class ItJoinTest extends AbstractBasicIntegrationTest {
                 new Object[] {4, 3, 3, 3},
                 new Object[] {5, 4, 4, 4}
         );
-    
+
         insertData("PUBLIC.T2", new String[] {"ID", "C1", "C2", "C3"},
                 new Object[] {0, 1, 1, 1},
                 new Object[] {1, 2, 2, null},

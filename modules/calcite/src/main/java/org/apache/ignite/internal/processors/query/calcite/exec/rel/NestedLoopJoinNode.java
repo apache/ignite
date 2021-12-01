@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
 public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
     /** Special value to highlights that all row were received and we are not waiting any more. */
     protected static final int NOT_WAITING = -1;
-    
+
     protected final BiPredicate<RowT, RowT> cond;
 
     protected final RowHandler<RowT> handler;
@@ -289,7 +289,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
                             checkState();
-   
+
                             if (!cond.test(left, rightMaterialized.get(rightIdx++))) {
                                 continue;
                             }
@@ -386,7 +386,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                             requested--;
                             matched = true;
-    
+
                             RowT row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
@@ -491,14 +491,14 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
                             checkState();
 
                             RowT right = rightMaterialized.get(rightIdx++);
-    
+
                             if (!cond.test(left, right)) {
                                 continue;
                             }
 
                             requested--;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
-    
+
                             RowT joined = handler.concat(left, right);
                             downstream().push(joined);
                         }
@@ -635,7 +635,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
                             checkState();
 
                             RowT right = rightMaterialized.get(rightIdx++);
-    
+
                             if (!cond.test(left, right)) {
                                 continue;
                             }
@@ -643,7 +643,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
                             requested--;
                             leftMatched = true;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
-    
+
                             RowT joined = handler.concat(left, right);
                             downstream().push(joined);
                         }
@@ -754,7 +754,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                     while (!matched && requested > 0 && rightIdx < rightMaterialized.size()) {
                         checkState();
-    
+
                         if (!cond.test(left, rightMaterialized.get(rightIdx++))) {
                             continue;
                         }
@@ -828,7 +828,7 @@ public abstract class NestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                         while (!matched && rightIdx < rightMaterialized.size()) {
                             checkState();
-    
+
                             if (cond.test(left, rightMaterialized.get(rightIdx++))) {
                                 matched = true;
                             }

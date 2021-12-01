@@ -147,7 +147,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
         final IgniteDistribution leftDistr = TraitUtils.distribution(left);
         final IgniteDistribution rightDistr = TraitUtils.distribution(right);
-    
+
         final IgniteDistribution left2rightProjectedDistr = leftDistr.apply(buildTransposeMapping(true));
         final IgniteDistribution right2leftProjectedDistr = rightDistr.apply(buildTransposeMapping(false));
 

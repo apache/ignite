@@ -31,26 +31,26 @@ import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
  */
 public class FakeCursor implements SqlCursor<List<?>> {
     private final Random random;
-    
+
     FakeCursor() {
         random = new Random();
     }
-    
+
     @Override
     public void close() throws Exception {
-    
+
     }
-    
+
     @Override
     public Iterator<List<?>> iterator() {
         return null;
     }
-    
+
     @Override
     public boolean hasNext() {
         return true;
     }
-    
+
     @Override
     public List<?> next() {
         List<Object> result = new ArrayList<>();
@@ -60,15 +60,15 @@ public class FakeCursor implements SqlCursor<List<?>> {
         result.add(random.nextDouble());
         result.add(UUID.randomUUID().toString());
         result.add(null);
-        
+
         return result;
     }
-    
+
     @Override
     public SqlQueryType queryType() {
         return SqlQueryType.QUERY;
     }
-    
+
     @Override
     public ResultSetMetadata metadata() {
         return null;

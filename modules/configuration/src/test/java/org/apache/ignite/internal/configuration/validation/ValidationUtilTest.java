@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
  */
 public class ValidationUtilTest {
     private static ConfigurationAsmGenerator cgen;
-    
+
     /**
      * Before all.
      */
@@ -62,7 +62,7 @@ public class ValidationUtilTest {
 
         cgen.compileRootSchema(ValidatedRootConfigurationSchema.class, Map.of(), Map.of());
     }
-    
+
     /**
      * After all.
      */
@@ -70,22 +70,22 @@ public class ValidationUtilTest {
     public static void afterAll() {
         cgen = null;
     }
-    
+
     @Target(FIELD)
     @Retention(RUNTIME)
     @interface LeafValidation {
     }
-    
+
     @Target(FIELD)
     @Retention(RUNTIME)
     @interface InnerValidation {
     }
-    
+
     @Target(FIELD)
     @Retention(RUNTIME)
     @interface NamedListValidation {
     }
-    
+
     /**
      * Root configuration schema.
      */
@@ -94,7 +94,7 @@ public class ValidationUtilTest {
         @InnerValidation
         @ConfigValue
         public ValidatedChildConfigurationSchema child;
-        
+
         @NamedListValidation
         @NamedConfigValue
         public ValidatedChildConfigurationSchema elements;
@@ -109,7 +109,7 @@ public class ValidationUtilTest {
         @Value(hasDefault = true)
         public String str = "foo";
     }
-    
+
     private InnerNode root;
 
     /**
@@ -121,7 +121,7 @@ public class ValidationUtilTest {
 
         ConfigurationUtil.addDefaults(root);
     }
-    
+
     @Test
     public void validateLeafNode() {
         var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));
@@ -146,7 +146,7 @@ public class ValidationUtilTest {
 
         assertEquals("bar", issues.get(0).message());
     }
-    
+
     @Test
     public void validateInnerNode() throws Exception {
         var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));
@@ -171,7 +171,7 @@ public class ValidationUtilTest {
 
         assertEquals("bar", issues.get(0).message());
     }
-    
+
     @Test
     public void validateNamedListNode() throws Exception {
         var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));

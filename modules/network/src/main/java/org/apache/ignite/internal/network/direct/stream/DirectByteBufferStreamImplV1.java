@@ -63,24 +63,24 @@ import org.jetbrains.annotations.Nullable;
 public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** Poison object. */
     private static final Object NULL = new Object();
-    
+
     private final MessageSerializationRegistry serializationRegistry;
-    
+
     private ByteBuffer buf;
-    
+
     private byte[] heapArr;
-    
+
     private long baseOff;
-    
+
     private int arrOff = -1;
-    
+
     private Object tmpArr;
-    
+
     private int tmpArrOff;
 
     /** Number of bytes of the boundary value, read from previous message. */
     private int valReadBytes;
-    
+
     private int tmpArrBytes;
 
     /**
@@ -96,46 +96,46 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * message type.
      */
     private short msgGroupType;
-    
+
     @Nullable
     private MessageDeserializer<NetworkMessage> msgDeserializer;
-    
+
     private Iterator<?> mapIt;
-    
+
     private Iterator<?> it;
-    
+
     private int arrPos = -1;
-    
+
     private Object arrCur = NULL;
-    
+
     private Object mapCur = NULL;
-    
+
     private Object cur = NULL;
-    
+
     private boolean keyDone;
-    
+
     private int readSize = -1;
-    
+
     private int readItems;
-    
+
     private Object[] objArr;
-    
+
     private Collection<Object> col;
-    
+
     private Map<Object, Object> map;
-    
+
     private long prim;
-    
+
     private int primShift;
-    
+
     private int uuidState;
-    
+
     private long uuidMost;
-    
+
     private long uuidLeast;
-    
+
     private long uuidLocId;
-    
+
     protected boolean lastFinished;
 
     /** byte-array representation of string. */
@@ -517,14 +517,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 //noinspection fallthrough
             case 2:
                 writeLong(val.getLeastSignificantBits());
-    
+
                 if (!lastFinished) {
                     return;
                 }
-    
+
                 uuidState = 0;
                 break;
-    
+
             default:
                 throw new IllegalArgumentException("Unknown uuidState: " + uuidState);
         }
@@ -573,7 +573,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 uuidState = 0;
                 break;
-                
+
             default:
                 throw new IllegalArgumentException("Unknown uuidState: " + uuidState);
         }
@@ -1072,7 +1072,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 uuidState = 0;
                 break;
-                
+
             default:
                 throw new IllegalArgumentException("Unknown uuidState: " + uuidState);
         }
@@ -1128,7 +1128,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 uuidState = 0;
                 break;
-                
+
             default:
                 throw new IllegalArgumentException("Unknown uuidState: " + uuidState);
         }

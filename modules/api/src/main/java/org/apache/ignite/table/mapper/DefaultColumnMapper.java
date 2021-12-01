@@ -28,10 +28,10 @@ import org.jetbrains.annotations.NotNull;
 class DefaultColumnMapper<T> implements Mapper<T> {
     /** Target type. */
     private final Class<T> targetType;
-    
+
     /** Column-to-field name mapping. */
     private final Map<String, String> mapping;
-    
+
     /**
      * Creates a mapper for given type.
      *
@@ -42,12 +42,12 @@ class DefaultColumnMapper<T> implements Mapper<T> {
         this.targetType = targetType;
         this.mapping = mapping;
     }
-    
+
     /** {@inheritDoc} */
     @Override public Class<T> targetType() {
         return targetType;
     }
-    
+
     /** {@inheritDoc} */
     @Override public String columnToField(@NotNull String columnName) {
         return mapping.get(columnName);

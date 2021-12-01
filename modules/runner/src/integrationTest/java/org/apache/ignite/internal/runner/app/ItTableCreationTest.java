@@ -156,7 +156,7 @@ class ItTableCreationTest {
                         + "  }\n" /* Root. */
                         + "}"
         );
-    
+
         nodesBootstrapCfg.put(
                 node1Name,
                 "{\n"
@@ -200,58 +200,58 @@ class ItTableCreationTest {
         nodesBootstrapCfg.forEach((nodeName, configStr) ->
                 clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
         );
-    
+
         assertEquals(3, clusterNodes.size());
-    
+
         clusterNodes.forEach(Assertions::assertNotNull);
-    
+
         /* Table 1. */
-    
+
         Table tbl01 = clusterNodes.get(1).tables().table("tbl1");
         RecordView<Tuple> recView01 = tbl01.recordView();
         KeyValueView<Tuple, Tuple> kvView01 = tbl01.keyValueView();
-    
+
         recView01.insert(Tuple.create().set("key", 1L).set("val", 111));
         kvView01.put(Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
-    
+
         Table tbl02 = clusterNodes.get(2).tables().table("tbl1");
         RecordView<Tuple> recView02 = tbl02.recordView();
         KeyValueView<Tuple, Tuple> kvView02 = tbl02.keyValueView();
-    
+
         final Tuple keyTuple01 = Tuple.create().set("key", 1L);
         final Tuple keyTuple02 = Tuple.create().set("key", 2L);
-    
+
         assertEquals(111, (Integer) recView02.get(keyTuple01).value("val"));
         assertEquals(111, (Integer) kvView02.get(keyTuple01).value("val"));
         assertEquals(222, (Integer) recView02.get(keyTuple02).value("val"));
         assertEquals(222, (Integer) kvView02.get(keyTuple02).value("val"));
-    
+
         /* Table 2. */
-    
+
         final UUID uuid = UUID.randomUUID();
         final UUID uuid2 = UUID.randomUUID();
-    
+
         // Put data on node 1.
         Table tbl11 = clusterNodes.get(1).tables().table("tbl1");
         RecordView<Tuple> recView11 = tbl11.recordView();
         KeyValueView<Tuple, Tuple> kvView11 = tbl11.keyValueView();
-    
+
         recView11.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
                 .set("valStr", "String value").set("valInt", 73).set("valNullable", null));
-    
+
         kvView11.put(
                 Tuple.create().set("key", uuid2).set("affKey", 4242L),
                 Tuple.create().set("valStr", "String value 2").set("valInt", 7373).set("valNullable", null)
         );
-    
+
         // Get data on node 2.
         Table tbl12 = clusterNodes.get(2).tables().table("tbl1");
         RecordView<Tuple> recView12 = tbl12.recordView();
         KeyValueView<Tuple, Tuple> kvView12 = tbl12.keyValueView();
-    
+
         final Tuple keyTuple11 = Tuple.create().set("key", uuid).set("affKey", 42L);
         final Tuple keyTuple12 = Tuple.create().set("key", uuid2).set("affKey", 4242L);
-    
+
         assertEquals("String value", recView12.get(keyTuple11).value("valStr"));
         assertEquals("String value", kvView12.get(keyTuple11).value("valStr"));
         assertEquals("String value 2", recView12.get(keyTuple12).value("valStr"));

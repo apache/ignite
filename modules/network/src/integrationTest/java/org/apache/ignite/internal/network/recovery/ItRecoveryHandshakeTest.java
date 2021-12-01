@@ -408,11 +408,11 @@ public class ItRecoveryHandshakeTest {
         networkConfiguration.port().update(port).join();
 
         NetworkView cfg = networkConfiguration.value();
-    
+
         NettyBootstrapFactory bootstrapFactory = new NettyBootstrapFactory(networkConfiguration, consistentId);
         bootstrapFactory.start();
         startedBootstrapFactories.add(bootstrapFactory);
-        
+
         var manager = new ConnectionManager(
                 cfg,
                 registry,
@@ -446,11 +446,11 @@ public class ItRecoveryHandshakeTest {
         networkConfiguration.port().update(port).join();
 
         NetworkView cfg = networkConfiguration.value();
-    
+
         NettyBootstrapFactory bootstrapFactory = new NettyBootstrapFactory(networkConfiguration, consistentId);
         bootstrapFactory.start();
         startedBootstrapFactories.add(bootstrapFactory);
-        
+
         var manager = new ConnectionManager(
                 cfg,
                 registry,

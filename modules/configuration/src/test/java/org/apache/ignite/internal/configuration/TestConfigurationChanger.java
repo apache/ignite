@@ -39,7 +39,7 @@ import org.apache.ignite.internal.configuration.tree.InnerNode;
 public class TestConfigurationChanger extends ConfigurationChanger {
     /** Runtime implementations generator for node classes. */
     private final ConfigurationAsmGenerator cgen;
-    
+
     /**
      * Constructor.
      *
@@ -66,15 +66,15 @@ public class TestConfigurationChanger extends ConfigurationChanger {
                 validators,
                 storage
         );
-        
+
         this.cgen = cgen;
-        
+
         Map<Class<?>, Set<Class<?>>> internalExtensions = internalSchemaExtensions(internalSchemaExtensions);
         Map<Class<?>, Set<Class<?>>> polymorphicExtensions = polymorphicSchemaExtensions(polymorphicSchemaExtensions);
-        
+
         rootKeys.forEach(key -> cgen.compileRootSchema(key.schemaClass(), internalExtensions, polymorphicExtensions));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public InnerNode createRootNode(RootKey<?, ?> rootKey) {

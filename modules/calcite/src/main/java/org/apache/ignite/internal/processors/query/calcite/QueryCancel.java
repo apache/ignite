@@ -27,9 +27,9 @@ import org.apache.ignite.lang.IgniteException;
  */
 public class QueryCancel {
     private final List<Cancellable> cancelActions = new ArrayList<>(3);
-    
+
     private boolean canceled;
-    
+
     /**
      * Adds a cancel action.
      *
@@ -37,14 +37,14 @@ public class QueryCancel {
      */
     public synchronized void add(Cancellable clo) throws QueryCancelledException {
         assert clo != null;
-        
+
         if (canceled) {
             throw new QueryCancelledException();
         }
-        
+
         cancelActions.add(clo);
     }
-    
+
     /**
      * Executes cancel closure.
      */
@@ -52,16 +52,16 @@ public class QueryCancel {
         if (canceled) {
             return;
         }
-        
+
         canceled = true;
-        
+
         IgniteException ex = null;
-        
+
         // Run actions in the reverse order.
         for (int i = cancelActions.size() - 1; i >= 0; i--) {
             try {
                 Cancellable act = cancelActions.get(i);
-                
+
                 act.cancel();
             } catch (Exception e) {
                 if (ex == null) {
@@ -71,12 +71,12 @@ public class QueryCancel {
                 }
             }
         }
-    
+
         if (ex != null) {
             throw ex;
         }
     }
-    
+
     /**
      * Stops query execution if a user requested cancel.
      */
@@ -85,7 +85,7 @@ public class QueryCancel {
             throw new QueryCancelledException();
         }
     }
-    
+
     public synchronized boolean isCanceled() {
         return canceled;
     }

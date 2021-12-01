@@ -221,7 +221,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
     private ClientMessageUnpacker getUnpacker(ByteBuf buf) {
         return new ClientMessageUnpacker(buf);
     }
-    
+
     private void processOperation(ChannelHandlerContext ctx, ClientMessageUnpacker in, ClientMessagePacker out) {
         long requestId = -1;
 

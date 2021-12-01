@@ -47,15 +47,15 @@ public interface IgniteMapSetOp extends IgniteSetOp {
         boolean rewindable = inputTraits.stream()
                 .map(TraitUtils::rewindability)
                 .allMatch(RewindabilityTrait::rewindable);
-    
+
         if (rewindable) {
             return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
         }
-        
+
         return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
                 Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
@@ -65,7 +65,7 @@ public interface IgniteMapSetOp extends IgniteSetOp {
         if (inputTraits.stream().allMatch(t -> TraitUtils.distribution(t).satisfies(IgniteDistributions.single()))) {
             return List.of(); // If all distributions are single or broadcast IgniteSingleMinus should be used.
         }
-        
+
         return List.of(
                 Pair.of(nodeTraits.replace(IgniteDistributions.random()), Commons.transform(inputTraits,
                         t -> TraitUtils.distribution(t) == IgniteDistributions.broadcast()
@@ -74,7 +74,7 @@ public interface IgniteMapSetOp extends IgniteSetOp {
                                 t.replace(IgniteDistributions.random())))
         );
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
@@ -85,25 +85,25 @@ public interface IgniteMapSetOp extends IgniteSetOp {
                 .map(TraitUtils::correlation)
                 .flatMap(corrTr -> corrTr.correlationIds().stream())
                 .collect(Collectors.toSet());
-        
+
         return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
                 inTraits));
     }
-    
+
     /** Build RowType for MAP node. */
     public default RelDataType buildRowType() {
         RelDataTypeFactory typeFactory = Commons.typeFactory(getCluster());
-        
+
         assert typeFactory instanceof IgniteTypeFactory;
-        
+
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-        
+
         builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
         builder.add("COUNTERS", typeFactory.createJavaType(int[].class));
-        
+
         return builder.build();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default AggregateType aggregateType() {

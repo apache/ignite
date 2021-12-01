@@ -36,7 +36,7 @@ public interface Mapper<T> {
     static <K> Mapper<K> of(Class<K> cls) {
         return identity(cls);
     }
-    
+
     /**
      * Creates a mapper builder for a class.
      *
@@ -47,7 +47,7 @@ public interface Mapper<T> {
     static <V> MapperBuilder<V> builderFor(Class<V> cls) {
         return new MapperBuilder<>(cls);
     }
-    
+
     /**
      * Creates identity mapper which is used for simple types that have native support or objects with field names that match column names.
      *
@@ -58,14 +58,14 @@ public interface Mapper<T> {
     static <T> Mapper<T> identity(Class<T> targetClass) {
         return new IdentityMapper<T>(targetClass);
     }
-    
+
     /**
      * Return mapped type.
      *
      * @return Mapped type.
      */
     Class<T> targetType();
-    
+
     /**
      * Maps a column name to a field name.
      *

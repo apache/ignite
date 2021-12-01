@@ -50,70 +50,70 @@ public class SqlDdlParserTest {
     @Test
     public void createTableSimpleCase() throws SqlParseException {
         String query = "create table my_table(id int, val varchar)";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(columnWithName("ID")));
         assertThat(createTable.columnList(), hasItem(columnWithName("VAL")));
     }
-    
+
     /**
      * Parsing of CREATE TABLE statement with quoted identifiers.
      */
     @Test
     public void createTableQuotedIdentifiers() throws SqlParseException {
         String query = "create table \"My_Table\"(\"Id\" int, \"Val\" varchar)";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("My_Table")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(columnWithName("Id")));
         assertThat(createTable.columnList(), hasItem(columnWithName("Val")));
     }
-    
+
     /**
      * Parsing of CREATE TABLE statement with IF NOT EXISTS.
      */
     @Test
     public void createTableIfNotExists() throws SqlParseException {
         String query = "create table if not exists my_table(id int, val varchar)";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(true));
         assertThat(createTable.columnList(), hasItem(columnWithName("ID")));
         assertThat(createTable.columnList(), hasItem(columnWithName("VAL")));
     }
-    
+
     /**
      * Parsing of CREATE TABLE with specified PK constraint where constraint is a shortcut within a column definition.
      */
     @Test
     public void createTableWithPkCase1() throws SqlParseException {
         String query = "create table my_table(id int primary key, val varchar)";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
@@ -123,20 +123,20 @@ public class SqlDdlParserTest {
                         && constraint.getOperandList().get(0) == null
                         && constraint.isA(singleton(SqlKind.PRIMARY_KEY)))));
     }
-    
+
     /**
      * Parsing of CREATE TABLE with specified PK constraint where constraint is set explicitly and has no name.
      */
     @Test
     public void createTableWithPkCase2() throws SqlParseException {
         String query = "create table my_table(id int, val varchar, primary key(id))";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
@@ -146,20 +146,20 @@ public class SqlDdlParserTest {
                         && constraint.getOperandList().get(0) == null
                         && constraint.isA(singleton(SqlKind.PRIMARY_KEY)))));
     }
-    
+
     /**
      * Parsing of CREATE TABLE with specified PK constraint where constraint is set explicitly and has a name.
      */
     @Test
     public void createTableWithPkCase3() throws SqlParseException {
         String query = "create table my_table(id int, val varchar, constraint pk_key primary key(id))";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
@@ -169,20 +169,20 @@ public class SqlDdlParserTest {
                         && "PK_KEY".equals(((SqlIdentifier) constraint.getOperandList().get(0)).names.get(0))
                         && constraint.isA(singleton(SqlKind.PRIMARY_KEY)))));
     }
-    
+
     /**
      * Parsing of CREATE TABLE with specified PK constraint where constraint consists of several columns.
      */
     @Test
     public void createTableWithPkCase4() throws SqlParseException {
         String query = "create table my_table(id1 int, id2 int, val varchar, primary key(id1, id2))";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
@@ -194,7 +194,7 @@ public class SqlDdlParserTest {
                         && constraint.getOperandList().get(0) == null
                         && constraint.isA(singleton(SqlKind.PRIMARY_KEY)))));
     }
-    
+
     /**
      * Parsing of CREATE TABLE with specified table options.
      */
@@ -212,13 +212,13 @@ public class SqlDdlParserTest {
                 + " key_type=my_key_type,"
                 + " value_type=my_value_type,"
                 + " encrypted=true";
-        
+
         SqlNode node = parse(query);
-        
+
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
-        
+
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
-        
+
         assertThatStringOptionPresent(createTable.createOptionList().getList(), "TEMPLATE", "my_template");
         assertThatIntegerOptionPresent(createTable.createOptionList().getList(), "BACKUPS", 2);
         assertThatStringOptionPresent(createTable.createOptionList().getList(), "AFFINITY_KEY", "MY_AFF");
@@ -231,7 +231,7 @@ public class SqlDdlParserTest {
         assertThatStringOptionPresent(createTable.createOptionList().getList(), "VALUE_TYPE", "MY_VALUE_TYPE");
         assertThatBooleanOptionPresent(createTable.createOptionList().getList(), "ENCRYPTED", true);
     }
-    
+
     /**
      * Parses a given statement and returns a resulting AST.
      *
@@ -240,10 +240,10 @@ public class SqlDdlParserTest {
      */
     private static SqlNode parse(String stmt) throws SqlParseException {
         SqlParser parser = SqlParser.create(stmt, SqlParser.config().withParserFactory(IgniteSqlParserImpl.FACTORY));
-        
+
         return parser.parseStmt();
     }
-    
+
     /**
      * Shortcut to verify that there is an option with a particular string value.
      *
@@ -257,7 +257,7 @@ public class SqlDdlParserTest {
                 opt -> opt.key().name().equals(option) && opt.value() instanceof SqlIdentifier
                         && Objects.equals(expVal, ((SqlIdentifier) opt.value()).names.get(0)))));
     }
-    
+
     /**
      * Shortcut to verify that there is an option with a particular boolean value.
      *
@@ -271,7 +271,7 @@ public class SqlDdlParserTest {
                 opt -> opt.key().name().equals(option) && opt.value() instanceof SqlLiteral
                         && Objects.equals(expVal, ((SqlLiteral) opt.value()).booleanValue()))));
     }
-    
+
     /**
      * Shortcut to verify that there is an option with a particular integer value.
      *
@@ -286,7 +286,7 @@ public class SqlDdlParserTest {
                         && ((SqlNumericLiteral) opt.value()).isInteger()
                         && Objects.equals(expVal, ((SqlLiteral) opt.value()).intValue(true)))));
     }
-    
+
     /**
      * Matcher to verify name in the column declaration.
      *
@@ -302,7 +302,7 @@ public class SqlDdlParserTest {
             }
         };
     }
-    
+
     /**
      * Matcher to verify that an object of the expected type and matches the given predicat.
      *

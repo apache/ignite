@@ -75,28 +75,28 @@ public abstract class GridUnsafe {
 
     /** {@code byte} array offset. */
     public static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-    
+
     /** {@code byte} array offset. */
     public static final int BYTE_ARR_INT_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-    
+
     /** {@code short} array offset. */
     public static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
-    
+
     /** {@code int} array offset. */
     public static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
-    
+
     /** {@code long} array offset. */
     public static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
-    
+
     /** {@code float} array offset. */
     public static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
-    
+
     /** {@code double} array offset. */
     public static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
-    
+
     /** {@code char} array offset. */
     public static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
-    
+
     /** {@code boolean} array offset. */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 

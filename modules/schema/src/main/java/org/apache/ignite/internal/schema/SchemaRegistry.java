@@ -51,7 +51,7 @@ public interface SchemaRegistry {
      * @throws SchemaRegistryException If no schema found for given version.
      */
     @NotNull SchemaDescriptor schema(int ver) throws SchemaRegistryException;
-    
+
     /**
      * Gets schema descriptor for the latest version in cluster.
      *

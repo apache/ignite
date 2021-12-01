@@ -58,19 +58,19 @@ class ClientTableCommon {
      */
     public static void writeSchema(ClientMessagePacker packer, int schemaVer, SchemaDescriptor schema) {
         packer.packInt(schemaVer);
-        
+
         if (schema == null) {
             packer.packNil();
-            
+
             return;
         }
-        
+
         var colCnt = schema.columnNames().size();
         packer.packArrayHeader(colCnt);
-        
+
         for (var colIdx = 0; colIdx < colCnt; colIdx++) {
             var col = schema.column(colIdx);
-            
+
             packer.packArrayHeader(4);
             packer.packString(col.name());
             packer.packInt(getClientDataType(col.type().spec()));
@@ -78,7 +78,7 @@ class ClientTableCommon {
             packer.packBoolean(col.nullable());
         }
     }
-    
+
     /**
      * Writes a tuple.
      *
@@ -88,15 +88,15 @@ class ClientTableCommon {
     public static void writeTupleOrNil(ClientMessagePacker packer, Tuple tuple) {
         if (tuple == null) {
             packer.packNil();
-            
+
             return;
         }
-        
+
         var schema = ((SchemaAware) tuple).schema();
-        
+
         writeTuple(packer, tuple, schema);
     }
-    
+
     /**
      * Writes a tuple.
      *
@@ -106,15 +106,15 @@ class ClientTableCommon {
     public static void writeTupleOrNil(ClientMessagePacker packer, Tuple tuple, TuplePart part) {
         if (tuple == null) {
             packer.packNil();
-            
+
             return;
         }
-        
+
         var schema = ((SchemaAware) tuple).schema();
-        
+
         writeTuple(packer, tuple, schema, false, part);
     }
-    
+
     /**
      * Writes a tuple.
      *
@@ -130,7 +130,7 @@ class ClientTableCommon {
     ) {
         writeTuple(packer, tuple, schema, false, TuplePart.KEY_AND_VAL);
     }
-    
+
     /**
      * Writes a tuple.
      *
@@ -148,7 +148,7 @@ class ClientTableCommon {
     ) {
         writeTuple(packer, tuple, schema, skipHeader, TuplePart.KEY_AND_VAL);
     }
-    
+
     /**
      * Writes a tuple.
      *
@@ -171,20 +171,20 @@ class ClientTableCommon {
         if (!skipHeader) {
             packer.packInt(schema.version());
         }
-        
+
         if (part != TuplePart.VAL) {
             for (var col : schema.keyColumns().columns()) {
                 writeColumnValue(packer, tuple, col);
             }
         }
-        
+
         if (part != TuplePart.KEY) {
             for (var col : schema.valueColumns().columns()) {
                 writeColumnValue(packer, tuple, col);
             }
         }
     }
-    
+
     /**
      * Writes multiple tuples.
      *
@@ -201,7 +201,7 @@ class ClientTableCommon {
             boolean skipHeader) {
         writeTuples(packer, tuples, TuplePart.KEY_AND_VAL, schemaRegistry, skipHeader);
     }
-    
+
     /**
      * Writes multiple tuples.
      *
@@ -221,15 +221,15 @@ class ClientTableCommon {
     ) {
         if (tuples == null || tuples.isEmpty()) {
             packer.packNil();
-        
+
             return;
         }
-    
+
         SchemaDescriptor schema = schemaRegistry.schema();
-    
+
         packer.packInt(schema.version());
         packer.packInt(tuples.size());
-    
+
         for (Tuple tuple : tuples) {
             assert tuple != null;
             assert schema.version() == ((SchemaAware) tuple).schema().version();
@@ -237,7 +237,7 @@ class ClientTableCommon {
             writeTuple(packer, tuple, schema, skipHeader, part);
         }
     }
-    
+
     /**
      * Writes multiple tuples with null flags.
      *
@@ -289,10 +289,10 @@ class ClientTableCommon {
      */
     public static Tuple readTuple(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) {
         SchemaDescriptor schema = readSchema(unpacker, table);
-        
+
         return readTuple(unpacker, keyOnly, schema);
     }
-    
+
     /**
      * Reads a tuple.
      *
@@ -307,20 +307,20 @@ class ClientTableCommon {
             SchemaDescriptor schema
     ) {
         var cnt = keyOnly ? schema.keyColumns().length() : schema.length();
-        
+
         var tuple = Tuple.create(cnt);
-        
+
         for (int i = 0; i < cnt; i++) {
             if (unpacker.tryUnpackNil()) {
                 continue;
             }
-            
+
             readAndSetColumnValue(unpacker, tuple, schema.column(i));
         }
-        
+
         return tuple;
     }
-    
+
     /**
      * Reads multiple tuples.
      *
@@ -331,17 +331,17 @@ class ClientTableCommon {
      */
     public static ArrayList<Tuple> readTuples(ClientMessageUnpacker unpacker, TableImpl table, boolean keyOnly) {
         SchemaDescriptor schema = readSchema(unpacker, table);
-        
+
         var rowCnt = unpacker.unpackInt();
         var res = new ArrayList<Tuple>(rowCnt);
-    
+
         for (int i = 0; i < rowCnt; i++) {
             res.add(readTuple(unpacker, keyOnly, schema));
         }
-        
+
         return res;
     }
-    
+
     /**
      * Reads schema.
      *
@@ -352,10 +352,10 @@ class ClientTableCommon {
     @NotNull
     public static SchemaDescriptor readSchema(ClientMessageUnpacker unpacker, TableImpl table) {
         var schemaId = unpacker.unpackInt();
-        
+
         return table.schemaView().schema(schemaId);
     }
-    
+
     /**
      * Reads a tuple as a map, without schema.
      *
@@ -365,18 +365,18 @@ class ClientTableCommon {
     public static Tuple readTupleSchemaless(ClientMessageUnpacker unpacker) {
         var cnt = unpacker.unpackMapHeader();
         var tuple = Tuple.create(cnt);
-        
+
         for (int i = 0; i < cnt; i++) {
             var colName = unpacker.unpackString();
             var colType = unpacker.unpackInt();
-            
+
             // TODO: Unpack value as object IGNITE-15194.
             tuple.set(colName, unpacker.unpackObject(colType));
         }
-        
+
         return tuple;
     }
-    
+
     /**
      * Reads multiple tuples as a map, without schema.
      *
@@ -386,14 +386,14 @@ class ClientTableCommon {
     public static ArrayList<Tuple> readTuplesSchemaless(ClientMessageUnpacker unpacker) {
         var rowCnt = unpacker.unpackArrayHeader();
         var res = new ArrayList<Tuple>(rowCnt);
-    
+
         for (int i = 0; i < rowCnt; i++) {
             res.add(readTupleSchemaless(unpacker));
         }
-        
+
         return res;
     }
-    
+
     /**
      * Reads a table.
      *
@@ -407,148 +407,148 @@ class ClientTableCommon {
      */
     public static TableImpl readTable(ClientMessageUnpacker unpacker, IgniteTables tables) {
         IgniteUuid tableId = unpacker.unpackIgniteUuid();
-        
+
         try {
             return ((IgniteTablesInternal) tables).table(tableId);
         } catch (NodeStoppingException e) {
             throw new IgniteException(e);
         }
     }
-    
+
     private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, Tuple tuple, Column col) {
         tuple.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
     }
-    
+
     private static int getClientDataType(NativeTypeSpec spec) {
         switch (spec) {
             case INT8:
                 return ClientDataType.INT8;
-            
+
             case INT16:
                 return ClientDataType.INT16;
-            
+
             case INT32:
                 return ClientDataType.INT32;
-            
+
             case INT64:
                 return ClientDataType.INT64;
-            
+
             case FLOAT:
                 return ClientDataType.FLOAT;
-            
+
             case DOUBLE:
                 return ClientDataType.DOUBLE;
-            
+
             case DECIMAL:
                 return ClientDataType.DECIMAL;
-            
+
             case NUMBER:
                 return ClientDataType.NUMBER;
-            
+
             case UUID:
                 return ClientDataType.UUID;
-            
+
             case STRING:
                 return ClientDataType.STRING;
-            
+
             case BYTES:
                 return ClientDataType.BYTES;
-            
+
             case BITMASK:
                 return ClientDataType.BITMASK;
-            
+
             case DATE:
                 return ClientDataType.DATE;
-            
+
             case TIME:
                 return ClientDataType.TIME;
-            
+
             case DATETIME:
                 return ClientDataType.DATETIME;
-            
+
             case TIMESTAMP:
                 return ClientDataType.TIMESTAMP;
-            
+
             default:
                 throw new IgniteException("Unsupported native type: " + spec);
         }
     }
-    
+
     private static void writeColumnValue(ClientMessagePacker packer, Tuple tuple, Column col) {
         var val = tuple.valueOrDefault(col.name(), null);
-        
+
         if (val == null) {
             packer.packNil();
             return;
         }
-        
+
         switch (col.type().spec()) {
             case INT8:
                 packer.packByte((byte) val);
                 break;
-            
+
             case INT16:
                 packer.packShort((short) val);
                 break;
-            
+
             case INT32:
                 packer.packInt((int) val);
                 break;
-            
+
             case INT64:
                 packer.packLong((long) val);
                 break;
-            
+
             case FLOAT:
                 packer.packFloat((float) val);
                 break;
-            
+
             case DOUBLE:
                 packer.packDouble((double) val);
                 break;
-            
+
             case DECIMAL:
                 packer.packDecimal((BigDecimal) val);
                 break;
-            
+
             case NUMBER:
                 packer.packNumber((BigInteger) val);
                 break;
-            
+
             case UUID:
                 packer.packUuid((UUID) val);
                 break;
-            
+
             case STRING:
                 packer.packString((String) val);
                 break;
-            
+
             case BYTES:
                 byte[] bytes = (byte[]) val;
                 packer.packBinaryHeader(bytes.length);
                 packer.writePayload(bytes);
                 break;
-            
+
             case BITMASK:
                 packer.packBitSet((BitSet) val);
                 break;
-            
+
             case DATE:
                 packer.packDate((LocalDate) val);
                 break;
-            
+
             case TIME:
                 packer.packTime((LocalTime) val);
                 break;
-            
+
             case DATETIME:
                 packer.packDateTime((LocalDateTime) val);
                 break;
-            
+
             case TIMESTAMP:
                 packer.packTimestamp((Instant) val);
                 break;
-            
+
             default:
                 throw new IgniteException("Data type not supported: " + col.type());
         }

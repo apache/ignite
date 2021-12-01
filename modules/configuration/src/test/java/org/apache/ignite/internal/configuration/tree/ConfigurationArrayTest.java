@@ -46,39 +46,39 @@ public class ConfigurationArrayTest {
     public static class TestArrayConfigurationSchema {
         @Value
         public boolean[] booleanArray;
-        
+
         @Value
         public byte[] byteArray;
-        
+
         @Value
         public short[] shortArray;
-        
+
         @Value
         public int[] intArray;
-        
+
         @Value
         public long[] longArray;
-        
+
         @Value
         public char[] charArray;
-        
+
         @Value
         public float[] floatArray;
-        
+
         @Value
         public double[] doubleArray;
-        
+
         @Value
         public String[] stringArray;
     }
-    
+
     private static ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
-    
+
     @BeforeAll
     public static void beforeAll() {
         cgen.compileRootSchema(TestArrayConfigurationSchema.class, Map.of(), Map.of());
     }
-    
+
     @AfterAll
     public static void afterAll() {
         cgen = null;

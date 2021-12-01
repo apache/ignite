@@ -40,10 +40,10 @@ public class SchemaUtils {
      */
     public static SchemaDescriptor prepareSchemaDescriptor(int schemaVer, TableView tblCfg) {
         TableDefinition tableDef = SchemaConfigurationConverter.convert(tblCfg);
-        
+
         return SchemaDescriptorConverter.convert(schemaVer, tableDef);
     }
-    
+
     /**
      * Prepares column mapper.
      *
@@ -60,43 +60,43 @@ public class SchemaUtils {
             TableView newTbl
     ) {
         ColumnMapper mapper = null;
-        
+
         for (String s : newTbl.columns().namedListKeys()) {
             final ColumnView newColView = newTbl.columns().get(s);
             final ColumnView oldColView = oldTbl.columns().get(s);
-            
+
             if (oldColView == null && newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
-                
+
                 assert !newDesc.isKeyColumn(newCol.schemaIndex());
-    
+
                 if (mapper == null) {
                     mapper = ColumnMapping.createMapper(newDesc);
                 }
-                
+
                 mapper.add(newCol); // New column added.
             } else if (newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
                 final Column oldCol = oldDesc.column(oldColView.name());
-    
+
                 if (newCol.schemaIndex() == oldCol.schemaIndex()) {
                     continue;
                 }
-    
+
                 if (mapper == null) {
                     mapper = ColumnMapping.createMapper(newDesc);
                 }
-                
+
                 mapper.add(newCol.schemaIndex(), oldCol.schemaIndex());
             }
         }
-        
+
         final Optional<Column> droppedKeyCol = oldTbl.columns().namedListKeys().stream()
                 .filter(k -> newTbl.columns().get(k) == null)
                 .map(k -> oldDesc.column(oldTbl.columns().get(k).name()))
                 .filter(c -> oldDesc.isKeyColumn(c.schemaIndex()))
                 .findAny();
-        
+
         // TODO: IGNITE-15774 Assertion just in case, proper validation should be implemented with the help of
         // TODO: configuration validators.
         assert !droppedKeyCol.isPresent() :
@@ -105,10 +105,10 @@ public class SchemaUtils {
                         newDesc.version(),
                         droppedKeyCol.get()
                 );
-        
+
         return mapper == null ? ColumnMapping.identityMapping() : mapper;
     }
-    
+
     /**
      * Compares schemas.
      *
@@ -121,13 +121,13 @@ public class SchemaUtils {
                 || exp.valueColumns().length() != actual.valueColumns().length()) {
             return false;
         }
-        
+
         for (int i = 0; i < exp.length(); i++) {
             if (!exp.column(i).equals(actual.column(i))) {
                 return false;
             }
         }
-        
+
         return true;
     }
 }

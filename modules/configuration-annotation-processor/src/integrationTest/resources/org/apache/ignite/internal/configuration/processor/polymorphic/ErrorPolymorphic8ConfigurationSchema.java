@@ -29,7 +29,7 @@ public class ErrorPolymorphic8ConfigurationSchema {
 	/** String value. */
     @Value
     public String strVal;
-	
+
     /** Polymorphic type id field. */
     @PolymorphicId
     public String typeId;

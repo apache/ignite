@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TypeUtils {
     private final Types types;
-    
+
     private final Elements elements;
 
     /**

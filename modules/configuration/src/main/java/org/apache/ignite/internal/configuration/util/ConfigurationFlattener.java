@@ -39,23 +39,23 @@ public class ConfigurationFlattener {
     public static Map<String, Serializable> createFlattenedUpdatesMap(SuperRoot curRoot, SuperRoot updates) {
         // Resulting map.
         Map<String, Serializable> resMap = new HashMap<>();
-        
+
         // This method traverses two trees at the same time. In order to reuse the visitor object it's decided to
         // use an explicit stack for nodes of the "old" tree. We need to reuse the visitor object because it accumulates
         // "full" keys in dot-separated notation. Please refer to KeysTrackingConfigurationVisitor for details..
         Deque<InnerNode> oldInnerNodesStack = new ArrayDeque<>();
-        
+
         oldInnerNodesStack.push(curRoot);
-        
+
         // Explicit access to the children of super root guarantees that "oldInnerNodesStack" is never empty, and thus
         // we don't need null-checks when calling Deque#peek().
         updates.traverseChildren(new FlattenerVisitor(oldInnerNodesStack, resMap), true);
-        
+
         assert oldInnerNodesStack.peek() == curRoot : oldInnerNodesStack;
-        
+
         return resMap;
     }
-    
+
     /**
      * Returns map that contains same keys and their positions as values.
      *
@@ -64,37 +64,37 @@ public class ConfigurationFlattener {
      */
     private static Map<String, Integer> keysToOrderIdx(NamedListNode<?> node) {
         Map<String, Integer> res = new HashMap<>();
-        
+
         int idx = 0;
-        
+
         for (String key : node.namedListKeys()) {
             if (node.getInnerNode(key) != null) {
                 res.put(key, idx++);
             }
         }
-        
+
         return res;
     }
-    
+
     /**
      * Visitor that collects diff between "old" and "new" trees into a flat map.
      */
     private static class FlattenerVisitor extends KeysTrackingConfigurationVisitor<Object> {
         /** Old nodes stack for recursion. */
         private final Deque<InnerNode> oldInnerNodesStack;
-        
+
         /** Map with the result. */
         private final Map<String, Serializable> resMap;
-        
+
         /** Flag indicates that "old" and "new" trees are literally the same at the moment. */
         private boolean singleTreeTraversal;
-        
+
         /**
          * Makes sense only if {@link #singleTreeTraversal} is {@code true}. Helps distinguishing creation from deletion. Always {@code
          * false} if {@link #singleTreeTraversal} is {@code false}.
          */
         private boolean deletion;
-        
+
         /**
          * Constructor.
          *
@@ -105,18 +105,18 @@ public class ConfigurationFlattener {
             this.oldInnerNodesStack = oldInnerNodesStack;
             this.resMap = resMap;
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public Void doVisitLeafNode(String key, Serializable newVal) {
             // Read same value from old tree.
             Serializable oldVal = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.leafNodeVisitor(), true);
-            
+
             // Do not put duplicates into the resulting map.
             if (singleTreeTraversal || !Objects.deepEquals(oldVal, newVal)) {
                 resMap.put(currentKey(), deletion ? null : newVal);
             }
-            
+
             return null;
         }
 
@@ -125,12 +125,12 @@ public class ConfigurationFlattener {
         public Void doVisitInnerNode(String key, InnerNode newNode) {
             // Read same node from old tree.
             InnerNode oldNode = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.innerNodeVisitor(), true);
-            
+
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal) {
                 return null;
             }
-    
+
             if (oldNode == null) {
                 visitAsymmetricInnerNode(newNode, false);
             } else if (oldNode.schemaType() != newNode.schemaType()) {
@@ -138,52 +138,52 @@ public class ConfigurationFlattener {
                 // specific instances of the polymorphic configuration, so we will assume
                 // that all the fields have changed, perhaps we will fix this later.
                 visitAsymmetricInnerNode(oldNode, true);
-        
+
                 visitAsymmetricInnerNode(newNode, false);
             } else {
                 oldInnerNodesStack.push(oldNode);
-        
+
                 newNode.traverseChildren(this, true);
-        
+
                 oldInnerNodesStack.pop();
             }
-            
+
             return null;
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public Void doVisitNamedListNode(String key, NamedListNode<?> newNode) {
             // Read same named list node from old tree.
             NamedListNode<?> oldNode = oldInnerNodesStack.element().traverseChild(key, ConfigurationUtil.namedListNodeVisitor(), true);
-            
+
             // Skip subtree that has not changed.
             if (oldNode == newNode && !singleTreeTraversal) {
                 return null;
             }
-            
+
             // Old keys ordering can be ignored if we either create or delete everything.
             Map<String, Integer> oldKeysToOrderIdxMap = singleTreeTraversal ? null
                     : keysToOrderIdx(oldNode);
-            
+
             // New keys ordering can be ignored if we delete everything.
             Map<String, Integer> newKeysToOrderIdxMap = deletion ? null
                     : keysToOrderIdx(newNode);
-            
+
             for (String newNodeKey : newNode.namedListKeys()) {
                 String newNodeInternalId = newNode.internalId(newNodeKey);
-                
+
                 withTracking(newNodeInternalId, false, false, () -> {
                     InnerNode newNamedElement = newNode.getInnerNode(newNodeKey);
-                    
+
                     String oldNodeKey = oldNode.keyByInternalId(newNodeInternalId);
                     InnerNode oldNamedElement = oldNode.getInnerNode(oldNodeKey);
-                    
+
                     // Deletion of nonexistent element.
                     if (oldNamedElement == null && newNamedElement == null) {
                         return null;
                     }
-                    
+
                     // Skip element that has not changed.
                     // Its index can be different though, so we don't "continue" straight away.
                     if (singleTreeTraversal || oldNamedElement != newNamedElement) {
@@ -196,43 +196,43 @@ public class ConfigurationFlattener {
                             // specific instances of the polymorphic configuration, so we will assume
                             // that all the fields have changed, perhaps we will fix this later.
                             visitAsymmetricInnerNode(oldNamedElement, true);
-    
+
                             visitAsymmetricInnerNode(newNamedElement, false);
                         } else {
                             oldInnerNodesStack.push(oldNamedElement);
-    
+
                             newNamedElement.traverseChildren(this, true);
-    
+
                             oldInnerNodesStack.pop();
                         }
                     }
-                    
+
                     Integer newIdx = newKeysToOrderIdxMap == null ? null : newKeysToOrderIdxMap.get(newNodeKey);
                     Integer oldIdx = oldKeysToOrderIdxMap == null ? null : oldKeysToOrderIdxMap.get(newNodeKey);
-                    
+
                     // We should "persist" changed indexes only.
                     if (!Objects.equals(newIdx, oldIdx) || singleTreeTraversal || newNamedElement == null) {
                         String orderKey = currentKey() + NamedListNode.ORDER_IDX;
-                        
+
                         resMap.put(orderKey, deletion || newNamedElement == null ? null : newIdx);
                     }
-                    
+
                     // If it's creation / deletion / rename.
                     if (singleTreeTraversal || oldNamedElement == null || newNamedElement == null
                             || !oldNodeKey.equals(newNodeKey)
                     ) {
                         String idKey = currentKey() + NamedListNode.NAME;
-                        
+
                         resMap.put(idKey, deletion || newNamedElement == null ? null : newNodeKey);
                     }
-                    
+
                     return null;
                 });
             }
-            
+
             return null;
         }
-        
+
         /**
          * Here we must list all joined keys belonging to deleted or created element. The only way to do it is to traverse the entire
          * configuration tree unconditionally.
@@ -240,13 +240,13 @@ public class ConfigurationFlattener {
         private void visitAsymmetricInnerNode(InnerNode node, boolean delete) {
             assert !singleTreeTraversal;
             assert node != null;
-            
+
             oldInnerNodesStack.push(node);
             singleTreeTraversal = true;
             deletion = delete;
-            
+
             node.traverseChildren(this, true);
-            
+
             deletion = false;
             singleTreeTraversal = false;
             oldInnerNodesStack.pop();

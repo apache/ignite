@@ -39,32 +39,32 @@ import org.jetbrains.annotations.Nullable;
 public class TableValidatorImpl implements Validator<TableValidator, NamedListView<TableView>> {
     /** Static instance. */
     public static final TableValidatorImpl INSTANCE = new TableValidatorImpl();
-    
+
     /** {@inheritDoc} */
     @Override
     public void validate(TableValidator annotation, ValidationContext<NamedListView<TableView>> ctx) {
         NamedListView<TableView> oldTables = ctx.getOldValue();
         NamedListView<TableView> newTables = ctx.getNewValue();
-        
+
         for (String tableName : newTables.namedListKeys()) {
             TableView newTable = newTables.get(tableName);
-            
+
             try {
                 TableDefinitionImpl tbl = SchemaConfigurationConverter.convert(newTable);
-                
+
                 assert !tbl.keyColumns().isEmpty();
                 assert !tbl.affinityColumns().isEmpty();
-                
+
                 TableDefinitionBuilderImpl.validateIndices(tbl.indices(), tbl.columns(), tbl.affinityColumns());
             } catch (IllegalArgumentException e) {
                 ctx.addIssue(new ValidationIssue("Validator works success by key " + ctx.currentKey() + ". Found "
                         + newTable.columns().size() + " columns"));
             }
-            
+
             validateDataRegion(oldTables == null ? null : oldTables.get(tableName), newTable, ctx);
         }
     }
-    
+
     /**
      * Checks that data region configuration is valid. Check involves data region existence and region type preservation if it's updated.
      *
@@ -75,29 +75,29 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
     private void validateDataRegion(@Nullable TableView oldTable, TableView newTable, ValidationContext<?> ctx) {
         DataStorageView oldDbCfg = ctx.getOldRoot(DataStorageConfiguration.KEY);
         DataStorageView newDbCfg = ctx.getNewRoot(DataStorageConfiguration.KEY);
-    
+
         if (oldTable != null && Objects.equals(oldTable.dataRegion(), newTable.dataRegion())) {
             return;
         }
-        
+
         DataRegionView newRegion = dataRegion(newDbCfg, newTable.dataRegion());
-        
+
         if (newRegion == null) {
             ctx.addIssue(new ValidationIssue(String.format(
                     "Data region '%s' configured for table '%s' isn't found",
                     newTable.dataRegion(),
                     newTable.name()
             )));
-            
+
             return;
         }
-    
+
         if (oldDbCfg == null || oldTable == null) {
             return;
         }
-        
+
         DataRegionView oldRegion = dataRegion(oldDbCfg, oldTable.dataRegion());
-        
+
         if (!oldRegion.type().equalsIgnoreCase(newRegion.type())) {
             ctx.addIssue(new ValidationIssue(String.format(
                     "Unable to move table '%s' from region '%s' to region '%s' because it has different type (old=%s, new=%s)",
@@ -109,7 +109,7 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
             )));
         }
     }
-    
+
     /**
      * Retrieves data region configuration.
      *
@@ -121,10 +121,10 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
         if (regionName.equals(DEFAULT_DATA_REGION_NAME)) {
             return dbCfg.defaultRegion();
         }
-        
+
         return dbCfg.regions().get(regionName);
     }
-    
+
     /** Private constructor. */
     private TableValidatorImpl() {
     }

@@ -166,14 +166,14 @@ public class WatchAggregator {
         final LinkedHashMap<Long, Watch> cpWatches = new LinkedHashMap<>(watches);
 
         return new WatchListener() {
-    
+
             @Override
             public boolean onUpdate(@NotNull WatchEvent evt) {
                 //TODO: IGNITE-15858 Fix stopWatch may solve the issue.
                 synchronized (watches) {
                     processWatchEvents(evt);
                 }
-        
+
                 return true;
             }
 

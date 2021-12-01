@@ -65,7 +65,7 @@ public class TableExamplesTest {
                         + "    Owner: Val Kulichenko\n"
                         + "    Balance: $100.0\n");
     }
-    
+
     /**
      * Start node.
      *
@@ -79,7 +79,7 @@ public class TableExamplesTest {
                 workDir
         );
     }
-    
+
     /**
      * Stop node.
      */

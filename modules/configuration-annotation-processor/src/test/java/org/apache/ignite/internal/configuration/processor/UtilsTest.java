@@ -33,7 +33,7 @@ public class UtilsTest {
     void testSimpleName() {
         assertEquals("@Config", simpleName(Config.class));
     }
-    
+
     @Test
     void testJoinSimpleName() {
         assertEquals("@Config", joinSimpleName(" and ", Config.class));

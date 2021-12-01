@@ -105,7 +105,7 @@ public class ItIgniteNodeRestartTest extends IgniteAbstractTest {
     @Test
     public void twoCustomPropertiesTest(TestInfo testInfo) {
         String nodeName = testNodeName(testInfo, 3344);
-    
+
         String startCfg = "network: {\n"
                 + "  port:3344,\n"
                 + "  nodeFinder: {netClusterNodes:[ \"localhost:3344\" ]}\n"

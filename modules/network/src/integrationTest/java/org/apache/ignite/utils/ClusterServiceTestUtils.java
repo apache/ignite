@@ -64,7 +64,7 @@ public class ClusterServiceTestUtils {
             TestScaleCubeClusterServiceFactory clusterSvcFactory
     ) {
         var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), msgSerializationRegistry);
-    
+
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
                 Collections.singleton(NetworkConfiguration.KEY),
                 Map.of(),
@@ -72,46 +72,46 @@ public class ClusterServiceTestUtils {
                 List.of(),
                 List.of()
         );
-    
+
         NetworkConfiguration configuration = nodeConfigurationMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY);
-        
+
         var bootstrapFactory = new NettyBootstrapFactory(configuration, ctx.getName());
-        
+
         var clusterSvc = clusterSvcFactory.createClusterService(
                 ctx,
                 configuration,
                 bootstrapFactory);
-        
+
         assert nodeFinder instanceof StaticNodeFinder : "Only StaticNodeFinder is supported at the moment";
-        
+
         return new ClusterService() {
             @Override
             public TopologyService topologyService() {
                 return clusterSvc.topologyService();
             }
-            
+
             @Override
             public MessagingService messagingService() {
                 return clusterSvc.messagingService();
             }
-            
+
             @Override
             public ClusterLocalConfiguration localConfiguration() {
                 return clusterSvc.localConfiguration();
             }
-            
+
             @Override
             public boolean isStopped() {
                 return clusterSvc.isStopped();
             }
-            
+
             @Override
             public void start() {
                 nodeConfigurationMgr.start();
-                
+
                 NetworkConfiguration configuration = nodeConfigurationMgr.configurationRegistry()
                         .getConfiguration(NetworkConfiguration.KEY);
-    
+
                 configuration.change(netCfg ->
                         netCfg
                                 .changePort(port)
@@ -122,12 +122,12 @@ public class ClusterServiceTestUtils {
                                         )
                                 )
                 ).join();
-    
+
                 bootstrapFactory.start();
-                
+
                 clusterSvc.start();
             }
-            
+
             @Override
             public void stop() {
                 try {
@@ -140,7 +140,7 @@ public class ClusterServiceTestUtils {
             }
         };
     }
-    
+
     /**
      * Creates a list of {@link NetworkAddress}es within a given port range.
      *

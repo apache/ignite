@@ -115,11 +115,11 @@ public class StopCalciteModuleTest {
                 new Column[]{new Column("ID", NativeTypes.INT32, false)},
                 new Column[]{new Column("VAL", NativeTypes.INT32, false)}
         );
-    
+
         schemaReg = new SchemaRegistryImpl(0, (v) -> schemaDesc, () -> INITIAL_SCHEMA_VERSION);
-    
+
         when(tbl.name()).thenReturn("PUBLIC.TEST");
-    
+
         // Mock create table (notify on register listener).
         doAnswer(invocation -> {
             EventListener<TableEventParameters> clo = (EventListener<TableEventParameters>) invocation.getArguments()[1];

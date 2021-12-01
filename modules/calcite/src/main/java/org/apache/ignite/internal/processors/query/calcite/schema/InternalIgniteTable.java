@@ -43,7 +43,7 @@ public interface InternalIgniteTable extends IgniteTable {
     default IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
         return toRel(cluster, relOptTbl, null, null, null);
     }
-    
+
     /**
      * Converts table into relational expression.
      *
@@ -55,7 +55,7 @@ public interface InternalIgniteTable extends IgniteTable {
     default IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         return toRel(cluster, relOptTbl, idxName, null, null, null);
     }
-    
+
     /**
      * Converts table into table scan relational expression.
      */
@@ -78,7 +78,7 @@ public interface InternalIgniteTable extends IgniteTable {
             RexNode condition,
             ImmutableBitSet requiredCols
     );
-    
+
     /** Returns the internal table. */
     TableImpl table();
 

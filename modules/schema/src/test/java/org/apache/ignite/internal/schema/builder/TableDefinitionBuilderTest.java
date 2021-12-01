@@ -39,9 +39,9 @@ public class TableDefinitionBuilderTest {
                         SchemaBuilders.column("COL1", ColumnType.DOUBLE).build(),
                         SchemaBuilders.column("COL2", ColumnType.DOUBLE).build())
                 .withPrimaryKey("COL1");
-        
+
         TableDefinition tbl = builder.build();
-        
+
         assertEquals("SNAME.TNAME", tbl.canonicalName());
         assertEquals("TNAME", tbl.name());
         assertEquals(1, tbl.keyColumns().size());

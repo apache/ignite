@@ -37,7 +37,7 @@ import org.mockito.InOrder;
  */
 public class SerializationOrderTest {
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
-    
+
     private final SerializationOrderMessageSerializationFactory serializationFactory =
             new SerializationOrderMessageSerializationFactory(messageFactory);
 

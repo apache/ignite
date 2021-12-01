@@ -44,26 +44,26 @@ public abstract class Marshaller {
      */
     public static <T> Marshaller createMarshaller(Column[] cols, Mapper<T> mapper, boolean requireAllFields) {
         final BinaryMode mode = MarshallerUtil.mode(mapper.targetType());
-        
+
         if (mode != null) {
             final Column col = cols[0];
-            
+
             assert cols.length == 1;
             assert mode.typeSpec() == col.type().spec() : "Target type is not compatible.";
             assert !mapper.targetType().isPrimitive() : "Non-nullable types are not allowed.";
-            
+
             return new SimpleMarshaller(FieldAccessor.createIdentityAccessor(col, col.schemaIndex(), mode));
         }
-        
+
         FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length];
-        
+
         // Build handlers.
-        
+
         for (int i = 0; i < cols.length; i++) {
             final Column col = cols[i];
-            
+
             String fieldName = mapper.columnToField(col.name());
-    
+
             if (requireAllFields && fieldName == null) {
                 throw new IllegalArgumentException("No field found for column " + col.name());
             }
@@ -74,7 +74,7 @@ public abstract class Marshaller {
 
         return new PojoMarshaller(new ObjectFactory<>(mapper.targetType()), fieldAccessors);
     }
-    
+
     /**
      * Creates a marshaller for class.
      *
@@ -87,19 +87,19 @@ public abstract class Marshaller {
     @Deprecated
     public static Marshaller createMarshaller(Columns cols, Class<? extends Object> cls, boolean requireAllFields) {
         final BinaryMode mode = MarshallerUtil.mode(cls);
-        
+
         if (mode != null) {
             final Column col = cols.column(0);
-            
+
             assert cols.length() == 1;
             assert mode.typeSpec() == col.type().spec() : "Target type is not compatible.";
             assert !cls.isPrimitive() : "Non-nullable types are not allowed.";
-            
+
             return new SimpleMarshaller(FieldAccessor.createIdentityAccessor(col, col.schemaIndex(), mode));
         }
-        
+
         FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length()];
-        
+
         // Build accessors
         for (int i = 0; i < cols.length(); i++) {
             final Column col = cols.column(i);
@@ -117,7 +117,7 @@ public abstract class Marshaller {
 
         return new PojoMarshaller(new ObjectFactory<>(cls), fieldAccessors);
     }
-    
+
     /**
      * Reads object field value.
      *
@@ -126,7 +126,7 @@ public abstract class Marshaller {
      * @return Field value.
      */
     public abstract @Nullable Object value(Object obj, int fldIdx);
-    
+
     /**
      * Reads object from a row.
      *
@@ -135,7 +135,7 @@ public abstract class Marshaller {
      * @throws MarshallerException If failed.
      */
     public abstract Object readObject(Row reader) throws MarshallerException;
-    
+
     /**
      * Write an object to a row.
      *
@@ -144,14 +144,14 @@ public abstract class Marshaller {
      * @throws MarshallerException If failed.
      */
     public abstract void writeObject(Object obj, RowAssembler writer) throws MarshallerException;
-    
+
     /**
      * Marshaller for objects of natively supported types.
      */
     static class SimpleMarshaller extends Marshaller {
         /** Identity accessor. */
         private final FieldAccessor fieldAccessor;
-        
+
         /**
          * Creates a marshaller for objects of natively supported type.
          *
@@ -160,36 +160,36 @@ public abstract class Marshaller {
         SimpleMarshaller(FieldAccessor fieldAccessor) {
             this.fieldAccessor = fieldAccessor;
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public @Nullable
         Object value(Object obj, int fldIdx) {
             assert fldIdx == 0;
-            
+
             return fieldAccessor.value(obj);
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public Object readObject(Row reader) {
             return fieldAccessor.read(reader);
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public void writeObject(Object obj, RowAssembler writer) throws MarshallerException {
             fieldAccessor.write(writer, obj);
         }
     }
-    
+
     /**
      * Marshaller for POJOs.
      */
     static class PojoMarshaller extends Marshaller {
         /** Field accessors for mapped columns. Array has same size and order as columns. */
         private final FieldAccessor[] fieldAccessors;
-        
+
         /** Object factory. */
         private final Factory<?> factory;
 
@@ -204,26 +204,26 @@ public abstract class Marshaller {
             this.fieldAccessors = fieldAccessors;
             this.factory = Objects.requireNonNull(factory);
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public @Nullable
         Object value(Object obj, int fldIdx) {
             return fieldAccessors[fldIdx].value(obj);
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public Object readObject(Row reader) throws MarshallerException {
             final Object obj = factory.create();
-            
+
             for (int fldIdx = 0; fldIdx < fieldAccessors.length; fldIdx++) {
                 fieldAccessors[fldIdx].read(reader, obj);
             }
-            
+
             return obj;
         }
-        
+
         /** {@inheritDoc} */
         @Override
         public void writeObject(Object obj, RowAssembler writer) throws MarshallerException {

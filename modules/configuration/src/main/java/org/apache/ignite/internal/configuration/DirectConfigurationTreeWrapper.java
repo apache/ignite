@@ -35,10 +35,10 @@ public class DirectConfigurationTreeWrapper<VIEWT, CHANGET> extends Configuratio
      */
     public DirectConfigurationTreeWrapper(ConfigurationTree<VIEWT, CHANGET> configTree) {
         super(configTree);
-        
+
         assert configTree instanceof DirectConfigurationProperty : configTree;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public VIEWT directValue() {

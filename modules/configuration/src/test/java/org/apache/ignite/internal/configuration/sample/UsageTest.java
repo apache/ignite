@@ -36,12 +36,12 @@ import org.junit.jupiter.api.Test;
  */
 public class UsageTest {
     private ConfigurationRegistry registry;
-    
+
     @AfterEach
     public void after() {
         registry.stop();
     }
-    
+
     /**
      * Test creation of configuration and calling configuration API methods.
      */
@@ -54,13 +54,13 @@ public class UsageTest {
                 List.of(),
                 List.of()
         );
-        
+
         registry.start();
-        
+
         registry.initializeDefaults();
-        
+
         LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
-        
+
         root.change(local ->
                 local.changeBaseline(baseline ->
                         baseline.changeNodes(nodes ->
@@ -72,33 +72,33 @@ public class UsageTest {
                         )
                 )
         ).get(1, SECONDS);
-        
+
         assertTrue(root.baseline().autoAdjust().enabled().value());
-        
+
         root.baseline().autoAdjust().enabled().update(false).get(1, SECONDS);
-        
+
         assertFalse(root.value().baseline().autoAdjust().enabled());
         assertFalse(root.baseline().value().autoAdjust().enabled());
         assertFalse(root.baseline().autoAdjust().value().enabled());
         assertFalse(root.baseline().autoAdjust().enabled().value());
-        
+
         root.baseline().nodes().get("node1").autoAdjustEnabled().update(true).get(1, SECONDS);
-        
+
         assertTrue(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().value().nodes().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().nodes().value().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().nodes().get("node1").value().autoAdjustEnabled());
         assertTrue(root.baseline().nodes().get("node1").autoAdjustEnabled().value());
-        
+
         root.baseline().nodes().get("node1").change(node -> node.changeAutoAdjustEnabled(false)).get(1, SECONDS);
         assertFalse(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
-        
+
         root.baseline().nodes().change(nodes -> nodes.delete("node1")).get(1, SECONDS);
-        
+
         assertNull(root.baseline().nodes().get("node1"));
         assertNull(root.value().baseline().nodes().get("node1"));
     }
-    
+
     /**
      * Test to show an API to work with multiroot configurations.
      */
@@ -106,9 +106,9 @@ public class UsageTest {
     public void multiRootConfiguration() throws Exception {
         final int failureDetectionTimeout = 30_000;
         final int joinTimeout = 10_000;
-        
+
         long autoAdjustTimeout = 30_000L;
-        
+
         registry = new ConfigurationRegistry(
                 List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
                 Map.of(),
@@ -116,9 +116,9 @@ public class UsageTest {
                 List.of(),
                 List.of()
         );
-        
+
         registry.start();
-        
+
         registry.getConfiguration(LocalConfiguration.KEY).change(local ->
                 local.changeBaseline(baseline ->
                         baseline.changeAutoAdjust(autoAdjust ->
@@ -126,7 +126,7 @@ public class UsageTest {
                         )
                 )
         ).get(1, SECONDS);
-        
+
         registry.getConfiguration(NetworkConfiguration.KEY).change(network ->
                 network.changeDiscovery(discovery ->
                         discovery
@@ -134,12 +134,12 @@ public class UsageTest {
                                 .changeJoinTimeout(joinTimeout)
                 )
         ).get(1, SECONDS);
-        
+
         assertEquals(
                 failureDetectionTimeout,
                 registry.getConfiguration(NetworkConfiguration.KEY).discovery().failureDetectionTimeout().value()
         );
-        
+
         assertEquals(
                 autoAdjustTimeout,
                 registry.getConfiguration(LocalConfiguration.KEY).baseline().autoAdjust().timeout().value()

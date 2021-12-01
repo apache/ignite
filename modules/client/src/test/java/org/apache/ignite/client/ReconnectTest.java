@@ -32,42 +32,42 @@ import org.junit.jupiter.api.Test;
 public class ReconnectTest {
     /** Test server. */
     TestServer server;
-    
+
     /** Test server 2. */
     TestServer server2;
-    
+
     @AfterEach
     void tearDown() throws Exception {
         IgniteUtils.closeAll(server, server2);
     }
-    
+
     @Test
     public void clientReconnectsToAnotherAddressOnNodeFail() throws Exception {
         FakeIgnite ignite1 = new FakeIgnite();
         ignite1.tables().createTable("t", c -> c.changeName("t"));
-    
+
         server = AbstractClientTest.startServer(
                 10900,
                 10,
                 ignite1);
-    
+
         var client = IgniteClient.builder()
                 .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
                 .retryLimit(100)
                 .build();
-    
+
         assertEquals("t", client.tables().tables().get(0).name());
-    
+
         server.close();
-    
+
         FakeIgnite ignite2 = new FakeIgnite();
         ignite2.tables().createTable("t2", c -> c.changeName("t2"));
-    
+
         server2 = AbstractClientTest.startServer(
                 10950,
                 10,
                 ignite2);
-    
+
         assertEquals("t2", client.tables().tables().get(0).name());
     }
 
@@ -75,21 +75,21 @@ public class ReconnectTest {
     public void testOperationFailsWhenAllServersFail() throws Exception {
         FakeIgnite ignite1 = new FakeIgnite();
         ignite1.tables().createTable("t", c -> c.changeName("t"));
-    
+
         server = AbstractClientTest.startServer(
                 10900,
                 10,
                 ignite1);
-    
+
         var client = IgniteClient.builder()
                 .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
                 .retryLimit(100)
                 .build();
-    
+
         assertEquals("t", client.tables().tables().get(0).name());
-    
+
         server.close();
-    
+
         var ex = assertThrows(CompletionException.class, () -> client.tables().tables());
         assertEquals(ex.getCause().getMessage(), "Channel is closed");
     }

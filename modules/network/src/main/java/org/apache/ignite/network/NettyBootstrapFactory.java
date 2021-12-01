@@ -36,19 +36,19 @@ import org.apache.ignite.internal.network.netty.NamedNioEventLoopGroup;
 public class NettyBootstrapFactory implements IgniteComponent {
     /** Network configuration. */
     private final NetworkConfiguration networkConfiguration;
-    
+
     /** Prefix for event loop group names. */
     private final String eventLoopGroupNamePrefix;
-    
+
     /** Server boss socket channel handler event loop group. */
     private EventLoopGroup bossGroup;
-    
+
     /** Server work socket channel handler event loop group. */
     private EventLoopGroup workerGroup;
-    
+
     /** Client socket channel handler event loop group. */
     private EventLoopGroup clientWorkerGroup;
-    
+
     /**
      * Constructor.
      *
@@ -61,11 +61,11 @@ public class NettyBootstrapFactory implements IgniteComponent {
     ) {
         assert eventLoopGroupNamePrefix != null;
         assert networkConfiguration != null;
-        
+
         this.networkConfiguration = networkConfiguration;
         this.eventLoopGroupNamePrefix = eventLoopGroupNamePrefix;
     }
-    
+
     /**
      * Creates bootstrap for outbound client connections.
      *
@@ -74,17 +74,17 @@ public class NettyBootstrapFactory implements IgniteComponent {
     public Bootstrap createClientBootstrap() {
         OutboundView clientConfiguration = networkConfiguration.value().outbound();
         Bootstrap clientBootstrap = new Bootstrap();
-        
+
         clientBootstrap.group(clientWorkerGroup)
                 .channel(NioSocketChannel.class)
                 // See createServerBootstrap for netty configuration details.
                 .option(ChannelOption.SO_KEEPALIVE, clientConfiguration.soKeepAlive())
                 .option(ChannelOption.SO_LINGER, clientConfiguration.soLinger())
                 .option(ChannelOption.TCP_NODELAY, clientConfiguration.tcpNoDelay());
-        
+
         return clientBootstrap;
     }
-    
+
     /**
      * Creates bootstrap for inbound server connections.
      *
@@ -93,7 +93,7 @@ public class NettyBootstrapFactory implements IgniteComponent {
     public ServerBootstrap createServerBootstrap() {
         InboundView serverConfiguration = networkConfiguration.value().inbound();
         ServerBootstrap serverBootstrap = new ServerBootstrap();
-        
+
         serverBootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 /*
@@ -126,10 +126,10 @@ public class NettyBootstrapFactory implements IgniteComponent {
                  * and https://en.wikipedia.org/wiki/Nagle%27s_algorithm.
                  */
                 .childOption(ChannelOption.TCP_NODELAY, serverConfiguration.tcpNoDelay());
-                
+
         return serverBootstrap;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void start() {
@@ -137,7 +137,7 @@ public class NettyBootstrapFactory implements IgniteComponent {
         workerGroup = NamedNioEventLoopGroup.create(eventLoopGroupNamePrefix + "-srv-worker");
         clientWorkerGroup = NamedNioEventLoopGroup.create(eventLoopGroupNamePrefix + "-client");
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void stop() throws Exception {

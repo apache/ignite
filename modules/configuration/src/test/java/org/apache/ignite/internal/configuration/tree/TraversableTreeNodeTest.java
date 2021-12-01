@@ -85,11 +85,11 @@ public class TraversableTreeNodeTest {
     public static class ParentConfigurationSchema {
         @ConfigValue
         public ChildConfigurationSchema child;
-        
+
         @NamedConfigValue
         public NamedElementConfigurationSchema elements;
     }
-    
+
     /**
      * Child configuration schema.
      */
@@ -98,11 +98,11 @@ public class TraversableTreeNodeTest {
         @Value(hasDefault = true)
         @Immutable
         public int intCfg = 99;
-        
+
         @Value
         public String strCfg;
     }
-    
+
     /**
      * Child named configuration schema.
      */

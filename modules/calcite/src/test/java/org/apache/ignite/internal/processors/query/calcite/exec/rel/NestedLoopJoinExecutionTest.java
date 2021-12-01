@@ -321,9 +321,9 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
         } else {
             outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
         }
-    
+
         RowHandler<Object[]> hnd = ctx.rowHandler();
-    
+
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType,
                 (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(asList(leftNode, rightNode));

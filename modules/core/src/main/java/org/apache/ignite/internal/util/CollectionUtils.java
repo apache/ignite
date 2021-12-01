@@ -48,7 +48,7 @@ public final class CollectionUtils {
     public static boolean nullOrEmpty(@Nullable Collection<?> col) {
         return col == null || col.isEmpty();
     }
-    
+
     /**
      * Tests if the given collection is either {@code null} or empty.
      *
@@ -58,7 +58,7 @@ public final class CollectionUtils {
     public static boolean nullOrEmpty(@Nullable Iterable<?> c) {
         return c == null || (c instanceof Collection<?> ? ((Collection<?>) c).isEmpty() : !c.iterator().hasNext());
     }
-    
+
     /**
      * Tests if the given collection is either {@code null} or empty.
      *
@@ -68,7 +68,7 @@ public final class CollectionUtils {
     public static boolean nullOrEmpty(@Nullable Map<?, ?> col) {
         return col == null || col.isEmpty();
     }
-    
+
     /**
      * Gets first element from given list or returns {@code null} if list is empty.
      *
@@ -80,10 +80,10 @@ public final class CollectionUtils {
         if (nullOrEmpty(list)) {
             return null;
         }
-        
+
         return list.get(0);
     }
-    
+
     /**
      * Union set and items.
      *
@@ -97,18 +97,18 @@ public final class CollectionUtils {
         if (nullOrEmpty(set)) {
             return ts == null || ts.length == 0 ? Set.of() : Set.of(ts);
         }
-    
+
         if (ts == null || ts.length == 0) {
             return unmodifiableSet(set);
         }
-        
+
         Set<T> res = new HashSet<>(set);
-        
+
         addAll(res, ts);
-        
+
         return unmodifiableSet(res);
     }
-    
+
     /**
      * Union collections.
      *
@@ -121,35 +121,35 @@ public final class CollectionUtils {
         if (collections == null || collections.length == 0) {
             return List.of();
         }
-        
+
         return new AbstractCollection<>() {
             /** Total size of the collections. */
             int size = -1;
-            
+
             /** {@inheritDoc} */
             @Override
             public Iterator<T> iterator() {
                 return concat(collections).iterator();
             }
-            
+
             /** {@inheritDoc} */
             @Override
             public int size() {
                 if (size == -1) {
                     int s = 0;
-                    
+
                     for (Collection<T> collection : collections) {
                         s += collection.size();
                     }
-                    
+
                     size = s;
                 }
-                
+
                 return size;
             }
         };
     }
-    
+
     /**
      * Create a lazy concatenation of iterables.
      *
@@ -164,24 +164,24 @@ public final class CollectionUtils {
         if (iterables == null || iterables.length == 0) {
             return Collections::emptyIterator;
         }
-        
+
         return () -> new Iterator<>() {
             /** Current index at {@code iterables}. */
             int idx = 0;
-            
+
             /** Current iterator. */
             Iterator<? extends T> curr = emptyIterator();
-            
+
             /** {@inheritDoc} */
             @Override
             public boolean hasNext() {
                 while (!curr.hasNext() && idx < iterables.length) {
                     curr = iterables[idx++].iterator();
                 }
-                
+
                 return curr.hasNext();
             }
-            
+
             /** {@inheritDoc} */
             @Override
             public T next() {
@@ -193,7 +193,7 @@ public final class CollectionUtils {
             }
         };
     }
-    
+
     /**
      * Create a collection view that can only be read.
      *
@@ -210,24 +210,24 @@ public final class CollectionUtils {
         if (nullOrEmpty(collection)) {
             return emptyList();
         }
-    
+
         if (mapper == null) {
             return unmodifiableCollection((Collection<T2>) collection);
         }
-        
+
         return new AbstractCollection<>() {
             /** {@inheritDoc} */
             @Override
             public Iterator<T2> iterator() {
                 Iterator<? extends T1> iterator = collection.iterator();
-                
+
                 return new Iterator<>() {
                     /** {@inheritDoc} */
                     @Override
                     public boolean hasNext() {
                         return iterator.hasNext();
                     }
-                    
+
                     /** {@inheritDoc} */
                     @Override
                     public T2 next() {
@@ -235,13 +235,13 @@ public final class CollectionUtils {
                     }
                 };
             }
-            
+
             /** {@inheritDoc} */
             @Override
             public int size() {
                 return collection.size();
             }
-            
+
             /** {@inheritDoc} */
             @Override
             public boolean isEmpty() {
@@ -249,7 +249,7 @@ public final class CollectionUtils {
             }
         };
     }
-    
+
     /**
      * Difference of two sets.
      *
@@ -264,23 +264,23 @@ public final class CollectionUtils {
         } else if (nullOrEmpty(b)) {
             return unmodifiableSet(a);
         }
-        
+
         // Lazy initialization.
         Set<T> res = null;
-        
+
         for (T t : a) {
             if (!b.contains(t)) {
                 if (res == null) {
                     res = new HashSet<>();
                 }
-                
+
                 res.add(t);
             }
         }
-        
+
         return res == null ? Set.of() : unmodifiableSet(res);
     }
-    
+
     /** Stub. */
     private CollectionUtils() {
         // No op.

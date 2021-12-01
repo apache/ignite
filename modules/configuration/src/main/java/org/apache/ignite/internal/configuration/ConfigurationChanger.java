@@ -71,25 +71,25 @@ import org.jetbrains.annotations.Nullable;
 public abstract class ConfigurationChanger implements DynamicConfigurationChanger {
     /** Thread pool. */
     private final ForkJoinPool pool = new ForkJoinPool(2);
-    
+
     /** Lazy annotations cache for configuration schema fields. */
     private final Map<MemberKey, Annotation[]> cachedAnnotations = new ConcurrentHashMap<>();
-    
+
     /** Closure to execute when an update from the storage is received. */
     private final Notificator notificator;
-    
+
     /** Root keys. Mapping: {@link RootKey#key()} -> identity (itself). */
     private final Map<String, RootKey<?, ?>> rootKeys;
-    
+
     /** Validators. */
     private final Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators;
-    
+
     /** Configuration storage. */
     private final ConfigurationStorage storage;
-    
+
     /** Storage trees. */
     private volatile StorageRoots storageRoots;
-    
+
     /**
      * Closure interface to be used by the configuration changer. An instance of this closure is passed into the constructor and invoked
      * every time when there's an update from any of the storages.
@@ -106,20 +106,20 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
          */
         @NotNull CompletableFuture<Void> notify(SuperRoot oldRoot, SuperRoot newRoot, long storageRevision);
     }
-    
+
     /**
      * Immutable data container to store version and all roots associated with the specific storage.
      */
     private static class StorageRoots {
         /** Immutable forest, so to say. */
         private final SuperRoot roots;
-        
+
         /** Version associated with the currently known storage state. */
         private final long version;
-        
+
         /** Future that signifies update of current configuration. */
         private final CompletableFuture<Void> changeFuture = new CompletableFuture<>();
-        
+
         /**
          * Constructor.
          *
@@ -131,7 +131,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             this.version = version;
         }
     }
-    
+
     /**
      * Constructor.
      *
@@ -148,14 +148,14 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             ConfigurationStorage storage
     ) {
         checkConfigurationType(rootKeys, storage);
-        
+
         this.notificator = notificator;
         this.validators = validators;
         this.storage = storage;
-        
+
         this.rootKeys = rootKeys.stream().collect(toMap(RootKey::key, identity()));
     }
-    
+
     /**
      * Creates new {@code Node} object that corresponds to passed root keys root configuration node.
      *
@@ -163,7 +163,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
      * @return New {@link InnerNode} instance that represents root.
      */
     public abstract InnerNode createRootNode(RootKey<?, ?> rootKey);
-    
+
     /**
      * Utility method to create {@link SuperRoot} parameter value.
      *
@@ -172,48 +172,48 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
     private Function<String, RootInnerNode> rootCreator() {
         return key -> {
             RootKey<?, ?> rootKey = rootKeys.get(key);
-            
+
             return rootKey == null ? null : new RootInnerNode(rootKey, createRootNode(rootKey));
         };
     }
-    
+
     /**
      * Start component.
      */
     // ConfigurationChangeException, really?
     public void start() throws ConfigurationChangeException {
         Data data;
-        
+
         try {
             data = storage.readAll();
         } catch (StorageException e) {
             throw new ConfigurationChangeException("Failed to initialize configuration: " + e.getMessage(), e);
         }
-        
+
         SuperRoot superRoot = new SuperRoot(rootCreator());
-        
+
         Map<String, ?> dataValuesPrefixMap = toPrefixMap(data.values());
-        
+
         for (RootKey<?, ?> rootKey : rootKeys.values()) {
             Map<String, ?> rootPrefixMap = (Map<String, ?>) dataValuesPrefixMap.get(rootKey.key());
-            
+
             InnerNode rootNode = createRootNode(rootKey);
-    
+
             if (rootPrefixMap != null) {
                 fillFromPrefixMap(rootNode, rootPrefixMap);
             }
-            
+
             superRoot.addRoot(rootKey, rootNode);
         }
-        
+
         //Workaround for distributed configuration.
         addDefaults(superRoot);
-        
+
         storageRoots = new StorageRoots(superRoot, data.changeId());
-        
+
         storage.registerConfigurationListener(this::updateFromListener);
     }
-    
+
     /**
      * Initializes the configuration storage - reads data and sets default values for missing configuration properties.
      *
@@ -229,19 +229,19 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                     addDefaults((InnerNode) node);
                 }
             };
-            
+
             changeInternally(defaultsCfgSource).get(5, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-    
+
             if (cause instanceof ConfigurationValidationException) {
                 throw (ConfigurationValidationException) cause;
             }
-    
+
             if (cause instanceof ConfigurationChangeException) {
                 throw (ConfigurationChangeException) cause;
             }
-            
+
             throw new ConfigurationChangeException(
                     "Failed to write default configuration values into the storage " + storage.getClass(), e
             );
@@ -251,20 +251,20 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             );
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Void> change(ConfigurationSource source) {
         return changeInternally(source);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public <T> T getLatest(List<String> path) {
         assert !path.isEmpty();
-        
+
         var storagePath = new ArrayList<String>(path.size());
-        
+
         // we can't use the provided path as-is, because Named List elements are stored in a different way:
         // while their path can be represented as "root.namedList.<elementName>.value", the corresponding path
         // in the storage will look like "root.namedList.<internalId>.value". We also need to support the Named List
@@ -276,35 +276,35 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
              * Index of the current path element.
              */
             private int pathIndex;
-            
+
             @Override
             public @Nullable Void visitLeafNode(String key, Serializable val) {
                 assert path.get(pathIndex).equals(key);
-    
+
                 if (pathIndex != path.size() - 1) {
                     throw new NoSuchElementException(ConfigurationUtil.join(path.subList(0, pathIndex + 2)));
                 }
-                
+
                 storagePath.add(key);
-                
+
                 return null;
             }
-            
+
             @Override
             public @Nullable Void visitInnerNode(String key, InnerNode node) {
                 assert path.get(pathIndex).equals(key);
-                
+
                 storagePath.add(key);
-    
+
                 if (pathIndex == path.size() - 1) {
                     return null;
                 }
-                
+
                 pathIndex++;
-                
+
                 return node.traverseChild(path.get(pathIndex), this, true);
             }
-            
+
             /**
              * Visits a Named List node. This method ends the tree traversal even if the last key in the path has not
              * been reached yet for the reasons described above.
@@ -312,58 +312,58 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             @Override
             public @Nullable Void visitNamedListNode(String key, NamedListNode<?> node) {
                 assert path.get(pathIndex).equals(key);
-                
+
                 storagePath.add(key);
-                
+
                 return null;
             }
         };
-        
+
         storageRoots.roots.traverseChild(path.get(0), visitor, true);
-        
+
         Map<String, ? extends Serializable> storageData = storage.readAllLatest(ConfigurationUtil.join(storagePath));
-        
+
         InnerNode rootNode = new SuperRoot(rootCreator());
-        
+
         fillFromPrefixMap(rootNode, toPrefixMap(storageData));
-    
+
         if (storageData.isEmpty()) {
             rootNode.construct(path.get(0), ConfigurationUtil.EMPTY_CFG_SRC, true);
         }
-        
+
         // Workaround for distributed configuration.
         addDefaults(rootNode);
-        
+
         try {
             T result = ConfigurationUtil.find(path, rootNode, true);
-    
+
             if (result == null) {
                 throw new NoSuchElementException(ConfigurationUtil.join(path));
             }
-            
+
             return result;
         } catch (KeyNotFoundException e) {
             throw new NoSuchElementException(ConfigurationUtil.join(path));
         }
     }
-    
+
     /** Stop component. */
     public void stop() {
         IgniteUtils.shutdownAndAwaitTermination(pool, 10, TimeUnit.SECONDS);
-        
+
         StorageRoots roots = storageRoots;
-    
+
         if (roots != null) {
             roots.changeFuture.completeExceptionally(new NodeStoppingException());
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public InnerNode getRootNode(RootKey<?, ?> rootKey) {
         return storageRoots.roots.getRoot(rootKey);
     }
-    
+
     /**
      * Get storage super root.
      *
@@ -372,7 +372,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
     public SuperRoot superRoot() {
         return storageRoots.roots;
     }
-    
+
     /**
      * Internal configuration change method that completes provided future.
      *
@@ -381,7 +381,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
      */
     private CompletableFuture<Void> changeInternally(ConfigurationSource src) {
         StorageRoots localRoots = storageRoots;
-        
+
         return CompletableFuture
                 .supplyAsync(() -> {
                     SuperRoot curRoots = localRoots.roots;
@@ -446,20 +446,20 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
      */
     private CompletableFuture<Void> updateFromListener(Data changedEntries) {
         StorageRoots oldStorageRoots = storageRoots;
-        
+
         Map<String, ?> dataValuesPrefixMap = toPrefixMap(changedEntries.values());
-        
+
         compressDeletedEntries(dataValuesPrefixMap);
-        
+
         SuperRoot oldSuperRoot = oldStorageRoots.roots;
         SuperRoot newSuperRoot = oldSuperRoot.copy();
-        
+
         fillFromPrefixMap(newSuperRoot, dataValuesPrefixMap);
-        
+
         long newChangeId = changedEntries.changeId();
-        
+
         storageRoots = new StorageRoots(newSuperRoot, newChangeId);
-        
+
         return notificator.notify(oldSuperRoot, newSuperRoot, newChangeId)
                 .whenComplete((v, t) -> {
                     if (t == null) {

@@ -129,10 +129,10 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
                 .replace(distribution())
                 .replace(RewindabilityTrait.REWINDABLE)
                 .replace(getIndex(idxName).collation());
-        
+
         return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTable, idxName, proj, condition, requiredCols);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public IgniteDistribution distribution() {

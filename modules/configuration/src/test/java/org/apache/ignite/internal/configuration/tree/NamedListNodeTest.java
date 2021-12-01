@@ -51,18 +51,18 @@ public class NamedListNodeTest {
         @NamedConfigValue
         public SecondConfigurationSchema second;
     }
-    
+
     /** Named list element node that contains another named list. */
     @Config
     public static class SecondConfigurationSchema {
         /** Every named list element node must have at least one configuration field that is not named list. */
         @Value(hasDefault = true)
         public String str = "foo";
-        
+
         @NamedConfigValue
         public ThirdConfigurationSchema third;
     }
-    
+
     /** Simple configuration schema. */
     @Config
     public static class ThirdConfigurationSchema {
@@ -70,35 +70,35 @@ public class NamedListNodeTest {
         @Value(hasDefault = true)
         public int intVal = 1;
     }
-    
+
     /** Runtime implementations generator. */
     private static ConfigurationAsmGenerator cgen;
-    
+
     /** Test configuration storage. */
     private TestConfigurationStorage storage;
-    
+
     /** Test configuration changer. */
     private TestConfigurationChanger changer;
-    
+
     /** Instantiates {@link #cgen}. */
     @BeforeAll
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
     }
-    
+
     /** Nullifies {@link #cgen} to prevent memory leak from having runtime ClassLoader accessible from GC root. */
     @AfterAll
     public static void afterAll() {
         cgen = null;
     }
-    
+
     /**
      * Before each.
      */
     @BeforeEach
     public void before() {
         storage = new TestConfigurationStorage(LOCAL);
-        
+
         changer = new TestConfigurationChanger(
                 cgen,
                 List.of(FirstConfiguration.KEY),
@@ -107,10 +107,10 @@ public class NamedListNodeTest {
                 List.of(),
                 List.of()
         );
-        
+
         changer.start();
     }
-    
+
     /**
      * After each.
      */
@@ -118,7 +118,7 @@ public class NamedListNodeTest {
     public void after() {
         changer.stop();
     }
-    
+
     /**
      * Tests that there are no unnecessary {@code <order>} values in the storage after all basic named list operations.
      *
@@ -128,16 +128,16 @@ public class NamedListNodeTest {
     public void storageData() throws Exception {
         // Manually instantiate configuration instance.
         var a = (FirstConfiguration) cgen.instantiateCfg(FirstConfiguration.KEY, changer);
-        
+
         // Create values on several layers at the same time. They all should have <order> = 0.
         a.second().change(b -> b.create("X", x -> x.changeThird(xb -> xb.create("Z0", z0 -> {
         })))).get();
-        
+
         String x0Id = ((NamedListNode<?>) a.second().value()).internalId("X");
         String z0Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z0");
-        
+
         Map<String, ? extends Serializable> storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -150,17 +150,17 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0")
                 ))
         );
-        
+
         SecondConfiguration x = a.second().get("X");
-        
+
         // Append new key. It should have <order> = 1.
         x.third().change(xb -> xb.create("Z5", z5 -> {
         })).get();
-        
+
         String z5Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z5");
-        
+
         storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -176,15 +176,15 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z5Id), "Z5")
                 ))
         );
-        
+
         // Insert new key somewhere in the middle. Index of Z5 should be updated to 2.
         x.third().change(xb -> xb.create(1, "Z2", z2 -> {
         })).get();
-        
+
         String z2Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z2");
-        
+
         storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -203,15 +203,15 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z5Id), "Z5")
                 ))
         );
-        
+
         // Insert new key somewhere in the middle. Indexes of Z3 and Z5 should be updated to 2 and 3.
         x.third().change(xb -> xb.createAfter("Z2", "Z3", z3 -> {
         })).get();
-        
+
         String z3Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z3");
-        
+
         storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -233,12 +233,12 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z5Id), "Z5")
                 ))
         );
-        
+
         // Delete keys from the middle. Indexes of Z3 should be updated to 1.
         x.third().change(xb -> xb.delete("Z2").delete("Z5")).get();
-        
+
         storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -254,12 +254,12 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z3Id), "Z3")
                 ))
         );
-        
+
         // Delete keys from the middle. Indexes of Z3 should be updated to 1.
         x.third().change(xb -> xb.rename("Z0", "Z1")).get();
-        
+
         storageValues = storage.readAll().values();
-        
+
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
@@ -275,22 +275,22 @@ public class NamedListNodeTest {
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z3Id), "Z3")
                 ))
         );
-        
+
         // Delete values on several layers simultaneously. Storage must be empty after that.
         a.second().change(b -> b.delete("X")).get();
-        
+
         assertThat(storage.readAll().values(), is(anEmptyMap()));
     }
-    
+
     /** Tests exceptions described in methods signatures. */
     @Test
     public void errors() throws Exception {
         var b = new NamedListNode<>("name", () -> cgen.instantiateNode(SecondConfigurationSchema.class), null);
-        
+
         b.create("X", x -> {
         }).create("Y", y -> {
         });
-        
+
         // NPE in keys.
         assertThrows(NullPointerException.class, () -> b.create(null, z -> {
         }));
@@ -305,13 +305,13 @@ public class NamedListNodeTest {
         assertThrows(NullPointerException.class, () -> b.rename(null, "Z"));
         assertThrows(NullPointerException.class, () -> b.rename("X", null));
         assertThrows(NullPointerException.class, () -> b.delete(null));
-        
+
         // NPE in closures.
         assertThrows(NullPointerException.class, () -> b.create("Z", null));
         assertThrows(NullPointerException.class, () -> b.createOrUpdate("Z", null));
         assertThrows(NullPointerException.class, () -> b.create(0, "Z", null));
         assertThrows(NullPointerException.class, () -> b.createAfter("X", "Z", null));
-        
+
         // Already existing keys.
         assertThrows(IllegalArgumentException.class, () -> b.create("X", x -> {
         }));
@@ -320,20 +320,20 @@ public class NamedListNodeTest {
         assertThrows(IllegalArgumentException.class, () -> b.createAfter("X", "Y", y -> {
         }));
         assertThrows(IllegalArgumentException.class, () -> b.rename("X", "Y"));
-        
+
         // Nonexistent preceding key.
         assertThrows(IllegalArgumentException.class, () -> b.createAfter("A", "Z", z -> {
         }));
-        
+
         // Wrong indexes.
         assertThrows(IndexOutOfBoundsException.class, () -> b.create(-1, "Z", z -> {
         }));
         assertThrows(IndexOutOfBoundsException.class, () -> b.create(3, "Z", z -> {
         }));
-        
+
         // Nonexisting key.
         assertThrows(IllegalArgumentException.class, () -> b.rename("A", "Z"));
-        
+
         // Operations after delete.
         b.delete("X");
         assertThrows(IllegalArgumentException.class, () -> b.create("X", x -> {
@@ -342,7 +342,7 @@ public class NamedListNodeTest {
         }));
         assertThrows(IllegalArgumentException.class, () -> b.rename("X", "Z"));
         assertThrows(IllegalArgumentException.class, () -> b.rename("Y", "X"));
-        
+
         // Deletion of nonexistent elements doesn't break anything.
         b.delete("X");
         b.delete("Y");

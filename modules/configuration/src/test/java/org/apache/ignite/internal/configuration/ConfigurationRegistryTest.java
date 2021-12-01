@@ -50,7 +50,7 @@ public class ConfigurationRegistryTest {
                         List.of()
                 )
         );
-        
+
         // Check that everything is fine.
         ConfigurationRegistry configRegistry = new ConfigurationRegistry(
                 List.of(FirstRootConfiguration.KEY, SecondRootConfiguration.KEY),
@@ -59,10 +59,10 @@ public class ConfigurationRegistryTest {
                 List.of(ExtendedFirstRootConfigurationSchema.class),
                 List.of()
         );
-        
+
         configRegistry.stop();
     }
-    
+
     @Test
     void testValidationPolymorphicConfigurationExtensions() {
         // There is a polymorphic extension that is missing from the schema.
@@ -76,7 +76,7 @@ public class ConfigurationRegistryTest {
                         List.of(Second0PolymorphicConfigurationSchema.class)
                 )
         );
-        
+
         // There are two polymorphic extensions with the same id.
         assertThrows(
                 IllegalArgumentException.class,
@@ -88,7 +88,7 @@ public class ConfigurationRegistryTest {
                         List.of(First0PolymorphicConfigurationSchema.class, ErrorFirst0PolymorphicConfigurationSchema.class)
                 )
         );
-        
+
         // Check that everything is fine.
         ConfigurationRegistry configRegistry = new ConfigurationRegistry(
                 List.of(ThirdRootConfiguration.KEY, FourthRootConfiguration.KEY, FifthRootConfiguration.KEY),
@@ -103,7 +103,7 @@ public class ConfigurationRegistryTest {
                         Third1PolymorphicConfigurationSchema.class
                 )
         );
-        
+
         configRegistry.stop();
     }
 
@@ -123,7 +123,7 @@ public class ConfigurationRegistryTest {
                 + "[class org.apache.ignite.internal.configuration.ConfigurationRegistryTest$"
                 + "FirstPolymorphicConfigurationSchema]"));
     }
-    
+
     /**
      * First root configuration.
      */
@@ -133,7 +133,7 @@ public class ConfigurationRegistryTest {
         @Value(hasDefault = true)
         public String str = "str";
     }
-    
+
     /**
      * First root configuration.
      */
@@ -143,7 +143,7 @@ public class ConfigurationRegistryTest {
         @Value(hasDefault = true)
         public String str = "str";
     }
-    
+
     /**
      * First extended root configuration.
      */
@@ -153,7 +153,7 @@ public class ConfigurationRegistryTest {
         @Value(hasDefault = true)
         public String strEx = "str";
     }
-    
+
     /**
      * Third root configuration.
      */
@@ -163,7 +163,7 @@ public class ConfigurationRegistryTest {
         @ConfigValue
         public FirstPolymorphicConfigurationSchema polymorphicConfig;
     }
-    
+
     /**
      * Fourth root configuration.
      */
@@ -173,7 +173,7 @@ public class ConfigurationRegistryTest {
         @ConfigValue
         public SecondPolymorphicConfigurationSchema polymorphicConfig;
     }
-    
+
     /**
      * Fifth root configuration.
      */
@@ -183,7 +183,7 @@ public class ConfigurationRegistryTest {
         @ConfigValue
         public ThirdPolymorphicConfigurationSchema polymorphicConfig;
     }
-    
+
     /**
      * Simple first polymorphic configuration scheme.
      */
@@ -193,28 +193,28 @@ public class ConfigurationRegistryTest {
         @PolymorphicId
         public String typeId;
     }
-    
+
     /**
      * First {@link FirstPolymorphicConfigurationSchema} extension.
      */
     @PolymorphicConfigInstance("first0")
     public static class First0PolymorphicConfigurationSchema extends FirstPolymorphicConfigurationSchema {
     }
-    
+
     /**
      * Second {@link FirstPolymorphicConfigurationSchema} extension.
      */
     @PolymorphicConfigInstance("first1")
     public static class First1PolymorphicConfigurationSchema extends FirstPolymorphicConfigurationSchema {
     }
-    
+
     /**
      * First error {@link FirstPolymorphicConfigurationSchema} extension.
      */
     @PolymorphicConfigInstance("first0")
     public static class ErrorFirst0PolymorphicConfigurationSchema extends FirstPolymorphicConfigurationSchema {
     }
-    
+
     /**
      * Second polymorphic configuration scheme.
      */
@@ -224,14 +224,14 @@ public class ConfigurationRegistryTest {
         @PolymorphicId
         public String typeId;
     }
-    
+
     /**
      * First {@link SecondPolymorphicConfigurationSchema} extension.
      */
     @PolymorphicConfigInstance("second0")
     public static class Second0PolymorphicConfigurationSchema extends SecondPolymorphicConfigurationSchema {
     }
-    
+
     /**
      * Third polymorphic configuration scheme.
      */
@@ -241,14 +241,14 @@ public class ConfigurationRegistryTest {
         @PolymorphicId(hasDefault = true)
         public String typeId = "third0";
     }
-    
+
     /**
      * First {@link ThirdPolymorphicConfigurationSchema} extension.
      */
     @PolymorphicConfigInstance("third0")
     public static class Third0PolymorphicConfigurationSchema extends ThirdPolymorphicConfigurationSchema {
     }
-    
+
     /**
      * First {@link ThirdPolymorphicConfigurationSchema} extension.
      */

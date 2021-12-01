@@ -56,60 +56,60 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class BaseQueryContext extends AbstractQueryContext {
     public static final CalciteConnectionConfig CALCITE_CONNECTION_CONFIG;
-    
+
     public static final RelOptCluster CLUSTER;
-    
+
     public static final IgniteTypeFactory TYPE_FACTORY;
-    
+
     private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
-    
+
     private static final BaseQueryContext EMPTY_CONTEXT;
-    
+
     private static final VolcanoPlanner EMPTY_PLANNER;
-    
+
     private static final RexBuilder DFLT_REX_BUILDER;
-    
+
     static {
         Properties props = new Properties();
-        
+
         props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
                 String.valueOf(FRAMEWORK_CONFIG.getParserConfig().caseSensitive()));
         props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
                 String.valueOf(FRAMEWORK_CONFIG.getParserConfig().conformance()));
         props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
                 String.valueOf(true));
-        
+
         CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props);
-        
+
         EMPTY_CONTEXT = builder().build();
-        
+
         EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
-        
+
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
-        
+
         DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
-        
+
         CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
-        
+
         CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
         CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
     }
-    
+
     private final FrameworkConfig cfg;
-    
+
     private final IgniteLogger log;
-    
+
     private final IgniteTypeFactory typeFactory;
-    
+
     private final RexBuilder rexBuilder;
-    
+
     private final QueryCancel qryCancel;
 
     private final Map<String, SqlExtension> extensions;
-    
+
     private CalciteCatalogReader catalogReader;
-    
+
     /**
      * Private constructor, used by a builder.
      */
@@ -120,26 +120,26 @@ public final class BaseQueryContext extends AbstractQueryContext {
             Map<String, SqlExtension> extensions
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
-        
+
         // link frameworkConfig#context() to this.
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
-        
+
         this.log = log;
         this.extensions = extensions;
-        
+
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
-        
+
         typeFactory = new IgniteTypeFactory(typeSys);
-        
+
         qryCancel = unwrap(QueryCancel.class);
-        
+
         rexBuilder = new RexBuilder(typeFactory);
     }
-    
+
     public static Builder builder() {
         return new Builder();
     }
-    
+
     public static BaseQueryContext empty() {
         return EMPTY_CONTEXT;
     }
@@ -155,23 +155,23 @@ public final class BaseQueryContext extends AbstractQueryContext {
     public FrameworkConfig config() {
         return cfg;
     }
-    
+
     public IgniteLogger logger() {
         return log;
     }
-    
+
     public String schemaName() {
         return schema().getName();
     }
-    
+
     public SchemaPlus schema() {
         return cfg.getDefaultSchema();
     }
-    
+
     public IgniteTypeFactory typeFactory() {
         return typeFactory;
     }
-    
+
     public RexBuilder rexBuilder() {
         return rexBuilder;
     }
@@ -183,24 +183,24 @@ public final class BaseQueryContext extends AbstractQueryContext {
         if (catalogReader != null) {
             return catalogReader;
         }
-        
+
         SchemaPlus dfltSchema = schema();
         SchemaPlus rootSchema = dfltSchema;
-    
+
         while (rootSchema.getParentSchema() != null) {
             rootSchema = rootSchema.getParentSchema();
         }
-        
+
         return catalogReader = new CalciteCatalogReader(
                 CalciteSchema.from(rootSchema),
                 CalciteSchema.from(dfltSchema).path(null),
                 typeFactory(), CALCITE_CONNECTION_CONFIG);
     }
-    
+
     public QueryCancel queryCancel() {
         return qryCancel;
     }
-    
+
     /**
      * Query context builder.
      */
@@ -210,25 +210,25 @@ public final class BaseQueryContext extends AbstractQueryContext {
                 Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                         .defaultSchema(createRootSchema(false))
                         .build();
-        
+
         private FrameworkConfig frameworkCfg = EMPTY_CONFIG;
-        
+
         private Context parentCtx = Contexts.empty();
-        
+
         private IgniteLogger log = new NullLogger();
 
         private Map<String, SqlExtension> extensions = Collections.emptyMap();
-        
+
         public Builder frameworkConfig(@NotNull FrameworkConfig frameworkCfg) {
             this.frameworkCfg = frameworkCfg;
             return this;
         }
-        
+
         public Builder parentContext(@NotNull Context parentCtx) {
             this.parentCtx = parentCtx;
             return this;
         }
-        
+
         public Builder logger(@NotNull IgniteLogger log) {
             this.log = log;
             return this;
@@ -238,7 +238,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
             this.extensions = extensions;
             return this;
         }
-        
+
         public BaseQueryContext build() {
             return new BaseQueryContext(frameworkCfg, parentCtx, log, extensions);
         }

@@ -28,7 +28,7 @@ public class TxMessageGroup {
      * Message type for {@link TxFinishRequest}.
      */
     public static final short TX_FINISH_REQUEST = 0;
-    
+
     /**
      * Message type for {@link TxFinishResponse}.
      */

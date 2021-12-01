@@ -1067,7 +1067,7 @@ public class ClientMessageUnpacker implements AutoCloseable {
             buf.release();
         }
     }
-    
+
     /**
      * Unpacks string header.
      *

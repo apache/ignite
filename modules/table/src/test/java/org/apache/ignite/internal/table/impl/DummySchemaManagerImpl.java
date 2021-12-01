@@ -48,17 +48,17 @@ public class DummySchemaManagerImpl implements SchemaRegistry {
     public SchemaDescriptor schema() {
         return schema;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public SchemaDescriptor schema(int ver) {
         assert ver >= 0;
-        
+
         assert schema.version() == ver;
-        
+
         return schema;
     }
-    
+
     /** {@inheritDoc} */
     @Override public SchemaDescriptor waitLatestSchema() {
         return schema();

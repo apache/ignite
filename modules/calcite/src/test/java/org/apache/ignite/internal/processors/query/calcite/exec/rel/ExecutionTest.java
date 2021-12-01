@@ -86,9 +86,9 @@ public class ExecutionTest extends AbstractExecutionTest {
         RelDataType outType = TypeUtils.createRowType(tf, int.class, String.class, String.class, int.class, int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
         RelDataType rightType = TypeUtils.createRowType(tf, int.class, int.class, String.class);
-    
+
         RowHandler<Object[]> hnd = ctx.rowHandler();
-    
+
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, INNER,
                 (r1, r2) -> getFieldFromBiRows(hnd, 0, r1, r2) == getFieldFromBiRows(hnd, 4, r1, r2));
         join.register(asList(persons, projects));
@@ -190,9 +190,9 @@ public class ExecutionTest extends AbstractExecutionTest {
                 int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
-    
+
         RowHandler<Object[]> hnd = ctx.rowHandler();
-    
+
         NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT,
                 (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(asList(persons, deps));

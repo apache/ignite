@@ -186,7 +186,7 @@ public class Accumulators {
 
             super.add(args);
         }
-    
+
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
             if (((SingleVal) other).touched) {
@@ -208,8 +208,8 @@ public class Accumulators {
         private Object holder;
 
         public static final Supplier<Accumulator> FACTORY = AnyVal::new;
-    
-    
+
+
         /** {@inheritDoc} */
         @Override
         public void add(Object... args) {
@@ -219,7 +219,7 @@ public class Accumulators {
                 holder = args[0];
             }
         }
-    
+
         /** {@inheritDoc} */
         @Override
         public void apply(Accumulator other) {

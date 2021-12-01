@@ -31,7 +31,7 @@ public interface RecordMarshaller<R> {
      * Returns marshaller schema version.
      */
     int schemaVersion();
-    
+
     /**
      * Marshals given record to a row.
      *
@@ -40,7 +40,7 @@ public interface RecordMarshaller<R> {
      * @throws MarshallerException If failed to marshal record.
      */
     BinaryRow marshal(@NotNull R rec) throws MarshallerException;
-    
+
     /**
      * Marshals key part of given record to a row.
      *
@@ -49,7 +49,7 @@ public interface RecordMarshaller<R> {
      * @throws MarshallerException If failed to marshal record.
      */
     BinaryRow marshalKey(@NotNull R keyRec) throws MarshallerException;
-    
+
     /**
      * Unmarshal given row to a record object.
      *

@@ -55,7 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AbstractBasicIntegrationTest {
     private static final IgniteLogger LOG = IgniteLogger.forClass(AbstractBasicIntegrationTest.class);
-    
+
     /** Nodes bootstrap configuration. */
     private static final Map<String, String> NODES_BOOTSTRAP_CFG = new LinkedHashMap<>() {
         {
@@ -70,7 +70,7 @@ public class AbstractBasicIntegrationTest {
                     + "    }\n"
                     + "  }\n"
                     + "}");
-        
+
             put("node1", "{\n"
                     + "  \"node\": {\n"
                     + "    \"metastorageNodes\":[ \"node0\" ]\n"
@@ -82,7 +82,7 @@ public class AbstractBasicIntegrationTest {
                     + "    }\n"
                     + "  }\n"
                     + "}");
-        
+
             put("node2", "{\n"
                     + "  \"node\": {\n"
                     + "    \"metastorageNodes\":[ \"node0\" ]\n"
@@ -96,14 +96,14 @@ public class AbstractBasicIntegrationTest {
                     + "}");
         }
     };
-    
+
     /** Cluster nodes. */
     protected static final List<Ignite> CLUSTER_NODES = new ArrayList<>();
-    
+
     /** Work directory. */
     @WorkDirectory
     private static Path WORK_DIR;
-    
+
     /**
      * Before all.
      */
@@ -113,18 +113,18 @@ public class AbstractBasicIntegrationTest {
                 CLUSTER_NODES.add(IgnitionManager.start(nodeName, configStr, WORK_DIR.resolve(nodeName)))
         );
     }
-    
+
     /**
      * After all.
      */
     @AfterAll
     static void stopNodes() throws Exception {
         LOG.info("Start tearDown()");
-        
+
         IgniteUtils.closeAll(ItUtils.reverse(CLUSTER_NODES));
-        
+
         CLUSTER_NODES.clear();
-        
+
         LOG.info("End tearDown()");
     }
 
@@ -143,15 +143,15 @@ public class AbstractBasicIntegrationTest {
                 SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
                 SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable().build()
         ).withPrimaryKey("ID").build();
-        
+
         Table tbl = CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
                 SchemaConfigurationConverter.convert(schTbl1, tblCh)
                         .changeReplicas(1)
                         .changePartitions(10)
         );
-        
+
         int idx = 0;
-        
+
         insertData(tbl, new String[]{"ID", "NAME", "SALARY"}, new Object[][]{
                 {idx++, "Igor", 10d},
                 {idx++, null, 15d},
@@ -159,13 +159,13 @@ public class AbstractBasicIntegrationTest {
                 {idx++, "Roma", 10d},
                 {idx, "Roma", 10d}
         });
-        
+
         return tbl;
     }
-    
+
     protected static void createTable(TableDefinitionBuilder tblBld) {
         TableDefinition schTbl1 = tblBld.build();
-        
+
         CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
                 SchemaConfigurationConverter.convert(schTbl1, tblCh)
                         .changeReplicas(1)
@@ -179,35 +179,35 @@ public class AbstractBasicIntegrationTest {
 
     protected static void insertData(Table table, String[] columnNames, Object[]... tuples) {
         RecordView<Tuple> view = table.recordView();
-        
+
         int batchSize = 128;
-        
+
         List<Tuple> batch = new ArrayList<>(batchSize);
         for (Object[] tuple : tuples) {
             assert tuple != null && tuple.length == columnNames.length;
-            
+
             Tuple toInsert = Tuple.create();
-    
+
             for (int i = 0; i < tuple.length; i++) {
                 toInsert.set(columnNames[i], tuple[i]);
             }
-            
+
             batch.add(toInsert);
-            
+
             if (batch.size() == batchSize) {
                 Collection<Tuple> duplicates = view.insertAll(batch);
-    
+
                 if (!duplicates.isEmpty()) {
                     throw new AssertionError("Duplicated rows detected: " + duplicates);
                 }
-                
+
                 batch.clear();
             }
         }
-        
+
         if (!batch.isEmpty()) {
             view.insertAll(batch);
-            
+
             batch.clear();
         }
     }

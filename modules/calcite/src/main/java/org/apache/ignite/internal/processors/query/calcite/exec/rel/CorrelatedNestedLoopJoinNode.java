@@ -367,10 +367,10 @@ public class CorrelatedNestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                 while (requested > 0 && leftIdx < leftInBuf.size()) {
                     checkState();
-    
+
                     RowT left = leftInBuf.get(leftIdx);
                     RowT right = rightInBuf.get(rightIdx);
-    
+
                     if (cond.test(left, right)) {
                         leftMatched.set(leftIdx);
 

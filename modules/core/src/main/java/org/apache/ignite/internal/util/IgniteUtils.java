@@ -51,19 +51,19 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteUtils {
     /** Byte bit-mask. */
     private static final int MASK = 0xf;
-    
+
     /** The moment will be used as a start monotonic time. */
     private static final long BEGINNING_OF_TIME = System.nanoTime();
-    
+
     /** Version of the JDK. */
     private static final String jdkVer = System.getProperty("java.specification.version");
-    
+
     /** Class loader used to load Ignite. */
     private static final ClassLoader igniteClassLoader = IgniteUtils.class.getClassLoader();
-    
+
     /** Indicates that assertions are enabled. */
     private static final boolean assertionsEnabled = IgniteUtils.class.desiredAssertionStatus();
-    
+
     /**
      * Gets the current monotonic time in milliseconds. This is the amount of milliseconds which passed from an arbitrary moment in the
      * past.
@@ -71,7 +71,7 @@ public class IgniteUtils {
     public static long monotonicMs() {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - BEGINNING_OF_TIME);
     }
-    
+
     /** Primitive class map. */
     private static final Map<String, Class<?>> primitiveMap = Map.of(
             "byte", byte.class,
@@ -84,10 +84,10 @@ public class IgniteUtils {
             "boolean", boolean.class,
             "void", void.class
     );
-    
+
     /** Class cache. */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class<?>>> classCache = new ConcurrentHashMap<>();
-    
+
     /**
      * Get JDK version.
      *
@@ -96,7 +96,7 @@ public class IgniteUtils {
     public static String jdkVersion() {
         return jdkVer;
     }
-    
+
     /**
      * Get major Java version from a string.
      *
@@ -107,24 +107,24 @@ public class IgniteUtils {
         if (verStr == null || verStr.isEmpty()) {
             return 0;
         }
-        
+
         try {
             String[] parts = verStr.split("\\.");
-            
+
             int major = Integer.parseInt(parts[0]);
-    
+
             if (parts.length == 1) {
                 return major;
             }
-            
+
             int minor = Integer.parseInt(parts[1]);
-            
+
             return major == 1 ? minor : major;
         } catch (Exception e) {
             return 0;
         }
     }
-    
+
     /**
      * Returns a capacity that is sufficient to keep the map from being resized as long as it grows no larger than expSize and the load
      * factor is &gt;= its default (0.75).
@@ -138,14 +138,14 @@ public class IgniteUtils {
         if (expSize < 3) {
             return expSize + 1;
         }
-    
+
         if (expSize < (1 << 30)) {
             return expSize + expSize / 3;
         }
-        
+
         return Integer.MAX_VALUE; // any large value
     }
-    
+
     /**
      * Creates new {@link HashMap} with expected size.
      *
@@ -157,7 +157,7 @@ public class IgniteUtils {
     public static <K, V> HashMap<K, V> newHashMap(int expSize) {
         return new HashMap<>(capacity(expSize));
     }
-    
+
     /**
      * Creates new {@link LinkedHashMap} with expected size.
      *
@@ -169,7 +169,7 @@ public class IgniteUtils {
     public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
         return new LinkedHashMap<>(capacity(expSize));
     }
-    
+
     /**
      * Applies a supplemental hash function to a given hashCode, which defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables, that otherwise encounter collisions for hashCodes that do not differ
@@ -188,10 +188,10 @@ public class IgniteUtils {
         h += (h << 3);
         h ^= (h >>> 6);
         h += (h << 2) + (h << 14);
-        
+
         return h ^ (h >>> 16);
     }
-    
+
     /**
      * Applies a supplemental hash function to a given hashCode, which defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables, that otherwise encounter collisions for hashCodes that do not differ
@@ -205,7 +205,7 @@ public class IgniteUtils {
     public static int hash(Object obj) {
         return hash(obj.hashCode());
     }
-    
+
     /**
      * A primitive override of {@link #hash(Object)} to avoid unnecessary boxing.
      *
@@ -214,10 +214,10 @@ public class IgniteUtils {
      */
     public static int hash(long key) {
         int val = (int) (key ^ (key >>> 32));
-        
+
         return hash(val);
     }
-    
+
     /**
      * Converts byte array to hex string.
      *
@@ -227,7 +227,7 @@ public class IgniteUtils {
     public static String toHexString(byte[] arr) {
         return toHexString(arr, Integer.MAX_VALUE);
     }
-    
+
     /**
      * Converts byte array to hex string.
      *
@@ -237,20 +237,20 @@ public class IgniteUtils {
      */
     public static String toHexString(byte[] arr, int maxLen) {
         assert maxLen >= 0 : "maxLem must be not negative.";
-        
+
         int capacity = Math.min(arr.length << 1, maxLen);
-        
+
         int lim = capacity >> 1;
-        
+
         StringBuilder sb = new StringBuilder(capacity);
-    
+
         for (int i = 0; i < lim; i++) {
             addByteAsHex(sb, arr[i]);
         }
-        
+
         return sb.toString().toUpperCase();
     }
-    
+
     /**
      * Appends {@code byte} in hexadecimal format.
      *
@@ -260,7 +260,7 @@ public class IgniteUtils {
     private static void addByteAsHex(StringBuilder sb, byte b) {
         sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
     }
-    
+
     /**
      * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
      *
@@ -269,10 +269,10 @@ public class IgniteUtils {
      */
     public static int safeAbs(int i) {
         i = Math.abs(i);
-        
+
         return i < 0 ? 0 : i;
     }
-    
+
     /**
      * Returns a first non-null value in a given array, if such is present.
      *
@@ -285,16 +285,16 @@ public class IgniteUtils {
         if (vals == null) {
             return null;
         }
-        
+
         for (T val : vals) {
             if (val != null) {
                 return val;
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Returns class loader used to load Ignite itself.
      *
@@ -303,7 +303,7 @@ public class IgniteUtils {
     public static ClassLoader igniteClassLoader() {
         return igniteClassLoader;
     }
-    
+
     /**
      * Gets class for provided name. Accepts primitive types names.
      *
@@ -315,7 +315,7 @@ public class IgniteUtils {
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
         return forName(clsName, ldr, null);
     }
-    
+
     /**
      * Gets class for provided name. Accepts primitive types names.
      *
@@ -331,46 +331,46 @@ public class IgniteUtils {
             Predicate<String> clsFilter
     ) throws ClassNotFoundException {
         assert clsName != null;
-        
+
         Class<?> cls = primitiveMap.get(clsName);
-    
+
         if (cls != null) {
             return cls;
         }
-    
+
         if (ldr == null) {
             ldr = igniteClassLoader;
         }
-        
+
         ConcurrentMap<String, Class<?>> ldrMap = classCache.get(ldr);
-        
+
         if (ldrMap == null) {
             ConcurrentMap<String, Class<?>> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
-    
+
             if (old != null) {
                 ldrMap = old;
             }
         }
-        
+
         cls = ldrMap.get(clsName);
-        
+
         if (cls == null) {
             if (clsFilter != null && !clsFilter.test(clsName)) {
                 throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
             }
-            
+
             cls = Class.forName(clsName, true, ldr);
-            
+
             Class<?> old = ldrMap.putIfAbsent(clsName, cls);
-    
+
             if (old != null) {
                 cls = old;
             }
         }
-        
+
         return cls;
     }
-    
+
     /**
      * Deletes a file or a directory with all sub-directories and files.
      *
@@ -385,20 +385,20 @@ public class IgniteUtils {
                     if (exc != null) {
                         throw exc;
                     }
-                    
+
                     Files.delete(dir);
-                    
+
                     return FileVisitResult.CONTINUE;
                 }
-                
+
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
-                    
+
                     return FileVisitResult.CONTINUE;
                 }
             });
-            
+
             return true;
         } catch (NoSuchFileException e) {
             return true;
@@ -406,7 +406,7 @@ public class IgniteUtils {
             return false;
         }
     }
-    
+
     /**
      * Checks if assertions enabled.
      *
@@ -415,7 +415,7 @@ public class IgniteUtils {
     public static boolean assertionsEnabled() {
         return assertionsEnabled;
     }
-    
+
     /**
      * Shuts down the given executor service gradually, first disabling new submissions and later, if necessary, cancelling remaining
      * tasks.
@@ -439,10 +439,10 @@ public class IgniteUtils {
      */
     public static void shutdownAndAwaitTermination(ExecutorService service, long timeout, TimeUnit unit) {
         long halfTimeoutNanos = unit.toNanos(timeout) / 2;
-        
+
         // Disable new tasks from being submitted
         service.shutdown();
-        
+
         try {
             // Wait for half the duration of the timeout for existing tasks to terminate
             if (!service.awaitTermination(halfTimeoutNanos, TimeUnit.NANOSECONDS)) {
@@ -458,7 +458,7 @@ public class IgniteUtils {
             service.shutdownNow();
         }
     }
-    
+
     /**
      * Closes all provided objects. If any of the {@link AutoCloseable#close} methods throw an exception, only the first thrown exception
      * will be propagated to the caller, after all other objects are closed, similar to the try-with-resources block.
@@ -468,7 +468,7 @@ public class IgniteUtils {
      */
     public static void closeAll(Stream<? extends AutoCloseable> closeables) throws Exception {
         AtomicReference<Exception> ex = new AtomicReference<>();
-        
+
         closeables.filter(Objects::nonNull).forEach(closeable -> {
             try {
                 closeable.close();
@@ -478,12 +478,12 @@ public class IgniteUtils {
                 }
             }
         });
-    
+
         if (ex.get() != null) {
             throw ex.get();
         }
     }
-    
+
     /**
      * Closes all provided objects. If any of the {@link AutoCloseable#close} methods throw an exception, only the first thrown exception
      * will be propagated to the caller, after all other objects are closed, similar to the try-with-resources block.
@@ -494,7 +494,7 @@ public class IgniteUtils {
     public static void closeAll(Collection<? extends AutoCloseable> closeables) throws Exception {
         closeAll(closeables.stream());
     }
-    
+
     /**
      * Closes all provided objects.
      *
@@ -505,13 +505,13 @@ public class IgniteUtils {
     public static void closeAll(AutoCloseable... closeables) throws Exception {
         closeAll(Arrays.stream(closeables));
     }
-    
+
     /**
      * Short date format pattern for log messages in "quiet" mode. Only time is included since we don't expect "quiet" mode to be used for
      * longer runs.
      */
     private static final DateTimeFormatter SHORT_DATE_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
-    
+
     /**
      * Prints stack trace of the current thread to provided logger.
      *
@@ -521,18 +521,18 @@ public class IgniteUtils {
      */
     public static void dumpStack(IgniteLogger log, String msg, Object... params) {
         String reason = "Dumping stack.";
-    
+
         var err = new Exception(LoggerMessageHelper.format(msg, params));
-    
+
         if (log != null) {
             log.error(reason, err);
         } else {
             System.err.println("[" + LocalDateTime.now().format(SHORT_DATE_FMT) + "] (err) " + reason);
-        
+
             err.printStackTrace(System.err);
         }
     }
-    
+
     /**
      * Atomically moves or renames a file to a target file.
      *
@@ -548,9 +548,9 @@ public class IgniteUtils {
         // https://github.com/jenkinsci/jenkins/blob/master/core/src/main/java/hudson/util/AtomicFileWriter.java#L187
         Objects.requireNonNull(sourcePath, "sourcePath");
         Objects.requireNonNull(targetPath, "targetPath");
-        
+
         Path success;
-        
+
         try {
             success = Files.move(sourcePath, targetPath, StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -562,40 +562,40 @@ public class IgniteUtils {
                 } else {
                     log.warn("Unable to move atomically, falling back to non-atomic move, error: {}.", e.getMessage());
                 }
-    
+
                 if (targetPath.toFile().exists() && log.isInfoEnabled()) {
                     log.info("The target file {} was already existing.", targetPath);
                 }
             }
-            
+
             try {
                 success = Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (final IOException e1) {
                 e1.addSuppressed(e);
-                
+
                 if (log != null) {
                     log.warn("Unable to move {} to {}. Attempting to delete {} and abandoning.",
                             sourcePath,
                             targetPath,
                             sourcePath);
                 }
-                
+
                 try {
                     Files.deleteIfExists(sourcePath);
                 } catch (final IOException e2) {
                     e2.addSuppressed(e1);
-    
+
                     if (log != null) {
                         log.warn("Unable to delete {}, good bye then!", sourcePath);
                     }
-                    
+
                     throw e2;
                 }
-                
+
                 throw e1;
             }
         }
-        
+
         return success;
     }
 }

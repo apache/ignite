@@ -46,28 +46,28 @@ public class StripedDisruptorTest extends IgniteAbstractTest {
                 16384,
                 GroupAwareTestObj::new,
                 1);
-        
+
         GroupAwareTestObjHandler handler1 = new GroupAwareTestObjHandler();
         GroupAwareTestObjHandler handler2 = new GroupAwareTestObjHandler();
-        
+
         RingBuffer<GroupAwareTestObj> taskQueue1 = disruptor.subscribe("grp1", handler1);
         RingBuffer<GroupAwareTestObj> taskQueue2 = disruptor.subscribe("grp2", handler2);
-        
+
         assertSame(taskQueue1, taskQueue2);
-        
+
         for (int i = 0; i < 1_000; i++) {
             int finalInt = i;
-            
+
             taskQueue1.tryPublishEvent((event, sequence) -> {
                 event.groupId = "grp1";
                 event.num = finalInt;
             });
-            
+
             taskQueue2.tryPublishEvent((event, sequence) -> {
                 event.groupId = "grp2";
                 event.num = finalInt;
             });
-            
+
             if (i % 10 == 0) {
                 assertTrue(IgniteTestUtils.waitForCondition(() -> handler1.applied == finalInt + 1, 10_000),
                         LoggerMessageHelper.format("Batch was not commited [applied={}, expected={}, buffered={}]",
@@ -77,10 +77,10 @@ public class StripedDisruptorTest extends IgniteAbstractTest {
                                 handler2.applied, finalInt + 1, handler2.batch));
             }
         }
-        
+
         disruptor.shutdown();
     }
-    
+
     /**
      * The test checks that the Striped Disruptor work same as real one in the circumstances when we have only one consumer group.
      *
@@ -92,56 +92,56 @@ public class StripedDisruptorTest extends IgniteAbstractTest {
                 16384,
                 () -> new GroupAwareTestObj(),
                 5);
-        
+
         GroupAwareTestObjHandler handler = new GroupAwareTestObjHandler();
-        
+
         RingBuffer<GroupAwareTestObj> taskQueue = disruptor.subscribe("grp", handler);
-        
+
         for (int i = 0; i < 1_000; i++) {
             int finalInt = i;
-            
+
             taskQueue.publishEvent((event, sequence) -> {
                 event.groupId = "grp";
                 event.num = finalInt;
             });
         }
-        
+
         assertTrue(IgniteTestUtils.waitForCondition(() -> handler.applied == 1_000, 10_000));
-        
+
         disruptor.shutdown();
     }
-    
+
     /** Group event handler. */
     private static class GroupAwareTestObjHandler implements EventHandler<GroupAwareTestObj> {
         /** This is a container for the batch events. */
         ArrayList<Integer> batch = new ArrayList<>();
-        
+
         /** Counter of applied events. */
         int applied = 0;
-        
+
         /** {@inheritDoc} */
         @Override
         public void onEvent(GroupAwareTestObj event, long sequence, boolean endOfBatch) {
             batch.add(event.num);
-            
+
             if (endOfBatch) {
                 applied += batch.size();
-                
+
                 batch.clear();
             }
         }
     }
-    
+
     /**
      * Group aware object implementation to test the striped disruptor.
      */
     private static class GroupAwareTestObj implements GroupAware {
         /** Group id. */
         String groupId;
-        
+
         /** Any integer number. */
         int num;
-        
+
         /**
          * Get a group id.
          *

@@ -252,7 +252,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
 
             case NUMBER:
                 return INT + ((BigInteger) val).toByteArray().length;
-    
+
             default:
                 throw new InvalidTypeException("Unexpected type " + type);
         }
@@ -450,7 +450,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
 
                 break;
             }
-    
+
             default:
                 throw new InvalidTypeException("Unexpected type " + type);
         }
@@ -651,10 +651,10 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
 
             case BITMASK:
                 return BitSet.valueOf(readByteArray(buf));
-    
+
             case NUMBER:
                 return new BigInteger(readByteArray(buf));
-    
+
             default:
                 throw new InvalidTypeException("Unexpected type " + type);
         }
@@ -733,10 +733,10 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
 
             case UUID:
                 return NativeTypes.UUID;
-    
+
             case DATE:
                 return NativeTypes.DATE;
-    
+
             default:
                 throw new InvalidTypeException("Unexpected type " + spec);
         }

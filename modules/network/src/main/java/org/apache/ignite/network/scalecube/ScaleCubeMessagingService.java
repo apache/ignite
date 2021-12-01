@@ -42,7 +42,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
      * Inner representation of a ScaleCube cluster.
      */
     private volatile Cluster cluster;
-    
+
     /**
      * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
      *
@@ -51,7 +51,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
     void setCluster(Cluster cluster) {
         this.cluster = cluster;
     }
-    
+
     /**
      * Delegates the received message to the registered message handlers.
      *
@@ -59,16 +59,16 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
      */
     void fireEvent(Message message) {
         NetworkMessage msg = message.data();
-        
+
         var address = NetworkAddress.from(message.header(Message.HEADER_SENDER));
-        
+
         String correlationId = message.correlationId();
-    
+
         for (NetworkMessageHandler handler : getMessageHandlers(msg.groupType())) {
             handler.onReceived(msg, address, correlationId);
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void weakSend(ClusterNode recipient, NetworkMessage msg) {
@@ -76,7 +76,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
                 .send(fromNetworkAddress(recipient.address()), Message.fromData(msg))
                 .subscribe();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg) {
@@ -85,18 +85,18 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
         if (cluster.isShutdown()) {
             return failedFuture(new NodeStoppingException());
         }
-        
+
         return cluster
                 .send(fromNetworkAddress(recipient.address()), Message.fromData(msg))
                 .toFuture();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg, String correlationId) {
         return send(recipient.address(), msg, correlationId);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Void> send(NetworkAddress addr, NetworkMessage msg, String correlationId) {
@@ -105,23 +105,23 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
         if (cluster.isShutdown()) {
             return failedFuture(new NodeStoppingException());
         }
-        
+
         var message = Message
                 .withData(msg)
                 .correlationId(correlationId)
                 .build();
-        
+
         return cluster
                 .send(fromNetworkAddress(addr), message)
                 .toFuture();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<NetworkMessage> invoke(ClusterNode recipient, NetworkMessage msg, long timeout) {
         return invoke(recipient.address(), msg, timeout);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<NetworkMessage> invoke(NetworkAddress addr, NetworkMessage msg, long timeout) {
@@ -130,12 +130,12 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
         if (cluster.isShutdown()) {
             return failedFuture(new NodeStoppingException());
         }
-        
+
         var message = Message
                 .withData(msg)
                 .correlationId(UUID.randomUUID().toString())
                 .build();
-        
+
         return cluster
                 .requestResponse(fromNetworkAddress(addr), message)
                 .timeout(Duration.ofMillis(timeout))
@@ -143,7 +143,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
                 .thenCompose(m -> m == null ? failedFuture(new NodeStoppingException()) : completedFuture(m))
                 .thenApply(Message::data);
     }
-    
+
     /**
      * Converts a {@link NetworkAddress} into ScaleCube's {@link Address}.
      *

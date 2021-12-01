@@ -3500,7 +3500,7 @@ public class ItNodeTest {
                 rpcServer.shutdown();
 
                 super.shutdown();
-    
+
                 clusterService.stop();
             }
         };

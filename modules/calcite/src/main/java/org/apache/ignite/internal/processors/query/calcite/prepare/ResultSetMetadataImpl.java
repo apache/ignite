@@ -30,13 +30,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 public class ResultSetMetadataImpl implements ResultSetMetadataInternal {
     /** Columns origins. */
     private final List<List<String>> origins;
-    
+
     /** Internal row type. */
     private final RelDataType rowType;
-    
+
     /** Fields metadata. */
     private volatile List<ResultFieldMetadata> fields;
-    
+
     public ResultSetMetadataImpl(
             RelDataType rowType,
             List<List<String>> origins
@@ -44,16 +44,16 @@ public class ResultSetMetadataImpl implements ResultSetMetadataInternal {
         this.rowType = rowType;
         this.origins = origins;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<ResultFieldMetadata> fields() {
         if (fields == null) {
             List<ResultFieldMetadata> flds = new ArrayList<>(rowType.getFieldCount());
-            
+
             for (int i = 0; i < rowType.getFieldCount(); ++i) {
                 RelDataTypeField fld = rowType.getFieldList().get(i);
-                
+
                 flds.add(
                         new ResultFieldMetadataImpl(
                                 fld.getName(),
@@ -63,14 +63,14 @@ public class ResultSetMetadataImpl implements ResultSetMetadataInternal {
                                 origins.get(i)
                         )
                 );
-                
+
                 fields = flds;
             }
         }
-        
+
         return fields;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public RelDataType rowType() {

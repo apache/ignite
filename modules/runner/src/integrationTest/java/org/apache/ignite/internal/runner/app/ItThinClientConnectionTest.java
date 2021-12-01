@@ -68,7 +68,7 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
     void setup(TestInfo testInfo) {
         String node0Name = testNodeName(testInfo, 3344);
         String node1Name = testNodeName(testInfo, 3345);
-    
+
         nodesBootstrapCfg.put(
                 node0Name,
                 "{\n"
@@ -81,7 +81,7 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
                         + "  }\n"
                         + "}"
         );
-    
+
         nodesBootstrapCfg.put(
                 node1Name,
                 "{\n"
@@ -126,7 +126,7 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
                         .changeReplicas(1)
                         .changePartitions(10)
         );
-    
+
         var addrs = new String[]{"127.0.0.1:"
                 + ((InetSocketAddress) ((IgniteImpl) startedNodes.get(0)).clientHandlerModule().localAddress()).getPort()};
 

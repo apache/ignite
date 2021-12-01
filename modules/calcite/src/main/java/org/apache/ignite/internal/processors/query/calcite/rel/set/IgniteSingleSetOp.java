@@ -43,15 +43,15 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
         boolean rewindable = inputTraits.stream()
                 .map(TraitUtils::rewindability)
                 .allMatch(RewindabilityTrait::rewindable);
-    
+
         if (rewindable) {
             return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
         }
-        
+
         return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
                 Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
@@ -59,10 +59,10 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
         if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single()) {
             return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
         }
-        
+
         return null;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
@@ -72,14 +72,14 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
         boolean single = inputTraits.stream()
                 .map(TraitUtils::distribution)
                 .allMatch(d -> d.satisfies(IgniteDistributions.single()));
-    
+
         if (!single) {
             return List.of();
         }
-        
+
         return List.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
@@ -90,11 +90,11 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
                 .map(TraitUtils::correlation)
                 .flatMap(corrTr -> corrTr.correlationIds().stream())
                 .collect(Collectors.toSet());
-        
+
         return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
                 inTraits));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public default AggregateType aggregateType() {

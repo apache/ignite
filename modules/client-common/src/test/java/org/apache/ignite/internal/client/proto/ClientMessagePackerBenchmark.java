@@ -40,40 +40,40 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @State(Scope.Benchmark)
 public class ClientMessagePackerBenchmark {
     private static final ByteBuf buffer = Unpooled.buffer(1024);
-    
+
     private static final UUID uuid = UUID.randomUUID();
-    
+
     /**
      * String benchmark.
      */
     @Benchmark
     public void packString() {
         var packer = new ClientMessagePacker(buffer.writerIndex(0));
-        
+
         packer.packString("The quick brown fox jumps over the lazy dog.");
     }
-    
+
     /**
      * Int benchmark.
      */
     @Benchmark
     public void packInt() {
         var packer = new ClientMessagePacker(buffer.writerIndex(0));
-        
+
         packer.packInt(10);
         packer.packInt(Integer.MAX_VALUE);
     }
-    
+
     /**
      * UUID benchmark.
      */
     @Benchmark
     public void packUuid() {
         var packer = new ClientMessagePacker(buffer.writerIndex(0));
-        
+
         packer.packUuid(uuid);
     }
-    
+
     /**
      * Runner.
      *
@@ -89,7 +89,7 @@ public class ClientMessagePackerBenchmark {
                 .measurementTime(TimeValue.seconds(10))
                 .forks(1)
                 .build();
-        
+
         new Runner(opt).run();
     }
 }

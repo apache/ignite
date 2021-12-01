@@ -47,7 +47,7 @@ public abstract class SpecAdapter implements Runnable {
 
     @CommandLine.Spec
     protected CommandSpec spec;
-    
+
     /**
      * Returns Ignite banner.
      *

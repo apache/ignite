@@ -27,7 +27,7 @@ import java.util.EnumSet;
 public enum ProtocolBitmaskFeature {
     /** Feature for user attributes. */
     USER_ATTRIBUTES(0);
-    
+
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
             EnumSet.allOf(ProtocolBitmaskFeature.class);
 

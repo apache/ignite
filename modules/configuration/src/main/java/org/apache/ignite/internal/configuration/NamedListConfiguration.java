@@ -39,16 +39,16 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
         implements NamedConfigurationTree<T, VIEWT, CHANGET> {
     /** Listeners of property update. */
     private final List<ConfigurationNamedListListener<VIEWT>> extendedListeners = new CopyOnWriteArrayList<>();
-    
+
     /** Creator of named configuration. */
     private final BiFunction<List<String>, String, T> creator;
-    
+
     /** Placeholder to add listeners for any configuration. */
     private final T anyConfig;
-    
+
     /** Notification cache. */
     private volatile Map<String, T> notificationCache = Collections.emptyMap();
-    
+
     /**
      * Constructor.
      *
@@ -70,21 +70,21 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
             T anyConfig
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
-        
+
         this.creator = creator;
         this.anyConfig = anyConfig;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public T get(String name) {
         refreshValue();
-        
+
         ConfigurationProperty<?> configProperty = members.get(name);
-        
+
         return configProperty == null ? null : (T) ((DynamicConfiguration<?, ?>) configProperty).specificConfigTree();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     protected synchronized void beforeRefreshValue(
@@ -93,32 +93,32 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
     ) {
         Map<String, ConfigurationProperty<?>> oldValues = this.members;
         Map<String, ConfigurationProperty<?>> newValues = new LinkedHashMap<>();
-        
+
         for (String key : newValue.namedListKeys()) {
             ConfigurationProperty<?> oldElement = oldValues.get(key);
-    
+
             if (oldElement != null) {
                 newValues.put(key, oldElement);
             } else {
                 newValues.put(key, creator.apply(keys, key));
             }
         }
-        
+
         this.members = newValues;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Map<String, ConfigurationProperty<?>> touchMembers() {
         Map<String, T> res = notificationCache;
-        
+
         refreshValue();
-        
+
         notificationCache = (Map<String, T>) members;
-        
+
         return Collections.unmodifiableMap(res);
     }
-    
+
     /**
      * Returns list of listeners that are specific for named configurations.
      *
@@ -127,31 +127,31 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
     public List<ConfigurationNamedListListener<VIEWT>> extendedListeners() {
         return Collections.unmodifiableList(extendedListeners);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void listenElements(ConfigurationNamedListListener<VIEWT> listener) {
         extendedListeners.add(listener);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void stopListenElements(ConfigurationNamedListListener<VIEWT> listener) {
         extendedListeners.remove(listener);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public T any() {
         return anyConfig;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Class<? extends ConfigurationProperty<NamedListView<VIEWT>>> configType() {
         throw new UnsupportedOperationException("Not supported.");
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public NamedListView<VIEWT> value() {

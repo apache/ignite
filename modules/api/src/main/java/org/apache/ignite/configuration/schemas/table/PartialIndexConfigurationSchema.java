@@ -31,7 +31,7 @@ public class PartialIndexConfigurationSchema extends TableIndexConfigurationSche
     /** Expression for PartialIndex: PARTIAL indexes. */
     @Value
     public String expr;
-    
+
     /** Columns configuration for sorted indexes. */
     @NamedConfigValue
     public IndexColumnConfigurationSchema columns;

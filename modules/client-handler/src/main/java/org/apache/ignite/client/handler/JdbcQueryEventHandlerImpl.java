@@ -64,16 +64,16 @@ import org.apache.ignite.internal.util.Cursor;
 public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
     /** Current JDBC cursors. */
     private final ConcurrentHashMap<Long, SqlCursor<List<?>>> openCursors = new ConcurrentHashMap<>();
-    
+
     /** Cursor Id generator. */
     private final AtomicLong cursorIdGenerator = new AtomicLong();
-    
+
     /** Sql query processor. */
     private final QueryProcessor processor;
-    
+
     /** Jdbc metadata info. */
     private final JdbcMetadataCatalog meta;
-    
+
     /**
      * Constructor.
      *
@@ -84,7 +84,7 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         this.processor = processor;
         this.meta = meta;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public QueryExecuteResult query(QueryExecuteRequest req) {
@@ -92,24 +92,24 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
             return new QueryExecuteResult(Response.STATUS_FAILED,
                     "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
         }
-        
+
         List<SqlCursor<List<?>>> cursors;
         try {
             cursors = processor.query(req.schemaName(), req.sqlQuery(), req.arguments() == null ? new Object[0] : req.arguments());
         } catch (Exception e) {
             StringWriter sw = getWriterWithStackTrace(e);
-            
+
             return new QueryExecuteResult(Response.STATUS_FAILED,
                     "Exception while executing query " + req.sqlQuery() + ". Error message: " + sw);
         }
-    
+
         if (cursors.isEmpty()) {
             return new QueryExecuteResult(Response.STATUS_FAILED,
                     "At least one cursor is expected for query " + req.sqlQuery());
         }
-        
+
         List<QuerySingleResult> results = new ArrayList<>();
-        
+
         try {
             for (SqlCursor<List<?>> cur : cursors) {
                 QuerySingleResult res = createJdbcResult(cur, req);
@@ -117,98 +117,98 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
             }
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
-            
+
             return new QueryExecuteResult(Response.STATUS_FAILED,
                     "Failed to fetch results for query " + req.sqlQuery() + ". Error message: " + sw);
         }
-        
+
         return new QueryExecuteResult(results);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public QueryFetchResult fetch(QueryFetchRequest req) {
         Cursor<List<?>> cur = openCursors.get(req.cursorId());
-    
+
         if (cur == null) {
             return new QueryFetchResult(Response.STATUS_FAILED,
                     "Failed to find query cursor with ID: " + req.cursorId());
         }
-    
+
         if (req.pageSize() <= 0) {
             return new QueryFetchResult(Response.STATUS_FAILED,
                     "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
         }
-        
+
         List<List<Object>> fetch;
         boolean hasNext;
-        
+
         try {
             fetch = fetchNext(req.pageSize(), cur);
             hasNext = cur.hasNext();
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
-            
+
             return new QueryFetchResult(Response.STATUS_FAILED,
                     "Failed to fetch results for cursor id " + req.cursorId() + ". Error message: " + sw);
         }
-        
+
         return new QueryFetchResult(fetch, hasNext);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public BatchExecuteResult batch(BatchExecuteRequest req) {
         return new BatchExecuteResult(UNSUPPORTED_OPERATION,
                 "ExecuteBatch operation is not implemented yet.");
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public QueryCloseResult close(QueryCloseRequest req) {
         Cursor<List<?>> cur = openCursors.remove(req.cursorId());
-    
+
         if (cur == null) {
             return new QueryCloseResult(Response.STATUS_FAILED,
                     "Failed to find query cursor with ID: " + req.cursorId());
         }
-        
+
         try {
             cur.close();
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
-            
+
             return new QueryCloseResult(Response.STATUS_FAILED,
                     "Failed to close SQL query [curId=" + req.cursorId() + "]. Error message: " + sw);
         }
-        
+
         return new QueryCloseResult();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
         SqlCursor<List<?>> cur = openCursors.get(req.cursorId());
-    
+
         if (cur == null) {
             return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
                     "Failed to find query cursor with ID: " + req.cursorId());
         }
-        
+
         ResultSetMetadata metadata = cur.metadata();
-    
+
         if (metadata == null) {
             return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
                     "Failed to get query metadata for cursor with ID : " + req.cursorId());
         }
-        
+
         List<JdbcColumnMeta> meta = metadata.fields().stream()
                 .map(this::createColumnMetadata)
                 .collect(Collectors.toList());
-        
+
         return new JdbcMetaColumnsResult(meta);
     }
-    
+
     /**
      * Create Jdbc representation of column metadata from given origin and RelDataTypeField field.
      *
@@ -217,11 +217,11 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
      */
     private JdbcColumnMeta createColumnMetadata(ResultFieldMetadata fldMeta) {
         List<String> origin = fldMeta.origin();
-        
+
         String schemaName = origin == null ? null : origin.get(0);
         String tblName = origin == null ? null : origin.get(1);
         String colName = origin == null ? null : origin.get(2);
-        
+
         return new JdbcColumnMeta(
                 fldMeta.name(),
                 schemaName,
@@ -233,39 +233,39 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
                 fldMeta.isNullable()
         );
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
         List<JdbcTableMeta> tblsMeta = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
-        
+
         return new JdbcMetaTablesResult(tblsMeta);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
         Collection<JdbcColumnMeta> tblsMeta = meta.getColumnsMeta(req.schemaName(), req.tableName(), req.columnName());
-        
+
         return new JdbcMetaColumnsResult(tblsMeta);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
         Collection<String> tblsMeta = meta.getSchemasMeta(req.schemaName());
-        
+
         return new JdbcMetaSchemasResult(tblsMeta);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
         Collection<JdbcPrimaryKeyMeta> tblsMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
-        
+
         return new JdbcMetaPrimaryKeysResult(tblsMeta);
     }
-    
+
     /**
      * Serializes the stack trace of given exception for further sending to the client.
      *
@@ -275,11 +275,11 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
     private StringWriter getWriterWithStackTrace(Exception ex) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-        
+
         ex.printStackTrace(pw);
         return sw;
     }
-    
+
     /**
      * Creates jdbc result for the cursor.
      *
@@ -289,12 +289,12 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
      */
     private QuerySingleResult createJdbcResult(SqlCursor<List<?>> cur, QueryExecuteRequest req) {
         long cursorId = cursorIdGenerator.getAndIncrement();
-        
+
         openCursors.put(cursorId, cur);
-        
+
         List<List<Object>> fetch = fetchNext(req.pageSize(), cur);
         boolean hasNext = cur.hasNext();
-        
+
         switch (cur.queryType()) {
             case EXPLAIN:
             case QUERY:
@@ -305,7 +305,7 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
                     return new QuerySingleResult(Response.STATUS_FAILED,
                             "Unexpected result for DML query [" + req.sqlQuery() + "].");
                 }
-                
+
                 return new QuerySingleResult(cursorId, (Long) fetch.get(0).get(0));
             }
             default:
@@ -313,7 +313,7 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
                         "Query type [" + cur.queryType() + "] is not supported yet.");
         }
     }
-    
+
     /**
      * Validate dml result. Check if it stores only one value of Long type.
      *
@@ -325,18 +325,18 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         if (next) {
             return false;
         }
-    
+
         if (fetch.size() != 1) {
             return false;
         }
-    
+
         if (fetch.get(0).size() != 1) {
             return false;
         }
-        
+
         return fetch.get(0).get(0) instanceof Long;
     }
-    
+
     /**
      * Fetch next batch of data.
      *

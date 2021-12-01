@@ -71,11 +71,11 @@ public class RebalanceExample {
         //       eliminating the need to start an embedded server node in this example.
         //
         //--------------------------------------------------------------------------------------
-        
+
         System.out.println("Starting a server node... Logging to file: example-node.log");
-        
+
         System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
-        
+
         try (Ignite server = IgnitionManager.start(
                 "example-node",
                 Files.readString(Path.of("config", "ignite-config.json")),
@@ -91,9 +91,9 @@ public class RebalanceExample {
             //     )
             //
             //--------------------------------------------------------------------------------------
-            
+
             System.out.println("\nCreating a table...");
-            
+
             TableDefinition tableDef = SchemaBuilders.tableBuilder("PUBLIC", "rebalance")
                     .columns(
                             SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
@@ -101,70 +101,70 @@ public class RebalanceExample {
                     )
                     .withPrimaryKey("key")
                     .build();
-            
+
             server.tables().createTable(tableDef.canonicalName(), tableChange ->
                     SchemaConfigurationConverter.convert(tableDef, tableChange)
                             .changeReplicas(5)
                             .changePartitions(1)
             );
-            
+
             //--------------------------------------------------------------------------------------
             //
             // Creating a client to connect to the cluster.
             //
             //--------------------------------------------------------------------------------------
-            
+
             System.out.println("\nConnecting to server...");
-            
+
             try (IgniteClient client = IgniteClient.builder()
                     .addresses("127.0.0.1:10800")
                     .build()
             ) {
                 KeyValueView<Tuple, Tuple> kvView = client.tables().table("PUBLIC.rebalance").keyValueView();
-                
+
                 //--------------------------------------------------------------------------------------
                 //
                 // Inserting several key-value pairs into the table.
                 //
                 //--------------------------------------------------------------------------------------
-                
+
                 System.out.println("\nInserting key-value pairs...");
-                
+
                 for (int i = 0; i < 10; i++) {
                     Tuple key = Tuple.create().set("key", i);
                     Tuple value = Tuple.create().set("value", "test_" + i);
-                    
+
                     kvView.put(key, value);
                 }
-                
+
                 //--------------------------------------------------------------------------------------
                 //
                 // Retrieving the newly inserted data.
                 //
                 //--------------------------------------------------------------------------------------
-                
+
                 System.out.println("\nRetrieved key-value pairs:");
-                
+
                 for (int i = 0; i < 10; i++) {
                     Tuple key = Tuple.create().set("key", i);
                     Tuple value = kvView.get(key);
-                    
+
                     System.out.println("    " + i + " -> " + value.stringValue("value"));
                 }
-                
+
                 //--------------------------------------------------------------------------------------
                 //
                 // Scaling out by adding two more nodes into the topology.
                 //
                 //--------------------------------------------------------------------------------------
-                
+
                 System.out.println("\n"
                         + "Run the following commands using the CLI tool to start two more nodes, and then press 'Enter' to continue...\n"
                         + "    ignite node start --config=examples/config/ignite-config.json my-first-additional-node\n"
                         + "    ignite node start --config=examples/config/ignite-config.json my-second-additional-node");
-                
+
                 System.in.read();
-                
+
                 //--------------------------------------------------------------------------------------
                 //
                 // Updating baseline to initiate the data rebalancing process.
@@ -181,9 +181,9 @@ public class RebalanceExample {
                 //       the need for this manual step.
                 //
                 //--------------------------------------------------------------------------------------
-                
+
                 System.out.println("\nUpdating the baseline and rebalancing the data...");
-                
+
                 server.setBaseline(Set.of(
                         "my-first-node",
                         "my-second-node",
@@ -191,25 +191,25 @@ public class RebalanceExample {
                         "my-first-additional-node",
                         "my-second-additional-node"
                 ));
-                
+
                 //--------------------------------------------------------------------------------------
                 //
                 // Retrieving data again to validate correctness.
                 //
                 //--------------------------------------------------------------------------------------
-                
+
                 System.out.println("\nKey-value pairs retrieved after the topology change:");
-                
+
                 for (int i = 0; i < 10; i++) {
                     Tuple key = Tuple.create().set("key", i);
                     Tuple value = kvView.get(key);
-                    
+
                     System.out.println("    " + i + " -> " + value.stringValue("value"));
                 }
             }
-            
+
             System.out.println("\nDropping the table and stopping the server...");
-            
+
             server.tables().dropTable(tableDef.canonicalName());
         }
     }

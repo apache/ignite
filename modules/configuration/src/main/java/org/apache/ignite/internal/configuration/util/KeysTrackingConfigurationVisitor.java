@@ -30,46 +30,46 @@ import org.apache.ignite.internal.configuration.tree.NamedListNode;
 public abstract class KeysTrackingConfigurationVisitor<T> implements ConfigurationVisitor<T> {
     /** Current key, aggregated by visitor. */
     private final StringBuilder currentKey = new StringBuilder();
-    
+
     /** Current keys list, almost the same as {@link #currentKey}. */
     private final List<String> currentPath = new ArrayList<>();
-    
+
     /** {@inheritDoc} */
     @Override
     public final T visitLeafNode(String key, Serializable val) {
         int prevPos = startVisit(key, false, true);
-        
+
         try {
             return doVisitLeafNode(key, val);
         } finally {
             endVisit(prevPos);
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public final T visitInnerNode(String key, InnerNode node) {
         int prevPos = startVisit(key, false, false);
-        
+
         try {
             return doVisitInnerNode(key, node);
         } finally {
             endVisit(prevPos);
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public final T visitNamedListNode(String key, NamedListNode<?> node) {
         int prevPos = startVisit(key, false, false);
-        
+
         try {
             return doVisitNamedListNode(key, node);
         } finally {
             endVisit(prevPos);
         }
     }
-    
+
     /**
      * To be used instead of {@link ConfigurationVisitor#visitLeafNode(String, Serializable)}.
      *
@@ -80,7 +80,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     protected T doVisitLeafNode(String key, Serializable val) {
         return null;
     }
-    
+
     /**
      * To be used instead of {@link ConfigurationVisitor#visitInnerNode(String, InnerNode)}.
      *
@@ -90,10 +90,10 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      */
     protected T doVisitInnerNode(String key, InnerNode node) {
         node.traverseChildren(this, true);
-        
+
         return null;
     }
-    
+
     /**
      * To be used instead of {@link ConfigurationVisitor#visitNamedListNode(String, NamedListNode)}.
      *
@@ -104,17 +104,17 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     protected T doVisitNamedListNode(String key, NamedListNode<?> node) {
         for (String namedListKey : node.namedListKeys()) {
             int prevPos = startVisit(namedListKey, true, false);
-            
+
             try {
                 doVisitInnerNode(namedListKey, node.getInnerNode(namedListKey));
             } finally {
                 endVisit(prevPos);
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Tracks passed key to reflect it in {@link #currentKey()} and {@link #currentPath()}.
      *
@@ -126,14 +126,14 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      */
     protected final T withTracking(String key, boolean escape, boolean leaf, Supplier<T> closure) {
         int prevPos = startVisit(key, escape, leaf);
-        
+
         try {
             return closure.get();
         } finally {
             endVisit(prevPos);
         }
     }
-    
+
     /**
      * Returns current key, with a dot at the end if it's not a leaf.
      *
@@ -142,7 +142,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     protected final String currentKey() {
         return currentKey.toString();
     }
-    
+
     /**
      * Returns list representation of the current key.
      *
@@ -151,7 +151,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     protected final List<String> currentPath() {
         return Collections.unmodifiableList(currentPath);
     }
-    
+
     /**
      * Prepares values of {@link #currentKey} and {@link #currentPath} for further processing.
      *
@@ -161,18 +161,18 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      */
     private int startVisit(String key, boolean escape, boolean leaf) {
         final int previousKeyLength = currentKey.length();
-        
+
         currentKey.append(escape ? ConfigurationUtil.escape(key) : key);
-    
+
         if (!leaf) {
             currentKey.append('.');
         }
-        
+
         currentPath.add(key);
-        
+
         return previousKeyLength;
     }
-    
+
     /**
      * Puts {@link #currentKey} and {@link #currentPath} in the same state as they were before {@link #startVisit}.
      *
@@ -180,7 +180,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      */
     private void endVisit(int previousKeyLength) {
         currentKey.setLength(previousKeyLength);
-        
+
         currentPath.remove(currentPath.size() - 1);
     }
 }

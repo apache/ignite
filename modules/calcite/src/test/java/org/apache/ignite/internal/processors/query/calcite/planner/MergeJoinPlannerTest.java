@@ -43,7 +43,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
             "FilterSpoolMergeRule",
             "JoinCommuteRule"
     };
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -57,7 +57,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-    
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -65,22 +65,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1, LEFT_T.c2";
-    
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -94,7 +94,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -102,22 +102,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -131,7 +131,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -139,22 +139,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 ASC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -168,7 +168,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -176,22 +176,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 ASC NULLS LAST, LEFT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -205,7 +205,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -213,22 +213,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 ASC NULLS FIRST, LEFT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -243,7 +243,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -251,13 +251,13 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1, LEFT_T.c2, LEFT_T.c3";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -274,7 +274,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -289,7 +289,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -297,13 +297,13 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 DESC, LEFT_T.c3 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
@@ -320,7 +320,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -335,7 +335,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -343,13 +343,13 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 ASC, LEFT_T.c3 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
@@ -366,7 +366,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -381,7 +381,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -389,13 +389,13 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 ASC NULLS LAST, LEFT_T.c2 ASC NULLS LAST, LEFT_T.c3 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -412,7 +412,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -427,7 +427,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -435,13 +435,13 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 ASC NULLS FIRST, LEFT_T.c2 ASC NULLS LAST, LEFT_T.c3 ASC NULLS FIRST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -458,7 +458,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -473,7 +473,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -481,11 +481,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c3, LEFT_T.c2, LEFT_T.c1";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         IgniteSort topSortNode = sortOnTopOfJoin(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -494,9 +494,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 topSortNode.collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -512,7 +512,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortNodes.get(1).collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -526,7 +526,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -535,23 +535,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by LEFT_T.c1, LEFT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -565,7 +565,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -574,23 +574,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -604,7 +604,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -613,23 +613,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by LEFT_T.c1 DESC, LEFT_T.c2 ASC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -643,7 +643,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -652,23 +652,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by LEFT_T.c1 ASC NULLS LAST, LEFT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -682,7 +682,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -691,23 +691,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by LEFT_T.c1 ASC NULLS FIRST, LEFT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -721,7 +721,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -729,22 +729,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -758,7 +758,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -766,22 +766,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -795,7 +795,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -803,22 +803,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 ASC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -832,7 +832,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -840,22 +840,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 ASC NULLS LAST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -869,7 +869,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -877,22 +877,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 ASC NULLS FIRST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -906,7 +906,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -914,11 +914,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2, RIGHT_T.c3";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         IgniteSort topSortNode = sortOnTopOfJoin(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -927,18 +927,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 topSortNode.collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expectedBottomCollation = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expectedBottomCollation, sortNodes.get(0).collation());
         assertEquals(expectedBottomCollation, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -952,7 +952,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -961,23 +961,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(2)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -991,7 +991,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1000,23 +1000,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1030,7 +1030,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1039,23 +1039,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 ASC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1069,7 +1069,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1078,23 +1078,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1 ASC NULLS LAST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1108,7 +1108,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1117,23 +1117,23 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1 ASC NULLS FIRST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1147,7 +1147,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1155,11 +1155,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1, LEFT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         IgniteSort topSortNode = sortOnTopOfJoin(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1167,18 +1167,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 topSortNode.collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1192,7 +1192,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1200,11 +1200,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1, LEFT_T.c2, LEFT_T.c3";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         IgniteSort topSortNode = sortOnTopOfJoin(rel);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1213,18 +1213,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 topSortNode.collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1238,7 +1238,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1246,22 +1246,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1275,7 +1275,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1283,22 +1283,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 DESC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, DESCENDING, RelFieldCollation.NullDirection.LAST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1312,7 +1312,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1320,22 +1320,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 DESC, RIGHT_T.c2 ASC";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
                 new RelFieldCollation(1, ASCENDING, RelFieldCollation.NullDirection.FIRST)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1349,7 +1349,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1357,22 +1357,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 ASC NULLS LAST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1386,7 +1386,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1394,22 +1394,22 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1 ASC NULLS FIRST, RIGHT_T.c2 ASC NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1423,7 +1423,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1431,9 +1431,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1441,18 +1441,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 sortOnTopOfJoin(rel).collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1466,7 +1466,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1475,9 +1475,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1485,19 +1485,19 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 sortOnTopOfJoin(rel).collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING),
                 new RelFieldCollation(2, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1511,7 +1511,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1519,9 +1519,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1, LEFT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1529,18 +1529,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 sortOnTopOfJoin(rel).collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1554,7 +1554,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -1562,9 +1562,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by RIGHT_T.c1, RIGHT_T.c2";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(3, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1572,18 +1572,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 sortOnTopOfJoin(rel).collation()
         );
-        
+
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortNodes.get(0).collation());
         assertEquals(expected, sortNodes.get(1).collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1595,7 +1595,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft1() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -1603,21 +1603,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1627,7 +1627,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1639,7 +1639,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft2() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING),
@@ -1647,21 +1647,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1671,7 +1671,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1683,7 +1683,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft3() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING),
@@ -1691,21 +1691,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1715,7 +1715,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1727,7 +1727,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft4() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.LAST),
@@ -1735,21 +1735,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1759,7 +1759,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1771,7 +1771,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft5() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -1779,21 +1779,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1803,7 +1803,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1815,7 +1815,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft6() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -1824,20 +1824,20 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1847,7 +1847,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1859,7 +1859,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft7() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING),
@@ -1868,21 +1868,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1892,7 +1892,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1904,7 +1904,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft8() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING),
@@ -1913,21 +1913,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -1937,7 +1937,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -1950,7 +1950,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft9() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING),
@@ -1959,21 +1959,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -1989,7 +1989,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2001,7 +2001,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft10() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2010,21 +2010,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2034,7 +2034,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2046,7 +2046,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft11() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2054,12 +2054,12 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -2067,9 +2067,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2087,7 +2087,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2099,7 +2099,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft12() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2108,12 +2108,12 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -2121,11 +2121,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c1 NULLS LAST, LEFT_T.c2 NULLS LAST, LEFT_T.c3 NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfJoin(rel));
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2135,7 +2135,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2147,7 +2147,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveLeft13() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING),
@@ -2156,12 +2156,12 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 left,
                 createTable("RIGHT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class)
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -2169,9 +2169,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + " order by LEFT_T.c3 NULLS LAST, LEFT_T.c1 NULLS LAST, LEFT_T.c2 NULLS LAST";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING),
@@ -2180,16 +2180,16 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 sortOnTopOfJoin(rel).collation()
         );
-        
+
         RelCollation expected = RelCollations.of(
                 new RelFieldCollation(0, ASCENDING),
                 new RelFieldCollation(1, ASCENDING)
         );
-        
+
         assertEquals(expected, sortOnTopOfScan(rel, "LEFT_T").collation());
         assertEquals(expected, sortOnTopOfScan(rel, "RIGHT_T").collation());
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2201,7 +2201,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight1() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2209,21 +2209,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2233,7 +2233,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2245,7 +2245,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight2() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING),
@@ -2253,21 +2253,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2277,7 +2277,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2289,7 +2289,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight3() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
@@ -2297,21 +2297,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2321,7 +2321,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2333,7 +2333,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight4() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2341,21 +2341,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2365,7 +2365,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2377,7 +2377,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight5() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2385,21 +2385,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2409,7 +2409,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2421,7 +2421,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight6() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2430,21 +2430,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2454,7 +2454,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2466,7 +2466,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight7() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
@@ -2475,21 +2475,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2499,7 +2499,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2511,7 +2511,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight8() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, DESCENDING, RelFieldCollation.NullDirection.LAST),
@@ -2520,21 +2520,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2544,7 +2544,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2556,7 +2556,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight9() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2565,21 +2565,21 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2589,7 +2589,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2601,7 +2601,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDerivePreserveRight10() throws Exception {
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2609,12 +2609,12 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(
                 createTable("LEFT_T", IgniteDistributions.single(), "C1", Integer.class, "C2", Integer.class, "C3", Integer.class),
                 right
         );
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -2622,9 +2622,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2642,7 +2642,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "LEFT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2654,7 +2654,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDeriveMixed1() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING),
@@ -2662,10 +2662,10 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(1, ASCENDING),
@@ -2673,18 +2673,18 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(left, right);
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
                 + "  join RIGHT_T "
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertNull(sortOnTopOfScan(rel, "LEFT_T"));
         assertEquals(
                 RelCollations.of(
@@ -2694,7 +2694,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 sortOnTopOfScan(rel, "RIGHT_T").collation()
         );
     }
-    
+
     /**
      * Test verifies the collation propagation from a parent node.
      *
@@ -2706,7 +2706,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     public void testInnerDeriveMixed2() throws Exception {
         TestTable left = createTable("LEFT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         left.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2714,10 +2714,10 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         TestTable right = createTable("RIGHT_T", IgniteDistributions.single(),
                 "C1", Integer.class, "C2", Integer.class, "C3", Integer.class);
-        
+
         right.addIndex(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2726,9 +2726,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 ),
                 "idx"
         );
-        
+
         IgniteSchema schema = createSchema(left, right);
-        
+
         String sql = ""
                 + "select * "
                 + "  from LEFT_T "
@@ -2736,9 +2736,9 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
                 + "    on LEFT_T.c1 = RIGHT_T.c1 "
                 + "   and LEFT_T.c2 = RIGHT_T.c2 "
                 + "   and LEFT_T.c3 = RIGHT_T.c3 ";
-        
+
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
-        
+
         assertEquals(
                 RelCollations.of(
                         new RelFieldCollation(2, ASCENDING, RelFieldCollation.NullDirection.FIRST),
@@ -2749,7 +2749,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         );
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
     }
-    
+
     /**
      * Search for sort node whose input is arbitrary scan node.
      *
@@ -2760,7 +2760,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         return findNodes(root, byClass(IgniteSort.class)
                 .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof IgniteTableScan));
     }
-    
+
     /**
      * Search for sort node whose input is scan of the given table.
      *
@@ -2772,14 +2772,14 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         List<IgniteSort> sortNodes = findNodes(root, byClass(IgniteSort.class)
                 .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof IgniteTableScan
                         && node.getInput(0).getTable().unwrap(TestTable.class).name().equals(tableName)));
-    
+
         if (sortNodes.size() > 1) {
             throw new AssertionError("Unexpected count of sort nodes: exp<=1, act=" + sortNodes.size());
         }
-        
+
         return sortNodes.isEmpty() ? null : sortNodes.get(0);
     }
-    
+
     /**
      * Search for sort node whose input is join node.
      *
@@ -2789,11 +2789,11 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
     private IgniteSort sortOnTopOfJoin(IgniteRel root) {
         List<IgniteSort> sortNodes = findNodes(root, byClass(IgniteSort.class)
                 .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof Join));
-    
+
         if (sortNodes.size() > 1) {
             throw new AssertionError("Unexpected count of sort nodes: exp<=1, act=" + sortNodes.size());
         }
-        
+
         return sortNodes.isEmpty() ? null : sortNodes.get(0);
     }
 }

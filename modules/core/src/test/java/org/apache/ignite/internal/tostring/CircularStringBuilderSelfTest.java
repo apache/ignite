@@ -38,7 +38,7 @@ public class CircularStringBuilderSelfTest extends IgniteAbstractTest {
         csb2.append(1);
         assertEquals("1", csb2.toString());
     }
-    
+
     @Test
     public void testCsbOverflow() {
         testSb(3, "1234", 2, "234");

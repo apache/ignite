@@ -34,7 +34,7 @@ public interface ConfigurationSource {
     default <T> T unwrap(Class<T> clazz) {
         throw new UnsupportedOperationException("unwrap");
     }
-    
+
     /**
      * Treats current configuration source as an inner node. Tries to construct the content of {@code node} using available data from the
      * source.
@@ -43,13 +43,13 @@ public interface ConfigurationSource {
      */
     default void descend(ConstructableTreeNode node) {
     }
-    
+
     /**
      * Reset internal state, preparing this configuration source for reuse.
      */
     default void reset() {
     }
-    
+
     /**
      * Returns the identifier of the polymorphic configuration instance.
      *

@@ -35,7 +35,7 @@ public class NamedNioEventLoopGroup extends NioEventLoopGroup {
     private NamedNioEventLoopGroup(ThreadFactory threadFactory) {
         super(threadFactory);
     }
-    
+
     /**
      * Creates event loop.
      *
@@ -46,7 +46,7 @@ public class NamedNioEventLoopGroup extends NioEventLoopGroup {
         var factory = new DefaultThreadFactory(namePrefix, Thread.MAX_PRIORITY) {
             /** Thread index. */
             private final AtomicInteger nextId = new AtomicInteger();
-            
+
             /** {@inheritDoc} */
             @Override
             protected Thread newThread(Runnable r, String unused) {

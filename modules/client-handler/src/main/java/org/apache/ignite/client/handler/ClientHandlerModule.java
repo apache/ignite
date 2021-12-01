@@ -53,10 +53,10 @@ public class ClientHandlerModule implements IgniteComponent {
 
     /** Processor. */
     private final QueryProcessor processor;
-    
+
     /** Netty bootstrap factory. */
     private final NettyBootstrapFactory bootstrapFactory;
-    
+
     /**
      * Constructor.
      *
@@ -74,7 +74,7 @@ public class ClientHandlerModule implements IgniteComponent {
         assert registry != null;
         assert processor != null;
         assert bootstrapFactory != null;
-        
+
         this.processor = processor;
         this.igniteTables = igniteTables;
         this.registry = registry;
@@ -130,9 +130,9 @@ public class ClientHandlerModule implements IgniteComponent {
 
         int port = 0;
         Channel ch = null;
-    
+
         ServerBootstrap bootstrap = bootstrapFactory.createServerBootstrap();
-    
+
         bootstrap.childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel ch) {
@@ -142,7 +142,7 @@ public class ClientHandlerModule implements IgniteComponent {
                     }
                 })
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout());
-    
+
         for (int portCandidate = desiredPort; portCandidate <= desiredPort + portRange; portCandidate++) {
             ChannelFuture bindRes = bootstrap.bind(portCandidate).await();
 

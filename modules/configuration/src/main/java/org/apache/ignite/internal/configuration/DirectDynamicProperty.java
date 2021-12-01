@@ -51,14 +51,14 @@ public class DirectDynamicProperty<T extends Serializable>
     ) {
         super(prefix, key, rootKey, changer, listenOnly, readOnly);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public T directValue() {
         if (listenOnly) {
             throw listenOnlyException();
         }
-        
+
         return changer.getLatest(keys);
     }
 }

@@ -152,7 +152,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelTraitSet right = inputTraits.get(1);
         RelCollation leftCollation = TraitUtils.collation(left);
         RelCollation rightCollation = TraitUtils.collation(right);
-    
+
         if (containsOrderless(leftCollation, joinInfo.leftKeys)) {
             // preserve left collation
             rightCollation = leftCollation.apply(buildTransposeMapping(true));
@@ -164,13 +164,13 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             leftCollation = RelCollations.of(joinInfo.leftKeys);
             rightCollation = RelCollations.of(joinInfo.rightKeys);
         }
-    
+
         RelCollation desiredCollation = leftCollation;
-    
+
         if (joinType == RIGHT || joinType == FULL) {
             desiredCollation = RelCollations.EMPTY;
         }
-    
+
         return List.of(
                 Pair.of(
                         nodeTraits.replace(desiredCollation),
@@ -191,30 +191,30 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelCollation collation = TraitUtils.collation(required);
         RelTraitSet left = inputTraits.get(0);
         RelTraitSet right = inputTraits.get(1);
-    
+
         if (joinType == FULL) {
             return defaultCollationPair(required, left, right);
         }
-    
+
         int leftInputFieldCount = this.left.getRowType().getFieldCount();
-    
+
         List<Integer> reqKeys = RelCollations.ordinals(collation);
         List<Integer> leftKeys = joinInfo.leftKeys.toIntegerList();
         List<Integer> rightKeys = joinInfo.rightKeys.incr(leftInputFieldCount).toIntegerList();
-    
+
         ImmutableBitSet reqKeySet = ImmutableBitSet.of(reqKeys);
         ImmutableBitSet leftKeySet = ImmutableBitSet.of(joinInfo.leftKeys);
         ImmutableBitSet rightKeySet = ImmutableBitSet.of(rightKeys);
-    
+
         RelCollation nodeCollation;
         RelCollation leftCollation;
         RelCollation rightCollation;
-    
+
         if (reqKeySet.equals(leftKeySet)) {
             if (joinType == RIGHT) {
                 return defaultCollationPair(required, left, right);
             }
-        
+
             nodeCollation = collation;
             leftCollation = collation;
             rightCollation = collation.apply(buildTransposeMapping(true));
@@ -222,7 +222,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             if (joinType == RIGHT) {
                 return defaultCollationPair(required, left, right);
             }
-        
+
             // if sort keys are subset of left join keys, we can extend collations to make sure all join
             // keys are sorted.
             nodeCollation = collation;
@@ -232,7 +232,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             if (joinType == RIGHT) {
                 return defaultCollationPair(required, left, right);
             }
-        
+
             // if sort keys are superset of left join keys, and left join keys is prefix of sort keys
             // (order not matter), also sort keys are all from left join input.
             nodeCollation = collation;
@@ -242,7 +242,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             if (joinType == LEFT) {
                 return defaultCollationPair(required, left, right);
             }
-        
+
             nodeCollation = collation;
             rightCollation = RelCollations.shift(collation, -leftInputFieldCount);
             leftCollation = rightCollation.apply(buildTransposeMapping(false));
@@ -250,14 +250,14 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             if (joinType == LEFT) {
                 return defaultCollationPair(required, left, right);
             }
-    
+
             nodeCollation = collation;
             rightCollation = RelCollations.shift(extendCollation(collation, rightKeys), -leftInputFieldCount);
             leftCollation = rightCollation.apply(buildTransposeMapping(false));
         } else {
             return defaultCollationPair(required, left, right);
         }
-    
+
         return Pair.of(
                 required.replace(nodeCollation),
                 ImmutableList.of(
@@ -266,7 +266,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
                 )
         );
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
@@ -311,8 +311,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     public RelCollation rightCollation() {
         return rightCollation;
     }
-    
-    
+
+
     /** Creates pair with default collation for parent and simple yet sufficient collation for children nodes. */
     private Pair<RelTraitSet, List<RelTraitSet>> defaultCollationPair(
             RelTraitSet nodeTraits,
@@ -327,22 +327,22 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
                 )
         );
     }
-    
+
     /**
      * This function extends collation by appending new collation fields defined on keys.
      */
     private static RelCollation extendCollation(RelCollation collation, List<Integer> keys) {
         List<RelFieldCollation> fieldsForNewCollation = new ArrayList<>(keys.size());
         fieldsForNewCollation.addAll(collation.getFieldCollations());
-        
+
         ImmutableBitSet keysBitset = ImmutableBitSet.of(keys);
         ImmutableBitSet colKeysBitset = ImmutableBitSet.of(collation.getKeys());
         ImmutableBitSet exceptBitset = keysBitset.except(colKeysBitset);
-        
+
         for (Integer i : exceptBitset) {
             fieldsForNewCollation.add(new RelFieldCollation(i));
         }
-        
+
         return RelCollations.of(fieldsForNewCollation);
     }
 }

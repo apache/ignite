@@ -44,7 +44,7 @@ public class RuntimeSortedIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<R
     private final RelCollation collation;
 
     private final ArrayList<RowT> rows = new ArrayList<>();
-    
+
     /**
      * Constructor.
      *

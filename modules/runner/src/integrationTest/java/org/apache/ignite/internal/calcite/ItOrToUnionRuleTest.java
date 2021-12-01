@@ -50,7 +50,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
     public static final String IDX_CATEGORY = "IDX_CATEGORY";
 
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
-    
+
     /**
      * Before all.
      */
@@ -70,13 +70,13 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .withIndex(SchemaBuilders.sortedIndex(IDX_SUBCATEGORY).addIndexColumn("SUBCATEGORY").done().build())
                 .withIndex(SchemaBuilders.sortedIndex(IDX_SUBCAT_ID).addIndexColumn("SUBCAT_ID").done().build())
                 .build();
-        
+
         Table tbl = CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
                 SchemaConfigurationConverter.convert(schTbl1, tblCh)
                         .changeReplicas(1)
                         .changePartitions(10)
         );
-        
+
         insertData(tbl, new String[]{"ID", "CATEGORY", "CAT_ID", "SUBCATEGORY", "SUBCAT_ID", "NAME"}, new Object[][]{
                 {1, "Photo", 1, "Camera Media", 11, "Media 1"},
                 {2, "Photo", 1, "Camera Media", 11, "Media 2"},
@@ -103,7 +103,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 {23, null, 0, null, 41, null},
         });
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
      *
@@ -125,7 +125,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
                 .check();
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
      *
@@ -147,7 +147,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
                 .check();
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is applied for mixed conditions on indexed columns.
      *
@@ -169,7 +169,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
                 .check();
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is not applied for range conditions on indexed columns.
      *
@@ -189,7 +189,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .returns(9, null, 0, null, 0, null)
                 .check();
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
      */
@@ -206,7 +206,7 @@ public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
                 .returns(7, "Video", 1, null, 0, "Canon")
                 .check();
     }
-    
+
     /**
      * Check 'OR -> UNION' rule is not applied if all columns are not indexed.
      *

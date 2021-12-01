@@ -337,16 +337,16 @@ public class TableManagerTest extends IgniteAbstractTest {
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
                 SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
         ).withPrimaryKey("key").build();
-    
+
         Phaser phaser = new Phaser(2);
-    
+
         CompletableFuture<Table> createFut = CompletableFuture.supplyAsync(() -> {
             try {
                 return mockManagersAndCreateTableWithDelay(scmTbl, tblManagerFut, phaser);
             } catch (NodeStoppingException e) {
                 fail(e.getMessage());
             }
-            
+
             return null;
         });
 
@@ -476,14 +476,14 @@ public class TableManagerTest extends IgniteAbstractTest {
             if (!createTbl && !dropTbl) {
                 return CompletableFuture.completedFuture(null);
             }
-            
+
             if (phaser != null) {
                 phaser.arriveAndAwaitAdvance();
             }
-            
+
             return CompletableFuture.completedFuture(null);
         });
-    
+
         TableImpl tbl2 = (TableImpl) tableManager.createTable(tableDefinition.canonicalName(),
                 tblCh -> SchemaConfigurationConverter.convert(tableDefinition, tblCh)
                         .changeReplicas(REPLICAS)

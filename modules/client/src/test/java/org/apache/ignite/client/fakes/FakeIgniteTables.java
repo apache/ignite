@@ -40,120 +40,120 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     public static final String TABLE_EXISTS = "Table exists";
-    
+
     private final ConcurrentHashMap<String, TableImpl> tables = new ConcurrentHashMap<>();
-    
+
     private final ConcurrentHashMap<IgniteUuid, TableImpl> tablesById = new ConcurrentHashMap<>();
-    
+
     /** {@inheritDoc} */
     @Override
     public Table createTable(String name, Consumer<TableChange> tableInitChange) {
         var newTable = getNewTable(name);
-        
+
         var oldTable = tables.putIfAbsent(name, newTable);
-    
+
         if (oldTable != null) {
             throw new IgniteException(TABLE_EXISTS);
         }
-        
+
         tablesById.put(newTable.tableId(), newTable);
-        
+
         return newTable;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
         return CompletableFuture.completedFuture(createTable(name, tableInitChange));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void alterTable(String name, Consumer<TableChange> tableChange) {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
         throw new UnsupportedOperationException();
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
         var newTable = getNewTable(name);
-        
+
         var oldTable = tables.putIfAbsent(name, newTable);
-    
+
         if (oldTable != null) {
             return oldTable;
         }
-        
+
         tablesById.put(newTable.tableId(), newTable);
-        
+
         return newTable;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
         return CompletableFuture.completedFuture(createTableIfNotExists(name, tableInitChange));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public void dropTable(String name) {
         var table = tables.remove(name);
-    
+
         if (table != null) {
             tablesById.remove(table.tableId());
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Void> dropTableAsync(String name) {
         dropTable(name);
-        
+
         return CompletableFuture.completedFuture(null);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<Table> tables() {
         return new ArrayList<>(tables.values());
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<List<Table>> tablesAsync() {
         return CompletableFuture.completedFuture(tables());
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Table table(String name) {
         return tables.get(name);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public TableImpl table(IgniteUuid id) {
         return tablesById.get(id);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<Table> tableAsync(String name) {
         return CompletableFuture.completedFuture(table(name));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public CompletableFuture<TableImpl> tableAsync(IgniteUuid id) {
         return CompletableFuture.completedFuture(tablesById.get(id));
     }
-    
+
     @NotNull
     private TableImpl getNewTable(String name) {
         return new TableImpl(
@@ -162,7 +162,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
                 null
         );
     }
-    
+
     /**
      * Gets the schema.
      *
@@ -176,7 +176,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
                         1,
                         new Column[]{new Column("id", NativeTypes.INT64, false)},
                         new Column[]{new Column("name", NativeTypes.STRING, true)});
-            
+
             case 2:
                 return new SchemaDescriptor(
                         2,

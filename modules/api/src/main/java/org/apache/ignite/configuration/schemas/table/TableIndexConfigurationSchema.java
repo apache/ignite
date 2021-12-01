@@ -29,17 +29,17 @@ import org.apache.ignite.configuration.validation.Immutable;
 public class TableIndexConfigurationSchema {
     /** Hash index type. */
     public static final String HASH_INDEX_TYPE = "HASH";
-    
+
     /** Sorted index type. */
     public static final String SORTED_INDEX_TYPE = "SORTED";
-    
+
     /** Partial index type. */
     public static final String PARTIAL_INDEX_TYPE = "PARTIAL";
-    
+
     /** Index type name. */
     @PolymorphicId
     public String type;
-    
+
     /** Index name. */
     @Value
     @Immutable

@@ -34,7 +34,7 @@ public interface KvMarshaller<K, V> {
      * Returns marshaller schema version.
      */
     int schemaVersion();
-    
+
     /**
      * Marshal given key and value objects to a table row.
      *
@@ -44,7 +44,7 @@ public interface KvMarshaller<K, V> {
      * @throws MarshallerException If failed to marshal key and/or value.
      */
     BinaryRow marshal(@NotNull K key, V val) throws MarshallerException;
-    
+
     /**
      * Unmarshal given row to a key object.
      *
@@ -53,7 +53,7 @@ public interface KvMarshaller<K, V> {
      * @throws MarshallerException If failed to unmarshal row.
      */
     @NotNull K unmarshalKey(@NotNull Row row) throws MarshallerException;
-    
+
     /**
      * Unmarshal given row to a value object.
      *

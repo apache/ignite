@@ -60,7 +60,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
 
         assertEquals(obj.toStringManual(), obj.toStringAutomatic());
     }
-    
+
     @Test
     public void testToStringWithAdditions() {
         TestClass1 obj = new TestClass1();
@@ -71,7 +71,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
 
         assertEquals(manual, automatic);
     }
-    
+
     @Test
     public void testToStringCheckSimpleListRecursionPrevention() {
         ArrayList<Object> list1 = new ArrayList<>();
@@ -83,7 +83,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertEquals("ArrayList [size=1]", IgniteToStringBuilder.toString(ArrayList.class, list1));
         assertEquals("ArrayList [size=1]", IgniteToStringBuilder.toString(ArrayList.class, list2));
     }
-    
+
     @Test
     public void testToStringCheckSimpleMapRecursionPrevention() {
         HashMap<Object, Object> map1 = new HashMap<>();
@@ -95,7 +95,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertEquals("HashMap []", IgniteToStringBuilder.toString(HashMap.class, map1));
         assertEquals("HashMap []", IgniteToStringBuilder.toString(HashMap.class, map2));
     }
-    
+
     @Test
     public void testToStringCheckListAdvancedRecursionPrevention() {
         ArrayList<Object> list1 = new ArrayList<>();
@@ -112,7 +112,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertEquals("ArrayList" + hash2 + " [size=1, name=ArrayList [ArrayList" + hash2 + "]]",
                 IgniteToStringBuilder.toString(ArrayList.class, list2, "name", list1));
     }
-    
+
     @Test
     public void testToStringCheckMapAdvancedRecursionPrevention() {
         HashMap<Object, Object> map1 = new HashMap<>();
@@ -129,7 +129,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertEquals("HashMap" + hash2 + " [name=HashMap {2=HashMap" + hash2 + "}]",
                 IgniteToStringBuilder.toString(HashMap.class, map2, "name", map1));
     }
-    
+
     @Test
     public void testToStringCheckObjectRecursionPrevention() throws Exception {
         Node n1 = new Node();
@@ -177,7 +177,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
 
         IgniteUtils.shutdownAndAwaitTermination(pool, 3_000, TimeUnit.MILLISECONDS);
     }
-    
+
     private static <U> CompletableFuture<U> runAsync(Callable<U> callable, Executor pool) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -187,7 +187,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             }
         }, pool);
     }
-    
+
     @Test
     public void testToStringPerformance() {
         TestClass1 obj = new TestClass1();
@@ -243,7 +243,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
 
         checkArrayOverflow(arrOf, arr, limit);
     }
-    
+
     private void checkArrayOverflow(Object[] arrOf, Object[] arr, int limit) {
         String arrStr = IgniteToStringBuilder.arrayToString(arr);
         final String arrOfStr = IgniteToStringBuilder.arrayToString(arrOf);
@@ -258,7 +258,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertEquals(arrStr, arrOfStr, "Collection limit error in array of type "
                 + arrOf.getClass().getName() + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">");
     }
-    
+
     @Test
     public void testToStringCollectionLimits() {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
@@ -364,7 +364,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
 
         checkColAndMap(testCls);
     }
-    
+
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testToStringColAndMapLimitWithRecursion() {
@@ -437,7 +437,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         assertTrue(actual.contains("... and"));
         assertTrue(actual.contains("skipped ..."));
     }
-    
+
     @Test
     public void testHierarchy() {
         Wrapper w = new Wrapper();
@@ -584,10 +584,10 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
     private static class Node {
         @IgniteToStringInclude
         String name;
-        
+
         @IgniteToStringInclude
         Node next;
-        
+
         @IgniteToStringInclude
         Node[] nodes;
 
@@ -603,12 +603,12 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
      */
     private static class BarrierCallable implements Callable<String> {
         CyclicBarrier bar;
-        
+
         Object obj;
 
         /** Expected value of {@code toString()} method. */
         String exp;
-        
+
         private BarrierCallable(CyclicBarrier bar, Object obj, String exp) {
             this.bar = bar;
             this.obj = obj;
@@ -635,15 +635,15 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
     private static class WrapperForFaultyToStringClass {
         @IgniteToStringInclude
         private int id = 12345;
-        
+
         @SuppressWarnings("unused")
         @IgniteToStringInclude
         private ClassWithFaultyToString[] arr;
-        
+
         @SuppressWarnings("unused")
         @IgniteToStringInclude
         private String str = "str";
-        
+
         WrapperForFaultyToStringClass(ClassWithFaultyToString[] arr) {
             this.arr = arr;
         }
@@ -673,35 +673,35 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
     private static class TestClass1 {
         @IgniteToStringOrder(0)
         private String id = "1234567890";
-        
+
         private int intVar;
-        
+
         @IgniteToStringInclude(sensitive = true)
         private long longVar;
-        
+
         @IgniteToStringOrder(1)
         private UUID uuidVar = UUID.randomUUID();
-        
+
         private boolean boolVar;
-        
+
         private byte byteVar;
-        
+
         private String name = "qwertyuiopasdfghjklzxcvbnm";
-        
+
         private final Integer finalInt = 2;
-        
+
         private List<String> strList;
-        
+
         @IgniteToStringInclude
         private Map<String, String> strMap;
-        
+
         @IgniteToStringInclude
         private List<String> strListIncl;
-        
+
         private Object obj = new Object();
-        
+
         private ReadWriteLock lock;
-    
+
         /**
          * Returns manual string.
          *
@@ -764,21 +764,21 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             return s.toString();
         }
     }
-    
+
     @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "FieldMayBeFinal", "unused"})
     private static class TestClass2 {
         @SuppressWarnings("unused")
         @IgniteToStringInclude
         private String str;
-        
+
         @IgniteToStringInclude
         private Object[] nullArr;
-        
+
         TestClass2(String str) {
             this.str = str;
         }
     }
-    
+
     @SuppressWarnings("FieldMayBeFinal")
     private static class ClassWithList {
         @IgniteToStringInclude
@@ -790,7 +790,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             return S.toString(ClassWithList.class, this);
         }
     }
-    
+
     @SuppressWarnings("FieldMayBeFinal")
     private static class ClassWithMap {
         @IgniteToStringInclude
@@ -820,11 +820,11 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             return super.toString();
         }
     }
-    
+
     @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray", "unused", "FieldMayBeFinal"})
     private static class Parent {
         private int ai;
-        
+
         @IgniteToStringInclude
         private Parent[] pa = new Parent[1];
 
@@ -834,11 +834,11 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             return S.toString(Parent.class, this);
         }
     }
-    
+
     @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray", "unused", "FieldMayBeFinal"})
     private static class Child extends Parent {
         private int bi;
-        
+
         @IgniteToStringInclude
         private Parent[] pb = new Parent[1];
 
@@ -848,7 +848,7 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
             return S.toString(Child.class, this, super.toString());
         }
     }
-    
+
     private static class Wrapper {
         @IgniteToStringInclude
         Parent parent = new Child();

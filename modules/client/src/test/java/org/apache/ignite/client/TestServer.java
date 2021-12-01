@@ -35,11 +35,11 @@ import org.apache.ignite.network.NettyBootstrapFactory;
  */
 public class TestServer implements AutoCloseable {
     private final ConfigurationRegistry cfg;
-    
+
     private final ClientHandlerModule module;
-    
+
     private final NettyBootstrapFactory bootstrapFactory;
-    
+
     /**
      * Constructor.
      *
@@ -59,34 +59,34 @@ public class TestServer implements AutoCloseable {
                 List.of(),
                 List.of()
         );
-    
+
         cfg.start();
-    
+
         cfg.getConfiguration(ClientConnectorConfiguration.KEY).change(
                 local -> local.changePort(port).changePortRange(portRange)
         ).join();
-        
+
         bootstrapFactory = new NettyBootstrapFactory(cfg.getConfiguration(NetworkConfiguration.KEY), "TestServer-");
-        
+
         bootstrapFactory.start();
-    
+
         module = new ClientHandlerModule(((FakeIgnite) ignite).queryEngine(), ignite.tables(), cfg, bootstrapFactory);
-        
+
         module.start();
     }
-    
+
     public ConfigurationRegistry configurationRegistry() {
         return cfg;
     }
-    
+
     public ClientHandlerModule module() {
         return module;
     }
-    
+
     public NettyBootstrapFactory bootstrapFactory() {
         return bootstrapFactory;
     }
-    
+
     @Override
     public void close() throws Exception {
         module.stop();

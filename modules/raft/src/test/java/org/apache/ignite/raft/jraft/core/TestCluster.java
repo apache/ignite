@@ -225,16 +225,16 @@ public class TestCluster {
             nodeOptions.setRaftMetaUri(serverDataPath + File.separator + "meta");
             nodeOptions.setSnapshotUri(serverDataPath + File.separator + "snapshot");
             nodeOptions.setElectionPriority(priority);
-    
+
             // Align rpc options with election timeout.
             nodeOptions.setRpcConnectTimeoutMs(this.electionTimeoutMs / 3);
             nodeOptions.setRpcDefaultTimeout(this.electionTimeoutMs / 2);
-            
+
             // Reduce default threads count per test node.
             nodeOptions.setRaftRpcThreadPoolSize(Utils.cpus());
             nodeOptions.setTimerPoolSize(Utils.cpus() * 2);
             nodeOptions.setRpcProcessorThreadPoolSize(Utils.cpus() * 3);
-    
+
             MockStateMachine fsm = new MockStateMachine(listenAddr);
             nodeOptions.setFsm(fsm);
 
@@ -278,7 +278,7 @@ public class TestCluster {
                     ExecutorServiceHelper.shutdownAndAwaitTermination(requestExecutor);
 
                     super.shutdown();
-    
+
                     // Network service must be stopped after a node because raft initiates timeoutnowrequest on stop for faster
                     // leader election.
                     clusterService.stop();
