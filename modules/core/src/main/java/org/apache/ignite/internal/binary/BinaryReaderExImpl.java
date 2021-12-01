@@ -1918,10 +1918,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                if (BinaryArray.useBinaryArrays())
-                    obj = BinaryUtils.doReadBinaryArray(in, ctx, ldr, this, false, true).deserialize(ldr);
-                else
-                    obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
                 break;
 

@@ -407,18 +407,16 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    public void checkArraySerDe(Function<Object[], Object> serde, boolean sameArrType) {
-        List<Object[]> data = (List<Object[]>)dataToTest();
-
-        for (Object[] arr : data) {
+    public void checkArraySerDe(Function<Object[], Object> serde, boolean sameArr) {
+        for (Object[] arr : (List<Object[]>)dataToTest()) {
             Object deser = serde.apply(arr);
 
-            assertEquals((useBinaryArrays || sameArrType) ? arr.getClass() : Object[].class, deser.getClass());
+            assertEquals((useBinaryArrays || sameArr) ? arr.getClass() : Object[].class, deser.getClass());
 
             assertEquals(arr.length, ((Object[])deser).length);
             assertArrayEquals(arr, ((Object[])deser));
 
-            if (arr instanceof TestClass1[][] && arr.length == 2) {
+            if (arr instanceof TestClass1[][] && arr.length == 2 && sameArr) {
                 Object[] val = (Object[])deser;
 
                 // See dataToTest -> dataToTest -> arr6[0] == arr6[1]
