@@ -1035,7 +1035,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(null, upper, true, upIncl, c, x);
+        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, x);
 
         long firstPageId;
 
@@ -5831,6 +5831,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** */
         private final TreeRowClosure<L, T> c;
+
+        /**
+         * Lower unbound cursor.
+         *
+         * @param upperBound Upper bound.
+         * @param upIncl {@code true} if upper bound is inclusive.
+         * @param c Filter closure.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         */
+        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+            this(null, upperBound, true, upIncl, c, x);
+        }
 
         /**
          * @param lowerBound Lower bound.
