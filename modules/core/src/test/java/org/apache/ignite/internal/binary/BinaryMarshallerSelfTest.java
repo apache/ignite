@@ -1116,9 +1116,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
                     col = bob.getField(flds.get1());
                 }
 
-                // Must be assertSame but now BinaryObjectBuilder doesn't support handle to collection.
-                // Now we check only that BinaryObjectBuilder#getField doesn't crash and returns valid collection.
-                assertEquals("Check: " + flds, col, colHnd);
+                assertSame(col, colHnd);
             }
 
             bo = bob.build();

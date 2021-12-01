@@ -1894,6 +1894,11 @@ public class BinaryUtils {
             }
 
             case GridBinaryMarshaller.OBJ: {
+                Object obj = handles.getHandle(start);
+
+                if (obj != null)
+                    return obj;
+
                 checkProtocolVersion(in.readByte());
 
                 int len = length(in, start);
@@ -2123,6 +2128,11 @@ public class BinaryUtils {
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
+        Object obj = handles.getHandle(hPos);
+
+        if (obj != null)
+            return (Collection<?>)obj;
+
         int size = in.readInt();
 
         assert size >= 0;
@@ -2194,6 +2204,11 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
+
+        Object obj = handles.getHandle(hPos);
+
+        if (obj != null)
+            return (Map<?, ?>)obj;
 
         int size = in.readInt();
 

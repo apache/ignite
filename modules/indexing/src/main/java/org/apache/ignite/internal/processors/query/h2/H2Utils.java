@@ -199,7 +199,10 @@ public class H2Utils {
      * @return SQL.
      */
     public static String tableCreateSql(H2TableDescriptor tbl) {
-        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
+        String keyFieldName = tbl.type().keyFieldName();
+        GridQueryProperty keyByNameProp = (keyFieldName == null) ? null : tbl.type().property(keyFieldName);
+        GridQueryProperty keyProp = (keyByNameProp == null) ? tbl.type().property(KEY_FIELD_NAME) : keyByNameProp;
+
         GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
 
         String keyType = dbTypeFromClass(tbl.type().keyClass(),
