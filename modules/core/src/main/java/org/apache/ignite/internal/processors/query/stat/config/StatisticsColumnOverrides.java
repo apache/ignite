@@ -98,7 +98,7 @@ public class StatisticsColumnOverrides implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        StatisticsColumnOverrides that = (StatisticsColumnOverrides) o;
+        StatisticsColumnOverrides that = (StatisticsColumnOverrides)o;
 
         return Objects.equals(nulls, that.nulls) && Objects.equals(distinct, that.distinct) &&
             Objects.equals(total, that.total) && Objects.equals(size, that.size);

@@ -142,7 +142,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
                                 cache.put(i, i);
 
                             for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
-                                assertEquals(i, (int) cache.get(i));
+                                assertEquals(i, (int)cache.get(i));
 
                                 if (isNearCacheNode)
                                     assertEquals((Integer)i, cache.localPeek(i, CachePeekMode.ONHEAP));
@@ -188,6 +188,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
             cache.put(i, i);
 
         for (int i = 100; i < 200; i++)
-            assertEquals(i, (int) cache.get(i));
+            assertEquals(i, (int)cache.get(i));
     }
 }

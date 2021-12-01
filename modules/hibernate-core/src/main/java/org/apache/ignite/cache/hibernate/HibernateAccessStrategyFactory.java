@@ -128,7 +128,7 @@ public class HibernateAccessStrategyFactory {
 
                 String cacheName = entry.getValue().toString();
 
-                if (((IgniteKernal) ignite).getCache(cachePrefix + cacheName) == null) {
+                if (((IgniteKernal)ignite).getCache(cachePrefix + cacheName) == null) {
                     throw new IllegalArgumentException("Cache '" + cacheName + "' specified for region '" + regionName + "' " +
                         "is not configured.");
                 }

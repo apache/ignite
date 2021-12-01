@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.Contains(
                     socketEx.SocketErrorCode,
-                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset});
+                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset, SocketError.ConnectionRefused});
             }
             else
             {
@@ -596,32 +596,47 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
+            // ReSharper disable AccessToDisposedClosure
             using (var client = Ignition.StartClient(cfg))
             {
                 Assert.AreEqual(0, client.GetCacheNames().Count);
 
-                // Stop target node.
+                Action checkReconnect = () =>
+                {
+                    // First operation may fail or may not.
+                    // Sometimes the client will switch to another socket in background due to
+                    // OnAffinityTopologyVersionChange callback.
+                    var timeout = DateTime.Now.AddSeconds(0.3);
+
+                    while (DateTime.Now < timeout)
+                    {
+                        try
+                        {
+                            Assert.AreEqual(0, client.GetCacheNames().Count);
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            Assert.IsNotNull(GetSocketException(e));
+                        }
+                    }
+                };
+
+                // Stop first node.
                 var nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
-                // Check failure.
-                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                checkReconnect();
 
-                // Check reconnect.
-                Assert.AreEqual(0, client.GetCacheNames().Count);
-
-                // Stop target node.
+                // Stop second node.
                 nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
-                // Check failure.
-                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
-
-                // Check reconnect.
-                Assert.AreEqual(0, client.GetCacheNames().Count);
+                checkReconnect();
 
                 // Stop all nodes.
                 Ignition.StopAll(true);
+
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
             }

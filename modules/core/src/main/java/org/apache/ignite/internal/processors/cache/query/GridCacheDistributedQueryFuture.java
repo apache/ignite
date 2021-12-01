@@ -85,7 +85,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         this.reqId = reqId;
 
-        qryMgr = (GridCacheDistributedQueryManager<K, V>) ctx.queries();
+        qryMgr = (GridCacheDistributedQueryManager<K, V>)ctx.queries();
 
         streams = new ConcurrentHashMap<>(nodes.size());
 

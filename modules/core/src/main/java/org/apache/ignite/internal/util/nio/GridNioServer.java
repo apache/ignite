@@ -2968,7 +2968,7 @@ public class GridNioServer<T> {
         if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int) outboundMessagesQueueSizeMetric.value();
+        return (int)outboundMessagesQueueSizeMetric.value();
     }
 
     /**

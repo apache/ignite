@@ -282,7 +282,7 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue val = (TestValue) o;
+            TestValue val = (TestValue)o;
 
             return id == val.id && Objects.equals(name, val.name);
         }

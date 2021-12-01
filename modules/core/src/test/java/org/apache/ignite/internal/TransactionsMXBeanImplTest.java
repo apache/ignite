@@ -214,9 +214,9 @@ public class TransactionsMXBeanImplTest extends GridCommonAbstractTest {
         clientNodes.forEach((igniteEx, bean) -> igniteEx.context().distributedMetastorage().listen(
             (key) -> key.startsWith(DIST_CONF_PREFIX),
             (String key, Serializable oldVal, Serializable newVal) -> {
-                if ((long) newVal == 200)
+                if ((long)newVal == 200)
                     updateLatches.get(igniteEx).get(0).countDown();
-                if ((long) newVal == 300)
+                if ((long)newVal == 300)
                     updateLatches.get(igniteEx).get(1).countDown();
             }
         ));

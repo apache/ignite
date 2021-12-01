@@ -669,7 +669,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx) ig).context().cache().context().tm();
+        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -790,7 +790,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
 
-        IgniteTxManager txManager = ((IgniteEx) ig).context().cache().context().tm();
+        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
 
         final TransactionsMXBean txMXBean1 = txMXBean(0);
 

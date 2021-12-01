@@ -329,7 +329,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Key key1 = (Key) o;
+            Key key1 = (Key)o;
 
             return key == key1.key;
 
@@ -362,7 +362,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Key2 key1 = (Key2) o;
+            Key2 key1 = (Key2)o;
 
             return Id == key1.Id;
 
@@ -405,7 +405,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             if (id != person.id) return false;
             return name != null ? name.equals(person.name) : person.name == null;

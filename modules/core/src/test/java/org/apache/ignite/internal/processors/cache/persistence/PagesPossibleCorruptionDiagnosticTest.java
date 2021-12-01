@@ -194,7 +194,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
         IgniteCacheOffheapManager.CacheDataStore dataStore =
             ignite.context().cache().cacheGroup(grpId).offheap().cacheDataStores().iterator().next();
 
-        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore) dataStore;
+        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore)dataStore;
 
         AbstractFreeList freeList = store.getCacheStoreFreeList();
 

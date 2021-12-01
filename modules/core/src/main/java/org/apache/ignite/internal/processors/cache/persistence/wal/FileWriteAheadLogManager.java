@@ -1463,9 +1463,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 if (e instanceof StorageException)
-                    throw (StorageException) e;
+                    throw (StorageException)e;
 
-                throw e instanceof IOException ? (IOException) e : new IOException(e);
+                throw e instanceof IOException ? (IOException)e : new IOException(e);
             }
         }
         catch (IOException e) {
@@ -2636,7 +2636,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     public static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
         // Write record type.
-        buf.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
+        buf.put((byte)(WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
         // Write position.
         RecordV1Serializer.putPosition(buf, new WALPointer(idx, 0, 0));
@@ -2841,7 +2841,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     currDesc = zipFile;
             }
 
-            return (ReadFileHandle) super.initReadHandle(currDesc, start);
+            return (ReadFileHandle)super.initReadHandle(currDesc, start);
         }
 
         /** {@inheritDoc} */

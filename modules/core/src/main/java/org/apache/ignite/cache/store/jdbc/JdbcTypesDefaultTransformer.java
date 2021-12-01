@@ -126,7 +126,7 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
             String str = rs.getString(colIdx);
 
             try {
-                return rs.wasNull() ? null : Enum.valueOf((Class<? extends Enum>) type, str.trim());
+                return rs.wasNull() ? null : Enum.valueOf((Class<? extends Enum>)type, str.trim());
             }
             catch (IllegalArgumentException ignore) {
                 return null;

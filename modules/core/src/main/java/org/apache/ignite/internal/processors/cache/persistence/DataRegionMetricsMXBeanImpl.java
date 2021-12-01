@@ -165,12 +165,12 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getInitialSize() {
-        return (int) (dataRegCfg.getInitialSize() / (1024 * 1024));
+        return (int)(dataRegCfg.getInitialSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
     @Override public int getMaxSize() {
-        return (int) (dataRegCfg.getMaxSize() / (1024 * 1024));
+        return (int)(dataRegCfg.getMaxSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */

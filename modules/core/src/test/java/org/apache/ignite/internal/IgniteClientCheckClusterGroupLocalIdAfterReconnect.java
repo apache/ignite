@@ -93,7 +93,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         CountDownLatch topicSignal = new CountDownLatch(2);
 
-        messaging.localListen("topic", (IgniteBiPredicate<UUID, Object>) (uuid, n) -> {
+        messaging.localListen("topic", (IgniteBiPredicate<UUID, Object>)(uuid, n) -> {
             topicSignal.countDown();
 
             return true;
@@ -104,7 +104,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
 
         CountDownLatch discSignal = new CountDownLatch(1);
 
-        client.events().localListen((IgnitePredicate<DiscoveryEvent>) evt -> {
+        client.events().localListen((IgnitePredicate<DiscoveryEvent>)evt -> {
             discSignal.countDown();
 
             return true;
