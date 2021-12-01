@@ -25,6 +25,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client connection.
@@ -62,8 +63,8 @@ class GridNioClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(ByteBuffer msg) throws IgniteCheckedException {
-        ses.sendNoFuture(msg, null);
+    @Override public void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException {
+        ses.sendNoFuture(msg, onDone == null ? null : e -> onDone.run());
     }
 
     /** {@inheritDoc} */
