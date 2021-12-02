@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -27,6 +29,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
+
+    /** TODO: REMOVE THIS. */
+    private final AtomicBoolean released = new AtomicBoolean();
 
     /** Data. */
     private byte[] data;
@@ -54,6 +59,9 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (!released.compareAndSet(false, true))
+            throw new IgniteException("Use after free");
+
         chunk.release(data, pos);
     }
 
