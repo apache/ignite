@@ -111,8 +111,8 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
-import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**

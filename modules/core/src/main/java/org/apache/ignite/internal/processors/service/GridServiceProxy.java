@@ -205,7 +205,7 @@ public class GridServiceProxy<T> implements Serializable {
 
                             if (svc != null) {
                                 if (svcCtx.isStatisticsEnabled()) {
-                                    return measureCall(ctx.service(), svcCtx, mtd.getName(),
+                                    return measureCall(svcCtx, mtd.getName(),
                                         () -> callServiceLocally(svc, mtd, args, callCtx));
                                 }
 
@@ -451,13 +451,11 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * Calls the target, measures and registers its duration.
      *
-     * @param srvcProc Current service processor.
      * @param srvCtx   Service context.
      * @param mtdName  Related method name.
      * @param target   Target to call and measure.
      */
     private static Object measureCall(
-        ServiceProcessorAdapter srvcProc,
         ServiceContextImpl srvCtx,
         String mtdName,
         Callable<Object> target
@@ -468,14 +466,12 @@ public class GridServiceProxy<T> implements Serializable {
             return target.call();
         }
         finally {
-            if (srvcProc instanceof IgniteServiceProcessor) {
-                long duration = System.nanoTime() - startTime;
+            long duration = System.nanoTime() - startTime;
 
-                HistogramMetricImpl histogram = srvCtx.metrics() == null ? null : srvCtx.metrics().findMetric(mtdName);
+            HistogramMetricImpl histogram = srvCtx.metrics() == null ? null : srvCtx.metrics().findMetric(mtdName);
 
-                if (histogram != null)
-                    histogram.value(duration);
-            }
+            if (histogram != null)
+                histogram.value(duration);
         }
     }
 
@@ -574,7 +570,7 @@ public class GridServiceProxy<T> implements Serializable {
         private Object callPlatformService(ServiceContextImpl svcCtx, PlatformService srv) {
             try {
                 if (svcCtx.isStatisticsEnabled()) {
-                    return measureCall(ignite.context().service(), svcCtx, mtdName,
+                    return measureCall(svcCtx, mtdName,
                         () -> srv.invokeMethod(mtdName, false, true, args,
                             callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null));
                 }
@@ -597,7 +593,7 @@ public class GridServiceProxy<T> implements Serializable {
 
             try {
                 if (svcCtx.isStatisticsEnabled()) {
-                    return measureCall(ignite.context().service(), svcCtx, mtd.getName(),
+                    return measureCall(svcCtx, mtd.getName(),
                         () -> callServiceMethod(svcCtx.service(), mtd, args, callCtx));
                 }
 
