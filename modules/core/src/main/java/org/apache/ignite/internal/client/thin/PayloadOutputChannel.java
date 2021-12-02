@@ -63,6 +63,8 @@ class PayloadOutputChannel implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        // Pooled buffer is reusable and should be released once and only once.
+        // Releasing more than once potentially "steals" it from another request.
         if (closed.compareAndSet(false, true))
             out.release();
     }
