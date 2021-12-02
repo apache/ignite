@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Optional;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.app.IgniteImpl;
@@ -40,13 +41,13 @@ import org.mockito.Mockito;
  * Listener which wraps another one to inhibit events.
  */
 public class WatchListenerInhibitor implements WatchListener {
-    /** Inhibited events. */
-    private final ArrayList<WatchEvent> inhibitEvents = new ArrayList<>();
+    /** Inhibited events. Guarded by {@code this}. */
+    private final Collection<WatchEvent> inhibitEvents = new ArrayList<>();
 
-    /** Inhibit flag. */
+    /** Inhibit flag. Guarded by {@code this}. */
     private boolean inhibit = false;
 
-    /** Wrapped listener. */
+    /** Wrapped listener. Guarded by {@code this}. */
     private WatchListener realListener;
 
     /**
@@ -109,7 +110,7 @@ public class WatchListenerInhibitor implements WatchListener {
      *
      * @param realListener Listener to wrap.
      */
-    private void setRealListener(WatchListener realListener) {
+    private synchronized void setRealListener(WatchListener realListener) {
         this.realListener = realListener;
     }
 

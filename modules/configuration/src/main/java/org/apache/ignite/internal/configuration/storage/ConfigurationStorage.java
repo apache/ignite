@@ -67,4 +67,9 @@ public interface ConfigurationStorage {
      * @return Type of this configuration storage.
      */
     ConfigurationType type();
+
+    /**
+     * Returns a future that will be completed when the latest revision of the storage is received.
+     */
+    CompletableFuture<Long> lastRevision();
 }

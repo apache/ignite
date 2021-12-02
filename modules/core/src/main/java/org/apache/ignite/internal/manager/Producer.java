@@ -38,8 +38,7 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param closure Closure.
      */
     public void listen(T evt, EventListener<P> closure) {
-        listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>())
-                .offer(closure);
+        listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>()).offer(closure);
     }
 
     /**

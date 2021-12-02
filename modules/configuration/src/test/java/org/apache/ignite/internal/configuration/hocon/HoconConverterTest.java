@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
@@ -614,7 +615,13 @@ public class HoconConverterTest {
         try {
             registry.change(hoconSource(ConfigFactory.parseString(hocon).root())).get(1, SECONDS);
         } catch (ExecutionException e) {
-            throw e.getCause();
+            Throwable cause = e.getCause();
+
+            if (cause instanceof ConfigurationChangeException) {
+                throw cause.getCause();
+            } else {
+                throw cause;
+            }
         }
     }
 

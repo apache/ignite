@@ -128,7 +128,9 @@ public class ItTablesApiTest extends IgniteAbstractTest {
                     return IgnitionManager.start(
                             nodeName,
                             nodesBootstrapCfg.get(value).apply(metastorageNodeName),
-                            workDir.resolve(nodeName));
+                            // Avoid a long file path name (260 characters) for windows.
+                            workDir.resolve(Integer.toString(value))
+                    );
                 }
         ).collect(Collectors.toList());
     }
@@ -142,12 +144,10 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Trys to create a table which is already created.
-     *
-     * @throws Exception If failed.
+     * Tries to create a table which is already created.
      */
     @Test
-    public void testTableAlreadyCreated() throws Exception {
+    public void testTableAlreadyCreated() {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
         Ignite ignite0 = clusterNodes.get(0);
@@ -161,12 +161,11 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Trys to create a table which is already created from lagged node.
+     * Tries to create a table which is already created from lagged node.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15891 Configuration use local state cache internally, but have to look at consensus")
     public void testTableAlreadyCreatedFromLaggedNode() throws Exception {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
@@ -182,7 +181,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
 
         CompletableFuture createTblFut = CompletableFuture.runAsync(() -> createTable(ignite1, SCHEMA, SHORT_TABLE_NAME));
         CompletableFuture createTblIfNotExistsFut = CompletableFuture
-                .runAsync(() -> createTableIfNotExists(ignite1, SCHEMA, SHORT_TABLE_NAME));
+                .supplyAsync(() -> createTableIfNotExists(ignite1, SCHEMA, SHORT_TABLE_NAME));
 
         for (Ignite ignite : clusterNodes) {
             if (ignite != ignite1) {
@@ -215,7 +214,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testAddIndex() throws Exception {
+    public void testAddIndex() {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
         Ignite ignite0 = clusterNodes.get(0);
@@ -231,12 +230,12 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Trys to create an index which is already created from lagged node.
+     * Tries to create an index which is already created from lagged node.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15891 Configuration use local state cache internally, but have to look at consensus")
+    @Disabled("IGNITE-16033")
     public void testAddIndexFromLaggedNode() throws Exception {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
@@ -281,12 +280,10 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Trys to create a column which is already created.
-     *
-     * @throws Exception If failed.
+     * Tries to create a column which is already created.
      */
     @Test
-    public void testAddColumn() throws Exception {
+    public void testAddColumn() {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
         Ignite ignite0 = clusterNodes.get(0);
@@ -302,12 +299,12 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Trys to create a column which is already created from lagged node.
+     * Tries to create a column which is already created from lagged node.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15891 Configuration use local state cache internally, but have to look at consensus")
+    @Disabled("IGNITE-16033")
     public void testAddColumnFromLaggedNode() throws Exception {
         clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
 
@@ -340,7 +337,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
 
         ignite1Inhibitor.stopInhibit();
 
-        assertThrows(IndexAlreadyExistsException.class, () -> {
+        assertThrows(ColumnAlreadyExistsException.class, () -> {
             try {
                 addColFut.get(10, TimeUnit.SECONDS);
             } catch (ExecutionException e) {

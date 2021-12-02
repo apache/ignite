@@ -39,6 +39,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
@@ -784,7 +785,19 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     }
             );
         }).exceptionally(t -> {
-            Throwable ex = t.getCause();
+            Throwable ex;
+
+            if (t instanceof CompletionException) {
+                if (t.getCause() instanceof ConfigurationChangeException) {
+                    ex = t.getCause().getCause();
+                } else {
+                    ex = t.getCause();
+                }
+
+                assert ex != null;
+            } else {
+                ex = t;
+            }
 
             if (ex instanceof TableAlreadyExistsException) {
                 tableAsync(name, false).thenAccept(table -> {
@@ -927,7 +940,13 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 )).exceptionally(t -> {
                     LOG.error(LoggerMessageHelper.format("Table wasn't altered [name={}]", name), t);
 
-                    removeListener(TableEvent.ALTER, clo, new IgniteInternalCheckedException(t.getCause()));
+                    Throwable cause = t.getCause();
+
+                    if (cause instanceof ConfigurationChangeException) {
+                        cause = cause.getCause();
+                    }
+
+                    removeListener(TableEvent.ALTER, clo, new IgniteInternalCheckedException(cause));
 
                     return null;
                 });

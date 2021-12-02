@@ -153,6 +153,12 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
         return ConfigurationType.LOCAL;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<Long> lastRevision() {
+        return CompletableFuture.completedFuture(ver.get());
+    }
+
     /**
      * Increments the last character of the given string.
      */

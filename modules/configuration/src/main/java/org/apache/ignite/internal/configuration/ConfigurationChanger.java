@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.configuration;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
@@ -374,7 +373,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
     }
 
     /**
-     * Internal configuration change method that completes provided future.
+     * Entry point for configuration changes.
      *
      * @param src Configuration source.
      * @return fut Future that will be completed after changes are written to the storage.
@@ -382,60 +381,77 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
     private CompletableFuture<Void> changeInternally(ConfigurationSource src) {
         StorageRoots localRoots = storageRoots;
 
+        return storage.lastRevision()
+            .thenCompose(storageRevision -> {
+                assert storageRevision != null;
+
+                if (localRoots.version < storageRevision) {
+                    // Need to wait for the configuration updates from the storage, then try to update again (loop).
+                    return localRoots.changeFuture.thenCompose(v -> changeInternally(src));
+                } else {
+                    return changeInternally0(localRoots, src);
+                }
+            })
+            .exceptionally(throwable -> {
+                Throwable cause = throwable.getCause();
+
+                if (cause instanceof ConfigurationChangeException) {
+                    throw ((ConfigurationChangeException) cause);
+                } else {
+                    throw new ConfigurationChangeException("Failed to change configuration", cause);
+                }
+            });
+    }
+
+    /**
+     * Internal configuration change method that completes provided future.
+     *
+     * @param src Configuration source.
+     * @return fut Future that will be completed after changes are written to the storage.
+     */
+    private CompletableFuture<Void> changeInternally0(StorageRoots localRoots, ConfigurationSource src) {
         return CompletableFuture
-                .supplyAsync(() -> {
-                    SuperRoot curRoots = localRoots.roots;
+            .supplyAsync(() -> {
+                SuperRoot curRoots = localRoots.roots;
 
-                    SuperRoot changes = curRoots.copy();
+                SuperRoot changes = curRoots.copy();
 
-                    src.reset();
+                src.reset();
 
-                    src.descend(changes);
+                src.descend(changes);
 
-                    addDefaults(changes);
+                addDefaults(changes);
 
-                    Map<String, Serializable> allChanges = createFlattenedUpdatesMap(curRoots, changes);
+                Map<String, Serializable> allChanges = createFlattenedUpdatesMap(curRoots, changes);
 
-                    // Unlikely but still possible.
-                    if (allChanges.isEmpty()) {
-                        return null;
-                    }
+                dropNulls(changes);
 
-                    dropNulls(changes);
+                List<ValidationIssue> validationIssues = ValidationUtil.validate(
+                        curRoots,
+                        changes,
+                        this::getRootNode,
+                        cachedAnnotations,
+                        validators
+                );
 
-                    List<ValidationIssue> validationIssues = ValidationUtil.validate(
-                            curRoots,
-                            changes,
-                            this::getRootNode,
-                            cachedAnnotations,
-                            validators
-                    );
+                if (!validationIssues.isEmpty()) {
+                    throw new ConfigurationValidationException(validationIssues);
+                }
 
-                    if (!validationIssues.isEmpty()) {
-                        throw new ConfigurationValidationException(validationIssues);
-                    }
-
-                    return allChanges;
-                }, pool)
-                .thenCompose(allChanges -> {
-                    if (allChanges == null) {
-                        return completedFuture(null);
-                    }
-
-                    return storage.write(allChanges, localRoots.version)
-                            .thenCompose(casWroteSuccessfully -> {
-                                if (casWroteSuccessfully) {
-                                    return localRoots.changeFuture;
-                                } else {
-                                    // Here we go to next iteration of an implicit spin loop; we have to do it via recursion
-                                    // because we work with async code (futures).
-                                    return localRoots.changeFuture.thenCompose(v -> changeInternally(src));
-                                }
-                            })
-                            .exceptionally(throwable -> {
-                                throw new ConfigurationChangeException("Failed to change configuration", throwable);
-                            });
-                });
+                return allChanges;
+            }, pool)
+            .thenCompose(allChanges ->
+                storage.write(allChanges, localRoots.version)
+                    .thenCompose(casWroteSuccessfully -> {
+                        if (casWroteSuccessfully) {
+                            return localRoots.changeFuture;
+                        } else {
+                            // Here we go to next iteration of an implicit spin loop; we have to do it via recursion
+                            // because we work with async code (futures).
+                            return localRoots.changeFuture.thenCompose(v -> changeInternally(src));
+                        }
+                    })
+            );
     }
 
     /**
@@ -460,7 +476,12 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
 
         storageRoots = new StorageRoots(newSuperRoot, newChangeId);
 
-        return notificator.notify(oldSuperRoot, newSuperRoot, newChangeId)
+        if (dataValuesPrefixMap.isEmpty()) {
+            oldStorageRoots.changeFuture.complete(null);
+
+            return CompletableFuture.completedFuture(null);
+        } else {
+            return notificator.notify(oldSuperRoot, newSuperRoot, newChangeId)
                 .whenComplete((v, t) -> {
                     if (t == null) {
                         oldStorageRoots.changeFuture.complete(null);
@@ -468,5 +489,6 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                         oldStorageRoots.changeFuture.completeExceptionally(t);
                     }
                 });
+        }
     }
 }

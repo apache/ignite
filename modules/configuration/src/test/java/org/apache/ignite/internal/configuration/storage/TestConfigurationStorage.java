@@ -21,8 +21,8 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
@@ -38,13 +38,13 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     /** Map to store values. */
     private final Map<String, Serializable> map = new HashMap<>();
 
-    /** Change listeners. */
-    private final List<ConfigurationStorageListener> listeners = new ArrayList<>();
+    /** Change listeners. Guarded by {@code this}. */
+    private final Collection<ConfigurationStorageListener> listeners = new ArrayList<>();
 
-    /** Storage version. */
+    /** Storage version. Guarded by {@code this}. */
     private long version = 0;
 
-    /** Should fail on every operation. */
+    /** Should fail on every operation. Guarded by {@code this}. */
     private boolean fail = false;
 
     /**
@@ -127,5 +127,35 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     @Override
     public ConfigurationType type() {
         return configurationType;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public synchronized CompletableFuture<Long> lastRevision() {
+        return CompletableFuture.completedFuture(version);
+    }
+
+    /**
+     * Increase the current revision of the storage.
+     *
+     * <p>New configuration changes will wait when the new configuration is updated from the repository.
+     *
+     * <p>For pending updates to apply, you will need to call {@link #decrementAndGetRevision}
+     * and make an additional (new) configuration change.
+     *
+     * @return Storage revision.
+     */
+    public synchronized long incrementAndGetRevision() {
+        return ++version;
+    }
+
+    /**
+     * Decrease the current revision of the storage.
+     *
+     * @return Repository revision.
+     * @see #incrementAndGetRevision
+     */
+    public synchronized long decrementAndGetRevision() {
+        return --version;
     }
 }

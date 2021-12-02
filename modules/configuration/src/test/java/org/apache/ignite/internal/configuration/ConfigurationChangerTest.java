@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.Serializable;
 import java.lang.annotation.Retention;
@@ -38,7 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.NamedListView;
@@ -53,6 +57,7 @@ import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
+import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
@@ -464,6 +469,82 @@ public class ConfigurationChangerTest {
         );
 
         assertThat(e.getMessage(), containsString("def.childrenList.name.defStr"));
+    }
+
+    /**
+     * Check that {@link ConfigurationStorage#lastRevision} always returns the latest revision of the storage,
+     * and that the change will only be applied on the last revision of the storage.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    void testLastRevision() throws Exception {
+        ConfigurationChanger changer = createChanger(DefaultsConfiguration.KEY);
+
+        changer.start();
+
+        changer.initializeDefaults();
+
+        assertEquals(1, storage.lastRevision().get(1, SECONDS));
+
+        changer.change(source(DefaultsConfiguration.KEY, (DefaultsChange c) -> c.changeDefStr("test0"))).get(1, SECONDS);
+        assertEquals(2, storage.lastRevision().get(1, SECONDS));
+
+        // Increase the revision so that the change waits for the latest revision of the configuration to be received from the storage.
+        storage.incrementAndGetRevision();
+        assertEquals(3, storage.lastRevision().get(1, SECONDS));
+
+        AtomicInteger invokeConsumerCnt = new AtomicInteger();
+
+        CompletableFuture<Void> changeFut = changer.change(source(
+                DefaultsConfiguration.KEY,
+                (DefaultsChange c) -> {
+                    invokeConsumerCnt.incrementAndGet();
+
+                    try {
+                        // Let's check that the consumer will be called on the last revision of the repository.
+                        assertEquals(3, storage.lastRevision().get(1, SECONDS));
+                    } catch (Exception e) {
+                        fail(e);
+                    }
+
+                    c.changeDefStr("test1");
+                }
+        ));
+
+        assertThrows(TimeoutException.class, () -> changeFut.get(1, SECONDS));
+        assertEquals(0, invokeConsumerCnt.get());
+
+        // Let's roll back the previous revision so that the new change can be applied.
+        storage.decrementAndGetRevision();
+        assertEquals(2, storage.lastRevision().get(1, SECONDS));
+
+        changer.change(source(DefaultsConfiguration.KEY, (DefaultsChange c) -> c.changeDefStr("test00"))).get(1, SECONDS);
+
+        changeFut.get(1, SECONDS);
+        assertEquals(1, invokeConsumerCnt.get());
+    }
+
+    /**
+     * Checks that if we have not changed the configuration, then the update in the storage will still occur.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    void testUpdateStorageRevisionOnEmptyChanges() throws Exception {
+        ConfigurationChanger changer = createChanger(DefaultsConfiguration.KEY);
+
+        changer.start();
+
+        changer.initializeDefaults();
+
+        assertEquals(1, storage.lastRevision().get(1, SECONDS));
+
+        changer.change(source(DefaultsConfiguration.KEY, (DefaultsChange c) -> {})).get(1, SECONDS);
+        assertEquals(2, storage.lastRevision().get(1, SECONDS));
+
+        changer.change(source(DefaultsConfiguration.KEY, (DefaultsChange c) -> c.changeDefStr("foo"))).get(1, SECONDS);
+        assertEquals(3, storage.lastRevision().get(1, SECONDS));
     }
 
     private static <CHANGET> ConfigurationSource source(RootKey<?, ? super CHANGET> rootKey, Consumer<CHANGET> changer) {

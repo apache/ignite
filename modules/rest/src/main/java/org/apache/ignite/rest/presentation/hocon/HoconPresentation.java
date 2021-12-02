@@ -23,6 +23,7 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.sp
 
 import com.typesafe.config.ConfigException;
 import java.util.List;
+import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
@@ -74,10 +75,14 @@ public class HoconPresentation implements ConfigurationPresentation<String> {
         } catch (Throwable t) {
             RuntimeException e;
 
-            if (t.getCause() instanceof IllegalArgumentException) {
-                e = (RuntimeException) t.getCause();
-            } else if (t.getCause() instanceof ConfigurationValidationException) {
-                e = (RuntimeException) t.getCause();
+            Throwable cause = t.getCause();
+
+            if (cause instanceof IllegalArgumentException) {
+                e = (RuntimeException) cause;
+            } else if (cause instanceof ConfigurationValidationException) {
+                e = (RuntimeException) cause;
+            } else if (cause instanceof ConfigurationChangeException) {
+                e = (RuntimeException) cause.getCause();
             } else {
                 e = new IgniteException(t);
             }
