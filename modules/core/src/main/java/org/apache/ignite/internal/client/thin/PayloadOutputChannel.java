@@ -56,6 +56,9 @@ class PayloadOutputChannel implements AutoCloseable {
      * Gets output stream.
      */
     public BinaryOutputStream out() {
+        // TODO: out is being closed by callers of this property!
+        // 1. Rewrite all callers (44 of them)
+        // 2. Somehow protect from closing the stream.
         return out;
     }
 
