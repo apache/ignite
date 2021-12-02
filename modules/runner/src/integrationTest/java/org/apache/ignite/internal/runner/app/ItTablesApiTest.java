@@ -479,16 +479,11 @@ public class ItTablesApiTest extends IgniteAbstractTest {
         node.tables().alterTable(
                 schemaName + "." + shortTableName,
                 chng -> chng.changeColumns(cols -> {
-                    for (String colOrder : chng.columns().namedListKeys()) {
-                        if (colDefinition.name().equals(chng.columns().get(colOrder).name())) {
-                            throw new ColumnAlreadyExistsException(colDefinition.name());
-                        }
+                    try {
+                        cols.create(colDefinition.name(), colChg -> convert(colDefinition, colChg));
+                    } catch (IllegalArgumentException e) {
+                        throw new ColumnAlreadyExistsException(colDefinition.name());
                     }
-
-                    int colIdx = chng.columns().namedListKeys().stream().mapToInt(Integer::parseInt)
-                            .max().getAsInt() + 1;
-
-                    cols.create(String.valueOf(colIdx), colChg -> convert(colDefinition, colChg));
                 }));
     }
 

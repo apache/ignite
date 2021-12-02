@@ -44,7 +44,6 @@ import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -190,7 +189,7 @@ abstract class AbstractSchemaChangeTest {
      *
      * @param nodes Cluster nodes.
      */
-    protected void createTable(List<Ignite> nodes) {
+    protected static void createTable(List<Ignite> nodes) {
         // Create table on node 0.
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
                 SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
@@ -213,13 +212,9 @@ abstract class AbstractSchemaChangeTest {
      * @param nodes       Cluster nodes.
      * @param columnToAdd Column to add.
      */
-    protected void addColumn(List<Ignite> nodes, ColumnDefinition columnToAdd) {
+    protected static void addColumn(List<Ignite> nodes, ColumnDefinition columnToAdd) {
         nodes.get(0).tables().alterTable(TABLE,
-                chng -> chng.changeColumns(cols -> {
-                    int colIdx = chng.columns().namedListKeys().stream().mapToInt(Integer::parseInt).max().getAsInt() + 1;
-
-                    cols.create(String.valueOf(colIdx), colChg -> convert(columnToAdd, colChg));
-                })
+                chng -> chng.changeColumns(cols -> cols.create(columnToAdd.name(), colChg -> convert(columnToAdd, colChg)))
         );
     }
 
@@ -229,18 +224,9 @@ abstract class AbstractSchemaChangeTest {
      * @param nodes   Cluster nodes.
      * @param colName Name of column to drop.
      */
-    protected void dropColumn(List<Ignite> nodes, String colName) {
-        nodes.get(0).tables().alterTable(TABLE,
-                chng -> chng.changeColumns(cols -> {
-                    cols.delete(chng.columns().namedListKeys().stream()
-                            .filter(key -> colName.equals(chng.columns().get(key).name()))
-                            .findAny()
-                            .orElseThrow(() -> {
-                                throw new IllegalStateException("Column not found.");
-                            })
-                    );
-                })
-        );
+    protected static void dropColumn(List<Ignite> nodes, String colName) {
+        nodes.get(0).tables()
+                .alterTable(TABLE, chng -> chng.changeColumns(cols -> cols.delete(colName)));
     }
 
     /**
@@ -250,20 +236,13 @@ abstract class AbstractSchemaChangeTest {
      * @param oldName Old column name.
      * @param newName New column name.
      */
-    protected void renameColumn(List<Ignite> nodes, String oldName, String newName) {
+    protected static void renameColumn(List<Ignite> nodes, String oldName, String newName) {
         nodes.get(0).tables().alterTable(TABLE,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    final String colKey = tblChanger.columns().namedListKeys().stream()
-                            .filter(c -> oldName.equals(tblChanger.columns().get(c).name()))
-                            .findFirst()
-                            .orElseThrow(() -> {
-                                throw new IllegalStateException("Column not found.");
-                            });
-
-                    tblChanger.changeColumns(listChanger ->
-                            listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeName(newName))
-                    );
-                })
+                tblChanger -> tblChanger.changeColumns(
+                        colListChanger -> colListChanger
+                                .rename(oldName, newName)
+                                .update(newName, colChanger -> colChanger.changeName(newName))
+                )
         );
     }
 
@@ -274,20 +253,12 @@ abstract class AbstractSchemaChangeTest {
      * @param colName Column name.
      * @param defSup  Default value supplier.
      */
-    protected void changeDefault(List<Ignite> nodes, String colName, Supplier<Object> defSup) {
+    protected static void changeDefault(List<Ignite> nodes, String colName, Supplier<Object> defSup) {
         nodes.get(0).tables().alterTable(TABLE,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    final String colKey = tblChanger.columns().namedListKeys().stream()
-                            .filter(c -> colName.equals(tblChanger.columns().get(c).name()))
-                            .findFirst()
-                            .orElseThrow(() -> {
-                                throw new IllegalStateException("Column not found.");
-                            });
-
-                    tblChanger.changeColumns(listChanger ->
-                            listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
-                    );
-                })
+                tblChanger -> tblChanger.changeColumns(
+                        colListChanger -> colListChanger
+                                .update(colName, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
+                )
         );
     }
 
@@ -298,23 +269,15 @@ abstract class AbstractSchemaChangeTest {
      * @param colName    Column to change.
      * @param colChanger Column configuration changer.
      */
-    private void assertColumnChangeFailed(List<Ignite> grid, String colName, Consumer<ColumnChange> colChanger) {
-        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
-            grid.get(0).tables().alterTable(TABLE,
-                    tblChanger -> tblChanger.changeColumns(cols -> {
-                        final String colKey = tblChanger.columns().namedListKeys().stream()
-                                .filter(c -> colName.equals(tblChanger.columns().get(c).name()))
-                                .findFirst()
-                                .orElseGet(() -> Assertions.fail("Column not found."));
-
-                        tblChanger.changeColumns(listChanger -> listChanger.createOrUpdate(colKey, colChanger)
-                        );
-                    })
-            );
-        });
+    private static void assertColumnChangeFailed(List<Ignite> grid, String colName, Consumer<ColumnChange> colChanger) {
+        assertThrows(ConfigurationValidationException.class, () ->
+                grid.get(0).tables().alterTable(TABLE,
+                        tblChanger -> tblChanger.changeColumns(listChanger -> listChanger.update(colName, colChanger))
+                )
+        );
     }
 
-    protected <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+    protected static <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
         Throwable ex = assertThrows(IgniteException.class, executable);
 
         while (ex.getCause() != null) {

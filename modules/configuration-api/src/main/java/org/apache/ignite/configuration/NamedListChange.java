@@ -85,6 +85,20 @@ public interface NamedListChange<VIEWT, CHANGET extends VIEWT> extends NamedList
     NamedListChange<VIEWT, CHANGET> createOrUpdate(String key, Consumer<CHANGET> valConsumer);
 
     /**
+     * Updates a value in the named list configuration.
+     *
+     * @param key Key for the value to be updated.
+     * @param valConsumer Closure to modify the value associated with the key. Closure parameter must not be leaked
+     *      outside the scope of the closure.
+     * @return {@code this} for chaining.
+     *
+     * @throws NullPointerException If one of parameters is null.
+     * @throws IllegalArgumentException If the given key does not exist or if {@link #delete(String)} has been invoked with the same key
+     *                                  previously.
+     */
+    NamedListChange<VIEWT, CHANGET> update(String key, Consumer<CHANGET> valConsumer);
+
+    /**
      * Renames the existing value in the named list configuration. Element with key {@code oldKey} must exist and key
      * {@code newKey} must not. Error will occur if {@code newKey} has just been deleted on the same
      * {@link NamedListChange} instance (to distinguish between

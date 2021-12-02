@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataRegionView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageView;
+import org.apache.ignite.configuration.schemas.table.ColumnView;
+import org.apache.ignite.configuration.schemas.table.TableIndexView;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.validation.ValidationContext;
@@ -62,6 +64,8 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
             }
 
             validateDataRegion(oldTables == null ? null : oldTables.get(tableName), newTable, ctx);
+
+            validateNamedListKeys(newTable, ctx);
         }
     }
 
@@ -72,7 +76,7 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
      * @param newTable New configuration.
      * @param ctx      Validation context.
      */
-    private void validateDataRegion(@Nullable TableView oldTable, TableView newTable, ValidationContext<?> ctx) {
+    private static void validateDataRegion(@Nullable TableView oldTable, TableView newTable, ValidationContext<?> ctx) {
         DataStorageView oldDbCfg = ctx.getOldRoot(DataStorageConfiguration.KEY);
         DataStorageView newDbCfg = ctx.getNewRoot(DataStorageConfiguration.KEY);
 
@@ -123,6 +127,43 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
         }
 
         return dbCfg.regions().get(regionName);
+    }
+
+    /**
+     * Checks that columns and indices are stored under their names in the corresponding Named Lists, i.e. their Named List keys and names
+     * are the same.
+     *
+     * @param table Table configuration view.
+     * @param ctx Validation context.
+     */
+    private static void validateNamedListKeys(TableView table, ValidationContext<NamedListView<TableView>> ctx) {
+        NamedListView<? extends ColumnView> columns = table.columns();
+
+        for (String key : columns.namedListKeys()) {
+            ColumnView column = columns.get(key);
+
+            if (!column.name().equals(key)) {
+                var issue = new ValidationIssue(String.format(
+                        "Column name \"%s\" does not match its Named List key: \"%s\"", column.name(), key
+                ));
+
+                ctx.addIssue(issue);
+            }
+        }
+
+        NamedListView<? extends TableIndexView> indices = table.indices();
+
+        for (String key : indices.namedListKeys()) {
+            TableIndexView index = indices.get(key);
+
+            if (!index.name().equals(key)) {
+                var issue = new ValidationIssue(String.format(
+                        "Index name \"%s\" does not match its Named List key: \"%s\"", index.name(), key
+                ));
+
+                ctx.addIssue(issue);
+            }
+        }
     }
 
     /** Private constructor. */

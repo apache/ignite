@@ -25,6 +25,7 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.jo
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
+import com.typesafe.config.ConfigValueType;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -133,5 +134,23 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
                 );
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable String polymorphicTypeId(String fieldName) {
+        ConfigValue typeId = hoconCfgObject.get(fieldName);
+
+        if (typeId == null) {
+            return null;
+        }
+
+        if (typeId.valueType() != ConfigValueType.STRING) {
+            throw new IllegalArgumentException(
+                    format("Invalid Polymorphic Type ID type. Expected %s, got %s", ConfigValueType.STRING, typeId.valueType())
+            );
+        }
+
+        return (String) typeId.unwrapped();
     }
 }

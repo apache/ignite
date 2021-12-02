@@ -39,6 +39,7 @@ import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.Table;
@@ -161,15 +162,14 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
 
         listenerInhibitor.startInhibit();
 
-        ignite0.tables().alterTable(TABLE_NAME,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    int colIdx = tblChanger.columns().namedListKeys().stream()
-                            .mapToInt(Integer::parseInt).max().getAsInt() + 1;
+        ColumnDefinition columnDefinition = SchemaBuilders.column("valStr2", ColumnType.string())
+                .withDefaultValueExpression("default")
+                .build();
 
-                    cols.create(String.valueOf(colIdx),
-                            colChg -> convert(SchemaBuilders.column("valStr2", ColumnType.string())
-                                    .withDefaultValueExpression("default").build(), colChg));
-                })
+        ignite0.tables().alterTable(TABLE_NAME,
+                tblChanger -> tblChanger.changeColumns(cols ->
+                        cols.create(columnDefinition.name(), colChg -> convert(columnDefinition, colChg))
+                )
         );
 
         for (Ignite node : clusterNodes) {

@@ -17,21 +17,28 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageView;
+import org.apache.ignite.configuration.schemas.table.HashIndexChange;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.configuration.validation.ValidationContext;
@@ -53,25 +60,22 @@ public class TableValidatorImplTest {
     @InjectConfiguration(
             value = "mock.tables.table {\n"
             + "    name = schema.table,\n"
-            + "    columns.0 {name = id, type.type = STRING, nullable = true},\n"
-            + "    primaryKey {columns = [id], affinityColumns = [id]}\n"
+            + "    columns.id {name = id, type.type = STRING, nullable = true},\n"
+            + "    primaryKey {columns = [id], affinityColumns = [id]},\n"
+            + "    indices.foo {type = HASH, name = foo, colNames = [id]}"
             + "}",
             polymorphicExtensions = {
                     HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class
             }
     )
-    private TablesConfiguration tableCfg;
+    private TablesConfiguration tablesCfg;
 
     /** Tests that validator finds no issues in a simple valid configuration. */
     @Test
     public void testNoIssues(@InjectConfiguration DataStorageConfiguration dbCfg) {
-        ValidationContext<NamedListView<TableView>> ctx = mockContext(null, tableCfg.tables().value(), dbCfg.value());
+        ValidationContext<NamedListView<TableView>> ctx = mockContext(null, dbCfg.value());
 
-        ArgumentCaptor<ValidationIssue> issuesCaptor = ArgumentCaptor.forClass(ValidationIssue.class);
-
-        doNothing().when(ctx).addIssue(issuesCaptor.capture());
-
-        TableValidatorImpl.INSTANCE.validate(null, ctx);
+        ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
 
         assertThat(issuesCaptor.getAllValues(), is(empty()));
     }
@@ -79,15 +83,11 @@ public class TableValidatorImplTest {
     /** Tests that the validator catches nonexistent data regions. */
     @Test
     public void testMissingDataRegion(@InjectConfiguration DataStorageConfiguration dbCfg) throws Exception {
-        tableCfg.tables().get("table").dataRegion().update("r0").get(1, TimeUnit.SECONDS);
+        tablesCfg.tables().get("table").dataRegion().update("r0").get(1, TimeUnit.SECONDS);
 
-        ValidationContext<NamedListView<TableView>> ctx = mockContext(null, tableCfg.tables().value(), dbCfg.value());
+        ValidationContext<NamedListView<TableView>> ctx = mockContext(null, dbCfg.value());
 
-        ArgumentCaptor<ValidationIssue> issuesCaptor = ArgumentCaptor.forClass(ValidationIssue.class);
-
-        doNothing().when(ctx).addIssue(issuesCaptor.capture());
-
-        TableValidatorImpl.INSTANCE.validate(null, ctx);
+        ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
 
         assertEquals(1, issuesCaptor.getAllValues().size());
 
@@ -102,19 +102,13 @@ public class TableValidatorImplTest {
     public void testChangeDataRegionType(
             @InjectConfiguration("mock.regions.r0.type = foo") DataStorageConfiguration dbCfg
     ) throws Exception {
-        NamedListView<TableView> oldValue = tableCfg.tables().value();
+        NamedListView<TableView> oldValue = tablesCfg.tables().value();
 
-        tableCfg.tables().get("table").dataRegion().update("r0").get(1, TimeUnit.SECONDS);
+        tablesCfg.tables().get("table").dataRegion().update("r0").get(1, TimeUnit.SECONDS);
 
-        NamedListView<TableView> newValue = tableCfg.tables().value();
+        ValidationContext<NamedListView<TableView>> ctx = mockContext(oldValue, dbCfg.value());
 
-        ValidationContext<NamedListView<TableView>> ctx = mockContext(oldValue, newValue, dbCfg.value());
-
-        ArgumentCaptor<ValidationIssue> issuesCaptor = ArgumentCaptor.forClass(ValidationIssue.class);
-
-        doNothing().when(ctx).addIssue(issuesCaptor.capture());
-
-        TableValidatorImpl.INSTANCE.validate(null, ctx);
+        ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
 
         assertEquals(1, issuesCaptor.getAllValues().size());
 
@@ -126,19 +120,79 @@ public class TableValidatorImplTest {
     }
 
     /**
+     * Tests that column names and column keys inside a Named List must be equal.
+     */
+    @Test
+    void testMisalignedColumnNamedListKeys(@InjectConfiguration DataStorageConfiguration dbCfg) {
+        NamedListView<TableView> oldValue = tablesCfg.tables().value();
+
+        TableConfiguration tableCfg = tablesCfg.tables().get("table");
+
+        CompletableFuture<Void> tableChangeFuture = tableCfg.columns()
+                .change(columnsChange -> columnsChange
+                        .create("ololo", columnChange -> columnChange
+                                .changeName("not ololo")
+                                .changeType(columnTypeChange -> columnTypeChange.changeType("STRING"))
+                                .changeNullable(true)));
+
+        assertThat(tableChangeFuture, willBe(nullValue(Void.class)));
+
+        ValidationContext<NamedListView<TableView>> ctx = mockContext(oldValue, dbCfg.value());
+
+        ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
+
+        assertThat(issuesCaptor.getAllValues(), hasSize(1));
+
+        assertThat(
+                issuesCaptor.getValue().message(),
+                is(equalTo("Column name \"not ololo\" does not match its Named List key: \"ololo\""))
+        );
+    }
+
+    /**
+     * Tests that index names and index keys inside a Named List must be equal.
+     */
+    @Test
+    void testMisalignedIndexNamedListKeys(@InjectConfiguration DataStorageConfiguration dbCfg) {
+        NamedListView<TableView> oldValue = tablesCfg.tables().value();
+
+        TableConfiguration tableCfg = tablesCfg.tables().get("table");
+
+        CompletableFuture<Void> tableChangeFuture = tableCfg.indices()
+                .change(indicesChange -> indicesChange
+                        .create("ololo", indexChange -> indexChange
+                                .changeName("not ololo")
+                                .convert(HashIndexChange.class)
+                                .changeColNames("id")));
+
+        assertThat(tableChangeFuture, willBe(nullValue(Void.class)));
+
+        ValidationContext<NamedListView<TableView>> ctx = mockContext(oldValue, dbCfg.value());
+
+        ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
+
+        assertThat(issuesCaptor.getAllValues(), hasSize(1));
+
+        assertThat(
+                issuesCaptor.getValue().message(),
+                is(equalTo("Index name \"not ololo\" does not match its Named List key: \"ololo\""))
+        );
+    }
+
+    /**
      * Mocks validation context.
      *
      * @param oldValue  Old value of configuration.
-     * @param newValue  New value of configuration.
      * @param dbCfgView Data storage configuration to register it by {@link DataStorageConfiguration#KEY}.
      * @return Mocked validation context.
      */
-    private static ValidationContext<NamedListView<TableView>> mockContext(
+    private ValidationContext<NamedListView<TableView>> mockContext(
             @Nullable NamedListView<TableView> oldValue,
-            NamedListView<TableView> newValue,
             DataStorageView dbCfgView
     ) {
         ValidationContext<NamedListView<TableView>> ctx = mock(ValidationContext.class);
+
+        NamedListView<TableView> newValue = tablesCfg.tables().value();
 
         when(ctx.getOldValue()).thenReturn(oldValue);
         when(ctx.getNewValue()).thenReturn(newValue);
@@ -147,5 +201,15 @@ public class TableValidatorImplTest {
         when(ctx.getNewRoot(DataStorageConfiguration.KEY)).thenReturn(dbCfgView);
 
         return ctx;
+    }
+
+    private static ArgumentCaptor<ValidationIssue> validate(ValidationContext<NamedListView<TableView>> ctx) {
+        ArgumentCaptor<ValidationIssue> issuesCaptor = ArgumentCaptor.forClass(ValidationIssue.class);
+
+        doNothing().when(ctx).addIssue(issuesCaptor.capture());
+
+        TableValidatorImpl.INSTANCE.validate(null, ctx);
+
+        return issuesCaptor;
     }
 }

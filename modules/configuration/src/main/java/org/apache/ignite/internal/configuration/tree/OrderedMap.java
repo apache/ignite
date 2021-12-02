@@ -106,6 +106,8 @@ class OrderedMap<V> {
      * @param value Value associated with the key.
      */
     public void put(String key, V value) {
+        assert value != null;
+
         if (map.put(key, value) == null) {
             orderedKeys.add(key);
         }
@@ -122,6 +124,7 @@ class OrderedMap<V> {
      */
     public void putByIndex(int idx, String key, V value) {
         assert !map.containsKey(key) : key + " " + map;
+        assert value != null;
 
         if (idx >= orderedKeys.size()) {
             orderedKeys.add(key);
@@ -142,6 +145,7 @@ class OrderedMap<V> {
     public void putAfter(String precedingKey, String key, V value) {
         assert map.containsKey(precedingKey) : precedingKey + " " + map;
         assert !map.containsKey(key) : key + " " + map;
+        assert value != null;
 
         int idx = orderedKeys.indexOf(precedingKey);
 
