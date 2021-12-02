@@ -516,8 +516,10 @@ public class PoolProcessor extends GridProcessorAdapter {
                 cfg.getSnapshotThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
-                GridIoPolicy.SYSTEM_POOL,
+                GridIoPolicy.UNDEFINED,
                 excHnd);
+
+            snpExecSvc.allowCoreThreadTimeOut(true);
         }
 
         if (cfg.getClientConnectorConfiguration() != null) {
@@ -1090,6 +1092,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     private void stopExecutors0(IgniteLogger log) {
         assert log != null;
+        U.shutdownNow(getClass(), snpExecSvc, log);
+
+        snpExecSvc = null;
 
         U.shutdownNow(getClass(), execSvc, log);
 
@@ -1114,10 +1119,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), rebalanceExecSvc, log);
 
         rebalanceExecSvc = null;
-
-        U.shutdownNow(getClass(), snpExecSvc, log);
-
-        snpExecSvc = null;
 
         U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
 

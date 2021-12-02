@@ -565,11 +565,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCleanedOnLeft() throws Exception {
-        int grids = 2;
-        CountDownLatch block = new CountDownLatch(grids);
+        CountDownLatch block = new CountDownLatch(1);
         CountDownLatch partProcessed = new CountDownLatch(1);
 
-        IgniteEx ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
         String dirNameIgnite0 = folderName(ignite);
@@ -752,7 +751,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotMetrics() throws Exception {
         String newSnapshotName = SNAPSHOT_NAME + "_new";
         CountDownLatch deltaApply = new CountDownLatch(1);
-        CountDownLatch deltaBlock = new CountDownLatch(2);
+        CountDownLatch deltaBlock = new CountDownLatch(1);
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         MetricRegistry mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
@@ -1194,7 +1193,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 started.countDown();
 
                 try {
-                    blocked.countDown();
                     U.await(blocked, TIMEOUT, TimeUnit.MILLISECONDS);
 
                     if (log.isInfoEnabled())

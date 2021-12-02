@@ -1112,14 +1112,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Total number of threads to perform snapshot operation. By default,
-     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
-     */
-    public int getSnapshotThreadPoolSize() {
-        return snapshotThreadPoolSize;
-    }
-
-    /**
      * Sets index create/rebuild thread pool size to use within grid.
      *
      * @param poolSize Thread pool size to use within grid.
@@ -1347,17 +1339,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setUtilityCacheKeepAliveTime(long keepAliveTime) {
         utilityCacheKeepAliveTime = keepAliveTime;
-
-        return this;
-    }
-
-    /**
-     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
-     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
-        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
 
         return this;
     }
@@ -1768,6 +1749,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
+
+        return this;
+    }
+
+    /**
+     * @return Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     */
+    public int getSnapshotThreadPoolSize() {
+        return snapshotThreadPoolSize;
+    }
+
+    /**
+     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
+        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
 
         return this;
     }

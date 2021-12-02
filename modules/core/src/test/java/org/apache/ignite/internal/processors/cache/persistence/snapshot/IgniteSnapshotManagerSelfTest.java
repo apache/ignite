@@ -97,7 +97,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         if (listenLog != null)
             cfg.setGridLogger(listenLog);
 
-        if (snapshotThreadPoolSize != IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE)
+        if (snapshotThreadPoolSize > 0 && snapshotThreadPoolSize != IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE)
             cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
