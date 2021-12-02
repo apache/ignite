@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for sorted and segmented Ignite indexes.
@@ -38,8 +39,8 @@ public interface SortedSegmentedIndex extends Index {
      * @return Cursor of found index rows.
      */
     public GridCursor<IndexRow> find(
-        IndexRow lower,
-        IndexRow upper,
+        @Nullable IndexRow lower,
+        @Nullable IndexRow upper,
         boolean lowerIncl,
         boolean upperIncl,
         int segment,
