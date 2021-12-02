@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = true;
 
     /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
     private static boolean USE_BINARY_ARRAYS =
