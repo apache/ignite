@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  * Binary object representing array.
@@ -122,7 +123,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
             if (deserialized != null)
                 return (T)deserialized;
 
-            deserialized = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
+            deserialized = (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++) {
                 Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
@@ -241,7 +242,21 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         BinaryArray arr = (BinaryArray)o;
 
-        return compTypeId == arr.compTypeId
+        int compTypeId1 = this.compTypeId;
+        int compTypeId2 = arr.compTypeId;
+
+        // This can happen when binary type was not registered in time of binary array creation.
+        // In this case same type will be written differently:
+        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
+        // arr2 = [comTypeId=1234,compClsName=null]
+        // Overcome by calculation compTypeId based on compClsName.
+        if (compTypeId1 == UNREGISTERED_TYPE_ID && compTypeId2 != UNREGISTERED_TYPE_ID)
+            compTypeId1 = ctx.typeId(compClsName);
+
+        if (compTypeId2 == UNREGISTERED_TYPE_ID && compTypeId1 != UNREGISTERED_TYPE_ID)
+            compTypeId2 = ctx.typeId(arr.compClsName);
+
+        return compTypeId1 == compTypeId2
             && Arrays.equals(this.arr, arr.arr);
     }
 
