@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
@@ -32,7 +33,7 @@ class PayloadOutputChannel implements AutoCloseable {
     private final ClientChannel ch;
 
     /** Output stream. */
-    private final BinaryOutputStream out;
+    private final BinaryHeapOutputStream out;
 
     /** Close guard. */
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -41,7 +42,8 @@ class PayloadOutputChannel implements AutoCloseable {
      * Constructor.
      */
     PayloadOutputChannel(ClientChannel ch) {
-        out = new BinaryHeapOutputStream(INITIAL_BUFFER_CAPACITY);
+        // Disable AutoCloseable on the stream so that out callers don't release the pooled buffer before it is written to the socket.
+        out = new BinaryHeapOutputStream(INITIAL_BUFFER_CAPACITY, BinaryMemoryAllocator.THREAD_LOCAL.chunk(), true);
         this.ch = ch;
     }
 
@@ -56,15 +58,12 @@ class PayloadOutputChannel implements AutoCloseable {
      * Gets output stream.
      */
     public BinaryOutputStream out() {
-        // TODO: out is being closed by callers of this property!
-        // 1. Rewrite all callers (44 of them)
-        // 2. Somehow protect from closing the stream.
         return out;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         if (closed.compareAndSet(false, true))
-            out.close();
+            out.release();
     }
 }

@@ -30,6 +30,9 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
 
+    /** Disable auto close flag. */
+    private final boolean disableAutoClose;
+
     /** TODO: REMOVE THIS. */
     private final AtomicBoolean released = new AtomicBoolean();
 
@@ -52,13 +55,34 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
      * @param chunk Chunk.
      */
     public BinaryHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
+        this(cap, chunk, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cap Capacity.
+     * @param chunk Chunk.
+     * @param disableAutoClose Whether to disable resource release in {@link BinaryHeapOutputStream#close()} method
+     *                         so that an explicit {@link BinaryHeapOutputStream#release()} call is required.
+     */
+    public BinaryHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk, boolean disableAutoClose) {
         this.chunk = chunk;
+        this.disableAutoClose = disableAutoClose;
 
         data = chunk.allocate(cap);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (!disableAutoClose)
+            release();
+    }
+
+    /**
+     * Releases pooled memory.
+     */
+    public void release() {
         if (!released.compareAndSet(false, true))
             throw new IgniteException("Use after free");
 
