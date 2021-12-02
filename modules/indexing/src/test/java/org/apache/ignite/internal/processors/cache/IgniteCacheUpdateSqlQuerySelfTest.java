@@ -219,15 +219,9 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                         "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', " +
                         "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
                         "\"primitiveIntsCol\" = ?, " +  //(3)
-                        "\"bytesCol\" = ?" + // (4)
-                        (useBinaryArrays ? ",\"personCol\" = ?" : "") // (5)
-            ).setArgs(
-                5,
-                new AllTypes.InnerType(80L),
-                new int[] {2, 3},
-                new Byte[] {4, 5, 6},
-                new Person[] {new Person(1, "John", " Connor"), new Person(2, "Sarah", "Connor")}
-            )).getAll();
+                        "\"bytesCol\" = ?" // (4)
+                ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
+            ).getAll();
 
             AllTypes res = (AllTypes)cache.get(2L);
 
@@ -240,12 +234,6 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             assertEquals("3.141592653589793", res.strCol);
             assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
             assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
-            if (useBinaryArrays) {
-                assertTrue(Arrays.equals(
-                    new Person[] {new Person(1, "John", " Connor"), new Person(2, "Sarah", "Connor")},
-                    res.personCol
-                ));
-            }
             assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
             assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
 
