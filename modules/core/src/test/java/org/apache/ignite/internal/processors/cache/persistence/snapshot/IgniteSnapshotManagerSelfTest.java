@@ -67,6 +67,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
@@ -84,7 +85,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     private ListeningTestLogger listenLog;
 
     /** Number of threads being used to perform snapshot operation. */
-    private int snapshotThreadPoolSize;
+    private Integer snapshotThreadPoolSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -97,7 +98,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         if (listenLog != null)
             cfg.setGridLogger(listenLog);
 
-        if (snapshotThreadPoolSize > 0 && snapshotThreadPoolSize != IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE)
+        if (nonNull(snapshotThreadPoolSize))
             cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
@@ -563,7 +564,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         long snpRunningThreads = LongStream.of(tMb.getAllThreadIds()).mapToObj(tMb::getThreadInfo)
             .filter(info -> info.getThreadName().startsWith(SNAPSHOT_RUNNER_THREAD_PREFIX)).count();
 
-        assertEquals(snapshotThreadPoolSize, snpRunningThreads);
+        assertEquals(snapshotThreadPoolSize.longValue(), snpRunningThreads);
     }
 
     /**
