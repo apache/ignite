@@ -76,7 +76,9 @@ snapshot data spread across the cluster. Each node keeps a segment of the snapsh
 The link:persistence/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
 ====
 
-=== Configuring Snapshot Directory
+== Configuration
+
+=== Snapshot Directory
 
 By default, a segment of the snapshot is stored in the work directory of a respective Ignite node and uses the same storage
 media where Ignite Persistence keeps data, index, WAL, and other files. Since the snapshot can consume as much space as
@@ -86,12 +88,12 @@ Ignite Persistence routines, it's suggested to store the snapshot and persistenc
 See the link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory] page for
 configuration examples.
 
-=== Configuring Snapshot Execution Pool
+=== Snapshot Execution Pool
 
 By default, the snapshot thread pool size has value `4`. Decreasing the number of threads involving into snapshot creation will
 increase the total amount of time the snapshot being taking, however, this will keep the disk load within reasonable limits.
 
-See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Pool] page.
+See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Execution Pool] page.
 
 == Creating Snapshot
 
