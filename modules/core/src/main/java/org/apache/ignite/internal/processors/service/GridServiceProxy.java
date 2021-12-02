@@ -237,7 +237,7 @@ public class GridServiceProxy<T> implements Serializable {
                     // Check if ignorable exceptions are in the cause chain.
                     Throwable ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
 
-                    if (ignorableCause == null && ctx.service() instanceof GridServiceProcessor)
+                    if (ignorableCause == null)
                         ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
                     if (ignorableCause != null) {

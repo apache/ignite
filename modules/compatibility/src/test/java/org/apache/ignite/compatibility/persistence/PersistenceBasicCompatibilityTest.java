@@ -182,6 +182,24 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
         doTestStartupWithOldVersion("2.9.0");
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_9_1() throws Exception {
+        doTestStartupWithOldVersion("2.9.1");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_10() throws Exception {
+        doTestStartupWithOldVersion("2.10.0");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_11() throws Exception {
+        doTestStartupWithOldVersion("2.11.0");
+    }
+
     /**
      * Tests opportunity to read data from previous Ignite DB version.
      *
