@@ -267,15 +267,14 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             req.writeInt(0, req.position() - 4); // Actual size.
 
-            // TODO: Looks like we close the buffer before it is fully written,
-            // returning it to the pool and causing overwrite.
-            // See testActiveTasksLimit.
             write(req.array(), req.position(), payloadCh::close);
 
             return fut;
         }
         catch (Throwable t) {
             pendingReqs.remove(id);
+
+            // Potential double-close is handled in PayloadOutputChannel.
             payloadCh.close();
 
             throw t;
