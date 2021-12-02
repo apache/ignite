@@ -509,10 +509,17 @@ public class IndexQueryProcessor {
 
         LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
 
-        // Step 1. Traverse index.
-        GridCursor<IndexRow> findRes = idx.find(qry.lower, qry.upper, segment, qryCtx);
+        boolean lowIncl = inclBoundary(qry, true);
+        boolean upIncl = inclBoundary(qry, false);
 
-        // Step 2. Scan and filter.
+        // Step 1. Traverse index and find index boundaries.
+        GridCursor<IndexRow> findRes = idx.find(qry.lower, qry.upper, lowIncl, upIncl, segment, qryCtx);
+
+        // No need in the additional filter step for queries with 0 or 1 criteria.
+        if (qry.criteria.length <= 1)
+            return findRes;
+
+        // Step 2. Filter range if the criteria apply to multiple fields.
         return new GridCursor<IndexRow>() {
             /** */
             private final IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
@@ -577,6 +584,25 @@ public class IndexQueryProcessor {
                 return false;
             }
         };
+    }
+
+    /**
+     * Checks whether index thraversing should include boundary or not. Includes a boundary for unbounded searches, for
+     * others it checks user criteria.
+     *
+     * @param lower {@code true} for lower bound and {@code false} for upper bound.
+     * @return {@code true} for inclusive boundary, otherwise {@code false}.
+     */
+    private boolean inclBoundary(IndexRangeQuery qry, boolean lower) {
+        for (RangeIndexQueryCriterion c: qry.criteria) {
+            if (c == null || (lower ? c.lower() : c.upper()) == null)
+                break;
+
+            if (!(lower ? c.lowerIncl() : c.upperIncl()))
+                return false;
+        }
+
+        return true;
     }
 
     /**
