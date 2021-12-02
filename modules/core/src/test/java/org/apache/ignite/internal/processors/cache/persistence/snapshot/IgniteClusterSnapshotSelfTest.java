@@ -581,7 +581,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        U.await(partProcessed);
+        U.await(partProcessed, TIMEOUT, TimeUnit.MILLISECONDS);
 
         stopGrid(1);
 
@@ -1191,7 +1191,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 started.countDown();
 
                 try {
-                    U.await(blocked);
+                    U.await(blocked, TIMEOUT, TimeUnit.MILLISECONDS);
 
                     if (log.isInfoEnabled())
                         log.info("Latch released. Processing delta file continued: " + delta.getName());
