@@ -980,24 +980,19 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         SecuritySubject subj = ctx.security().securityContext().subject();
 
-        try {
-            if (subj.type() == REMOTE_NODE) {
-                throw new IgniteAccessControlException("User management operations initiated on behalf of" +
-                    " the Ignite node are not expected.");
-            }
-
-            if (!User.DFAULT_USER_NAME.equals(subj.login())
-                && !(UserManagementOperation.OperationType.UPDATE == op.type() && subj.login().equals(op.user().name())))
-                throw new IgniteAccessControlException("User management operations are not allowed for user. " +
-                    "[curUser=" + subj.login() + ']');
-
-            if (op.type() == UserManagementOperation.OperationType.REMOVE
-                && User.DFAULT_USER_NAME.equals(op.user().name()))
-                throw new IgniteAccessControlException("Default user cannot be removed.");
+        if (subj.type() == REMOTE_NODE) {
+            throw new IgniteAccessControlException("User management operations initiated on behalf of" +
+                " the Ignite node are not expected.");
         }
-        catch (SecurityException e) {
-            throw new IgniteAccessControlException("Failed to perform user management operation.", e);
-        }
+
+        if (!User.DFAULT_USER_NAME.equals(subj.login())
+            && !(UserManagementOperation.OperationType.UPDATE == op.type() && subj.login().equals(op.user().name())))
+            throw new IgniteAccessControlException("User management operations are not allowed for user. " +
+                "[curUser=" + subj.login() + ']');
+
+        if (op.type() == UserManagementOperation.OperationType.REMOVE
+            && User.DFAULT_USER_NAME.equals(op.user().name()))
+            throw new IgniteAccessControlException("Default user cannot be removed.");
     }
 
     /**

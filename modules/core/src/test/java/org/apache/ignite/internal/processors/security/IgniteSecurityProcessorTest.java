@@ -111,7 +111,7 @@ public class IgniteSecurityProcessorTest extends GridCommonAbstractTest {
                 .setUserName(user)
                 .setUserPassword(pwd))
         ) {
-            IgniteClientFuture<Object> fut = cli.compute().executeAsync2(TestTask.class.getName(), grid(1).localNode().id());
+            IgniteClientFuture<Void> fut = cli.compute().executeAsync2(TestTask.class.getName(), grid(1).localNode().id());
 
             taskExecutionStartedLatch.await();
 

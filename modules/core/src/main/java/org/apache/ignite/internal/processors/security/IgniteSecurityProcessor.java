@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.security.Security;
 import java.util.Collection;
@@ -439,16 +438,18 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * operation or security plugin has incorrect implementation. This implementation throws exception on every attempt
      * to get any specific user security information from it.
      */
-    private static class UnknownUserSecurityContext implements SecurityContext, Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+    private static class UnknownUserSecurityContext implements SecurityContext {
         /** */
         private final SecuritySubject secSubj;
 
         /** */
-        public UnknownUserSecurityContext(UUID id) {
-            secSubj = new UnknownSecuritySubject(id);
+        private final String errMsg;
+
+        /** */
+        public UnknownUserSecurityContext(UUID secSubjId) {
+            secSubj = new UnknownSecuritySubject(secSubjId);
+
+            errMsg = "Operation is not allowed for the user. User security data is not found [subjId=" + secSubjId + ']';
         }
 
         /** {@inheritDoc} */
@@ -458,22 +459,22 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         /** {@inheritDoc} */
         @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-            return false;
+            throw new SecurityException(errMsg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-            return false;
+            throw new SecurityException(errMsg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-            return false;
+            throw new SecurityException(errMsg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-            return false;
+            throw new SecurityException(errMsg);
         }
 
         /** */
