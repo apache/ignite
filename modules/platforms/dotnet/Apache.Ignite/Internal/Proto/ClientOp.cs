@@ -40,17 +40,11 @@ namespace Apache.Ignite.Internal.Proto
         /** Upsert tuple. */
         TupleUpsert = 10,
 
-        /** Upsert tuple without schema. */
-        TupleUpsertSchemaless = 11,
-
         /** Get tuple. */
         TupleGet = 12,
 
         /** Upsert all tuples. */
         TupleUpsertAll = 13,
-
-        /** Upsert all tuples without schema. */
-        TupleUpsertAllSchemaless = 14,
 
         /** Get all tuples. */
         TupleGetAll = 15,
@@ -58,38 +52,20 @@ namespace Apache.Ignite.Internal.Proto
         /** Get and upsert tuple. */
         TupleGetAndUpsert = 16,
 
-        /** Get and upsert tuple without schema. */
-        TupleGetAndUpsertSchemaless = 17,
-
         /** Insert tuple. */
         TupleInsert = 18,
-
-        /** Insert tuple without schema. */
-        TupleInsertSchemaless = 19,
 
         /** Insert all tuples. */
         TupleInsertAll = 20,
 
-        /** Insert all tuples without schema. */
-        TupleInsertAllSchemaless = 21,
-
         /** Replace tuple. */
         TupleReplace = 22,
-
-        /** Replace tuple without schema. */
-        TupleReplaceSchemaless = 23,
 
         /** Replace exact tuple. */
         TupleReplaceExact = 24,
 
-        /** Replace exact tuple without schema. */
-        TupleReplaceExactSchemaless = 25,
-
         /** Get and replace tuple. */
         TupleGetAndReplace = 26,
-
-        /** Get and replace tuple without schema. */
-        TupleGetAndReplaceSchemaless = 27,
 
         /** Delete tuple. */
         TupleDelete = 28,

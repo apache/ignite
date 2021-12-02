@@ -39,17 +39,11 @@ public class ClientOp {
     /** Upsert tuple. */
     public static final int TUPLE_UPSERT = 10;
 
-    /** Upsert tuple without schema. */
-    public static final int TUPLE_UPSERT_SCHEMALESS = 11;
-
     /** Get tuple. */
     public static final int TUPLE_GET = 12;
 
     /** Upsert all tuples. */
     public static final int TUPLE_UPSERT_ALL = 13;
-
-    /** Upsert all tuples without schema. */
-    public static final int TUPLE_UPSERT_ALL_SCHEMALESS = 14;
 
     /** Get all tuples. */
     public static final int TUPLE_GET_ALL = 15;
@@ -57,38 +51,20 @@ public class ClientOp {
     /** Get and upsert tuple. */
     public static final int TUPLE_GET_AND_UPSERT = 16;
 
-    /** Get and upsert tuple without schema. */
-    public static final int TUPLE_GET_AND_UPSERT_SCHEMALESS = 17;
-
     /** Insert tuple. */
     public static final int TUPLE_INSERT = 18;
-
-    /** Insert tuple without schema. */
-    public static final int TUPLE_INSERT_SCHEMALESS = 19;
 
     /** Insert all tuples. */
     public static final int TUPLE_INSERT_ALL = 20;
 
-    /** Insert all tuples without schema. */
-    public static final int TUPLE_INSERT_ALL_SCHEMALESS = 21;
-
     /** Replace tuple. */
     public static final int TUPLE_REPLACE = 22;
-
-    /** Replace tuple without schema. */
-    public static final int TUPLE_REPLACE_SCHEMALESS = 23;
 
     /** Replace exact tuple. */
     public static final int TUPLE_REPLACE_EXACT = 24;
 
-    /** Replace exact tuple without schema. */
-    public static final int TUPLE_REPLACE_EXACT_SCHEMALESS = 25;
-
     /** Get and replace tuple. */
     public static final int TUPLE_GET_AND_REPLACE = 26;
-
-    /** Get and replace tuple without schema. */
-    public static final int TUPLE_GET_AND_REPLACE_SCHEMALESS = 27;
 
     /** Delete tuple. */
     public static final int TUPLE_DELETE = 28;

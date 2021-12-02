@@ -357,44 +357,6 @@ class ClientTableCommon {
     }
 
     /**
-     * Reads a tuple as a map, without schema.
-     *
-     * @param unpacker Unpacker.
-     * @return Tuple.
-     */
-    public static Tuple readTupleSchemaless(ClientMessageUnpacker unpacker) {
-        var cnt = unpacker.unpackMapHeader();
-        var tuple = Tuple.create(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            var colName = unpacker.unpackString();
-            var colType = unpacker.unpackInt();
-
-            // TODO: Unpack value as object IGNITE-15194.
-            tuple.set(colName, unpacker.unpackObject(colType));
-        }
-
-        return tuple;
-    }
-
-    /**
-     * Reads multiple tuples as a map, without schema.
-     *
-     * @param unpacker Unpacker.
-     * @return Tuples.
-     */
-    public static ArrayList<Tuple> readTuplesSchemaless(ClientMessageUnpacker unpacker) {
-        var rowCnt = unpacker.unpackArrayHeader();
-        var res = new ArrayList<Tuple>(rowCnt);
-
-        for (int i = 0; i < rowCnt; i++) {
-            res.add(readTupleSchemaless(unpacker));
-        }
-
-        return res;
-    }
-
-    /**
      * Reads a table.
      *
      * @param unpacker Unpacker.
