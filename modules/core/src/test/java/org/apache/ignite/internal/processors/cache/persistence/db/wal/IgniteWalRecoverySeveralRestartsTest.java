@@ -44,8 +44,6 @@ import org.junit.Test;
  *
  */
 public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest {
-    /** */
-    public static final int PAGE_SIZE = 1024;
 
     /** */
     private static final int KEYS_COUNT = 100_000;
@@ -82,8 +80,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(500L * 1024 * 1024).setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(PAGE_SIZE);
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -252,6 +249,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
             dynCacheCfg.setReadFromBackup(true);
 
             ignite.getOrCreateCache(dynCacheCfg);
+
+            final int PAGE_SIZE = ignite.configuration().getDataStorageConfiguration().getPageSize();
 
             try (IgniteDataStreamer<Integer, IndexedObject> dataLdr = ignite.dataStreamer("dyncache")) {
                 for (int i = 0; i < LARGE_KEYS_COUNT; ++i) {

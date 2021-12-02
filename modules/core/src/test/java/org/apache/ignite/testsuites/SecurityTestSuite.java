@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTe
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
+import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
@@ -130,7 +131,8 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class,
     MaintenanceModeNodeSecurityTest.class,
     DaemonNodeBasicSecurityTest.class,
-    ServiceAuthorizationTest.class
+    ServiceAuthorizationTest.class,
+    ServiceStaticConfigTest.class
 })
 public class SecurityTestSuite {
     /** */

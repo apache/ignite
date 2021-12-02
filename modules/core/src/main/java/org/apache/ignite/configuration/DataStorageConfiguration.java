@@ -536,7 +536,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
-     * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
+     * to the Persistent Store. Checkpoint will be triggered more frequently the lower the value you use.
      *
      * If value is not positive, {@link #DFLT_CHECKPOINT_FREQ} will be used.
      *
