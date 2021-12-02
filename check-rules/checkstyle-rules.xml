@@ -277,6 +277,11 @@
       <property name="lineWrappingIndentation" value="8"/>
       <property name="arrayInitIndent" value="4"/>
     </module>
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="^\s+$"/>
+      <property name="message" value="Line contains a whitespace indent only."/>
+      <property name="ignoreComments" value="true"/>
+    </module>
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="false"/>
       <property name="allowedAbbreviationLength" value="0"/>
