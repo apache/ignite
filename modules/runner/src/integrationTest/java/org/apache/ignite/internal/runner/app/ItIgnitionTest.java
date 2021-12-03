@@ -22,14 +22,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ItUtils;
+import org.apache.ignite.internal.app.IgnitionImpl;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -252,5 +260,62 @@ class ItIgnitionTest {
                     "Unable to parse user-specific configuration."
             ));
         }
+    }
+
+    /**
+     * Tests scenario when we try to start node with URL configuration.
+     */
+    @Test
+    void testStartNodeWithUrlConfig() throws Exception {
+        Ignition ign = new IgnitionImpl();
+
+        String nodeName = "node-url-config";
+
+        String cfg = "{\n"
+                + "  node.metastorageNodes: [ \"" + nodeName + "\" ],\n"
+                + "  network: {\n"
+                + "    port: " + PORTS[0] + "\n"
+                + "  }\n"
+                + "}";
+
+        URL url = buildUrl("testURL.txt", cfg);
+
+        startedNodes.add(ign.start(nodeName, url, workDir.resolve(nodeName)));
+    }
+
+    /**
+     * Test URL with content in memory.
+     *
+     * @param path URL path.
+     * @param data Data is available by URL.
+     * @return URL.
+     * @throws Exception If failed.
+     */
+    private URL buildUrl(String path, String data) throws Exception {
+        URLStreamHandler handler = new URLStreamHandler() {
+            private byte[] content = data.getBytes(StandardCharsets.UTF_8);
+
+            @Override
+            protected URLConnection openConnection(URL url) {
+                return new URLConnection(url) {
+                    @Override
+                    public void connect() {
+                        connected = true;
+                    }
+
+                    @Override
+                    public long getContentLengthLong() {
+                        return content.length;
+                    }
+
+                    @Override
+                    public InputStream getInputStream() {
+                        return new ByteArrayInputStream(content);
+                    }
+                };
+            }
+        };
+
+        return new URL("memory", "", -1, path, handler);
     }
 }

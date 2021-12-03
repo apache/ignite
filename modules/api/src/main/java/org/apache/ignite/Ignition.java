@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Path;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +37,16 @@ public interface Ignition {
      * @return Started Ignite node.
      */
     public Ignite start(@NotNull String name, @Nullable Path configPath, @NotNull Path workDir);
+
+    /**
+     * Starts an Ignite node with an optional bootstrap configuration from a URL linking to HOCON configs.
+     *
+     * @param name       Name of the node. Must not be {@code null}.
+     * @param cfgUrl     URL linking to the node configuration in the HOCON format. Can be {@code null}.
+     * @param workDir    Work directory for the started node. Must not be {@code null}.
+     * @return Started Ignite node.
+     */
+    public Ignite start(@NotNull String name, @Nullable URL cfgUrl, @NotNull Path workDir);
 
     /**
      * Starts an Ignite node with an optional bootstrap configuration from an input stream with HOCON configs.

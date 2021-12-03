@@ -19,6 +19,7 @@ package org.apache.ignite.internal.app;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,6 +75,20 @@ public class IgnitionImpl implements Ignition {
             );
         } catch (IOException e) {
             throw new IgniteException("Unable to read user specific configuration.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Ignite start(@NotNull String name, @Nullable URL cfgUrl, @NotNull Path workDir) {
+        if (cfgUrl == null) {
+            return doStart(name, null, workDir);
+        } else {
+            try (InputStream cfgStream = cfgUrl.openStream()) {
+                return doStart(name, new String(cfgStream.readAllBytes(), StandardCharsets.UTF_8), workDir);
+            } catch (IOException e) {
+                throw new IgniteException("Unable to read user specific configuration.", e);
+            }
         }
     }
 
