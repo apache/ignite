@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -38,7 +37,10 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.client.PersonBinarylizable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * Thin client async cache tests.
@@ -355,6 +357,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      * Tests that request encode errors are handled correctly.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testPutAsyncThrowsExceptionOnFailedSerialization() {
         ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
 

@@ -114,7 +114,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static final String CACHE_ADDL_NAME = "cache1";
 
     /** Dump records to logger. Should be false for non local run. */
-    private static final boolean DUMP_RECORDS = true;
+    private static final boolean DUMP_RECORDS = false;
 
     /**
      * Field for transferring setting from test to getConfig method.
@@ -643,6 +643,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testFillWalWithDifferentTypes() throws Exception {
         Ignite ig = startGrid();
 

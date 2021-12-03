@@ -18,13 +18,16 @@
 package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * Test for Jdbc driver query without class on client
  */
+@WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
 public class JdbcPojoQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /** URL. */
     private static final String URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-bin-config.xml";

@@ -27,6 +27,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccLeafIO;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -34,19 +40,17 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 
 /**
  * Print WAL log data in human-readable form.
@@ -70,8 +74,30 @@ public class IgniteWalConverter {
      * @param params Parameters.
      */
     public static void convert(final PrintStream out, final IgniteWalConverterArguments params) {
-        System.setProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE,
-            Boolean.toString(params.getProcessSensitiveData() == ProcessSensitiveData.HIDE));
+        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, MvccInnerIO.VERSIONS, MvccLeafIO.VERSIONS);
+        AbstractInlineInnerIO.register();
+        AbstractInlineLeafIO.register();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE);
+        if (params.getProcessSensitiveData() == null) {
+            System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
+        }
+        else {
+            switch (params.getProcessSensitiveData()) {
+                case SHOW:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "plain");
+                    break;
+                case HASH:
+                case MD5:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash");
+                    break;
+                case HIDE:
+                    System.setProperty(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "none");
+                    break;
+                default:
+                    assert false : "Unexpected includeSensitive: " + params.getProcessSensitiveData();
+            }
+        }
 
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_SKIP_CRC, Boolean.toString(params.isSkipCrc()));
         RecordV1Serializer.skipCrc = params.isSkipCrc();
@@ -97,7 +123,7 @@ public class IgniteWalConverter {
 
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
-        try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
+        try (WALIterator stIt = factory.iterator(iteratorParametersBuilder)) {
             String currentWalPath = null;
 
             while (stIt.hasNextX()) {
@@ -167,11 +193,11 @@ public class IgniteWalConverter {
         String res = null;
 
         try {
-            WALIterator walIter = it instanceof FilteredWalIterator ? U.field(it, "delegateWalIter") : it;
+            WALIterator walIter = it instanceof FilteredWalIterator ? IgniteUtils.field(it, "delegateWalIter") : it;
 
-            Integer curIdx = U.field(walIter, "curIdx");
+            Integer curIdx = IgniteUtils.field(walIter, "curIdx");
 
-            List<FileDescriptor> walFileDescriptors = U.field(walIter, "walFileDescriptors");
+            List<FileDescriptor> walFileDescriptors = IgniteUtils.field(walIter, "walFileDescriptors");
 
             if (curIdx != null && walFileDescriptors != null && curIdx < walFileDescriptors.size())
                 res = walFileDescriptors.get(curIdx).getAbsolutePath();
@@ -229,7 +255,7 @@ public class IgniteWalConverter {
                 .collect(Collectors.toSet());
 
             // Build WAL filter. (Checkoint, Page, Partition meta)
-            filter = checkpoint().or(pageOwner(grpAndPageIds0)).or(partitionMetaStateUpdate(grpAndParts));
+            filter = WalFilters.checkpoint().or(WalFilters.pageOwner(grpAndPageIds0)).or(WalFilters.partitionMetaStateUpdate(grpAndParts));
         }
 
         return filter != null ? new FilteredWalIterator(walIter, filter) : walIter;

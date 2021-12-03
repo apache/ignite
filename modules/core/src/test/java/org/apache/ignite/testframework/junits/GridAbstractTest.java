@@ -60,6 +60,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
@@ -160,11 +161,15 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_ENV;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.NONE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.convertSensitiveDataLogging;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -285,7 +290,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
         System.setProperty(IGNITE_TEST_ENV, "true");
 
-        S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
+        S.setSensitiveDataLoggingSupplier(() -> {
+            String sysStrToStringIncludeSensitive = getString(IGNITE_TO_STRING_INCLUDE_SENSITIVE);
+
+            if (sysStrToStringIncludeSensitive != null)
+                return getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE) ? PLAIN : NONE;
+            else
+                return convertSensitiveDataLogging(getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, "hash"));
+        });
 
         if (GridTestClockTimer.startTestTimer()) {
             Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");

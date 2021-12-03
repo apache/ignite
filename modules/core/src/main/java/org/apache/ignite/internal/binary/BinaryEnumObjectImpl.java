@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +44,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.objectPutSize;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  * Binary enum object.
@@ -269,37 +273,40 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (!S.includeSensitive())
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+        if (sensitiveDataLogging == PLAIN) {
+            // 1. Try deserializing the object.
+            try {
+                Object val = deserialize();
+
+                return new SB().a(val).toString();
+            } catch (Exception ignored) {
+                // No-op.
+            }
+
+            // 2. Try getting meta.
+            BinaryType type;
+
+            try {
+                type = rawType();
+            } catch (Exception ignored) {
+                type = null;
+            }
+
+            if (type != null)
+                return S.toString(type.typeName(), "ordinal", ord, false);
+            else {
+                if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                    return S.toString("BinaryEnum", "clsName", clsName, false, "ordinal", ord, false);
+                else
+                    return S.toString("BinaryEnum", "typeId", typeId, false, "ordinal", ord, false);
+            }
+        }
+        if (sensitiveDataLogging == HASH)
+            return String.valueOf(IgniteUtils.hash(this));
+        else
             return ord >= 0 ? "BinaryEnum" : "null";
-
-        // 1. Try deserializing the object.
-        try {
-            Object val = deserialize();
-
-            return new SB().a(val).toString();
-        }
-        catch (Exception ignored) {
-            // No-op.
-        }
-
-        // 2. Try getting meta.
-        BinaryType type;
-
-        try {
-            type = rawType();
-        }
-        catch (Exception ignored) {
-            type = null;
-        }
-
-        if (type != null)
-            return S.toString(type.typeName(), "ordinal", ord, true);
-        else {
-            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                return S.toString("BinaryEnum", "clsName", clsName, true, "ordinal", ord, true);
-            else
-                return S.toString("BinaryEnum", "typeId", typeId, true, "ordinal", ord, true);
-        }
     }
 
     /** {@inheritDoc} */

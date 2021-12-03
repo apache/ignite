@@ -25,11 +25,16 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  *
@@ -39,7 +44,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     private static final long serialVersionUID = 2006765505127197251L;
 
     /** */
-    @GridToStringInclude(sensitive = true)
+    @GridToStringInclude()
     @GridDirectTransient
     protected Object val;
 
@@ -184,9 +189,17 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "CacheObject",
-            "val", val, true,
-            "hasValBytes", valBytes != null, false);
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+        if (sensitiveDataLogging == PLAIN) {
+            return S.toString(getClass().getSimpleName(),
+                        "val", val, true,
+                        "hasValBytes", valBytes != null, false);
+        }
+        else if (sensitiveDataLogging == HASH)
+            return val == null ? "null" : String.valueOf(IgniteUtils.hash(val));
+        else
+            return "CacheObject";
     }
 
     /**

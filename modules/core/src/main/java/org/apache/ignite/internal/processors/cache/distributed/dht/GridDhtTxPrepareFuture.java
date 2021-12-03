@@ -83,9 +83,11 @@ import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -112,6 +114,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_PREPARE;
 import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -1247,13 +1251,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         GridCacheContext cctx = entry.context();
 
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
         try {
             Object key = cctx.unwrapBinaryIfNeeded(entry.key(), entry.keepBinary(), false, null);
 
             assert key != null : entry.key();
 
-            if (S.includeSensitive())
+            if (sensitiveDataLogging == PLAIN)
                 msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
+            else if (sensitiveDataLogging == HASH)
+                msg.append("key=").append(IgniteUtils.hash(key));
+
         }
         catch (Exception e) {
             msg.append("key=<failed to get key: ").append(e.toString()).append(">");
@@ -1267,8 +1276,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false, null) : null;
 
             if (val != null) {
-                if (S.includeSensitive())
+                if (sensitiveDataLogging == PLAIN)
                     msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+                else if (sensitiveDataLogging == HASH)
+                    msg.append(", val=").append(IgniteUtils.hash(val));
             }
             else
                 msg.append(", val=null");

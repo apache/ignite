@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.util.tostring;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
@@ -30,6 +31,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -40,10 +43,11 @@ import org.junit.Test;
 
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -102,10 +106,22 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
     @Test
     public void testHideSensitiveDataDuringExchange() throws Exception {
-        checkSensitiveDataDuringExchange((logStr, binObjStr) -> assertNotContains(log, logStr, binObjStr));
+        checkSensitiveDataDuringExchange();
+    }
+
+    /**
+     * Test for checking the hash of sensitive data in log during an
+     * exchange while an active transaction is running.
+     *
+     * @throws Exception If failed.
+     */
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
+    @Test
+    public void testHashSensitiveDataDuringExchange() throws Exception {
+        checkSensitiveDataDuringExchange();
     }
 
     /**
@@ -114,10 +130,10 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     @Test
     public void testShowSensitiveDataDuringExchange() throws Exception {
-        checkSensitiveDataDuringExchange((logStr, binObjStr) -> assertContains(log, logStr, binObjStr));
+        checkSensitiveDataDuringExchange();
     }
 
     /**
@@ -126,10 +142,22 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "none")
     @Test
     public void testHideSensitiveDataDuringNodeLeft() throws Exception {
-        checkSensitiveDataDuringNodeLeft((logStr, binObjStr) -> assertNotContains(log, logStr, binObjStr));
+        checkSensitiveDataDuringNodeLeft();
+    }
+
+    /**
+     * Test for checking the hash of sensitive data in log when node exits
+     * during transaction preparation.
+     *
+     * @throws Exception If failed.
+     */
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "hash")
+    @Test
+    public void testHashSensitiveDataDuringNodeLeft() throws Exception {
+        checkSensitiveDataDuringNodeLeft();
     }
 
     /**
@@ -138,22 +166,19 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     @Test
     public void testShowSensitiveDataDuringNodeLeft() throws Exception {
-        checkSensitiveDataDuringNodeLeft((logStr, binObjStr) -> assertContains(log, logStr, binObjStr));
+        checkSensitiveDataDuringNodeLeft();
     }
 
     /**
      * Receiving a log message "Partition release future:" during the exchange
      * to check whether or not sensitive data is in printed transactions.
      *
-     * @param check Check sensitive data in log message.
      * @throws Exception If failed.
      */
-    private void checkSensitiveDataDuringExchange(BiConsumer<String, String> check) throws Exception {
-        assert nonNull(check);
-
+    private void checkSensitiveDataDuringExchange() throws Exception {
         IgniteEx crd = startGrids(NODE_COUNT);
 
         awaitPartitionMapExchange();
@@ -195,8 +220,36 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
 
         startGrid(NODE_COUNT);
 
-        check.accept(maskIdHash(strToCheckRef.get()), maskIdHash(toStr(binKey, Key.class)));
-        check.accept(maskIdHash(strToCheckRef.get()), maskIdHash(toStr(binPerson, Person.class)));
+        if (S.getSensitiveDataLogging() == PLAIN) {
+            assertContains(log, maskIdHash(strToCheckRef.get()), maskIdHash(toStr(binKey, Key.class)));
+
+            assertContains(log, maskIdHash(strToCheckRef.get()), maskIdHash(toStr(binPerson, Person.class)));
+        }
+        else {
+            Pattern patternKey;
+            Pattern patternVal;
+
+            if (S.getSensitiveDataLogging() == HASH) {
+                patternKey = Pattern.compile("(IgniteTxKey \\[key=" + IgniteUtils.hash(binKey) + ", cacheId=\\d+\\])");
+
+                patternVal = Pattern.compile("(TxEntryValueHolder \\[val=" + IgniteUtils.hash(binPerson) + ", op=\\D+\\])");
+            }
+            else {
+                patternKey = Pattern.compile("(IgniteTxKey \\[cacheId=\\d+\\])");
+
+                patternVal = Pattern.compile("(TxEntryValueHolder \\[op=\\D+\\])");
+            }
+
+            final String strToCheck = maskIdHash(strToCheckRef.get());
+
+            Matcher matcherKey = patternKey.matcher(strToCheck);
+
+            assertTrue(strToCheck, matcherKey.find());
+
+            Matcher matcherVal = patternVal.matcher(strToCheck);
+
+            assertTrue(strToCheck, matcherVal.find());
+        }
     }
 
     /**
@@ -205,12 +258,9 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
      * when preparing the transaction to check whether or not sensitive data
      * is in the printed transactions.
      *
-     * @param check Check sensitive data in log messages.
      * @throws Exception If failed.
      */
-    private void checkSensitiveDataDuringNodeLeft(BiConsumer<String, String> check) throws Exception {
-        assert nonNull(check);
-
+    private void checkSensitiveDataDuringNodeLeft() throws Exception {
         startGrids(NODE_COUNT);
 
         IgniteEx clientNode = startClientGrid(NODE_COUNT);
@@ -250,8 +300,7 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
             cache.put(binKey, binPerson);
 
             tx.commit();
-        }
-        catch (Exception ignored) {
+        } catch (Exception ignored) {
             //ignore
         }
 
@@ -261,11 +310,37 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
         String binKeyStr = maskIdHash(toStr(binKey, Key.class));
         String binPersonStr = maskIdHash(toStr(binPerson, Person.class));
 
-        check.accept(strFailedSndStr, binKeyStr);
-        check.accept(strFailedSndStr, binPersonStr);
+        if (S.getSensitiveDataLogging() == PLAIN) {
+            assertContains(log, strFailedSndStr, binKeyStr);
+            assertContains(log, strFailedSndStr, binPersonStr);
+            assertContains(log, strReceivedErrorStr, binKeyStr);
+            assertContains(log, strReceivedErrorStr, binPersonStr);
+        }
+        else {
+            Pattern patternKey;
+            Pattern patternVal;
+            
+            if (S.getSensitiveDataLogging() == HASH) {
+                patternKey = Pattern.compile("(IgniteTxKey \\[key=" + IgniteUtils.hash(binKey) + ", cacheId=\\d+\\])");
+                patternVal = Pattern.compile("(TxEntryValueHolder \\[val=" + IgniteUtils.hash(binPerson) + ", op=\\D+\\])");
+            }
+            else {
+                patternKey = Pattern.compile("(IgniteTxKey \\[cacheId=\\d+\\])");
+                patternVal = Pattern.compile("(TxEntryValueHolder \\[op=\\D+\\])");
+            }
 
-        check.accept(strReceivedErrorStr, binKeyStr);
-        check.accept(strReceivedErrorStr, binPersonStr);
+            final Matcher matcherKeySnd = patternKey.matcher(strFailedSndStr);
+            final Matcher matcherKeyReceived = patternKey.matcher(strReceivedErrorStr);
+
+            assertTrue(matcherKeySnd.find());
+            assertTrue(matcherKeyReceived.find());
+
+            final Matcher matcherValSnd = patternVal.matcher(strFailedSndStr);
+            final Matcher matcherValReceived = patternVal.matcher(strReceivedErrorStr);
+
+            assertTrue(matcherValSnd.find());
+            assertTrue(matcherValReceived.find());
+        }
     }
 
     /**

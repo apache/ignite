@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -327,7 +327,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
         v = valueWrapped();
         sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.getString() :
-            "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
+            "Data hidden due to " + IGNITE_SENSITIVE_DATA_LOGGING + " flag."));
 
         sb.a(" ][ ");
 

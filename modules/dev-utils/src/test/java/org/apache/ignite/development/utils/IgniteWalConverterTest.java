@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
@@ -47,13 +48,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
-import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -145,6 +139,30 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         return dataRegionConfiguration;
     }
 
+    /** */
+    @Test
+    public void testIgniteWalConverterWithDefaultSensitive() throws Exception {
+        testIgniteWalConverter(null);
+    }
+
+    /** */
+    @Test
+    public void testIgniteWalConverterWithShowSensitive() throws Exception {
+        testIgniteWalConverter(ProcessSensitiveData.SHOW);
+    }
+
+    /** */
+    @Test
+    public void testIgniteWalConverterWithHashSensitive() throws Exception {
+        testIgniteWalConverter(ProcessSensitiveData.HASH);
+    }
+
+    /** */
+    @Test
+    public void testIgniteWalConverterWithHideSensitive() throws Exception {
+        testIgniteWalConverter(ProcessSensitiveData.HIDE);
+    }
+
     /**
      * Checking utility IgniteWalConverter
      * <ul>
@@ -159,28 +177,47 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testIgniteWalConverter() throws Exception {
+    private void testIgniteWalConverter(ProcessSensitiveData sensitiveData) throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
+        final String workDir = U.defaultWorkDirectory();
+
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            walDir,
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
-            null, null, null, null, true, true, emptyList()
+            null, null, null, sensitiveData, true, true, Collections.emptyList()
         );
 
-        convert(out, arg);
+        IgniteWalConverter.convert(out, arg);
+
+        if (sensitiveData == ProcessSensitiveData.SHOW)
+            assertTrue("plain".equals(IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING)));
+        else if (sensitiveData == ProcessSensitiveData.HIDE)
+            assertTrue("none".equals(IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING)));
+        else
+            assertTrue("hash".equals(IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING)));
 
         final String result = outByte.toString();
 
@@ -191,17 +228,32 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
             index = result.indexOf("DataRecord", index);
 
-            if (index > 0) {
-                index = result.indexOf("PersonKey", index + 10);
-
+            if (sensitiveData == ProcessSensitiveData.SHOW) {
                 if (index > 0) {
-                    index = result.indexOf("id=" + person.getId(), index + 9);
+                    index = result.indexOf("PersonKey", index + 10);
 
+                    if (index > 0) {
+                        index = result.indexOf("id=" + person.getId(), index + 9);
+                    }
                     if (index > 0) {
                         index = result.indexOf("name=" + person.getName(), index + 4);
 
                         find = index > 0;
                     }
+                }
+            }
+            else if (sensitiveData == ProcessSensitiveData.HIDE) {
+                if (index > 0) {
+                    index = result.indexOf("v = []", index);
+
+                    find = index > 0;
+                }
+            }
+            else {
+                if (index > 0) {
+                    index = result.indexOf("v = [" + person.hashCode() + "]", index);
+
+                    find = index > 0;
                 }
             }
 
@@ -233,18 +285,25 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final String workDir = U.defaultWorkDirectory();
+
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            walDir,
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
             null,
             null,
             false,
             null,
-            null, null, null, null, true, true, emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
-        convert(out, arg);
+        IgniteWalConverter.convert(out, arg);
 
         final String result = outByte.toString();
 
@@ -294,11 +353,13 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
+        final String workDir = U.defaultWorkDirectory();
 
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File wal = new File(walDir, nodeDir + File.separator + "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -350,18 +411,27 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
-            null, null, null, null, true, true, emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
-        convert(out, arg);
+        IgniteWalConverter.convert(out, arg);
 
         final String result = outByte.toString();
 
@@ -413,11 +483,13 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final String nodeDir = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
+        final String workDir = U.defaultWorkDirectory();
 
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File walDir = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_WAL_PATH, false);
+
+        final File wal = new File(walDir, nodeDir + File.separator + "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -455,18 +527,27 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final File walArchiveDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false);
+
+        final File binaryMetaDir = new File(U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false), nodeDir);
+
+        final File marshallerDir = U.resolveWorkDirectory(
+            workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            walArchiveDir,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            binaryMetaDir,
+            marshallerDir,
             false,
             null,
-            null, null, null, null, true, true, emptyList()
+            null, null, null, ProcessSensitiveData.SHOW, true, true, Collections.emptyList()
         );
 
-        convert(out, arg);
+        IgniteWalConverter.convert(out, arg);
 
         final String result = outByte.toString();
 
@@ -485,21 +566,21 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (index > 0) {
                     index = result.indexOf("id=" + person.getId(), index + 9);
 
-                    if (index > 0) {
-                        index = result.indexOf(person.getClass().getSimpleName(), index + 4);
-
                         if (index > 0) {
-                            index = result.indexOf("id=" + person.getId(), index + person.getClass().getSimpleName().length());
+                            index = result.indexOf(person.getClass().getSimpleName(), index + 4);
 
                             if (index > 0) {
-                                index = result.indexOf("name=" + person.getName(), index + 4);
+                                index = result.indexOf("id=" + person.getId(), index + person.getClass().getSimpleName().length());
 
-                                find = index > 0;
+                                if (index > 0) {
+                                    index = result.indexOf("name=" + person.getName(), index + 4);
+
+                                    find = index > 0;
+                                }
                             }
                         }
                     }
                 }
-            }
 
             if (!find)
                 countErrorRead++;
@@ -530,7 +611,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         assertFalse(walRecords.isEmpty());
 
-        File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
+        File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_WAL_PATH, false);
         assertTrue(U.fileCount(walDir.toPath()) > 0);
 
         File walNodeDir = new File(walDir, nodeDir);
@@ -541,7 +622,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         T2<PageSnapshot, String> expRec = walRecords.get(0);
 
-        IgniteWalConverterArguments args = parse(
+        IgniteWalConverterArguments args = IgniteWalConverterArguments.parse(
             ps,
             "walDir=" + walDir.getAbsolutePath(),
             "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
@@ -550,7 +631,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         baos.reset();
 
-        convert(ps, args);
+        IgniteWalConverter.convert(ps, args);
 
         assertContains(log, baos.toString(), expRec.get2());
     }

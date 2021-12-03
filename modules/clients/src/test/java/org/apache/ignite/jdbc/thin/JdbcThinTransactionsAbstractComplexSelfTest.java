@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -262,15 +263,13 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                 return null;
             }
-        }, IgniteException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl " +
-            "[part=6, val=6, hasValBytes=true]]");
+        }, IgniteException.class, "Duplicate key during INSERT [key=" + IgniteUtils.hash(6) + "]");
 
         assertTrue(e.getCause() instanceof BatchUpdateException);
 
         assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY, ((BatchUpdateException)e.getCause()).getErrorCode());
 
-        assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=KeyCacheObjectImpl " +
-            "[part=6, val=6, hasValBytes=true]]"));
+        assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=" + IgniteUtils.hash(6) + "]"));
 
         // First we insert id 7, then 6. Still, 7 is not in the cache as long as the whole batch has failed inside tx.
         assertEquals(Collections.emptyList(), execute("SELECT * FROM \"Person\".Person where id > 6 order by id"));

@@ -21,10 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  *
@@ -210,9 +214,17 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "KeyCacheObject",
-            "part", part, true,
-            "val", val, true,
-            "hasValBytes", valBytes != null, false);
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+        if (sensitiveDataLogging == PLAIN) {
+            return S.toString(getClass().getSimpleName(),
+                    "part", part, false,
+                    "val", val, false,
+                    "hasValBytes", valBytes != null, false);
+        }
+        else if (sensitiveDataLogging == HASH)
+            return String.valueOf(val == null ? "null" : IgniteUtils.hash(val));
+        else
+            return "KeyCacheObject";
     }
 }
