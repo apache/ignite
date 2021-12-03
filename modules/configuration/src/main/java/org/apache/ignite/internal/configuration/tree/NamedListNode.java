@@ -191,8 +191,12 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(valConsumer, "valConsumer");
 
-        if (!map.containsKey(precedingKey)) {
-            throw new IllegalArgumentException("Element with name " + precedingKey + " doesn't exist.");
+        ElementDescriptor precedingElement = map.get(precedingKey);
+
+        if (precedingElement == null) {
+            throw elementMissingException(precedingKey);
+        } else if (precedingElement.value == null) {
+            throw elementRemovedException(precedingKey);
         }
 
         checkNewKey(key);
@@ -217,7 +221,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         ElementDescriptor element = map.get(key);
 
         if (element != null && element.value == null) {
-            throw new IllegalArgumentException("Can't create entity that has just been deleted [key=" + key + ']');
+            throw elementRemovedException(key);
         }
 
         if (element == null) {
@@ -244,9 +248,9 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         ElementDescriptor element = map.get(key);
 
         if (element == null) {
-            throw new IllegalArgumentException("Element with name " + key + " does not exist.");
+            throw elementMissingException(key);
         } else if (element.value == null) {
-            throw new IllegalArgumentException("Can't update entity that has just been deleted [key=" + key + ']');
+            throw elementRemovedException(key);
         }
 
         element = element.copy();
@@ -267,11 +271,9 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         ElementDescriptor element = map.get(oldKey);
 
         if (element == null) {
-            throw new IllegalArgumentException("Element with name " + oldKey + " does not exist.");
+            throw elementMissingException(oldKey);
         } else if (element.value == null) {
-            throw new IllegalArgumentException(
-                    "Can't rename entity that has just been deleted [key=" + oldKey + ']'
-            );
+            throw elementRemovedException(oldKey);
         }
 
         checkNewKey(newKey);
@@ -294,9 +296,9 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
 
         if (element != null) {
             if (element.value == null) {
-                throw new IllegalArgumentException("You can't create entity that has just been deleted [key=" + key + ']');
+                throw elementRemovedException(key);
             } else {
-                throw new IllegalArgumentException("Element with name " + key + " already exists.");
+                throw elementExistsException(key);
             }
         }
     }
@@ -355,7 +357,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         ElementDescriptor element = map.get(key);
 
         if (element == null) {
-            throw new IllegalArgumentException("Element with name '" + key + "' does not exist.");
+            throw elementMissingException(key);
         }
 
         return element.internalId;
@@ -413,7 +415,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
             ElementDescriptor element = map.get(key);
 
             if (element != null && element.value == null) {
-                throw new IllegalArgumentException("You can't create entity that has just been deleted [key=" + key + ']');
+                throw elementRemovedException(key);
             }
 
             if (element == null) {
@@ -546,5 +548,17 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         InnerNode value = element.value;
 
         return value == null ? null : value.specificNode();
+    }
+
+    private static IllegalArgumentException elementMissingException(String key) {
+        return new IllegalArgumentException("Named List element with key \"" + key + "\" does not exist");
+    }
+
+    private static IllegalArgumentException elementExistsException(String key) {
+        return new IllegalArgumentException("Named List element with key \"" + key + "\" already exists");
+    }
+
+    private static IllegalArgumentException elementRemovedException(String key) {
+        return new IllegalArgumentException("Named List element with key \"" + key + "\" has been removed");
     }
 }

@@ -299,10 +299,6 @@ public class NamedListNodeTest {
         }));
         assertThrows(NullPointerException.class, () -> b.create(0, null, z -> {
         }));
-        assertThrows(NullPointerException.class, () -> b.createAfter(null, "Z", z -> {
-        }));
-        assertThrows(NullPointerException.class, () -> b.createAfter("X", null, z -> {
-        }));
         assertThrows(NullPointerException.class, () -> b.rename(null, "Z"));
         assertThrows(NullPointerException.class, () -> b.rename("X", null));
         assertThrows(NullPointerException.class, () -> b.delete(null));
@@ -311,20 +307,13 @@ public class NamedListNodeTest {
         assertThrows(NullPointerException.class, () -> b.create("Z", null));
         assertThrows(NullPointerException.class, () -> b.createOrUpdate("Z", null));
         assertThrows(NullPointerException.class, () -> b.create(0, "Z", null));
-        assertThrows(NullPointerException.class, () -> b.createAfter("X", "Z", null));
 
         // Already existing keys.
         assertThrows(IllegalArgumentException.class, () -> b.create("X", x -> {
         }));
         assertThrows(IllegalArgumentException.class, () -> b.create(0, "X", x -> {
         }));
-        assertThrows(IllegalArgumentException.class, () -> b.createAfter("X", "Y", y -> {
-        }));
         assertThrows(IllegalArgumentException.class, () -> b.rename("X", "Y"));
-
-        // Nonexistent preceding key.
-        assertThrows(IllegalArgumentException.class, () -> b.createAfter("A", "Z", z -> {
-        }));
 
         // Wrong indexes.
         assertThrows(IndexOutOfBoundsException.class, () -> b.create(-1, "Z", z -> {
@@ -379,5 +368,29 @@ public class NamedListNodeTest {
 
         // updating a non existent key should throw
         assertThrows(IllegalArgumentException.class, () -> list.update("wrong", ch -> {}));
+    }
+
+    @Test
+    void testCreateAfterErrors() {
+        var list = new NamedListNode<>("name", () -> cgen.instantiateNode(SecondConfigurationSchema.class), null);
+
+        list
+                .create("X", x -> {})
+                .create("Y", y -> {});
+
+        assertThrows(NullPointerException.class, () -> list.createAfter(null, "Z", z -> {}));
+
+        assertThrows(NullPointerException.class, () -> list.createAfter("X", null, z -> {}));
+
+        assertThrows(NullPointerException.class, () -> list.createAfter("X", "Z", null));
+
+        // inserting an existing key should throw
+        assertThrows(IllegalArgumentException.class, () -> list.createAfter("X", "Y", y -> {}));
+
+        // inserting after a missing key should throw
+        assertThrows(IllegalArgumentException.class, () -> list.createAfter("A", "Z", z -> {}));
+
+        // inserting after a removed key should throw
+        assertThrows(IllegalArgumentException.class, () -> list.delete("X").createAfter("X", "foo", foo -> {}));
     }
 }
