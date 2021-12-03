@@ -45,7 +45,7 @@ public abstract class AbstractTestDependencyResolver implements DependencyResolv
      * @return Returns {@code null} if dependency wasn't registered.
      */
     public <T> T getDependency(Class<T> clazz) {
-        return (T) registry.get(clazz);
+        return (T)registry.get(clazz);
     }
 
     /**

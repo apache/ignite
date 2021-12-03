@@ -234,7 +234,7 @@ public final class DmlAstUtils {
         if (!(where instanceof GridSqlOperation))
             return null;
 
-        GridSqlOperation whereOp = (GridSqlOperation) where;
+        GridSqlOperation whereOp = (GridSqlOperation)where;
 
         // Does this WHERE limit only by _key?
         if (isKeyEqualityCondition(whereOp))
@@ -251,9 +251,9 @@ public final class DmlAstUtils {
         if (!(left instanceof GridSqlOperation && right instanceof GridSqlOperation))
             return null;
 
-        GridSqlOperation leftOp = (GridSqlOperation) left;
+        GridSqlOperation leftOp = (GridSqlOperation)left;
 
-        GridSqlOperation rightOp = (GridSqlOperation) right;
+        GridSqlOperation rightOp = (GridSqlOperation)right;
 
         if (isKeyEqualityCondition(leftOp)) { // _key = ? and _val = ?
             if (!isValueEqualityCondition(rightOp))
@@ -291,7 +291,7 @@ public final class DmlAstUtils {
         if (!(column.column().getTable() instanceof GridH2Table))
             return false;
 
-        GridH2RowDescriptor desc = ((GridH2Table) column.column().getTable()).rowDescriptor();
+        GridH2RowDescriptor desc = ((GridH2Table)column.column().getTable()).rowDescriptor();
 
         return (key ? desc.isKeyColumn(column.column().getColumnId()) :
                        desc.isValueColumn(column.column().getColumnId())) &&

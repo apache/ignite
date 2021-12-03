@@ -52,7 +52,7 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
      */
     public static <T> T get(CompletableFuture<?> fut) throws IgniteCheckedException {
         try {
-            return (T) fut.get();
+            return (T)fut.get();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -63,7 +63,7 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
             Throwable t = e.getCause();
 
             if (t instanceof IgniteCheckedException)
-                throw (IgniteCheckedException) t;
+                throw (IgniteCheckedException)t;
 
             throw new IgniteCheckedException("Page future was completed with unexpected error.", e);
         }

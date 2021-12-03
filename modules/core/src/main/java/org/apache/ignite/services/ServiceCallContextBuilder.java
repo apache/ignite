@@ -17,8 +17,6 @@
 
 package org.apache.ignite.services;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
@@ -31,7 +29,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public class ServiceCallContextBuilder {
     /** Service call context attributes. */
-    private final Map<String, byte[]> attrs = new HashMap<>();
+    private final Map<String, Object> attrs = new HashMap<>();
 
     /**
      * Put string attribute.
@@ -44,13 +42,15 @@ public class ServiceCallContextBuilder {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, value.getBytes(StandardCharsets.UTF_8));
+        attrs.put(name, value);
 
         return this;
     }
 
     /**
      * Put binary attribute.
+     * <p>
+     * <b>Note:</b> it is recommended to pass a copy of the array if the original can be changed later.
      *
      * @param name Attribute name.
      * @param value Attribute value.
@@ -60,7 +60,7 @@ public class ServiceCallContextBuilder {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, Arrays.copyOf(value, value.length));
+        attrs.put(name, value);
 
         return this;
     }
@@ -72,6 +72,6 @@ public class ServiceCallContextBuilder {
         if (attrs.isEmpty())
             throw new IllegalStateException("Cannot create an empty context.");
 
-        return new ServiceCallContextImpl(attrs);
+        return new ServiceCallContextImpl(new HashMap<>(attrs));
     }
 }

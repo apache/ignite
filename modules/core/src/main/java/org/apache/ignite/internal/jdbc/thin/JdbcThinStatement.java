@@ -372,7 +372,7 @@ public class JdbcThinStatement implements Statement {
             }
 
             if (e instanceof SQLException)
-                throw (SQLException) e;
+                throw (SQLException)e;
             else
                 throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
         }

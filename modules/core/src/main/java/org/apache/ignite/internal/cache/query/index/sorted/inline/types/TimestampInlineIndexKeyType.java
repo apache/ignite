@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.D
 public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimestampIndexKey> {
     /** */
     public TimestampInlineIndexKeyType() {
-        super(IndexKeyTypes.TIMESTAMP, (short) 16);
+        super(IndexKeyTypes.TIMESTAMP, (short)16);
     }
 
     /** {@inheritDoc} */
@@ -51,7 +51,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, AbstractTimestampIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type());
 
         PageUtils.putLong(pageAddr, off + 1, key.dateValue());
         PageUtils.putLong(pageAddr, off + 9, key.nanos());
@@ -72,7 +72,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
             nanos = 0;
         }
 
-        return (AbstractTimestampIndexKey) IndexKeyFactory.wrapDateValue(type(), dv, nanos);
+        return (AbstractTimestampIndexKey)IndexKeyFactory.wrapDateValue(type(), dv, nanos);
     }
 
     /** {@inheritDoc} */

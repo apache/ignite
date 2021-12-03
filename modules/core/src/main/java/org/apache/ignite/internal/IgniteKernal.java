@@ -129,7 +129,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -185,7 +184,6 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -238,7 +236,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -263,7 +260,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -406,9 +402,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * Value is {@code 60 sec}.
      */
     public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT = 60_000L;
-
-    /** @see IgniteSystemProperties#IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED */
-    public static final boolean DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = true;
 
     /** @see IgniteSystemProperties#IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP */
     public static final boolean DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP = true;
@@ -1044,6 +1037,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         ackP2pConfiguration();
         ackRebalanceConfiguration();
         ackIPv4StackFlagIsSet();
+        ackWaitForBackupsOnShutdownPropertyIsUsed();
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -1231,7 +1225,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new IndexProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
-                startProcessor(createServiceProcessor());
+                startProcessor(new IgniteServiceProcessor(ctx));
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
                 startProcessor(new GridTaskProcessor(ctx));
@@ -1571,7 +1565,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             poolQSize = exec.getQueue().size();
         }
         else if (execSvc instanceof StripedExecutor) {
-            StripedExecutor exec = (StripedExecutor) execSvc;
+            StripedExecutor exec = (StripedExecutor)execSvc;
 
             poolSize = exec.stripesCount();
             poolActiveThreads = exec.activeStripesCount();
@@ -1581,21 +1575,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         int poolIdleThreads = poolSize - poolActiveThreads;
 
         return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
-    }
-
-    /**
-     * Creates service processor depend on {@link IgniteSystemProperties#IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED}.
-     *
-     * @return The service processor. See {@link IgniteServiceProcessor} for details.
-     */
-    private GridProcessorAdapter createServiceProcessor() {
-        final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
-            DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
-
-        if (srvcProcMode)
-            return new IgniteServiceProcessor(ctx);
-
-        return new GridServiceProcessor(ctx);
     }
 
     /**
@@ -1901,9 +1880,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 ctx.addNodeAttribute(e.getKey(), e.getValue());
             }
         }
-
-        ctx.addNodeAttribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
-            ctx.service() instanceof IgniteServiceProcessor);
     }
 
     /**
@@ -3004,6 +2980,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             U.quietAndWarn(log, "Please set system property '-Djava.net.preferIPv4Stack=true' " +
                 "to avoid possible problems in mixed environments.");
+        }
+    }
+
+    /**
+     * Prints warning if IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN is used.
+     */
+    private void ackWaitForBackupsOnShutdownPropertyIsUsed() {
+        if (IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN) != null) {
+            log.warning("IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN system property is deprecated and will be removed " +
+                "in a future version. Use ShutdownPolicy instead.");
         }
     }
 

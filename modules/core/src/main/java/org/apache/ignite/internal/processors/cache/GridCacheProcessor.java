@@ -157,7 +157,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
@@ -473,7 +472,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.walState().onNodeLeft(task0.node().id());
         }
         else if (task instanceof FinishPreloadingTask) {
-            FinishPreloadingTask task0 = (FinishPreloadingTask) task;
+            FinishPreloadingTask task0 = (FinishPreloadingTask)task;
 
             CacheGroupContext grp = cacheGroup(task0.groupId());
 
@@ -738,9 +737,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Escape if cluster inactive.
         if (!active)
             return;
-
-        if (ctx.service() instanceof GridServiceProcessor)
-            ((GridServiceProcessor)ctx.service()).onUtilityCacheStarted();
 
         awaitRebalance(joinVer).get();
     }
@@ -2980,12 +2976,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions == null)
             return;
 
-        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
+        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null)
             ctx.dataStructures().restoreStructuresState(ctx);
-
-            if (ctx.service() instanceof GridServiceProcessor)
-                ((GridServiceProcessor)ctx.service()).updateUtilityCache();
-        }
 
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);
@@ -5354,7 +5346,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache configuration splitter with or without old format support depending on cluster state.
      */
     private CacheConfigurationSplitter backwardCompatibleSplitter() {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
         boolean oldFormat = !spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 

@@ -838,7 +838,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 }
 
                 if (e instanceof TimeoutException)
-                    throw (TimeoutException) e;
+                    throw (TimeoutException)e;
             }
         }
 

@@ -35,6 +35,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -130,7 +132,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryKeyPKIdx)
-            .setCriteria(lt("_KEY", (long) pivot));
+            .setCriteria(lt("_KEY", (long)pivot));
 
         checkPerson(qry, 0, pivot, false);
     }
@@ -168,8 +170,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         result.sort(Comparator.comparingLong(Cache.Entry::getKey));
 
-        assertEquals(1L, (long) result.get(0).getKey());
-        assertEquals(3L, (long) result.get(1).getKey());
+        assertEquals(1L, (long)result.get(0).getKey());
+        assertEquals(3L, (long)result.get(1).getKey());
 
         assertEquals(new Person(0, 1), result.get(0).getValue());
         assertEquals(new Person(1, 1), result.get(1).getValue());
@@ -441,7 +443,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         // Use long boundary instead of int.
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-            .setCriteria(lt("id", (long) 0));
+            .setCriteria(lt("id", (long)0));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry).getAll(), CacheException.class, null);
@@ -458,7 +460,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-            .setCriteria(eq("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
+            .setCriteria(eq("id", 0), lt("secId", pivot), lt("_KEY", (long)pivot));
 
         checkPerson(qry, 0, pivot, false);
     }
@@ -467,7 +469,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     private void insertData() {
         try (IgniteDataStreamer<Long, Person> streamer = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < CNT; i++)
-                streamer.addData((long) i, new Person(i));
+                streamer.addData((long)i, new Person(i));
         }
     }
 
@@ -499,6 +501,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static class Person {
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = {
             @QuerySqlField.Group(name = INDEX, order = 0),
             @QuerySqlField.Group(name = DESC_INDEX, order = 0)}
@@ -506,10 +509,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         final int id;
 
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = INDEX, order = 1))
         final int secId;
 
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = DESC_INDEX, order = 1, descending = true))
         final int descId;
 
@@ -535,7 +540,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id) && Objects.equals(secId, person.secId);
         }
@@ -543,6 +548,11 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(id, secId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Person.class, this);
         }
     }
 }

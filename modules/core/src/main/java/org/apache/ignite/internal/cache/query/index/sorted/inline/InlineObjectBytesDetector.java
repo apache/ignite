@@ -118,7 +118,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
                 len &= 0x7FFF;
 
-                byte[] originalObjBytes = ((JavaObjectIndexKey) key).bytesNoCopy();
+                byte[] originalObjBytes = ((JavaObjectIndexKey)key).bytesNoCopy();
 
                 // Read size more then available space or more then origin length.
                 if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {

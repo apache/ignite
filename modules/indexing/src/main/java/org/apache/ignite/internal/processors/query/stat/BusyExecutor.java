@@ -158,7 +158,7 @@ public class BusyExecutor {
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
         if (r instanceof CancellableTask) {
-            CancellableTask ct = (CancellableTask) r;
+            CancellableTask ct = (CancellableTask)r;
 
             res.thenApply(result -> {
                 cancellableTasks.remove(ct);

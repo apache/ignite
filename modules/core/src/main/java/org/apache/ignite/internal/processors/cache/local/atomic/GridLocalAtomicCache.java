@@ -581,7 +581,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 invokeMap.keySet(),
                 invokeMap.values(),
@@ -687,7 +687,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 map.keySet(),
                 map.values(),

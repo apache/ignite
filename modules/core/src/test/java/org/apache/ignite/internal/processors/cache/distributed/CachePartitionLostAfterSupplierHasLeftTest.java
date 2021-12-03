@@ -339,7 +339,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
         TestRecordingCommunicationSpi.spi(grid(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
                 }

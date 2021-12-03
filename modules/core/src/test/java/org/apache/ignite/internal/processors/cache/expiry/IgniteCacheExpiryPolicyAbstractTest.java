@@ -330,7 +330,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 0);
 
-        assertEquals((Integer) 1, cache.get(key)); // Get.
+        assertEquals((Integer)1, cache.get(key)); // Get.
 
         checkTtl(key, 0);
 
@@ -503,7 +503,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
 

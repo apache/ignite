@@ -639,7 +639,7 @@ public class CacheGroupContext {
     /**
      * @return Cache shared context.
      */
-    public GridCacheSharedContext shared() {
+    public GridCacheSharedContext<?, ?> shared() {
         return ctx;
     }
 
@@ -871,7 +871,7 @@ public class CacheGroupContext {
         if (ccfg.getCacheMode() != LOCAL) {
             if (!ctx.kernalContext().clientNode()) {
                 ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>) this::processAffinityAssignmentRequest);
+                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
             }
 
             preldr = new GridDhtPreloader(this);

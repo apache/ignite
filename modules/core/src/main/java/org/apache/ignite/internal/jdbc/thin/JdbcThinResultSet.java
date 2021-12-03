@@ -314,7 +314,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).byteValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? (byte) 1 : (byte) 0;
+            return (Boolean)val ? (byte)1 : (byte)0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Byte.parseByte(val.toString());
@@ -337,9 +337,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).shortValue();
+            return ((Number)val).shortValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? (short) 1 : (short) 0;
+            return (Boolean)val ? (short)1 : (short)0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Short.parseShort(val.toString());
@@ -362,9 +362,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).intValue();
+            return ((Number)val).intValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? 1 : 0;
+            return (Boolean)val ? 1 : 0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Integer.parseInt(val.toString());
@@ -389,7 +389,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).longValue();
         else if (cls == Boolean.class)
-            return (long) ((Boolean) val ? 1 : 0);
+            return (long)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Long.parseLong(val.toString());
@@ -412,9 +412,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).floatValue();
+            return ((Number)val).floatValue();
         else if (cls == Boolean.class)
-            return (float) ((Boolean) val ? 1 : 0);
+            return (float)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Float.parseFloat(val.toString());
@@ -437,9 +437,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).doubleValue();
+            return ((Number)val).doubleValue();
         else if (cls == Boolean.class)
-            return (double)((Boolean) val ? 1 : 0);
+            return (double)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Double.parseDouble(val.toString());
@@ -480,13 +480,13 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == Integer.class) {
             int x = (int)val;
 
-            return new byte[] { (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+            return new byte[] { (byte)(x >> 24), (byte)(x >> 16), (byte)(x >> 8), (byte)x};
         }
         else if (cls == Long.class) {
             long x = (long)val;
 
-            return new byte[] {(byte) (x >> 56), (byte) (x >> 48), (byte) (x >> 40), (byte) (x >> 32),
-                (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+            return new byte[] {(byte)(x >> 56), (byte)(x >> 48), (byte)(x >> 40), (byte)(x >> 32),
+                (byte)(x >> 24), (byte)(x >> 16), (byte)(x >> 8), (byte)x};
         }
         else if (cls == String.class)
             return ((String)val).getBytes();

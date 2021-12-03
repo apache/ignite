@@ -380,11 +380,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
                 if (!fut.isDone()) {
                     //skipping system tx futures if possible
                     if (fut instanceof GridNearTxPrepareFutureAdapter
-                        && ((GridNearTxPrepareFutureAdapter) fut).tx().system())
+                        && ((GridNearTxPrepareFutureAdapter)fut).tx().system())
                         continue;
 
                     if (fut instanceof GridDhtTxPrepareFuture
-                        && ((GridDhtTxPrepareFuture) fut).tx().system())
+                        && ((GridDhtTxPrepareFuture)fut).tx().system())
                         continue;
 
                     log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');

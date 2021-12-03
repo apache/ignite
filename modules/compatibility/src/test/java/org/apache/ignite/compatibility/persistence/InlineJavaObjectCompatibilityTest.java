@@ -277,7 +277,7 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
-            return val == ((EntityValue) other).val;
+            return val == ((EntityValue)other).val;
         }
 
         /** Enable comparison of EntityValue objects by the {@link #val} field. */

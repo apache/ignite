@@ -113,7 +113,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongType() {
-        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String) null, qryIdx),
+        GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String)null, qryIdx),
             NullPointerException.class, "Ouch! Argument cannot be null: valType");
 
         GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>("", qryIdx),
@@ -270,7 +270,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     private void destroyIndex() {
         IndexName idxName = new IndexName(CACHE, CACHE, Person.class.getSimpleName().toUpperCase(), IDX);
 
-        GridCacheContext cctx = ((GatewayProtectedCacheProxy) cache).context();
+        GridCacheContext cctx = ((GatewayProtectedCacheProxy)cache).context();
 
         cctx.kernalContext().indexProcessor()
             .removeIndex(cctx, idxName, false);
@@ -279,7 +279,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     private void insertData(int from, int to) {
         for (int i = from; i < to; i++)
-            cache.put((long) i, new Person(i));
+            cache.put((long)i, new Person(i));
     }
 
     /** */
@@ -310,7 +310,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id)
                 && Objects.equals(descId, person.descId);

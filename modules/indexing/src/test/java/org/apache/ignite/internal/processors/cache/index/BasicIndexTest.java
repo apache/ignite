@@ -1575,9 +1575,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(100, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1634,9 +1634,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1662,9 +1662,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1765,7 +1765,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Key key = (Key) o;
+            Key key = (Key)o;
 
             return keyLong == key.keyLong &&
                 Objects.equals(keyStr, key.keyStr) &&
@@ -1815,7 +1815,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Val val = (Val) o;
+            Val val = (Val)o;
 
             return valLong == val.valLong &&
                 Objects.equals(valStr, val.valStr) &&
@@ -1857,7 +1857,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Pojo pojo = (Pojo) o;
+            Pojo pojo = (Pojo)o;
 
             return pojoLong == pojo.pojoLong;
         }

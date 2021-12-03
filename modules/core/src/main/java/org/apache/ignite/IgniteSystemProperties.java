@@ -50,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheManager.DFLT_JCACHE_DEFAULT_ISOLATED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_USE_ASYNC_FILE_IO_FACTORY;
-import static org.apache.ignite.internal.IgniteKernal.DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
@@ -1634,24 +1633,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
     /**
-     * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
-     * All nodes in the cluster must have the same value of this property.
-     * <p/>
-     * If the property is {@code true} then event-driven implementation of the service processor will be used.
-     * <p/>
-     * If the property is {@code false} then internal cache based implementation of service processor will be used.
-     * <p/>
-     * Default is {@code true}.
-     */
-    @SystemProperty(value = "Manages the type of the implementation of the service processor " +
-        "(implementation of the IgniteServices). All nodes in the cluster must have the same value of this property. " +
-        "If the property is true then event-driven implementation of the service processor will be used. If the " +
-        "property is false then internal cache based implementation of service processor will be used",
-        defaults = "" + DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED)
-    public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
-        = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
-
-    /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
      * case message contains only cluster metrics). By default cache metrics are included into the message and
      * calculated each time the message is sent.
@@ -1912,7 +1893,9 @@ public final class IgniteSystemProperties {
      * When enabled, node will wait until all of its data is backed up before shutting down.
      * Please note that it will completely prevent last node in cluster from shutting down if any caches exist
      * that have backups configured.
+     * @deprecated Use {@link ShutdownPolicy} instead.
      */
+    @Deprecated
     @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +

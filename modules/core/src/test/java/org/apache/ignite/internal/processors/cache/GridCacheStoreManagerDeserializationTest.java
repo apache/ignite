@@ -333,7 +333,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final TestObj testObj = (TestObj) o;
+            final TestObj testObj = (TestObj)o;
 
             return val != null ? val.equals(testObj.val) : testObj.val == null;
 
