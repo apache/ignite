@@ -93,7 +93,7 @@ configuration examples.
 By default, the snapshot thread pool size has a value of `4`. Decreasing the number of threads involved in the snapshot creation process 
 increases the total amount of time for taking a snapshot. However, this keeps the disk load within reasonable limits.
 
-See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Execution Pool] page.
+See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Execution Pool,window=_blank] page for more details.
 
 == Creating Snapshot
 
