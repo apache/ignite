@@ -253,8 +253,8 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                             .setPersistenceEnabled(true)
-                            .setInitialSize(1024 * 1024 * 10)
-                            .setMaxSize(1024 * 1024 * 15)
+                            .setInitialSize(10 * 1024 * 1024)
+                            .setMaxSize(15 * 1024 * 1024)
                 )
                 .setSystemDataRegionConfiguration(
                     new SystemDataRegionConfiguration()

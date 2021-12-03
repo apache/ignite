@@ -144,16 +144,6 @@ namespace Apache.Ignite.Core.Configuration
         public const bool DefaultWalCompactionEnabled = false;
 
         /// <summary>
-        /// Default size of a memory chunk reserved for system cache initially.
-        /// </summary>
-        public const long DefaultSystemRegionInitialSize = 40 * 1024 * 1024;
-
-        /// <summary>
-        /// Default max size of a memory chunk for the system cache.
-        /// </summary>
-        public const long DefaultSystemRegionMaxSize = 100 * 1024 * 1024;
-
-        /// <summary>
         /// The default page size.
         /// </summary>
         public const int DefaultPageSize = 4 * 1024;
@@ -490,7 +480,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.
         /// </summary>
-        [DefaultValue(DefaultSystemRegionInitialSize)]
+        [DefaultValue(SystemDataRegionConfiguration.DefaultInitialSize)]
         public long SystemRegionInitialSize
         {
             get => SystemDataRegionConfiguration?.InitialSize ?? SystemDataRegionConfiguration.DefaultInitialSize;
@@ -508,7 +498,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the maximum memory region size reserved for system needs.
         /// </summary>
-        [DefaultValue(DefaultSystemRegionMaxSize)]
+        [DefaultValue(SystemDataRegionConfiguration.DefaultMaxSize)]
         public long SystemRegionMaxSize
         {
             get => SystemDataRegionConfiguration?.MaxSize ?? SystemDataRegionConfiguration.DefaultMaxSize;

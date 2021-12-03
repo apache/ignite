@@ -352,6 +352,9 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Deprecated
     public long getSystemRegionInitialSize() {
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
         return sysDataRegConf.getInitialSize();
     }
 
@@ -364,6 +367,9 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Deprecated
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
         sysDataRegConf.setInitialSize(sysRegionInitSize);
 
         return this;
@@ -377,6 +383,9 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Deprecated
     public long getSystemRegionMaxSize() {
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
         return sysDataRegConf.getMaxSize();
     }
 
@@ -390,6 +399,9 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Deprecated
     public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
         sysDataRegConf.setMaxSize(sysRegionMaxSize);
 
         return this;

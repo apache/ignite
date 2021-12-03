@@ -84,7 +84,7 @@ public class SystemDataRegionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public SystemDataRegionConfiguration setMaxSize(long maxSize) {
-        A.ensure(maxSize > 0, "System region max size can not be less zero.");
+        A.ensure(maxSize > 0, "System region max size should be greater that zero.");
 
         this.maxSize = maxSize;
 
