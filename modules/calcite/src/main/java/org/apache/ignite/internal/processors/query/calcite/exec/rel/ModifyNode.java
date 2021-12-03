@@ -32,10 +32,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
@@ -54,7 +54,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     private final List<String> cols;
 
     /** */
-    private List<IgniteBiTuple<?, ?>> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
+    private List<ModifyTuple> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
     /** */
     private long updatedRows;
@@ -191,12 +191,12 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
-        List<IgniteBiTuple<?, ?>> tuples = this.tuples;
+        List<ModifyTuple> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-        GridCacheContext<Object, Object> cctg = desc.cacheContext();
+        GridCacheContext<Object, Object> cctx = desc.cacheContext();
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cctg.cache().invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
@@ -225,39 +225,46 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<IgniteBiTuple<?, ?>> tuples) {
+    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<ModifyTuple> tuples) {
         Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(tuples.size());
 
         switch (op) {
             case INSERT:
-                for (IgniteBiTuple<?, ?> entry : tuples) {
+                for (ModifyTuple entry : tuples) {
+                    assert entry.getOp() == op : entry.getOp();
+
                     if (procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue())) != null)
                         throw conflictKeysException(Collections.singletonList(entry.getKey()));
                 }
 
                 break;
             case UPDATE:
-                for (IgniteBiTuple<?, ?> entry : tuples)
+                for (ModifyTuple entry : tuples) {
+                    assert entry.getOp() == op : entry.getOp();
+
                     procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
+                }
 
                 break;
             case MERGE:
-                for (IgniteBiTuple<?, ?> insertUpdateTuple : tuples) {
-                    IgniteBiTuple<?, ?> insertEntry = (IgniteBiTuple<?, ?>)insertUpdateTuple.get1();
-                    IgniteBiTuple<?, ?> updateEntry = (IgniteBiTuple<?, ?>)insertUpdateTuple.get2();
-
-                    if (updateEntry != null)
-                        procMap.put(updateEntry.getKey(), new UpdateOperation<>(updateEntry.getValue()));
+                for (ModifyTuple entry : tuples) {
+                    if (entry.getOp() == TableModify.Operation.UPDATE)
+                        procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
                     else {
-                        if (procMap.put(insertEntry.getKey(), new InsertOperation<>(insertEntry.getValue())) != null)
-                            throw conflictKeysException(Collections.singletonList(insertEntry.getKey()));
+                        assert entry.getOp() == TableModify.Operation.INSERT : entry.getOp();
+
+                        if (procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue())) != null)
+                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
                     }
                 }
 
                 break;
             case DELETE:
-                for (IgniteBiTuple<?, ?> entry : tuples)
+                for (ModifyTuple entry : tuples) {
+                    assert entry.getOp() == op : entry.getOp();
+
                     procMap.put(entry.getKey(), new DeleteOperation<>());
+                }
 
                 break;
             default:
