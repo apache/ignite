@@ -76,15 +76,24 @@ snapshot data spread across the cluster. Each node keeps a segment of the snapsh
 The link:persistence/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
 ====
 
-== Configuring Snapshot Directory
+== Configuration
+
+=== Snapshot Directory
 
 By default, a segment of the snapshot is stored in the work directory of a respective Ignite node and uses the same storage
 media where Ignite Persistence keeps data, index, WAL, and other files. Since the snapshot can consume as much space as
-already taken by the persistence files and can affect your applications' performance by sharing the disk I/O with the
+already taken by the persistence files and can affect your application's performance by sharing the disk I/O with the
 Ignite Persistence routines, it's suggested to store the snapshot and persistence files on different media.
 
 See the link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory] page for
 configuration examples.
+
+=== Snapshot Execution Pool
+
+By default, the snapshot thread pool size has a value of `4`. Decreasing the number of threads involved in the snapshot creation process 
+increases the total amount of time for taking a snapshot. However, this keeps the disk load within reasonable limits.
+
+See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Execution Pool,window=_blank] page for more details.
 
 == Creating Snapshot
 
@@ -247,8 +256,6 @@ The snapshot procedure has some limitations that you should be aware of before u
 * Encrypted caches are not included in the snapshot.
 * You can have only one snapshotting operation running at a time.
 * The snapshot procedure is interrupted if a server node leaves the cluster.
-* Snapshot may be restored only at the same cluster topology with the same node IDs;
-* The automatic restore procedure is not available yet. You have to restore it manually.
 
 If any of these limitations prevent you from using Apache Ignite, then select alternate snapshotting implementations for
 Ignite provided by enterprise vendors.
