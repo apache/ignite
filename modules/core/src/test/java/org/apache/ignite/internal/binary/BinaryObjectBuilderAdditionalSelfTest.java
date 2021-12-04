@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -57,6 +58,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
+import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1874,6 +1877,36 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         }
     }
 
+    /** */
+    @Test
+    public void testArray2() {
+        try {
+            TestClass1[] expArr = new TestClass1[] {new TestClass1()};
+
+            BiConsumer<TestClass1[], BinaryObject> checker = (arr, bobj) -> {
+                Object[] val = useBinaryArrays
+                    ? bobj.<BinaryArray>field("arr").deserialize()
+                    : PlatformUtils.unwrapBinariesInArray(bobj.field("arr"));
+
+                Assert.assertArrayEquals(arr, val);
+                Assert.assertArrayEquals(arr, ((TestClsWithArray)bobj.deserialize()).arr);
+            };
+
+            BinaryObjectBuilder builder = newWrapper(TestClsWithArray.class.getName());
+            BinaryObject arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+
+            expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
+
+            builder = newWrapper(arrObj.type().typeName());
+            arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+        }
+        finally {
+            clearBinaryMeta();
+        }
+    }
+
     /**
      * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
      */
@@ -1899,7 +1932,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      * @return Deserialized enums.
      */
     private TestEnum[] deserializeEnumBinaryArray(Object obj) {
-        Object[] arr = (Object[])obj;
+        if (useBinaryArrays)
+            return ((BinaryArray)obj).deserialize();
+
+        Object[] arr;
+
+        arr = (Object[])obj;
 
         final TestEnum[] res = new TestEnum[arr.length];
 
@@ -2097,6 +2135,17 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
             this.testEnumA = testEnumA;
             this.testEnumB = testEnumB;
             this.testEnumArr = testEnumArr;
+        }
+    }
+
+    /** Test class with array. */
+    public static class TestClsWithArray {
+        /** */
+        private final Object[] arr;
+
+        /** */
+        public TestClsWithArray(TestClass1[] arr) {
+            this.arr = arr;
         }
     }
 

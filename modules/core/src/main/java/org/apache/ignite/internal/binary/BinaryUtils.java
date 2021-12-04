@@ -610,6 +610,9 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
                 GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
+        if (cls == BinaryArray.class)
+            return GridBinaryMarshaller.OBJ_ARR;
+
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
 
@@ -2012,7 +2015,7 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.OBJ_ARR:
                 if (BinaryArray.useBinaryArrays() && !deserialize)
-                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize);
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, false);
                 else
                     return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
@@ -2030,9 +2033,13 @@ public class BinaryUtils {
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
-                doReadEnumType(in); // Simply skip this part as we do not need it.
+                if (BinaryArray.useBinaryArrays() && !deserialize)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, true);
+                else {
+                    doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadBinaryEnumArray(in, ctx);
+                    return doReadBinaryEnumArray(in, ctx);
+                }
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
@@ -2093,7 +2100,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
         int hPos = positionForHandle(in);
 
         int compTypeId = in.readInt();
@@ -2106,7 +2113,9 @@ public class BinaryUtils {
         
         Object[] arr = new Object[len];
 
-        BinaryArray res = new BinaryArray(ctx, compTypeId, compClsName, arr);
+        BinaryArray res = isEnumArray
+            ? new BinaryEnumArray(ctx, compTypeId, compClsName, arr)
+            : new BinaryArray(ctx, compTypeId, compClsName, arr);
 
         handles.setHandle(res, hPos);
 

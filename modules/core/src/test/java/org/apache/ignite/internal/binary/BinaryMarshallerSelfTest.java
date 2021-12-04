@@ -838,7 +838,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject innerPo = po.field("inner");
@@ -877,7 +877,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
             new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
+        assertArrayEquals(ordinals(obj.inner.enumArr), binaryOrdinals(innerPo.field("enumArr")));
         assertNull(innerPo.field("inner"));
         assertNull(innerPo.field("unknown"));
     }
@@ -928,7 +928,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("_enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject simplePo = po.field("_simple");
@@ -967,7 +967,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.simple.map, simplePo.field("map"));
         assertEquals(new Integer(obj.simple.enumVal.ordinal()),
             new Integer(((BinaryObject)simplePo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
+        assertArrayEquals(ordinals(obj.simple.enumArr), binaryOrdinals(simplePo.field("enumArr")));
         assertNull(simplePo.field("simple"));
         assertNull(simplePo.field("binary"));
         assertNull(simplePo.field("unknown"));
@@ -1007,7 +1007,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.binary.map, binaryPo.field("_map"));
         assertEquals(new Integer(obj.binary.enumVal.ordinal()),
             new Integer(((BinaryObject)binaryPo.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.binary.enumArr), ordinals((BinaryObject[])binaryPo.field("_enumArr")));
+        assertArrayEquals(ordinals(obj.binary.enumArr), binaryOrdinals(binaryPo.field("_enumArr")));
         assertNull(binaryPo.field("_simple"));
         assertNull(binaryPo.field("_binary"));
         assertNull(binaryPo.field("unknown"));
@@ -1314,7 +1314,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         assertEquals(obj, po.deserialize());
@@ -3972,14 +3972,27 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     }
 
     /**
-     * @param enumArr Enum array.
+     * @param fld Field value.
      * @return Ordinals.
      */
-    private <T extends Enum<?>> Integer[] ordinals(BinaryObject[] enumArr) {
+    private <T extends Enum<?>> Integer[] binaryOrdinals(Object fld) {
+        Object[] enumArr;
+
+        if (useBinaryArrays) {
+            assertTrue(fld instanceof BinaryArray);
+
+            enumArr = ((BinaryArray)fld).array();
+        }
+        else {
+            assertTrue(fld instanceof BinaryObject[]);
+
+            enumArr = (Object[])fld;
+        }
+
         Integer[] ords = new Integer[enumArr.length];
 
         for (int i = 0; i < enumArr.length; i++)
-            ords[i] = enumArr[i].enumOrdinal();
+            ords[i] = ((BinaryObject)enumArr[i]).enumOrdinal();
 
         return ords;
     }

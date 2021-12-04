@@ -57,21 +57,21 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** Context. */
     @GridDirectTransient
     @GridToStringExclude
-    private BinaryContext ctx;
+    protected BinaryContext ctx;
 
     /** Type ID. */
-    private int compTypeId;
+    protected int compTypeId;
 
     /** Type class name. */
-    @Nullable private String compClsName;
+    @Nullable protected String compClsName;
 
     /** Values. */
     @GridToStringInclude(sensitive = true)
-    private Object[] arr;
+    protected Object[] arr;
 
     /** Deserialized value. */
     @GridToStringExclude
-    private Object[] deserialized;
+    protected Object[] deserialized;
 
     /**
      * {@link Externalizable} support.

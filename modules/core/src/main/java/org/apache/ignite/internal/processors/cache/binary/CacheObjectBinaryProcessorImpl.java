@@ -63,6 +63,7 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -514,12 +515,23 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             // Interfaces and array not registered as binary types.
             BinaryClassDescriptor desc = binaryCtx.descriptorForClass(compCls);
 
-            return new BinaryArray(
-                binaryCtx,
-                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
-                compClsName,
-                pArr
-            );
+            if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+                return new BinaryEnumArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+            else {
+                return new BinaryArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+
         }
 
         if (obj instanceof IgniteBiTuple) {
