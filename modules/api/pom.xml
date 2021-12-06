@@ -38,10 +38,34 @@
             <artifactId>ignite-configuration-api</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-configuration</artifactId>
+        </dependency>
+
         <!-- 3rd party dependencies -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.npathai</groupId>
+            <artifactId>hamcrest-optional</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -62,16 +62,24 @@ public class IgnitionImpl implements Ignition {
     /**
      * Node name to node instance mapping. Please pay attention, that nodes in given map might be in any state: STARTING, STARTED, STOPPED.
      */
-    private static Map<String, IgniteImpl> nodes = new ConcurrentHashMap<>();
+    private static final Map<String, IgniteImpl> nodes = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override
     public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir) {
+        return start(nodeName, cfgPath, workDir, defaultServiceClassLoader());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir,
+                        @Nullable ClassLoader serviceLoaderClassLoader) {
         try {
             return doStart(
                     nodeName,
                     cfgPath == null ? null : Files.readString(cfgPath),
-                    workDir
+                    workDir,
+                    serviceLoaderClassLoader
             );
         } catch (IOException e) {
             throw new IgniteException("Unable to read user specific configuration.", e);
@@ -82,10 +90,10 @@ public class IgnitionImpl implements Ignition {
     @Override
     public Ignite start(@NotNull String name, @Nullable URL cfgUrl, @NotNull Path workDir) {
         if (cfgUrl == null) {
-            return doStart(name, null, workDir);
+            return doStart(name, null, workDir, defaultServiceClassLoader());
         } else {
             try (InputStream cfgStream = cfgUrl.openStream()) {
-                return doStart(name, new String(cfgStream.readAllBytes(), StandardCharsets.UTF_8), workDir);
+                return doStart(name, new String(cfgStream.readAllBytes(), StandardCharsets.UTF_8), workDir, defaultServiceClassLoader());
             } catch (IOException e) {
                 throw new IgniteException("Unable to read user specific configuration.", e);
             }
@@ -99,7 +107,8 @@ public class IgnitionImpl implements Ignition {
             return doStart(
                     name,
                     cfg == null ? null : new String(cfg.readAllBytes(), StandardCharsets.UTF_8),
-                    workDir
+                    workDir,
+                    defaultServiceClassLoader()
             );
         } catch (IOException e) {
             throw new IgniteException("Unable to read user specific configuration.", e);
@@ -109,7 +118,7 @@ public class IgnitionImpl implements Ignition {
     /** {@inheritDoc} */
     @Override
     public Ignite start(@NotNull String name, @NotNull Path workDir) {
-        return doStart(name, null, workDir);
+        return doStart(name, null, workDir, defaultServiceClassLoader());
     }
 
     /** {@inheritDoc} */
@@ -122,6 +131,10 @@ public class IgnitionImpl implements Ignition {
         });
     }
 
+    private ClassLoader defaultServiceClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
     /**
      * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
@@ -130,12 +143,13 @@ public class IgnitionImpl implements Ignition {
      * @param workDir    Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
-    private static Ignite doStart(String nodeName, @Nullable String cfgContent, Path workDir) {
+    private static Ignite doStart(String nodeName, @Nullable String cfgContent, Path workDir,
+                                  @Nullable ClassLoader serviceLoaderClassLoader) {
         if (nodeName.isEmpty()) {
             throw new IllegalArgumentException("Node name must not be null or empty.");
         }
 
-        IgniteImpl nodeToStart = new IgniteImpl(nodeName, workDir);
+        IgniteImpl nodeToStart = new IgniteImpl(nodeName, workDir, serviceLoaderClassLoader);
 
         IgniteImpl prevNode = nodes.putIfAbsent(nodeName, nodeToStart);
 

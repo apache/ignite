@@ -106,7 +106,7 @@ public class IgnitionManager {
             }
         }
 
-        return ignition.start(nodeName, cfgPath, workDir);
+        return ignition.start(nodeName, cfgPath, workDir, clsLdr);
     }
 
     /**

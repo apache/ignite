@@ -68,6 +68,7 @@
         <spoon.framework.version>8.4.0-beta-18</spoon.framework.version>
         <typesafe.version>1.4.1</typesafe.version>
         <hamcrest.version>2.2</hamcrest.version>
+        <hamcrest.optional.version>2.0.0</hamcrest.optional.version>
         <scalecube.version>2.6.12</scalecube.version>
         <calcite.version>1.27.0</calcite.version>
         <janino.version>3.1.4</janino.version>
@@ -553,6 +554,12 @@
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest</artifactId>
                 <version>${hamcrest.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.npathai</groupId>
+                <artifactId>hamcrest-optional</artifactId>
+                <version>${hamcrest.optional.version}</version>
             </dependency>
 
             <dependency>

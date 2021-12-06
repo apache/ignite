@@ -24,28 +24,20 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.client.handler.ClientHandlerModule;
-import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
-import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
-import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
-import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
-import org.apache.ignite.configuration.schemas.table.ColumnTypeValidator;
-import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
-import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
-import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
-import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.ConfigurationModule;
+import org.apache.ignite.internal.configuration.ConfigurationModules;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
-import org.apache.ignite.internal.configuration.schema.ExtendedTableConfigurationSchema;
+import org.apache.ignite.internal.configuration.ServiceLoaderModulesProvider;
 import org.apache.ignite.internal.configuration.storage.DistributedConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.LocalConfigurationStorage;
 import org.apache.ignite.internal.manager.IgniteComponent;
@@ -54,8 +46,6 @@ import org.apache.ignite.internal.metastorage.server.persistence.RocksDbKeyValue
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.internal.raft.Loza;
-import org.apache.ignite.internal.schema.configuration.ColumnTypeValidatorImpl;
-import org.apache.ignite.internal.schema.configuration.TableValidatorImpl;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.distributed.TableTxManagerImpl;
 import org.apache.ignite.internal.tx.TxManager;
@@ -148,28 +138,29 @@ public class IgniteImpl implements Ignite {
     /**
      * The Constructor.
      *
-     * @param name    Ignite node name.
-     * @param workDir Work directory for the started node. Must not be {@code null}.
+     * @param name                       Ignite node name.
+     * @param workDir                    Work directory for the started node. Must not be {@code null}.
+     * @param serviceProviderClassLoader The class loader to be used to load provider-configuration files and provider
+     *                                   classes, or {@code null} if the system class loader (or, failing that
+     *                                   the bootstrap class loader) is to be used
      */
     IgniteImpl(
             String name,
-            Path workDir
+            Path workDir,
+            ClassLoader serviceProviderClassLoader
     ) {
         this.name = name;
 
         vaultMgr = createVault(workDir);
 
+        ConfigurationModules modules = loadConfigurationModules(serviceProviderClassLoader);
+
         nodeCfgMgr = new ConfigurationManager(
-                List.of(
-                        NetworkConfiguration.KEY,
-                        NodeConfiguration.KEY,
-                        RestConfiguration.KEY,
-                        ClientConnectorConfiguration.KEY
-                ),
-                Map.of(),
+                modules.local().rootKeys(),
+                modules.local().validators(),
                 new LocalConfigurationStorage(vaultMgr),
-                List.of(),
-                List.of()
+                modules.local().internalSchemaExtensions(),
+                modules.local().polymorphicSchemaExtensions()
         );
 
         NetworkConfiguration networkConfiguration = nodeCfgMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY);
@@ -197,18 +188,11 @@ public class IgniteImpl implements Ignite {
         );
 
         clusterCfgMgr = new ConfigurationManager(
-                List.of(
-                        ClusterConfiguration.KEY,
-                        TablesConfiguration.KEY,
-                        DataStorageConfiguration.KEY
-                ),
-                Map.of(
-                        TableValidator.class, Set.of(TableValidatorImpl.INSTANCE),
-                        ColumnTypeValidator.class, Set.of(ColumnTypeValidatorImpl.INSTANCE)
-                ),
+                modules.distributed().rootKeys(),
+                modules.distributed().validators(),
                 new DistributedConfigurationStorage(metaStorageMgr, vaultMgr),
-                List.of(ExtendedTableConfigurationSchema.class),
-                List.of(HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class)
+                modules.distributed().internalSchemaExtensions(),
+                modules.distributed().polymorphicSchemaExtensions()
         );
 
         baselineMgr = new BaselineManager(
@@ -240,6 +224,29 @@ public class IgniteImpl implements Ignite {
                 nodeCfgMgr.configurationRegistry(),
                 nettyBootstrapFactory
         );
+    }
+
+    private ConfigurationModules loadConfigurationModules(ClassLoader classLoader) {
+        var modulesProvider = new ServiceLoaderModulesProvider();
+        List<ConfigurationModule> modules = modulesProvider.modules(classLoader);
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Configuration modules loaded: {}", modules);
+        }
+
+        if (modules.isEmpty()) {
+            throw new IllegalStateException("No configuration modules were loaded, this means Ignite cannot start. "
+                    + "Please make sure that the classloader for loading services is correct.");
+        }
+
+        var configModules = new ConfigurationModules(modules);
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Local root keys: {}", configModules.local().rootKeys());
+            LOG.info("Distributed root keys: {}", configModules.distributed().rootKeys());
+        }
+
+        return configModules;
     }
 
     /**

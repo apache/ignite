@@ -51,7 +51,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-configuration</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <!-- 3rd party dependencies -->
@@ -90,6 +89,12 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.npathai</groupId>
+            <artifactId>hamcrest-optional</artifactId>
             <scope>test</scope>
         </dependency>
 

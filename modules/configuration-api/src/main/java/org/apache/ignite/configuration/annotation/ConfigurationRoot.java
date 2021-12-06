@@ -25,8 +25,34 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Annotation that marks underlying class as a root configuration schema. Has basically the same properties as {@link Config} + adds extra
- * properties.
+ * This annotation, if applied to a class, marks it as a configuration schema root. Annotation processor generates
+ * several classes for each configuration schema:
+ * <ul>
+ * <li>Config - Represents the configuration, provides API to init, change and view it.
+ * Extends {@code DynamicConfiguration}</li>
+ * <li>Change - changes the config tree</li>
+ * <li>View - an immutable object to view the config tree</li>
+ * </ul>
+ *
+ * <h1 class="header">Example</h1>
+ * Here is how to create a root configuration schema:
+ * <pre><code>
+ * {@literal @}ConfigurationRoot(rootName = "a.b", type = ConfigurationType.LOCAL)
+ * public class LocalConfigurationSchema {
+ *
+ *      {@literal @}Value
+ *      public String foo;
+ *
+ *      {@literal @}Value
+ *      public boolean bar;
+ *
+ *      {@literal @}ConfigValue
+ *      public SomeOtherConfiguration someOther;
+ * }
+ * </code></pre>
+ *
+ * <p>The main difference between @{@link ConfigurationRoot} and @{@link Config} is that the former marks schema root,
+ * while the latter is for marking non-root parts of the schema.
  *
  * @see Config
  */

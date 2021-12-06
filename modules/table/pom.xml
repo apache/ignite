@@ -144,6 +144,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.npathai</groupId>
+            <artifactId>hamcrest-optional</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-network</artifactId>
             <scope>test</scope>

@@ -39,6 +39,21 @@ public interface Ignition {
     public Ignite start(@NotNull String name, @Nullable Path configPath, @NotNull Path workDir);
 
     /**
+     * Starts an Ignite node with an optional bootstrap configuration from a HOCON file, with an optional
+     * class loader for further usage by {@link java.util.ServiceLoader}.
+     *
+     * @param name                     Name of the node. Must not be {@code null}.
+     * @param configPath               Path to the node configuration in the HOCON format. Can be {@code null}.
+     * @param workDir                  Work directory for the started node. Must not be {@code null}.
+     * @param serviceLoaderClassLoader The class loader to be used to load provider-configuration files and provider
+     *                                 classes, or {@code null} if the system
+     *                                 class loader (or, failing that, the bootstrap class loader) is to be used
+     * @return Started Ignite node.
+     */
+    public Ignite start(@NotNull String name, @Nullable Path configPath, @NotNull Path workDir,
+                        @Nullable ClassLoader serviceLoaderClassLoader);
+
+    /**
      * Starts an Ignite node with an optional bootstrap configuration from a URL linking to HOCON configs.
      *
      * @param name       Name of the node. Must not be {@code null}.
