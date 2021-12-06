@@ -41,7 +41,7 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
      * @param traitSet Traits of this relational expression.
      * @param table Target table to modify.
      * @param input Sub-query or filter condition.
-     * @param operation Modify operation (INSERT, UPDATE, DELETE).
+     * @param operation Modify operation (INSERT, UPDATE, DELETE, MERGE).
      * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE.
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE.
      * @param flattened Whether set flattens the input row type.

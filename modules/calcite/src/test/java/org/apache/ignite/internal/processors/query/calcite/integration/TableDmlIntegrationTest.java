@@ -21,55 +21,25 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 /** */
-public class TableDmlIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CLIENT_NODE_NAME = "client";
-
-    /** */
-    private IgniteEx client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
-
-        client = startClientGrid(CLIENT_NODE_NAME);
-    }
-
-    /** */
-    @Before
-    public void init() {
-        client = grid(CLIENT_NODE_NAME);
-    }
-
-    /** */
-    @After
-    public void cleanUp() {
-        client.destroyCaches(client.cacheNames());
-    }
-
+public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /**
      * Test verifies that already inserted by the current query data
      * is not processed by this query again.
@@ -272,17 +242,189 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         assertNull(row);
     }
 
-    /** */
-    private List<List<?>> executeSql(String sql, Object... args) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql, args);
+    /**
+     * Test full MERGE command.
+     */
+    @Test
+    public void testMerge() {
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
+        executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
 
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
+        executeSql("CREATE TABLE test2 (a int, b varchar)");
+        executeSql("INSERT INTO test2 VALUES (0, '0')");
+        executeSql("INSERT INTO test2 VALUES (2, '2')");
+
+        String sql = "MERGE INTO test2 dst USING test1 src ON dst.a = src.a " +
+            "WHEN MATCHED THEN UPDATE SET a = src.a, b = src.b " +
+            "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)";
+
+        assertQuery(sql).matches(QueryChecker.containsSubPlan("IgniteTableSpool")).check();
+
+        assertQuery("SELECT * FROM test2")
+            .returns(0, "a")
+            .returns(1, "b")
+            .returns(2, "2")
+            .check();
     }
 
-    /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+    /**
+     * Test MERGE with UPDATE clause only.
+     */
+    @Test
+    public void testMergeWhenMatched() {
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
+        executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
+
+        executeSql("CREATE TABLE test2 (a int, b varchar)");
+        executeSql("INSERT INTO test2 VALUES (0, '0')");
+        executeSql("INSERT INTO test2 VALUES (2, '2')");
+
+        String sql = "MERGE INTO test2 dst USING test1 src ON dst.a = src.a " +
+            "WHEN MATCHED THEN UPDATE SET a = src.a, b = src.b";
+
+        assertQuery(sql).matches(QueryChecker.containsSubPlan("IgniteTableSpool")).check();
+
+        assertQuery("SELECT * FROM test2")
+            .returns(0, "a")
+            .returns(2, "2")
+            .check();
+    }
+
+    /**
+     * Test MERGE with INSERT clause only.
+     */
+    @Test
+    public void testMergeWhenNotMatched() {
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
+        executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
+
+        executeSql("CREATE TABLE test2 (a int, b varchar)");
+        executeSql("INSERT INTO test2 VALUES (0, '0')");
+        executeSql("INSERT INTO test2 VALUES (2, '2')");
+
+        String sql = "MERGE INTO test2 dst USING test1 src ON dst.a = src.a " +
+            "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)";
+
+        assertQuery(sql).matches(QueryChecker.containsSubPlan("IgniteTableSpool")).check();
+
+        assertQuery("SELECT * FROM test2")
+            .returns(0, "0")
+            .returns(1, "b")
+            .returns(2, "2")
+            .check();
+    }
+
+    /**
+     * Test MERGE table with itself.
+     */
+    @Test
+    public void testMergeTableWithItself() {
+        executeSql("CREATE TABLE test1 (a int, b int, c varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 0, '0')");
+
+        String sql = "MERGE INTO test1 dst USING test1 src ON dst.a = src.a + 1 " +
+            "WHEN MATCHED THEN UPDATE SET b = dst.b + 1 " +
+            "WHEN NOT MATCHED THEN INSERT (a, b, c) VALUES (src.a + 1, 1, src.a)";
+
+        for (int i = 0; i < 5; i++)
+            executeSql(sql);
+
+        assertQuery("SELECT * FROM test1")
+            .returns(0, 0, "0")
+            .returns(1, 5, "0")
+            .returns(2, 4, "1")
+            .returns(3, 3, "2")
+            .returns(4, 2, "3")
+            .returns(5, 1, "4")
+            .check();
+    }
+
+    /**
+     * Test MERGE operator with large batch.
+     */
+    @Test
+    public void testMergeBatch() {
+        executeSql("CREATE TABLE test1 (a int)");
+
+        executeSql("INSERT INTO test1 SELECT x FROM TABLE(SYSTEM_RANGE(0, 9999))");
+
+        executeSql("CREATE TABLE test2 (a int, b int)");
+
+        executeSql("INSERT INTO test2 SELECT x, 0 FROM TABLE(SYSTEM_RANGE(-5000, 4999))");
+
+        executeSql("MERGE INTO test2 dst USING test1 src ON dst.a = src.a " +
+            "WHEN MATCHED THEN UPDATE SET b = 1 " +
+            "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, 2)");
+
+        assertQuery("SELECT count(*) FROM test2 WHERE b = 0").returns(5_000L).check();
+        assertQuery("SELECT count(*) FROM test2 WHERE b = 1").returns(5_000L).check();
+        assertQuery("SELECT count(*) FROM test2 WHERE b = 2").returns(5_000L).check();
+    }
+
+    /**
+     * Test MERGE operator with aliases.
+     */
+    @Test
+    public void testMergeAliases() {
+        executeSql("CREATE TABLE test1 (a int, b int, c varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 0, '0')");
+
+        executeSql("CREATE TABLE test2 (a int, d int, e varchar)");
+
+        // Without aliases, column 'A' in insert statement is not ambiguous.
+        executeSql("MERGE INTO test2 USING test1 ON c = e " +
+            "WHEN MATCHED THEN UPDATE SET d = b + 1" +
+            "WHEN NOT MATCHED THEN INSERT (a, d, e) VALUES (a, b, c)");
+
+        assertQuery("SELECT * FROM test2").returns(0, 0, "0").check();
+
+        // Target table alias duplicate source table name.
+        assertThrows("MERGE INTO test2 test1 USING test1 ON c = e " +
+            "WHEN MATCHED THEN UPDATE SET d = b + 1", IgniteSQLException.class, "Duplicate relation name");
+
+        // Source table alias duplicate target table name.
+        assertThrows("MERGE INTO test2 USING test1 test2 ON c = e " +
+            "WHEN MATCHED THEN UPDATE SET d = b + 1", IgniteSQLException.class, "Duplicate relation name");
+
+        // Without aliases, reference columns by table name.
+        executeSql("MERGE INTO test2 USING test1 ON test1.a = test2.a " +
+            "WHEN MATCHED THEN UPDATE SET a = test1.a + 1");
+
+        assertQuery("SELECT * FROM test2").returns(1, 0, "0").check();
+
+        // Ambiguous column name in condition.
+        assertThrows("MERGE INTO test2 USING test1 ON a = test1.a " +
+            "WHEN MATCHED THEN UPDATE SET a = test1.a + 1", IgniteSQLException.class, "Column 'A' is ambiguous");
+
+        // Ambiguous column name in update statement.
+        assertThrows("MERGE INTO test2 USING test1 ON c = e " +
+            "WHEN MATCHED THEN UPDATE SET a = a + 1", IgniteSQLException.class, "Column 'A' is ambiguous");
+
+        // With aliases, reference columns by table alias.
+        executeSql("MERGE INTO test2 test1 USING test1 test2 ON test1.d = test2.b " +
+            "WHEN MATCHED THEN UPDATE SET a = test1.a + 1 " +
+            "WHEN NOT MATCHED THEN INSERT (a, d, e) VALUES (test2.a, test2.b, test2.c)");
+
+        assertQuery("SELECT * FROM test2").returns(2, 0, "0").check();
+    }
+
+    /**
+     * Test MERGE operator with keys conflicts.
+     */
+    @Test
+    public void testMergeKeysConflict() {
+        executeSql("CREATE TABLE test1 (a int, b int)");
+        executeSql("INSERT INTO test1 VALUES (0, 0)");
+        executeSql("INSERT INTO test1 VALUES (1, 1)");
+
+        executeSql("CREATE TABLE test2 (a int primary key, b int)");
+
+        assertThrows("MERGE INTO test2 USING test1 ON test1.a = test2.a " +
+            "WHEN MATCHED THEN UPDATE SET b = test1.b + 1 " +
+            "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (0, b)", IgniteSQLException.class,
+            "Failed to MERGE some keys due to keys conflict");
     }
 }

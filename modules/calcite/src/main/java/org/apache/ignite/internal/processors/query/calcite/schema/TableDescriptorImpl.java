@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -307,7 +305,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> IgniteBiTuple toTuple(ExecutionContext<Row> ectx, Row row,
+    @Override public <Row> ModifyTuple toTuple(ExecutionContext<Row> ectx, Row row,
         TableModify.Operation op, Object arg) throws IgniteCheckedException {
         switch (op) {
             case INSERT:
@@ -315,16 +313,16 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             case DELETE:
                 return deleteTuple(row, ectx);
             case UPDATE:
-                return updateTuple(row, (List<String>) arg, ectx);
+                return updateTuple(row, (List<String>) arg, 0, ectx);
             case MERGE:
-                throw new UnsupportedOperationException();
+                return mergeTuple(row, (List<String>) arg, ectx);
             default:
                 throw new AssertionError();
         }
     }
 
     /** */
-    private <Row> IgniteBiTuple insertTuple(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
+    private <Row> ModifyTuple insertTuple(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
         Object key = insertKey(row, ectx);
         Object val = insertVal(row, ectx);
 
@@ -338,7 +336,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         typeDesc.validateKeyAndValue(key, val);
 
-        return F.t(key, val);
+        return new ModifyTuple(key, val, TableModify.Operation.INSERT);
     }
 
     /** */
@@ -440,14 +438,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private <Row> IgniteBiTuple updateTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx)
+    private <Row> ModifyTuple updateTuple(Row row, List<String> updateColList, int offset, ExecutionContext<Row> ectx)
         throws IgniteCheckedException {
         RowHandler<Row> handler = ectx.rowHandler();
 
-        Object key = Objects.requireNonNull(handler.get(QueryUtils.KEY_COL, row));
-        Object val = clone(Objects.requireNonNull(handler.get(QueryUtils.VAL_COL, row)));
+        Object key = Objects.requireNonNull(handler.get(offset + QueryUtils.KEY_COL, row));
+        Object val = clone(Objects.requireNonNull(handler.get(offset + QueryUtils.VAL_COL, row)));
 
-        int offset = descriptorsMap.size();
+        offset += descriptorsMap.size();
 
         for (int i = 0; i < updateColList.size(); i++) {
             final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
@@ -467,7 +465,32 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         typeDesc.validateKeyAndValue(key, val);
 
-        return F.t(key, val);
+        return new ModifyTuple(key, val, TableModify.Operation.UPDATE);
+    }
+
+    /** */
+    private <Row> ModifyTuple mergeTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx)
+        throws IgniteCheckedException {
+        RowHandler<Row> hnd = ectx.rowHandler();
+
+        int rowColumnsCnt = hnd.columnCount(row);
+
+        if (rowColumnsCnt == descriptors.length)
+            return insertTuple(row, ectx); // Only WHEN NOT MATCHED clause in MERGE.
+        else if (rowColumnsCnt == descriptors.length + updateColList.size())
+            return updateTuple(row, updateColList, 0, ectx); // Only WHEN MATCHED clause in MERGE.
+        else {
+            // Both WHEN MATCHED and WHEN NOT MATCHED clauses in MERGE.
+            assert rowColumnsCnt == descriptors.length * 2 + updateColList.size() : "Unexpected columns count: " +
+                rowColumnsCnt;
+
+            int updateOffset = descriptors.length; // Offset of fields for update statement.
+
+            if (hnd.get(updateOffset + QueryUtils.KEY_COL, row) != null)
+                return updateTuple(row, updateColList, updateOffset, ectx);
+            else
+                return insertTuple(row, ectx);
+        }
     }
 
     /** */
@@ -489,10 +512,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private <Row> IgniteBiTuple deleteTuple(Row row, ExecutionContext<Row> ectx) {
+    private <Row> ModifyTuple deleteTuple(Row row, ExecutionContext<Row> ectx) {
         Object key = TypeUtils.fromInternal(ectx,
             ectx.rowHandler().get(QueryUtils.KEY_COL, row), descriptors[QueryUtils.KEY_COL].storageType());
-        return F.t(Objects.requireNonNull(key), null);
+        return new ModifyTuple(Objects.requireNonNull(key), null, TableModify.Operation.DELETE);
     }
 
     /** {@inheritDoc} */

@@ -473,6 +473,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             case INSERT:
             case UPDATE:
             case DELETE:
+            case MERGE:
                 ModifyNode<Row> node = new ModifyNode<>(ctx, rel.getRowType(), rel.getTable().unwrap(TableDescriptor.class),
                     rel.getOperation(), rel.getUpdateColumnList());
 
@@ -481,8 +482,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 node.register(input);
 
                 return node;
-            case MERGE:
-                throw new UnsupportedOperationException();
             default:
                 throw new AssertionError();
         }

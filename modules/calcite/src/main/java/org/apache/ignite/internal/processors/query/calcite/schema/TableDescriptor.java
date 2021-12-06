@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -131,7 +130,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
                     @Nullable ImmutableBitSet requiredColunms) throws IgniteCheckedException;
 
     /**
-     * Converts a relational node row to cache key-value tuple;
+     * Converts a relational node row to cache key-value tuple with table operation.
      *
      * @param ectx Execution context.
      * @param row Relational node row.
@@ -140,7 +139,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Cache key-value tuple;
      * @throws IgniteCheckedException If failed.
      */
-    <Row> IgniteBiTuple toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op, @Nullable Object arg)
+    <Row> ModifyTuple toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op, @Nullable Object arg)
         throws IgniteCheckedException;
 
     /**

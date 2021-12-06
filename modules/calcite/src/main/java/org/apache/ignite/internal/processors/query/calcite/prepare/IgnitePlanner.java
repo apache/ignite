@@ -341,7 +341,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
-        return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
+        return new IgniteSqlToRelConvertor(this, validator, reader, cluster(), convertletTbl, config);
     }
 
     /** */

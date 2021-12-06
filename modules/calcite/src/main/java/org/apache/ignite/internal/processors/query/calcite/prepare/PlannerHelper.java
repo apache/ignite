@@ -147,7 +147,10 @@ public class PlannerHelper {
             if (rel.isDelete())
                 return rel;
 
-            processNode(rel);
+            if (rel.isMerge()) // MERGE operator always contains modified table as a source.
+                spoolNeeded = true;
+            else
+                processNode(rel);
 
             if (spoolNeeded) {
                 IgniteTableSpool spool = new IgniteTableSpool(
@@ -225,8 +228,7 @@ public class PlannerHelper {
          * @return {@code true} in case {@link #modifyNode} produces any insert.
          */
         private boolean modifyNodeInsertsData() {
-            return modifyNode.isInsert(); // MERGE should be analyzed too
-            // but currently it is not implemented
+            return modifyNode.isInsert();
         }
     }
 }
