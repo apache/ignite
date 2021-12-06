@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.management.MBeanServer;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -273,10 +273,11 @@ public class IgniteTestResources {
         marsh.setContext(new MarshallerContextTestImpl());
 
         if (marsh instanceof BinaryMarshaller) {
+            BinaryMarshaller binaryMarsh = (BinaryMarshaller)marsh;
+
             BinaryContext ctx =
                 new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
-
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, new IgniteConfiguration());
+            binaryMarsh.setBinaryContext(ctx, new IgniteConfiguration());
         }
 
         return marsh;

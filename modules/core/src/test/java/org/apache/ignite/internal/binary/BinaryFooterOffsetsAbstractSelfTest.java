@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
+
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -64,7 +64,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        marsh.setBinaryContext(ctx, iCfg);
     }
 
     /**

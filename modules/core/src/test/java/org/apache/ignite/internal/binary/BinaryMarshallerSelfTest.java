@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -2264,9 +2264,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         try {
             binaryMarshaller(Arrays.asList(customType1, customType2));
         }
-        catch (IgniteCheckedException e) {
-            assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]",
-                e.getCause().getCause().getMessage());
+        catch (BinaryObjectException e) {
+            assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]", e.getMessage());
 
             return;
         }
@@ -4150,7 +4149,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        marsh.setBinaryContext(ctx, iCfg);
 
         return marsh;
     }

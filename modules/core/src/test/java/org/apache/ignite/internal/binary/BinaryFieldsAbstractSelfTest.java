@@ -22,12 +22,12 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
+
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -69,7 +69,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        marsh.setBinaryContext(ctx, iCfg);
 
         return marsh;
     }

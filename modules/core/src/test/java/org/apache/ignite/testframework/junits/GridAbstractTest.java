@@ -54,6 +54,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1947,7 +1948,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         marsh.setContext(new MarshallerContextTestImpl());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
+        marsh.setBinaryContext(ctx, cfg);
 
         return marsh;
     }
