@@ -92,7 +92,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** See {@link CacheConfiguration#getQueryParallelism()}. */
     private Integer parallelism;
 
-    /** See {@link QueryEntity#isUnwrapPrimaryKeyFields()}. */
+    /** See {@link QueryEntity#getUnwrapPrimaryKeyFieldsForSortedIndex()}. */
     private Boolean unwrapPk;
 
     /** See {@link QueryEntity#getPrimaryKeyInlineSize()}. */

@@ -239,25 +239,23 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testInlineSizeValidation() {
-        new QueryEntity().setPrimaryKeyInlineSize(-1);
-        new QueryEntity().setAffinityKeyInlineSize(-1);
         new QueryEntity().setPrimaryKeyInlineSize(0);
         new QueryEntity().setAffinityKeyInlineSize(0);
+        new QueryEntity().setPrimaryKeyInlineSize(null);
+        new QueryEntity().setAffinityKeyInlineSize(null);
 
         GridTestUtils.assertThrows(
                 log,
-                ()  -> new QueryEntity().setPrimaryKeyInlineSize(-2),
+                ()  -> new QueryEntity().setPrimaryKeyInlineSize(-1),
                 CacheException.class,
-                "Inline size for sorted primary key cannot be negative "
-                        + "(except the value '-1' that is used to calculate inline size automatically)"
+                "Inline size for sorted primary key cannot be negative."
         );
 
         GridTestUtils.assertThrows(
                 log,
-                ()  -> new QueryEntity().setAffinityKeyInlineSize(-2),
+                ()  -> new QueryEntity().setAffinityKeyInlineSize(-1),
                 CacheException.class,
-                "Inline size for affinity filed index cannot be negative "
-                        + "(except the value '-1' that is used to calculate inline size automatically)"
+                "Inline size for affinity filed index cannot be negative."
         );
     }
 

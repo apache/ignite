@@ -328,7 +328,7 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
-        normalEntity.setUnwrapPrimaryKeyFields(entity.getUnwrapPrimaryKeyFields());
+        normalEntity.setUnwrapPrimaryKeyFieldsForSortedIndex(entity.getUnwrapPrimaryKeyFieldsForSortedIndex());
         normalEntity.setPrimaryKeyInlineSize(entity.getPrimaryKeyInlineSize());
         normalEntity.setAffinityKeyInlineSize(entity.getAffinityFieldInlineSize());
 
@@ -601,9 +601,9 @@ public class QueryUtils {
 
         desc.typeId(valTypeId);
 
-        desc.unwrapPrimaryKeyFields(qryEntity.getUnwrapPrimaryKeyFields());
-        desc.primaryKeyInlineSize(qryEntity.getPrimaryKeyInlineSize());
-        desc.affinityFieldInlineSize(qryEntity.getAffinityFieldInlineSize());
+        desc.unwrapPrimaryKeyFields(qryEntity.getUnwrapPrimaryKeyFieldsForSortedIndex());
+        desc.primaryKeyInlineSize(qryEntity.getPrimaryKeyInlineSize() != null ? qryEntity.getPrimaryKeyInlineSize() : -1);
+        desc.affinityFieldInlineSize(qryEntity.getAffinityFieldInlineSize() != null ? qryEntity.getAffinityFieldInlineSize() : -1);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

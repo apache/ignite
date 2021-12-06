@@ -1239,7 +1239,7 @@ public class CommandProcessor {
         if (!F.isEmpty(notNullFields))
             res.setNotNullFields(notNullFields);
 
-        res.setUnwrapPrimaryKeyFields(createTbl.unwrapPrimaryKeyFields());
+        res.setUnwrapPrimaryKeyFieldsForSortedIndex(createTbl.unwrapPrimaryKeyFields());
 
         if (Objects.nonNull(createTbl.primaryKeyInlineSize()))
             res.setPrimaryKeyInlineSize(createTbl.primaryKeyInlineSize());
