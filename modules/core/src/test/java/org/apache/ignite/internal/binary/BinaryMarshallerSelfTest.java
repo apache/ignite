@@ -3979,9 +3979,9 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         Object[] enumArr;
 
         if (useBinaryArrays) {
-            assertTrue(fld instanceof BinaryArray);
+            assertTrue(fld instanceof BinaryEnumArray);
 
-            enumArr = ((BinaryArray)fld).array();
+            enumArr = ((BinaryEnumArray)fld).array();
         }
         else {
             assertTrue(fld instanceof BinaryObject[]);

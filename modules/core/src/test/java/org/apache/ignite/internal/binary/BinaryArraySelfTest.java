@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectContainer;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -104,7 +105,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             Object obj = server.binary().toBinary(arr);
 
             return useBinaryArrays
-                ? ((BinaryArray)obj).deserialize()
+                ? ((BinaryObject)obj).deserialize()
                 : PlatformUtils.unwrapBinariesInArray((Object[])obj);
         }, false);
     }
@@ -378,6 +379,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             new Double[] {1d, 2d, 3d},
             new Character[] {'a', 'b', 'c'},
             new Boolean[] {true, false},
+            new CacheAtomicityMode[] { CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC }
         };
 
         for (Object item : data) {

@@ -613,6 +613,9 @@ public class BinaryUtils {
         if (cls == BinaryArray.class)
             return GridBinaryMarshaller.OBJ_ARR;
 
+        if (cls == BinaryEnumArray.class)
+            return GridBinaryMarshaller.ENUM_ARR;
+
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
 
@@ -1166,6 +1169,8 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryArray.class)
             return BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryEnumArray.class)
+            return BinaryWriteMode.ENUM_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2639,7 +2644,7 @@ public class BinaryUtils {
 
     /** */
     public static boolean isObjectArray(Class<?> cls) {
-        return Object[].class == cls || BinaryArray.class == cls;
+        return Object[].class == cls || BinaryArray.class == cls || BinaryEnumArray.class == cls;
     }
 
     /**

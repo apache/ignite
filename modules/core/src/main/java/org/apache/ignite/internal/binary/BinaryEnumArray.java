@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,9 +26,11 @@ import org.jetbrains.annotations.Nullable;
  * This extension of {@link BinaryArray} intended to keep correct typeId for binary enum arrays.
  */
 public class BinaryEnumArray extends BinaryArray {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     public BinaryEnumArray() {
-        super();
     }
 
     /** {@inheritDoc} */
@@ -44,5 +47,10 @@ public class BinaryEnumArray extends BinaryArray {
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
         return new BinaryEnumArray(ctx, compTypeId, compClsName, arr.clone());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryEnumArray.class, this, super.toString());
     }
 }
