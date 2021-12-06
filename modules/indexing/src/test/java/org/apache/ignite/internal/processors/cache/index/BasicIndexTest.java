@@ -1550,7 +1550,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
                             )
                                     .setPrimaryKeyInlineSize(pkInlineSize)
                                     .setAffinityKeyInlineSize(affInlineSize)
-                                    .setUnwrapPrimaryKeyFields(true)
                     ))
                     .setSqlSchema("PUBLIC")
                     .setKeyConfiguration(new CacheKeyConfiguration("TestKeyType", "ID_AFF"))

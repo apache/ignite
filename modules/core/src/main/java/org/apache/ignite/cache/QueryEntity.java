@@ -105,7 +105,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Used for composite primary key.
-     * {@code true} if the PK index is created on fields of PK;
+     * {@code true} if the PK index is created on fields of PK.
      * {@code false} in case the PK index is created on the whole key (composite binary object).
      * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
      */
@@ -697,12 +697,18 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Sets INLINE_SIZE for PK index. Implemented at the child.
+     * Sets INLINE_SIZE for PK index.
      *
      * @param pkInlineSize INLINE_SIZE for PK index.
      * @return {@code this} for chaining.
      */
     public QueryEntity setPrimaryKeyInlineSize(int pkInlineSize) {
+        if (pkInlineSize < -1) {
+            throw new CacheException("Inline size for sorted primary key cannot be negative "
+                    + "(except the value '-1' that is used to calculate inline size automatically). "
+                    + "[inlineSize=" + pkInlineSize + ']');
+        }
+
         this.pkInlineSize = pkInlineSize;
 
         return this;
@@ -718,12 +724,18 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Sets INLINE_SIZE for AFFINITY_KEY index. Implemented at the child.
+     * Sets INLINE_SIZE for AFFINITY_KEY index.
      *
      * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index.
      * @return {@code this} for chaining.
      */
     public QueryEntity setAffinityKeyInlineSize(int affFieldInlineSize) {
+        if (affFieldInlineSize < -1) {
+            throw new CacheException("Inline size for affinity filed index cannot be negative "
+                    + "(except the value '-1' that is used to calculate inline size automatically). [" +
+                    "inlineSize=" + affFieldInlineSize + ']');
+        }
+
         this.affFieldInlineSize = affFieldInlineSize;
 
         return this;
@@ -732,7 +744,7 @@ public class QueryEntity implements Serializable {
     /**
      * The property is used for composite primary key.
      *
-     * @return  {@code true} if the PK index is created on fields of PK;
+     * @return  {@code true} if the PK index is created on fields of PK.
      * {@code false} in case the PK index is created on the whole key (composite binary object).
      * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
      */
@@ -743,7 +755,7 @@ public class QueryEntity implements Serializable {
     /**
      * The property is used for composite primary key.
      *
-     * @param unwrapPk {@code true} if the PK index is created on fields of PK;
+     * @param unwrapPk {@code true} if the PK index is created on fields of PK.
      *      {@code false} in case the PK index is created on the whole key (composite binary object).
      *      {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key
      *      for a table created by API).
