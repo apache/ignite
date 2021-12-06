@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -29,11 +30,18 @@ public class BinaryEnumArray extends BinaryArray {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
+    /**
+     * {@link Externalizable} support.
+     */
     public BinaryEnumArray() {
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param ctx Context.
+     * @param compTypeId Component type id.
+     * @param compClsName Component class name.
+     * @param arr Array.
+     */
     public BinaryEnumArray(BinaryContext ctx, int compTypeId,
         @Nullable String compClsName, Object[] arr) {
         super(ctx, compTypeId, compClsName, arr);
