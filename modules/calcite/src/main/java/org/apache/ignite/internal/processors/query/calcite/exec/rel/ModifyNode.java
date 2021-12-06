@@ -228,47 +228,28 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<ModifyTuple> tuples) {
         Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(tuples.size());
 
-        switch (op) {
-            case INSERT:
-                for (ModifyTuple entry : tuples) {
-                    assert entry.getOp() == op : entry.getOp();
+        for (ModifyTuple entry : tuples) {
+            assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
 
+            switch (entry.getOp()) {
+                case INSERT:
                     if (procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue())) != null)
                         throw conflictKeysException(Collections.singletonList(entry.getKey()));
-                }
 
-                break;
-            case UPDATE:
-                for (ModifyTuple entry : tuples) {
-                    assert entry.getOp() == op : entry.getOp();
-
+                    break;
+                case UPDATE:
                     procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
-                }
 
-                break;
-            case MERGE:
-                for (ModifyTuple entry : tuples) {
-                    if (entry.getOp() == TableModify.Operation.UPDATE)
-                        procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
-                    else {
-                        assert entry.getOp() == TableModify.Operation.INSERT : entry.getOp();
-
-                        if (procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue())) != null)
-                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
-                    }
-                }
-
-                break;
-            case DELETE:
-                for (ModifyTuple entry : tuples) {
-                    assert entry.getOp() == op : entry.getOp();
+                    break;
+                case DELETE:
+                    assert op == TableModify.Operation.DELETE;
 
                     procMap.put(entry.getKey(), new DeleteOperation<>());
-                }
 
-                break;
-            default:
-                throw new AssertionError();
+                    break;
+                default:
+                    throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
+            }
         }
 
         return procMap;
