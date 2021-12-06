@@ -80,6 +80,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -967,7 +968,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Calculates user id based on specified login. */
     private UUID toSubjectId(String login) {
-        return UUID.nameUUIDFromBytes(login.getBytes());
+        return UUID.nameUUIDFromBytes(login.getBytes(UTF_8));
     }
 
     /**
