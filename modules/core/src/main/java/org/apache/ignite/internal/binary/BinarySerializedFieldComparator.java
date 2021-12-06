@@ -276,6 +276,13 @@ public class BinarySerializedFieldComparator {
                 return Arrays.equals((float[])val1, (float[])val2);
             else if (val1 instanceof double[])
                 return Arrays.equals((double[])val1, (double[])val2);
+            else if (val1 instanceof BinaryArray) {
+                BinaryArray arr1 = (BinaryArray)val1;
+                BinaryArray arr2 = (BinaryArray)val2;
+
+                return arr1.componentTypeId() == arr2.componentTypeId()
+                    && Arrays.deepEquals(arr1.array(), arr2.array());
+            }
             else
                 return Arrays.deepEquals((Object[])val1, (Object[])val2);
         }
@@ -288,7 +295,7 @@ public class BinarySerializedFieldComparator {
      * @return {@code True} if field is array.
      */
     private static boolean isArray(@Nullable Object field) {
-        return field != null && field.getClass().isArray();
+        return field != null && (field.getClass().isArray() || field instanceof BinaryArray);
     }
 
     /**
