@@ -1097,7 +1097,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config().getDataStorageConfiguration()))
             return;
 
-        // TODO: ensure that with "false" it will works correctly. No need to deserialize all record during restore.
         WALIterator iter = cctx.wal().replay(null, (type, ptr) -> true);
 
         while (iter.hasNext())
