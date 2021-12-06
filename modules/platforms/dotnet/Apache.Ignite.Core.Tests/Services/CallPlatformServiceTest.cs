@@ -163,6 +163,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             BinarizableTestValue AddOne(BinarizableTestValue val);
+
+            /** */
+            // ReSharper disable once InconsistentNaming
+            string contextAttribute(string name);
         }
 
         #pragma warning disable 649
@@ -173,6 +177,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             [InstanceResource]
             private IIgnite _grid;
+
+            /** */
+            private IServiceContext _ctx;
 
             /** <inheritdoc /> */
             public Guid NodeId
@@ -247,10 +254,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
+            public string contextAttribute(string name)
+            {
+                return _ctx.CurrentCallContext.GetAttribute(name);
+            }
+
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                // No-op.
+                _ctx = context;
             }
 
             /** <inheritdoc /> */

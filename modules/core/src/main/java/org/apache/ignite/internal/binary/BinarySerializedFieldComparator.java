@@ -295,7 +295,7 @@ public class BinarySerializedFieldComparator {
      * @return {@code True} if field is array.
      */
     private static boolean isArray(@Nullable Object field) {
-        return field != null && (field.getClass().isArray() || BinaryArray.class.isAssignableFrom(field.getClass()));
+        return field != null && (field.getClass().isArray() || field instanceof BinaryArray);
     }
 
     /**

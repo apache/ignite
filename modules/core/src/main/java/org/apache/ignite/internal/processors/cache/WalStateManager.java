@@ -157,7 +157,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             ioLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof WalStateAckMessage) {
-                        WalStateAckMessage msg0 = (WalStateAckMessage) msg;
+                        WalStateAckMessage msg0 = (WalStateAckMessage)msg;
 
                         msg0.senderNodeId(nodeId);
 

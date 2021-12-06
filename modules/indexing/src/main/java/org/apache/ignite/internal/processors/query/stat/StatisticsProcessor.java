@@ -25,6 +25,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -63,15 +64,17 @@ public class StatisticsProcessor {
      *
      * @param repo IgniteStatisticsRepository.
      * @param gatherPool Thread pool to gather statistics in.
+     * @param stopping External stopping state supplier.
      * @param logSupplier Log supplier function.
      */
     public StatisticsProcessor(
         IgniteStatisticsRepository repo,
         IgniteThreadPoolExecutor gatherPool,
+        Supplier<Boolean> stopping,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.statRepo = repo;
-        this.gatheringBusyExecutor = new BusyExecutor("gathering", gatherPool, logSupplier);
+        this.gatheringBusyExecutor = new BusyExecutor("gathering", gatherPool, stopping, logSupplier);
         this.log = logSupplier.apply(StatisticsProcessor.class);
     }
 
@@ -209,7 +212,17 @@ public class StatisticsProcessor {
                 log
             );
 
-            gatheringBusyExecutor.submit(() -> processPartitionTask(task))
+            gatheringBusyExecutor.submit(new CancellableTask() {
+                    /** {@inheritDoc} */
+                    @Override public void run() {
+                        processPartitionTask(task);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void cancel() {
+                        task.context().cancel();
+                    }
+                })
                 .thenAccept(success -> {
                     if (!success) {
                         if (log.isDebugEnabled()) {
@@ -337,7 +350,7 @@ public class StatisticsProcessor {
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
 
         // Can skip waiting for each task finished because of global busyLock.
-        gatheringBusyExecutor.deactivate(() -> gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel));
+        gatheringBusyExecutor.deactivate();
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");

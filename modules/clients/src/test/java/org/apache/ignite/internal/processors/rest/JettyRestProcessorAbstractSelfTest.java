@@ -144,7 +144,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -176,11 +176,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** */
     @Parameterized.Parameter
-    public boolean useTypedArrays;
+    public boolean useBinaryArrays;
 
-    /** Generates values for the {@link #useTypedArrays} parameter. */
-    @Parameterized.Parameters(name = "useTypedArrays = {0}")
-    public static Iterable<Object[]> useTypedArrays() {
+    /** Generates values for the {@link #useBinaryArrays} parameter. */
+    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
+    public static Iterable<Object[]> useBinaryArrays() {
         return Arrays.asList(new Object[][] {{true}, {false}});
     }
 
@@ -188,7 +188,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected void beforeTestsStarted() throws Exception {
         String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
 
         super.beforeTestsStarted();
 
@@ -198,7 +198,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
 
         super.afterTestsStopped();
     }
@@ -1859,34 +1859,37 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
+        try {
+            Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content("", GridRestCommand.CACHE_METADATA);
+            String ret = content("", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata: " + ret);
+            info("Cache metadata: " + ret);
 
-        JsonNode arrRes = validateJsonResponse(ret);
+            JsonNode arrRes = validateJsonResponse(ret);
 
-        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
-        // int cachesCnt = grid(1).cacheNames().size();
-        // assertEquals(cachesCnt, arrRes.size());
+            // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+            // int cachesCnt = grid(1).cacheNames().size();
+            // assertEquals(cachesCnt, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        ret = content("person", GridRestCommand.CACHE_METADATA);
+            ret = content("person", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata with cacheName parameter: " + ret);
+            info("Cache metadata with cacheName parameter: " + ret);
 
-        arrRes = validateJsonResponse(ret);
+            arrRes = validateJsonResponse(ret);
 
-        assertEquals(1, arrRes.size());
+            assertEquals(1, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
-            "Failed to request meta data. nonExistingCacheName is not found");
-
-        grid(1).destroyCache("partial");
+            assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
+                "Failed to request meta data. nonExistingCacheName is not found");
+        }
+        finally {
+            grid(1).destroyCache("partial");
+        }
     }
 
     /**

@@ -1741,7 +1741,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         fld.setAccessible(true);
 
-        return (T) fld.get(target);
+        return (T)fld.get(target);
     }
 
     /**

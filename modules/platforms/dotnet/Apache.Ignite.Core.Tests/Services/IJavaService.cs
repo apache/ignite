@@ -208,9 +208,12 @@ namespace Apache.Ignite.Core.Tests.Services
         void testException(string exceptionClass);
 
         /** */
-        void sleep(long delayMs);
+        object testRoundtrip(object x);
 
         /** */
-        object testRoundtrip(object x);
+        object contextAttribute(string name);
+
+        /** */
+        void sleep(long delayMs);
     }
 }

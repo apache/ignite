@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -148,17 +149,15 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
-        if (BinaryArray.useTypedArrays())
-            GridServiceProxy.KEEP_BINARY.set(true);
-
         try {
             Object res;
 
             if (PlatformService.class.isAssignableFrom(svcCls)) {
                 // Never deserialize platform service arguments and result: may contain platform-only types.
-                PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
+                PlatformService proxy =
+                    ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, false, timeout, true);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), false, args);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args, null);
             }
             else {
                 // Deserialize Java service arguments when not in keepBinary mode.
@@ -172,14 +171,14 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 }
 
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
-                    ctx.kernalContext());
+                    ctx.kernalContext(), null, true);
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                if (!BinaryArray.useTypedArrays())
+                if (!BinaryArray.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
-                res = proxy.invokeMethod(method, args);
+                res = proxy.invokeMethod(method, args, null);
             }
 
             return new ClientObjectResponse(requestId(), res);
@@ -191,10 +190,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         }
         catch (Throwable e) {
             throw new IgniteException(e);
-        }
-        finally {
-            if (BinaryArray.useTypedArrays())
-                GridServiceProxy.KEEP_BINARY.set(false);
         }
     }
 

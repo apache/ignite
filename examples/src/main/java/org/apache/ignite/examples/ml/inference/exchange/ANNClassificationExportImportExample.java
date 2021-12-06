@@ -76,7 +76,7 @@ public class ANNClassificationExportImportExample {
                     .withMaxIterations(1000)
                     .withEpsilon(1e-2);
 
-                ANNClassificationModel mdl = (ANNClassificationModel) trainer.fit(
+                ANNClassificationModel mdl = (ANNClassificationModel)trainer.fit(
                     ignite,
                     dataCache,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
@@ -142,7 +142,7 @@ public class ANNClassificationExportImportExample {
 
             System.out.println(">>> ---------------------------------");
 
-            accuracy = 1 - amountOfErrors / (double) totalAmount;
+            accuracy = 1 - amountOfErrors / (double)totalAmount;
 
         }
         return accuracy;

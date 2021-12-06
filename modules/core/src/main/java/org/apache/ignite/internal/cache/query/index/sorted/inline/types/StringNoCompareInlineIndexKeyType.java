@@ -30,7 +30,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public StringNoCompareInlineIndexKeyType() {
-        super(IndexKeyTypes.STRING, (short) -1);
+        super(IndexKeyTypes.STRING, (short)-1);
     }
 
     /** {@inheritDoc} */

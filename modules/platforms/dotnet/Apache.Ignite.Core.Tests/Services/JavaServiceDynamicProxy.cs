@@ -400,5 +400,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return x;
         }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _svc.contextAttribute(name);
+        }
     }
 }

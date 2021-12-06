@@ -53,7 +53,6 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -241,7 +240,6 @@ public class BinaryContext {
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
-        registerPredefinedType(BinaryObject.class, GridBinaryMarshaller.BINARY_OBJ_INTERFACE);
 
         // Special collections.
         registerPredefinedType(ArrayList.class, 0);
@@ -271,6 +269,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
         registerPredefinedType(BinaryArray.class, 0);
+        registerPredefinedType(BinaryEnumArray.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
@@ -604,7 +603,7 @@ public class BinaryContext {
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
      */
-    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+    @NotNull public BinaryClassDescriptor descriptorForClass(Class<?> cls) {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);

@@ -43,7 +43,7 @@ import org.junit.Test;
  * Contains tests for binary enums.
  */
 @SuppressWarnings("unchecked")
-public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
+public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";
 
@@ -328,8 +328,8 @@ public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
      */
     private void validateNested(int key, EnumType val, boolean registered) throws Exception {
         if (registered) {
-            EnumHolder res1 = (EnumHolder) cache1.get(key);
-            EnumHolder res2 = (EnumHolder) cache2.get(key);
+            EnumHolder res1 = (EnumHolder)cache1.get(key);
+            EnumHolder res2 = (EnumHolder)cache2.get(key);
 
             assertEquals(val, res1.val);
             assertEquals(val, res2.val);
@@ -596,8 +596,8 @@ public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
             assertEquals(DeclaredBodyEnum.ONE, cache2.get(1));
         }
 
-        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnum.ONE);
-        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary1.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary2.get(1), DeclaredBodyEnum.ONE);
     }
 
     /**
@@ -623,21 +623,21 @@ public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
         Object arr1 = cacheBinary1.get(1);
         Object arr2 = cacheBinary2.get(1);
 
-        Object[] arrBinary1 = useTypedArrays
+        Object[] arrBinary1 = useBinaryArrays
             ? ((BinaryArray)arr1).array()
             : (Object[])arr1;
-        Object[] arrBinary2 = useTypedArrays
+        Object[] arrBinary2 = useBinaryArrays
             ? ((BinaryArray)arr2).array()
             : (Object[])arr2;
 
         assertEquals(2, arrBinary1.length);
         assertEquals(2, arrBinary2.length);
 
-        validate((BinaryObject) arrBinary1[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary1[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary1[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary1[1], EnumType.TWO);
 
-        validate((BinaryObject) arrBinary2[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary2[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary2[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary2[1], EnumType.TWO);
     }
 
     /**
@@ -654,8 +654,8 @@ public class BinaryEnumsSelfTest extends AbstractTypedArrayTest {
             assertEquals(val, cache2.get(key));
         }
 
-        validate((BinaryObject) cacheBinary1.get(key), val);
-        validate((BinaryObject) cacheBinary2.get(key), val);
+        validate((BinaryObject)cacheBinary1.get(key), val);
+        validate((BinaryObject)cacheBinary2.get(key), val);
     }
 
     /**

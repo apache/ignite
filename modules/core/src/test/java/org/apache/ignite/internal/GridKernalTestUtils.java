@@ -39,6 +39,6 @@ public class GridKernalTestUtils {
     public static GridKernalContext context(Ignite ignite) {
         assert ignite != null;
 
-        return ((IgniteKernal) ignite).context();
+        return ((IgniteKernal)ignite).context();
     }
 }

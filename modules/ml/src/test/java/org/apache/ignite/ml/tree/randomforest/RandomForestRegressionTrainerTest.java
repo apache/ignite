@@ -47,7 +47,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
             double x3 = x2 / 10.0;
             double x4 = x3 / 10.0;
 
-            sample.put(x1 * x2 + x3 * x4, VectorUtils.of(x1, x2, x3, x4).labeled((double) i % 2));
+            sample.put(x1 * x2 + x3 * x4, VectorUtils.of(x1, x2, x3, x4).labeled((double)i % 2));
         }
 
         ArrayList<FeatureMeta> meta = new ArrayList<>();
@@ -73,7 +73,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
             double x3 = x2 / 10.0;
             double x4 = x3 / 10.0;
 
-            sample.put(x1 * x2 + x3 * x4, VectorUtils.of(x1, x2, x3, x4).labeled((double) i % 2));
+            sample.put(x1 * x2 + x3 * x4, VectorUtils.of(x1, x2, x3, x4).labeled((double)i % 2));
         }
 
         ArrayList<FeatureMeta> meta = new ArrayList<>();

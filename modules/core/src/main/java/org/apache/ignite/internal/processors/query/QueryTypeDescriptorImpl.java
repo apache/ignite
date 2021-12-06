@@ -611,7 +611,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             boolean isKey = false;
 
             if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
@@ -694,7 +694,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 Class<?> propType;
 
                 if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
-                    propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                     propType = propVal == null ? null : propVal.getClass();
                 }
@@ -729,7 +729,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
                     // Check for classes/enums implementing indexed interfaces.
-                    String clsName = ((BinaryObject) propVal).type().typeName();
+                    String clsName = ((BinaryObject)propVal).type().typeName();
                     try {
                         final Class<?> cls = Class.forName(clsName);
 

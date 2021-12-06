@@ -37,18 +37,19 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  * Binary object representing array.
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
-    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = false;
+    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
 
-    /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    private static boolean USE_TYPED_ARRAYS =
-        IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
+    /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    private static boolean USE_BINARY_ARRAYS =
+        IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -56,17 +57,21 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** Context. */
     @GridDirectTransient
     @GridToStringExclude
-    private BinaryContext ctx;
+    protected BinaryContext ctx;
 
     /** Type ID. */
-    private int compTypeId;
+    protected int compTypeId;
 
     /** Type class name. */
-    @Nullable private String compClsName;
+    @Nullable protected String compClsName;
 
     /** Values. */
     @GridToStringInclude(sensitive = true)
-    private Object[] arr;
+    protected Object[] arr;
+
+    /** Deserialized value. */
+    @GridToStringExclude
+    protected Object[] deserialized;
 
     /**
      * {@link Externalizable} support.
@@ -113,20 +118,23 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
+            // Skip deserialization if already deserialized.
+            // Prepared result is in arr, already.
+            if (deserialized != null)
+                return (T)deserialized;
 
-            boolean keepBinary = BinaryObject.class.isAssignableFrom(compType);
+            deserialized = (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++) {
-                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], keepBinary, false, ldr);
+                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
 
-                if (!keepBinary && obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
+                if (obj instanceof BinaryObject)
                     obj = ((BinaryObject)obj).deserialize(ldr);
 
-                res[i] = obj;
+                deserialized[i] = obj;
             }
 
-            return (T)res;
+            return (T)deserialized;
         }
         finally {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
@@ -234,7 +242,21 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         BinaryArray arr = (BinaryArray)o;
 
-        return compTypeId == arr.compTypeId
+        int compTypeId1 = this.compTypeId;
+        int compTypeId2 = arr.compTypeId;
+
+        // This can happen when binary type was not registered in time of binary array creation.
+        // In this case same type will be written differently:
+        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
+        // arr2 = [comTypeId=1234,compClsName=null]
+        // Overcome by calculation compTypeId based on compClsName.
+        if (compTypeId1 == UNREGISTERED_TYPE_ID && compTypeId2 != UNREGISTERED_TYPE_ID)
+            compTypeId1 = ctx.typeId(compClsName);
+
+        if (compTypeId2 == UNREGISTERED_TYPE_ID && compTypeId1 != UNREGISTERED_TYPE_ID)
+            compTypeId2 = ctx.typeId(arr.compClsName);
+
+        return compTypeId1 == compTypeId2
             && Arrays.equals(this.arr, arr.arr);
     }
 
@@ -244,17 +266,17 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
-    public static boolean useTypedArrays() {
-        return USE_TYPED_ARRAYS;
+    public static boolean useBinaryArrays() {
+        return USE_BINARY_ARRAYS;
     }
 
     /**
-     * Initialize {@link #USE_TYPED_ARRAYS} value with
-     * {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS} system property value.
+     * Initialize {@link #USE_BINARY_ARRAYS} value with
+     * {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
      *
      * This method invoked using reflection in tests.
      */
-    public static void initUseTypedArrays() {
-        USE_TYPED_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
+    public static void initUseBinaryArrays() {
+        USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
     }
 }

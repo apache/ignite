@@ -41,8 +41,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
         /// <param name="platformType">The platform.</param>
+        /// <param name="callCtx">Service call context.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, PlatformType platformType)
+            object[] arguments, PlatformType platformType, IServiceCallContext callCtx)
         {
             Debug.Assert(writer != null);
 
@@ -76,6 +77,8 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
                 writer.WriteBoolean(false);
+
+            writer.WriteDictionary(callCtx == null ? null : ((ServiceCallContext) callCtx).Values());
         }
 
         /// <summary>
@@ -85,8 +88,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
+        /// <param name="callCtx">Service call context.</param>
         public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
-            out string mthdName, out object[] mthdArgs)
+            out string mthdName, out object[] mthdArgs, out IServiceCallContext callCtx)
         {
             var reader = marsh.StartUnmarshal(stream);
 
@@ -106,6 +110,10 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
                 mthdArgs = null;
+
+            var attrs = reader.ReadDictionary();
+
+            callCtx = attrs == null ? null : new ServiceCallContext(attrs);
         }
 
         /// <summary>

@@ -106,7 +106,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     public void setCacheManager(org.apache.ignite.cache.CacheManager cacheMgr) {
         if (delegate instanceof IgniteCacheProxyImpl)
-            ((IgniteCacheProxyImpl) delegate).setCacheManager(cacheMgr);
+            ((IgniteCacheProxyImpl)delegate).setCacheManager(cacheMgr);
     }
 
     /** {@inheritDoc} */
@@ -279,7 +279,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>) delegate, opCtx.keepBinary(), lock);
+            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.keepBinary(), lock);
         }
         finally {
             onLeave(opGate);
@@ -1625,14 +1625,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
         if (isCacheProxy)
-            ((IgniteCacheProxyImpl) delegate).checkRestart();
+            ((IgniteCacheProxyImpl)delegate).checkRestart();
 
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
 
         if (isCacheProxy && tryRestart && gate.isStopped() &&
             context().kernalContext().gateway().getState() == GridKernalState.STARTED) {
-            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl) delegate;
+            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl)delegate;
 
             try {
                 IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().publicJCache(context().name());
@@ -1664,7 +1664,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
             if (isCacheProxy)
-                ((IgniteCacheProxyImpl) delegate).checkRestart(true);
+                ((IgniteCacheProxyImpl)delegate).checkRestart(true);
 
             throw e; // If we reached this line.
         }
@@ -1741,16 +1741,16 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        delegate = (IgniteCacheProxy<K, V>) in.readObject();
+        delegate = (IgniteCacheProxy<K, V>)in.readObject();
 
         lock = in.readBoolean();
 
-        opCtx = (CacheOperationContext) in.readObject();
+        opCtx = (CacheOperationContext)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object another) {
-        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;
+        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy)another;
 
         return delegate.equals(anotherProxy.delegate);
     }

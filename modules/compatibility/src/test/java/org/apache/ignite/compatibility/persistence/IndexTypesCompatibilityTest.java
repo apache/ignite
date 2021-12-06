@@ -183,7 +183,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
         for (int i = 0; i < 2; i++) {
             if ("Binary".equals(type))
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(i),
-                    Arrays.equals((byte[]) val, (byte[]) row.get(i)));
+                    Arrays.equals((byte[])val, (byte[])row.get(i)));
             else
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(i), row.get(i).equals(getBaseValue(type, inc)));
         }
@@ -242,7 +242,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
 
             if ("Binary".equals(type))
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(0),
-                    Arrays.equals((byte[]) val, (byte[]) row.get(0)));
+                    Arrays.equals((byte[])val, (byte[])row.get(0)));
             else
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(0),
                     row.get(0).equals(val));

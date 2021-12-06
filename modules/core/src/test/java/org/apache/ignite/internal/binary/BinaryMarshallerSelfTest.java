@@ -118,7 +118,7 @@ import static org.junit.Assert.assertNotEquals;
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
-public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
+public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     /**
      * @throws Exception If failed.
      */
@@ -501,6 +501,33 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
+    /** */
+    @Test
+    public void testBinaryArray() throws IgniteCheckedException {
+        TestClass1[] arr = new TestClass1[] {new TestClass1(), new TestClass1()};
+
+        assertArrayEquals(arr, marshalUnmarshal(arr));
+
+        Object[] arr1 = new Object[] {arr, arr};
+
+        Object[] arr2 = marshalUnmarshal(arr1);
+
+        Assert.assertSame("Same array should be returned because of HANDLE usage", arr2[0], arr2[1]);
+
+        assertArrayEquals(arr1, arr2);
+
+        ArrayFieldClass o1 = new ArrayFieldClass();
+
+        o1.arr1 = arr;
+        o1.arr2 = arr;
+
+        ArrayFieldClass o2 = marshalUnmarshal(o1);
+
+        Assert.assertSame("Same array should be returned because of HANDLE usage", o2.arr1, o2.arr2);
+
+        assertArrayEquals(o1.arr1, o2.arr1);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -806,12 +833,12 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
+            useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
         );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject innerPo = po.field("inner");
@@ -844,13 +871,13 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
         assertArrayEquals(
             obj.inner.objArr,
-            useTypedArrays ? innerPo.<BinaryArray>field("objArr").array() : innerPo.field("objArr")
+            useBinaryArrays ? innerPo.<BinaryArray>field("objArr").array() : innerPo.field("objArr")
         );
         assertEquals(obj.inner.col, innerPo.field("col"));
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
             new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
+        assertArrayEquals(ordinals(obj.inner.enumArr), binaryOrdinals(innerPo.field("enumArr")));
         assertNull(innerPo.field("inner"));
         assertNull(innerPo.field("unknown"));
     }
@@ -896,12 +923,12 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("_objArr").array() : po.field("_objArr")
+            useBinaryArrays ? po.<BinaryArray>field("_objArr").array() : po.field("_objArr")
         );
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("_enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject simplePo = po.field("_simple");
@@ -934,13 +961,13 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
         assertArrayEquals(
             obj.simple.objArr,
-            useTypedArrays ? simplePo.<BinaryArray>field("objArr").array() : simplePo.field("objArr")
+            useBinaryArrays ? simplePo.<BinaryArray>field("objArr").array() : simplePo.field("objArr")
         );
         assertEquals(obj.simple.col, simplePo.field("col"));
         assertEquals(obj.simple.map, simplePo.field("map"));
         assertEquals(new Integer(obj.simple.enumVal.ordinal()),
             new Integer(((BinaryObject)simplePo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
+        assertArrayEquals(ordinals(obj.simple.enumArr), binaryOrdinals(simplePo.field("enumArr")));
         assertNull(simplePo.field("simple"));
         assertNull(simplePo.field("binary"));
         assertNull(simplePo.field("unknown"));
@@ -974,13 +1001,13 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
         assertArrayEquals(
             obj.binary.objArr,
-            useTypedArrays ? binaryPo.<BinaryArray>field("_objArr").array() : binaryPo.field("_objArr")
+            useBinaryArrays ? binaryPo.<BinaryArray>field("_objArr").array() : binaryPo.field("_objArr")
         );
         assertEquals(obj.binary.col, binaryPo.field("_col"));
         assertEquals(obj.binary.map, binaryPo.field("_map"));
         assertEquals(new Integer(obj.binary.enumVal.ordinal()),
             new Integer(((BinaryObject)binaryPo.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.binary.enumArr), ordinals((BinaryObject[])binaryPo.field("_enumArr")));
+        assertArrayEquals(ordinals(obj.binary.enumArr), binaryOrdinals(binaryPo.field("_enumArr")));
         assertNull(binaryPo.field("_simple"));
         assertNull(binaryPo.field("_binary"));
         assertNull(binaryPo.field("unknown"));
@@ -1089,9 +1116,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
                     col = bob.getField(flds.get1());
                 }
 
-                // Must be assertSame but now BinaryObjectBuilder doesn't support handle to collection.
-                // Now we check only that BinaryObjectBuilder#getField doesn't crash and returns valid collection.
-                assertEquals("Check: " + flds, col, colHnd);
+                assertSame(col, colHnd);
             }
 
             bo = bob.build();
@@ -1284,12 +1309,12 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
-            useTypedArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
+            useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
         );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        assertArrayEquals(ordinals(obj.enumArr), binaryOrdinals(po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         assertEquals(obj, po.deserialize());
@@ -1678,7 +1703,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        Object[] arr0 = useTypedArrays ? po.<BinaryArray>field("arr").array() : po.field("arr");
+        Object[] arr0 = useBinaryArrays ? po.<BinaryArray>field("arr").array() : po.field("arr");
 
         assertEquals(3, arr0.length);
 
@@ -3123,9 +3148,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     public void testReadDetachedTypedArray() throws Exception {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
-        testReadDetachObjectProperly(arr, obj0 -> {
-            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Value[])obj0;
-
+        testReadDetachObjectProperly(arr, obj -> {
             assertArrayEquals(arr, (Value[])obj);
 
             Object[] args = new Object[] {obj};
@@ -3143,9 +3166,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     @Test
     public void testReadArrayOfCollections() throws Exception {
         Collection[] arr = new Collection[] { Arrays.asList(new Value(1), new Value(2), new Value(3)) };
-        testReadDetachObjectProperly(arr, obj0 -> {
-            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Collection[])obj0;
-
+        testReadDetachObjectProperly(arr, obj -> {
             assertArrayEquals(arr, (Collection[])obj);
 
             Object[] args = new Object[] {obj};
@@ -3951,14 +3972,27 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     }
 
     /**
-     * @param enumArr Enum array.
+     * @param fld Field value.
      * @return Ordinals.
      */
-    private <T extends Enum<?>> Integer[] ordinals(BinaryObject[] enumArr) {
+    private <T extends Enum<?>> Integer[] binaryOrdinals(Object fld) {
+        Object[] enumArr;
+
+        if (useBinaryArrays) {
+            assertTrue(fld instanceof BinaryEnumArray);
+
+            enumArr = ((BinaryEnumArray)fld).array();
+        }
+        else {
+            assertTrue(fld instanceof BinaryObject[]);
+
+            enumArr = (Object[])fld;
+        }
+
         Integer[] ords = new Integer[enumArr.length];
 
         for (int i = 0; i < enumArr.length; i++)
-            ords[i] = enumArr[i].enumOrdinal();
+            ords[i] = ((BinaryObject)enumArr[i]).enumOrdinal();
 
         return ords;
     }
@@ -5772,6 +5806,15 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         }
     }
 
+    /** */
+    public static class ArrayFieldClass {
+        /** */
+        protected TestClass1[] arr1;
+
+        /** */
+        protected TestClass1[] arr2;
+    }
+
     /**
      *
      */
@@ -5784,6 +5827,21 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
         /** */
         private SimpleObject obj = TestClass0.constSimpleObject();
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            TestClass1 class1 = (TestClass1)o;
+            return intVal == class1.intVal && Objects.equals(strVal, class1.strVal) && Objects.equals(obj, class1.obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(intVal, strVal, obj);
+        }
     }
 
     /**

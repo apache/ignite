@@ -1370,7 +1370,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
@@ -1478,7 +1483,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
@@ -2010,7 +2020,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
@@ -2357,7 +2367,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int) n);
+        return skipBytes((int)n);
     }
 
     /** {@inheritDoc} */

@@ -39,7 +39,7 @@ public class InlineIndexFactory implements IndexFactory {
 
     /** {@inheritDoc} */
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition def) {
-        SortedIndexDefinition sdef = (SortedIndexDefinition) def;
+        SortedIndexDefinition sdef = (SortedIndexDefinition)def;
 
         InlineIndexTree[] trees = new InlineIndexTree[sdef.segments()];
         InlineRecommender recommender = new InlineRecommender(cctx, sdef);

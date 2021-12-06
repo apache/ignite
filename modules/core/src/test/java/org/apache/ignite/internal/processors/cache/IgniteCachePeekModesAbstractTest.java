@@ -397,9 +397,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(size, cache0.size(NEAR));
                 assertEquals(size, cache0.size(ALL));
 
-                assertEquals(size, (int) cache0.sizeAsync().get());
+                assertEquals(size, (int)cache0.sizeAsync().get());
 
-                assertEquals(size, (int) cache0.sizeAsync(PRIMARY).get());
+                assertEquals(size, (int)cache0.sizeAsync(PRIMARY).get());
             }
 
             for (int i = 0; i < HEAP_ENTRIES; i++) {
@@ -419,7 +419,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(size, cache0.size(NEAR));
                 assertEquals(size, cache0.size(ALL));
 
-                assertEquals(size, (int) cache0.sizeAsync().get());
+                assertEquals(size, (int)cache0.sizeAsync().get());
             }
 
             checkEmpty();
@@ -509,9 +509,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             assertEquals(size, cache0.sizeLong(part, NEAR));
             assertEquals(size, cache0.sizeLong(part, ALL));
 
-            assertEquals(size, (long) cache0.sizeAsync().get());
+            assertEquals(size, (long)cache0.sizeAsync().get());
 
-            assertEquals(size, (long) cache0.sizeLongAsync(part, PRIMARY).get());
+            assertEquals(size, (long)cache0.sizeLongAsync(part, PRIMARY).get());
         }
 
         for (int i = 0; i < HEAP_ENTRIES; i++) {
@@ -531,7 +531,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             assertEquals(size, cache0.sizeLong(part, NEAR));
             assertEquals(size, cache0.sizeLong(part, ALL));
 
-            assertEquals(size, (long) cache0.sizeAsync().get());
+            assertEquals(size, (long)cache0.sizeAsync().get());
         }
     }
 
@@ -1276,7 +1276,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             size += cache.localSize(PRIMARY);
 
-            assertEquals(exp, (int) cache.sizeAsync(PRIMARY).get());
+            assertEquals(exp, (int)cache.sizeAsync(PRIMARY).get());
         }
 
         assertEquals(exp, size);

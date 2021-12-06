@@ -252,7 +252,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     ArrayList unwrapped = new ArrayList();
 
                     for (Object o: data) {
-                        ScoredCacheEntry e = (ScoredCacheEntry) o;
+                        ScoredCacheEntry e = (ScoredCacheEntry)o;
 
                         Object uKey = CacheObjectUtils.unwrapBinary(
                             cctx.cacheObjectContext(), e.getKey(), qry.query().keepBinary(), true, null);
@@ -276,7 +276,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 if (query().query().type() == GridCacheQueryType.INDEX)
                     onMeta(metadata);
 
-                onPage(nodeId, (Collection<R>) data, lastPage);
+                onPage(nodeId, (Collection<R>)data, lastPage);
 
                 if (isDone())
                     clear();

@@ -459,27 +459,27 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             Object expVal = U.field(ctx.obj, fieldName);
 
             if (val instanceof BinaryObject)
-                val = ((BinaryObject) val).deserialize();
+                val = ((BinaryObject)val).deserialize();
 
             if (val != null && val.getClass().isArray()) {
                 assertNotNull(expVal);
 
                 if (val instanceof byte[])
-                    assertTrue(Arrays.equals((byte[]) expVal, (byte[]) val));
+                    assertTrue(Arrays.equals((byte[])expVal, (byte[])val));
                 else if (val instanceof boolean[])
-                    assertTrue(Arrays.equals((boolean[]) expVal, (boolean[]) val));
+                    assertTrue(Arrays.equals((boolean[])expVal, (boolean[])val));
                 else if (val instanceof short[])
-                    assertTrue(Arrays.equals((short[]) expVal, (short[]) val));
+                    assertTrue(Arrays.equals((short[])expVal, (short[])val));
                 else if (val instanceof char[])
-                    assertTrue(Arrays.equals((char[]) expVal, (char[]) val));
+                    assertTrue(Arrays.equals((char[])expVal, (char[])val));
                 else if (val instanceof int[])
-                    assertTrue(Arrays.equals((int[]) expVal, (int[]) val));
+                    assertTrue(Arrays.equals((int[])expVal, (int[])val));
                 else if (val instanceof long[])
-                    assertTrue(Arrays.equals((long[]) expVal, (long[]) val));
+                    assertTrue(Arrays.equals((long[])expVal, (long[])val));
                 else if (val instanceof float[])
-                    assertTrue(Arrays.equals((float[]) expVal, (float[]) val));
+                    assertTrue(Arrays.equals((float[])expVal, (float[])val));
                 else if (val instanceof double[])
-                    assertTrue(Arrays.equals((double[]) expVal, (double[]) val));
+                    assertTrue(Arrays.equals((double[])expVal, (double[])val));
                 else {
                     Object[] expVal0 = (Object[])expVal;
                     Object[] val0 = (Object[])val;

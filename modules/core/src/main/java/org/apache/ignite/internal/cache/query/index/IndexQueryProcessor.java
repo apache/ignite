@@ -306,7 +306,7 @@ public class IndexQueryProcessor {
         IndexRowComparator keyCmp = idxDef.rowComparator();
 
         for (IndexQueryCriterion c: idxQryDesc.criteria()) {
-            RangeIndexQueryCriterion crit = (RangeIndexQueryCriterion) c;
+            RangeIndexQueryCriterion crit = (RangeIndexQueryCriterion)c;
 
             String fldName = idxFlds.containsKey(crit.field()) ? crit.field()
                 : QueryUtils.normalizeObjectName(crit.field(), false);
@@ -426,8 +426,8 @@ public class IndexQueryProcessor {
 
             qry.criteria[i] = criterion;
 
-            IndexKey l = (IndexKey) criterion.lower();
-            IndexKey u = (IndexKey) criterion.upper();
+            IndexKey l = (IndexKey)criterion.lower();
+            IndexKey u = (IndexKey)criterion.upper();
 
             if (l != null)
                 lowerAllNulls = false;
@@ -456,7 +456,7 @@ public class IndexQueryProcessor {
      * @return Prepared query for index range.
      */
     private IndexRangeQuery prepareQuery(SortedSegmentedIndex idx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
-        SortedIndexDefinition idxDef = (SortedIndexDefinition) idxProc.indexDefinition(idx.id());
+        SortedIndexDefinition idxDef = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
 
         // For PK indexes will serialize _KEY column.
         if (F.isEmpty(idxQryDesc.criteria()))
@@ -509,13 +509,20 @@ public class IndexQueryProcessor {
 
         LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
 
-        // Step 1. Traverse index.
-        GridCursor<IndexRow> findRes = idx.find(qry.lower, qry.upper, segment, qryCtx);
+        boolean lowIncl = inclBoundary(qry, true);
+        boolean upIncl = inclBoundary(qry, false);
 
-        // Step 2. Scan and filter.
+        // Step 1. Traverse index and find index boundaries.
+        GridCursor<IndexRow> findRes = idx.find(qry.lower, qry.upper, lowIncl, upIncl, segment, qryCtx);
+
+        // No need in the additional filter step for queries with 0 or 1 criteria.
+        if (qry.criteria.length <= 1)
+            return findRes;
+
+        // Step 2. Filter range if the criteria apply to multiple fields.
         return new GridCursor<IndexRow>() {
             /** */
-            private final IndexRowComparator rowCmp = ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator();
+            private final IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
 
             /** {@inheritDoc} */
             @Override public boolean next() throws IgniteCheckedException {
@@ -577,6 +584,25 @@ public class IndexQueryProcessor {
                 return false;
             }
         };
+    }
+
+    /**
+     * Checks whether index thraversing should include boundary or not. Includes a boundary for unbounded searches, for
+     * others it checks user criteria.
+     *
+     * @param lower {@code true} for lower bound and {@code false} for upper bound.
+     * @return {@code true} for inclusive boundary, otherwise {@code false}.
+     */
+    private boolean inclBoundary(IndexRangeQuery qry, boolean lower) {
+        for (RangeIndexQueryCriterion c: qry.criteria) {
+            if (c == null || (lower ? c.lower() : c.upper()) == null)
+                break;
+
+            if (!(lower ? c.lowerIncl() : c.upperIncl()))
+                return false;
+        }
+
+        return true;
     }
 
     /**

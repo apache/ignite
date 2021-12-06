@@ -294,7 +294,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             restReq.key(req.key());
 
             if (cmd == CACHE_REMOVE_ALL) {
-                Object[] keys = (Object[]) req.value();
+                Object[] keys = (Object[])req.value();
 
                 if (keys != null) {
                     Map<Object, Object> map = new HashMap<>();

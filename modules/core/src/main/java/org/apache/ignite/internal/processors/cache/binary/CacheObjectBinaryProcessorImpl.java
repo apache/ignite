@@ -63,6 +63,7 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -501,19 +502,36 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            if (!BinaryArray.useTypedArrays())
+            if (!BinaryArray.useBinaryArrays())
                 return pArr;
 
             Class<?> compCls = obj.getClass().getComponentType();
 
             boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
 
-            return new BinaryArray(
-                binaryCtx,
-                binaryCtx.typeId(!isBinaryArr ? compCls.getName() : Object.class.getName()),
-                !isBinaryArr ? compCls.getName() : Object.class.getName(),
-                pArr
-            );
+            String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+            // In case of interface or multidimensional array rely on class name.
+            // Interfaces and array not registered as binary types.
+            BinaryClassDescriptor desc = binaryCtx.descriptorForClass(compCls);
+
+            if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+                return new BinaryEnumArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+            else {
+                return new BinaryArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+
         }
 
         if (obj instanceof IgniteBiTuple) {
@@ -1253,7 +1271,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         obj = toBinary(obj, false);
 
         if (obj instanceof BinaryObjectImpl) {
-            ((KeyCacheObject) obj).partition(partition(ctx, cctx, obj));
+            ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
         }
@@ -1540,7 +1558,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable) res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
         }
     }
 
@@ -1551,12 +1569,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
             res.put(e.getKey(), e.getValue());
 
-        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable) res);
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable)res);
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        Map<Integer, BinaryMetadataHolder> newNodeMeta = (Map<Integer, BinaryMetadataHolder>) data.joiningNodeData();
+        Map<Integer, BinaryMetadataHolder> newNodeMeta = (Map<Integer, BinaryMetadataHolder>)data.joiningNodeData();
 
         if (newNodeMeta == null)
             return;
@@ -1611,7 +1629,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataHolder> receivedData = (Map<Integer, BinaryMetadataHolder>) data.commonData();
+        Map<Integer, BinaryMetadataHolder> receivedData = (Map<Integer, BinaryMetadataHolder>)data.commonData();
 
         if (receivedData != null) {
             for (Map.Entry<Integer, BinaryMetadataHolder> e : receivedData.entrySet()) {

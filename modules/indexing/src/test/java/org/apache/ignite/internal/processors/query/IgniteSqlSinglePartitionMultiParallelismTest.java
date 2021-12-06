@@ -80,7 +80,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
     public void testSimpleCountQuery() throws Exception {
         List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME);
 
-        Long res = (Long) results.get(0).get(0);
+        Long res = (Long)results.get(0).get(0);
 
         assertEquals(1, results.size());
         assertEquals(Long.valueOf(KEY_CNT), res);
@@ -96,7 +96,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
 
             List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME + " where ID=" + keyForSegment);
 
-            Long res = (Long) results.get(0).get(0);
+            Long res = (Long)results.get(0).get(0);
 
             assertEquals(1, results.size());
             assertEquals(Long.valueOf(1), res);
@@ -114,7 +114,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
         List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME + " where ID="
             + keyFromFirstSegment + " or ID=" + keyFromLastSegment);
 
-        Long res = (Long) results.get(0).get(0);
+        Long res = (Long)results.get(0).get(0);
 
         assertEquals(1, results.size());
         assertEquals(Long.valueOf(2), res);

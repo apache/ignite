@@ -45,7 +45,7 @@ public class ClientIndexFactory implements IndexFactory {
 
     /** {@inheritDoc} */
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
-        ClientIndexDefinition def = (ClientIndexDefinition) definition;
+        ClientIndexDefinition def = (ClientIndexDefinition)definition;
 
         LinkedHashMap<String, IndexKeyDefinition> keyDefs = definition.indexKeyDefinitions();
 

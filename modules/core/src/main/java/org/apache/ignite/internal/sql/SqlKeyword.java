@@ -329,7 +329,7 @@ public class SqlKeyword {
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
                 if (F.eq(String.class, field.getType())) {
-                    String val = (String) field.get(null);
+                    String val = (String)field.get(null);
 
                     KEYWORDS.add(val);
                 }

@@ -520,7 +520,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
             }
 
             for (int k : addedKeys) {
@@ -528,7 +528,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
             }
         }
     }

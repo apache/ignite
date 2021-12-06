@@ -268,7 +268,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
         try {
             for (Cache.Entry<Object, Object> entry : grid(0).cache(regionName)) {
                 if (((HibernateKeyWrapper)entry.getKey()).id().equals(id))
-                    return (String) ((HashMap) entry.getValue()).get("name");
+                    return (String)((HashMap)entry.getValue()).get("name");
             }
 
             return null;

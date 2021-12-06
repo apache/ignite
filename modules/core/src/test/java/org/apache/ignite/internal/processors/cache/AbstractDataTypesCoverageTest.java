@@ -53,8 +53,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
-import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Abstract data types coverage  test.
@@ -150,19 +150,19 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
     /** */
     @Parameterized.Parameter(9)
-    public boolean useTypedArrays;
+    public boolean useBinaryArrays;
 
     /**
      * @return Test parameters.
      */
     @Parameterized.Parameters(name = "atomicityMode={1}, cacheMode={2}, ttlFactory={3}, backups={4}," +
-        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}, useTypedArrays={9}")
+        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}, useBinaryArrays={9}")
     public static Collection parameters() {
         Set<Object[]> params = new HashSet<>();
 
         Object[] baseParamLine = {
             null, CacheAtomicityMode.ATOMIC, CacheMode.PARTITIONED, null, 2, null,
-            false, CacheWriteSynchronizationMode.FULL_SYNC, false, DFLT_IGNITE_USE_TYPED_ARRAYS};
+            false, CacheWriteSynchronizationMode.FULL_SYNC, false, DFLT_IGNITE_USE_BINARY_ARRAYS};
 
         Object[] paramLine = null;
 
@@ -250,8 +250,8 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-        BinaryArray.initUseTypedArrays();
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
+        BinaryArray.initUseBinaryArrays();
 
         super.beforeTest();
     }
@@ -260,8 +260,8 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-        BinaryArray.initUseTypedArrays();
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+        BinaryArray.initUseBinaryArrays();
     }
 
     /** {@inheritDoc} */

@@ -203,7 +203,7 @@ public class CacheObjectUtils {
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
-        else if (o instanceof Object[] && !BinaryArray.useTypedArrays())
+        else if (o instanceof Object[] && !BinaryArray.useBinaryArrays())
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         else if (o instanceof BinaryArray && !keepBinary)
             return ((BinaryObject)o).deserialize(ldr);

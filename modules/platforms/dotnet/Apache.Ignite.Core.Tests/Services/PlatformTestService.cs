@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Services
         private bool _cancelled;
 
         /** */
+        private IServiceContext _context;
+
+        /** */
         public PlatformTestService()
         {
             // No-Op.
@@ -60,6 +63,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Init(IServiceContext context)
         {
+            _context = context;
             _initialized = true;
         }
 
@@ -622,6 +626,12 @@ namespace Apache.Ignite.Core.Tests.Services
         public object testRoundtrip(object x)
         {
             return x;
+        }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _context.CurrentCallContext.GetAttribute(name);
         }
     }
 }

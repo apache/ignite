@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GracefulShutd
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadDelayedWithPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadWaitForBackupsWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.WaitForBackupsOnShutdownSystemPropertyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.BlockedEvictionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.DelayedOwningDuringExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionWhilePartitionGroupIsReservedTest;
@@ -149,6 +150,7 @@ public class IgniteCacheTestSuite7 {
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheDhtPreloadWaitForBackupsWithPersistenceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GracefulShutdownTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WaitForBackupsOnShutdownSystemPropertyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxWithKeyContentionSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheDhtPreloadDelayedWithPersistenceSelfTest.class, ignoredTests);

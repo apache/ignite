@@ -787,7 +787,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 return;
 
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridBinaryMarshaller.OBJ_ARR);
+            out.unsafeWriteByte(val instanceof BinaryEnumArray
+                ? GridBinaryMarshaller.ENUM_ARR
+                : GridBinaryMarshaller.OBJ_ARR
+            );
             out.unsafeWriteInt(val.componentTypeId());
 
             if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -1796,22 +1799,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeByte(int v) throws IOException {
-        out.writeByte((byte) v);
+        out.writeByte((byte)v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(int v) throws IOException {
-        out.writeShort((short) v);
+        out.writeShort((short)v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(int v) throws IOException {
-        out.writeChar((char) v);
+        out.writeChar((char)v);
     }
 
     /** {@inheritDoc} */
     @Override public void write(int b) throws IOException {
-        out.writeByte((byte) b);
+        out.writeByte((byte)b);
     }
 
     /** {@inheritDoc} */
@@ -1927,7 +1930,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param obj Object to write.
      * @return {@code true} if the object has been written as a handle.
      */
-    boolean tryWriteAsHandle(Object obj) {
+    public boolean tryWriteAsHandle(Object obj) {
         assert obj != null;
 
         int pos = out.position();
