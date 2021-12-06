@@ -58,7 +58,7 @@ public class SystemDataRegionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public SystemDataRegionConfiguration setInitialSize(long initSize) {
-        A.ensure(initSize > 0, "System region initial size can not be less zero.");
+        A.ensure(initSize > 0, "System region initial size should be greater than zero.");
 
         this.initSize = initSize;
 
@@ -84,7 +84,7 @@ public class SystemDataRegionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public SystemDataRegionConfiguration setMaxSize(long maxSize) {
-        A.ensure(maxSize > 0, "System region max size should be greater that zero.");
+        A.ensure(maxSize > 0, "System region max size should be greater than zero.");
 
         this.maxSize = maxSize;
 
