@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -1973,7 +1976,29 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         builder.setField("f1", "val2");
         assertEquals("val2", builder.build().field("f1"));
     }
-
+    
+    /** */
+    @Test
+    public void testArrayFieldSeveralRead() throws Exception {
+        try (Ignite ignite = startGrid(1)) {
+            TestClass1[] expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
+            
+            BinaryObject arrObj = ignite.binary().toBinary(new TestClsWithArray(expArr));
+            
+            for (int i = 0; i < 10; i++) {
+                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
+            }
+            
+            arrObj = ignite.binary().builder(TestClsWithArray.class.getName()).setField("arr", expArr).build();
+            
+            for (int i = 0; i < 10; i++)
+                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
+        }
+        finally {
+            clearBinaryMeta();
+        }
+    }
+    
     /**
      *
      */
