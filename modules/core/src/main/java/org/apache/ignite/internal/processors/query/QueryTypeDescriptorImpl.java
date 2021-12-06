@@ -31,6 +31,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -625,11 +627,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             }
 
             if (validateTypes && propVal != null) {
-                if (!(propVal instanceof BinaryObject)) {
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[])propVal).
+                        if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                             noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
                             throw new IgniteSQLException("Type for a column '" + prop.name() +
@@ -710,11 +712,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!(propVal instanceof BinaryObject)) {
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[])propVal).
+                        if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                                 noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
                             throw new IgniteSQLException("Type for a column '" + idxField +
