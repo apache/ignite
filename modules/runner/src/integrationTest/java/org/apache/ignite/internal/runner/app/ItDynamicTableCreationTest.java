@@ -39,6 +39,7 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
@@ -369,7 +370,7 @@ class ItDynamicTableCreationTest {
      * @param colChanger Column configuration changer.
      */
     private void assertTableCreationFailed(List<Ignite> grid, Consumer<ColumnChange> colChanger) {
-        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+        Assertions.assertThrows(IgniteException.class, () -> {
             try {
                 grid.get(0).tables().createTable(
                         "PUBLIC.tbl1",

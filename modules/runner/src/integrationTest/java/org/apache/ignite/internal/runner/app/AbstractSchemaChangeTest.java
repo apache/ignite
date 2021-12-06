@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.configuration.schemas.table.ColumnChange;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.ItUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -270,7 +269,7 @@ abstract class AbstractSchemaChangeTest {
      * @param colChanger Column configuration changer.
      */
     private static void assertColumnChangeFailed(List<Ignite> grid, String colName, Consumer<ColumnChange> colChanger) {
-        assertThrows(ConfigurationValidationException.class, () ->
+        assertThrows(IgniteException.class, () ->
                 grid.get(0).tables().alterTable(TABLE,
                         tblChanger -> tblChanger.changeColumns(listChanger -> listChanger.update(colName, colChanger))
                 )
