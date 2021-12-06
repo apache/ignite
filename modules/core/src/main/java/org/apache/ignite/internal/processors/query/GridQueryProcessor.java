@@ -64,7 +64,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -3392,10 +3391,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.INDEX, valCls, cctx,
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
-                        IndexQueryContext qryCtx = new IndexQueryContext(filters, null);
-
-                        return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, qryCtx, keepBinary);
-
+                        return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, filters, keepBinary);
                     }
                 }, true);
         }

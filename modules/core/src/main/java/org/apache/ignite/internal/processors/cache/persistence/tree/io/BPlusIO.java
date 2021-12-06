@@ -235,6 +235,20 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     public abstract L getLookupRow(BPlusTree<L, ?> tree, long pageAddr, int idx) throws IgniteCheckedException;
 
     /**
+     * Get lookup row.
+     *
+     * @param tree Tree.
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param x Parameter depends on implementation.
+     * @return Lookup row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public L getLookupRow(BPlusTree<L, ?> tree, long pageAddr, int idx, Object x) throws IgniteCheckedException {
+        return getLookupRow(tree, pageAddr, idx);
+    }
+
+    /**
      * Copy items from source page to destination page.
      * Both pages must be of the same type and the same version.
      *

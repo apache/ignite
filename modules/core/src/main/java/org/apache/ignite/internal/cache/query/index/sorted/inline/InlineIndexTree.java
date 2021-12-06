@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.InlinedIndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
@@ -375,6 +376,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return order == SortOrder.ASC ? c : -c;
     }
 
+    /**
+     * Creates an index row with inlined keys for this tree.
+     *
+     * @param link Link to CacheDataRow.
+     * @param pageAddr Address of page stored an index row.
+     * @param inlineOffset Offset to inlined keys of an index row.
+     */
+    public IndexRowImpl createIndexRow(long link, long pageAddr, int inlineOffset) {
+        return new InlinedIndexRowImpl(
+            cacheGroupContext(), new CacheDataRowAdapter(link), rowHnd, pageAddr, inlineOffset, inlineSize);
+    }
+
     /** Creates an index row for this tree. */
     public IndexRowImpl createIndexRow(long link) throws IgniteCheckedException {
         IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
@@ -424,10 +437,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object ignore)
+    @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object x)
         throws IgniteCheckedException {
 
-        return io.getLookupRow(this, pageAddr, idx);
+        return io.getLookupRow(this, pageAddr, idx, x);
     }
 
     /** */

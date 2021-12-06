@@ -49,6 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
@@ -82,14 +85,14 @@ public class IndexQueryProcessor {
         GridCacheContext<K, V> cctx,
         IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> filter,
-        IndexQueryContext qryCtx,
+        IndexingQueryFilter cacheFilter,
         boolean keepBinary
     ) throws IgniteCheckedException {
         SortedSegmentedIndex idx = findSortedIndex(cctx, idxQryDesc);
 
         IndexRangeQuery qry = prepareQuery(idx, idxQryDesc);
 
-        GridCursor<IndexRow> cursor = querySortedIndex(cctx, idx, qryCtx, qry);
+        GridCursor<IndexRow> cursor = querySortedIndex(cctx, idx, cacheFilter, qry);
 
         SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
 
@@ -477,10 +480,22 @@ public class IndexQueryProcessor {
     private GridCursor<IndexRow> querySortedIndex(
         GridCacheContext<?, ?> cctx,
         SortedSegmentedIndex idx,
-        IndexQueryContext qryCtx,
+        IndexingQueryFilter cacheFilter,
         IndexRangeQuery qry
     ) throws IgniteCheckedException {
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
+
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> inlineFilter = null;
+
+        // No need in the additional filter step for queries with 0 or 1 criteria.
+        if (qry.criteria.length > 1) {
+            LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
+
+            inlineFilter = new InlineIndexRangeFilter(
+                qry, idxDef, ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator());
+        }
+
+        IndexQueryContext qryCtx = new IndexQueryContext(cacheFilter, inlineFilter, null);
 
         if (segmentsCnt == 1)
             return treeIndexRange(idx, 0, qry, qryCtx);
@@ -507,83 +522,10 @@ public class IndexQueryProcessor {
     private GridCursor<IndexRow> treeIndexRange(SortedSegmentedIndex idx, int segment, IndexRangeQuery qry, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
-        LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
-
         boolean lowIncl = inclBoundary(qry, true);
         boolean upIncl = inclBoundary(qry, false);
 
-        // Step 1. Traverse index and find index boundaries.
-        GridCursor<IndexRow> findRes = idx.find(qry.lower, qry.upper, lowIncl, upIncl, segment, qryCtx);
-
-        // No need in the additional filter step for queries with 0 or 1 criteria.
-        if (qry.criteria.length <= 1)
-            return findRes;
-
-        // Step 2. Filter range if the criteria apply to multiple fields.
-        return new GridCursor<IndexRow>() {
-            /** */
-            private final IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
-
-            /** {@inheritDoc} */
-            @Override public boolean next() throws IgniteCheckedException {
-                if (!findRes.next())
-                    return false;
-
-                while (rowIsOutOfRange(get(), qry.lower, qry.upper)) {
-                    if (!findRes.next())
-                        return false;
-                }
-
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public IndexRow get() throws IgniteCheckedException {
-                return findRes.get();
-            }
-
-            /**
-             * Checks that {@code row} belongs to the range specified with {@code lower} and {@code upper}.
-             *
-             * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
-             */
-            private boolean rowIsOutOfRange(IndexRow row, IndexRow low, IndexRow high) throws IgniteCheckedException {
-                if (low == null && high == null)
-                    return false;  // Unbounded search, include all.
-
-                int criteriaKeysCnt = qry.criteria.length;
-
-                for (int i = 0; i < criteriaKeysCnt; i++) {
-                    RangeIndexQueryCriterion c = qry.criteria[i];
-
-                    boolean descOrder = idxDef.get(c.field()).order().sortOrder() == DESC;
-
-                    if (low != null && low.key(i) != null) {
-                        int cmp = rowCmp.compareRow(row, low, i);
-
-                        if (cmp == 0) {
-                            if (!c.lowerIncl())
-                                return true;  // Exclude if field equals boundary field and criteria is excluding.
-                        }
-                        else if ((cmp < 0) ^ descOrder)
-                            return true;  // Out of bound. Either below 'low' margin or column with desc order.
-                    }
-
-                    if (high != null && high.key(i) != null) {
-                        int cmp = rowCmp.compareRow(row, high, i);
-
-                        if (cmp == 0) {
-                            if (!c.upperIncl())
-                                return true;  // Exclude if field equals boundary field and criteria is excluding.
-                        }
-                        else if ((cmp > 0) ^ descOrder)
-                            return true;  // Out of bound. Either above 'high' margin or column with desc order.
-                    }
-                }
-
-                return false;
-            }
-        };
+        return idx.find(qry.lower, qry.upper, lowIncl, upIncl, segment, qryCtx);
     }
 
     /**
@@ -650,7 +592,6 @@ public class IndexQueryProcessor {
                         }
 
                         return 0;
-
                     } catch (IgniteCheckedException e) {
                         throw new IgniteException("Failed to sort remote index rows", e);
                     }
@@ -674,7 +615,7 @@ public class IndexQueryProcessor {
 
             head = c.get();
 
-            if (c != null && c.next())
+            if (c.next())
                 cursors.add(c);
 
             return true;
@@ -683,6 +624,83 @@ public class IndexQueryProcessor {
         /** {@inheritDoc} */
         @Override public IndexRow get() throws IgniteCheckedException {
             return head;
+        }
+    }
+
+    /** Checks wheter row is part of specified IndexQuery range. Use inline */
+    private static class InlineIndexRangeFilter implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
+        /** */
+        private final IndexRangeQuery qry;
+
+        /** */
+        private final LinkedHashMap<String, IndexKeyDefinition> idxDef;
+
+        /** */
+        private final IndexRowComparator rowCmp;
+
+        /** */
+        InlineIndexRangeFilter(
+            IndexRangeQuery qry,
+            LinkedHashMap<String, IndexKeyDefinition> idxDef,
+            IndexRowComparator rowCmp
+        ) {
+            this.qry = qry;
+            this.idxDef = idxDef;
+            this.rowCmp = rowCmp;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(
+            BPlusTree<IndexRow, IndexRow> tree,
+            BPlusIO<IndexRow> io,
+            long pageAddr,
+            int idx
+        ) throws IgniteCheckedException {
+            IndexRow r = io.getLookupRow(tree, pageAddr, idx, Boolean.TRUE);
+
+            return !rowIsOutOfRange(r, qry.lower, qry.upper);
+        }
+
+        /**
+         * Checks that {@code row} belongs to the range specified with {@code lower} and {@code upper}.
+         *
+         * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
+         */
+        private boolean rowIsOutOfRange(IndexRow row, IndexRow low, IndexRow high) throws IgniteCheckedException {
+            if (low == null && high == null)
+                return false;  // Unbounded search, include all.
+
+            int criteriaKeysCnt = qry.criteria.length;
+
+            for (int i = 0; i < criteriaKeysCnt; i++) {
+                RangeIndexQueryCriterion c = qry.criteria[i];
+
+                boolean descOrder = idxDef.get(c.field()).order().sortOrder() == DESC;
+
+                if (low != null && low.key(i) != null) {
+                    int cmp = rowCmp.compareRow(row, low, i);
+
+                    if (cmp == 0) {
+                        if (!c.lowerIncl())
+                            return true;  // Exclude if field equals boundary field and criteria is excluding.
+                    }
+                    else if ((cmp < 0) ^ descOrder)
+                        return true;  // Out of bound. Either below 'low' margin or column with desc order.
+                }
+
+                if (high != null && high.key(i) != null) {
+                    int cmp = rowCmp.compareRow(row, high, i);
+
+                    if (cmp == 0) {
+                        if (!c.upperIncl())
+                            return true;  // Exclude if field equals boundary field and criteria is excluding.
+                    }
+                    else if ((cmp > 0) ^ descOrder)
+                        return true;  // Out of bound. Either above 'high' margin or column with desc order.
+                }
+            }
+
+            return false;
         }
     }
 
