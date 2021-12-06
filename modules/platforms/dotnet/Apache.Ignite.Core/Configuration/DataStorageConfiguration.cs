@@ -561,10 +561,19 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the default region configuration.
         /// </summary>
         public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
+
+        /// <summary>
+        /// System region configuration.
+        /// </summary>
+        private SystemDataRegionConfiguration _systemDataRegionConfiguration;
         
         /// <summary>
         /// Gets or sets the system region configuration.
         /// </summary>
-        public SystemDataRegionConfiguration SystemDataRegionConfiguration { get; set; }
+        public SystemDataRegionConfiguration SystemDataRegionConfiguration {
+            get => _systemDataRegionConfiguration ??
+                   (_systemDataRegionConfiguration = new SystemDataRegionConfiguration());
+            set => _systemDataRegionConfiguration = value;
+        }
     }
 }
