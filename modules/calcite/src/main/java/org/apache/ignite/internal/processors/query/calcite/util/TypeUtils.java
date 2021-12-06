@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Type;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Period;
@@ -34,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -42,9 +45,16 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.sql.SqlIntervalLiteral;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.TimeString;
+import org.apache.calcite.util.TimestampString;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
@@ -54,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.transform;
 
 /** */
@@ -260,22 +271,22 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object toInternal(ExecutionContext<?> ectx, Object val) {
-        return val == null ? null : toInternal(ectx, val, val.getClass());
+    public static Object toInternal(DataContext ctx, Object val) {
+        return val == null ? null : toInternal(ctx, val, val.getClass());
     }
 
     /** */
-    public static Object toInternal(ExecutionContext<?> ectx, Object val, Type storageType) {
+    public static Object toInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx)) / DateTimeUtils.MILLIS_PER_DAY);
+            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == java.sql.Time.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx)) % DateTimeUtils.MILLIS_PER_DAY);
+            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) % DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == Timestamp.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx));
+            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
         else if (storageType == java.util.Date.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx));
+            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
         else if (storageType == Duration.class) {
             return TimeUnit.SECONDS.toMillis(((Duration)val).getSeconds())
                 + TimeUnit.NANOSECONDS.toMillis(((Duration)val).getNano());
@@ -289,17 +300,17 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object fromInternal(ExecutionContext<?> ectx, Object val, Type storageType) {
+    public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && val instanceof Integer)
-            return new java.sql.Date(fromLocalTs(ectx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == java.sql.Time.class && val instanceof Integer)
-            return new java.sql.Time(fromLocalTs(ectx, (Integer)val));
+            return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
         else if (storageType == Timestamp.class && val instanceof Long)
-            return new Timestamp(fromLocalTs(ectx, (Long)val));
+            return new Timestamp(fromLocalTs(ctx, (Long)val));
         else if (storageType == java.util.Date.class && val instanceof Long)
-            return new java.util.Date(fromLocalTs(ectx, (Long)val));
+            return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
@@ -310,9 +321,52 @@ public class TypeUtils {
             return val;
     }
 
+    /**
+     * Creates a value of required type from the literal.
+     */
+    public static Object fromLiteral(DataContext ctx, Type storageType, SqlLiteral literal) {
+        Object internalVal;
+
+        try {
+            storageType = Primitive.box(storageType); // getValueAs() implemented only for boxed classes.
+
+            if (Date.class.equals(storageType))
+                internalVal = literal.getValueAs(DateString.class).getDaysSinceEpoch();
+            else if (Time.class.equals(storageType))
+                internalVal = literal.getValueAs(TimeString.class).getMillisOfDay();
+            else if (Timestamp.class.equals(storageType))
+                internalVal = literal.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            else if (Duration.class.equals(storageType)) {
+                if (literal instanceof SqlIntervalLiteral &&
+                    !literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())
+                    internalVal = literal.getValueAs(Long.class);
+                else
+                    throw new IgniteException("Expected DAY-TIME interval literal");
+            }
+            else if (Period.class.equals(storageType))
+                if (literal instanceof SqlIntervalLiteral &&
+                    literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())
+                    internalVal = literal.getValueAs(Long.class).intValue();
+                else
+                    throw new IgniteException("Expected YEAR-MONTH interval literal");
+            else {
+                if (storageType instanceof Class)
+                    internalVal = literal.getValueAs((Class<?>)storageType);
+                else
+                    throw new IgniteException("Unexpected storage type: " + storageType);
+            }
+        }
+        catch (Throwable t) { // Throwable is requred here, since Calcite throws Assertion error in case of type mismatch.
+            throw new IgniteSQLException("Cannot convert literal " + literal + " to type " + storageType,
+                UNEXPECTED_ELEMENT_TYPE, t);
+        }
+
+        return fromInternal(ctx, internalVal, storageType);
+    }
+
     /** */
-    private static long fromLocalTs(ExecutionContext<?> ectx, long ts) {
-        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ectx);
+    private static long fromLocalTs(DataContext ctx, long ts) {
+        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ctx);
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return ts - tz.getOffset(ts - tz.getOffset(ts));

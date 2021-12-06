@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlDdl;
@@ -45,6 +47,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
@@ -53,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTab
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BOOLEAN;
@@ -189,8 +193,13 @@ public class DdlSqlToCommandConverter {
                 RelDataType type = planner.convert(col.dataType);
 
                 Object dflt = null;
-                if (col.expression != null)
-                    dflt = ((SqlLiteral)col.expression).getValue();
+                if (col.expression != null) {
+                    Type storageType = ctx.typeFactory().getResultClass(type);
+
+                    DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
+
+                    dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
+                }
 
                 cols.add(new ColumnDefinition(name, type, dflt));
             }

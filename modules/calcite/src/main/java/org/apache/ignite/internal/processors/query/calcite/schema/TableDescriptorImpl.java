@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -55,7 +57,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -301,7 +305,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         final RexBuilder rexBuilder = ctx.getRexBuilder();
         final IgniteTypeFactory typeFactory = (IgniteTypeFactory)rexBuilder.getTypeFactory();
 
-        return rexBuilder.makeLiteral(desc.defaultValue(), desc.logicalType(typeFactory), false);
+        DataContext dataCtx = new BaseDataContext(typeFactory);
+
+        Object dfltVal = TypeUtils.toInternal(dataCtx, desc.defaultValue());
+
+        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), false);
     }
 
     /** {@inheritDoc} */
@@ -345,8 +353,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         Object key = handler.get(keyField, row);
 
-        if (key != null)
+        if (key != null) {
+            key = replaceDefault(key, descriptors[QueryUtils.KEY_COL]);
+
             return TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
+        }
 
         // skip _key and _val
         for (int i = 2; i < descriptors.length; i++) {
@@ -355,7 +366,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             if (!desc.field() || !desc.key())
                 continue;
 
-            Object fieldVal = handler.get(i, row);
+            Object fieldVal = replaceDefault(handler.get(i, row), desc);
 
             if (fieldVal != null) {
                 if (key == null)
@@ -384,16 +395,24 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 2; i < descriptors.length; i++) {
                 final ColumnDescriptor desc = descriptors[i];
 
-                Object fieldVal = handler.get(i, row);
+                Object fieldVal = replaceDefault(handler.get(i, row), desc);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
-        else
+        else {
+            val = replaceDefault(val, descriptors[QueryUtils.VAL_COL]);
+
             val = TypeUtils.fromInternal(ectx, val, descriptors[QueryUtils.VAL_COL].storageType());
+        }
 
         return val;
+    }
+
+    /** */
+    private Object replaceDefault(Object val, ColumnDescriptor desc) {
+        return val == RexImpTable.DEFAULT_VALUE_PLACEHOLDER ? desc.defaultValue() : val;
     }
 
     /** */
@@ -665,7 +684,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(storageType);
+            return f.toSql(f.createJavaType(storageType));
         }
 
         /** {@inheritDoc} */
@@ -739,7 +758,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(storageType);
+            return f.toSql(f.createJavaType(storageType));
         }
 
         /** {@inheritDoc} */

@@ -16,6 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -426,5 +432,68 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
             "WHEN MATCHED THEN UPDATE SET b = test1.b + 1 " +
             "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (0, b)", IgniteSQLException.class,
             "Failed to MERGE some keys due to keys conflict");
+    }
+
+    /** */
+    @Test
+    public void testInsertDefaultValue() {
+        checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
+        checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
+        checkDefaultValue("BIGINT", "10", 10L);
+        checkDefaultValue("INTEGER", "10", 10);
+        checkDefaultValue("SMALLINT", "10", (short)10);
+        checkDefaultValue("TINYINT", "10", (byte)10);
+        checkDefaultValue("DOUBLE", "10.01", 10.01d);
+        checkDefaultValue("FLOAT", "10.01", 10.01f);
+        checkDefaultValue("DECIMAL(4, 2)", "10.01", new BigDecimal("10.01"));
+        checkDefaultValue("CHAR(2)", "'10'", "10");
+        checkDefaultValue("VARCHAR", "'10'", "10");
+        checkDefaultValue("VARCHAR NOT NULL", "'10'", "10");
+        checkDefaultValue("VARCHAR(2)", "'10'", "10");
+        checkDefaultValue("INTERVAL DAYS TO SECONDS", "INTERVAL '10' DAYS", Duration.ofDays(10));
+        checkDefaultValue("INTERVAL YEARS TO MONTHS", "INTERVAL '10' MONTHS", Period.ofMonths(10));
+        checkDefaultValue("INTERVAL MONTHS", "INTERVAL '10' YEARS", Period.ofYears(10));
+        checkDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
+        checkDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
+        checkDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
+
+        checkWrongDefault("VARCHAR", "10");
+        checkWrongDefault("INT", "'10'");
+        checkWrongDefault("INT", "TRUE");
+        checkWrongDefault("DATE", "10");
+        checkWrongDefault("DATE", "TIME '01:01:01'");
+        checkWrongDefault("TIME", "TIMESTAMP '2021-01-01 01:01:01'");
+        checkWrongDefault("BOOLEAN", "1");
+        checkWrongDefault("INTERVAL DAYS", "INTERVAL '10' MONTHS");
+        checkWrongDefault("INTERVAL MONTHS", "INTERVAL '10' DAYS");
+    }
+
+    /** */
+    private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
+        try {
+            executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ")");
+            executeSql("INSERT INTO test (dummy) VALUES (0)");
+
+            assertQuery("SELECT val FROM test").returns(expectedVal).check();
+
+            executeSql("DELETE FROM test");
+            executeSql("INSERT INTO test (dummy, val) VALUES (0, DEFAULT)");
+
+            assertQuery("SELECT val FROM test").returns(expectedVal).check();
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /** */
+    private void checkWrongDefault(String sqlType, String sqlVal) {
+        try {
+            assertThrows("CREATE TABLE test (val " + sqlType + " DEFAULT " + sqlVal + ")",
+                IgniteSQLException.class, "Cannot convert literal");
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS test");
+        }
     }
 }
