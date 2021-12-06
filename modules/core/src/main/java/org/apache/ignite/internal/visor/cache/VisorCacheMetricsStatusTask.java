@@ -1,0 +1,68 @@
+package org.apache.ignite.internal.visor.cache;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Task for obtaining a cache metrics collection status.
+ */
+@GridInternal
+@GridVisorManagementTask
+public class VisorCacheMetricsStatusTask extends VisorOneNodeTask<VisorCacheMetricsStatusTaskArg,
+    Map<String, Boolean>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override protected VisorCacheMetricsStatusJob job(VisorCacheMetricsStatusTaskArg arg) {
+        return new VisorCacheMetricsStatusJob(arg, false);
+    }
+
+    /**
+     * Job result is a map with metrics statuses for proccessed caches.
+     */
+    private static class VisorCacheMetricsStatusJob extends VisorJob<VisorCacheMetricsStatusTaskArg,
+        Map<String, Boolean>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Create job with specified argument.
+         *
+         * @param arg   Job argument.
+         * @param debug Flag indicating whether debug information should be printed into node log.
+         */
+        protected VisorCacheMetricsStatusJob(@Nullable VisorCacheMetricsStatusTaskArg arg, boolean debug) {
+            super(arg, debug);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Map<String, Boolean> run(@Nullable VisorCacheMetricsStatusTaskArg arg)
+            throws IgniteException {
+            Collection<String> allCacheNames = ignite.cacheNames();
+            Collection<String> foundCachesFromArg = F.view(arg.cacheNames(), allCacheNames::contains);
+
+            Collection<String> cacheNames = arg.applyToAllCaches() ? allCacheNames : foundCachesFromArg;
+
+            Map<String, Boolean> cacheMetricsStatusInfo = new TreeMap<>();
+
+            for (String cacheName : cacheNames) {
+                IgniteInternalCache<Object, Object> cachex = ignite.cachex(cacheName);
+
+                if (cachex != null)
+                    cacheMetricsStatusInfo.put(cacheName, cachex.clusterMetrics().isStatisticsEnabled());
+            }
+
+            return cacheMetricsStatusInfo;
+        }
+    }
+}
