@@ -72,7 +72,6 @@ public class BinaryReaderHandles {
      */
     @SuppressWarnings("unchecked")
     public void put(int pos, Object obj) {
-        assert pos >= 0;
         assert obj != null;
 
         switch (mode) {

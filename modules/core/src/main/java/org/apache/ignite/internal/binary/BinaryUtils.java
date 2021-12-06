@@ -1929,7 +1929,10 @@ public class BinaryUtils {
                     in.position(start + po.length());
                 }
 
-                handles.setHandle(po, start);
+                if (deserialize)
+                    handles.setHandle(po, -start);
+                else
+                    handles.setHandle(po, start);
 
                 return po;
             }
@@ -2073,10 +2076,13 @@ public class BinaryUtils {
     public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
-    
+
+        if (deserialize)
+            hPos = -hPos;
+
         if (handles.getHandle(hPos) != null)
             return (Object[]) handles.getHandle(hPos);
-        
+
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
         int len = in.readInt();

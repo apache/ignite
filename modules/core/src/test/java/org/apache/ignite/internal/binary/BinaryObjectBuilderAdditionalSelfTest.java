@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -1980,6 +1978,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
     /** */
     @Test
     public void testArrayFieldSeveralRead() throws Exception {
+        if (useBinaryArrays)
+            return;
+        
         try (Ignite ignite = startGrid(1)) {
             TestClass1[] expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
             
@@ -1988,9 +1989,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
             for (int i = 0; i < 10; i++) {
                 Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
             }
-            
+
             arrObj = ignite.binary().builder(TestClsWithArray.class.getName()).setField("arr", expArr).build();
-            
+
             for (int i = 0; i < 10; i++)
                 Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
         }
