@@ -31,10 +31,10 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /**
- * Task to set {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS} to {@code true}.
+ * Task to set {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} to {@code true}.
  */
 public class PlatformSetUseTypedArrayTask extends ComputeTaskAdapter<Boolean, Void> {
     /** {@inheritDoc} */
@@ -62,8 +62,8 @@ public class PlatformSetUseTypedArrayTask extends ComputeTaskAdapter<Boolean, Vo
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(argument(0)));
-            BinaryArray.initUseTypedArrays();
+            System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(argument(0)));
+            BinaryArray.initUseBinaryArrays();
 
             return null;
         }

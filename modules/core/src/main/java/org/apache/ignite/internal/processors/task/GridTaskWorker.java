@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
@@ -70,7 +68,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
-import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -830,13 +827,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc
-                            ? res.getJobResult()
-                            : unmarshalResult(
-                                res.getJobResultBytes(),
-                                isBinaryTask(ses.getTaskName()),
-                                U.resolveClassLoader(clsLdr, ctx.config())
-                            );
+                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
+                            U.resolveClassLoader(clsLdr, ctx.config()));
 
                         IgniteException ex = loc ? res.getException() :
                             U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
@@ -1023,21 +1015,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 });
             }
         }
-    }
-
-    /** */
-    private boolean isBinaryTask(String taskClsName) {
-        return Objects.equals(taskClsName, GridServiceProxy.BinaryServiceProxyCallable.class.getName());
-    }
-
-    /** */
-    private Object unmarshalResult(byte[] res, boolean keepBinary, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (keepBinary && (marsh instanceof BinaryMarshaller)) {
-            // To avoid deserializing of enum types and BinaryArrays.
-            return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, clsLdr);
-        }
-        else
-            return U.unmarshal(marsh, res, clsLdr);
     }
 
     /**
