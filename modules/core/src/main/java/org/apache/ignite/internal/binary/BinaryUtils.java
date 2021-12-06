@@ -2081,7 +2081,7 @@ public class BinaryUtils {
             hPos = -hPos;
 
         if (handles.getHandle(hPos) != null)
-            return (Object[]) handles.getHandle(hPos);
+            return (Object[])handles.getHandle(hPos);
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
