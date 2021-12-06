@@ -61,10 +61,12 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         cfg.setAuthenticationEnabled(true);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(200L * 1024 * 1024)
-                .setPersistenceEnabled(true)));
+        if (!cfg.isClientMode()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(200L * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
+        }
 
         return cfg;
     }

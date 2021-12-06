@@ -56,12 +56,16 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (!cfg.isClientMode()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)))
-            .setAuthenticationEnabled(true)
-            .setCacheConfiguration(new CacheConfiguration()
+                    .setPersistenceEnabled(true)));
+        }
+
+        return cfg.setAuthenticationEnabled(true)
+            .setCacheConfiguration(new CacheConfiguration<>()
                 .setName("test")
                 .setSqlSchema("TEST")
                 .setSqlFunctionClasses(TestSQLFunctions.class)
