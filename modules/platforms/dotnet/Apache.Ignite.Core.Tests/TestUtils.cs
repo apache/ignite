@@ -102,13 +102,13 @@ namespace Apache.Ignite.Core.Tests
         public static bool JvmDebug = true;
 
         /** */
-        public static readonly bool DfltUseTypedArray = false;
+        public static readonly bool DfltUseBinaryArray = false;
 
         /** */
-        public static bool UseTypedArray = DfltUseTypedArray;
+        public static bool UseBinaryArray = DfltUseBinaryArray;
 
         /** Decimal task name. */
-        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseTypedArrayTask";
+        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
 
         /** */
         [ThreadStatic]
@@ -634,7 +634,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Can't use JVM options here, because JVM instance are cached inside IgniteManager#CreateJvm
             // and can't be changed after initialization.
-            if (UseTypedArray)
+            if (UseBinaryArray)
                 cfg.LifecycleHandlers = new[] { new SetUseTypedArray() };
 
             return cfg;
@@ -652,7 +652,7 @@ namespace Apache.Ignite.Core.Tests
 
                 _ignite.GetCompute().ExecuteJavaTask<object>(
                     SetUseTypedArrayTask,
-                    evt == LifecycleEventType.AfterNodeStart ? !DfltUseTypedArray : DfltUseTypedArray
+                    evt == LifecycleEventType.AfterNodeStart ? !DfltUseBinaryArray : DfltUseBinaryArray
                 );
             }
         }

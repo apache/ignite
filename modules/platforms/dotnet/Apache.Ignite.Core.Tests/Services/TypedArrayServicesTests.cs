@@ -20,13 +20,13 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using NUnit.Framework;
 
-    /// <summary> Tests with UserTypedArray = true. </summary>
+    /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestAsyncTypedArrays : ServicesTestAsync
     {
         [SetUp]
         public override void SetUp()
         {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
             base.SetUp();
         }
@@ -35,17 +35,17 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void FixtureTearDown()
         {
             base.FixtureTearDown();
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 
-    /// <summary> Tests with UserTypedArray = true. </summary>
+    /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestFullFooterTypedArrays : ServicesTestFullFooter
     {
         [SetUp]
         public override void SetUp()
         {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
             base.SetUp();
         }
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void FixtureTearDown()
         {
             base.FixtureTearDown();
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public override void SetUp()
         {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
             base.SetUp();
         }
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             base.FixtureTearDown();
 
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 }

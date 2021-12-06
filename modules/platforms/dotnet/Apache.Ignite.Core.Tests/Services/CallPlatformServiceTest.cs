@@ -343,13 +343,13 @@ namespace Apache.Ignite.Core.Tests.Services
         }
     }
 
-    /// <summary> Tests with UserTypedArray = true. </summary>
+    /// <summary> Tests with UseBinaryArray = true. </summary>
     public class CallPlatformServiceTestTypedArrays : CallPlatformServiceTest
     {
         [SetUp]
         public override void SetUp()
         {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
             base.SetUp();
         }
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             base.TearDown();
 
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 

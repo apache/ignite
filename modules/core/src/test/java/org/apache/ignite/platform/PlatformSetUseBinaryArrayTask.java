@@ -36,7 +36,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 /**
  * Task to set {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} to {@code true}.
  */
-public class PlatformSetUseTypedArrayTask extends ComputeTaskAdapter<Boolean, Void> {
+public class PlatformSetUseBinaryArrayTask extends ComputeTaskAdapter<Boolean, Void> {
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Boolean useTypedArr) throws IgniteException {

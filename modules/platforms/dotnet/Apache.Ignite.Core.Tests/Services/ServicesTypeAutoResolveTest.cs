@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual("127000", addr.Zip);
                 Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-                if (!isPlatform || TestUtils.UseTypedArray)
+                if (!isPlatform || TestUtils.UseBinaryArray)
                 {
                     Assert.AreEqual(42, svc.testOverload(2, Emps));
                     Assert.AreEqual(43, svc.testOverload(2, Param));
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 var emps = svc.testEmployees(Emps);
 
-                if (!isPlatform || TestUtils.UseTypedArray)
+                if (!isPlatform || TestUtils.UseBinaryArray)
                     Assert.AreEqual(typeof(Employee[]), emps.GetType());
 
                 Assert.NotNull(emps);
@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 var accs = svc.testAccounts();
 
-                if (!isPlatform || TestUtils.UseTypedArray)
+                if (!isPlatform || TestUtils.UseBinaryArray)
                     Assert.AreEqual(typeof(Account[]), accs.GetType());
 
                 Assert.NotNull(accs);
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 var users = svc.testUsers();
 
-                if (!isPlatform || TestUtils.UseTypedArray)
+                if (!isPlatform || TestUtils.UseBinaryArray)
                     Assert.AreEqual(typeof(User[]), users.GetType());
 
                 Assert.NotNull(users);
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.NotNull(users2);
 
                 //TODO: check why ArrayList returned instead of array in userTypeArray=false mode.
-                if (TestUtils.UseTypedArray)
+                if (TestUtils.UseBinaryArray)
                     Assert.AreEqual(typeof(User[]), users2.GetType());
             }
             finally

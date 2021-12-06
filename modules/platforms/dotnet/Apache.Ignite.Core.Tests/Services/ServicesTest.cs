@@ -1271,7 +1271,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var bins = svc.testBinarizableArray(arr);
 
-            if (TestUtils.UseTypedArray)
+            if (TestUtils.UseBinaryArray)
                 Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
 
             Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
@@ -1886,13 +1886,13 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 #endif
 
-        /// <summary> Tests with UserTypedArray = true. </summary>
+        /// <summary> Tests with UseBinaryArray = true. </summary>
         public class ServicesTestTypedArrays : ServicesTest
         {
             [SetUp]
             public override void SetUp()
             {
-                TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+                TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
                 base.SetUp();
             }
@@ -1901,7 +1901,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public override void FixtureTearDown()
             {
                 base.FixtureTearDown();
-                TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+                TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
             }
         }
     }

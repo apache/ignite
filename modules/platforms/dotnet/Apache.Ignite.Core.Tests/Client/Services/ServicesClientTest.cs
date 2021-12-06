@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
-            if (!TestUtils.UseTypedArray)
+            if (!TestUtils.UseBinaryArray)
             {
                 // Array types are not distinguished.
                 Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [TestFixtureSetUp]
         public override void FixtureSetUp()
         {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
 
             base.FixtureSetUp();
         }
@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             base.FixtureTearDown();
 
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 }
