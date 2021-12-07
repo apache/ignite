@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;

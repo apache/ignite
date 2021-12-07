@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
-
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
