@@ -39,12 +39,15 @@ public class SimpleNumaAllocationStrategy implements NumaAllocationStrategy, Ser
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final int NODE_NOT_SET = Integer.MAX_VALUE;
+
+    /** */
     @GridToStringInclude
     private final int node;
 
     /** */
     public SimpleNumaAllocationStrategy() {
-        node = Integer.MAX_VALUE;
+        node = NODE_NOT_SET;
     }
 
     /**
@@ -61,7 +64,7 @@ public class SimpleNumaAllocationStrategy implements NumaAllocationStrategy, Ser
 
     /** {@inheritDoc}*/
     @Override public long allocateMemory(long size) {
-        if (node == Integer.MAX_VALUE)
+        if (node == NODE_NOT_SET)
             return NumaAllocUtil.allocate(size);
 
         return NumaAllocUtil.allocateOnNode(size, node);

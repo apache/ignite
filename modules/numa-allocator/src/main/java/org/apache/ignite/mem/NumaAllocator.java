@@ -21,8 +21,8 @@ import java.io.Serializable;
 import org.apache.ignite.internal.mem.NumaAllocUtil;
 
 /**
- * NUMA aware memory allocator. Uses {@code libnuma} under the hood. Only Linux distros with {@code libnuma >= 2.0.x} is
- * supported.
+ * NUMA aware memory allocator. Uses {@code libnuma} under the hood. Only Linux distros with {@code libnuma >= 2.0.x}
+ * are supported.
  * <p>
  * Allocation strategy can be defined by setting {@code allocStrategy} to
  * {@link NumaAllocator#NumaAllocator(NumaAllocationStrategy)}.
