@@ -533,7 +533,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                excHnd);
+                oomeHnd);
 
             reencryptExecSvc.allowCoreThreadTimeOut(true);
         }
