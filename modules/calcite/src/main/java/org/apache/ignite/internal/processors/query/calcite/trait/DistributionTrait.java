@@ -100,7 +100,7 @@ public final class DistributionTrait implements IgniteDistribution {
             return true;
 
         if (o instanceof DistributionTrait) {
-            DistributionTrait that = (DistributionTrait) o;
+            DistributionTrait that = (DistributionTrait)o;
 
             return Objects.equals(function, that.function) && Objects.equals(keys, that.keys);
         }
@@ -131,7 +131,7 @@ public final class DistributionTrait implements IgniteDistribution {
         if (!(trait instanceof DistributionTrait))
             return false;
 
-        DistributionTrait other = (DistributionTrait) trait;
+        DistributionTrait other = (DistributionTrait)trait;
 
         if (other.getType() == ANY)
             return true;
@@ -157,7 +157,7 @@ public final class DistributionTrait implements IgniteDistribution {
                 return IgniteDistributions.random(); // Some distribution keys are not mapped => any.
         }
 
-        List<Integer> res = Mappings.apply2((Mapping) mapping, keys);
+        List<Integer> res = Mappings.apply2((Mapping)mapping, keys);
 
         return IgniteDistributions.hash(ImmutableIntList.copyOf(res), function);
     }
@@ -169,7 +169,7 @@ public final class DistributionTrait implements IgniteDistribution {
 
     /** {@inheritDoc} */
     @Override public int compareTo(RelMultipleTrait o) {
-        final IgniteDistribution distribution = (IgniteDistribution) o;
+        final IgniteDistribution distribution = (IgniteDistribution)o;
 
         if (getType() == distribution.getType() && getType() == Type.HASH_DISTRIBUTED) {
             int cmp = ORDERING.compare(getKeys(), distribution.getKeys());

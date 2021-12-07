@@ -493,6 +493,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        UUID nodeId = ctx.localNodeId();
+
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable obj = e.getValue();
 
@@ -503,6 +505,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
             else
                 obj.needCheckNotRemoved();
+
+            if (obj instanceof GridCacheLockEx)
+                ((GridCacheLockEx)obj).onReconnected(nodeId);
         }
 
         for (GridCacheContext cctx : ctx.cache().context().cacheContexts())
@@ -1204,7 +1209,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         CIX1<GridCacheQueueHeader> afterRmv = new CIX1<GridCacheQueueHeader>() {
             @Override public void applyx(GridCacheQueueHeader hdr) throws IgniteCheckedException {
-                hdr = (GridCacheQueueHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
+                hdr = (GridCacheQueueHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
 
                 if (hdr == null || hdr.empty())
                     return;
@@ -1408,7 +1413,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 GridCacheCountDownLatchValue retVal = (val == null ? new GridCacheCountDownLatchValue(cnt, autoDel,
                     ctx.discovery().gridStartTime()) : null);
 
-                GridCacheCountDownLatchValue latchVal = retVal != null ? retVal : (GridCacheCountDownLatchValue) val;
+                GridCacheCountDownLatchValue latchVal = retVal != null ? retVal : (GridCacheCountDownLatchValue)val;
 
                 assert latchVal != null;
 
@@ -1434,7 +1439,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheCountDownLatchValue;
 
-                GridCacheCountDownLatchValue latchVal = (GridCacheCountDownLatchValue) val;
+                GridCacheCountDownLatchValue latchVal = (GridCacheCountDownLatchValue)val;
 
                 if (latchVal.get() > 0) {
                     throw new IgniteCheckedException("Failed to remove count down latch " +
@@ -1488,13 +1493,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 //check Cluster state against semaphore state
                 if (val != null && failoverSafe) {
-                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
+                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState)val;
 
                     boolean updated = false;
 
                     Map<UUID, Integer> waiters = semState.getWaiters();
 
-                    Integer permit = ((GridCacheSemaphoreState) val).getCount();
+                    Integer permit = ((GridCacheSemaphoreState)val).getCount();
 
                     for (UUID nodeId : new HashSet<>(waiters.keySet())) {
 
@@ -1534,7 +1539,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheSemaphoreState;
 
-                GridCacheSemaphoreState semVal = (GridCacheSemaphoreState) val;
+                GridCacheSemaphoreState semVal = (GridCacheSemaphoreState)val;
 
                 if (semVal.getCount() < 0)
                     throw new IgniteCheckedException("Failed to remove semaphore with blocked threads. ");
@@ -1600,7 +1605,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheLockState;
 
-                GridCacheLockState lockVal = (GridCacheLockState) val;
+                GridCacheLockState lockVal = (GridCacheLockState)val;
 
                 if (lockVal.get() > 0 && !broken)
                     throw new IgniteCheckedException("Failed to remove reentrant lock with blocked threads. ");
@@ -1795,7 +1800,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         CIX1<GridCacheSetHeader> afterRmv = new CIX1<GridCacheSetHeader>() {
             @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
-                hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
+                hdr = (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
                 if (hdr != null)
                     cctx.dataStructures().removeSetData(hdr.id(), hdr.separated());

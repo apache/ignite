@@ -151,7 +151,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -168,7 +167,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
@@ -1301,7 +1299,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSrvcProcMode = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
         for (ClusterNode n : nodes) {
@@ -1385,22 +1382,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
-            }
-
-            Boolean rmtSrvcProcModeAttr = n.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
-
-            final boolean rmtSrvcProcMode = rmtSrvcProcModeAttr != null ? rmtSrvcProcModeAttr : false;
-
-            if (!F.eq(locSrvcProcMode, rmtSrvcProcMode)) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED +
-                    " property value differs from remote node's value " +
-                    "(to make sure all nodes in topology have identical service processor mode, " +
-                    "configure system property explicitly) " +
-                    "[locSrvcProcMode=" + locSrvcProcMode +
-                    ", rmtSrvcProcMode=" + rmtSrvcProcMode +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
             ShutdownPolicy rmtShutdownPolicy = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
@@ -2466,7 +2447,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode clusterNode = ctx.discovery().localNode();
 
         boolean client = (clusterNode instanceof TcpDiscoveryNode) ?
-                (((TcpDiscoveryNode) clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
+                (((TcpDiscoveryNode)clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
 
         return client && (spi instanceof IgniteDiscoverySpi) &&
             ((IgniteDiscoverySpi)spi).clientReconnectSupported();
@@ -3602,12 +3583,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
 
-                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
-
-                    if (nodes == null)
-                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
-
-                    nodes.add(node);
+                    cacheGrpAffNodes.computeIfAbsent(grpId, id -> new ArrayList<>()).add(node);
                 }
             }
 

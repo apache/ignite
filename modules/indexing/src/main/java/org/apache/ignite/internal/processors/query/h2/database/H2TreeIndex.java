@@ -205,7 +205,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
-            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), idxQryContext(qctx));
+            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), true, true, segment(qctx), idxQryContext(qctx));
 
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -239,7 +239,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return null;
 
         else if (row instanceof H2CacheRow)
-            return new IndexRowImpl(rowHnd, (CacheDataRow) row, getCachedKeys((H2CacheRow) row));
+            return new IndexRowImpl(rowHnd, (CacheDataRow)row, getCachedKeys((H2CacheRow)row));
         else
             return preparePlainIndexKey(row, rowHnd);
     }
@@ -580,7 +580,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         T2<IndexRow, IndexRow> key = prepareIndexKeys(lower, upper);
 
         try {
-            GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), segment, qryCtx);
+            GridCursor<IndexRow> range = queryIndex.find(key.get1(), key.get2(), true, true, segment, qryCtx);
 
             if (range == null)
                 range = IndexValueCursor.EMPTY;

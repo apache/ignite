@@ -114,7 +114,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
 
             Ignite ignite = nodes.removeFirst();
 
-            String consistentId = (String) ignite.cluster().localNode().consistentId();
+            String consistentId = (String)ignite.cluster().localNode().consistentId();
 
             ignite.close();
 
@@ -154,7 +154,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
 
                 /** */
                 @Override public void run() {
-                    MaintenanceRegistry mntcRegistry = ((IgniteEx) ignite).context().maintenanceRegistry();
+                    MaintenanceRegistry mntcRegistry = ((IgniteEx)ignite).context().maintenanceRegistry();
 
                     List<MaintenanceAction<?>> actions = mntcRegistry
                         .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);

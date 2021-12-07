@@ -50,7 +50,7 @@ final class RemoteFragmentKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        RemoteFragmentKey that = (RemoteFragmentKey) o;
+        RemoteFragmentKey that = (RemoteFragmentKey)o;
 
         if (fragmentId != that.fragmentId)
             return false;
@@ -60,7 +60,7 @@ final class RemoteFragmentKey {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = nodeId.hashCode();
-        res = 31 * res + (int) (fragmentId ^ (fragmentId >>> 32));
+        res = 31 * res + (int)(fragmentId ^ (fragmentId >>> 32));
         return res;
     }
 }

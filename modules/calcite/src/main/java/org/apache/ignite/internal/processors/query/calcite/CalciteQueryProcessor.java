@@ -388,7 +388,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private void onStart(GridKernalContext ctx, Service... services) {
         for (Service service : services) {
             if (service instanceof LifecycleAware)
-                ((LifecycleAware) service).onStart(ctx);
+                ((LifecycleAware)service).onStart(ctx);
         }
     }
 
@@ -396,7 +396,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private void onStop(Service... services) {
         for (Service service : services) {
             if (service instanceof LifecycleAware)
-                ((LifecycleAware) service).onStop();
+                ((LifecycleAware)service).onStop();
         }
     }
 

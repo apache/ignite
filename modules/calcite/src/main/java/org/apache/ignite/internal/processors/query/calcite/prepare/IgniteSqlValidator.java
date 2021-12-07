@@ -216,7 +216,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (F.isEmpty(parameters))
                 return;
 
-            int idx = ((SqlDynamicParam) n).getIndex();
+            int idx = ((SqlDynamicParam)n).getIndex();
 
             if (idx < parameters.length) {
                 Object param = parameters[idx];
@@ -259,7 +259,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override public void validateAggregateParams(SqlCall aggCall,
         @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
         @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
-        validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
+        validateAggregateFunction(aggCall, (SqlAggFunction)aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
     }
@@ -338,7 +338,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final RelOptTable relOptTable = relOptTable(ns);
 
         for (SqlNode node : call.getTargetColumnList()) {
-            SqlIdentifier id = (SqlIdentifier) node;
+            SqlIdentifier id = (SqlIdentifier)node;
 
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
@@ -378,7 +378,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private IgniteTypeFactory typeFactory() {
-        return (IgniteTypeFactory) typeFactory;
+        return (IgniteTypeFactory)typeFactory;
     }
 
     /** */

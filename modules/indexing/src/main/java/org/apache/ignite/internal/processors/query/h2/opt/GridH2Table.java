@@ -708,7 +708,7 @@ public class GridH2Table extends TableBase {
 
             if (SysProperties.CHECK) {
                 for (SchemaObject obj : database.getAllSchemaObjects(DbObject.INDEX)) {
-                    Index idx = (Index) obj;
+                    Index idx = (Index)obj;
                     if (idx.getTable() == this)
                         DbException.throwInternalError("index not dropped: " + idx.getName());
                 }
@@ -747,7 +747,7 @@ public class GridH2Table extends TableBase {
      */
     private void destroyIndex(Index idx) {
         if (idx instanceof GridH2IndexBase) {
-            GridH2IndexBase h2idx = (GridH2IndexBase) idx;
+            GridH2IndexBase h2idx = (GridH2IndexBase)idx;
 
             // Destroy underlying Ignite index.
             IndexDefinition deleteDef = new IndexDefinition() {

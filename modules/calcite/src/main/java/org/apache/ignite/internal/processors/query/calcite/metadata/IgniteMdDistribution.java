@@ -87,7 +87,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(Exchange rel, RelMetadataQuery mq) {
-        return (IgniteDistribution) rel.distribution;
+        return (IgniteDistribution)rel.distribution;
     }
 
     /**
@@ -106,6 +106,6 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     public static IgniteDistribution _distribution(RelNode rel, RelMetadataQuery mq) {
         assert mq instanceof RelMetadataQueryEx;
 
-        return (IgniteDistribution) mq.distribution(rel);
+        return (IgniteDistribution)mq.distribution(rel);
     }
 }

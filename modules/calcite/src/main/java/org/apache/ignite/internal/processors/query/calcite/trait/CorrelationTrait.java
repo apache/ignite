@@ -95,7 +95,7 @@ public class CorrelationTrait implements RelTrait {
         if (!(trait instanceof CorrelationTrait))
             return false;
 
-        CorrelationTrait other = (CorrelationTrait) trait;
+        CorrelationTrait other = (CorrelationTrait)trait;
 
         return other.correlated() && other.correlationIds().containsAll(correlationIds());
     }

@@ -56,7 +56,7 @@ public class Product {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj instanceof Product && id == ((Product) obj).id;
+        return obj instanceof Product && id == ((Product)obj).id;
     }
 
     /** {@inheritDoc} */

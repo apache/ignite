@@ -170,7 +170,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 if (!(rex instanceof RexLocalRef))
                     continue;
 
-                RexLocalRef ref = (RexLocalRef) rex;
+                RexLocalRef ref = (RexLocalRef)rex;
 
                 mappingMap.put(trimmingMapping.getSource(ref.getIndex()), i);
             }

@@ -267,11 +267,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static Type FindType(Assembly asm, string typeName, IBinaryNameMapper mapper)
         {
-            if (asm.IsDynamic)
-            {
-                return null;
-            }
-
             if (mapper == null)
             {
                 return asm.GetType(typeName);

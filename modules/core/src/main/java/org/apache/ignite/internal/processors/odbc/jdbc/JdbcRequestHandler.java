@@ -241,7 +241,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (!(cmp instanceof QueryEngine))
                     continue;
 
-                experimentalQueryEngine = (QueryEngine) cmp;
+                experimentalQueryEngine = (QueryEngine)cmp;
 
                 break;
             }

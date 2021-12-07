@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -123,6 +124,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         private boolean isExecuted;
 
+        /** */
+        private ServiceContext svcCtx;
+
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             isCancelled = true;
@@ -130,6 +134,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            svcCtx = ctx;
+
             isInitialized = true;
         }
 
@@ -161,12 +167,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public byte test(byte arg) {
-            return (byte) (arg + 1);
+            return (byte)(arg + 1);
         }
 
         /** */
         public short test(short arg) {
-            return (short) (arg + 1);
+            return (short)(arg + 1);
         }
 
         /** */
@@ -196,7 +202,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public char test(char arg) {
-            return (char) (arg + 1);
+            return (char)(arg + 1);
         }
 
         /** */
@@ -221,12 +227,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Byte testWrapper(Byte arg) {
-            return arg == null ? null : (byte) (arg + 1);
+            return arg == null ? null : (byte)(arg + 1);
         }
 
         /** */
         public Short testWrapper(Short arg) {
-            return arg == null ? null : (short) (arg + 1);
+            return arg == null ? null : (short)(arg + 1);
         }
 
         /** */
@@ -256,7 +262,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Character testWrapper(Character arg) {
-            return arg == null ? null : (char) (arg + 1);
+            return arg == null ? null : (char)(arg + 1);
         }
 
         /** */
@@ -407,14 +413,29 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public BinaryObject[] testBinaryObjectArray(BinaryObject[] arg) {
-            for (int i = 0; i < arg.length; i++) {
-                int field = arg[i].field("Field");
+        public BinaryObject[] testBinaryObjectArray(Object arg0) {
+            Object[] arg;
 
-                arg[i] = arg[i].toBuilder().setField("Field", field + 1).build();
+            if (BinaryArray.useBinaryArrays()) {
+                assertTrue(arg0 instanceof BinaryArray);
+
+                arg = ((BinaryArray)arg0).array();
+            }
+            else {
+                assertTrue(arg0 instanceof Object[]);
+
+                arg = (Object[])arg0;
             }
 
-            return arg;
+            BinaryObject[] res = new BinaryObject[arg.length];
+
+            for (int i = 0; i < arg.length; i++) {
+                int field = ((BinaryObject)arg[i]).field("Field");
+
+                res[i] = ((BinaryObject)arg[i]).toBuilder().setField("Field", field + 1).build();
+            }
+
+            return res;
         }
 
         /** */
@@ -642,6 +663,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        public Object contextAttribute(String name) {
+            return svcCtx.currentCallContext().attribute(name);
         }
     }
 

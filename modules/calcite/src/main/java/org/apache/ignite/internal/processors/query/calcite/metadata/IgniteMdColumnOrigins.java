@@ -145,7 +145,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
 
         if (rexNode instanceof RexInputRef) {
             // Direct reference:  no derivation added.
-            RexInputRef inputRef = (RexInputRef) rexNode;
+            RexInputRef inputRef = (RexInputRef)rexNode;
 
             return mq.getColumnOrigins(input, inputRef.getIndex());
         }
@@ -172,7 +172,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
 
         if (rexNode instanceof RexInputRef) {
             // Direct reference:  no derivation added.
-            RexInputRef inputRef = (RexInputRef) rexNode;
+            RexInputRef inputRef = (RexInputRef)rexNode;
 
             return mq.getColumnOrigins(input, inputRef.getIndex());
         }

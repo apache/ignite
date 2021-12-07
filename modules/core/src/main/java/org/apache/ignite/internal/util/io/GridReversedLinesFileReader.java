@@ -93,7 +93,7 @@ public class GridReversedLinesFileReader implements Closeable {
 
         randomAccessFile = new RandomAccessFile(file, "r");
         totalByteLength = randomAccessFile.length();
-        int lastBlockLength = (int) (totalByteLength % blockSize);
+        int lastBlockLength = (int)(totalByteLength % blockSize);
         if (lastBlockLength > 0) {
             totalBlockCount = totalByteLength / blockSize + 1;
         } else {

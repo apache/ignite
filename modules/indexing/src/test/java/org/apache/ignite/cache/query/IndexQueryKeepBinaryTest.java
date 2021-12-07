@@ -19,9 +19,7 @@ package org.apache.ignite.cache.query;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import java.util.Random;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -97,6 +95,35 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
         check(cache.withKeepBinary().query(qry), CNT / 4 + 1, CNT / 2);
     }
 
+    /** */
+    @Test
+    public void testComplexSqlPrimaryKey() {
+        String valType = "MY_VALUE_TYPE";
+        String tblCacheName = "MY_TABLE_CACHE";
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("create table my_table (id1 int, id2 int, id3 int," +
+            " PRIMARY KEY(id1, id2)) with \"VALUE_TYPE=" + valType + ",CACHE_NAME=" + tblCacheName + "\";");
+
+        cache.query(qry);
+
+        qry = new SqlFieldsQuery("insert into my_table(id1, id2, id3) values(?, ?, ?);");
+
+        for (int i = 0; i < CNT; i++) {
+            qry.setArgs(i, i, i);
+
+            cache.query(qry);
+        }
+
+        int pivot = new Random().nextInt(CNT);
+
+        IgniteCache<BinaryObject, BinaryObject> tblCache = grid(0).cache(tblCacheName);
+
+        IndexQuery<BinaryObject, BinaryObject> idxQry = new IndexQuery<BinaryObject, BinaryObject>(valType)
+            .setCriteria(lt("id1", pivot));
+
+        checkBinary(tblCache.withKeepBinary().query(idxQry), 0, pivot);
+    }
+
     /**
      * @param left First cache key, inclusive.
      * @param right Last cache key, exclusive.
@@ -106,26 +133,37 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
-
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, ?> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
+            assertEquals(left + i, entry.getKey().intValue());
 
             BinaryObject o = all.get(i).getValue();
 
             assertEquals(new Person(entry.getKey().intValue()), o.deserialize());
         }
+    }
 
-        assertTrue(expKeys.isEmpty());
+    /** */
+    private void checkBinary(QueryCursor cursor, int left, int right) {
+        List<Cache.Entry<BinaryObject, BinaryObject>> all = cursor.getAll();
+
+        assertEquals(right - left, all.size());
+
+        for (int i = 0; i < all.size(); i++) {
+            Cache.Entry<BinaryObject, BinaryObject> entry = all.get(i);
+
+            assertEquals(left + i, (int)entry.getKey().field("id1"));
+            assertEquals(left + i, (int)entry.getKey().field("id2"));
+            assertEquals(left + i, (int)entry.getValue().field("id3"));
+        }
     }
 
     /** */
     private void insertData(Ignite ignite, IgniteCache cache) {
         try (IgniteDataStreamer<Long, Person> streamer = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < CNT; i++)
-                streamer.addData((long) i, new Person(i));
+                streamer.addData((long)i, new Person(i));
         }
     }
 
@@ -152,7 +190,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id);
         }

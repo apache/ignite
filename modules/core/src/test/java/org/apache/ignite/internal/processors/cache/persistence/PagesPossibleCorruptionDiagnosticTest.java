@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CorruptedFreeListException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -90,7 +89,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
             )
             .setFailureHandler(new FailureHandlerWithCallback(failureCtx ->
                 correctFailure = failureCtx.error() instanceof CorruptedPartitionMetaPageException
-                     && ((AbstractCorruptedPersistenceException)failureCtx.error()).pages().length > 0
+                     && ((CorruptedDataStructureException)failureCtx.error()).pageIds().length > 0
             ));
     }
 
@@ -195,7 +194,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
         IgniteCacheOffheapManager.CacheDataStore dataStore =
             ignite.context().cache().cacheGroup(grpId).offheap().cacheDataStores().iterator().next();
 
-        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore) dataStore;
+        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore)dataStore;
 
         AbstractFreeList freeList = store.getCacheStoreFreeList();
 
@@ -204,13 +203,13 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
         bag.addFreePage(pageId(0, FLAG_DATA, 10));
         bag.addFreePage(pageId(0, FLAG_DATA, 11));
 
-        T2<Integer, Long>[] pages = null;
+        long[] pages = null;
 
         try {
             freeList.addForRecycle(bag);
         }
         catch (CorruptedFreeListException e) {
-            pages = e.pages();
+            pages = e.pageIds();
         }
 
         assertNotNull(pages);

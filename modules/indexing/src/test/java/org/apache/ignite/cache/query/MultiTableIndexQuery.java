@@ -186,45 +186,45 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         // Lt.
         IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
-            .setCriteria(lt("_KEY", (long) (CNT + pivot)));
+            .setCriteria(lt("_KEY", (long)(CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
-            .setCriteria(lt("_KEY", (long) pivot));
+            .setCriteria(lt("_KEY", (long)pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         // Lte.
         secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
-            .setCriteria(lte("_KEY", (long) (CNT + pivot)));
+            .setCriteria(lte("_KEY", (long)(CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot + 1);
 
         qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
-            .setCriteria(lte("_KEY", (long) pivot));
+            .setCriteria(lte("_KEY", (long)pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
         // Gt.
         secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
-            .setCriteria(gt("_KEY", (long) (CNT + pivot)));
+            .setCriteria(gt("_KEY", (long)(CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot + 1, 2 * CNT);
 
         qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
-            .setCriteria(gt("_KEY", (long) pivot));
+            .setCriteria(gt("_KEY", (long)pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
         // Gte.
         secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
-            .setCriteria(gte("_KEY", (long) (CNT + pivot)));
+            .setCriteria(gte("_KEY", (long)(CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot, 2 * CNT);
 
         qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
-            .setCriteria(gte("_KEY", (long) pivot));
+            .setCriteria(gte("_KEY", (long)pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
     }
@@ -232,8 +232,8 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
     private void insertData(IgniteCache<Long, Object> cache) {
         for (int i = 0; i < CNT; i++) {
-            cache.put((long) i, new Person(i));
-            cache.put((long) CNT + i, new SecondPerson(CNT + i));
+            cache.put((long)i, new Person(i));
+            cache.put((long)CNT + i, new SecondPerson(CNT + i));
         }
     }
 
@@ -260,12 +260,10 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
-
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, SecondPerson> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
+            assertEquals(left + i, entry.getKey().intValue());
 
             assertEquals(new SecondPerson(entry.getKey().intValue()), all.get(i).getValue());
         }
@@ -295,7 +293,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id);
         }
@@ -330,7 +328,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SecondPerson person = (SecondPerson) o;
+            SecondPerson person = (SecondPerson)o;
 
             return Objects.equals(id, person.id);
         }

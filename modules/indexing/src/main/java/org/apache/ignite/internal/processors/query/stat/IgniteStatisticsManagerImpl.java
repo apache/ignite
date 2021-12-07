@@ -169,7 +169,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.uncaughtExceptionHandler()
         );
 
-        obsolescenceBusyExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::log);
+        obsolescenceBusyExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::isStopping, ctx::log);
 
         IgniteStatisticsStore store;
 
@@ -185,6 +185,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         statProc = serverNode ? new StatisticsProcessor(
             statsRepos,
             gatherPool,
+            ctx::isStopping,
             ctx::log
         ) : null;
 
@@ -196,6 +197,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             statProc,
             db != null,
             mgmtPool,
+            ctx::isStopping,
             ctx::log,
             serverNode
         );
@@ -271,7 +273,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos.stop();
 
-        obsolescenceBusyExecutor.deactivate(() -> {});
+        obsolescenceBusyExecutor.deactivate();
         started = false;
     }
 

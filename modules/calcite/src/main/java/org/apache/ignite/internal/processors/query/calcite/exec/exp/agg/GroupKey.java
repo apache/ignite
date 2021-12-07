@@ -52,7 +52,7 @@ public class GroupKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GroupKey groupKey = (GroupKey) o;
+        GroupKey groupKey = (GroupKey)o;
 
         return Arrays.equals(fields, groupKey.fields);
     }

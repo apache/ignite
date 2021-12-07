@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeReplaceRemoveRaceTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
@@ -115,6 +116,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestionsTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
@@ -238,6 +240,7 @@ import org.junit.runners.Suite;
     BPlusTreeSelfTest.class,
     BPlusTreeFakeReuseSelfTest.class,
     BPlusTreeReuseSelfTest.class,
+    BPlusTreeReplaceRemoveRaceTest.class,
     IndexStorageSelfTest.class,
     CacheFreeListSelfTest.class,
     DataRegionMetricsSelfTest.class,
@@ -325,7 +328,8 @@ import org.junit.runners.Suite;
     CacheLockCandidatesThreadTest.class,
     RemoveAllDeadlockTest.class,
 
-    NoopCheckpointSpiLoggingTest.class
+    NoopCheckpointSpiLoggingTest.class,
+    JvmConfigurationSuggestionsTest.class
 })
 public class IgniteBasicTestSuite {
 }

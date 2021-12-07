@@ -194,7 +194,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            MailboxKey that = (MailboxKey) o;
+            MailboxKey that = (MailboxKey)o;
 
             if (exchangeId != that.exchangeId)
                 return false;
@@ -204,7 +204,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = qryId.hashCode();
-            res = 31 * res + (int) (exchangeId ^ (exchangeId >>> 32));
+            res = 31 * res + (int)(exchangeId ^ (exchangeId >>> 32));
             return res;
         }
 

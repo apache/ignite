@@ -24,6 +24,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -34,8 +35,11 @@ import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+
 /**
- * Cache queries example. This example demonstrates TEXT and FULL SCAN
+ * Cache queries example. This example demonstrates TEXT, FULL SCAN and INDEX
  * queries over cache.
  * <p>
  * Example also demonstrates usage of fields queries that return only required
@@ -104,6 +108,9 @@ public class CacheQueryExample {
 
                 // Example for TEXT-based querying for a given string in peoples resumes.
                 textQuery();
+
+                // Example for INDEX-based query with index criteria.
+                indexQuery();
             }
             finally {
                 // Distributed cache could be removed from cluster only by Ignite.destroyCache() call.
@@ -150,6 +157,47 @@ public class CacheQueryExample {
 
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
+    }
+
+    /**
+     * Example for query indexes with criteria and binary objects.
+     */
+    private static void indexQuery() {
+        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+
+        // Query for all people who work in the organization "ApacheIgnite".
+        QueryCursor<Cache.Entry<Long, Person>> igniters = cache.query(
+            new IndexQuery<Long, Person>(Person.class)
+                .setCriteria(eq("orgId", 1L))
+        );
+
+        print("Following people work in the 'ApacheIgnite' organization (queried with INDEX query): ",
+            igniters.getAll());
+
+        // Query for all people who work in the organization "Other" and have salary more than 1,500.
+        QueryCursor<Cache.Entry<Long, Person>> others = cache.query(
+            new IndexQuery<Long, Person>(Person.class)  // Index name {@link Person#ORG_SALARY_IDX} is optional.
+                .setCriteria(eq("orgId", 2L), gt("salary", 1500.0)));
+
+        print("Following people work in the 'Other' organizations and have salary more than 1500 (queried with INDEX query): ",
+            others.getAll());
+
+        // Query for all people who have salary more than 1,500 using BinaryObject.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> rich = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0)));
+
+        print("Following people have salary more than 1500 (queried with INDEX query and using binary objects): ",
+            rich.getAll());
+
+        // Query for all people who have salary more than 1,500 and have 'Master Degree' in their resumes.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> richMasters = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0))
+                .setFilter((k, v) -> v.<String>field("resume").contains("Master")));
+
+        print("Following people have salary more than 1500 and Master degree (queried with INDEX query): ",
+            richMasters.getAll());
     }
 
     /**

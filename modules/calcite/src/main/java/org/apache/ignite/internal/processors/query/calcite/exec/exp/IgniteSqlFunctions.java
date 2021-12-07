@@ -138,7 +138,7 @@ public class IgniteSqlFunctions {
         if (o instanceof Boolean)
             throw new UnsupportedOperationException();
 
-        return o instanceof Number ? toBigDecimal((Number) o, precision, scale)
+        return o instanceof Number ? toBigDecimal((Number)o, precision, scale)
             : toBigDecimal(o.toString(), precision, scale);
     }
 

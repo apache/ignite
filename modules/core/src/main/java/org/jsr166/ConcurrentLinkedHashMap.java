@@ -1140,7 +1140,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * @param m the map
      */
     public ConcurrentLinkedHashMap(Map<? extends K, ? extends V> m) {
-        this(Math.max((int) (m.size() / DFLT_LOAD_FACTOR) + 1, DFLT_INIT_CAP),
+        this(Math.max((int)(m.size() / DFLT_LOAD_FACTOR) + 1, DFLT_INIT_CAP),
             DFLT_LOAD_FACTOR, DFLT_CONCUR_LVL);
 
         putAll(m);

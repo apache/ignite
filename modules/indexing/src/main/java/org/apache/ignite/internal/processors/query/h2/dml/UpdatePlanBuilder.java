@@ -157,7 +157,7 @@ public final class UpdatePlanBuilder {
         if (stmt instanceof GridSqlInsert) {
             mode = UpdateMode.INSERT;
 
-            GridSqlInsert ins = (GridSqlInsert) stmt;
+            GridSqlInsert ins = (GridSqlInsert)stmt;
 
             target = ins.into();
 
@@ -182,7 +182,7 @@ public final class UpdatePlanBuilder {
         else if (stmt instanceof GridSqlMerge) {
             mode = UpdateMode.MERGE;
 
-            GridSqlMerge merge = (GridSqlMerge) stmt;
+            GridSqlMerge merge = (GridSqlMerge)stmt;
 
             target = merge.into();
 
@@ -206,7 +206,7 @@ public final class UpdatePlanBuilder {
 
         // Let's set the flag only for subqueries that have their FROM specified.
         isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
-            (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
+            (sel instanceof GridSqlSelect && ((GridSqlSelect)sel).from() != null)));
 
         int keyColIdx = -1;
         int valColIdx = -1;
@@ -374,7 +374,7 @@ public final class UpdatePlanBuilder {
             mode = UpdateMode.UPDATE;
         }
         else if (stmt instanceof GridSqlDelete) {
-            GridSqlDelete del = (GridSqlDelete) stmt;
+            GridSqlDelete del = (GridSqlDelete)stmt;
             target = del.from();
             fastUpdate = DmlAstUtils.getFastDeleteArgs(del);
             mode = UpdateMode.DELETE;
@@ -408,7 +408,7 @@ public final class UpdatePlanBuilder {
             GridSqlSelect sel;
 
             if (stmt instanceof GridSqlUpdate) {
-                List<GridSqlColumn> updatedCols = ((GridSqlUpdate) stmt).cols();
+                List<GridSqlColumn> updatedCols = ((GridSqlUpdate)stmt).cols();
 
                 int valColIdx = -1;
 
@@ -748,7 +748,7 @@ public final class UpdatePlanBuilder {
         if (!(statement instanceof GridSqlUpdate))
             return;
 
-        GridSqlUpdate update = (GridSqlUpdate) statement;
+        GridSqlUpdate update = (GridSqlUpdate)statement;
 
         GridSqlElement updTarget = update.target();
 

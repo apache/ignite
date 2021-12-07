@@ -312,8 +312,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (int k = 0; k < 1000; k++)
             dfltCache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -1248,17 +1248,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
         }
 
-        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
             return configuration;
         });
 
-        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
             return configuration;
         });
 
-        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(true));
             return configuration;
         });
@@ -2179,7 +2179,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String outputStr = testOut.toString();
 
         assertContains(log, outputStr, "The check procedure failed on 1 node.");
-        assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
+        assertContains(log, outputStr, "CRC check of partition failed");
     }
 
     /** */

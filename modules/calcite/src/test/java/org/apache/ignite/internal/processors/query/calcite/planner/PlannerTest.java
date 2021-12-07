@@ -410,7 +410,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assert exec instanceof Outbox;
 
-        Outbox<Object[]> outbox = (Outbox<Object[]>) exec;
+        Outbox<Object[]> outbox = (Outbox<Object[]>)exec;
 
         exec.context().execute(outbox::init, outbox::onError);
 
@@ -634,7 +634,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assert exec instanceof Outbox;
 
-        Outbox<Object[]> outbox = (Outbox<Object[]>) exec;
+        Outbox<Object[]> outbox = (Outbox<Object[]>)exec;
 
         exec.context().execute(outbox::init, outbox::onError);
 
@@ -648,7 +648,7 @@ public class PlannerTest extends AbstractPlannerTest {
         int pos = 0;
 
         for (Object obj : checkRes.get())
-            Assert.assertArrayEquals((Object[]) obj, res.get(pos++));
+            Assert.assertArrayEquals((Object[])obj, res.get(pos++));
     }
 
     /**

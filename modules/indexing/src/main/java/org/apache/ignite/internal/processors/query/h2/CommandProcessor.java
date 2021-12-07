@@ -445,11 +445,11 @@ public class CommandProcessor extends SqlCommandProcessor {
             return runCommand(cmdNative);
 
         if (cmdNative instanceof SqlBulkLoadCommand)
-            return processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+            return processBulkLoadCommand((SqlBulkLoadCommand)cmdNative, qryId);
         else if (cmdNative instanceof SqlSetStreamingCommand)
             processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
         else if (cmdNative instanceof SqlKillQueryCommand)
-            processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+            processKillQueryCommand((SqlKillQueryCommand)cmdNative);
         else
             processTxCommand(cmdNative, params);
 
@@ -756,11 +756,11 @@ public class CommandProcessor extends SqlCommandProcessor {
                 ctx.security().dropUser(dropCmd.userName());
             }
             else if (cmd instanceof SqlAnalyzeCommand)
-                processAnalyzeCommand((SqlAnalyzeCommand) cmd);
+                processAnalyzeCommand((SqlAnalyzeCommand)cmd);
             else if (cmd instanceof SqlRefreshStatitsicsCommand)
-                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand) cmd);
+                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmd);
             else if (cmd instanceof SqlDropStatisticsCommand)
-                processDropStatisticsCommand((SqlDropStatisticsCommand) cmd);
+                processDropStatisticsCommand((SqlDropStatisticsCommand)cmd);
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -831,7 +831,7 @@ public class CommandProcessor extends SqlCommandProcessor {
                     newIdx, cmd.ifNotExists(), 0);
             }
             else if (cmdH2 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex) cmdH2;
+                GridSqlDropIndex cmd = (GridSqlDropIndex)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 

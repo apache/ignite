@@ -299,7 +299,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             return super.newColumnDefaultValue(tbl, colIdx, ctx);
 
         final RexBuilder rexBuilder = ctx.getRexBuilder();
-        final IgniteTypeFactory typeFactory = (IgniteTypeFactory) rexBuilder.getTypeFactory();
+        final IgniteTypeFactory typeFactory = (IgniteTypeFactory)rexBuilder.getTypeFactory();
 
         return rexBuilder.makeLiteral(desc.defaultValue(), desc.logicalType(typeFactory), false);
     }
@@ -313,9 +313,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             case DELETE:
                 return deleteTuple(row, ectx);
             case UPDATE:
-                return updateTuple(row, (List<String>) arg, 0, ectx);
+                return updateTuple(row, (List<String>)arg, 0, ectx);
             case MERGE:
-                return mergeTuple(row, (List<String>) arg, ectx);
+                return mergeTuple(row, (List<String>)arg, ectx);
             default:
                 throw new AssertionError();
         }
@@ -328,10 +328,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         if (cacheContext().binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder) key).build();
+                key = ((BinaryObjectBuilder)key).build();
 
             if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder) val).build();
+                val = ((BinaryObjectBuilder)val).build();
         }
 
         typeDesc.validateKeyAndValue(key, val);
@@ -461,7 +461,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         }
 
         if (cacheContext().binaryMarshaller() && val instanceof BinaryObjectBuilder)
-            val = ((BinaryObjectBuilder) val).build();
+            val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
 

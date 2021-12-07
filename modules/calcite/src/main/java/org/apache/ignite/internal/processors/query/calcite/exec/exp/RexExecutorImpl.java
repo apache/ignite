@@ -178,7 +178,7 @@ public class RexExecutorImpl implements RexExecutor {
       if (storageType == null) {
         final RelDataType fieldType =
             rowType.getFieldList().get(idx).getType();
-        storageType = ((JavaTypeFactory) typeFactory).getJavaClass(fieldType);
+        storageType = ((JavaTypeFactory)typeFactory).getJavaClass(fieldType);
       }
       return ConverterUtils.convert(recordAccess, storageType);
     }

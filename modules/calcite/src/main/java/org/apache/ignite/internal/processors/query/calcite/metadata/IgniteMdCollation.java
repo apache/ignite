@@ -255,9 +255,9 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
             new HashMap<>();
         for (Ord<RexNode> project : Ord.<RexNode>zip(projects)) {
             if (project.e instanceof RexInputRef) {
-                targets.put(((RexInputRef) project.e).getIndex(), project.i);
+                targets.put(((RexInputRef)project.e).getIndex(), project.i);
             } else if (project.e instanceof RexCall) {
-                final RexCall call = (RexCall) project.e;
+                final RexCall call = (RexCall)project.e;
                 final RexCallBinding binding =
                     RexCallBinding.create(Commons.typeFactory(input), call, inputCollations);
                 targetsWithMonotonicity.put(project.i, call.getOperator().getMonotonicity(binding));

@@ -225,7 +225,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareMarshal(this);
+                ((MarshalableMessage)msg).prepareMarshal(this);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -238,7 +238,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareUnmarshal(this);
+                ((MarshalableMessage)msg).prepareUnmarshal(this);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -250,7 +250,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void onMessage(UUID nodeId, CalciteMessage msg) {
         if (msg instanceof ExecutionContextAware) {
-            ExecutionContextAware msg0 = (ExecutionContextAware) msg;
+            ExecutionContextAware msg0 = (ExecutionContextAware)msg;
             taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
         }
         else
@@ -264,7 +264,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
         if (msg instanceof CalciteMessage)
-            onMessage(nodeId, (CalciteMessage) msg);
+            onMessage(nodeId, (CalciteMessage)msg);
     }
 
     /** */

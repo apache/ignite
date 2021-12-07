@@ -55,7 +55,7 @@ public class IgniteSqlIntervalTypeNameSpec extends SqlTypeNameSpec {
         if (!(spec instanceof IgniteSqlIntervalTypeNameSpec))
             return false;
 
-        IgniteSqlIntervalTypeNameSpec that = (IgniteSqlIntervalTypeNameSpec) spec;
+        IgniteSqlIntervalTypeNameSpec that = (IgniteSqlIntervalTypeNameSpec)spec;
 
         return getTypeName().equalsDeep(that.getTypeName(), litmus);
     }

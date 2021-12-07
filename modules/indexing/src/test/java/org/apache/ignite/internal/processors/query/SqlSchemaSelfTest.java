@@ -313,7 +313,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
             .setIndexedTypes(PersonKey.class, Person.class)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-        Throwable th = GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+        Throwable th = GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
             node.createCache(new CacheConfiguration<PersonKey, Person>()
                 .setName(CACHE_PERSON_2)
                 .setIndexedTypes(PersonKey.class, Person.class)

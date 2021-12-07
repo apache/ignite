@@ -351,8 +351,8 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
         Set<String> nonNullableFields = new HashSet<>(Arrays.asList(NON_NULLABLE_FIELDS));
 
         for (String numericField : NUMERIC_FIELDS) {
-            double allRowIsNullCnt = (nonNullableFields.contains(numericField)) ? (double) ROW_COUNT : 0.8125 * ROW_COUNT;
-            double allRowRangeCnt = (nonNullableFields.contains(numericField)) ? (double) ROW_COUNT : 0.75 * ROW_COUNT;
+            double allRowIsNullCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.8125 * ROW_COUNT;
+            double allRowRangeCnt = (nonNullableFields.contains(numericField)) ? (double)ROW_COUNT : 0.75 * ROW_COUNT;
 
             assertQuerySrv(String.format("select * from all_types where " +
                 "%s > %d or %s < %d", numericField, -1, numericField, 101))

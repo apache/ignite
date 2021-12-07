@@ -84,7 +84,7 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
         SqlUpdate updateCall = call.getUpdateCall();
         if (updateCall != null) {
             for (SqlNode targetColumn : updateCall.getTargetColumnList()) {
-                SqlIdentifier id = (SqlIdentifier) targetColumn;
+                SqlIdentifier id = (SqlIdentifier)targetColumn;
                 RelDataTypeField field =
                     SqlValidatorUtil.getTargetField(
                         targetRowType, typeFactory, id, catalogReader, targetTable);
@@ -122,16 +122,16 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             // the column; or if the expressions directly map to the source
             // table
             level1InsertExprs =
-                ((LogicalProject) insertRel.getInput(0)).getProjects();
+                ((LogicalProject)insertRel.getInput(0)).getProjects();
             if (insertRel.getInput(0).getInput(0) instanceof LogicalProject) {
                 level2InsertExprs =
-                    ((LogicalProject) insertRel.getInput(0).getInput(0))
+                    ((LogicalProject)insertRel.getInput(0).getInput(0))
                         .getProjects();
             }
             nLevel1Exprs = level1InsertExprs.size();
         }
 
-        LogicalJoin join = (LogicalJoin) mergeSourceRel.getInput(0);
+        LogicalJoin join = (LogicalJoin)mergeSourceRel.getInput(0);
 
         final List<RexNode> projects = new ArrayList<>();
 
@@ -140,13 +140,13 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             if ((level2InsertExprs != null)
                 && (level1InsertExprs.get(level1Idx) instanceof RexInputRef)) {
                 int level2Idx =
-                    ((RexInputRef) level1InsertExprs.get(level1Idx)).getIndex();
+                    ((RexInputRef)level1InsertExprs.get(level1Idx)).getIndex();
                 projects.add(level2InsertExprs.get(level2Idx));
             } else
                 projects.add(level1InsertExprs.get(level1Idx));
         }
         if (updateCall != null) {
-            final LogicalProject project = (LogicalProject) mergeSourceRel;
+            final LogicalProject project = (LogicalProject)mergeSourceRel;
             projects.addAll(project.getProjects());
         }
         else {

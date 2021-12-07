@@ -92,7 +92,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         if (!(expr instanceof RexCall))
             return null;
 
-        RexCall call = (RexCall) expr;
+        RexCall call = (RexCall)expr;
 
         for (RexNode op : call.getOperands()) {
             T res = findFirst(op, clz);

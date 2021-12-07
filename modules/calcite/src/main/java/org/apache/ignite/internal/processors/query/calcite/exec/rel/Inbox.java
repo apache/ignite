@@ -373,7 +373,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Batch<Row> batch = (Batch<Row>) o;
+            Batch<Row> batch = (Batch<Row>)o;
 
             return batchId == batch.batchId;
         }
@@ -508,12 +508,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
         /** */
         private Batch<Row> finishedMark() {
-            return (Batch<Row>) END;
+            return (Batch<Row>)END;
         }
 
         /** */
         private Batch<Row> waitingMark() {
-            return (Batch<Row>) WAITING;
+            return (Batch<Row>)WAITING;
         }
     }
 }

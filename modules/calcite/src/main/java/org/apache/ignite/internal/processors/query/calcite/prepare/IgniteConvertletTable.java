@@ -103,7 +103,7 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
                 cx.getTypeFactory().createTypeWithNullability(
                     cx.getTypeFactory().createSqlIntervalType(qualifier),
                     op1.getType().isNullable() || op2.getType().isNullable());
-            final RexCall rexCall = (RexCall) rexBuilder.makeCall(
+            final RexCall rexCall = (RexCall)rexBuilder.makeCall(
                 intervalType, SqlStdOperatorTable.MINUS_DATE,
                 ImmutableList.of(op2, op1));
             final RelDataType intType =

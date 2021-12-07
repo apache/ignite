@@ -267,7 +267,7 @@ public final class Commons {
      */
     public static void close(Object o) throws Exception {
         if (o instanceof AutoCloseable)
-            ((AutoCloseable) o).close();
+            ((AutoCloseable)o).close();
     }
 
     /**
@@ -275,7 +275,7 @@ public final class Commons {
      */
     public static void close(Object o, IgniteLogger log) {
         if (o instanceof AutoCloseable)
-            U.close((AutoCloseable) o, log);
+            U.close((AutoCloseable)o, log);
     }
 
     /**
@@ -283,7 +283,7 @@ public final class Commons {
      */
     public static void closeQuiet(Object o) {
         if (o instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable) o);
+            U.closeQuiet((AutoCloseable)o);
     }
 
     /** */
@@ -343,7 +343,7 @@ public final class Commons {
                 // Add line numbers to the generated janino class
                 cbe.setDebuggingInformation(true, true, true);
 
-            return (T) cbe.createInstance(new StringReader(body));
+            return (T)cbe.createInstance(new StringReader(body));
         } catch (Exception e) {
             throw new IgniteException(e);
         }

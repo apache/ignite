@@ -1797,10 +1797,10 @@ public final class GridTestUtils {
                     Throwable cause = e.getCause();
 
                     if (cause instanceof Error)
-                        throw (Error) cause;
+                        throw (Error)cause;
 
                     if (cause instanceof Exception)
-                        throw (Exception) cause;
+                        throw (Exception)cause;
 
                     throw new RuntimeException("Failed to invoke method)" +
                         " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
@@ -1878,7 +1878,7 @@ public final class GridTestUtils {
         assert file.exists();
         assert file.length() < Integer.MAX_VALUE;
 
-        byte[] bytes = new byte[(int) file.length()];
+        byte[] bytes = new byte[(int)file.length()];
 
         try (FileInputStream fis = new FileInputStream(file)) {
             int readBytesCnt = fis.read(bytes);

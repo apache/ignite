@@ -144,7 +144,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             ProjectNode<Object[]> project = new ProjectNode<>(ectx, rowType, r -> new Object[]{r[0], r[1], r[5]});
             project.register(scan);
 
-            FilterNode<Object[]> filter = new FilterNode<>(ectx, rowType, r -> (Integer) r[0] >= 2);
+            FilterNode<Object[]> filter = new FilterNode<>(ectx, rowType, r -> (Integer)r[0] >= 2);
             filter.register(project);
 
             MailboxRegistry registry = mailboxRegistry(locNodeId);
@@ -165,7 +165,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
         MailboxRegistry registry = mailboxRegistry(locNodeId);
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
+        Inbox<Object[]> inbox = (Inbox<Object[]>)registry.register(
             new Inbox<>(ectx, exchangeService(locNodeId), registry, 0, 0));
 
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class);

@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
-                
+
             var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(false, false));
 
             if (KeepBinary)
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
                 ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
-                    method, args, PlatformType.DotNet);
+                    method, args, PlatformType.DotNet, null);
 
                 inStream.SynchronizeOutput();
 
@@ -293,8 +293,9 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
+                IServiceCallContext unused;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
@@ -758,7 +759,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
-            
+
             var obj = new TestBinarizableClass { Prop = "PropValue" };
             var portObj = Binary.ToBinary<IBinaryObject>(obj);
 

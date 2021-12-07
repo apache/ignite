@@ -103,7 +103,7 @@ public class VisorConnectivityTask
             Map<ClusterNode, Boolean> statuses = new HashMap<>();
 
             if (spi instanceof TcpCommunicationSpi) {
-                BitSet set = ((TcpCommunicationSpi) spi).checkConnection(nodes).get();
+                BitSet set = ((TcpCommunicationSpi)spi).checkConnection(nodes).get();
 
                 for (int i = 0; i < nodes.size(); i++) {
                     ClusterNode node = nodes.get(i);

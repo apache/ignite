@@ -97,15 +97,15 @@ public class SqlCommandProcessor {
         if (isDdl(cmdNative))
             runCommandNativeDdl(cmdNative);
         else if (cmdNative instanceof SqlKillComputeTaskCommand)
-            processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+            processKillComputeTaskCommand((SqlKillComputeTaskCommand)cmdNative);
         else if (cmdNative instanceof SqlKillTransactionCommand)
-            processKillTxCommand((SqlKillTransactionCommand) cmdNative);
+            processKillTxCommand((SqlKillTransactionCommand)cmdNative);
         else if (cmdNative instanceof SqlKillServiceCommand)
-            processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
+            processKillServiceTaskCommand((SqlKillServiceCommand)cmdNative);
         else if (cmdNative instanceof SqlKillScanQueryCommand)
-            processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
+            processKillScanQueryCommand((SqlKillScanQueryCommand)cmdNative);
         else if (cmdNative instanceof SqlKillContinuousQueryCommand)
-            processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
+            processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
 
         return null;
     }

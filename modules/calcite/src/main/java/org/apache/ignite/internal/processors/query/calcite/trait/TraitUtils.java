@@ -478,7 +478,7 @@ public class TraitUtils {
 
         for (Ord<RexNode> exp : Ord.<RexNode>zip(projects)) {
             if (exp.e instanceof RexInputRef)
-                src2target.putIfAbsent(((RexInputRef) exp.e).getIndex(), exp.i);
+                src2target.putIfAbsent(((RexInputRef)exp.e).getIndex(), exp.i);
         }
 
         return Mappings.target(src -> src2target.getOrDefault(src, -1), inputFieldCount, projects.size());

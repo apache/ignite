@@ -39,8 +39,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -56,6 +58,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
+import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
@@ -63,10 +66,10 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,7 +79,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -237,6 +240,39 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assertEquals(res, res.inner.outer);
         assertEquals(res.inner, res.inner.foo);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testObjectHandleIsPossible() {
+        GridBinaryTestClasses.Address addr = new GridBinaryTestClasses.Address(
+                "Weligama", "Kapparatota", 203, 2
+        );
+
+        BinaryObjectBuilder objectBuilder = binaries().builder("customObject");
+
+        objectBuilder.setField("addr1", addr);
+        objectBuilder.setField("addr2", addr);
+
+        BinaryObject build = objectBuilder.build();
+
+        assertSame(build.field("addr1"), build.field("addr1"));
+        assertSame(build.field("addr1"), build.field("addr2"));
+
+        BinaryObjectBuilder secondBuilder = objectBuilder.build().toBuilder();
+
+        GridBinaryTestClasses.Address secondAddr = new GridBinaryTestClasses.Address(
+                "Tokyo", "Shibuya City", 122, 5
+        );
+
+        secondBuilder.setField("addr1", secondAddr);
+
+        BinaryObject build2 = secondBuilder.build();
+
+        assertSame(build2.field("addr1"), build2.field("addr1"));
+        assertNotSame(build2.field("addr1"), build2.field("addr2"));
     }
 
     /**
@@ -835,6 +871,44 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     @Test
+    public void testCollectionsHandlePossible() {
+        GridBinaryTestClasses.Address testObject = new GridBinaryTestClasses.Address();
+        testObject.city = "city";
+        testObject.flatNumber = 1;
+        testObject.street = "street";
+        testObject.streetNumber = 32;
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            testCollectionHandlePossible(list, Lists.newArrayList(list), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Lists.newLinkedList(list);
+
+            testCollectionHandlePossible(src, Lists.newLinkedList(src), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Sets.newHashSet(list);
+
+            testCollectionHandlePossible(src, Sets.newHashSet(src), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Sets.newLinkedHashSet(list);
+
+            testCollectionHandlePossible(src, Sets.newLinkedHashSet(src), testObject);
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testMapRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(obj, "a", "b", obj));
@@ -884,6 +958,29 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
         assertEquals(ImmutableMap.of(2, "b", 3, res), res.foo);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testMapsHandlePossible() {
+        GridBinaryTestClasses.Address testObject = new GridBinaryTestClasses.Address();
+        testObject.city = "city";
+        testObject.flatNumber = 1;
+        testObject.street = "street";
+        testObject.streetNumber = 32;
+
+        {
+            Map<Object, Object> src = Maps.newHashMap(ImmutableMap.of(1, "a", 2, "b", 3, testObject));
+            testMapHandlePossible(src, Maps.newHashMap(src), 3, testObject);
+        }
+
+        {
+            Map<Object, Object> src = Maps.newLinkedHashMap(ImmutableMap.of(1, "a", 2, "b", 3, testObject));
+
+            testMapHandlePossible(src, Maps.newLinkedHashMap(src), 3, testObject);
+        }
     }
 
     /**
@@ -1407,6 +1504,48 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
+    public void testSameArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[] arr1 = new Object[2];
+
+        arr1[0] = new Object[2];
+        arr1[0] = arr1[1];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])res.foo;
+
+        assertSame(resArr[0], resArr[1]);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSameMultiDimensionalArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[][] arr1 = new Object[1][2];
+
+        arr1[0][0] = new Object[2];
+        arr1[0][1] = arr1[0][0];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])((Object[])res.foo)[0];
+
+        assertSame(resArr[0], resArr[1]);
+    }
+
+    /**
+     *
+     */
     @SuppressWarnings("TypeMayBeWeakened")
     @Test
     public void testCyclicArrayList() {
@@ -1609,14 +1748,20 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("intVal", 10).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
         builder = extObj.toBuilder();
@@ -1624,7 +1769,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         extObj = builder.setField("strVal", "some string").build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
     }
@@ -1729,6 +1877,36 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
+    @Test
+    public void testArray2() {
+        try {
+            TestClass1[] expArr = new TestClass1[] {new TestClass1()};
+
+            BiConsumer<TestClass1[], BinaryObject> checker = (arr, bobj) -> {
+                Object[] val = useBinaryArrays
+                    ? bobj.<BinaryArray>field("arr").deserialize()
+                    : PlatformUtils.unwrapBinariesInArray(bobj.field("arr"));
+
+                Assert.assertArrayEquals(arr, val);
+                Assert.assertArrayEquals(arr, ((TestClsWithArray)bobj.deserialize()).arr);
+            };
+
+            BinaryObjectBuilder builder = newWrapper(TestClsWithArray.class.getName());
+            BinaryObject arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+
+            expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
+
+            builder = newWrapper(arrObj.type().typeName());
+            arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+        }
+        finally {
+            clearBinaryMeta();
+        }
+    }
+
     /**
      * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
      */
@@ -1754,7 +1932,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return Deserialized enums.
      */
     private TestEnum[] deserializeEnumBinaryArray(Object obj) {
-        Object[] arr = (Object[])obj;
+        if (useBinaryArrays)
+            return ((BinaryArray)obj).deserialize();
+
+        Object[] arr;
+
+        arr = (Object[])obj;
 
         final TestEnum[] res = new TestEnum[arr.length];
 
@@ -1789,6 +1972,96 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         builder.setField("f1", "val2");
         assertEquals("val2", builder.build().field("f1"));
+    }
+
+    /**
+     *
+     */
+    private void testCollectionHandlePossible(Collection<Object> src, Collection<Object> modified, Object obj) {
+        GridBinaryTestClasses.CollectionsHolder listHolder = new GridBinaryTestClasses.CollectionsHolder();
+
+        listHolder.firstCol = src;
+        listHolder.secondCol = src;
+        listHolder.obj = obj;
+
+        BinaryObjectBuilderImpl mutObj = wrap(listHolder);
+
+        assertSame(mutObj.getField("firstCol"), mutObj.getField("firstCol"));
+        assertSame(mutObj.getField("firstCol"), mutObj.getField("secondCol"));
+
+        GridBinaryTestClasses.CollectionsHolder deserialized = mutObj.build().deserialize();
+
+        assertEquals(deserialized.firstCol, deserialized.secondCol);
+        assertEquals(deserialized.firstCol, src);
+
+        Optional<Object> firstObj = deserialized.firstCol.stream()
+                .filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+        Optional<Object> secondObj = deserialized.secondCol.stream()
+                .filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+
+        assertSame(firstObj.get(), deserialized.obj);
+        assertSame(secondObj.get(), deserialized.obj);
+
+        mutObj.setField("firstCol", modified);
+
+        deserialized = mutObj.build().deserialize();
+
+        assertNotSame(deserialized.firstCol, deserialized.secondCol);
+        assertEquals(deserialized.firstCol, deserialized.secondCol);
+
+        firstObj = deserialized.firstCol.stream().filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+        secondObj = deserialized.secondCol.stream().filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+
+        assertEquals(firstObj.get(), deserialized.obj);
+        assertSame(secondObj.get(), deserialized.obj);
+    
+        BinaryObject anotherObject = wrap(listHolder).build();
+    
+        BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
+    
+        assertSame(bob.getField("firstCol"), bob.getField("firstCol"));
+        assertSame(bob.getField("firstCol"), bob.getField("secondCol"));
+    }
+
+    /**
+     *
+     */
+    private void testMapHandlePossible(Map<Object, Object> src, Map<Object, Object> modified, Object key, Object obj) {
+        GridBinaryTestClasses.MapsHolder mapsHolder = new GridBinaryTestClasses.MapsHolder();
+
+        mapsHolder.firstMap = src;
+        mapsHolder.secondMap = src;
+        mapsHolder.valObj = obj;
+
+        BinaryObjectBuilderImpl mutObj = wrap(mapsHolder);
+
+        assertSame(mutObj.getField("firstMap"), mutObj.getField("firstMap"));
+        assertSame(mutObj.getField("firstMap"), mutObj.getField("secondMap"));
+
+        GridBinaryTestClasses.MapsHolder deserialized = mutObj.build().deserialize();
+
+        assertEquals(deserialized.firstMap, deserialized.secondMap);
+        assertEquals(deserialized.firstMap, src);
+
+        assertSame(deserialized.firstMap.get(key), deserialized.valObj);
+        assertSame(deserialized.secondMap.get(key), deserialized.valObj);
+
+        mutObj.setField("firstMap", modified);
+
+        deserialized = mutObj.build().deserialize();
+
+        assertNotSame(deserialized.firstMap, deserialized.secondMap);
+        assertEquals(deserialized.firstMap, deserialized.secondMap);
+
+        assertEquals(deserialized.firstMap.get(key), deserialized.valObj);
+        assertSame(deserialized.secondMap.get(key), deserialized.valObj);
+        
+        BinaryObject anotherObject = wrap(mapsHolder).build();
+    
+        BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
+    
+        assertSame(bob.getField("firstMap"), bob.getField("firstMap"));
+        assertSame(bob.getField("firstMap"), bob.getField("secondMap"));
     }
 
     /**
@@ -1862,6 +2135,17 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             this.testEnumA = testEnumA;
             this.testEnumB = testEnumB;
             this.testEnumArr = testEnumArr;
+        }
+    }
+
+    /** Test class with array. */
+    public static class TestClsWithArray {
+        /** */
+        private final Object[] arr;
+
+        /** */
+        public TestClsWithArray(TestClass1[] arr) {
+            this.arr = arr;
         }
     }
 

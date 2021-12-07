@@ -139,7 +139,7 @@ public class RexUtils {
             if (!clazz.isInstance(projects.get(i)))
                 return false;
 
-            RexSlot ref = (RexSlot) projects.get(i);
+            RexSlot ref = (RexSlot)projects.get(i);
 
             if (ref.getIndex() != i)
                 return false;

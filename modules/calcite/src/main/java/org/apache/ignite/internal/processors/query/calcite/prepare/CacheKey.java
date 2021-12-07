@@ -59,7 +59,7 @@ public class CacheKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheKey cacheKey = (CacheKey) o;
+        CacheKey cacheKey = (CacheKey)o;
 
         if (!schemaName.equals(cacheKey.schemaName))
             return false;

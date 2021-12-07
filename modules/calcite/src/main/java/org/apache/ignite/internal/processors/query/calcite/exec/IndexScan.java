@@ -291,7 +291,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             try {
                 int seg = 0; // TODO segments support
 
-                return idx.find(lower, upper, seg, qctx);
+                return idx.find(lower, upper, true, true, seg, qctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);

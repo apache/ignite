@@ -96,7 +96,7 @@ public abstract class DistributionFunction {
     @Override public final boolean equals(Object obj) {
         if (obj instanceof DistributionFunction)
             //noinspection StringEquality
-            return name() == ((DistributionFunction) obj).name();
+            return name() == ((DistributionFunction)obj).name();
 
         return false;
     }

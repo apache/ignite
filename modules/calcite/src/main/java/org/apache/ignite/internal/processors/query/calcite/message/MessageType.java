@@ -77,7 +77,7 @@ public enum MessageType {
      * @return Message direct type;
      */
     public short directType() {
-        return (short) directType;
+        return (short)directType;
     }
 
     /**

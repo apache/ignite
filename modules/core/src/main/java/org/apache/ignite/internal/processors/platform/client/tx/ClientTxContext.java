@@ -63,13 +63,21 @@ public class ClientTxContext {
      */
     public void release(boolean suspendTx) throws IgniteCheckedException {
         try {
-            if (suspendTx) {
-                TransactionState state = tx.state();
+            try {
+                if (suspendTx) {
+                    TransactionState state = tx.state();
 
-                if (state != TransactionState.COMMITTED && state != TransactionState.ROLLED_BACK)
-                    tx.suspend();
+                    if (state == TransactionState.ACTIVE)
+                        tx.suspend();
+                }
             }
-        } finally {
+            finally {
+                // In some cases thread can still hold the transaction (due to concurrent rollbacks), threadMap should
+                // be forcibly cleared to avoid problems with resuming other transactions in the current worker.
+                tx.context().tm().clearThreadMap(tx);
+            }
+        }
+        finally {
             lock.unlock();
         }
     }
