@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -104,6 +105,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Discovery event types. */
     private static final int[] DISCO_EVT_TYPES = new int[] {EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
+
+    /** Charset that is used to encode user login. */
+    private static final Charset CHARSET = UTF_8;
 
     /** User operation finish futures (Operation ID -> future). */
     private final ConcurrentHashMap<IgniteUuid, UserOperationFinishFuture> opFinishFuts = new ConcurrentHashMap<>();
@@ -332,7 +336,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (F.isEmpty(passwd))
             throw new UserManagementException("Password is empty");
 
-        if ((STORE_USER_PREFIX + login).getBytes().length > MetastorageTree.MAX_KEY_LEN)
+        if ((STORE_USER_PREFIX + login).getBytes(CHARSET).length > MetastorageTree.MAX_KEY_LEN)
             throw new UserManagementException("User name is too long. " +
                 "The user name length must be less then 60 bytes in UTF8");
     }
@@ -968,7 +972,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Calculates user id based on specified login. */
     private UUID toSubjectId(String login) {
-        return UUID.nameUUIDFromBytes(login.getBytes(UTF_8));
+        return UUID.nameUUIDFromBytes(login.getBytes(CHARSET));
     }
 
     /**
