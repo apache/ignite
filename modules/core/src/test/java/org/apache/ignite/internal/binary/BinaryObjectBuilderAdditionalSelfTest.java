@@ -1978,22 +1978,32 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
     /** */
     @Test
     public void testArrayFieldSeveralRead() throws Exception {
-        if (useBinaryArrays)
-            return;
-        
         try (Ignite ignite = startGrid(1)) {
             TestClass1[] expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
             
             BinaryObject arrObj = ignite.binary().toBinary(new TestClsWithArray(expArr));
             
             for (int i = 0; i < 10; i++) {
-                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
+                Object[] arrs;
+                if (useBinaryArrays)
+                    arrs = ((BinaryArray)arrObj.field("arr")).array();
+                else
+                    arrs = arrObj.field("arr");
+                
+                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrs));
             }
 
             arrObj = ignite.binary().builder(TestClsWithArray.class.getName()).setField("arr", expArr).build();
 
-            for (int i = 0; i < 10; i++)
-                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrObj.field("arr")));
+            for (int i = 0; i < 10; i++) {
+                Object[] arrs;
+                if (useBinaryArrays)
+                    arrs = ((BinaryArray)arrObj.field("arr")).array();
+                else
+                    arrs = arrObj.field("arr");
+    
+                Assert.assertArrayEquals(i + " iteration", expArr, PlatformUtils.unwrapBinariesInArray(arrs));
+            }
         }
         finally {
             clearBinaryMeta();
