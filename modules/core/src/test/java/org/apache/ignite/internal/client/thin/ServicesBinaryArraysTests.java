@@ -15,27 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin.io;
+package org.apache.ignite.internal.client.thin;
 
-import java.nio.ByteBuffer;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Client connection: abstracts away sending and receiving messages.
- */
-public interface ClientConnection extends AutoCloseable {
-    /**
-     * Sends a message.
-     *
-     * @param msg Message buffer.
-     * @param onDone Callback to be invoked when asynchronous send operation completes.
-     */
-    void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException;
-
-    /**
-     * Closes the connection.
-     */
-    @Override void close();
+/** */
+public class ServicesBinaryArraysTests extends ServicesTest {
+    /** */
+    public ServicesBinaryArraysTests() {
+        useBinaryArrays = true;
+    }
 }
