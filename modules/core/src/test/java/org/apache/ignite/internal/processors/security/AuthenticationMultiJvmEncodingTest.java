@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,6 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /** Tests that authenticator is independent of default JVM character encoding. */
 public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
@@ -98,7 +99,7 @@ public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
         String login = "語";
         String pwd = "語";
 
-        try (AutoCloseable ignored = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"))) {
+        try (AutoCloseable ignored = withSecurityContextOnAllNodes(authenticate(grid(0), DFAULT_USER_NAME, "ignite"))) {
             grid(0).context().security().createUser(login, pwd.toCharArray());
         }
 
@@ -109,12 +110,13 @@ public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
         ) {
             ClientCache<Integer, Integer> cache = cli.cache(DEFAULT_CACHE_NAME);
 
-            Map<Integer, Integer> entries = new HashMap<>();
+            AtomicInteger keyCntr = new AtomicInteger();
 
-            for (int i = 0; i < 1000; i++)
-                entries.put(i, i);
+            for (ClusterNode node : grid(0).cluster().nodes()) {
+                int key = keyForNode(grid(0).affinity(DEFAULT_CACHE_NAME), keyCntr, node);
 
-            cache.putAll(entries);
+                cache.put(key, 0);
+            }
         }
     }
 }
