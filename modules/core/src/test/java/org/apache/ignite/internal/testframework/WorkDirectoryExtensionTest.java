@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.testframework;
 
+import static org.apache.ignite.internal.testframework.JunitExtensionTestUtils.assertExecutesSuccessfully;
+import static org.apache.ignite.internal.testframework.JunitExtensionTestUtils.assertExecutesWithFailure;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
-import static org.junit.platform.testkit.engine.EventConditions.finishedSuccessfully;
-import static org.junit.platform.testkit.engine.EventConditions.finishedWithFailure;
-import static org.junit.platform.testkit.engine.EventConditions.type;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
@@ -43,19 +41,14 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.junit.platform.testkit.engine.EngineExecutionResults;
-import org.junit.platform.testkit.engine.EngineTestKit;
-import org.junit.platform.testkit.engine.EventType;
 
 /**
  * Tests for the {@link WorkDirectoryExtension}.
  *
  * <p>This class uses an approach when several nested classes are executed manually on the JUnit test engine, because some test methods
  * should fail as part of these meta-tests. Nested classes are skipped by the surefire plugin and must not be executed during the build.
- *
- * @see <a href="https://junit.org/junit5/docs/current/user-guide/#testkit">JUnit Platform Test Kit</a>
  */
-public class WorkDirectoryExtensionTest {
+class WorkDirectoryExtensionTest {
     /**
      * Test class for the {@link #testStaticFieldInjection()} test.
      */
@@ -165,15 +158,11 @@ public class WorkDirectoryExtensionTest {
      */
     @Test
     void testDuplicateFieldAndParameterInjection() {
-        execute(ErrorParameterResolutionTest.class)
-                .testEvents()
-                .assertThatEvents()
-                .filteredOn(type(EventType.FINISHED))
-                .isNotEmpty()
-                .are(finishedWithFailure(
-                        instanceOf(ParameterResolutionException.class),
-                        message(m -> m.contains("there exists a field annotated with @WorkDirectory"))
-                ));
+        assertExecutesWithFailure(
+                ErrorParameterResolutionTest.class,
+                instanceOf(ParameterResolutionException.class),
+                message(m -> m.contains("there exists a field annotated with @WorkDirectory"))
+        );
     }
 
     /**
@@ -198,15 +187,11 @@ public class WorkDirectoryExtensionTest {
      */
     @Test
     void testDuplicateFieldInjection() {
-        execute(ErrorFieldInjectionTest.class)
-                .allEvents()
-                .assertThatEvents()
-                .filteredOn(finishedWithFailure())
-                .isNotEmpty()
-                .are(finishedWithFailure(
-                        instanceOf(IllegalStateException.class),
-                        message(m -> m.contains("Test class must have a single field of type"))
-                ));
+        assertExecutesWithFailure(
+                ErrorFieldInjectionTest.class,
+                instanceOf(IllegalStateException.class),
+                message(m -> m.contains("Test class must have a single field of type"))
+        );
     }
 
     /**
@@ -259,38 +244,17 @@ public class WorkDirectoryExtensionTest {
 
         @Disabled
         @Test
-        void test() {}
+        void test() {
+        }
     }
 
     /**
-     * Tests {@code WorkDirectoryExtension} lifecycle works correctly on a test class with all test methods being
-     * disabled.
+     * Tests {@code WorkDirectoryExtension} lifecycle works correctly on a test class with all test methods being disabled.
      *
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-15799">IGNITE-15799</a>
      */
     @Test
     void testEmptyClass() {
         assertExecutesSuccessfully(TestEmptyClass.class);
-    }
-
-    /**
-     * Executes the given test class on the test engine.
-     */
-    private static EngineExecutionResults execute(Class<?> testClass) {
-        return EngineTestKit.engine("junit-jupiter")
-                .selectors(selectClass(testClass))
-                .execute();
-    }
-
-    /**
-     * Executes the given test class and checks that it has run all its tests successfully.
-     */
-    private static void assertExecutesSuccessfully(Class<?> testClass) {
-        execute(testClass)
-                .allEvents()
-                .assertThatEvents()
-                .filteredOn(type(EventType.FINISHED))
-                .isNotEmpty()
-                .are(finishedSuccessfully());
     }
 }
