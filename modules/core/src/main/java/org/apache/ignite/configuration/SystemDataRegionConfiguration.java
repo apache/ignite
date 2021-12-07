@@ -29,10 +29,10 @@ public class SystemDataRegionConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
+    public static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
 
     /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
+    public static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Initial size of a memory chunk reserved for system cache. */
     private long initSize = DFLT_SYS_REG_INIT_SIZE;
