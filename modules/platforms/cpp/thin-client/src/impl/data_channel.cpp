@@ -168,19 +168,44 @@ namespace ignite
                 inStream.Position(4);
 
                 int64_t rspId = inStream.ReadInt64();
+                int16_t flags = inStream.ReadInt16();
 
+                if (flags & Flag::NOTIFICATION)
+                {
+                    common::concurrent::CsLockGuard lock(handlerMutex);
+
+                    NotificationHandlerHolder& holder = handlerMap[rspId];
+                    holder.ProcessNotification(msg);
+
+                    if (holder.IsProcessingComplete())
+                        handlerMap.erase(rspId);
+                }
+                else
                 {
                     common::concurrent::CsLockGuard lock(responseMutex);
 
                     ResponseMap::iterator it = responseMap.find(rspId);
 
-                    if (it!= responseMap.end())
+                    if (it != responseMap.end())
                     {
                         common::Promise<interop::SP_InteropMemory> rsp = it->second;
 
                         rsp.SetValue(msg);
+
+                        responseMap.erase(rspId);
                     }
                 }
+            }
+
+            void DataChannel::RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler)
+            {
+                common::concurrent::CsLockGuard lock(handlerMutex);
+
+                NotificationHandlerHolder& holder = handlerMap[notId];
+                holder.SetHandler(handler);
+
+                if (holder.IsProcessingComplete())
+                    handlerMap.erase(notId);
             }
 
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)

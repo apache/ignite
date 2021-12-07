@@ -36,6 +36,7 @@
 #include "impl/ignite_node.h"
 #include "impl/response_status.h"
 #include "impl/channel_state_handler.h"
+#include "impl/notification_handler.h"
 
 namespace ignite
 {
@@ -69,6 +70,9 @@ namespace ignite
 
                 /** Response map. */
                 typedef std::map< int64_t, common::Promise<interop::SP_InteropMemory> > ResponseMap;
+
+                /** Notification handler map. */
+                typedef std::map< int64_t, NotificationHandlerHolder > NotificationHandlerMap;
 
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
@@ -139,6 +143,13 @@ namespace ignite
                 void ProcessMessage(interop::SP_InteropMemory msg);
 
                 /**
+                 * Register handler for the notification.
+                 * @param notId Notification ID.
+                 * @param handler Handler.
+                 */
+                void RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler);
+
+                /**
                  * Get remote node.
                  * @return Node.
                  */
@@ -154,6 +165,21 @@ namespace ignite
                 uint64_t GetId() const
                 {
                     return id;
+                }
+
+                /**
+                 * Deserialize message received by this channel.
+                 * @tparam T Message type.
+                 * @param data Data.
+                 * @param msg Message.
+                 */
+                template<typename T>
+                void DeserializeMessage(interop::InteropMemory* data, T& msg)
+                {
+                    interop::InteropInputStream inStream(data);
+                    binary::BinaryReaderImpl reader(&inStream);
+
+                    msg.Read(reader, currentVersion);
                 }
 
             private:
@@ -265,6 +291,12 @@ namespace ignite
 
                 /** Responses. */
                 ResponseMap responseMap;
+
+                /** Notification handlers mutex. */
+                common::concurrent::CriticalSection handlerMutex;
+
+                /** Notification handlers. */
+                NotificationHandlerMap handlerMap;
             };
 
             /** Shared pointer type. */

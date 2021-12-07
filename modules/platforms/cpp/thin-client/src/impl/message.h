@@ -179,6 +179,24 @@ namespace ignite
             };
 
             /**
+             * Message flags.
+             */
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+
+                    /** Server notification flag. */
+                    NOTIFICATION = 1 << 2
+                };
+            };
+
+            /**
              * Request.
              */
             class Request
