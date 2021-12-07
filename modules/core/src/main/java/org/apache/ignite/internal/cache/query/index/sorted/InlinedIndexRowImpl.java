@@ -62,6 +62,8 @@ public class InlinedIndexRowImpl extends IndexRowImpl {
         int inlineSize) {
         super(rowHnd, row);
 
+        prepareCache();
+
         this.cgctx = cgctx;
         this.inlineSize = inlineSize;
         this.pageAddr = pageAddr;
@@ -107,7 +109,8 @@ public class InlinedIndexRowImpl extends IndexRowImpl {
      * @return IndexKey from inline, or {@code null} if key is not inlined.
      */
     private @Nullable IndexKey extractFromInline(int keyIdx) {
-        assert keyIdx == lastExtractedKeyIdx + 1 : "It's trying to extract key from inline in wrong order: " + keyIdx;
+        assert keyIdx == lastExtractedKeyIdx + 1 :
+            "It's trying to extract key from inline in wrong order: " + keyIdx + ". But last was " + lastExtractedKeyIdx;
 
         List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
 
