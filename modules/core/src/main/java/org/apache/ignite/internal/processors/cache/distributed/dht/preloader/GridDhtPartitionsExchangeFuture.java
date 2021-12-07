@@ -609,7 +609,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @param fut Exchange future that is used for getting nodes that are not applicable for rebalancing.
      */
-    public void markNodeAsInapplicableForRebalance(GridDhtPartitionsExchangeFuture fut) {
+    public void copyInapplicableNodesFrom(GridDhtPartitionsExchangeFuture fut) {
         fut.exclusionsFromFullRebalance.forEach((k, v) -> {
             v.forEach(p -> markNodeAsInapplicableForFullRebalance(k.get2(), k.get1(), p));
         });

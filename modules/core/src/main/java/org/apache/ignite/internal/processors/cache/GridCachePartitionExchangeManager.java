@@ -3300,7 +3300,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             assert fut.changedAffinity() :
                                 "Reassignment request started for exchange future which didn't change affinity " +
-                                    "[exchId=" + exchId + ", fut=" + exchFut + ']';
+                                    "[exchId=" + exchId + ", fut=" + fut + ']';
 
                             if (fut.hasInapplicableNodesForRebalance()) {
                                 GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
@@ -3311,8 +3311,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (fut.topologyVersion().equals(lastAffChangedVer))
                                     exchFut = fut;
                                 else if (lastAffChangedVer.after(exchId.topologyVersion())) {
+                                    exchId = lastFut.exchangeId();
+
                                     exchFut = lastFut;
-                                    exchFut.markNodeAsInapplicableForRebalance(fut);
+
+                                    exchFut.copyInapplicableNodesFrom(fut);
                                 }
                             }
                         }
@@ -3512,13 +3515,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 long rebId = cnt;
 
+                                final GridDhtPartitionExchangeId finalExchId = exchId;
                                 rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                                     @Override public void apply(IgniteInternalFuture<Boolean> f) {
                                         U.log(log, "Rebalancing scheduled [order=" + rebList +
                                             ", top=" + finalR.topologyVersion() +
                                             ", rebalanceId=" + rebId +
-                                            ", evt=" + exchId.discoveryEventName() +
-                                            ", node=" + exchId.nodeId() + ']');
+                                            ", evt=" + finalExchId.discoveryEventName() +
+                                            ", node=" + finalExchId.nodeId() + ']');
 
                                         finalR.requestPartitions();
                                     }
