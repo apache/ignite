@@ -1892,7 +1892,7 @@ namespace Apache.Ignite.Core.Tests.Services
             [SetUp]
             public override void SetUp()
             {
-                TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
+                TestUtils.UseBinaryArray = true;
 
                 base.SetUp();
             }

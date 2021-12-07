@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [TestFixtureSetUp]
         public override void FixtureSetUp()
         {
-            TestUtils.UseBinaryArray = !TestUtils.DfltUseBinaryArray;
+            TestUtils.UseBinaryArray = true;
 
             base.FixtureSetUp();
         }
