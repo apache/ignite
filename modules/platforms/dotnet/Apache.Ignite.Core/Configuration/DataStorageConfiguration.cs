@@ -237,8 +237,10 @@ namespace Apache.Ignite.Core.Configuration
             WalCompactionEnabled = reader.ReadBoolean();
             MaxWalArchiveSize = reader.ReadLong();
 
+#pragma warning disable 618
             SystemRegionInitialSize = reader.ReadLong();
             SystemRegionMaxSize = reader.ReadLong();
+#pragma warning restore 618
             PageSize = reader.ReadInt();
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
@@ -298,8 +300,10 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(WalCompactionEnabled);
             writer.WriteLong(MaxWalArchiveSize);
 
+#pragma warning disable 618
             writer.WriteLong(SystemRegionInitialSize);
             writer.WriteLong(SystemRegionMaxSize);
+#pragma warning restore 618
             writer.WriteInt(PageSize);
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);

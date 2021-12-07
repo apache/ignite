@@ -2059,12 +2059,12 @@
                         </xs:attribute>
                         <xs:attribute name="systemRegionInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Initial size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="systemRegionMaxSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Maximum size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Maximum size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="concurrencyLevel" type="xs:int">
