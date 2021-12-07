@@ -549,12 +549,14 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             if (val == REMOVED_FIELD_MARKER)
                 return null;
         }
-        else {
+        else if (reader != null) {
             ensureReadCacheInit();
 
             int fldId = ctx.fieldId(typeId, name);
 
             val = readCache.get(fldId);
+        } else {
+            return null;
         }
 
         return (T)BinaryUtils.unwrapLazy(val);
