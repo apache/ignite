@@ -52,12 +52,10 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         cfg.setAuthenticationEnabled(authEnabled);
 
-        if (!client) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(200L * 1024 * 1024)
-                    .setPersistenceEnabled(true)));
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(200L * 1024 * 1024)
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -126,7 +124,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * Checks that a new node cannot join a cluster with a different authentication enable state.
      *
      * @param client Is joining node client.
-     * @param authEnabled Whether authentication is enabled on server node, which accepts join of new node.
+     * @param authEnabled Whether authentication is enabled on joining node.
      * @throws Exception If failed.
      */
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
