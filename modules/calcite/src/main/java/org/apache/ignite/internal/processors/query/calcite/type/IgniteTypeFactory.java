@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
@@ -53,8 +55,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
     /** */
+    private final Charset charset;
+
+    /** */
     public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
+        this(IgniteTypeSystem.INSTANCE);
     }
 
     /**
@@ -62,6 +67,15 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
      */
     public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
         super(typeSystem);
+
+        if (SqlUtil.translateCharacterSetName(Charset.defaultCharset().name()) != null) {
+            // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
+            charset = Charset.defaultCharset();
+        }
+        else {
+            // If JVM default charset is not supported by Calcite - use UTF-8.
+            charset = StandardCharsets.UTF_8;
+        }
     }
 
     /** {@inheritDoc} */
@@ -233,8 +247,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public Charset getDefaultCharset() {
-        // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
-        return Charset.defaultCharset();
+        return charset;
     }
 
     /** {@inheritDoc} */
