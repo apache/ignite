@@ -34,7 +34,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
-/** Tests that authenticator is independent of default JVM characters encoding. */
+/** Tests that authenticator is independent of default JVM character encoding. */
 public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
     /** Character encoding name that will be applied to the next Ignite process start. */
     private String jvmCharacterEncoding;
@@ -75,8 +75,8 @@ public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  Tests scenario when Ignite cluster nodes run inside JVMs with different default charset encoding and user
-     *  login has different representation across all of them.
+     *  Tests scenario when Ignite cluster nodes run inside JVMs with different default character encoding and user
+     *  login has different byte representation across them.
      */
     @Test
     public void testMultipleJvmInstancesWithDifferentEncoding() throws Exception {
@@ -94,7 +94,7 @@ public class AuthenticationMultiJvmEncodingTest extends GridCommonAbstractTest {
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
-        // Here we use symbols that have different representation on started above nodes.
+        // Here we use symbols that have different byte representation in used above encodings.
         String login = "語";
         String pwd = "語";
 
