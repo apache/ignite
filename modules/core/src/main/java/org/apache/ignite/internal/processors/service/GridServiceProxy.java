@@ -476,10 +476,10 @@ public class GridServiceProxy<T> implements Serializable {
      * @param mtdName  Related method name.
      * @param target   Target to call and measure.
      */
-    private static Object measureCall(
+    private static <T> T measureCall(
         ServiceContextImpl srvCtx,
         String mtdName,
-        Callable<Object> target
+        Callable<T> target
     ) throws Exception {
         long startTime = System.nanoTime();
 
@@ -581,20 +581,29 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
+            if (ctx.isStatisticsEnabled())
+                return measureCall(ctx, mtdName, () -> callServiceAndUnmarshalResult(ctx, mtd));
+            else
+                return callServiceAndUnmarshalResult(ctx, mtd);
+        }
+
+        /** */
+        private byte[] callServiceAndUnmarshalResult(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             Object res;
 
-            if (ctx.service() instanceof PlatformService && mtd == null)
-                res = callPlatformService((PlatformService)ctx.service());
+            if (svcCtx.service() instanceof PlatformService && mtd == null)
+                res = callPlatformService(svcCtx);
             else
-                res = callService(ctx.service(), mtd);
+                res = callOrdinaryService(svcCtx, mtd);
 
             return U.marshal(ignite.configuration().getMarshaller(), res);
         }
 
         /** */
-        private Object callPlatformService(PlatformService srv) {
+        private Object callPlatformService(ServiceContextImpl svcCtx) {
             try {
-                return srv.invokeMethod(mtdName, false, true, args, callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
+                return ((PlatformService)svcCtx).invokeMethod(mtdName, false, true, args,
+                    callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
             }
             catch (PlatformNativeException ne) {
                 throw new ServiceProxyException(U.convertException(ne));
@@ -605,12 +614,12 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callService(Service srv, Method mtd) throws Exception {
+        private Object callOrdinaryService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return callServiceMethod(srv, mtd, args, callCtx);
+                return callServiceMethod(svcCtx.service(), mtd, args, callCtx);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
