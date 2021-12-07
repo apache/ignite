@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,6 +39,9 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Test for disabled {@link IgniteAuthenticationProcessor}.
  */
 public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTest {
+    /** Index of client node with disabled persistence in configuration. */
+    public static final int NO_PERSISTENCE_CLIENT_IDX = 9;
+
     /**
      * @param idx Node index.
      * @param authEnabled Authentication enabled.
@@ -52,10 +56,12 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         cfg.setAuthenticationEnabled(authEnabled);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(200L * 1024 * 1024)
-                .setPersistenceEnabled(true)));
+        if (idx != NO_PERSISTENCE_CLIENT_IDX) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(200L * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
+        }
 
         return cfg;
     }
@@ -124,7 +130,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * Checks that a new node cannot join a cluster with a different authentication enable state.
      *
      * @param client Is joining node client.
-     * @param authEnabled Whether authentication is enabled on joining node.
+     * @param authEnabled Whether authentication is enabled on server node, which accepts join of new node.
      * @throws Exception If failed.
      */
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
@@ -210,5 +216,21 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
             },
             IgniteCheckedException.class,
             "Invalid security configuration: both authentication is enabled and external security plugin is provided.");
+    }
+
+    /**
+     * Tests that client node with disabled persistence, but enabled authentication in configuration could start and
+     * join the cluster.
+     */
+    @Test
+    public void testClientNodeWithoutPersistence() throws Exception {
+        startGrid(configuration(0, true, false));
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        startGrid(configuration(NO_PERSISTENCE_CLIENT_IDX, true, true));
+
+        waitForTopology(2);
+
+        assertEquals("Unexpected client nodes count", 1, grid(0).cluster().forClients().nodes().size());
     }
 }
