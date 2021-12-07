@@ -622,7 +622,7 @@ public class ConfigurationNotificationsUtil {
 
                 for (String name : newNamedList.namedListKeys()) {
                     DynamicConfiguration<InnerNode, ?> newNodeCfg =
-                            (DynamicConfiguration<InnerNode, ?>) namedDynamicConfig(cfgNode, key).get(name);
+                            (DynamicConfiguration<InnerNode, ?>) namedDynamicConfig(cfgNode, key).getConfig(name);
 
                     configs.put(newNodeCfg.configType(), new ConfigurationContainer(name, newNodeCfg));
 

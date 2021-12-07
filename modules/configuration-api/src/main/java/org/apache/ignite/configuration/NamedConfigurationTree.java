@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration tree representing arbitrary set of named underlying configuration tree of the same type.
@@ -34,7 +35,7 @@ public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEWT>, 
      * @param name Name.
      * @return Configuration.
      */
-    T get(String name);
+    @Nullable T get(String name);
 
     /**
      * Add named-list-specific configuration values listener.

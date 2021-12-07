@@ -77,12 +77,24 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
 
     /** {@inheritDoc} */
     @Override
+    @Nullable
     public T get(String name) {
+        DynamicConfiguration<?, ?> config = getConfig(name);
+
+        return config == null ? null : (T) config.specificConfigTree();
+    }
+
+    /**
+     * Get a raw named config.
+     *
+     * @param name Name.
+     * @return Raw config.
+     */
+    @Nullable
+    public DynamicConfiguration<?, ?> getConfig(String name) {
         refreshValue();
 
-        ConfigurationProperty<?> configProperty = members.get(name);
-
-        return configProperty == null ? null : (T) ((DynamicConfiguration<?, ?>) configProperty).specificConfigTree();
+        return (DynamicConfiguration<?, ?>) members.get(name);
     }
 
     /** {@inheritDoc} */
