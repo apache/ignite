@@ -61,6 +61,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -592,7 +593,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
-                        H2Utils.bindParameters(stmt, args);
+                        // Convert parameters into BinaryObjects.
+                        Marshaller m = ctx.config().getMarshaller();
+                        byte[] paramsBytes = U.marshal(m, args.toArray(new Object[0]));
+                        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+                        Object[] params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+
+                        H2Utils.bindParameters(stmt, F.asList(params));
 
                         H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry);
 
