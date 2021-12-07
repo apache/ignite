@@ -585,25 +585,16 @@ public class GridServiceProxy<T> implements Serializable {
 
             if (ctx.service() instanceof PlatformService && mtd == null)
                 res = callPlatformService((PlatformService)ctx.service());
-                return callPlatformService(ctx, (PlatformService)ctx.service());
             else
                 res = callService(ctx.service(), mtd);
 
             return U.marshal(ignite.configuration().getMarshaller(), res);
-                return callService(ctx, mtd);
         }
 
         /** */
-        private Object callPlatformService(ServiceContextImpl svcCtx, PlatformService srv) {
+        private Object callPlatformService(PlatformService srv) {
             try {
-                if (svcCtx.isStatisticsEnabled()) {
-                    return measureCall(svcCtx, mtdName,
-                        () -> srv.invokeMethod(mtdName, false, true, args,
-                            callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null));
-                }
-
-                return srv.invokeMethod(mtdName, false, true, args,
-                    callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
+                return srv.invokeMethod(mtdName, false, true, args, callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
             }
             catch (PlatformNativeException ne) {
                 throw new ServiceProxyException(U.convertException(ne));
@@ -614,17 +605,12 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
+        private Object callService(Service srv, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                if (svcCtx.isStatisticsEnabled()) {
-                    return measureCall(svcCtx, mtd.getName(),
-                        () -> callServiceMethod(svcCtx.service(), mtd, args, callCtx));
-                }
-
-                return callServiceMethod(svcCtx.service(), mtd, args, callCtx);
+                return callServiceMethod(srv, mtd, args, callCtx);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
