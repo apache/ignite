@@ -74,6 +74,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultProperties(new DataRegionConfiguration());
             CheckDefaultProperties(new ClientConnectorConfiguration());
             CheckDefaultProperties(new SqlConnectorConfiguration());
+            CheckDefaultProperties(new SystemDataRegionConfiguration());
         }
 
         /// <summary>
@@ -624,14 +625,22 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
             Assert.AreEqual(DataStorageConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
 
-            Assert.AreEqual(SystemDataRegionConfiguration.DefaultInitialSize, cfg.SystemDataRegionConfiguration.InitialSize);
-            Assert.AreEqual(SystemDataRegionConfiguration.DefaultMaxSize, cfg.SystemDataRegionConfiguration.MaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalAutoArchiveAfterInactivity);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalForceArchiveTimeout);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">System Data Region Config.</param>
+        private static void CheckDefaultProperties(SystemDataRegionConfiguration cfg)
+        {
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
         }
 
         /// <summary>
