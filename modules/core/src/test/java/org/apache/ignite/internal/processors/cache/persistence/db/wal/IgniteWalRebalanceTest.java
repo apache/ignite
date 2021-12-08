@@ -527,7 +527,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         final GridCachePreloader preloader = demanderNode.cachex(CACHE_NAME).context().group().preloader();
 
         GridTestUtils.waitForCondition(() ->
-                ((GridDhtPartitionDemander.RebalanceFuture) preloader.rebalanceFuture()).topologyVersion().equals(curTopVer),
+                ((GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture()).topologyVersion().equals(curTopVer),
             getTestTimeout()
         );
 
