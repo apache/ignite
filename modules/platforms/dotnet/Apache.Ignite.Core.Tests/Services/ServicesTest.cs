@@ -1821,15 +1821,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Interop class.
-        /// </summary>
-        public class PlatformComputeBinarizable
-        {
-            /** */
-            public int Field { get; set; }
-        }
-
-        /// <summary>
         /// Class has no an equals class in Java.
         /// </summary>
         public class PlatformComputeBinarizable2
