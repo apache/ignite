@@ -994,7 +994,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestService(svc);
 
-            DoTestBinary(svc, binSvc);
+            DoTestBinary(svc, binSvc, isPlatform);
 
             if (!isPlatform)
                 DoTestJavaExceptions(svc, isClient);
@@ -1221,7 +1221,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tets binary methods in services.
         /// </summary>
-        private void DoTestBinary(IJavaService svc, IJavaService binSvc)
+        private void DoTestBinary(IJavaService svc, IJavaService binSvc, bool isPlatform)
         {
             // Binary collections
             var arr = new[] {10, 11, 12}.Select(
@@ -1241,7 +1241,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var bins = svc.testBinarizableArray(arr);
 
-            if (TestUtils.UseBinaryArray)
+            if (!isPlatform || TestUtils.UseBinaryArray)
                 Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
 
             Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
