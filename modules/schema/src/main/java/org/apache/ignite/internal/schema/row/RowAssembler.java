@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema.row;
 
+import static org.apache.ignite.internal.schema.BinaryRow.KEY_CHUNK_OFFSET;
 import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.KEY_FLAGS_OFFSET;
 import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.VAL_FLAGS_OFFSET;
 
@@ -30,7 +31,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.AssemblyException;
@@ -49,6 +49,7 @@ import org.apache.ignite.internal.schema.NumberNativeType;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.schema.TemporalNativeType;
+import org.apache.ignite.internal.util.HashUtils;
 
 /**
  * Utility class to build rows using column appending pattern. The external user of this class must consult with the schema and provide the
@@ -96,14 +97,13 @@ public class RowAssembler {
     /** Offset of data for current chunk. */
     private int dataOff;
 
-    /** Row hashcode. */
-    private int keyHash;
-
     /** Flags. */
     private short flags;
 
     /** Charset encoder for strings. Initialized lazily. */
     private CharsetEncoder strEncoder;
+
+    private int keyChunkLength;
 
     /**
      * Get total size of the varlen table.
@@ -302,13 +302,12 @@ public class RowAssembler {
 
         curCols = schema.keyColumns();
         curCol = 0;
-        keyHash = 0;
         strEncoder = null;
 
         int keyVartblLen = varTableChunkLength(keyVarlenCols, Integer.BYTES);
         valVartblLen = varTableChunkLength(valVarlenCols, Integer.BYTES);
 
-        initChunk(BinaryRow.KEY_CHUNK_OFFSET, curCols.nullMapSize(), keyVartblLen);
+        initChunk(KEY_CHUNK_OFFSET, curCols.nullMapSize(), keyVartblLen);
 
         final Columns valCols = schema.valueColumns();
 
@@ -336,10 +335,6 @@ public class RowAssembler {
 
         setNull(curCol);
 
-        if (isKeyChunk()) {
-            keyHash *= 31;
-        }
-
         shiftColumn(0);
 
         return this;
@@ -356,10 +351,6 @@ public class RowAssembler {
         checkType(NativeTypes.INT8);
 
         buf.put(curOff, val);
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Byte.hashCode(val);
-        }
 
         shiftColumn(NativeTypes.INT8.sizeInBytes());
 
@@ -378,10 +369,6 @@ public class RowAssembler {
 
         buf.putShort(curOff, val);
 
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Short.hashCode(val);
-        }
-
         shiftColumn(NativeTypes.INT16.sizeInBytes());
 
         return this;
@@ -398,10 +385,6 @@ public class RowAssembler {
         checkType(NativeTypes.INT32);
 
         buf.putInt(curOff, val);
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Integer.hashCode(val);
-        }
 
         shiftColumn(NativeTypes.INT32.sizeInBytes());
 
@@ -420,10 +403,6 @@ public class RowAssembler {
 
         buf.putLong(curOff, val);
 
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Long.hashCode(val);
-        }
-
         shiftColumn(NativeTypes.INT64.sizeInBytes());
 
         return this;
@@ -441,10 +420,6 @@ public class RowAssembler {
 
         buf.putFloat(curOff, val);
 
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Float.hashCode(val);
-        }
-
         shiftColumn(NativeTypes.FLOAT.sizeInBytes());
 
         return this;
@@ -461,10 +436,6 @@ public class RowAssembler {
         checkType(NativeTypes.DOUBLE);
 
         buf.putDouble(curOff, val);
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Double.hashCode(val);
-        }
 
         shiftColumn(NativeTypes.DOUBLE.sizeInBytes());
 
@@ -495,10 +466,6 @@ public class RowAssembler {
         byte[] bytes = val.toByteArray();
 
         buf.putBytes(curOff, bytes);
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Arrays.hashCode(bytes);
-        }
 
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
 
@@ -535,10 +502,6 @@ public class RowAssembler {
 
         buf.putBytes(curOff, bytes);
 
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Arrays.hashCode(bytes);
-        }
-
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
 
         curVartblEntry++;
@@ -560,10 +523,6 @@ public class RowAssembler {
 
         buf.putLong(curOff, uuid.getLeastSignificantBits());
         buf.putLong(curOff + 8, uuid.getMostSignificantBits());
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + uuid.hashCode();
-        }
 
         shiftColumn(NativeTypes.UUID.sizeInBytes());
 
@@ -587,10 +546,6 @@ public class RowAssembler {
 
             curVartblEntry++;
 
-            if (isKeyChunk()) {
-                keyHash = 31 * keyHash + val.hashCode();
-            }
-
             shiftColumn(written);
 
             return this;
@@ -610,10 +565,6 @@ public class RowAssembler {
         checkType(NativeTypes.BYTES);
 
         buf.putBytes(curOff, val);
-
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + Arrays.hashCode(val);
-        }
 
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
 
@@ -651,10 +602,6 @@ public class RowAssembler {
             buf.put(curOff + arr.length + i, (byte) 0);
         }
 
-        if (isKeyChunk()) {
-            keyHash = 31 * keyHash + bitSet.hashCode();
-        }
-
         shiftColumn(maskType.sizeInBytes());
 
         return this;
@@ -674,10 +621,6 @@ public class RowAssembler {
 
         writeDate(curOff, date);
 
-        if (isKeyChunk()) {
-            keyHash += 31 * keyHash + val.hashCode();
-        }
-
         shiftColumn(NativeTypes.DATE.sizeInBytes());
 
         return this;
@@ -696,10 +639,6 @@ public class RowAssembler {
         TemporalNativeType type = (TemporalNativeType) curCols.column(curCol).type();
 
         writeTime(buf, curOff, val, type);
-
-        if (isKeyChunk()) {
-            keyHash += 31 * keyHash + val.hashCode();
-        }
 
         shiftColumn(type.sizeInBytes());
 
@@ -722,10 +661,6 @@ public class RowAssembler {
 
         writeDate(curOff, date);
         writeTime(buf, curOff + 3, val.toLocalTime(), type);
-
-        if (isKeyChunk()) {
-            keyHash += 31 * keyHash + val.hashCode();
-        }
 
         shiftColumn(type.sizeInBytes());
 
@@ -752,11 +687,6 @@ public class RowAssembler {
         if (type.precision() != 0) {
             // Write only meaningful bytes.
             buf.putInt(curOff + 8, nanos);
-        }
-
-        if (isKeyChunk()) {
-            keyHash += 31 * keyHash + Long.hashCode(seconds);
-            keyHash += 31 * keyHash + Integer.hashCode(nanos);
         }
 
         shiftColumn(type.sizeInBytes());
@@ -799,8 +729,10 @@ public class RowAssembler {
             }
         }
 
+        int hash = HashUtils.hash32(buf.unwrap().array(), KEY_CHUNK_OFFSET, keyChunkLength, 0);
+
         buf.putShort(BinaryRow.FLAGS_FIELD_OFFSET, flags);
-        buf.putInt(BinaryRow.KEY_HASH_FIELD_OFFSET, keyHash);
+        buf.putInt(BinaryRow.KEY_HASH_FIELD_OFFSET, hash);
     }
 
     /**
@@ -935,7 +867,9 @@ public class RowAssembler {
         buf.putInt(baseOff, chunkLen);
 
         if (schema.keyColumns() == curCols) {
-            switchToValuChunk(BinaryRow.HEADER_SIZE + chunkLen);
+            keyChunkLength = chunkLen;
+
+            switchToValueChunk(BinaryRow.HEADER_SIZE + chunkLen);
         }
     }
 
@@ -945,7 +879,7 @@ public class RowAssembler {
      *
      * @param baseOff Chunk base offset.
      */
-    private void switchToValuChunk(int baseOff) {
+    private void switchToValueChunk(int baseOff) {
         // Switch key->value columns.
         curCols = schema.valueColumns();
         curCol = 0;
@@ -990,6 +924,6 @@ public class RowAssembler {
      * @return {@code true} if current chunk is a key chunk, {@code false} otherwise.
      */
     private boolean isKeyChunk() {
-        return baseOff == BinaryRow.KEY_CHUNK_OFFSET;
+        return baseOff == KEY_CHUNK_OFFSET;
     }
 }
