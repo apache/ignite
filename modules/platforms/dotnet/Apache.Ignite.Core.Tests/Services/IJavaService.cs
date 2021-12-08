@@ -211,9 +211,9 @@ namespace Apache.Ignite.Core.Tests.Services
         object testRoundtrip(object x);
 
         /** */
-        object contextAttribute(string name);
+        void sleep(long delayMs);
 
         /** */
-        void sleep(long delayMs);
+        object contextAttribute(string name);
     }
 }

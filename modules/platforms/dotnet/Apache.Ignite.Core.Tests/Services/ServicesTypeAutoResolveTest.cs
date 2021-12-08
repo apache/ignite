@@ -98,21 +98,21 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests .Net service invocation on remote node.
-        /// </summary>
-        [Test]
-        public void TestCallPlatformServiceRemote()
-        {
-            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
-        }
-
-        /// <summary>
         /// Tests .Net service invocation on local node.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceLocal()
         {
             DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
+        }
+
+        /// <summary>
+        /// Tests .Net service invocation on remote node.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceRemote()
+        {
+            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
