@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.AuthenticationMultiJvmEncodingTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -133,8 +132,7 @@ import org.junit.runners.Suite;
     MaintenanceModeNodeSecurityTest.class,
     DaemonNodeBasicSecurityTest.class,
     ServiceAuthorizationTest.class,
-    ServiceStaticConfigTest.class,
-    AuthenticationMultiJvmEncodingTest.class
+    ServiceStaticConfigTest.class
 })
 public class SecurityTestSuite {
     /** */

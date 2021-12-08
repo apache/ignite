@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -96,13 +97,13 @@ public class UserAuthenticateRequestMessage implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("name", name))
+                if (!writer.writeByteArray("name", BinaryUtils.strToUtf8Bytes(name)))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("passwd", passwd))
+                if (!writer.writeByteArray("passwd", BinaryUtils.strToUtf8Bytes(passwd)))
                     return false;
 
                 writer.incrementState();
@@ -129,7 +130,9 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                name = reader.readString("name");
+                byte[] nameBytes = reader.readByteArray("name");
+
+                name = BinaryUtils.utf8BytesToStr(nameBytes, 0, nameBytes.length);
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,7 +140,9 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                passwd = reader.readString("passwd");
+                byte[] pwdBytes = reader.readByteArray("passwd");
+
+                passwd = BinaryUtils.utf8BytesToStr( pwdBytes, 0, pwdBytes.length);
 
                 if (!reader.isLastRead())
                     return false;

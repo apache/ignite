@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.ReservationsOnDoneAfterTopologyUnlockFailTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.authentication.SqlUserCommandSelfTest;
+import org.apache.ignite.internal.processors.cache.authentication.UserCredentialsEncodingMultiJvmTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledQuerySelfTest;
@@ -612,6 +613,7 @@ import org.junit.runners.Suite;
     SqlUserCommandSelfTest.class,
     EncryptedSqlTableTest.class,
     EncryptedSqlTemplateTableTest.class,
+    UserCredentialsEncodingMultiJvmTest.class,
 
     // Partition loss.
     IndexingCachePartitionLossPolicySelfTest.class,
