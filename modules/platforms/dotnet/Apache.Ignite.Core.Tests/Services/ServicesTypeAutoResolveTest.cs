@@ -151,111 +151,106 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public void DoTestService(Func<String, IJavaService> svcProvider, bool isPlatform = false)
         {
-            try
+            string svcName;
+            if (isPlatform)
             {
-                string svcName;
-                if (isPlatform)
-                {
-                    svcName = PlatformSvcName;
+                svcName = PlatformSvcName;
 
-                    _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
-                }
-                else
-                    svcName = TestUtils.DeployJavaService(_grid1);
-
-                var svc = svcProvider.Invoke(svcName);
-
-                Assert.IsNull(svc.testDepartments(null));
-
-                var arr = new[] { "HR", "IT" }.Select(x => new Department() { Name = x }).ToList();
-
-                ICollection deps = svc.testDepartments(arr);
-
-                Assert.NotNull(deps);
-                Assert.AreEqual(1, deps.Count);
-                Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-
-                Assert.IsNull(svc.testAddress(null));
-
-                Address addr = svc.testAddress(new Address { Zip = "000", Addr = "Moscow" });
-
-                Assert.AreEqual("127000", addr.Zip);
-                Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
-
-                if (!isPlatform || TestUtils.UseBinaryArray)
-                {
-                    Assert.AreEqual(42, svc.testOverload(2, Emps));
-                    Assert.AreEqual(43, svc.testOverload(2, Param));
-                    Assert.AreEqual(3, svc.testOverload(1, 2));
-                    Assert.AreEqual(5, svc.testOverload(3, 2));
-                }
-
-
-                Assert.IsNull(svc.testEmployees(null));
-
-                var emps = svc.testEmployees(Emps);
-
-                if (!isPlatform || TestUtils.UseBinaryArray)
-                    Assert.AreEqual(typeof(Employee[]), emps.GetType());
-
-                Assert.NotNull(emps);
-                Assert.AreEqual(1, emps.Length);
-
-                Assert.AreEqual("Kyle Reese", emps[0].Fio);
-                Assert.AreEqual(3, emps[0].Salary);
-
-                Assert.IsNull(svc.testMap(null));
-
-                var map = new Dictionary<Key, Value>();
-
-                map.Add(new Key() { Id = 1 }, new Value() { Val = "value1" });
-                map.Add(new Key() { Id = 2 }, new Value() { Val = "value2" });
-
-                var res = svc.testMap(map);
-
-                Assert.NotNull(res);
-                Assert.AreEqual(1, res.Count);
-                Assert.AreEqual("value3", ((Value)res[new Key() { Id = 3 }]).Val);
-
-                var accs = svc.testAccounts();
-
-                if (!isPlatform || TestUtils.UseBinaryArray)
-                    Assert.AreEqual(typeof(Account[]), accs.GetType());
-
-                Assert.NotNull(accs);
-                Assert.AreEqual(2, accs.Length);
-                Assert.AreEqual("123", accs[0].Id);
-                Assert.AreEqual("321", accs[1].Id);
-                Assert.AreEqual(42, accs[0].Amount);
-                Assert.AreEqual(0, accs[1].Amount);
-
-                var users = svc.testUsers();
-
-                if (!isPlatform || TestUtils.UseBinaryArray)
-                    Assert.AreEqual(typeof(User[]), users.GetType());
-
-                Assert.NotNull(users);
-                Assert.AreEqual(2, users.Length);
-                Assert.AreEqual(1, users[0].Id);
-                Assert.AreEqual(ACL.ALLOW, users[0].Acl);
-
-                Assert.AreEqual("admin", users[0].Role.Name);
-                Assert.AreEqual(2, users[1].Id);
-                Assert.AreEqual(ACL.DENY, users[1].Acl);
-                Assert.AreEqual("user", users[1].Role.Name);
-
-                var users2 = svc.testRoundtrip(users);
-
-                Assert.NotNull(users2);
-
-                //TODO: check why ArrayList returned instead of array in userTypeArray=false mode.
-                if (TestUtils.UseBinaryArray)
-                    Assert.AreEqual(typeof(User[]), users2.GetType());
+                _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
             }
-            finally
+            else
+                svcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = svcProvider.Invoke(svcName);
+
+            Assert.IsNull(svc.testDepartments(null));
+
+            var arr = new[] { "HR", "IT" }.Select(x => new Department() { Name = x }).ToList();
+
+            ICollection deps = svc.testDepartments(arr);
+
+            Assert.NotNull(deps);
+            Assert.AreEqual(1, deps.Count);
+            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
+
+            Assert.IsNull(svc.testAddress(null));
+
+            Address addr = svc.testAddress(new Address { Zip = "000", Addr = "Moscow" });
+
+            Assert.AreEqual("127000", addr.Zip);
+            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
+
+            if (!isPlatform || TestUtils.UseBinaryArray)
             {
+                Assert.AreEqual(42, svc.testOverload(2, Emps));
+                Assert.AreEqual(43, svc.testOverload(2, Param));
+                Assert.AreEqual(3, svc.testOverload(1, 2));
+                Assert.AreEqual(5, svc.testOverload(3, 2));
+            }
+
+
+            Assert.IsNull(svc.testEmployees(null));
+
+            var emps = svc.testEmployees(Emps);
+
+            if (!isPlatform || TestUtils.UseBinaryArray)
+                Assert.AreEqual(typeof(Employee[]), emps.GetType());
+
+            Assert.NotNull(emps);
+            Assert.AreEqual(1, emps.Length);
+
+            Assert.AreEqual("Kyle Reese", emps[0].Fio);
+            Assert.AreEqual(3, emps[0].Salary);
+
+            Assert.IsNull(svc.testMap(null));
+
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() { Id = 1 }, new Value() { Val = "value1" });
+            map.Add(new Key() { Id = 2 }, new Value() { Val = "value2" });
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual("value3", ((Value)res[new Key() { Id = 3 }]).Val);
+
+            var accs = svc.testAccounts();
+
+            if (!isPlatform || TestUtils.UseBinaryArray)
+                Assert.AreEqual(typeof(Account[]), accs.GetType());
+
+            Assert.NotNull(accs);
+            Assert.AreEqual(2, accs.Length);
+            Assert.AreEqual("123", accs[0].Id);
+            Assert.AreEqual("321", accs[1].Id);
+            Assert.AreEqual(42, accs[0].Amount);
+            Assert.AreEqual(0, accs[1].Amount);
+
+            var users = svc.testUsers();
+
+            if (!isPlatform || TestUtils.UseBinaryArray)
+                Assert.AreEqual(typeof(User[]), users.GetType());
+
+            Assert.NotNull(users);
+            Assert.AreEqual(2, users.Length);
+            Assert.AreEqual(1, users[0].Id);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
+            Assert.AreEqual("admin", users[0].Role.Name);
+            Assert.AreEqual(2, users[1].Id);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
+            Assert.AreEqual("user", users[1].Role.Name);
+
+            var users2 = svc.testRoundtrip(users);
+
+            Assert.NotNull(users2);
+
+            //TODO: check why ArrayList returned instead of array in userTypeArray=false mode.
+            if (TestUtils.UseBinaryArray)
+                Assert.AreEqual(typeof(User[]), users2.GetType());
+
+            if (isPlatform)
                 _grid1.GetServices().Cancel(PlatformSvcName);
-            }
         }
 
         /// <summary>
