@@ -1282,9 +1282,9 @@ namespace Apache.Ignite.Core.Tests.Services
             var binArr = new[] {10, 11, 12}.Select(x =>
                 Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = x})).ToArray();
 
-            var binObjs = binSvc.testBinaryObjectArray(binArr).Select(x => x.GetField<int>("Field")).ToArray();
+            var binObjs = binSvc.testBinaryObjectArray(binArr);
 
-            Assert.AreEqual(new[] {11, 12, 13}, binObjs);
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")).ToArray());
 
             // Binary object
             Assert.AreEqual(15,

@@ -108,7 +108,6 @@ namespace Apache.Ignite.Core.Impl.Services
                 return (obj, args) => methods[0].Invoke(obj, args);
 
             // Try to search applicable without equality of all arguments.
-            // TODO: do we need to do it? Can we just invoke using standart reflection?
             methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters())).ToArray();
 
             if (methods.Length == 1)
