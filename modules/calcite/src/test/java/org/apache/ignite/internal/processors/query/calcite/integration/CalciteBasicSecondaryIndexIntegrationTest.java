@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.sql.Date;
 import java.util.LinkedHashMap;
-
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -27,12 +26,9 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -52,7 +48,7 @@ import static org.hamcrest.CoreMatchers.not;
 /**
  * Basic index tests.
  */
-public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
+public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String DEPID_IDX = "DEPID_IDX";
 
@@ -62,9 +58,15 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     private static final String NAME_DEPID_CITY_IDX = "NAME_DEPID_CITY_IDX";
 
+    /** */
+    private static final String DATE_IDX = "DATE_IDX";
+
+    /** */
+    private static final String NAME_DATE_IDX = "NAME_DATE_IDX";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite grid = startGridsMultiThreaded(2);
+        super.beforeTestsStarted();
 
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
@@ -97,7 +99,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
         CacheConfiguration<Integer, Developer> projCfg = cache(projEntity);
 
-        IgniteCache<Integer, Developer> devCache = grid.createCache(projCfg);
+        IgniteCache<Integer, Developer> devCache = client.createCache(projCfg);
 
         devCache.put(1, new Developer("Mozart", 3, "Vienna", 33));
         devCache.put(2, new Developer("Beethoven", 2, "Vienna", 44));
@@ -128,20 +130,52 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         devCache.put(22, new Developer("Prokofiev", 21, "", -1));
         devCache.put(23, new Developer("Musorgskii", 22, "", -1));
 
+        QueryEntity bdEntity = new QueryEntity();
+        bdEntity.setKeyType(Integer.class.getName());
+        bdEntity.setKeyFieldName("id");
+        bdEntity.setValueType(Birthday.class.getName());
+        bdEntity.addQueryField("id", Integer.class.getName(), null);
+        bdEntity.addQueryField("name", String.class.getName(), null);
+        bdEntity.addQueryField("birthday", Date.class.getName(), null);
+
+        QueryIndex dateIdx = new QueryIndex("birthday", true);
+        dateIdx.setName(DATE_IDX);
+
+        LinkedHashMap<String, Boolean> nameDateFields = new LinkedHashMap<>();
+        nameDateFields.put("name", false);
+        nameDateFields.put("birthday", false);
+        QueryIndex nameDateIdx = new QueryIndex(nameDateFields, QueryIndexType.SORTED);
+        nameDateIdx.setName(NAME_DATE_IDX);
+
+        bdEntity.setIndexes(asList(dateIdx, nameDateIdx));
+        bdEntity.setTableName("Birthday");
+
+        CacheConfiguration<Integer, Birthday> bdCfg = cache(bdEntity);
+
+        IgniteCache<Integer, Birthday> bdCache = client.createCache(bdCfg);
+
+        bdCache.put(1, new Birthday("Mozart", Date.valueOf("1756-01-27")));
+        bdCache.put(2, new Birthday("Beethoven", null));
+        bdCache.put(3, new Birthday("Bach", Date.valueOf("1685-03-31")));
+        bdCache.put(4, new Birthday("Strauss", Date.valueOf("1864-06-11")));
+        bdCache.put(5, new Birthday("Vagner", Date.valueOf("1813-05-22")));
+        bdCache.put(6, new Birthday("Chaikovsky", Date.valueOf("1840-05-07")));
+        bdCache.put(7, new Birthday("Verdy", Date.valueOf("1813-10-10")));
+
         IgniteCache<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer> tblWithAff =
-            grid.getOrCreateCache(new CacheConfiguration<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>()
-            .setName("TBL_WITH_AFF_KEY")
-            .setSqlSchema("PUBLIC")
-            .setBackups(1)
-            .setQueryEntities(F.asList(new QueryEntity(CalciteQueryProcessorTest.Key.class, CalciteQueryProcessorTest.Developer.class)
-            .setTableName("TBL_WITH_AFF_KEY")))
+            client.getOrCreateCache(new CacheConfiguration<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>()
+                .setName("TBL_WITH_AFF_KEY")
+                .setSqlSchema("PUBLIC")
+                .setBackups(1)
+                .setQueryEntities(F.asList(new QueryEntity(CalciteQueryProcessorTest.Key.class, CalciteQueryProcessorTest.Developer.class)
+                .setTableName("TBL_WITH_AFF_KEY")))
         );
 
         tblWithAff.put(new CalciteQueryProcessorTest.Key(1, 2), new CalciteQueryProcessorTest.Developer("Petr", 10));
         tblWithAff.put(new CalciteQueryProcessorTest.Key(2, 3), new CalciteQueryProcessorTest.Developer("Ivan", 11));
 
         IgniteCache<Integer, CalciteQueryProcessorTest.Developer> tblConstrPk =
-            grid.getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
+            client.getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
                 .setName("TBL_CONSTR_PK")
                 .setSqlSchema("PUBLIC")
                 .setBackups(0)
@@ -154,7 +188,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         tblConstrPk.put(1, new CalciteQueryProcessorTest.Developer("Petr", 10));
         tblConstrPk.put(2, new CalciteQueryProcessorTest.Developer("Ivan", 11));
 
-        GridQueryProcessor qryProc = ((IgniteEx)grid).context().query();
+        GridQueryProcessor qryProc = client.context().query();
 
         qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC.UNWRAP_PK" + " (F1 VARCHAR, F2 LONG, F3 LONG, F4 LONG, " +
             "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1\""), true).getAll();
@@ -172,13 +206,18 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        // Skip super method to keep caches after each test.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 
     /** */
-    private CacheConfiguration cache(QueryEntity ent) {
-        return new CacheConfiguration<>(ent.getTableName())
+    private <K, V> CacheConfiguration<K, V> cache(QueryEntity ent) {
+        return new CacheConfiguration<K, V>(ent.getTableName())
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
             .setQueryEntities(singletonList(ent))
@@ -466,6 +505,65 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedDateFieldEqualsFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE birthday = DATE '1813-05-22'")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", DATE_IDX))
+            .returns(5, "Vagner", Date.valueOf("1813-05-22"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedDateFieldEqualsParameterFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE birthday = ?")
+            .withParams(Date.valueOf("1813-05-22"))
+            .returns(5, "Vagner", Date.valueOf("1813-05-22"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedDateFieldGreaterThanFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE birthday > DATE '1813-05-22'")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", DATE_IDX))
+            .returns(4, "Strauss", Date.valueOf("1864-06-11"))
+            .returns(6, "Chaikovsky", Date.valueOf("1840-05-07"))
+            .returns(7, "Verdy", Date.valueOf("1813-10-10"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedDateFieldLessThanOrEqualFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE birthday <= DATE '1756-01-27'")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", DATE_IDX))
+            .returns(1, "Mozart", Date.valueOf("1756-01-27"))
+            .returns(3, "Bach", Date.valueOf("1685-03-31"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedDateFieldBetweenFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE birthday BETWEEN DATE '1756-01-27' AND DATE '1813-10-10'")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", DATE_IDX))
+            .returns(1, "Mozart", Date.valueOf("1756-01-27"))
+            .returns(5, "Vagner", Date.valueOf("1813-05-22"))
+            .returns(7, "Verdy", Date.valueOf("1813-10-10"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndexedNameDateFieldEqualsFilter() {
+        assertQuery("SELECT * FROM Birthday WHERE name = 'Vagner' AND birthday = DATE '1813-05-22'")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", NAME_DATE_IDX))
+            .returns(5, "Vagner", Date.valueOf("1813-05-22"))
             .check();
     }
 
@@ -958,13 +1056,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrderByNoIndexedColumn() {
-        assertQuery("SELECT * FROM Developer ORDER BY age DESC")
+        assertQuery("SELECT * FROM Developer ORDER BY age DESC, ID")
             .matches(containsAnyProject("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
             .returns(8, "Stravinsky", 7, "Spt", 89)
             .returns(7, "Verdy", 6, "Rankola", 88)
-            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
             .returns(5, "Vagner", 4, "Leipzig", 70)
+            .returns(9, "Rahmaninov", 8, "Starorussky ud", 70)
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(6, "Chaikovsky", 5, "Votkinsk", 53)
@@ -972,18 +1070,18 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(10, "Shubert", 9, "Vienna", 31)
-            .returns(14, "Rihter", 13, "", -1)
-            .returns(13, "Glass", 12, "", -1)
             .returns(12, "Einaudi", 11, "", -1)
-            .returns(20, "O'Halloran", 19, "", -1)
-            .returns(23, "Musorgskii", 22, "", -1)
+            .returns(13, "Glass", 12, "", -1)
+            .returns(14, "Rihter", 13, "", -1)
+            .returns(15, "Marradi", 14, "", -1)
+            .returns(16, "Zimmer", 15, "", -1)
+            .returns(17, "Hasaishi", 16, "", -1)
+            .returns(18, "Arnalds", 17, "", -1)
             .returns(19, "Yiruma", 18, "", -1)
+            .returns(20, "O'Halloran", 19, "", -1)
             .returns(21, "Cacciapaglia", 20, "", -1)
             .returns(22, "Prokofiev", 21, "", -1)
-            .returns(16, "Zimmer", 15, "", -1)
-            .returns(18, "Arnalds", 17, "", -1)
-            .returns(17, "Hasaishi", 16, "", -1)
-            .returns(15, "Marradi", 14, "", -1)
+            .returns(23, "Musorgskii", 22, "", -1)
             .ordered()
             .check();
     }
@@ -1021,15 +1119,6 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     /** */
-    private QueryChecker assertQuery(String qry) {
-        return new QueryChecker(qry) {
-            @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-            }
-        };
-    }
-
-    /** */
     private static class Developer {
         /** */
         String name;
@@ -1057,6 +1146,21 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
                 "name='" + name + '\'' +
                 ", ver=" + depId +
                 '}';
+        }
+    }
+
+    /** */
+    private static class Birthday {
+        /** */
+        String name;
+
+        /** */
+        Date birthday;
+
+        /** */
+        public Birthday(String name, Date birthday) {
+            this.name = name;
+            this.birthday = birthday;
         }
     }
 
