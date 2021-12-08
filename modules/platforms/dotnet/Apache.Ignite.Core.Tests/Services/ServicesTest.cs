@@ -1279,12 +1279,11 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testBinarizableArray(null));
 
             // Binary object array.
-            var binArr = new[] {10, 11, 12}.Select(x =>
-                Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = x})).ToArray();
+            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
 
             var binObjs = binSvc.testBinaryObjectArray(binArr);
 
-            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
 
             // Binary object
             Assert.AreEqual(15,
@@ -1887,7 +1886,7 @@ namespace Apache.Ignite.Core.Tests.Services
 #endif
 
         /// <summary> Tests with UseBinaryArray = true. </summary>
-        public class ServicesTestTypedArrays : ServicesTest
+        public class ServicesTestBinaryArrays : ServicesTest
         {
             [SetUp]
             public override void SetUp()

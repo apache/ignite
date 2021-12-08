@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// <summary>
     /// Tests for <see cref="IServicesClient"/>.
     /// </summary>
-    public class ServicesClientTestTypedArrays : ServicesClientTest
+    public class ServicesClientTestBinaryArrays : ServicesClientTest
     {
         /// <summary>Setup UseTypedArray flag value.</summary>
         [TestFixtureSetUp]

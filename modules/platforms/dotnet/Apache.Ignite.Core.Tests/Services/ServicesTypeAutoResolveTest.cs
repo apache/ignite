@@ -307,4 +307,27 @@ namespace Apache.Ignite.Core.Tests.Services
             };
         }
     }
+
+    /// <summary>
+    /// Tests checks ability to execute service method without explicit registration of parameter type.
+    /// </summary>
+    public class ServicesTypeAutoResolveTestBinaryArrays : ServicesTypeAutoResolveTest
+    {
+        /// <summary>Start grids and deploy test service.</summary>
+        [SetUp]
+        public override void SetUp()
+        {
+            TestUtils.UseBinaryArray = true;
+
+            base.SetUp();
+        }
+
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
+        {
+            base.FixtureTearDown();
+
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
+        }
+    }
 }

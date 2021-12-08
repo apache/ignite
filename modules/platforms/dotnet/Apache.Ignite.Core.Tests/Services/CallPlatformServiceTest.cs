@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Tests.Services
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>
-    public class CallPlatformServiceTestTypedArrays : CallPlatformServiceTest
+    public class CallPlatformServiceTestBinaryArrays : CallPlatformServiceTest
     {
         [SetUp]
         public override void SetUp()
@@ -362,5 +362,4 @@ namespace Apache.Ignite.Core.Tests.Services
             TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
-
 }
