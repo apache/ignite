@@ -54,6 +54,7 @@ import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.index.IndexDefinition;
 import org.apache.ignite.table.Table;
+import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,7 +121,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
      * Before each.
      */
     @BeforeEach
-    void beforeEach(TestInfo testInfo) throws Exception {
+    void beforeEach(TestInfo testInfo) {
         String metastorageNodeName = IgniteTestUtils.testNodeName(testInfo, 0);
 
         clusterNodes = IntStream.range(0, nodesBootstrapCfg.size()).mapToObj(value -> {
@@ -207,6 +208,51 @@ public class ItTablesApiTest extends IgniteAbstractTest {
         });
 
         assertNotNull(createTblIfNotExistsFut.get(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * Test scenario when we have lagged node, and tables with the same name are deleted and created again.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetTableFromLaggedNode() throws Exception {
+        clusterNodes.forEach(ign -> assertNull(ign.tables().table(TABLE_NAME)));
+
+        Ignite ignite0 = clusterNodes.get(0);
+
+        Ignite ignite1 = clusterNodes.get(1);
+
+        Table tbl = createTable(ignite0, SCHEMA, SHORT_TABLE_NAME);
+
+        Tuple tableKey = Tuple.create()
+                .set("key", 123L);
+
+        Tuple value = Tuple.create()
+                .set("valInt", 1234)
+                .set("valStr", "some string row");
+
+        tbl.keyValueView().put(null, tableKey, value);
+
+        assertEquals(value, tbl.keyValueView().get(null, tableKey));
+
+        assertEquals(value, ignite1.tables().table(TABLE_NAME).keyValueView().get(null, tableKey));
+
+        WatchListenerInhibitor ignite1Inhibitor = metastorageEventsInhibitor(ignite1);
+
+        ignite1Inhibitor.startInhibit();
+
+        Tuple otherValue = Tuple.create()
+                .set("valInt", 12345)
+                .set("valStr", "some other string row");
+
+        tbl.keyValueView().put(null, tableKey, otherValue);
+
+        assertEquals(otherValue, tbl.keyValueView().get(null, tableKey));
+
+        ignite1Inhibitor.stopInhibit();
+
+        assertEquals(otherValue, ignite1.tables().table(TABLE_NAME).keyValueView().get(null, tableKey));
     }
 
     /**
