@@ -32,7 +32,11 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTest
     {
+        /** Platform service name. */
         const string PlatformSvcName = "PlatformTestService";
+
+        /** Java service name. */
+        private string _javaSvcName;
 
         /** */
         protected internal static readonly Employee[] Emps = new[]
@@ -69,6 +73,9 @@ namespace Apache.Ignite.Core.Tests.Services
         public virtual void SetUp()
         {
             StartGrids();
+
+            _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            _javaSvcName = TestUtils.DeployJavaService(_grid1);
         }
 
         /// <summary>
@@ -77,6 +84,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [TearDown]
         public void TearDown()
         {
+            _grid1.GetServices().Cancel(PlatformSvcName);
+            _grid1.GetServices().Cancel(_javaSvcName);
+
             try
             {
                 _grid1.GetServices();
@@ -103,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
+            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
@@ -112,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
@@ -122,8 +132,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            DoTestService(name =>
-                new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(name, true)));
+            DoTestService(new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(_javaSvcName, true)));
         }
 
         /// <summary>
@@ -133,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name, false));
+            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
         }
 
         /// <summary>
@@ -143,26 +152,14 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
+            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
         }
 
         /// <summary>
         /// Tests service invocation.
         /// </summary>
-        public void DoTestService(Func<String, IJavaService> svcProvider, bool isPlatform = false)
+        public void DoTestService(IJavaService svc, bool isPlatform = false)
         {
-            string svcName;
-            if (isPlatform)
-            {
-                svcName = PlatformSvcName;
-
-                _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
-            }
-            else
-                svcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = svcProvider.Invoke(svcName);
-
             Assert.IsNull(svc.testDepartments(null));
 
             var arr = new[] { "HR", "IT" }.Select(x => new Department() { Name = x }).ToList();
