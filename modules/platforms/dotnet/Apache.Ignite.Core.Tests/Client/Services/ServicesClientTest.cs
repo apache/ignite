@@ -385,12 +385,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // Binary object.
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(
-                    Client.GetBinary().ToBinary<IBinaryObject>(new ServicesTest.PlatformComputeBinarizable {Field = 6}))
+                    Client.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
 
             // Binary object array.
             var arr  = new[] {10, 11, 12}.Select(
-                x => new ServicesTest.PlatformComputeBinarizable {Field = x}).ToArray();
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
 
             var binArr = arr.Select(Client.GetBinary().ToBinary<IBinaryObject>).ToArray();
 

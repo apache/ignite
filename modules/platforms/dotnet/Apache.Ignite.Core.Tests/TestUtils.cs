@@ -730,4 +730,13 @@ namespace Apache.Ignite.Core.Tests
             }
         }
     }
+
+    /// <summary>
+    /// Interop class.
+    /// </summary>
+    public class PlatformComputeBinarizable
+    {
+        /** */
+        public int Field { get; set; }
+    }
 }

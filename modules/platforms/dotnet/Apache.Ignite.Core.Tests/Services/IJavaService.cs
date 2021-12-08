@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Services
         int testParams(params object[] args);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x);
+        PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
         /** */
         object[] testBinarizableArrayOfObjects(object[] x);
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Services
         IBinaryObject[] testBinaryObjectArray(IBinaryObject[] x);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x);
+        PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
         /** */
         ICollection testBinarizableCollection(ICollection x);
