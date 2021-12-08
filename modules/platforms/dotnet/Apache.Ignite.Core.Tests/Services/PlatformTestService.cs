@@ -379,8 +379,7 @@ namespace Apache.Ignite.Core.Tests.Services
             for (int i = 0; i < x.Length; i++)
                 x[i] = x[i] == null
                     ? null
-                    : new PlatformComputeBinarizable
-                        {Field = ((PlatformComputeBinarizable) x[i]).Field + 1};
+                    : new PlatformComputeBinarizable {Field = ((PlatformComputeBinarizable) x[i]).Field + 1};
 
             return x;
         }
@@ -414,8 +413,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             foreach (var x in arg)
             {
-                res.Add(new PlatformComputeBinarizable
-                    {Field = ((PlatformComputeBinarizable) x).Field + 1});
+                res.Add(new PlatformComputeBinarizable {Field = ((PlatformComputeBinarizable) x).Field + 1});
             }
 
             return res;
