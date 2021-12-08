@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -39,9 +39,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Test for disabled {@link IgniteAuthenticationProcessor}.
  */
 public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTest {
-    /** Index of client node with disabled persistence in configuration. */
-    public static final int NO_PERSISTENCE_CLIENT_IDX = 9;
-
     /**
      * @param idx Node index.
      * @param authEnabled Authentication enabled.
@@ -56,12 +53,10 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         cfg.setAuthenticationEnabled(authEnabled);
 
-        if (idx != NO_PERSISTENCE_CLIENT_IDX) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(200L * 1024 * 1024)
-                    .setPersistenceEnabled(true)));
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(200L * 1024 * 1024)
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -224,13 +219,12 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     @Test
     public void testClientNodeWithoutPersistence() throws Exception {
-        startGrid(configuration(0, true, false));
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        startGrid(configuration(0, true, false))
+            .cluster().state(ACTIVE);
 
-        startGrid(configuration(NO_PERSISTENCE_CLIENT_IDX, true, true));
+        startGrid(configuration(1, true, true)
+            .setDataStorageConfiguration(null));
 
-        waitForTopology(2);
-
-        assertEquals("Unexpected client nodes count", 1, grid(0).cluster().forClients().nodes().size());
+        assertEquals("Unexpected cluster state", ACTIVE, grid(1).cluster().state());
     }
 }
