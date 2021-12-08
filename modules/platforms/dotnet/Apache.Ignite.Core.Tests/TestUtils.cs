@@ -764,14 +764,4 @@ namespace Apache.Ignite.Core.Tests
             }
         }
     }
-
-    public class PlatformComputeBinarizable
-    {
-        public int Field
-        {
-            get;
-            set;
-        }
-    }
 }
-
