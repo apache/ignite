@@ -66,9 +66,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _client;
 
         /** */
-        private IIgniteClient _thinClient;
-
-        /** */
         protected IIgnite[] Grids;
 
         /* Deploy Java service name. */
@@ -87,11 +84,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public virtual void SetUp()
         {
             StartGrids();
-
-            _thinClient = Ignition.StartClient(new IgniteClientConfiguration
-            {
-                Endpoints = new List<string> { IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort },
-            });
 
             Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
 
@@ -976,24 +968,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestCallPlatformServiceLocal()
         {
             DoAllServiceTests(Services, PlatformSvcName, false, true);
-        }
-
-        /// <summary>
-        /// Tests Java service invocation.
-        /// </summary>
-        [Test]
-        [Ignore("https://issues.apache.org/jira/browse/IGNITE-16083")]
-        public void TestCallJavaServiceThinClient()
-        {
-            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName);
-            var binSvc = _thinClient.GetServices() .WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName);
-
-            DoTestService(svc);
-
-            DoTestBinary(svc, binSvc);
-
-            DoTestJavaExceptions(svc, true);
         }
 
         /// <summary>

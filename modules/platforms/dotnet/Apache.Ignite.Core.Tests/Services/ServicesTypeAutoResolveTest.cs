@@ -40,9 +40,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /** Java service name. */
         private string _javaSvcName;
 
-        /** Thin client. */
-        private IIgniteClient _thinClient;
-
         /** */
         protected internal static readonly Employee[] Emps = new[]
         {
@@ -78,11 +75,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public virtual void SetUp()
         {
             StartGrids();
-
-            _thinClient = Ignition.StartClient(new IgniteClientConfiguration
-            {
-                Endpoints = new List<string> { IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort },
-            });
 
             _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
             _javaSvcName = TestUtils.DeployJavaService(_grid1);
@@ -136,16 +128,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests .Net service invocation with thin client.
-        /// </summary>
-        [Test]
-        [Ignore("https://issues.apache.org/jira/browse/IGNITE-16083")]
-        public void TestPlatformServiceThinClient()
-        {
-            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName));
-        }
-
-        /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Types should be resolved implicitly.
         /// </summary>
@@ -173,17 +155,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestJavaServiceRemote()
         {
             DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
-        }
-
-        /// <summary>
-        /// Tests Java service invocation with thin client.
-        /// Types should be resolved implicitly.
-        /// </summary>
-        [Test]
-        [Ignore("https://issues.apache.org/jira/browse/IGNITE-16083")]
-        public void TestJavaServiceThinClient()
-        {
-            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName));
         }
 
         /// <summary>
