@@ -1884,24 +1884,24 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 #endif
+    }
 
-        /// <summary> Tests with UseBinaryArray = true. </summary>
-        public class ServicesTestBinaryArrays : ServicesTest
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class ServicesTestBinaryArrays : ServicesTest
+    {
+        [SetUp]
+        public override void SetUp()
         {
-            [SetUp]
-            public override void SetUp()
-            {
-                TestUtils.UseBinaryArray = true;
+            TestUtils.UseBinaryArray = true;
 
-                base.SetUp();
-            }
+            base.SetUp();
+        }
 
-            [TestFixtureTearDown]
-            public override void FixtureTearDown()
-            {
-                base.FixtureTearDown();
-                TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-            }
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
+        {
+            base.FixtureTearDown();
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
 }
