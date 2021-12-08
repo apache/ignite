@@ -605,7 +605,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public override void FixtureSetUp()
         {
             TestUtils.UseBinaryArray = true;
-
             base.FixtureSetUp();
         }
 
@@ -614,7 +613,6 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public override void FixtureTearDown()
         {
             base.FixtureTearDown();
-
             TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }

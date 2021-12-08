@@ -350,7 +350,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void SetUp()
         {
             TestUtils.UseBinaryArray = true;
-
             base.SetUp();
         }
 
@@ -358,7 +357,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void TearDown()
         {
             base.TearDown();
-
             TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }

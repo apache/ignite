@@ -41,7 +41,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void SetUp()
         {
             TestUtils.UseBinaryArray = true;
-
             base.SetUp();
         }
 

@@ -22,8 +22,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -37,6 +39,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** Java service name. */
         private string _javaSvcName;
+
+        /** Thin client. */
+        private IIgniteClient _thinClient;
 
         /** */
         protected internal static readonly Employee[] Emps = new[]
@@ -74,6 +79,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             StartGrids();
 
+            _thinClient = Ignition.StartClient(new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> { IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort },
+            });
+
             _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
             _javaSvcName = TestUtils.DeployJavaService(_grid1);
         }
@@ -84,11 +94,11 @@ namespace Apache.Ignite.Core.Tests.Services
         [TearDown]
         public void TearDown()
         {
-            _grid1.GetServices().Cancel(PlatformSvcName);
-            _grid1.GetServices().Cancel(_javaSvcName);
-
             try
             {
+                _grid1.GetServices().Cancel(PlatformSvcName);
+                _grid1.GetServices().Cancel(_javaSvcName);
+
                 _grid1.GetServices();
 
                 TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1);
@@ -111,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests .Net service invocation on local node.
         /// </summary>
         [Test]
-        public void TestCallPlatformServiceLocal()
+        public void TestPlatformServiceLocal()
         {
             DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
@@ -120,9 +130,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests .Net service invocation on remote node.
         /// </summary>
         [Test]
-        public void TestCallPlatformServiceRemote()
+        public void TestPlatformServiceRemote()
         {
             DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+        }
+
+        /// <summary>
+        /// Tests .Net service invocation with thin client.
+        /// </summary>
+        [Test]
+        [Ignore("https://issues.apache.org/jira/browse/IGNITE-16083")]
+        public void TestPlatformServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName));
         }
 
         /// <summary>
@@ -130,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceDynamicProxy()
+        public void TestJavaServiceDynamicProxy()
         {
             DoTestService(new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(_javaSvcName, true)));
         }
@@ -140,7 +160,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceLocal()
+        public void TestJavaServiceLocal()
         {
             DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
         }
@@ -150,9 +170,20 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceRemote()
+        public void TestJavaServiceRemote()
         {
             DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with thin client.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        [Ignore("https://issues.apache.org/jira/browse/IGNITE-16083")]
+        public void TestJavaServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName));
         }
 
         /// <summary>
@@ -242,12 +273,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.NotNull(users2);
 
-            //TODO: check why ArrayList returned instead of array in userTypeArray=false mode.
             if (TestUtils.UseBinaryArray)
                 Assert.AreEqual(typeof(User[]), users2.GetType());
-
-            if (isPlatform)
-                _grid1.GetServices().Cancel(PlatformSvcName);
         }
 
         /// <summary>
@@ -310,7 +337,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void SetUp()
         {
             TestUtils.UseBinaryArray = true;
-
             base.SetUp();
         }
 
@@ -318,7 +344,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public override void FixtureTearDown()
         {
             base.FixtureTearDown();
-
             TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
     }
