@@ -214,17 +214,21 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     }
 
     /**
-     * Tests that client node with disabled persistence, but enabled authentication in configuration could start and
-     * join the cluster.
+     * Tests that client node configured with authentication but without persistence could start and join the cluster.
      */
     @Test
     public void testClientNodeWithoutPersistence() throws Exception {
         startGrid(configuration(0, true, false))
             .cluster().state(ACTIVE);
 
-        startGrid(configuration(1, true, true)
-            .setDataStorageConfiguration(null));
+        IgniteConfiguration clientCfg = configuration(1, true, true);
 
-        assertEquals("Unexpected cluster state", ACTIVE, grid(1).cluster().state());
+        clientCfg.getDataStorageConfiguration()
+            .getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(false);
+
+        startGrid(clientCfg);
+
+        assertEquals("Unexpected cluster size", 2, grid(1).cluster().nodes().size());
     }
 }
