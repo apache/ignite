@@ -16,26 +16,25 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
-/** */
-public interface ColumnDescriptor {
+/**
+ * Column descriptor for cache tables.
+ */
+public interface CacheColumnDescriptor extends ColumnDescriptor {
     /** */
-    String name();
-
-    /** */
-    int fieldIndex();
-
-    /** */
-    RelDataType logicalType(IgniteTypeFactory f);
+    public boolean field();
 
     /** */
-    Class<?> storageType();
+    public boolean key();
 
     /** */
-    boolean hasDefaultValue();
+    public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
+        throws IgniteCheckedException;
 
     /** */
-    Object defaultValue();
+    public void set(Object dst, Object val) throws IgniteCheckedException;
 }

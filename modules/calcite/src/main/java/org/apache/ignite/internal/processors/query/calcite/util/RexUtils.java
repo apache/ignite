@@ -287,7 +287,9 @@ public class RexUtils {
     public static List<RexNode> buildHashSearchRow(
         RelOptCluster cluster,
         RexNode condition,
-        RelDataType rowType
+        RelDataType rowType,
+        ImmutableBitSet requiredColumns,
+        boolean ignoreNotEqualPreds
     ) {
         condition = RexUtil.toCnf(builder(cluster), condition);
 
@@ -311,8 +313,12 @@ public class RexUtils {
                     assert idxOpSupports(cond) : cond;
                 }
 
-                if (pred.getOperator().kind != SqlKind.EQUALS)
-                    return null;
+                if (pred.getOperator().kind != SqlKind.EQUALS) {
+                    if (ignoreNotEqualPreds)
+                        continue;
+                    else // Only EQUALS predicates allowed in condition.
+                        return null;
+                }
 
                 if (searchPreds == null)
                     searchPreds = new ArrayList<>();
@@ -324,7 +330,12 @@ public class RexUtils {
         if (searchPreds == null)
             return null;
 
-        return asBound(cluster, searchPreds, rowType, null);
+        Mappings.TargetMapping mapping = null;
+
+        if (requiredColumns != null)
+            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
+
+        return asBound(cluster, searchPreds, rowType, mapping);
     }
 
     /** */

@@ -16,26 +16,17 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+/**
+ * Ignite cache-based table.
+ */
+public interface IgniteCacheTable extends IgniteTable {
+    /**
+     * @return Table description.
+     */
+    @Override CacheTableDescriptor descriptor();
 
-/** */
-public interface ColumnDescriptor {
-    /** */
-    String name();
-
-    /** */
-    int fieldIndex();
-
-    /** */
-    RelDataType logicalType(IgniteTypeFactory f);
-
-    /** */
-    Class<?> storageType();
-
-    /** */
-    boolean hasDefaultValue();
-
-    /** */
-    Object defaultValue();
+    /**
+     * Start cache context for lazy caches.
+     */
+    void ensureCacheStarted();
 }

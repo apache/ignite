@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -199,11 +199,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
-                ImmutableBitSet requiredColunms
+                ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
-                    row(execCtx, requiredColunms, 0, "Igor", 0),
-                    row(execCtx, requiredColunms, 1, "Roman", 0)
+                    row(execCtx, requiredColumns, 0, "Igor", 0),
+                    row(execCtx, requiredColumns, 1, "Roman", 0)
                 );
             }
 
@@ -227,11 +227,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
-                ImmutableBitSet requiredColunms
+                ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
-                    row(execCtx, requiredColunms, 0, "Calcite", 1),
-                    row(execCtx, requiredColunms, 1, "Ignite", 1)
+                    row(execCtx, requiredColumns, 0, "Calcite", 1),
+                    row(execCtx, requiredColumns, 1, "Ignite", 1)
                 );
             }
 
@@ -446,14 +446,14 @@ public class PlannerTest extends AbstractPlannerTest {
                 ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> rowTransformer,
-                ImmutableBitSet requiredColunms
+                ImmutableBitSet requiredColumns
             ) {
                 List<Row> checkRes0 = new ArrayList<>();
 
                 for (int i = 0; i < 10; ++i) {
                     int col = ThreadLocalRandom.current().nextInt(1_000);
 
-                    Row r = row(execCtx, requiredColunms, col, col);
+                    Row r = row(execCtx, requiredColumns, col, col);
 
                     if (rowTransformer != null)
                         r = rowTransformer.apply(r);
@@ -1228,7 +1228,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        emp.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
+        emp.addIndex(new CacheIndexImpl(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
 
         TestTable dept = new TestTable(
             new RelDataTypeFactory.Builder(f)
@@ -1241,7 +1241,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        dept.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
+        dept.addIndex(new CacheIndexImpl(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

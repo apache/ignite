@@ -22,6 +22,7 @@ import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -99,4 +100,12 @@ public interface SchemaChangeListener {
      * @param method Public static method, implementing this function.
      */
     public void onFunctionCreated(String schemaName, String name, Method method);
+
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     * @param sysView System view.
+     */
+    public void onSystemViewCreated(String schemaName, SystemView<?> sysView);
 }

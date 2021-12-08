@@ -23,6 +23,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 
 /**
@@ -46,7 +47,7 @@ class SchemaManager implements GridQuerySchemaManager {
         if (schema == null)
             return null;
 
-        IgniteTable tbl = (IgniteTable)schema.getTable(tableName);
+        IgniteCacheTable tbl = (IgniteCacheTable)schema.getTable(tableName);
 
         return tbl == null ? null : tbl.descriptor().typeDescription();
     }
@@ -61,8 +62,8 @@ class SchemaManager implements GridQuerySchemaManager {
         for (String tableName : schema.getTableNames()) {
             Table tbl = schema.getTable(tableName);
 
-            if (tbl instanceof IgniteTable && ((IgniteTable)tbl).getIndex(idxName) != null)
-                return ((IgniteTable)tbl).descriptor().typeDescription();
+            if (tbl instanceof IgniteCacheTable && ((IgniteTable)tbl).getIndex(idxName) != null)
+                return ((IgniteCacheTable)tbl).descriptor().typeDescription();
         }
 
         return null;
@@ -75,8 +76,10 @@ class SchemaManager implements GridQuerySchemaManager {
         if (schema == null)
             return null;
 
-        IgniteTable tbl = (IgniteTable)schema.getTable(tableName);
+        Table tbl = schema.getTable(tableName);
 
-        return tbl == null ? null : (GridCacheContextInfo<K, V>)tbl.descriptor().cacheInfo();
+        IgniteCacheTable cachetbl = tbl instanceof IgniteCacheTable ? (IgniteCacheTable)tbl : null;
+
+        return cachetbl == null ? null : (GridCacheContextInfo<K, V>)cachetbl.descriptor().cacheInfo();
     }
 }

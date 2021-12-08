@@ -20,58 +20,57 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
+import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
-import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Ignite table implementation.
+ * Ignite table implementation for system views.
  */
-public class IgniteTableImpl extends AbstractTable implements IgniteTable {
-    /** */
-    private final TableDescriptor desc;
+public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
+    /** Default row count approximation. */
+    private static final Double DEFAULT_ROW_COUNT_APPROXIMATION = 1000d;
 
     /** */
-    private final GridKernalContext ctx;
+    private final SystemViewTableDescriptorImpl<?> desc;
 
     /** */
-    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
+    private final Map<String, IgniteIndex> indexes;
 
     /** */
-    private volatile GridH2Table tbl;
+    private final Statistic statistic;
 
     /**
-     * @param ctx Kernal context.
      * @param desc Table descriptor.
      */
-    public IgniteTableImpl(GridKernalContext ctx, TableDescriptor desc) {
-        this.ctx = ctx;
+    public SystemViewTableImpl(SystemViewTableDescriptorImpl<?> desc) {
         this.desc = desc;
+        statistic = new StatisticsImpl();
+
+        if (desc.isFiltrable()) {
+            IgniteIndex idx = new SystemViewIndexImpl(this);
+
+            indexes = Collections.singletonMap(idx.name(), idx);
+        }
+        else
+            indexes = Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -81,25 +80,11 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
-
-        final String tblName = desc.typeDescription().tableName();
-        final String schemaName = desc.typeDescription().schemaName();
-
-        ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
-            new StatisticsKey(schemaName, tblName));
-
-        if (statistics != null)
-            return new IgniteStatisticsImpl(statistics);
-
-        if (tbl == null)
-            tbl = idx.schemaManager().dataTable(schemaName, tblName);
-
-        return new IgniteStatisticsImpl(tbl);
+        return statistic;
     }
 
     /** {@inheritDoc} */
-    @Override public TableDescriptor descriptor() {
+    @Override public SystemViewTableDescriptorImpl<?> descriptor() {
         return desc;
     }
 
@@ -115,35 +100,14 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogicalIndexScan toRel(
-        RelOptCluster cluster,
-        RelOptTable relOptTbl,
-        String idxName,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
-    }
-
-    /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
+        ColocationGroup grp,
         Predicate<Row> filter,
         Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet usedColumns) {
-        UUID localNodeId = execCtx.localNodeId();
-
-        if (group.nodeIds().contains(localNodeId))
-            return new TableScan<>(execCtx, desc, group.partitions(localNodeId), filter, rowTransformer, usedColumns);
-
-        return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
-        return desc.distribution();
+        @Nullable ImmutableBitSet usedColumns
+    ) {
+        return new SystemViewScan<>(execCtx, desc, null, filter, rowTransformer, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -152,13 +116,18 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return desc.distribution();
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, IgniteIndex> indexes() {
-        return Collections.unmodifiableMap(indexes);
+        return indexes;
     }
 
     /** {@inheritDoc} */
     @Override public void addIndex(IgniteIndex idxTbl) {
-        indexes.put(idxTbl.name(), idxTbl);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -168,7 +137,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public void removeIndex(String idxName) {
-        indexes.remove(idxName);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -179,18 +148,21 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         return super.unwrap(aCls);
     }
 
-    /**
-     * Start cache context for lazy caches.
-     */
-    public void ensureCacheStarted() {
-        if (desc.cacheContext() == null) {
-            try {
-                ctx.cache().dynamicStartCache(null, desc.cacheInfo().config().getName(), null,
-                    false, true, true).get();
-            }
-            catch (IgniteCheckedException ex) {
-                throw U.convertException(ex);
-            }
+    /** {@inheritDoc} */
+    @Override public boolean isModifiable() {
+        return false;
+    }
+
+    /** */
+    private static class StatisticsImpl implements Statistic {
+        /** {@inheritDoc} */
+        @Override public Double getRowCount() {
+            return DEFAULT_ROW_COUNT_APPROXIMATION;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelCollation> getCollations() {
+            return ImmutableList.of(); // Required not null.
         }
     }
 }

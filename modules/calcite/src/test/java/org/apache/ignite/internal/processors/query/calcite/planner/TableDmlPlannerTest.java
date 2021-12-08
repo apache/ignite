@@ -24,7 +24,7 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
@@ -75,7 +75,7 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     public void insertCachesIndexScan() throws Exception {
         TestTable tbl = createTable("TEST", IgniteDistributions.random(), "VAL", Integer.class);
 
-        tbl.addIndex(new IgniteIndex(RelCollations.of(0), "IDX", null, tbl));
+        tbl.addIndex(new CacheIndexImpl(RelCollations.of(0), "IDX", null, tbl));
 
         IgniteSchema schema = createSchema(tbl);
 
@@ -126,7 +126,7 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     public void updateNotCachesNonDependentIndexScan() throws Exception {
         TestTable tbl = createTable("TEST", IgniteDistributions.random(), "VAL", Integer.class, "IDX_VAL", Integer.class);
 
-        tbl.addIndex(new IgniteIndex(RelCollations.of(1), "IDX", null, tbl));
+        tbl.addIndex(new CacheIndexImpl(RelCollations.of(1), "IDX", null, tbl));
 
         IgniteSchema schema = createSchema(tbl);
 
@@ -149,7 +149,7 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     public void updateCachesDependentIndexScan() throws Exception {
         TestTable tbl = createTable("TEST", IgniteDistributions.random(), "VAL", Integer.class);
 
-        tbl.addIndex(new IgniteIndex(RelCollations.of(0), "IDX", null, tbl));
+        tbl.addIndex(new CacheIndexImpl(RelCollations.of(0), "IDX", null, tbl));
 
         IgniteSchema schema = createSchema(tbl);
 

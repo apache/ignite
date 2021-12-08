@@ -32,7 +32,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -125,7 +125,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         tbl1 = new TestTable(tbl1rt)
             .setDistribution(IgniteDistributions.affinity(0, "TBL1", "hash"));
 
-        tbl1.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl1));
+        tbl1.addIndex(new CacheIndexImpl(RelCollations.of(0), "PK", null, tbl1));
 
         for (RelDataTypeField field : tbl1rt.getFieldList()) {
             if (field.getIndex() == 0)
@@ -134,12 +134,12 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
             int idx = field.getIndex();
             String name = getIdxName(1, field.getName().toUpperCase());
 
-            tbl1.addIndex(new IgniteIndex(RelCollations.of(idx), name, null, tbl1));
+            tbl1.addIndex(new CacheIndexImpl(RelCollations.of(idx), name, null, tbl1));
         }
 
         tbl4 = new TestTable(tbl1rt)
             .setDistribution(IgniteDistributions.affinity(0, "TBL4", "hash"));
-        tbl4.addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, tbl1));
+        tbl4.addIndex(new CacheIndexImpl(RelCollations.of(0), "PK", null, tbl1));
 
         for (RelDataTypeField field : tbl1rt.getFieldList()) {
             if (field.getIndex() == 0)
@@ -148,10 +148,10 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
             int idx = field.getIndex();
             String name = getIdxName(4, field.getName().toUpperCase());
 
-            tbl4.addIndex(new IgniteIndex(RelCollations.of(idx), name, null, tbl4));
+            tbl4.addIndex(new CacheIndexImpl(RelCollations.of(idx), name, null, tbl4));
         }
 
-        tbl4.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(6, 7)), "TBL4_SHORT_LONG", null, tbl4));
+        tbl4.addIndex(new CacheIndexImpl(RelCollations.of(ImmutableIntList.of(6, 7)), "TBL4_SHORT_LONG", null, tbl4));
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
         colStat1.put("T1C1INT", new ColumnStatistics(ValueInt.get(1), ValueInt.get(1000),

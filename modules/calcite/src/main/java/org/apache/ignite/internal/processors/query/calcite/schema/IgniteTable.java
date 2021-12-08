@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
@@ -32,7 +31,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +42,7 @@ public interface IgniteTable extends TranslatableTable {
     /**
      * @return Table description.
      */
-    TableDescriptor descriptor();
+    TableDescriptor<?> descriptor();
 
     /** {@inheritDoc} */
     default @Override RelDataType getRowType(RelDataTypeFactory typeFactory) {
@@ -77,26 +75,6 @@ public interface IgniteTable extends TranslatableTable {
     IgniteLogicalTableScan toRel(
         RelOptCluster cluster,
         RelOptTable relOptTbl,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    );
-
-    /**
-     * Converts table into relational expression.
-     *
-     * @param cluster Custer.
-     * @param relOptTbl Table.
-     * @param idxName Index name.
-     * @param proj List of required projections.
-     * @param cond Conditions to filter rows.
-     * @param requiredColumns Set of columns to extract from original row.
-     * @return Table relational expression.
-     */
-    IgniteLogicalIndexScan toRel(
-        RelOptCluster cluster,
-        RelOptTable relOptTbl,
-        String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
@@ -154,9 +132,13 @@ public interface IgniteTable extends TranslatableTable {
      */
     IgniteIndex getIndex(String idxName);
 
-
     /**
      * @param idxName Index name.
      */
     void removeIndex(String idxName);
+
+    /**
+     * Is table modifiable.
+     */
+    boolean isModifiable();
 }

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,7 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTab
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -191,7 +190,9 @@ public class DdlCommandHandler {
             return;
         }
 
-        String cacheName = ((IgniteTable)tbl).descriptor().cacheInfo().name();
+        assert tbl instanceof IgniteCacheTable : tbl;
+
+        String cacheName = ((IgniteCacheTable)tbl).descriptor().cacheInfo().name();
 
         security.authorize(cacheName, SecurityPermission.CACHE_DESTROY);
 

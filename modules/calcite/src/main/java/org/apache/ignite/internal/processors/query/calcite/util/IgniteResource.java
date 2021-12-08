@@ -55,4 +55,8 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Illegal value ''{0}''. The value must be IgniteUuid")
     Resources.ExInst<SqlValidatorException> illegalIgniteUuid(String value);
+
+    /** */
+    @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
+    Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
 }
