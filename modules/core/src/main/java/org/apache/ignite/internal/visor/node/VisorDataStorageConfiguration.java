@@ -146,8 +146,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     public VisorDataStorageConfiguration(DataStorageConfiguration cfg) {
         assert cfg != null;
 
-        sysRegionInitSize = cfg.getSystemRegionInitialSize();
-        sysRegionMaxSize = cfg.getSystemRegionMaxSize();
+        sysRegionInitSize = cfg.getSystemDataRegionConfiguration().getInitialSize();
+        sysRegionMaxSize = cfg.getSystemDataRegionConfiguration().getMaxSize();
         pageSize = cfg.getPageSize();
         concLvl = cfg.getConcurrencyLevel();
 

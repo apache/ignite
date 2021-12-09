@@ -1924,6 +1924,23 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="systemDataRegionConfiguration">
+                                <xs:annotation>
+                                    <xs:documentation>System data region configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="initialSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Initial size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="storagePath" type="xs:string">
                             <xs:annotation>
@@ -2042,12 +2059,12 @@
                         </xs:attribute>
                         <xs:attribute name="systemRegionInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Initial size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="systemRegionMaxSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Maximum size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Maximum size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="concurrencyLevel" type="xs:int">
