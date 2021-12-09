@@ -74,6 +74,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultProperties(new DataRegionConfiguration());
             CheckDefaultProperties(new ClientConnectorConfiguration());
             CheckDefaultProperties(new SqlConnectorConfiguration());
+            CheckDefaultProperties(new SystemDataRegionConfiguration());
         }
 
         /// <summary>
@@ -624,14 +625,22 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
             Assert.AreEqual(DataStorageConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
 
-            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionInitialSize, cfg.SystemRegionInitialSize);
-            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalAutoArchiveAfterInactivity);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalForceArchiveTimeout);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">System Data Region Config.</param>
+        private static void CheckDefaultProperties(SystemDataRegionConfiguration cfg)
+        {
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
         }
 
         /// <summary>
@@ -886,8 +895,6 @@ namespace Apache.Ignite.Core.Tests
                     MetricsRateTimeInterval = TimeSpan.FromSeconds(9),
                     CheckpointWriteOrder = Configuration.CheckpointWriteOrder.Random,
                     WriteThrottlingEnabled = true,
-                    SystemRegionInitialSize = 64 * 1024 * 1024,
-                    SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
@@ -924,6 +931,11 @@ namespace Apache.Ignite.Core.Tests
                             MetricsSubIntervalCount = 7,
                             SwapPath = PathUtils.GetTempDirectoryName()
                         }
+                    },
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration
+                    {
+                        InitialSize = 64 * 1024 * 1024,
+                        MaxSize = 128 * 1024 * 1024,
                     }
                 },
                 AuthenticationEnabled = false,
