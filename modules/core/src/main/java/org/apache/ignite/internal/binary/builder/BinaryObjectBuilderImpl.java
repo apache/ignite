@@ -555,9 +555,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int fldId = ctx.fieldId(typeId, name);
 
             val = readCache.get(fldId);
-        } else {
-            return null;
         }
+        else
+            return null;
 
         return (T)BinaryUtils.unwrapLazy(val);
     }

@@ -1978,34 +1978,27 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      * @throws Exception If fails
      */
     @Test
-    public void testGetFieldForNotAssignedValInEmptyBuilder() {
+    public void testGetNotAssignedFieldInEmptyBuilder() {
         BinaryObjectBuilder builder = binaries().builder("SomeType")
                 .setField("w", "wewe");
 
-        String fieldValue = builder.getField("field");
-        String wValue = builder.getField("w");
-
-        assertNull(fieldValue);
-        assertEquals("wewe", wValue);
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
     }
 
     /**
      * @throws Exception If fails
      */
     @Test
-    public void testGetFieldForNotAssignedValInBuilder() {
+    public void testGetNotAssignedFieldInBuilder() {
         GridBinaryTestClasses.TestObjectContainer testObjectContainer = new GridBinaryTestClasses.TestObjectContainer();
         testObjectContainer.foo = "binaryCachedValue";
         BinaryObjectBuilderImpl builder = wrap(testObjectContainer);
         builder.setField("w", "wewe");
 
-        String fieldValue = builder.getField("field");
-        String wValue = builder.getField("w");
-        String fooValue = builder.getField("foo");
-
-        assertNull(fieldValue);
-        assertEquals("wewe", wValue);
-        assertEquals("binaryCachedValue", fooValue);
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
+        assertEquals("binaryCachedValue", builder.getField("foo"));
     }
 
     /**
