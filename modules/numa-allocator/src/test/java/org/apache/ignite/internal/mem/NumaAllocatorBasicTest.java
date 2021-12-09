@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.mem;
 
-import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,30 +62,44 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Parameterized.Parameters(name = "allocationStrategy={0}")
+    @Parameterized.Parameters(name = "allocationStrategy={0}, defaultConfig={1}")
     public static Iterable<Object[]> data() {
-        return Arrays.asList(
-            new Object[] {new LocalNumaAllocationStrategy()},
-            new Object[] {new InterleavedNumaAllocationStrategy(IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT)
-                .toArray())},
-            new Object[] {new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1)}
-        );
+        return Stream.of(
+            new LocalNumaAllocationStrategy(),
+            new InterleavedNumaAllocationStrategy(IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT).toArray()),
+            new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1)
+            )
+            .flatMap(strategy -> Stream.of(new Object[]{strategy, true}, new Object[]{strategy, false}))
+            .collect(Collectors.toList());
     }
 
     /** */
-    @Parameterized.Parameter()
+    @Parameterized.Parameter(0)
     public NumaAllocationStrategy strategy;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean defaultConfig;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setInitialSize(INITIAL_SIZE)
-                .setMaxSize(MAX_SIZE)
-                .setMetricsEnabled(true)
-                .setMemoryAllocator(new NumaAllocator(strategy)));
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
+
+        DataRegionConfiguration dfltReg = new DataRegionConfiguration()
+            .setInitialSize(INITIAL_SIZE)
+            .setMaxSize(MAX_SIZE)
+            .setMetricsEnabled(true);
+
+        NumaAllocator memAlloc = new NumaAllocator(strategy);
+
+        if (defaultConfig)
+            memCfg.setMemoryAllocator(memAlloc);
+        else
+            dfltReg.setMemoryAllocator(memAlloc);
+
+        memCfg.setDefaultDataRegionConfiguration(dfltReg);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -124,6 +138,10 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
         }
 
         assertEquals(NUM_NODES, serverGrids().count());
+
+        serverGrids().forEach(g -> {
+            assertTrue(getDefaultRegion(g).config().getMemoryAllocator() instanceof NumaAllocator);
+        });
     }
 
     /** */

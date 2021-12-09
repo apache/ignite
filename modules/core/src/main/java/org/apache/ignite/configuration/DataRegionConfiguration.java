@@ -24,7 +24,6 @@ import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -257,7 +256,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Sets memory allocator. If not specified, default, based on {@link Unsafe} allocator will be used.
+     * Sets memory allocator. If not specified, default, based on {@code Unsafe} allocator will be used.
      *
      * @param allocator Memory allocator instance.
      * @return {@code this} for chaining.
