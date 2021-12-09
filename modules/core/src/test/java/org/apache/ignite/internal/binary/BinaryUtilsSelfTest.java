@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -64,11 +63,8 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
         
         CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg.setCacheMode(REPLICATED);
-        
-        CacheConfiguration cacheCfg2 = new CacheConfiguration("partitioned");
-        cacheCfg2.setCacheMode(PARTITIONED);
-        
-        cfg.setCacheConfiguration(cacheCfg, cacheCfg2);
+
+        cfg.setCacheConfiguration(cacheCfg);
         
         BinaryConfiguration bCfg = new BinaryConfiguration();
         
