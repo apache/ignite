@@ -1975,6 +1975,33 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
     }
 
     /**
+     * @throws Exception If fails
+     */
+    @Test
+    public void testGetNotAssignedFieldInEmptyBuilder() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType")
+                .setField("w", "wewe");
+
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
+    }
+
+    /**
+     * @throws Exception If fails
+     */
+    @Test
+    public void testGetNotAssignedFieldInBuilder() {
+        GridBinaryTestClasses.TestObjectContainer testObjectContainer = new GridBinaryTestClasses.TestObjectContainer();
+        testObjectContainer.foo = "binaryCachedValue";
+        BinaryObjectBuilderImpl builder = wrap(testObjectContainer);
+        builder.setField("w", "wewe");
+
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
+        assertEquals("binaryCachedValue", builder.getField("foo"));
+    }
+
+    /**
      *
      */
     private void testCollectionHandlePossible(Collection<Object> src, Collection<Object> modified, Object obj) {
@@ -2014,11 +2041,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         assertEquals(firstObj.get(), deserialized.obj);
         assertSame(secondObj.get(), deserialized.obj);
-    
+
         BinaryObject anotherObject = wrap(listHolder).build();
-    
+
         BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
-    
+
         assertSame(bob.getField("firstCol"), bob.getField("firstCol"));
         assertSame(bob.getField("firstCol"), bob.getField("secondCol"));
     }
@@ -2055,11 +2082,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         assertEquals(deserialized.firstMap.get(key), deserialized.valObj);
         assertSame(deserialized.secondMap.get(key), deserialized.valObj);
-        
+
         BinaryObject anotherObject = wrap(mapsHolder).build();
-    
+
         BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
-    
+
         assertSame(bob.getField("firstMap"), bob.getField("firstMap"));
         assertSame(bob.getField("firstMap"), bob.getField("secondMap"));
     }
