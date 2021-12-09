@@ -40,6 +40,7 @@ import org.apache.ignite.internal.binary.BinaryObjectTypeCompatibilityTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
+import org.apache.ignite.internal.binary.BinaryUtilsSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
@@ -131,6 +132,7 @@ import org.junit.runners.Suite;
     BinaryObjectToStringSelfTest.class,
     BinaryObjectToStringTest.class,
     BinaryObjectTypeCompatibilityTest.class,
+    BinaryUtilsSelfTest.class,
 
     // Tests for objects with non-compact footers.
     BinaryMarshallerNonCompactSelfTest.class,
