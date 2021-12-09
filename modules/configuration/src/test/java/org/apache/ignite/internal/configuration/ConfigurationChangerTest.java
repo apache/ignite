@@ -57,6 +57,7 @@ import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
@@ -330,7 +331,7 @@ public class ConfigurationChangerTest {
 
         changer.change(source).get(1, SECONDS);
 
-        DefaultsView configurationView = changer.getLatest(List.of("def"));
+        DefaultsView configurationView = changer.getLatest(List.of(node("def")));
 
         assertEquals("foo", configurationView.defStr());
         assertEquals("bar", configurationView.child().defStr());
@@ -349,16 +350,16 @@ public class ConfigurationChangerTest {
 
         changer.initializeDefaults();
 
-        DefaultsChildView childView = changer.getLatest(List.of("def", "child"));
+        DefaultsChildView childView = changer.getLatest(List.of(node("def"), node("child")));
 
         assertEquals("bar", childView.defStr());
         assertArrayEquals(new String[]{"xyz"}, childView.arr());
 
-        String childStrValueView = changer.getLatest(List.of("def", "child", "defStr"));
+        String childStrValueView = changer.getLatest(List.of(node("def"), node("child"), node("defStr")));
 
         assertEquals("bar", childStrValueView);
 
-        String[] childArrView = changer.getLatest(List.of("def", "child", "arr"));
+        String[] childArrView = changer.getLatest(List.of(node("def"), node("child"), node("arr")));
 
         assertArrayEquals(new String[]{"xyz"}, childArrView);
     }
@@ -387,23 +388,27 @@ public class ConfigurationChangerTest {
         changer.change(source).get(1, SECONDS);
 
         for (String name : List.of("name1", "name2")) {
-            NamedListView<DefaultsChildView> childrenListView = changer.getLatest(List.of("def", "childrenList"));
+            NamedListView<DefaultsChildView> childrenListView = changer.getLatest(List.of(node("def"), node("childrenList")));
 
             DefaultsChildView childrenListElementView = childrenListView.get(name);
 
             assertEquals("bar", childrenListElementView.defStr());
             assertArrayEquals(new String[]{"xyz"}, childrenListElementView.arr());
 
-            childrenListElementView = changer.getLatest(List.of("def", "childrenList", name));
+            childrenListElementView = changer.getLatest(List.of(node("def"), node("childrenList"), listNode(name)));
 
             assertEquals("bar", childrenListElementView.defStr());
             assertArrayEquals(new String[]{"xyz"}, childrenListElementView.arr());
 
-            String childrenListStrValueView = changer.getLatest(List.of("def", "childrenList", name, "defStr"));
+            String childrenListStrValueView = changer.getLatest(
+                    List.of(node("def"), node("childrenList"), listNode(name), node("defStr"))
+            );
 
             assertEquals("bar", childrenListStrValueView);
 
-            String[] childrenListArrView = changer.getLatest(List.of("def", "childrenList", name, "arr"));
+            String[] childrenListArrView = changer.getLatest(
+                    List.of(node("def"), node("childrenList"), listNode(name), node("arr"))
+            );
 
             assertArrayEquals(new String[]{"xyz"}, childrenListArrView);
         }
@@ -429,43 +434,45 @@ public class ConfigurationChangerTest {
 
         changer.change(source).get(1, SECONDS);
 
-        NoSuchElementException e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of("foo")));
+        NoSuchElementException e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of(node("foo"))));
 
         assertThat(e.getMessage(), containsString("foo"));
 
-        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of("def", "foo")));
+        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of(node("def"), node("foo"))));
 
         assertThat(e.getMessage(), containsString("foo"));
 
-        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of("def", "defStr", "foo")));
+        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of(node("def"), node("defStr"), node("foo"))));
 
         assertThat(e.getMessage(), containsString("def.defStr.foo"));
 
-        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of("def", "child", "foo")));
+        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of(node("def"), node("child"), node("foo"))));
 
         assertThat(e.getMessage(), containsString("foo"));
 
         e = assertThrows(
                 NoSuchElementException.class,
-                () -> changer.getLatest(List.of("def", "child", "defStr", "foo"))
+                () -> changer.getLatest(List.of(node("def"), node("child"), node("defStr"), node("foo")))
         );
 
         assertThat(e.getMessage(), containsString("def.child.defStr.foo"));
 
-        e = assertThrows(NoSuchElementException.class, () -> changer.getLatest(List.of("def", "childrenList", "foo")));
+        e = assertThrows(NoSuchElementException.class, () ->
+                changer.getLatest(List.of(node("def"), node("childrenList"), listNode("foo")))
+        );
 
         assertThat(e.getMessage(), containsString("def.childrenList.foo"));
 
         e = assertThrows(
                 NoSuchElementException.class,
-                () -> changer.getLatest(List.of("def", "childrenList", "name", "foo"))
+                () -> changer.getLatest(List.of(node("def"), node("childrenList"), listNode("name"), node("foo")))
         );
 
         assertThat(e.getMessage(), containsString("def.childrenList.name.foo"));
 
         e = assertThrows(
                 NoSuchElementException.class,
-                () -> changer.getLatest(List.of("def", "childrenList", "name", "defStr", "foo"))
+                () -> changer.getLatest(List.of(node("def"), node("childrenList"), listNode("name"), node("defStr"), node("foo")))
         );
 
         assertThat(e.getMessage(), containsString("def.childrenList.name.defStr"));
@@ -565,5 +572,13 @@ public class ConfigurationChangerTest {
 
     private ConfigurationChanger createChanger(RootKey<?, ?> rootKey) {
         return new TestConfigurationChanger(cgen, List.of(rootKey), Map.of(), storage, List.of(), List.of());
+    }
+
+    private static KeyPathNode node(String key) {
+        return new KeyPathNode(key);
+    }
+
+    private static KeyPathNode listNode(String key) {
+        return new KeyPathNode(key, true);
     }
 }

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.configuration;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.directValue;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.directProxy;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCondition;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
-import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorageListener;
@@ -75,7 +74,6 @@ public class ItDistributedConfigurationPropertiesTest {
     @ConfigurationRoot(rootName = "root", type = ConfigurationType.DISTRIBUTED)
     public static class DistributedConfigurationSchema {
         @Value(hasDefault = true)
-        @DirectAccess
         public String str = "foo";
     }
 
@@ -268,8 +266,6 @@ public class ItDistributedConfigurationPropertiesTest {
     /**
      * Tests a scenario when a distributed property is lagging behind the latest value (e.g. due to network delays. storage listeners logic,
      * etc.). In this case the "direct" value should always be in the up-to-date state.
-     *
-     * @see DirectAccess
      */
     @Test
     public void testFallingBehindDistributedStorageValue() throws Exception {
@@ -283,7 +279,7 @@ public class ItDistributedConfigurationPropertiesTest {
 
         // check initial values
         assertThat(firstValue.value(), is("foo"));
-        assertThat(directValue(secondValue), is("foo"));
+        assertThat(directProxy(secondValue).value(), is("foo"));
         assertThat(secondValue.value(), is("foo"));
 
         // update the property to a new value and check that the change is propagated to the second node
@@ -292,7 +288,7 @@ public class ItDistributedConfigurationPropertiesTest {
         assertThat(changeFuture, willBe(nullValue(Void.class)));
 
         assertThat(firstValue.value(), is("bar"));
-        assertThat(directValue(secondValue), is("bar"));
+        assertThat(directProxy(secondValue).value(), is("bar"));
         assertTrue(waitForCondition(() -> "bar".equals(secondValue.value()), 100));
 
         // disable storage updates on the second node. This way the new values will never be propagated into the
@@ -306,7 +302,7 @@ public class ItDistributedConfigurationPropertiesTest {
         assertThat(changeFuture, willBe(nullValue(Void.class)));
 
         assertThat(firstValue.value(), is("baz"));
-        assertThat(directValue(secondValue), is("baz"));
+        assertThat(directProxy(secondValue).value(), is("baz"));
         assertFalse(waitForCondition(() -> "baz".equals(secondValue.value()), 100));
     }
 }

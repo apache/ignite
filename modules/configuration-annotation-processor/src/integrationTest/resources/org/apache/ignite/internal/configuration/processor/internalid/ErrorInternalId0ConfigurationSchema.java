@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.processor.internal;
+package org.apache.ignite.internal.configuration.processor.internalid;
 
+import java.util.UUID;
 import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.DirectAccess;
+import org.apache.ignite.configuration.annotation.InternalId;
 
-@ConfigurationRoot(rootName = "invalidDirect")
-public class InvalidDirectAccessConfigurationSchema {
-    @ConfigValue
-    @DirectAccess
-    public DirectAccessConfigurationSchema nested;
-}
-
+/**
+ * Field with {@link InternalId} must be a {@link UUID}.
+ */
 @Config
-class DirectAccessConfigurationSchema {
+public class ErrorInternalId0ConfigurationSchema {
+    @InternalId
+    public int id;
 }

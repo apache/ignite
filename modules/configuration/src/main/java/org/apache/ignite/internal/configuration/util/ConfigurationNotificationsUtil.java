@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -231,7 +232,7 @@ public class ConfigurationNotificationsUtil {
 
                     Map<String, String> renamed = new HashMap<>();
                     if (!created.isEmpty() && !deleted.isEmpty()) {
-                        Map<String, String> createdIds = new HashMap<>();
+                        Map<UUID, String> createdIds = new HashMap<>();
 
                         for (String createdKey : created) {
                             createdIds.put(newNamedList.internalId(createdKey), createdKey);
@@ -239,7 +240,7 @@ public class ConfigurationNotificationsUtil {
 
                         // Avoiding ConcurrentModificationException.
                         for (String deletedKey : Set.copyOf(deleted)) {
-                            String internalId = oldNamedList.internalId(deletedKey);
+                            UUID internalId = oldNamedList.internalId(deletedKey);
 
                             String maybeRenamedKey = createdIds.get(internalId);
 

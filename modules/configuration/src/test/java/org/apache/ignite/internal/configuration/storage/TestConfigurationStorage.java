@@ -79,6 +79,16 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override
+    public synchronized Serializable readLatest(String key) throws StorageException {
+        if (fail) {
+            throw new StorageException("Failed to read data");
+        }
+
+        return map.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public synchronized Data readAll() throws StorageException {
         if (fail) {
             throw new StorageException("Failed to read data");

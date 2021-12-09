@@ -50,6 +50,9 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
     /** Name of a synthetic configuration property that's used to store "key" of the named list element in the storage. */
     public static final String NAME = "<name>";
 
+    /** Name of a synthetic configuration property that's used to store mapping fron names to internal identifiers in the storage. */
+    public static final String IDS = "<ids>";
+
     /** Configuration name for the synthetic key. */
     private final String syntheticKeyName;
 
@@ -60,7 +63,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
     private final OrderedMap<ElementDescriptor> map;
 
     /** Mapping from internal ids to public keys. */
-    private final Map<String, String> reverseIdMap;
+    private final Map<UUID, String> reverseIdMap;
 
     /** Field name with {@link PolymorphicId}. */
     @Nullable
@@ -336,13 +339,14 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
      * @param key        Key to update. Should be present in the named list. Nothing will happen if the key is missing.
      * @param internalId New id to associate with the key.
      */
-    public void setInternalId(String key, String internalId) {
+    public void setInternalId(String key, UUID internalId) {
         ElementDescriptor element = map.get(key);
 
         if (element != null) {
             reverseIdMap.remove(element.internalId);
 
             element.internalId = internalId;
+            element.value.internalId(internalId);
 
             reverseIdMap.put(internalId, key);
         }
@@ -355,7 +359,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
      * @return Internal id.
      * @throws IllegalArgumentException If {@code key} is not found in the named list.
      */
-    public String internalId(String key) {
+    public UUID internalId(String key) {
         ElementDescriptor element = map.get(key);
 
         if (element == null) {
@@ -371,7 +375,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
      * @param internalId Internat id.
      * @return Key.
      */
-    public String keyByInternalId(String internalId) {
+    public String keyByInternalId(UUID internalId) {
         return reverseIdMap.get(internalId);
     }
 
@@ -380,7 +384,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
      *
      * @return Set of internal ids.
      */
-    public Collection<String> internalIds() {
+    public Collection<UUID> internalIds() {
         return Collections.unmodifiableSet(reverseIdMap.keySet());
     }
 
@@ -493,7 +497,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
      */
     private static class ElementDescriptor {
         /** Element's internal id. */
-        public String internalId;
+        public UUID internalId;
 
         /** Element node value. */
         @Nullable
@@ -506,9 +510,8 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
          */
         ElementDescriptor(InnerNode value) {
             this.value = value;
-            // Remove dashes so that id would be a bit shorter and easier to validate in tests.
-            // This string won't be visible by end users anyway.
-            internalId = UUID.randomUUID().toString().replace("-", "");
+
+            internalId = value.generateInternalId();
         }
 
         /**
@@ -517,7 +520,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
          * @param internalId Internal id.
          * @param value      Node instance.
          */
-        private ElementDescriptor(String internalId, InnerNode value) {
+        private ElementDescriptor(UUID internalId, InnerNode value) {
             this.internalId = internalId;
             this.value = value;
         }

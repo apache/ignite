@@ -134,18 +134,20 @@ public class NamedListNodeTest {
         a.second().change(b -> b.create("X", x -> x.changeThird(xb -> xb.create("Z0", z0 -> {
         })))).get();
 
-        String x0Id = ((NamedListNode<?>) a.second().value()).internalId("X");
-        String z0Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z0");
+        String x0Id = ((NamedListNode<?>) a.second().value()).internalId("X").toString();
+        String z0Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z0").toString();
 
         Map<String, ? extends Serializable> storageValues = storage.readAll().values();
 
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(6),
+                        aMapWithSize(8),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z0", x0Id), z0Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0")
@@ -158,17 +160,20 @@ public class NamedListNodeTest {
         x.third().change(xb -> xb.create("Z5", z5 -> {
         })).get();
 
-        String z5Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z5");
+        String z5Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z5").toString();
 
         storageValues = storage.readAll().values();
 
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(9),
+                        aMapWithSize(12),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z0", x0Id), z0Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z5", x0Id), z5Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0"),
@@ -182,17 +187,21 @@ public class NamedListNodeTest {
         x.third().change(xb -> xb.create(1, "Z2", z2 -> {
         })).get();
 
-        String z2Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z2");
+        String z2Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z2").toString();
 
         storageValues = storage.readAll().values();
 
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(12),
+                        aMapWithSize(16),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z0", x0Id), z0Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z2", x0Id), z2Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z5", x0Id), z5Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0"),
@@ -209,17 +218,22 @@ public class NamedListNodeTest {
         x.third().change(xb -> xb.createAfter("Z2", "Z3", z3 -> {
         })).get();
 
-        String z3Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z3");
+        String z3Id = ((NamedListNode<?>) a.second().get("X").third().value()).internalId("Z3").toString();
 
         storageValues = storage.readAll().values();
 
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(15),
+                        aMapWithSize(20),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z0", x0Id), z0Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z2", x0Id), z2Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z3", x0Id), z3Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z5", x0Id), z5Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0"),
@@ -243,10 +257,13 @@ public class NamedListNodeTest {
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(9),
+                    aMapWithSize(12),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z0", x0Id), z0Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z3", x0Id), z3Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z0"),
@@ -264,10 +281,13 @@ public class NamedListNodeTest {
         assertThat(
                 storageValues,
                 is(Matchers.<Map<String, ? extends Serializable>>allOf(
-                        aMapWithSize(9),
+                        aMapWithSize(12),
+                        hasEntry(format("a.second.<ids>.X"), x0Id),
                         hasEntry(format("a.second.%s.str", x0Id), "foo"),
                         hasEntry(format("a.second.%s.<order>", x0Id), 0),
                         hasEntry(format("a.second.%s.<name>", x0Id), "X"),
+                        hasEntry(format("a.second.%s.third.<ids>.Z1", x0Id), z0Id),
+                        hasEntry(format("a.second.%s.third.<ids>.Z3", x0Id), z3Id),
                         hasEntry(format("a.second.%s.third.%s.intVal", x0Id, z0Id), 1),
                         hasEntry(format("a.second.%s.third.%s.<order>", x0Id, z0Id), 0),
                         hasEntry(format("a.second.%s.third.%s.<name>", x0Id, z0Id), "Z1"),

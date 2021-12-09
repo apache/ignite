@@ -21,7 +21,6 @@ import static org.apache.ignite.configuration.schemas.store.DataStorageConfigura
 
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
@@ -32,7 +31,6 @@ import org.apache.ignite.configuration.validation.Min;
  * Table configuration schema class.
  */
 @Config
-@DirectAccess
 public class TableConfigurationSchema {
     /** Table name. */
     @Value

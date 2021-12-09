@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
@@ -68,9 +69,9 @@ import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.InjectedName;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
+import org.apache.ignite.configuration.annotation.InternalId;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.PolymorphicConfig;
 import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
@@ -97,8 +98,8 @@ public class Processor extends AbstractProcessor {
     /** Error format for an empty field. */
     private static final String EMPTY_FIELD_ERROR_FORMAT = "Field %s cannot be empty: %s";
 
-    /** Error format is that the field must be a {@link String}. */
-    private static final String FIELD_MUST_BE_STRING_ERROR_FORMAT = "%s %s.%s field must be a String";
+    /** Error format is that the field must be a specific class. */
+    private static final String FIELD_MUST_BE_SPECIFIC_CLASS_ERROR_FORMAT = "%s %s.%s field must be a %s";
 
     /** Postfix with which any configuration schema class name must end. */
     private static final String CONFIGURATION_SCHEMA_POSTFIX = "ConfigurationSchema";
@@ -189,12 +190,25 @@ public class Processor extends AbstractProcessor {
 
                 PolymorphicId polymorphicId = field.getAnnotation(PolymorphicId.class);
                 if (polymorphicId != null) {
-                    if (!isStringClass(field.asType())) {
+                    if (!isClass(field.asType(), String.class)) {
                         throw new ProcessorException(String.format(
-                            FIELD_MUST_BE_STRING_ERROR_FORMAT,
+                                FIELD_MUST_BE_SPECIFIC_CLASS_ERROR_FORMAT,
                                 simpleName(PolymorphicId.class),
                                 clazz.getQualifiedName(),
-                                field.getSimpleName()
+                                field.getSimpleName(),
+                                String.class.getSimpleName()
+                        ));
+                    }
+                }
+
+                if (field.getAnnotation(InternalId.class) != null) {
+                    if (!isClass(field.asType(), UUID.class)) {
+                        throw new ProcessorException(String.format(
+                                FIELD_MUST_BE_SPECIFIC_CLASS_ERROR_FORMAT,
+                                simpleName(InternalId.class),
+                                clazz.getQualifiedName(),
+                                field.getSimpleName(),
+                                UUID.class.getSimpleName()
                         ));
                     }
                 }
@@ -311,8 +325,10 @@ public class Processor extends AbstractProcessor {
         Value valueAnnotation = field.getAnnotation(Value.class);
         PolymorphicId polymorphicIdAnnotation = field.getAnnotation(PolymorphicId.class);
         InjectedName injectedNameAnnotation = field.getAnnotation(InjectedName.class);
+        InternalId internalIdAnnotation = field.getAnnotation(InternalId.class);
 
-        if (valueAnnotation != null || polymorphicIdAnnotation != null || injectedNameAnnotation != null) {
+        if (valueAnnotation != null || polymorphicIdAnnotation != null || injectedNameAnnotation != null
+                || internalIdAnnotation != null) {
             // It is necessary to use class names without loading classes so that we won't
             // accidentally get NoClassDefFoundError
             ClassName confValueClass = ClassName.get("org.apache.ignite.configuration", "ConfigurationValue");
@@ -399,7 +415,7 @@ public class Processor extends AbstractProcessor {
         ClassName consumerClsName = ClassName.get(Consumer.class);
 
         for (VariableElement field : fields) {
-            final Value valAnnotation = field.getAnnotation(Value.class);
+            Value valAnnotation = field.getAnnotation(Value.class);
 
             String fieldName = field.getSimpleName().toString();
             TypeMirror schemaFieldType = field.asType();
@@ -436,7 +452,8 @@ public class Processor extends AbstractProcessor {
             viewClsBuilder.addMethod(getMtdBuilder.build());
 
             // Read only.
-            if (field.getAnnotation(PolymorphicId.class) != null || field.getAnnotation(InjectedName.class) != null) {
+            if (field.getAnnotation(PolymorphicId.class) != null || field.getAnnotation(InjectedName.class) != null
+                    || field.getAnnotation(InternalId.class) != null) {
                 continue;
             }
 
@@ -522,21 +539,6 @@ public class Processor extends AbstractProcessor {
                 .asType();
 
         return processingEnv.getTypeUtils().isSameType(type, stringType);
-    }
-
-    /**
-     * Check if a class type is {@link Object}.
-     *
-     * @param type Class type.
-     * @return {@code true} if class type is {@link Object}.
-     */
-    private boolean isObjectClass(TypeMirror type) {
-        TypeMirror objectType = processingEnv
-                .getElementUtils()
-                .getTypeElement(Object.class.getCanonicalName())
-                .asType();
-
-        return objectType.equals(type);
     }
 
     /**
@@ -786,30 +788,18 @@ public class Processor extends AbstractProcessor {
                     field.getSimpleName()
             ));
         }
-
-        if (field.getAnnotation(DirectAccess.class) != null) {
-            throw new ProcessorException(String.format(
-                    "%s annotation must not be present on nested configuration fields: %s.%s",
-                    simpleName(DirectAccess.class),
-                    field.getEnclosingElement(),
-                    field.getSimpleName()
-            ));
-        }
     }
 
     /**
-     * Check if a class type is {@link String}.
-     *
-     * @param type Class type.
-     * @return {@code true} if class type is {@link String}.
+     * Check if a {@code type} is a {@code clazz} Class.
      */
-    private boolean isStringClass(TypeMirror type) {
-        TypeMirror objectType = processingEnv
+    private boolean isClass(TypeMirror type, Class<?> clazz) {
+        TypeMirror classType = processingEnv
                 .getElementUtils()
-                .getTypeElement(String.class.getCanonicalName())
+                .getTypeElement(clazz.getCanonicalName())
                 .asType();
 
-        return objectType.equals(type);
+        return classType.equals(type);
     }
 
     /**
@@ -865,7 +855,7 @@ public class Processor extends AbstractProcessor {
     private void checkExistSuperClass(TypeElement clazz, Class<? extends Annotation> clazzAnnotation) {
         assert clazz.getAnnotation(clazzAnnotation) != null : clazz.getQualifiedName();
 
-        if (isObjectClass(clazz.getSuperclass())) {
+        if (isClass(clazz.getSuperclass(), Object.class)) {
             throw new ProcessorException(String.format(
                     "Class with %s should not have a superclass: %s",
                     simpleName(clazzAnnotation),
@@ -884,7 +874,7 @@ public class Processor extends AbstractProcessor {
     private void checkNotExistSuperClass(TypeElement clazz, Class<? extends Annotation> clazzAnnotation) {
         assert clazz.getAnnotation(clazzAnnotation) != null : clazz.getQualifiedName();
 
-        if (!isObjectClass(clazz.getSuperclass())) {
+        if (!isClass(clazz.getSuperclass(), Object.class)) {
             throw new ProcessorException(String.format(
                     "Class with %s should not have a superclass: %s",
                     simpleName(clazzAnnotation),
@@ -992,12 +982,13 @@ public class Processor extends AbstractProcessor {
 
         VariableElement injectedNameField = injectedNameFields.get(0);
 
-        if (!isStringClass(injectedNameField.asType())) {
+        if (!isClass(injectedNameField.asType(), String.class)) {
             throw new ProcessorException(String.format(
-                FIELD_MUST_BE_STRING_ERROR_FORMAT,
+                FIELD_MUST_BE_SPECIFIC_CLASS_ERROR_FORMAT,
                 simpleName(InjectedName.class),
                 clazz.getQualifiedName(),
-                injectedNameField.getSimpleName()
+                injectedNameField.getSimpleName(),
+                String.class.getSimpleName()
             ));
         }
 

@@ -77,6 +77,18 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override
+    public synchronized Serializable readLatest(String key) throws StorageException {
+        try {
+            VaultEntry vaultEntry = vaultMgr.get(new ByteArray(LOC_PREFIX + key)).join();
+
+            return vaultEntry.empty() ? null : (Serializable) ByteUtils.fromBytes(vaultEntry.value());
+        } catch (Exception e) {
+            throw new StorageException("Exception while reading vault entry", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public synchronized Data readAll() throws StorageException {
         return readAll(LOC_KEYS_START_RANGE, LOC_KEYS_END_RANGE);
     }

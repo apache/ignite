@@ -148,6 +148,18 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override
+    public Serializable readLatest(String key) throws StorageException {
+        try {
+            Entry entry = metaStorageMgr.get(new ByteArray(key)).join();
+
+            return entry.value() == null ? null : (Serializable) ByteUtils.fromBytes(entry.value());
+        } catch (Exception e) {
+            throw new StorageException("Exception while reading data from Meta Storage", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public Data readAll() throws StorageException {
         var data = new HashMap<String, Serializable>();
 

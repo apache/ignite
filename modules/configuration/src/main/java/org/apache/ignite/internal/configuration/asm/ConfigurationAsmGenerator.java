@@ -39,12 +39,14 @@ import static com.facebook.presto.bytecode.expression.BytecodeExpressions.newIns
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.not;
 import static java.lang.invoke.MethodType.methodType;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.EnumSet.of;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.internal.configuration.asm.DirectProxyAsmGenerator.newDirectProxyLambda;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.changeClassName;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.configurationClassName;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.viewClassName;
@@ -52,8 +54,8 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.co
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.extensionsFields;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.hasDefault;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isConfigValue;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isDirectAccess;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isInjectedName;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isInternalId;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isNamedConfigValue;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isPolymorphicConfig;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.isPolymorphicConfigInstance;
@@ -101,6 +103,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -110,7 +113,6 @@ import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.ConfigurationWrongPolymorphicTypeIdException;
-import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.RootKey;
@@ -125,15 +127,12 @@ import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
 import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.internal.configuration.ConfigurationNode;
 import org.apache.ignite.internal.configuration.ConfigurationTreeWrapper;
-import org.apache.ignite.internal.configuration.DirectConfigurationTreeWrapper;
-import org.apache.ignite.internal.configuration.DirectDynamicConfiguration;
-import org.apache.ignite.internal.configuration.DirectDynamicProperty;
-import org.apache.ignite.internal.configuration.DirectNamedListConfiguration;
 import org.apache.ignite.internal.configuration.DynamicConfiguration;
 import org.apache.ignite.internal.configuration.DynamicConfigurationChanger;
 import org.apache.ignite.internal.configuration.DynamicProperty;
 import org.apache.ignite.internal.configuration.NamedListConfiguration;
 import org.apache.ignite.internal.configuration.TypeUtils;
+import org.apache.ignite.internal.configuration.direct.DirectPropertyProxy;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
@@ -154,11 +153,8 @@ public class ConfigurationAsmGenerator {
     /** {@link DynamicConfiguration#DynamicConfiguration} constructor. */
     private static final Constructor<?> DYNAMIC_CONFIGURATION_CTOR;
 
-    /** {@link DirectDynamicConfiguration#DirectDynamicConfiguration} constructor. */
-    private static final Constructor<?> DIRECT_DYNAMIC_CONFIGURATION_CTOR;
-
     /** {@link LambdaMetafactory#metafactory(Lookup, String, MethodType, MethodType, MethodHandle, MethodType)}. */
-    private static final Method LAMBDA_METAFACTORY;
+    public static final Method LAMBDA_METAFACTORY;
 
     /** {@link Consumer#accept(Object)}. */
     private static final Method ACCEPT;
@@ -180,6 +176,9 @@ public class ConfigurationAsmGenerator {
 
     /** {@link ConstructableTreeNode#copy()}. */
     private static final Method COPY;
+
+    /** {@link InnerNode#internalId()}. */
+    private static final Method INTERNAL_ID;
 
     /** {@code DynamicConfiguration#add} method. */
     private static final Method DYNAMIC_CONFIGURATION_ADD_MTD;
@@ -217,9 +216,6 @@ public class ConfigurationAsmGenerator {
     /** {@link ConfigurationUtil#addDefaults}. */
     private static final Method ADD_DEFAULTS_MTD;
 
-    /** {@link ConfigurationUtil#removeLastKey}. */
-    private static final Method REMOVE_LAST_KEY_MTD;
-
     /** {@link InnerNode#setInjectedNameFieldValue}. */
     private static final Method SET_INJECTED_NAME_FIELD_VALUE_MTD;
 
@@ -255,15 +251,9 @@ public class ConfigurationAsmGenerator {
 
             COPY = ConstructableTreeNode.class.getDeclaredMethod("copy");
 
-            DYNAMIC_CONFIGURATION_CTOR = DynamicConfiguration.class.getDeclaredConstructor(
-                    List.class,
-                    String.class,
-                    RootKey.class,
-                    DynamicConfigurationChanger.class,
-                    boolean.class
-            );
+            INTERNAL_ID = InnerNode.class.getDeclaredMethod("internalId");
 
-            DIRECT_DYNAMIC_CONFIGURATION_CTOR = DirectDynamicConfiguration.class.getDeclaredConstructor(
+            DYNAMIC_CONFIGURATION_CTOR = DynamicConfiguration.class.getDeclaredConstructor(
                     List.class,
                     String.class,
                     RootKey.class,
@@ -297,8 +287,6 @@ public class ConfigurationAsmGenerator {
             SPECIFIC_CONFIG_TREE_MTD = DynamicConfiguration.class.getDeclaredMethod("specificConfigTree");
 
             ADD_DEFAULTS_MTD = ConfigurationUtil.class.getDeclaredMethod("addDefaults", InnerNode.class);
-
-            REMOVE_LAST_KEY_MTD = ConfigurationUtil.class.getDeclaredMethod("removeLastKey", List.class);
 
             SET_INJECTED_NAME_FIELD_VALUE_MTD = InnerNode.class.getDeclaredMethod("setInjectedNameFieldValue", String.class);
         } catch (NoSuchMethodException nsme) {
@@ -417,6 +405,8 @@ public class ConfigurationAsmGenerator {
             Collection<Field> internalExtensionsFields = extensionsFields(internalExtensions, true);
             Collection<Field> polymorphicExtensionsFields = extensionsFields(polymorphicExtensions, false);
 
+            Field internalIdField = internalIdField(schemaClass, internalExtensions);
+
             for (Field schemaField : concat(schemaFields, internalExtensionsFields, polymorphicExtensionsFields)) {
                 if (isConfigValue(schemaField) || isNamedConfigValue(schemaField)) {
                     Class<?> subSchemaClass = schemaField.getType();
@@ -441,7 +431,8 @@ public class ConfigurationAsmGenerator {
                     polymorphicExtensions,
                     schemaFields,
                     internalExtensionsFields,
-                    polymorphicExtensionsFields
+                    polymorphicExtensionsFields,
+                    internalIdField
             );
 
             classDefs.add(innerNodeClassDef);
@@ -452,7 +443,8 @@ public class ConfigurationAsmGenerator {
                     polymorphicExtensions,
                     schemaFields,
                     internalExtensionsFields,
-                    polymorphicExtensionsFields
+                    polymorphicExtensionsFields,
+                    internalIdField
             );
 
             classDefs.add(cfgImplClassDef);
@@ -468,7 +460,8 @@ public class ConfigurationAsmGenerator {
                         polymorphicExtension,
                         innerNodeClassDef,
                         schemaFields,
-                        polymorphicFields
+                        polymorphicFields,
+                        internalIdField
                 ));
 
                 classDefs.add(createPolymorphicExtensionCfgImplClass(
@@ -476,9 +469,21 @@ public class ConfigurationAsmGenerator {
                         polymorphicExtension,
                         cfgImplClassDef,
                         schemaFields,
-                        polymorphicFields
+                        polymorphicFields,
+                        internalIdField
                 ));
             }
+
+            ClassDefinition directProxyClassDef = new DirectProxyAsmGenerator(
+                    this,
+                    schemaClass,
+                    internalExtensions,
+                    schemaFields,
+                    internalExtensionsFields,
+                    internalIdField
+            ).generate();
+
+            classDefs.add(directProxyClassDef);
         }
 
         Map<String, Class<?>> definedClasses = generator.defineClasses(classDefs);
@@ -492,6 +497,42 @@ public class ConfigurationAsmGenerator {
     }
 
     /**
+     * Returns info about schema class.
+     *
+     * @param schemaClass Schema class.
+     * @return Schema class info.
+     * @see SchemaClassesInfo
+     */
+    synchronized SchemaClassesInfo schemaInfo(Class<?> schemaClass) {
+        return schemasInfo.get(schemaClass);
+    }
+
+    /*
+     * Returns field, annotated with {@link InternalId}, if it exists. This field may only be present in {@link ConfigurationRoot},
+     * {@link Config}, {@link InternalConfiguration} or {@link PolymorphicConfig}.
+     *
+     * @param schemaClass Base schema class.
+     * @param schemaExtensions Extensions for the base schema.
+     * @return Internal id field or {@code null} if it's not found.
+     */
+    @Nullable
+    private Field internalIdField(Class<?> schemaClass, Set<Class<?>> schemaExtensions) {
+        List<Field> internalIdFields = Stream.concat(Stream.of(schemaClass), schemaExtensions.stream())
+                .map(Class::getDeclaredFields)
+                .flatMap(Arrays::stream)
+                .filter(ConfigurationUtil::isInternalId)
+                .collect(toList());
+
+        if (internalIdFields.isEmpty()) {
+            return null;
+        }
+
+        assert internalIdFields.size() == 1 : internalIdFields;
+
+        return internalIdFields.get(0);
+    }
+
+    /**
      * Construct a {@link InnerNode} definition for a configuration schema.
      *
      * @param schemaClass           Configuration schema class.
@@ -500,6 +541,7 @@ public class ConfigurationAsmGenerator {
      * @param schemaFields          Fields of the schema class.
      * @param internalFields        Fields of internal extensions of the configuration schema.
      * @param polymorphicFields     Fields of polymorphic extensions of the configuration schema.
+     * @param internalIdField       Internal id field or {@code null} if it's not present.
      * @return Constructed {@link InnerNode} definition for the configuration schema.
      */
     private ClassDefinition createNodeClass(
@@ -508,7 +550,8 @@ public class ConfigurationAsmGenerator {
             Set<Class<?>> polymorphicExtensions,
             List<Field> schemaFields,
             Collection<Field> internalFields,
-            Collection<Field> polymorphicFields
+            Collection<Field> polymorphicFields,
+            @Nullable Field internalIdField
     ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
 
@@ -557,6 +600,11 @@ public class ConfigurationAsmGenerator {
 
         // Constructor.
         addNodeConstructor(classDef, specFields, fieldDefs, schemaFields, internalFields, polymorphicFields);
+
+        // Add view method for internal id.
+        if (internalIdField != null) {
+            addNodeInternalIdMethod(classDef, internalIdField);
+        }
 
         // VIEW and CHANGE methods.
         for (Field schemaField : concat(schemaFields, internalFields)) {
@@ -803,6 +851,23 @@ public class ConfigurationAsmGenerator {
 
         // return;
         ctor.getBody().ret();
+    }
+
+    /**
+     * Generates method with the same name as the field, that calls {@link InnerNode#internalId()}.
+     *
+     * @param classDef Class definition.
+     * @param schemaField Internal id field from the base schema or one of extensions.
+     */
+    private void addNodeInternalIdMethod(ClassDefinition classDef, Field schemaField) {
+        MethodDefinition internalIdMtd = classDef.declareMethod(
+                of(PUBLIC),
+                schemaField.getName(),
+                type(UUID.class)
+        );
+
+        // return this.internalId();
+        internalIdMtd.getBody().append(internalIdMtd.getThis().invoke(INTERNAL_ID)).retObject();
     }
 
     /**
@@ -1556,6 +1621,7 @@ public class ConfigurationAsmGenerator {
      * @param schemaFields       Fields of the schema class.
      * @param internalFields     Fields of internal extensions of the configuration schema.
      * @param polymorphicFields  Fields of polymorphic extensions of the configuration schema.
+     * @param internalIdField    Internal id field or {@code null} if it's not present.
      * @return Constructed {@link DynamicConfiguration} definition for the configuration schema.
      */
     private ClassDefinition createCfgImplClass(
@@ -1564,17 +1630,16 @@ public class ConfigurationAsmGenerator {
             Set<Class<?>> polymorphicExtensions,
             Collection<Field> schemaFields,
             Collection<Field> internalFields,
-            Collection<Field> polymorphicFields
+            Collection<Field> polymorphicFields,
+            @Nullable Field internalIdField
     ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
-
-        Class<?> superClass = schemaClassInfo.direct ? DirectDynamicConfiguration.class : DynamicConfiguration.class;
 
         // Configuration impl class definition.
         ClassDefinition classDef = new ClassDefinition(
                 of(PUBLIC, FINAL),
                 internalName(schemaClassInfo.cfgImplClassName),
-                type(superClass),
+                type(DynamicConfiguration.class),
                 configClassInterfaces(schemaClass, internalExtensions)
         );
 
@@ -1596,6 +1661,15 @@ public class ConfigurationAsmGenerator {
             }
         }
 
+        if (internalIdField != null) {
+            // Internal id dynamic property is stored as a regular field.
+            String fieldName = internalIdField.getName();
+
+            FieldDefinition fieldDef = addConfigurationImplField(classDef, internalIdField, fieldName);
+
+            fieldDefs.put(fieldName, fieldDef);
+        }
+
         // Constructor
         addConfigurationImplConstructor(
                 classDef,
@@ -1603,8 +1677,17 @@ public class ConfigurationAsmGenerator {
                 fieldDefs,
                 schemaFields,
                 internalFields,
-                polymorphicFields
+                polymorphicFields,
+                internalIdField
         );
+
+        // org.apache.ignite.internal.configuration.DynamicProperty#directProxy
+        addDirectProxyMethod(schemaClassInfo, classDef);
+
+        // Getter for the internal id.
+        if (internalIdField != null) {
+            addConfigurationImplGetMethod(classDef, internalIdField, fieldDefs.get(internalIdField.getName()));
+        }
 
         for (Field schemaField : concat(schemaFields, internalFields)) {
             addConfigurationImplGetMethod(classDef, schemaField, fieldDefs.get(fieldName(schemaField)));
@@ -1685,11 +1768,13 @@ public class ConfigurationAsmGenerator {
     /**
      * Implements default constructor for the configuration class. It initializes all fields and adds them to members collection.
      *
-     * @param classDef       Configuration impl class definition.
-     * @param schemaClass    Configuration schema class.
-     * @param fieldDefs      Field definitions for all fields of configuration impl class.
-     * @param schemaFields   Fields of the schema class.
+     * @param classDef Configuration impl class definition.
+     * @param schemaClass Configuration schema class.
+     * @param fieldDefs Field definitions for all fields of configuration impl class.
+     * @param schemaFields Fields of the schema class.
      * @param internalFields Fields of internal extensions of the configuration schema.
+     * @param polymorphicFields Fields of polymorphic extensions of the configuration schema.
+     * @param internalIdField Internal id field or {@code null} if it's not present.
      */
     private void addConfigurationImplConstructor(
             ClassDefinition classDef,
@@ -1697,7 +1782,8 @@ public class ConfigurationAsmGenerator {
             Map<String, FieldDefinition> fieldDefs,
             Collection<Field> schemaFields,
             Collection<Field> internalFields,
-            Collection<Field> polymorphicFields
+            Collection<Field> polymorphicFields,
+            @Nullable Field internalIdField
     ) {
         MethodDefinition ctor = classDef.declareConstructor(
                 of(PUBLIC),
@@ -1714,8 +1800,6 @@ public class ConfigurationAsmGenerator {
 
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
 
-        Constructor<?> superCtor = schemaClassInfo.direct ? DIRECT_DYNAMIC_CONFIGURATION_CTOR : DYNAMIC_CONFIGURATION_CTOR;
-
         Variable thisVar = ctor.getThis();
 
         BytecodeBlock ctorBody = ctor.getBody()
@@ -1725,33 +1809,34 @@ public class ConfigurationAsmGenerator {
                 .append(rootKeyVar)
                 .append(changerVar)
                 .append(listenOnlyVar)
-                .invokeConstructor(superCtor);
+                .invokeConstructor(DYNAMIC_CONFIGURATION_CTOR);
 
         BytecodeExpression thisKeysVar = thisVar.getField("keys", List.class);
 
+        // Wrap object into list to reuse the loop below.
+        List<Field> internalIdFieldAsList = internalIdField == null ? emptyList() : List.of(internalIdField);
+
         int newIdx = 0;
-        for (Field schemaField : concat(schemaFields, internalFields, polymorphicFields)) {
+        for (Field schemaField : concat(schemaFields, internalFields, polymorphicFields, internalIdFieldAsList)) {
             String fieldName = schemaField.getName();
 
             BytecodeExpression newValue;
 
-            if (isValue(schemaField) || isPolymorphicId(schemaField) || isInjectedName(schemaField)) {
-                Class<?> fieldImplClass = isDirectAccess(schemaField) ? DirectDynamicProperty.class : DynamicProperty.class;
-
+            if (isValue(schemaField) || isPolymorphicId(schemaField) || isInjectedName(schemaField) || isInternalId(schemaField)) {
                 // A field with @InjectedName is special (auxiliary), it is not stored in storages as a regular field, and therefore there
                 // is no direct access to it. It is stored in the InnerNode and does not participate in its traversal, so in order to get
                 // it we need to get the InnerNode, and only then the value of this field.
 
-                // newValue = new DynamicProperty(this.keys, fieldName, rootKey, changer, listenOnly, readOnly, injectedNameField);
+                // newValue = new DynamicProperty(this.keys, fieldName, rootKey, changer, listenOnly, readOnly);
                 newValue = newInstance(
-                        fieldImplClass,
-                        isInjectedName(schemaField) ? invokeStatic(REMOVE_LAST_KEY_MTD, thisKeysVar) : thisKeysVar,
-                        isInjectedName(schemaField) ? thisVar.getField("key", String.class) : constantString(fieldName),
+                        DynamicProperty.class,
+                        thisKeysVar,
+                        constantString(isInjectedName(schemaField) ? InnerNode.INJECTED_NAME
+                                : isInternalId(schemaField) ? InnerNode.INTERNAL_ID : schemaField.getName()),
                         rootKeyVar,
                         changerVar,
                         listenOnlyVar,
-                        constantBoolean(isPolymorphicId(schemaField) || isInjectedName(schemaField)),
-                        constantBoolean(isInjectedName(schemaField))
+                        constantBoolean(isPolymorphicId(schemaField) || isInjectedName(schemaField) || isInternalId(schemaField))
                 );
             } else {
                 SchemaClassesInfo fieldInfo = schemasInfo.get(schemaField.getType());
@@ -1782,15 +1867,13 @@ public class ConfigurationAsmGenerator {
                             arg("key", String.class)
                     );
 
-                    Class<?> fieldImplClass = fieldInfo.direct
-                            ? DirectNamedListConfiguration.class : NamedListConfiguration.class;
-
                     // newValue = new NamedListConfiguration(this.keys, fieldName, rootKey, changer, listenOnly,
                     //      (p, k) -> new ValueConfigurationImpl(p, k, rootKey, changer, listenOnly),
+                    //      (p, c) -> new ValueDirectProxy(p, c),
                     //      new ValueConfigurationImpl(this.keys, "any", rootKey, changer, true)
                     // );
                     newValue = newInstance(
-                            fieldImplClass,
+                            NamedListConfiguration.class,
                             thisKeysVar,
                             constantString(fieldName),
                             rootKeyVar,
@@ -1819,6 +1902,7 @@ public class ConfigurationAsmGenerator {
                                     changerVar,
                                     listenOnlyVar
                             ),
+                            newDirectProxyLambda(fieldInfo),
                             newInstance(
                                     cfgImplParameterizedType,
                                     thisKeysVar,
@@ -1847,13 +1931,36 @@ public class ConfigurationAsmGenerator {
             // this.field = newValue;
             ctorBody.append(thisVar.setField(fieldDef, newValue));
 
-            if (!isPolymorphicConfigInstance(schemaField.getDeclaringClass())) {
+            if (!isPolymorphicConfigInstance(schemaField.getDeclaringClass()) && !isInternalId(schemaField)) {
                 // add(this.field);
                 ctorBody.append(thisVar.invoke(DYNAMIC_CONFIGURATION_ADD_MTD, thisVar.getField(fieldDef)));
             }
         }
 
         ctorBody.ret();
+    }
+
+    /**
+     * Generates {@link ConfigurationNode#directProxy()} method that returns new instance every time.
+     *
+     * @param schemaClassInfo Schema class info.
+     * @param classDef Class definition.
+     */
+    private void addDirectProxyMethod(
+            SchemaClassesInfo schemaClassInfo,
+            ClassDefinition classDef
+    ) {
+        MethodDefinition methodDef = classDef.declareMethod(
+                of(PUBLIC), "directProxy", type(DirectPropertyProxy.class)
+        );
+
+        methodDef.getBody().append(newInstance(
+                typeFromJavaClassName(schemaClassInfo.directProxyClassName),
+                methodDef.getThis().invoke("keyPath", List.class),
+                methodDef.getThis().getField("changer", DynamicConfigurationChanger.class)
+        ));
+
+        methodDef.getBody().retObject();
     }
 
     /**
@@ -1883,7 +1990,8 @@ public class ConfigurationAsmGenerator {
         } else if (isNamedConfigValue(schemaField)) {
             returnType = type(NamedConfigurationTree.class);
         } else {
-            assert isValue(schemaField) || isPolymorphicId(schemaField) || isInjectedName(schemaField) : schemaField;
+            assert isValue(schemaField) || isPolymorphicId(schemaField) || isInjectedName(schemaField)
+                    || isInternalId(schemaField) : schemaField;
 
             returnType = type(ConfigurationValue.class);
         }
@@ -1925,7 +2033,7 @@ public class ConfigurationAsmGenerator {
      * @see Type#getInternalName(Class)
      */
     @NotNull
-    private static String internalName(String className) {
+    static String internalName(String className) {
         return className.replace('.', '/');
     }
 
@@ -1966,14 +2074,10 @@ public class ConfigurationAsmGenerator {
      * @param schemaExtensions Internal extensions of the configuration schema.
      * @return Interfaces for {@link DynamicConfiguration} definition for a configuration schema.
      */
-    private ParameterizedType[] configClassInterfaces(Class<?> schemaClass, Set<Class<?>> schemaExtensions) {
+    ParameterizedType[] configClassInterfaces(Class<?> schemaClass, Set<Class<?>> schemaExtensions) {
         List<ParameterizedType> result = Stream.concat(Stream.of(schemaClass), schemaExtensions.stream())
                 .map(cls -> typeFromJavaClassName(configurationClassName(cls)))
                 .collect(toCollection(ArrayList::new));
-
-        if (schemasInfo.get(schemaClass).direct) {
-            result.add(type(DirectConfigurationProperty.class));
-        }
 
         return result.toArray(new ParameterizedType[0]);
     }
@@ -2004,13 +2108,15 @@ public class ConfigurationAsmGenerator {
      * @param schemaInnerNodeClassDef {@link InnerNode} definition for the polymorphic configuration schema {@code schemaClass}.
      * @param schemaFields            Schema fields of polymorphic configuration {@code schemaClass}.
      * @param polymorphicFields       Schema fields of a polymorphic configuration instance {@code polymorphicExtension}.
+     * @param internalIdField         Internal id field or {@code null} if it's not present.
      */
     private ClassDefinition createPolymorphicExtensionNodeClass(
             Class<?> schemaClass,
             Class<?> polymorphicExtension,
             ClassDefinition schemaInnerNodeClassDef,
             Collection<Field> schemaFields,
-            Collection<Field> polymorphicFields
+            Collection<Field> polymorphicFields,
+            @Nullable Field internalIdField
     ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
         SchemaClassesInfo polymorphicExtensionClassInfo = schemasInfo.get(polymorphicExtension);
@@ -2050,6 +2156,16 @@ public class ConfigurationAsmGenerator {
 
         Map<String, FieldDefinition> fieldDefs = schemaInnerNodeClassDef.getFields().stream()
                 .collect(toMap(FieldDefinition::getName, identity()));
+
+        // Creates method to get the internal id. Almost the same as regular view, but with method invocation instead of field access.
+        if (internalIdField != null) {
+            addNodeViewMethod(
+                    classDef,
+                    internalIdField,
+                    viewMtd -> getThisFieldCode(viewMtd, parentInnerNodeFieldDef).invoke(INTERNAL_ID),
+                    null
+            );
+        }
 
         // Creates view and change methods for parent schema.
         for (Field schemaField : schemaFields) {
@@ -2130,25 +2246,24 @@ public class ConfigurationAsmGenerator {
      * @param schemaCfgImplClassDef {@link DynamicConfiguration} definition for the polymorphic configuration schema {@code schemaClass}.
      * @param schemaFields          Schema fields of polymorphic configuration {@code schemaClass}.
      * @param polymorphicFields     Schema fields of a polymorphic configuration instance {@code polymorphicExtension}.
+     * @param internalIdField       Internal id field or {@code null} if it's not present.
      */
     private ClassDefinition createPolymorphicExtensionCfgImplClass(
             Class<?> schemaClass,
             Class<?> polymorphicExtension,
             ClassDefinition schemaCfgImplClassDef,
             Collection<Field> schemaFields,
-            Collection<Field> polymorphicFields
+            Collection<Field> polymorphicFields,
+            @Nullable Field internalIdField
     ) {
         SchemaClassesInfo schemaClassInfo = schemasInfo.get(schemaClass);
         SchemaClassesInfo polymorphicExtensionClassInfo = schemasInfo.get(polymorphicExtension);
-
-        Class<?> superClass = schemaClassInfo.direct || polymorphicExtensionClassInfo.direct
-                ? DirectConfigurationTreeWrapper.class : ConfigurationTreeWrapper.class;
 
         // Configuration impl class definition.
         ClassDefinition classDef = new ClassDefinition(
                 of(PUBLIC, FINAL),
                 internalName(polymorphicExtensionClassInfo.cfgImplClassName),
-                type(superClass),
+                type(ConfigurationTreeWrapper.class),
                 configClassInterfaces(polymorphicExtension, Set.of())
         );
 
@@ -2173,7 +2288,7 @@ public class ConfigurationAsmGenerator {
         constructorMtd.getBody()
                 .append(constructorMtd.getThis())
                 .append(delegateVar)
-                .invokeConstructor(superClass, ConfigurationTree.class)
+                .invokeConstructor(ConfigurationTreeWrapper.class, ConfigurationTree.class)
                 .append(constructorMtd.getThis().setField(
                         parentCfgImplFieldDef,
                         delegateVar
@@ -2183,13 +2298,12 @@ public class ConfigurationAsmGenerator {
         Map<String, FieldDefinition> fieldDefs = schemaCfgImplClassDef.getFields().stream()
                 .collect(toMap(FieldDefinition::getName, identity()));
 
+        if (internalIdField != null) {
+            addConfigurationImplGetMethod(classDef, internalIdField, parentCfgImplFieldDef, fieldDefs.get(internalIdField.getName()));
+        }
+
         for (Field schemaField : concat(schemaFields, polymorphicFields)) {
-            addConfigurationImplGetMethod(
-                    classDef,
-                    schemaField,
-                    parentCfgImplFieldDef,
-                    fieldDefs.get(fieldName(schemaField))
-            );
+            addConfigurationImplGetMethod(classDef, schemaField, parentCfgImplFieldDef, fieldDefs.get(fieldName(schemaField)));
         }
 
         return classDef;

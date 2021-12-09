@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import org.apache.ignite.configuration.ConfigurationProperty;
@@ -29,6 +30,10 @@ import org.apache.ignite.configuration.NamedListChange;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
+import org.apache.ignite.internal.configuration.direct.DirectNamedListProxy;
+import org.apache.ignite.internal.configuration.direct.DirectPropertyProxy;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
+import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,7 +46,10 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
     private final List<ConfigurationNamedListListener<VIEWT>> extendedListeners = new CopyOnWriteArrayList<>();
 
     /** Creator of named configuration. */
-    private final BiFunction<List<String>, String, T> creator;
+    private final BiFunction<List<String>, String, T> cfgCreator;
+
+    /** Creator of direct proxies for inner nodes. */
+    private BiFunction<List<KeyPathNode>, DynamicConfigurationChanger, T> directProxyCreator;
 
     /** Placeholder to add listeners for any configuration. */
     private final T anyConfig;
@@ -52,13 +60,15 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
     /**
      * Constructor.
      *
-     * @param prefix     Configuration prefix.
-     * @param key        Configuration key.
-     * @param rootKey    Root key.
-     * @param changer    Configuration changer.
+     * @param prefix Configuration prefix.
+     * @param key Configuration key.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param creator    Underlying configuration creator function.
-     * @param anyConfig  Placeholder to add listeners for any configuration.
+     * @param cfgCreator Underlying configuration creator function.
+     * @param directProxyCreator Creator for direct proxies of elements.
+     *      Required for {@link DirectPropertyProxy#DirectPropertyProxy(List, DynamicConfigurationChanger)}.
+     * @param anyConfig Placeholder to add listeners for any configuration.
      */
     public NamedListConfiguration(
             List<String> prefix,
@@ -66,12 +76,14 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
             RootKey<?, ?> rootKey,
             DynamicConfigurationChanger changer,
             boolean listenOnly,
-            BiFunction<List<String>, String, T> creator,
+            BiFunction<List<String>, String, T> cfgCreator,
+            BiFunction<List<KeyPathNode>, DynamicConfigurationChanger, T> directProxyCreator,
             T anyConfig
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
 
-        this.creator = creator;
+        this.cfgCreator = cfgCreator;
+        this.directProxyCreator = directProxyCreator;
         this.anyConfig = anyConfig;
     }
 
@@ -97,6 +109,18 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
         return (DynamicConfiguration<?, ?>) members.get(name);
     }
 
+    /**
+     * Retrieves a named list element by its internal id.
+     *
+     * @param internalId Internal id.
+     * @return Named list element, associated with the passed internal id, or {@code null} if it doesn't exist.
+     */
+    public T getByInternalId(UUID internalId) {
+        var value = (NamedListNode<?>) value();
+
+        return (T) members.get(value.keyByInternalId(internalId));
+    }
+
     /** {@inheritDoc} */
     @Override
     protected synchronized void beforeRefreshValue(
@@ -112,7 +136,7 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
             if (oldElement != null) {
                 newValues.put(key, oldElement);
             } else {
-                newValues.put(key, creator.apply(keys, key));
+                newValues.put(key, cfgCreator.apply(keys, key));
             }
         }
 
@@ -168,5 +192,17 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
     @Override
     public NamedListView<VIEWT> value() {
         return refreshValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public DirectPropertyProxy<NamedListView<VIEWT>> directProxy() {
+        if (listenOnly) {
+            throw listenOnlyException();
+        }
+
+        assert directProxyCreator != null;
+
+        return new DirectNamedListProxy<>(keyPath(), changer, directProxyCreator);
     }
 }

@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
@@ -313,12 +314,12 @@ public class ConfigurationUtilTest {
 
         ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
                 "elements", Map.of(
-                        "0123456789abcde0123456789abcde", Map.of(
+                        "01234567-89ab-cdef-0123-456789abcdef", Map.of(
                                 "child", Map.of("str", "value2"),
                                 ORDER_IDX, 1,
                                 NAME, "name2"
                         ),
-                        "12345689abcdef0123456789abcdef0", Map.of(
+                        "12345678-9abc-def0-1234-56789abcdef0", Map.of(
                                 "child", Map.of("str", "value1"),
                                 ORDER_IDX, 0,
                                 NAME, "name1"
@@ -346,8 +347,10 @@ public class ConfigurationUtilTest {
                 )
         );
 
+        UUID internalId = ((InnerNode) ((ParentView) parentNode).elements().get("name")).internalId();
+
         ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
-                "elements", singletonMap("name", null)
+                "elements", singletonMap(internalId.toString(), null)
         ));
 
         assertNull(parentChange.elements().get("node"));
@@ -375,10 +378,11 @@ public class ConfigurationUtilTest {
                         )
                 ),
                 is(allOf(
-                        aMapWithSize(3),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]child[.]str"), hasToString("foo")),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<order>"), is(0)),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<name>"), hasToString("name"))
+                        aMapWithSize(4),
+                        hasEntry(matchesPattern("root[.]elements[.]<ids>[.]name"), hasToString(matchesPattern("[-\\w]{36}"))),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]child[.]str"), hasToString("foo")),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]<order>"), is(0)),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]<name>"), hasToString("name"))
                 ))
         );
 
@@ -394,10 +398,11 @@ public class ConfigurationUtilTest {
                         .changeElements(elements -> elements.delete("name"))
                 ),
                 is(allOf(
-                        aMapWithSize(3),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]child[.]str"), nullValue()),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<order>"), nullValue()),
-                        hasEntry(matchesPattern("root[.]elements[.]\\w{32}[.]<name>"), nullValue())
+                        aMapWithSize(4),
+                        hasEntry(matchesPattern("root[.]elements[.]<ids>[.]name"), nullValue()),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]child[.]str"), nullValue()),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]<order>"), nullValue()),
+                        hasEntry(matchesPattern("root[.]elements[.][-\\w]{36}[.]<name>"), nullValue())
                 ))
         );
     }
@@ -783,7 +788,7 @@ public class ConfigurationUtilTest {
         );
 
         NamedListNode<?> polymorphicNamedCfgListNode = (NamedListNode<?>) polymorphicRootChange.polymorphicNamedCfg();
-        String internalId = polymorphicNamedCfgListNode.internalId("0");
+        UUID internalId = polymorphicNamedCfgListNode.internalId("0");
 
         Map<String, Serializable> exp = new HashMap<>();
 

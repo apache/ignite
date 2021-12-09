@@ -45,4 +45,3 @@ public class ExtendedTableConfigurationSchema extends TableConfigurationSchema {
     @NamedConfigValue
     public SchemaConfigurationSchema schemas;
 }
-

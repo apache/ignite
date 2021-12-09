@@ -19,6 +19,7 @@ package org.apache.ignite.internal.configuration.testframework;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.findEx;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.internalSchemaExtensions;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.polymorphicSchemaExtensions;
 import static org.mockito.Mockito.mock;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.configuration.DynamicConfigurationChanger;
 import org.apache.ignite.internal.configuration.RootInnerNode;
 import org.apache.ignite.internal.configuration.SuperRoot;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
@@ -236,8 +238,8 @@ public class ConfigurationExtension implements BeforeEachCallback, AfterEachCall
 
             /** {@inheritDoc} */
             @Override
-            public <T> T getLatest(List<String> path) {
-                return ConfigurationUtil.find(path, superRootRef.get(), true);
+            public <T> T getLatest(List<KeyPathNode> path) {
+                return findEx(path, superRootRef.get());
             }
         }));
 

@@ -18,23 +18,33 @@
 package org.apache.ignite.internal.configuration;
 
 import static java.util.function.Function.identity;
+import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.internal.configuration.tree.InnerNode.INJECTED_NAME;
+import static org.apache.ignite.internal.configuration.tree.InnerNode.INTERNAL_ID;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.KEY_SEPARATOR;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.compressDeletedEntries;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.dropNulls;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.escape;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.fillFromPrefixMap;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.findEx;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.toPrefixMap;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.RandomAccess;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -47,22 +57,20 @@ import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.StorageException;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
-import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
-import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.MemberKey;
 import org.apache.ignite.internal.configuration.validation.ValidationUtil;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Class that handles configuration changes, by validating them, passing to storage and listening to storage updates.
@@ -259,91 +267,157 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
 
     /** {@inheritDoc} */
     @Override
-    public <T> T getLatest(List<String> path) {
+    public <T> T getLatest(List<KeyPathNode> path) {
         assert !path.isEmpty();
+        assert path instanceof RandomAccess : path.getClass();
+        assert !path.get(0).unresolvedName : path;
 
-        var storagePath = new ArrayList<String>(path.size());
+        // This map will be merged into the data from the storage. It's required for the conversion into tree to work.
+        // Namely, named list order indexes and names are mandatory for conversion.
+        Map<String, Map<String, Serializable>> extras = new HashMap<>();
 
-        // we can't use the provided path as-is, because Named List elements are stored in a different way:
-        // while their path can be represented as "root.namedList.<elementName>.value", the corresponding path
-        // in the storage will look like "root.namedList.<internalId>.value". We also need to support the Named List
-        // guarantee, that different Named List nodes under the same name must be accessible by the same path. Therefore
-        // we manually traverse the configuration tree, re-reading the whole Named List subtrees in case they may
-        // contain not yet discovered nodes.
-        var visitor = new ConfigurationVisitor<Void>() {
-            /**
-             * Index of the current path element.
-             */
-            private int pathIndex;
+        // Joiner for the prefix that will be used to fetch data from the storage.
+        StringJoiner prefixJoiner = new StringJoiner(KEY_SEPARATOR);
 
-            @Override
-            public @Nullable Void visitLeafNode(String key, Serializable val) {
-                assert path.get(pathIndex).equals(key);
+        int pathSize = path.size();
 
-                if (pathIndex != path.size() - 1) {
-                    throw new NoSuchElementException(ConfigurationUtil.join(path.subList(0, pathIndex + 2)));
+        KeyPathNode lastPathNode = path.get(pathSize - 1);
+
+        // This loop is required to accumulate prefix and resolve all unresolved named list elements' ids.
+        for (int idx = 0; idx < pathSize; idx++) {
+            KeyPathNode keyPathNode = path.get(idx);
+
+            // Regular keys and resolved ids go straight to the prefix.
+            if (!keyPathNode.unresolvedName) {
+                // Fake name and 0 index go to extras in case of resolved named list elements.
+                if (keyPathNode.namedListEntry) {
+                    prefixJoiner.add(escape(keyPathNode.key));
+
+                    String prefix = prefixJoiner + KEY_SEPARATOR;
+
+                    extras.put(prefix, Map.of(
+                            prefix + NamedListNode.NAME, "<name_placeholder>",
+                            prefix + NamedListNode.ORDER_IDX, 0
+                    ));
+                } else {
+                    prefixJoiner.add(keyPathNode.key);
                 }
 
-                storagePath.add(key);
-
-                return null;
+                continue;
             }
 
-            @Override
-            public @Nullable Void visitInnerNode(String key, InnerNode node) {
-                assert path.get(pathIndex).equals(key);
+            assert keyPathNode.namedListEntry : path;
 
-                storagePath.add(key);
+            // Here we have unresolved named list element. Name must be translated into the internal id.
+            // There's a special path for this purpose in the storage.
+            String unresolvedNameKey = prefixJoiner + KEY_SEPARATOR
+                    + NamedListNode.IDS + KEY_SEPARATOR
+                    + escape(keyPathNode.key);
 
-                if (pathIndex == path.size() - 1) {
-                    return null;
+            // Data from the storage.
+            Serializable resolvedName = storage.readLatest(unresolvedNameKey);
+
+            if (resolvedName == null) {
+                throw new NoSuchElementException(prefixJoiner + KEY_SEPARATOR + escape(keyPathNode.key));
+            }
+
+            assert resolvedName instanceof String : resolvedName;
+
+            // Resolved internal id from the map.
+            String internalId = (String) resolvedName;
+
+            // There's a chance that this is exactly what user wants. If their request ends with
+            // `*.get("resourceName").internalId()` then the result can be returned straight away.
+            if (idx == pathSize - 2 && INTERNAL_ID.equals(lastPathNode.key)) {
+                assert !lastPathNode.unresolvedName : path;
+
+                // Despite the fact that this cast looks very stupid, it is correct. Internal ids are always UUIDs.
+                return (T) UUID.fromString(internalId);
+            }
+
+            prefixJoiner.add(internalId);
+
+            String prefix = prefixJoiner + KEY_SEPARATOR;
+
+            // Real name and 0 index go to extras in case of unresolved named list elements.
+            extras.put(prefix, Map.of(
+                    prefix + NamedListNode.NAME, keyPathNode.key,
+                    prefix + NamedListNode.ORDER_IDX, 0
+            ));
+        }
+
+        // Exceptional case, the only purpose of it is to ensure that named list element with given internal id does exist.
+        // That id must be resolved, otherwise method would already be completed in the loop above.
+        if (lastPathNode.key.equals(INTERNAL_ID) && !lastPathNode.unresolvedName && path.get(pathSize - 2).namedListEntry) {
+            assert !path.get(pathSize - 2).unresolvedName : path;
+
+            // Not very elegant, I know. <internal_id> is replaced with the <name> in the prefix.
+            // <name> always exists in named list element, and it's an easy way to check element's existence.
+            String nameStorageKey = prefixJoiner.toString().replaceAll(quote(INTERNAL_ID) + "$", NamedListNode.NAME);
+
+            // Data from the storage.
+            Serializable name = storage.readLatest(nameStorageKey);
+
+            if (name != null) {
+                // Id is already known.
+                return (T) UUID.fromString(path.get(pathSize - 2).key);
+            } else {
+                throw new NoSuchElementException(prefixJoiner.toString());
+            }
+        }
+
+        String prefix = prefixJoiner.toString();
+
+        if (lastPathNode.key.equals(INTERNAL_ID) && !path.get(pathSize - 2).namedListEntry) {
+            // This is not particularly efficient, but there's no way someone will actually use this case for real outside of tests.
+            prefix = prefix.replaceAll(quote(KEY_SEPARATOR + INTERNAL_ID) + "$", "");
+        } else if (lastPathNode.key.contains(INJECTED_NAME)) {
+            prefix = prefix.replaceAll(quote(KEY_SEPARATOR + INJECTED_NAME), "");
+        }
+
+        // Data from the storage.
+        Map<String, ? extends Serializable> storageData = storage.readAllLatest(prefix);
+
+        // Data to be converted into the tree.
+        Map<String, Serializable> mergedData = new HashMap<>();
+
+        if (!storageData.isEmpty()) {
+            mergedData.putAll(storageData);
+
+            for (Entry<String, Map<String, Serializable>> extrasEntry : extras.entrySet()) {
+                for (String storageKey : storageData.keySet()) {
+                    String extrasPrefix = extrasEntry.getKey();
+
+                    if (storageKey.startsWith(extrasPrefix)) {
+                        // Add extra order indexes and names before converting it to the tree.
+                        for (Entry<String, Serializable> extrasEntryMap : extrasEntry.getValue().entrySet()) {
+                            mergedData.putIfAbsent(extrasEntryMap.getKey(), extrasEntryMap.getValue());
+                        }
+
+                        break;
+                    }
                 }
-
-                pathIndex++;
-
-                return node.traverseChild(path.get(pathIndex), this, true);
             }
 
-            /**
-             * Visits a Named List node. This method ends the tree traversal even if the last key in the path has not
-             * been reached yet for the reasons described above.
-             */
-            @Override
-            public @Nullable Void visitNamedListNode(String key, NamedListNode<?> node) {
-                assert path.get(pathIndex).equals(key);
-
-                storagePath.add(key);
-
-                return null;
+            if (lastPathNode.namedListEntry) {
+                // Change element's order index to zero. Conversion won't work if indexes range is not continuous.
+                mergedData.put(prefix + KEY_SEPARATOR + NamedListNode.ORDER_IDX, 0);
             }
-        };
+        }
 
-        storageRoots.roots.traverseChild(path.get(0), visitor, true);
-
-        Map<String, ? extends Serializable> storageData = storage.readAllLatest(ConfigurationUtil.join(storagePath));
-
+        // Super root that'll be filled from the storage data.
         InnerNode rootNode = new SuperRoot(rootCreator());
 
-        fillFromPrefixMap(rootNode, toPrefixMap(storageData));
+        fillFromPrefixMap(rootNode, toPrefixMap(mergedData));
 
+        // "addDefaults" won't work if regular root is missing.
         if (storageData.isEmpty()) {
-            rootNode.construct(path.get(0), ConfigurationUtil.EMPTY_CFG_SRC, true);
+            rootNode.construct(path.get(0).key, ConfigurationUtil.EMPTY_CFG_SRC, true);
         }
 
-        // Workaround for distributed configuration.
         addDefaults(rootNode);
 
-        try {
-            T result = ConfigurationUtil.find(path, rootNode, true);
-
-            if (result == null) {
-                throw new NoSuchElementException(ConfigurationUtil.join(path));
-            }
-
-            return result;
-        } catch (KeyNotFoundException e) {
-            throw new NoSuchElementException(ConfigurationUtil.join(path));
-        }
+        return findEx(path, rootNode);
     }
 
     /** Stop component. */

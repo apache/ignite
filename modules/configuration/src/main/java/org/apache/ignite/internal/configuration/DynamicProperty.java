@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.configuration;
 
+import static org.apache.ignite.internal.configuration.tree.InnerNode.INJECTED_NAME;
+import static org.apache.ignite.internal.configuration.tree.InnerNode.INTERNAL_ID;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.appendKey;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +30,10 @@ import org.apache.ignite.configuration.ConfigurationReadOnlyException;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.InternalId;
+import org.apache.ignite.internal.configuration.direct.DirectPropertyProxy;
+import org.apache.ignite.internal.configuration.direct.DirectValueProxy;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
@@ -41,6 +49,9 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     /** Configuration field with {@link InjectedName}. */
     private final boolean injectedNameField;
 
+    /** Configuration field with {@link InternalId}. */
+    private final boolean internalIdField;
+
     /**
      * Constructor.
      *
@@ -50,7 +61,6 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
      * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      * @param readOnly Value cannot be changed.
-     * @param injectedNameField Configuration field with {@link InjectedName}.
      */
     public DynamicProperty(
             List<String> prefix,
@@ -58,20 +68,33 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
             RootKey<?, ?> rootKey,
             DynamicConfigurationChanger changer,
             boolean listenOnly,
-            boolean readOnly,
-            boolean injectedNameField
+            boolean readOnly
     ) {
-        super(prefix, key, rootKey, changer, listenOnly);
+        super(
+                INJECTED_NAME.equals(key) || INTERNAL_ID.equals(key) ? prefix : appendKey(prefix, key),
+                key,
+                rootKey,
+                changer,
+                listenOnly
+        );
 
         this.readOnly = readOnly;
-        this.injectedNameField = injectedNameField;
+
+        this.injectedNameField = INJECTED_NAME.equals(key);
+        this.internalIdField = INTERNAL_ID.equals(key);
     }
 
     /** {@inheritDoc} */
     @Override
     public T value() {
         if (injectedNameField) {
+            // In this case "refreshValue()" is not of type "T", but an "InnerNode" holding it instead.
+            // "T" must be a String then, this is guarded by external invariants.
             return (T) ((InnerNode) refreshValue()).getInjectedNameFieldValue();
+        } else if (internalIdField) {
+            // In this case "refreshValue()" is not of type "T", but an "InnerNode" holding it instead.
+            // "T" must be a UUID then, this is guarded by external invariants.
+            return (T) ((InnerNode) refreshValue()).internalId();
         } else {
             return refreshValue();
         }
@@ -130,6 +153,16 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     @Override
     public String key() {
         return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public DirectPropertyProxy<T> directProxy() {
+        if (injectedNameField || internalIdField) {
+            return new DirectValueProxy<>(appendKey(keyPath(), new KeyPathNode(key)), changer);
+        } else {
+            return new DirectValueProxy<>(keyPath(), changer);
+        }
     }
 
     /** {@inheritDoc} */

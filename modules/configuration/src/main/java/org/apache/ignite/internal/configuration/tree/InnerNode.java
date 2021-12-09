@@ -18,12 +18,52 @@
 package org.apache.ignite.internal.configuration.tree;
 
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.InternalId;
 
 /**
  * Configuration node implementation.
  */
 public abstract class InnerNode implements TraversableTreeNode, ConstructableTreeNode, Cloneable {
+    /** Configuration field name with {@link InternalId}. */
+    public static final String INTERNAL_ID = "<internal_id>";
+
+    /** Configuration field name with {@link InjectedName}. */
+    public static final String INJECTED_NAME = "<injected_name>";
+
+    /**
+     * Internal id of the node. May be {@code null}.
+     */
+    private UUID internalId;
+
+    /**
+     * Generates new internal id for the node.
+     *
+     * @return Generated internal id.
+     */
+    public UUID generateInternalId() {
+        return internalId = UUID.randomUUID();
+    }
+
+    /**
+     * Returns internal id of the node.
+     *
+     * @return Internal id of the node.
+     */
+    public final UUID internalId() {
+        return internalId;
+    }
+
+    /**
+     * Sets a new internal id value to the node.
+     *
+     * @param internalId New internal id value.
+     */
+    public final void internalId(UUID internalId) {
+        this.internalId = internalId;
+    }
+
     /** {@inheritDoc} */
     @Override
     public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {

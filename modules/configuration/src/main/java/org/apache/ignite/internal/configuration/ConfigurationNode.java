@@ -19,6 +19,8 @@ package org.apache.ignite.internal.configuration;
 
 import static java.util.Collections.unmodifiableCollection;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -28,6 +30,11 @@ import org.apache.ignite.configuration.ConfigurationListenOnlyException;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.notifications.ConfigurationListener;
+import org.apache.ignite.internal.configuration.direct.DirectPropertyProxy;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
+import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
+import org.apache.ignite.internal.configuration.tree.InnerNode;
+import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
@@ -72,20 +79,20 @@ public abstract class ConfigurationNode<VIEWT> implements ConfigurationProperty<
     /**
      * Constructor.
      *
-     * @param prefix     Configuration prefix.
-     * @param key        Configuration key.
-     * @param rootKey    Root key.
-     * @param changer    Configuration changer.
+     * @param keys Full path to the current node.
+     * @param key Name of the current node. Same as last element of {@link #keys}.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
     protected ConfigurationNode(
-            List<String> prefix,
+            List<String> keys,
             String key,
             RootKey<?, ?> rootKey,
             DynamicConfigurationChanger changer,
             boolean listenOnly
     ) {
-        this.keys = ConfigurationUtil.appendKey(prefix, key);
+        this.keys = keys;
         this.key = key;
         this.rootKey = rootKey;
         this.changer = changer;
@@ -114,6 +121,14 @@ public abstract class ConfigurationNode<VIEWT> implements ConfigurationProperty<
     public Collection<ConfigurationListener<VIEWT>> listeners() {
         return unmodifiableCollection(updateListeners);
     }
+
+    /**
+     * Converts current configuration node into a "direct proxy node". Unlike regular nodes, proxies read value from underlying storage
+     * every time {@link ConfigurationProperty#value()} is invoked.
+     *
+     * @return Direct proxy instance.
+     */
+    public abstract DirectPropertyProxy<VIEWT> directProxy();
 
     /**
      * Returns latest value of the configuration or throws exception.
@@ -193,7 +208,78 @@ public abstract class ConfigurationNode<VIEWT> implements ConfigurationProperty<
      *
      * @return Exception if there was an attempt to get or update a property value in {@link #listenOnly listen-only} mode.
      */
-    protected ConfigurationListenOnlyException listenOnlyException() {
-        throw new ConfigurationListenOnlyException("Adding only listeners mode: " + keys);
+    protected final ConfigurationListenOnlyException listenOnlyException() {
+        return new ConfigurationListenOnlyException("`any` configuration node can only be used for listeners [keys=" + keys + ']');
+    }
+
+    /**
+     * Converts {@link #keys} into a list of {@link KeyPathNode}. Result is used in implementations of {@link DirectPropertyProxy}.
+     */
+    protected final List<KeyPathNode> keyPath() {
+        if (listenOnly) {
+            throw listenOnlyException();
+        }
+
+        ConfigurationVisitor<List<KeyPathNode>> visitor = new ConfigurationVisitor<>() {
+            /** List with the result. */
+            private List<KeyPathNode> res = new ArrayList<>(keys.size());
+
+            /** Current index. */
+            private int idx = 1;
+
+            /** {@inheritDoc} */
+            @Nullable
+            @Override
+            public List<KeyPathNode> visitLeafNode(String key, Serializable val) {
+                res.add(new KeyPathNode(key));
+
+                return res;
+            }
+
+            /** {@inheritDoc} */
+            @Nullable
+            @Override
+            public List<KeyPathNode> visitInnerNode(String key, InnerNode node) {
+                res.add(new KeyPathNode(key));
+
+                if (keys.size() == idx) {
+                    return res;
+                }
+
+                node.traverseChild(keys.get(idx++), this, true);
+
+                return res;
+            }
+
+            /** {@inheritDoc} */
+            @Nullable
+            @Override
+            public List<KeyPathNode> visitNamedListNode(String key, NamedListNode node) {
+                res.add(new KeyPathNode(key));
+
+                if (keys.size() == idx) {
+                    return res;
+                }
+
+                InnerNode innerNode = node.getInnerNode(keys.get(idx++));
+
+                if (innerNode == null) {
+                    throw noSuchElementException();
+                }
+
+                // This is important, node is added as a resolved named list entry here.
+                res.add(new KeyPathNode(innerNode.internalId().toString(), false));
+
+                if (keys.size() == idx) {
+                    return res;
+                }
+
+                innerNode.traverseChild(keys.get(idx++), this, true);
+
+                return res;
+            }
+        };
+
+        return changer.getRootNode(rootKey).accept(keys.get(0), visitor);
     }
 }

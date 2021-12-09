@@ -29,8 +29,8 @@ import com.google.testing.compile.Compilation;
 import com.squareup.javapoet.ClassName;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.InternalId;
 import org.apache.ignite.configuration.annotation.Name;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -128,22 +128,6 @@ public class ItProcessorTest extends AbstractProcessorTest {
                         "SimpleConfigurationSchema",
                         "ErrorInternal5ConfigurationSchema"
                 )
-        );
-    }
-
-    /**
-     * Tests that placing the {@link DirectAccess} annotation on fields that represents sub-configurations results in an error.
-     */
-    @Test
-    void testDirectAccessConfiguration() {
-        String packageName = "org.apache.ignite.internal.configuration.processor.internal";
-
-        ClassName source = ClassName.get(packageName, "InvalidDirectAccessConfigurationSchema");
-
-        Compilation compilation = compile(source);
-
-        assertThat(compilation).hadErrorContaining(
-                "@DirectAccess annotation must not be present on nested configuration fields"
         );
     }
 
@@ -408,6 +392,39 @@ public class ItProcessorTest extends AbstractProcessorTest {
 
         assertTrue(batchCompile.getBySchema(cls0).allGenerated());
         assertTrue(batchCompile.getBySchema(cls1).allGenerated());
+    }
+
+    /**
+     * Checks that compilation will fail due to misuse of {@link InternalId}.
+     */
+    @Test
+    void testErrorInternalIdFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.internalid";
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInternalId0ConfigurationSchema"),
+                "@InternalId org.apache.ignite.internal.configuration.processor.internalid.ErrorInternalId0ConfigurationSchema.id"
+                        + " field must be a UUID"
+        );
+    }
+
+    /**
+     * Checks that compilation will succeed when using {@link InternalId}.
+     */
+    @Test
+    void testSuccessInternalIdFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.internalid";
+
+        ClassName cls = ClassName.get(packageName, "SimpleInternalId0ConfigurationSchema");
+
+        BatchCompilation batchCompile = batchCompile(cls);
+
+        assertThat(batchCompile.getCompilationStatus()).succeededWithoutWarnings();
+
+        assertEquals(3, batchCompile.generated().size());
+
+        assertTrue(batchCompile.getBySchema(cls).allGenerated());
     }
 
     /**

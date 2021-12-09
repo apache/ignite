@@ -21,6 +21,7 @@ import static java.lang.String.format;
 import static org.apache.ignite.internal.configuration.hocon.HoconPrimitiveConfigurationSource.formatArrayPath;
 import static org.apache.ignite.internal.configuration.hocon.HoconPrimitiveConfigurationSource.unwrapPrimitive;
 import static org.apache.ignite.internal.configuration.hocon.HoconPrimitiveConfigurationSource.wrongTypeException;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.KEY_SEPARATOR;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.appendKey;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.join;
 
@@ -125,7 +126,7 @@ class HoconListConfigurationSource implements ConfigurationSource {
                 throw new IllegalArgumentException(
                         format(
                                 "'%s' configuration value is mandatory and must be a String",
-                                formatArrayPath(path, idx) + "." + syntheticKeyName
+                                formatArrayPath(path, idx) + KEY_SEPARATOR + syntheticKeyName
                         )
                 );
             }

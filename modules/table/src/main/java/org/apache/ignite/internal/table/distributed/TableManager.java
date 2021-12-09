@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.table.distributed;
 
 import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.directProxy;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,7 +41,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConfigurationChangeException;
-import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
@@ -57,7 +57,6 @@ import org.apache.ignite.internal.configuration.schema.ExtendedTableConfiguratio
 import org.apache.ignite.internal.configuration.schema.ExtendedTableView;
 import org.apache.ignite.internal.configuration.schema.SchemaConfiguration;
 import org.apache.ignite.internal.configuration.schema.SchemaView;
-import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.manager.Producer;
@@ -1017,7 +1016,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return A list of table names.
      */
     private List<String> tableNamesConfigured() {
-        return ConfigurationUtil.directValue(tablesCfg.tables()).namedListKeys();
+        return directProxy(tablesCfg.tables()).value().namedListKeys();
     }
 
     /**
@@ -1039,8 +1038,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return The latest schema version.
      */
     private int latestSchemaVersion(IgniteUuid tblId) {
-        NamedListView<TableView> directTablesCfg = ((DirectConfigurationProperty<NamedListView<TableView>>) tablesCfg
-                .tables()).directValue();
+        NamedListView<TableView> directTablesCfg = directProxy(tablesCfg.tables()).value();
 
         ExtendedTableView viewForId = null;
 
@@ -1221,8 +1219,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return True when the table is configured into cluster, false otherwise.
      */
     private boolean isTableConfigured(IgniteUuid id) {
-        NamedListView<TableView> directTablesCfg = ((DirectConfigurationProperty<NamedListView<TableView>>) tablesCfg.tables())
-                .directValue();
+        NamedListView<TableView> directTablesCfg = directProxy(tablesCfg.tables()).value();
 
         // TODO: IGNITE-15721 Need to review this approach after the ticket would be fixed.
         // Probably, it won't be required getting configuration of all tables from Metastor.

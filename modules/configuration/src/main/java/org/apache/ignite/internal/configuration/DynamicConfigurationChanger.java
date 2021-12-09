@@ -20,8 +20,8 @@ package org.apache.ignite.internal.configuration;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.internal.configuration.direct.KeyPathNode;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 
@@ -47,12 +47,11 @@ public interface DynamicConfigurationChanger {
     InnerNode getRootNode(RootKey<?, ?> rootKey);
 
     /**
-     * Retrieves the latest configuration value for the given path directly from the storage. This method is needed to support the {@link
-     * DirectConfigurationProperty} implementation.
+     * Retrieves the latest configuration value for the given path directly from the storage.
      *
      * @param path Path to the value.
      * @return Configuration value.
      * @throws NoSuchElementException If no value could be found.
      */
-    public <T> T getLatest(List<String> path);
+    <T> T getLatest(List<KeyPathNode> path);
 }

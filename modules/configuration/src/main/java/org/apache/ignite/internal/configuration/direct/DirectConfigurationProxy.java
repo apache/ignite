@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration;
+package org.apache.ignite.internal.configuration.direct;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationTree;
-import org.apache.ignite.configuration.DirectConfigurationProperty;
+import org.apache.ignite.internal.configuration.DynamicConfigurationChanger;
 
 /**
- * {@link ConfigurationTree} wrapper with {@link DirectConfigurationProperty}.
- *
- * @param <VIEWT>   Value type of the node.
- * @param <CHANGET> Type of the object that changes this node's value.
+ * {@link DirectPropertyProxy} implementation for leaves.
  */
-public class DirectConfigurationTreeWrapper<VIEWT, CHANGET> extends ConfigurationTreeWrapper<VIEWT, CHANGET>
-        implements DirectConfigurationProperty<VIEWT> {
+public abstract class DirectConfigurationProxy<VIEWT, CHANGET extends VIEWT>
+        extends DirectPropertyProxy<VIEWT>
+        implements ConfigurationTree<VIEWT, CHANGET> {
+
     /**
      * Constructor.
      *
-     * @param configTree Configuration tree.
+     * @param keys Full path to the node.
+     * @param changer Changer.
      */
-    public DirectConfigurationTreeWrapper(ConfigurationTree<VIEWT, CHANGET> configTree) {
-        super(configTree);
-
-        assert configTree instanceof DirectConfigurationProperty : configTree;
+    protected DirectConfigurationProxy(List<KeyPathNode> keys, DynamicConfigurationChanger changer) {
+        super(keys, changer);
     }
 
     /** {@inheritDoc} */
     @Override
-    public VIEWT directValue() {
-        return ((DirectConfigurationProperty<VIEWT>) configTree).directValue();
+    public CompletableFuture<Void> change(Consumer<CHANGET> change) {
+        throw new UnsupportedOperationException("change");
     }
 }

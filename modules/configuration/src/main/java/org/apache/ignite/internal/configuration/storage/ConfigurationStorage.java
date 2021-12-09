@@ -45,6 +45,15 @@ public interface ConfigurationStorage {
     Map<String, ? extends Serializable> readAllLatest(String prefix) throws StorageException;
 
     /**
+     * Retrieves the most recent value associated with the key, regardless of the current storage version.
+     *
+     * @param key Key.
+     * @return Value from the storage.
+     * @throws StorageException If failed to retrieve data.
+     */
+    Serializable readLatest(String key) throws StorageException;
+
+    /**
      * Write key-value pairs into the storage with last known version.
      *
      * @param newValues Key-value pairs.

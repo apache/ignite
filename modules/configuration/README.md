@@ -166,6 +166,7 @@ type, name and fields specific to it.
 ### Additional annotations
 
 * `@InjectedName` - allows to get the key associated with the configuration in the named list, see javadoc for details.
+* `@InternalId` - allows to get an internal id in a named list, see javadoc for details.
 
 ## Generated API
 
@@ -300,3 +301,10 @@ parentCfg.polymorphicChild()
 It is possible to execute several change requests for different roots in a single transaction, but all these roots 
 _must have the same storage type_. However, this is only possible using the command line tool via the REST API, 
 there's no public Java API at the moment.
+
+### Accessing up-to-date configuration properties directly from storage
+Sometimes it's desirable to have a peek into the future, to read the configuration state that has not yet been processed by the current
+node. There's API for this purpose.
+
+Please refer to `ConfigurationUtil#directProxy(ConfigurationProperty)` for details. There are many usages of this method in tests. It
+should provide the context.

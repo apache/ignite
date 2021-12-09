@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.configuration;
 
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.appendKey;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class represents configuration root or node.
  */
-public abstract class DynamicConfiguration<VIEWT, CHANGET> extends ConfigurationNode<VIEWT>
+public abstract class DynamicConfiguration<VIEWT, CHANGET extends VIEWT> extends ConfigurationNode<VIEWT>
         implements ConfigurationTree<VIEWT, CHANGET> {
     /** Configuration members (leaves and nodes). */
     protected volatile Map<String, ConfigurationProperty<?>> members = new LinkedHashMap<>();
@@ -58,7 +60,7 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET> extends Configuration
             DynamicConfigurationChanger changer,
             boolean listenOnly
     ) {
-        super(prefix, key, rootKey, changer, listenOnly);
+        super(appendKey(prefix, key), key, rootKey, changer, listenOnly);
     }
 
     /**
