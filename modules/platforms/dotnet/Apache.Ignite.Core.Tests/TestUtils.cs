@@ -600,7 +600,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
-            var cfg = new IgniteConfiguration
+            return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
@@ -622,8 +622,6 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = WorkDir,
                 Logger = noLogger ? null : new TestContextLogger()
             };
-
-            return cfg;
         }
 
         /// <summary>
@@ -734,14 +732,17 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 
+    /** */
     public  class SetUseBinaryArray : ILifecycleHandler
     {
         /** Task name. */
         private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
 
+        /** */
         [InstanceResource]
         private readonly IIgnite _ignite = null;
 
+        /** <inheritdoc /> */
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
             if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)

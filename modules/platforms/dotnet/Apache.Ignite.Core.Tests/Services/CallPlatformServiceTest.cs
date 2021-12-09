@@ -363,6 +363,9 @@ namespace Apache.Ignite.Core.Tests.Services
     public class CallPlatformServiceTestBinaryArrays : CallPlatformServiceTest
     {
         /** */
-        public CallPlatformServiceTestBinaryArrays() : base(true) {}
+        public CallPlatformServiceTestBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }

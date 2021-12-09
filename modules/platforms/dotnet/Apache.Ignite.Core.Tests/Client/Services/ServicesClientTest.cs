@@ -44,6 +44,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // No-op.
         }
 
+        /** */
         public ServicesClientTest(bool useBinaryArray) : base(2, useBinaryArray: useBinaryArray)
         {
             // No-op.

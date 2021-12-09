@@ -1874,6 +1874,9 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServicesTestBinaryArrays : ServicesTest
     {
         /** */
-        public ServicesTestBinaryArrays() : base(true) { }
+        public ServicesTestBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }

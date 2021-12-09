@@ -34,16 +34,25 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** */
-        public ServicesTestAsync() { }
+        public ServicesTestAsync()
+        {
+            // No-op.
+        }
 
         /** */
-        public ServicesTestAsync(bool useBinaryArray) : base(useBinaryArray) { }
+        public ServicesTestAsync(bool useBinaryArray) : base(useBinaryArray)
+        {
+            // No-op.
+        }
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestAsyncBinaryArrays : ServicesTestAsync
     {
         /** */
-        public ServicesTestAsyncBinaryArrays() : base(true) { }
+        public ServicesTestAsyncBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }
