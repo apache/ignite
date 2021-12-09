@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-            if (!isPlatform || _useBinaryArray)
+            if (_useBinaryArray)
             {
                 Assert.AreEqual(42, svc.testOverload(2, Emps));
                 Assert.AreEqual(43, svc.testOverload(2, Param));
