@@ -66,13 +66,16 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** */
-        public CallPlatformServiceTest() : this(TestUtils.DfltUseBinaryArray) { }
+        public CallPlatformServiceTest() : this(TestUtils.DfltUseBinaryArray)
+        {
+            // No-op.
+        }
 
         /// <summary>
         /// Start grids and deploy test service.
         /// </summary>
         [SetUp]
-        public virtual void SetUp()
+        public void SetUp()
         {
             TestUtils.UseBinaryArray = _useBinaryArray;
 
@@ -83,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Stop grids after test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             StopGrids();
 

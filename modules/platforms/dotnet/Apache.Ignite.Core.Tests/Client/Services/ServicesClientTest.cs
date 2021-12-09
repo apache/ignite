@@ -44,6 +44,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // No-op.
         }
 
+        public ServicesClientTest(bool useBinaryArray) : base(2, useBinaryArray: useBinaryArray)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Tears down the test.
         /// </summary>
@@ -600,20 +605,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public class ServicesClientTestBinaryArrays : ServicesClientTest
     {
-        /// <summary>Setup UseTypedArray flag value.</summary>
-        [TestFixtureSetUp]
-        public override void FixtureSetUp()
+        public ServicesClientTestBinaryArrays() : base(true)
         {
-            TestUtils.UseBinaryArray = true;
-            base.FixtureSetUp();
-        }
-
-        /// <summary>Executes after all tests.</summary>
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
+            // No-op.
         }
     }
 }

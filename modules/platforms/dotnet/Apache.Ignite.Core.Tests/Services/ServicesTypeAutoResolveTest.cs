@@ -64,7 +64,10 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _client;
 
         /** */
-        public ServicesTypeAutoResolveTest() : this(TestUtils.DfltUseBinaryArray) { }
+        public ServicesTypeAutoResolveTest() : this(TestUtils.DfltUseBinaryArray)
+        {
+            // No-op.
+        }
 
         /** */
         public ServicesTypeAutoResolveTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
@@ -73,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         [TestFixtureTearDown]
-        public virtual void FixtureTearDown()
+        public void FixtureTearDown()
         {
             StopGrids();
         }
@@ -82,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Executes before each test.
         /// </summary>
         [SetUp]
-        public virtual void SetUp()
+        public void SetUp()
         {
             TestUtils.UseBinaryArray = _useBinaryArray;
 

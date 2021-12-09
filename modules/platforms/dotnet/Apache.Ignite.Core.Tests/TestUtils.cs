@@ -635,12 +635,12 @@ namespace Apache.Ignite.Core.Tests
             // Can't use JVM options here, because JVM instance are cached inside IgniteManager#CreateJvm
             // and can't be changed after initialization.
             if (UseBinaryArray)
-                cfg.LifecycleHandlers = new[] { new SetUseTypedArray() };
+                cfg.LifecycleHandlers = new[] { new SetUseBinaryArray() };
 
             return cfg;
         }
 
-        private class SetUseTypedArray : ILifecycleHandler
+        private class SetUseBinaryArray : ILifecycleHandler
         {
             [InstanceResource]
             private readonly IIgnite _ignite = null;

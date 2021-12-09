@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Server list log levels. */
         private readonly LogLevel[] _serverListLoggerLevels;
 
+        /** */
+        private readonly bool _useBinaryArray;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -78,13 +81,15 @@ namespace Apache.Ignite.Core.Tests.Client
             bool enableSsl = false,
             bool enablePartitionAwareness = false,
             bool enableServerListLogging = false,
-            LogLevel[] serverListLoggerLevels = null)
+            LogLevel[] serverListLoggerLevels = null,
+            bool useBinaryArray = TestUtils.DfltUseBinaryArray)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
             _enablePartitionAwareness = enablePartitionAwareness;
             _enableServerListLogging = enableServerListLogging;
             _serverListLoggerLevels = serverListLoggerLevels ?? new[] { LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
+            _useBinaryArray = useBinaryArray;
         }
 
         /// <summary>
@@ -93,6 +98,8 @@ namespace Apache.Ignite.Core.Tests.Client
         [TestFixtureSetUp]
         public virtual void FixtureSetUp()
         {
+            TestUtils.UseBinaryArray = _useBinaryArray;
+
             var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
 
@@ -111,10 +118,12 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void FixtureTearDown()
+        public void FixtureTearDown()
         {
             Ignition.StopAll(true);
             Client.Dispose();
+
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
