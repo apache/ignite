@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Services
         private string _javaSvcName;
 
         /** */
-        private readonly bool _useBinaryArray = false;
+        private readonly bool _useBinaryArray;
 
         /** */
         public ServicesTest()

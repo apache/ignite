@@ -102,9 +102,6 @@ namespace Apache.Ignite.Core.Tests
         public static bool JvmDebug = true;
 
         /** */
-        public const bool DfltUseBinaryArray = false;
-
-        /** */
         [ThreadStatic]
         private static Random _random;
 
