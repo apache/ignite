@@ -33,23 +33,18 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             get { return false; }
         }
+
+        /** */
+        public ServicesTestFullFooter() { }
+
+        /** */
+        public ServicesTestFullFooter(bool useBinaryArray = TestUtils.DfltUseBinaryArray) : base(useBinaryArray) { }
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestFullFooterBinaryArrays : ServicesTestFullFooter
     {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseBinaryArray = true;
-            base.SetUp();
-        }
-
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-        }
+        /** */
+        public ServicesTestFullFooterBinaryArrays() : base(true) { }
     }
 }

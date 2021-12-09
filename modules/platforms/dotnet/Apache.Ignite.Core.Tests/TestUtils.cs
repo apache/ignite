@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests
         public static bool JvmDebug = true;
 
         /** */
-        public static readonly bool DfltUseBinaryArray = false;
+        public const bool DfltUseBinaryArray = false;
 
         /** */
         public static bool UseBinaryArray = DfltUseBinaryArray;

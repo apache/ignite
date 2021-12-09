@@ -21,11 +21,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
@@ -71,10 +69,24 @@ namespace Apache.Ignite.Core.Tests.Services
         /* Deploy Java service name. */
         private string _javaSvcName;
 
+        /** */
+        private readonly bool _useBinaryArray;
+
+        /** */
+        public ServicesTest() : this(TestUtils.DfltUseBinaryArray) { }
+
+        /** */
+        public ServicesTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
         [TestFixtureTearDown]
         public virtual void FixtureTearDown()
         {
             StopGrids();
+
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
@@ -83,6 +95,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public virtual void SetUp()
         {
+            TestUtils.UseBinaryArray = _useBinaryArray;
+
             StartGrids();
 
             Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
@@ -1859,18 +1873,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestBinaryArrays : ServicesTest
     {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseBinaryArray = true;
-            base.SetUp();
-        }
-
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-        }
+        /** */
+        public ServicesTestBinaryArrays() : base(true) { }
     }
 }

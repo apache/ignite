@@ -32,23 +32,18 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             get { return new ServicesAsyncWrapper(Grid1.GetServices()); }
         }
+
+        /** */
+        public ServicesTestAsync() { }
+
+        /** */
+        public ServicesTestAsync(bool useBinaryArray = TestUtils.DfltUseBinaryArray) : base(useBinaryArray) { }
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>
     public class ServicesTestAsyncBinaryArrays : ServicesTestAsync
     {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseBinaryArray = true;
-            base.SetUp();
-        }
-
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-        }
+        /** */
+        public ServicesTestAsyncBinaryArrays() : base(true) { }
     }
 }

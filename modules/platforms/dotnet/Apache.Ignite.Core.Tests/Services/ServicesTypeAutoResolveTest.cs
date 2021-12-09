@@ -22,10 +22,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -34,6 +32,9 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTest
     {
+        /** */
+        private readonly bool _useBinaryArray;
+
         /** Platform service name. */
         const string PlatformSvcName = "PlatformTestService";
 
@@ -62,6 +63,15 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         private IIgnite _client;
 
+        /** */
+        public ServicesTypeAutoResolveTest() : this(TestUtils.DfltUseBinaryArray) { }
+
+        /** */
+        public ServicesTypeAutoResolveTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
         [TestFixtureTearDown]
         public virtual void FixtureTearDown()
         {
@@ -74,6 +84,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public virtual void SetUp()
         {
+            TestUtils.UseBinaryArray = _useBinaryArray;
+
             StartGrids();
 
             _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
@@ -106,6 +118,8 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
+
+                TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
             }
         }
 
@@ -303,19 +317,6 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTestBinaryArrays : ServicesTypeAutoResolveTest
     {
-        /// <summary>Start grids and deploy test service.</summary>
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseBinaryArray = true;
-            base.SetUp();
-        }
-
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-        }
+        public ServicesTypeAutoResolveTestBinaryArrays() : base(true) { }
     }
 }

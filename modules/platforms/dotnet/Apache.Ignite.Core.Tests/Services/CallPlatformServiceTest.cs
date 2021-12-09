@@ -48,6 +48,9 @@ namespace Apache.Ignite.Core.Tests.Services
             "org.apache.ignite.platform.PlatformServiceCallCollectionsThinTask";
 
         /** */
+        private readonly bool _useBinaryArray;
+
+        /** */
         protected IIgnite Grid1;
 
         /** */
@@ -56,12 +59,23 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         protected IIgnite Grid3;
 
+        /** */
+        public CallPlatformServiceTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
+        /** */
+        public CallPlatformServiceTest() : this(TestUtils.DfltUseBinaryArray) { }
+
         /// <summary>
         /// Start grids and deploy test service.
         /// </summary>
         [SetUp]
         public virtual void SetUp()
         {
+            TestUtils.UseBinaryArray = _useBinaryArray;
+
             StartGrids();
         }
 
@@ -72,6 +86,8 @@ namespace Apache.Ignite.Core.Tests.Services
         public virtual void TearDown()
         {
             StopGrids();
+
+            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
@@ -346,18 +362,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary> Tests with UseBinaryArray = true. </summary>
     public class CallPlatformServiceTestBinaryArrays : CallPlatformServiceTest
     {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseBinaryArray = true;
-            base.SetUp();
-        }
-
-        [TearDown]
-        public override void TearDown()
-        {
-            base.TearDown();
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
-        }
+        /** */
+        public CallPlatformServiceTestBinaryArrays() : base(true) {}
     }
 }
