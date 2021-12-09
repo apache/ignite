@@ -390,17 +390,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param obj Object.
      */
     void setHandle(Object obj) {
-        setHandle(obj, start);
+        setHandle(obj, start, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void setHandle(Object obj, int pos) {
-        handles().put(pos, obj);
+    @Override public void setHandle(Object obj, int pos, boolean deserialized) {
+        handles().put(deserialized ? -pos : pos, obj);
     }
 
     /** {@inheritDoc} */
-    @Override public Object getHandle(int pos) {
-        return hnds != null ? hnds.get(pos) : null;
+    @Override public Object getHandle(int pos, boolean deserialized) {
+        return hnds != null ? hnds.get(deserialized ? -pos : pos) : null;
     }
 
     /** {@inheritDoc} */
@@ -420,7 +420,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private <T> T readHandleField() {
         int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
 
-        Object obj = getHandle(handlePos);
+        Object obj = getHandle(handlePos, false);
 
         if (obj == null) {
             int retPos = in.position();
@@ -1552,7 +1552,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
 
-                Object obj = getHandle(handlePos);
+                Object obj = getHandle(handlePos, false);
 
                 if (obj == null) {
                     int retPos = in.position();
@@ -1630,7 +1630,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
 
-                Object obj = getHandle(handlePos);
+                Object obj = getHandle(handlePos, false);
 
                 if (obj == null) {
                     int retPos = in.position();
@@ -1753,7 +1753,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             case HANDLE:
                 int handlePos = start - in.readInt();
 
-                obj = getHandle(handlePos);
+                obj = getHandle(handlePos, false);
 
                 if (obj == null) {
                     int retPos = in.position();

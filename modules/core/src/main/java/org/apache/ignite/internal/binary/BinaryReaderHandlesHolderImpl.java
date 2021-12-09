@@ -25,13 +25,13 @@ public class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder 
     private BinaryReaderHandles hnds;
 
     /** {@inheritDoc} */
-    @Override public void setHandle(Object obj, int pos) {
-        handles().put(pos, obj);
+    @Override public void setHandle(Object obj, int pos, boolean deserialized) {
+        handles().put(deserialized ? -pos : pos, obj);
     }
 
     /** {@inheritDoc} */
-    @Override public Object getHandle(int pos) {
-        return hnds != null ? hnds.get(pos) : null;
+    @Override public Object getHandle(int pos, boolean deserialized) {
+        return hnds != null ? hnds.get(deserialized ? -pos : pos) : null;
     }
 
     /** {@inheritDoc} */

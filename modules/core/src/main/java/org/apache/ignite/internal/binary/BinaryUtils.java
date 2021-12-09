@@ -1886,11 +1886,7 @@ public class BinaryUtils {
             case GridBinaryMarshaller.HANDLE: {
                 int handlePos = start - in.readInt();
 
-                Object obj;
-                if (deserialize)
-                    obj = handles.getHandle(-handlePos);
-                else
-                    obj = handles.getHandle(handlePos);
+                Object obj = handles.getHandle(handlePos, deserialize);
     
                 if (obj == null) {
                     int retPos = in.position();
@@ -1906,12 +1902,7 @@ public class BinaryUtils {
             }
 
             case GridBinaryMarshaller.OBJ: {
-                Object obj;
-
-                if (deserialize)
-                    obj = handles.getHandle(-start);
-                else
-                    obj = handles.getHandle(start);
+                Object obj = handles.getHandle(start, deserialize);
 
                 if (obj != null)
                     return obj;
@@ -1938,10 +1929,7 @@ public class BinaryUtils {
                     in.position(start + po.length());
                 }
 
-                if (deserialize)
-                    handles.setHandle(po, -start);
-                else
-                    handles.setHandle(po, start);
+                handles.setHandle(po, start, deserialize);
 
                 return po;
             }
@@ -2086,11 +2074,8 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        if (deserialize)
-            hPos = -hPos;
-
-        if (handles.getHandle(hPos) != null)
-            return (Object[])handles.getHandle(hPos);
+        if (handles.getHandle(hPos, deserialize) != null)
+            return (Object[])handles.getHandle(hPos, deserialize);
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
@@ -2098,7 +2083,7 @@ public class BinaryUtils {
 
         Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
-        handles.setHandle(arr, hPos);
+        handles.setHandle(arr, hPos, deserialize);
 
         for (int i = 0; i < len; i++) {
             Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
@@ -2126,11 +2111,8 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
         int hPos = positionForHandle(in);
 
-        if (deserialize)
-            hPos = -hPos;
-
-        if (handles.getHandle(hPos) != null)
-            return (BinaryArray)handles.getHandle(hPos);
+        if (handles.getHandle(hPos, deserialize) != null)
+            return (BinaryArray)handles.getHandle(hPos, deserialize);
 
         int compTypeId = in.readInt();
         String compClsName = null;
@@ -2146,7 +2128,7 @@ public class BinaryUtils {
             ? new BinaryEnumArray(ctx, compTypeId, compClsName, arr)
             : new BinaryArray(ctx, compTypeId, compClsName, arr);
 
-        handles.setHandle(res, hPos);
+        handles.setHandle(res, hPos, deserialize);
 
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
@@ -2165,11 +2147,8 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        if (deserialize)
-            hPos = -hPos;
         
-        Object obj = handles.getHandle(hPos);
+        Object obj = handles.getHandle(hPos, deserialize);
 
         if (obj != null)
             return (Collection<?>)obj;
@@ -2226,7 +2205,7 @@ public class BinaryUtils {
             }
         }
 
-        handles.setHandle(col, hPos);
+        handles.setHandle(col, hPos, deserialize);
 
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize));
@@ -2246,10 +2225,7 @@ public class BinaryUtils {
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        if (deserialize)
-            hPos = -hPos;
-
-        Object obj = handles.getHandle(hPos);
+        Object obj = handles.getHandle(hPos, deserialize);
 
         if (obj != null)
             return (Map<?, ?>)obj;
@@ -2286,7 +2262,7 @@ public class BinaryUtils {
             }
         }
 
-        handles.setHandle(map, hPos);
+        handles.setHandle(map, hPos, deserialize);
 
         for (int i = 0; i < size; i++) {
             Object key = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);

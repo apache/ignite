@@ -26,16 +26,18 @@ public interface BinaryReaderHandlesHolder {
      *
      * @param obj Object.
      * @param pos Position.
+     * @param deserialized Deserialized flag.
      */
-    public void setHandle(Object obj, int pos);
+    public void setHandle(Object obj, int pos, boolean deserialized);
 
     /**
      * Get handle.
      *
      * @param pos Position.
+     * @param deserialized Deserialized flag.
      * @return Handle.
      */
-    public Object getHandle(int pos);
+    public Object getHandle(int pos, boolean deserialized);
 
     /**
      * Get all handles.
