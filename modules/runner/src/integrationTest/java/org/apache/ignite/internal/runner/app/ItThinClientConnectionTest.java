@@ -149,8 +149,25 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
                 var kvView = table.keyValueView();
                 assertEquals("Hello", kvView.get(keyTuple).stringValue(valCol));
 
+                var pojoView = table.recordView(TestPojo.class);
+                assertEquals("Hello", pojoView.get(new TestPojo(1)).val);
+
                 assertTrue(recView.delete(keyTuple));
             }
         }
+    }
+
+    private static class TestPojo {
+        public TestPojo() {
+            // No-op.
+        }
+
+        public TestPojo(int key) {
+            this.key = key;
+        }
+
+        public int key;
+
+        public String val;
     }
 }

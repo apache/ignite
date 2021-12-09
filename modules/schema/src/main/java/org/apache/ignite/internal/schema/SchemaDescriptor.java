@@ -74,7 +74,6 @@ public class SchemaDescriptor {
      */
     public SchemaDescriptor(int ver, Column[] keyCols, @Nullable String[] affCols, Column[] valCols) {
         assert keyCols.length > 0 : "No key columns are configured.";
-        assert valCols.length > 0 : "No value columns are configured.";
 
         this.ver = ver;
         this.keyCols = new Columns(0, keyCols);

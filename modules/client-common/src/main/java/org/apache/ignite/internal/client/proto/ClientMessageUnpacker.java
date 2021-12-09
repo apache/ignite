@@ -342,7 +342,7 @@ public class ClientMessageUnpacker implements AutoCloseable {
                 return BigInteger.valueOf(buf.readLong());
 
             default:
-                throw unexpected("Integer", code);
+                throw unexpected("BigInteger", code);
         }
     }
 

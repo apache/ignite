@@ -56,6 +56,7 @@ public interface Mapper<T> {
      * @return Mapper.
      */
     static <T> Mapper<T> identity(Class<T> targetClass) {
+        // TODO: Cache mappers (IGNITE-16094).
         return new IdentityMapper<T>(targetClass);
     }
 

@@ -94,7 +94,7 @@ public class ClientTable implements Table {
     /** {@inheritDoc} */
     @Override
     public <R> RecordView<R> recordView(Mapper<R> recMapper) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        return new ClientRecordView<>(this, recMapper);
     }
 
     @Override
@@ -250,6 +250,7 @@ public class ClientTable implements Table {
             boolean skipHeader
     ) {
         // TODO: Special case for ClientTupleBuilder - it has columns in order
+        // TODO: Optimize (IGNITE-16082).
         var vals = new Object[keyOnly ? schema.keyColumnCount() : schema.columns().length];
         var tupleSize = tuple.columnCount();
 
@@ -290,6 +291,7 @@ public class ClientTable implements Table {
             ClientMessagePacker out,
             boolean skipHeader
     ) {
+        // TODO: Handle missing values and null values differently (IGNITE-16093).
         var vals = new Object[schema.columns().length];
 
         for (var i = 0; i < key.columnCount(); i++) {

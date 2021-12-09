@@ -271,6 +271,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             pendingReq.complete(unpacker);
         } else {
             var errMsg = unpacker.unpackString();
+            unpacker.close();
+
             var err = new IgniteClientException(errMsg, status);
             pendingReq.completeExceptionally(err);
         }
