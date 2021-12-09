@@ -105,12 +105,6 @@ namespace Apache.Ignite.Core.Tests
         public const bool DfltUseBinaryArray = false;
 
         /** */
-        public static bool UseBinaryArray = DfltUseBinaryArray;
-
-        /** Decimal task name. */
-        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
-
-        /** */
         [ThreadStatic]
         private static Random _random;
 
@@ -632,29 +626,7 @@ namespace Apache.Ignite.Core.Tests
                 Logger = noLogger ? null : new TestContextLogger()
             };
 
-            // Can't use JVM options here, because JVM instance are cached inside IgniteManager#CreateJvm
-            // and can't be changed after initialization.
-            if (UseBinaryArray)
-                cfg.LifecycleHandlers = new[] { new SetUseBinaryArray() };
-
             return cfg;
-        }
-
-        private class SetUseBinaryArray : ILifecycleHandler
-        {
-            [InstanceResource]
-            private readonly IIgnite _ignite = null;
-
-            public void OnLifecycleEvent(LifecycleEventType evt)
-            {
-                if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
-                    return;
-
-                _ignite.GetCompute().ExecuteJavaTask<object>(
-                    SetUseTypedArrayTask,
-                    evt == LifecycleEventType.AfterNodeStart ? !DfltUseBinaryArray : DfltUseBinaryArray
-                );
-            }
         }
 
         /// <summary>
@@ -762,6 +734,26 @@ namespace Apache.Ignite.Core.Tests
             {
                 return level >= LogLevel.Info;
             }
+        }
+    }
+
+    public  class SetUseBinaryArray : ILifecycleHandler
+    {
+        /** Task name. */
+        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
+
+        [InstanceResource]
+        private readonly IIgnite _ignite = null;
+
+        public void OnLifecycleEvent(LifecycleEventType evt)
+        {
+            if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
+                return;
+
+            _ignite.GetCompute().ExecuteJavaTask<object>(
+                SetUseTypedArrayTask,
+                evt == LifecycleEventType.AfterNodeStart ? !TestUtils.DfltUseBinaryArray : TestUtils.DfltUseBinaryArray
+            );
         }
     }
 }

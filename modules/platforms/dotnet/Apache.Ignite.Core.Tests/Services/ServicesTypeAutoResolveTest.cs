@@ -87,8 +87,6 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public void SetUp()
         {
-            TestUtils.UseBinaryArray = _useBinaryArray;
-
             StartGrids();
 
             _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
@@ -121,8 +119,6 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
-
-                TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
             }
         }
 
@@ -196,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-            if (!isPlatform || TestUtils.UseBinaryArray)
+            if (!isPlatform || _useBinaryArray)
             {
                 Assert.AreEqual(42, svc.testOverload(2, Emps));
                 Assert.AreEqual(43, svc.testOverload(2, Param));
@@ -204,12 +200,11 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(5, svc.testOverload(3, 2));
             }
 
-
             Assert.IsNull(svc.testEmployees(null));
 
             var emps = svc.testEmployees(Emps);
 
-            if (!isPlatform || TestUtils.UseBinaryArray)
+            if (!isPlatform || _useBinaryArray)
                 Assert.AreEqual(typeof(Employee[]), emps.GetType());
 
             Assert.NotNull(emps);
@@ -233,7 +228,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var accs = svc.testAccounts();
 
-            if (!isPlatform || TestUtils.UseBinaryArray)
+            if (!isPlatform || _useBinaryArray)
                 Assert.AreEqual(typeof(Account[]), accs.GetType());
 
             Assert.NotNull(accs);
@@ -245,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var users = svc.testUsers();
 
-            if (!isPlatform || TestUtils.UseBinaryArray)
+            if (!isPlatform || _useBinaryArray)
                 Assert.AreEqual(typeof(User[]), users.GetType());
 
             Assert.NotNull(users);
@@ -261,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.NotNull(users2);
 
-            if (TestUtils.UseBinaryArray)
+            if (_useBinaryArray)
                 Assert.AreEqual(typeof(User[]), users2.GetType());
         }
 
@@ -310,7 +305,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
     }

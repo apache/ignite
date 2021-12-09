@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Client
         private readonly LogLevel[] _serverListLoggerLevels;
 
         /** */
-        private readonly bool _useBinaryArray;
+        protected readonly bool _useBinaryArray;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
@@ -98,8 +98,6 @@ namespace Apache.Ignite.Core.Tests.Client
         [TestFixtureSetUp]
         public virtual void FixtureSetUp()
         {
-            TestUtils.UseBinaryArray = _useBinaryArray;
-
             var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
 
@@ -122,8 +120,6 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             Ignition.StopAll(true);
             Client.Dispose();
-
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
@@ -231,7 +227,8 @@ namespace Apache.Ignite.Core.Tests.Client
                     }
                     : new TestUtils.TestContextLogger(),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null,
-                RedirectJavaConsoleOutput = false
+                RedirectJavaConsoleOutput = false,
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 

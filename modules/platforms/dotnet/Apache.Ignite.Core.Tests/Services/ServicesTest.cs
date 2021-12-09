@@ -88,8 +88,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void FixtureTearDown()
         {
             StopGrids();
-
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
@@ -98,8 +96,6 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public void SetUp()
         {
-            TestUtils.UseBinaryArray = _useBinaryArray;
-
             StartGrids();
 
             Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
@@ -1258,7 +1254,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var bins = svc.testBinarizableArray(arr);
 
-            if (!isPlatform || TestUtils.UseBinaryArray)
+            if (!isPlatform || _useBinaryArray)
                 Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
 
             Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
@@ -1375,7 +1371,8 @@ namespace Apache.Ignite.Core.Tests.Services
 #if NETCOREAPP
                     , TimestampConverter = new TimestampConverter()
 #endif
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 

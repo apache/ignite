@@ -77,8 +77,6 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public void SetUp()
         {
-            TestUtils.UseBinaryArray = _useBinaryArray;
-
             StartGrids();
         }
 
@@ -89,8 +87,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TearDown()
         {
             StopGrids();
-
-            TestUtils.UseBinaryArray = TestUtils.DfltUseBinaryArray;
         }
 
         /// <summary>
@@ -152,7 +148,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 
