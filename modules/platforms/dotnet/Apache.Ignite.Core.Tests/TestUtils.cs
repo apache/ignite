@@ -750,10 +750,8 @@ namespace Apache.Ignite.Core.Tests
             if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
                 return;
 
-            _ignite.GetCompute().ExecuteJavaTask<object>(
-                SetUseTypedArrayTask,
-                evt == LifecycleEventType.AfterNodeStart ? !TestUtils.DfltUseBinaryArray : TestUtils.DfltUseBinaryArray
-            );
+            _ignite.GetCompute()
+                .ExecuteJavaTask<object>(SetUseTypedArrayTask, evt == LifecycleEventType.AfterNodeStart);
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public ServicesTestFullFooter() { }
 
         /** */
-        public ServicesTestFullFooter(bool useBinaryArray = TestUtils.DfltUseBinaryArray) : base(useBinaryArray) { }
+        public ServicesTestFullFooter(bool useBinaryArray) : base(useBinaryArray) { }
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>

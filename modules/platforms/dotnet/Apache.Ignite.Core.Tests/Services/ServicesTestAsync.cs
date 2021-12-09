@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public ServicesTestAsync() { }
 
         /** */
-        public ServicesTestAsync(bool useBinaryArray = TestUtils.DfltUseBinaryArray) : base(useBinaryArray) { }
+        public ServicesTestAsync(bool useBinaryArray) : base(useBinaryArray) { }
     }
 
     /// <summary> Tests with UseBinaryArray = true. </summary>

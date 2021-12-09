@@ -64,13 +64,13 @@ namespace Apache.Ignite.Core.Tests.Services
         private IIgnite _client;
 
         /** */
-        public ServicesTypeAutoResolveTest() : this(TestUtils.DfltUseBinaryArray)
+        public ServicesTypeAutoResolveTest()
         {
             // No-op.
         }
 
         /** */
-        public ServicesTypeAutoResolveTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        public ServicesTypeAutoResolveTest(bool useBinaryArray)
         {
             _useBinaryArray = useBinaryArray;
         }

@@ -60,13 +60,13 @@ namespace Apache.Ignite.Core.Tests.Services
         protected IIgnite Grid3;
 
         /** */
-        public CallPlatformServiceTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        public CallPlatformServiceTest(bool useBinaryArray)
         {
             _useBinaryArray = useBinaryArray;
         }
 
         /** */
-        public CallPlatformServiceTest() : this(TestUtils.DfltUseBinaryArray)
+        public CallPlatformServiceTest() : this(false)
         {
             // No-op.
         }

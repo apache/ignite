@@ -70,16 +70,16 @@ namespace Apache.Ignite.Core.Tests.Services
         private string _javaSvcName;
 
         /** */
-        private readonly bool _useBinaryArray;
+        private readonly bool _useBinaryArray = false;
 
         /** */
-        public ServicesTest() : this(TestUtils.DfltUseBinaryArray)
+        public ServicesTest()
         {
             // No-op.
         }
 
         /** */
-        public ServicesTest(bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+        public ServicesTest(bool useBinaryArray)
         {
             _useBinaryArray = useBinaryArray;
         }

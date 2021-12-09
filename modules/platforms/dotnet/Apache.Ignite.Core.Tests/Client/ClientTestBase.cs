@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client
             bool enablePartitionAwareness = false,
             bool enableServerListLogging = false,
             LogLevel[] serverListLoggerLevels = null,
-            bool useBinaryArray = TestUtils.DfltUseBinaryArray)
+            bool useBinaryArray = false)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
