@@ -27,12 +27,12 @@ namespace Apache.Ignite.Core.Configuration
     public class SystemDataRegionConfiguration
     {
         /// <summary>
-        /// Default size of a memory chunk reserved for system cache initially.
+        /// Default size in bytes of a memory chunk reserved for system cache initially.
         /// </summary>
         public const long DefaultInitialSize = 40 * 1024 * 1024;
 
         /// <summary>
-        /// Default max size of a memory chunk for the system cache.
+        /// Default max size in bytes of a memory chunk for the system cache.
         /// </summary>
         public const long DefaultMaxSize = 100 * 1024 * 1024;
 
@@ -70,13 +70,13 @@ namespace Apache.Ignite.Core.Configuration
         }
         
         /// <summary>
-        /// Gets or sets the size of a memory chunk reserved for system needs.
+        /// Gets or sets the size in bytes of a memory chunk reserved for system needs.
         /// </summary>
         [DefaultValue(DefaultInitialSize)]
         public long InitialSize { get; set; }
         
         /// <summary>
-        /// Gets or sets the maximum memory region size reserved for system needs.
+        /// Gets or sets the maximum memory region size in bytes reserved for system needs.
         /// </summary>
         [DefaultValue(DefaultMaxSize)]
         public long MaxSize { get; set; }
