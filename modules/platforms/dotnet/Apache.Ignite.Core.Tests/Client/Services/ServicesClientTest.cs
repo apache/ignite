@@ -606,6 +606,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     /// </summary>
     public class ServicesClientTestBinaryArrays : ServicesClientTest
     {
+        /** */
         public ServicesClientTestBinaryArrays() : base(true)
         {
             // No-op.

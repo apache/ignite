@@ -316,6 +316,10 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTestBinaryArrays : ServicesTypeAutoResolveTest
     {
-        public ServicesTypeAutoResolveTestBinaryArrays() : base(true) { }
+        /** */
+        public ServicesTypeAutoResolveTestBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }
