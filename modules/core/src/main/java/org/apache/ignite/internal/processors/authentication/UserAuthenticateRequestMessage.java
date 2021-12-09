@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -97,13 +98,13 @@ public class UserAuthenticateRequestMessage implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("name", BinaryUtils.strToUtf8Bytes(name)))
+                if (!writeString(writer, "name", name))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("passwd", BinaryUtils.strToUtf8Bytes(passwd)))
+                if (!writeString(writer, "passwd", passwd))
                     return false;
 
                 writer.incrementState();
@@ -130,9 +131,7 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                byte[] nameBytes = reader.readByteArray("name");
-
-                name = BinaryUtils.utf8BytesToStr(nameBytes, 0, nameBytes.length);
+                name = readString(reader, "name");
 
                 if (!reader.isLastRead())
                     return false;
@@ -140,9 +139,7 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                byte[] pwdBytes = reader.readByteArray("passwd");
-
-                passwd = BinaryUtils.utf8BytesToStr( pwdBytes, 0, pwdBytes.length);
+                passwd = readString(reader, "passwd");
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,5 +169,24 @@ public class UserAuthenticateRequestMessage implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UserAuthenticateRequestMessage.class, this);
+    }
+
+    /** */
+    private static boolean writeString(MessageWriter writer, String name, String str) {
+        return writer.writeByteArray(
+            name,
+            BinaryUtils.USE_STR_SERIALIZATION_VER_2
+                ? BinaryUtils.strToUtf8Bytes(str)
+                : str.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    /** */
+    private static String readString(MessageReader reader, String name) {
+        byte[] bytes = reader.readByteArray(name);
+
+        return BinaryUtils.USE_STR_SERIALIZATION_VER_2
+            ? BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length)
+            : new String(bytes, StandardCharsets.UTF_8);
     }
 }

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.authentication;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -31,20 +33,49 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 
 /** Tests that authenticator is independent of default JVM character encoding. */
+@RunWith(Parameterized.class)
 public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameter()
+    public boolean isSurrogatesCharactersSupportEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "isSurrogatesCharactersSupportEnabled={0}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[] {true}, new Object[] {false});
+    }
+
+    /** */
+    public static final List<String> TEST_ENCODINGS = Arrays.asList("Big5", "UTF-8");
+
+    /** */
+    public static final List<SecurityCredentials> TEST_CREDENTIALS = Arrays.asList(
+        new SecurityCredentials("login", "pwd", false),
+        new SecurityCredentials("語", "Ignite是有史以來最好的基地", false),
+        new SecurityCredentials("的的abcd123кириллица", "的的abcd123пароль", false),
+        new SecurityCredentials(new String(new char[] {55296}), new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF}), true),
+        new SecurityCredentials(new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF}), new String(new char[] {55296}), true)
+    );
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -71,87 +102,118 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
 
         IgniteProcessProxy.killAll();
+
+        cleanPersistenceDir();
     }
 
-    /**
-     *  Tests that Ignite nodes that are running on JVMs with different encodings handles users in the same way.
-     */
+    /** Tests that Ignite nodes that are running on JVMs with different encodings handles users in the same way. */
     @Test
     public void testNodesWithDifferentEncodings() throws Exception {
-        startNodeProcess(0, false, "UTF-8");
-        startNodeProcess(1, false, "Big5");
-        startNodeProcess(2, true, "UTF-8");
-        startNodeProcess(3, true, "Big5");
+        int nodesCnt = 0;
 
-        prepareCluster(4, true);
+        for (String encoding : TEST_ENCODINGS) {
+            startNodeProcess(nodesCnt++, false, encoding);
+            startNodeProcess(nodesCnt++, true, encoding);
+        }
 
-        startProcess(TestRunner.class, "Big5");
-        startProcess(TestRunner.class, "UTF-8");
-    }
+        prepareCluster(nodesCnt, true);
 
-    /** Tests that security user credentials are restored from PDS properly and are accessible. */
-    @Test
-    public void testClusterRestart() throws Exception {
-        startNodeProcess(0, false, "Big5");
+        for (String encoding : TEST_ENCODINGS)
+            runProcess(UserCreator.class, encoding, Integer.toString(nodesCnt));
 
-        prepareCluster(1, true);
-
-        String login = "語";
-        String pwd = "Ignite是有史以來最好的基地";
-
-        runQueryWithSuperUser(0, String.format("CREATE USER \"%s\" WITH PASSWORD '%s';", login, pwd));
+        for (String encoding : TEST_ENCODINGS)
+            runProcess(TestClientConnector.class, encoding, Integer.toString(nodesCnt));
 
         IgniteProcessProxy.killAll();
 
-        startNodeProcess(0, false, "UTF-8");
+        nodesCnt = 0;
 
-        prepareCluster(1, false);
-
-        try (IgniteClient cli = connectClient(0, login, pwd)) {
-            ClientCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
-
-            cache.put(0, 0);
+        for (String encoding : TEST_ENCODINGS) {
+            startNodeProcess(nodesCnt++, false, encoding);
+            startNodeProcess(nodesCnt++, true, encoding);
         }
+
+        prepareCluster(nodesCnt, false);
+
+        for (String encoding : TEST_ENCODINGS)
+            runProcess(TestClientConnector.class, encoding, Integer.toString(nodesCnt));
     }
 
-    /** Tests that user can pass any kind of symbols as a login and checks that Ignite treats it properly. */
-    public static class TestRunner {
+    /** Creates test users. */
+    public static class UserCreator {
         /** */
         public static void main(String[] args) throws Exception {
-            doTest("login", "pwd");
-            doTest("語", "Ignite是有史以來最好的基地");
-            doTest("的的abcd123кириллица", "的的abcd123пароль");
-            doTest(new String(new char[]{55296}), new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF}));
-            doTest(new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF}), new String(new char[]{55296}));
-        }
+            String procEncoding = System.getProperty("file.encoding");
 
-        /** */
-        private static void doTest(String login, String pwd) {
-            String encoding = System.getProperty("file.encoding");
+            int nodesCnt = Integer.parseInt(args[0]);
 
-            for (int nodeIdx = 0; nodeIdx < 4; nodeIdx++) {
-                String extendedLogin = login + '_' + nodeIdx + '_' + encoding;
+            for (SecurityCredentials cred : TEST_CREDENTIALS) {
+                if (containsSurrogates(cred) && !BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                    continue;
 
-                runQueryWithSuperUser(nodeIdx, String.format("CREATE USER \"%s\" WITH PASSWORD '%s';", extendedLogin, pwd));
+                for (int creatorNodeIdx = 0; creatorNodeIdx < nodesCnt; creatorNodeIdx++) {
+                    String login = getLogin(cred, creatorNodeIdx, procEncoding);
+                    String pwd = (String)cred.getPassword();
 
-                try (IgniteClient cli = connectClient(nodeIdx, extendedLogin, pwd)) {
-                    ClientCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
-
-                    for (int i = 0; i < 2; i++)
-                        cache.put(i, i);
+                    try (IgniteClient cli = connectClient(creatorNodeIdx, DFAULT_USER_NAME, "ignite")) {
+                        cli.query(new SqlFieldsQuery(
+                            String.format("CREATE USER \"%s\" WITH PASSWORD '%s';", login, pwd))
+                        ).getAll();
+                    }
                 }
             }
         }
+    }
+
+    /** */
+    public static class TestClientConnector {
+        /** */
+        public static void main(String[] args) throws Exception {
+            String procEncoding = System.getProperty("file.encoding");
+
+            int nodesCnt = Integer.parseInt(args[0]);
+
+            for (SecurityCredentials cred : TEST_CREDENTIALS) {
+                if (containsSurrogates(cred) && !BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                    continue;
+
+                for (int creatorNodeIdx = 0; creatorNodeIdx < nodesCnt; creatorNodeIdx++) {
+                    String login = getLogin(cred, creatorNodeIdx, procEncoding);
+                    String pwd = (String)cred.getPassword();
+
+                    for (int nodeIdx = 0; nodeIdx < nodesCnt; nodeIdx++) {
+                        X.println("Testing client connection [credIdx=" + TEST_CREDENTIALS.indexOf(cred) +
+                            ", userCreatorNodeIdx=" + creatorNodeIdx +
+                            ", procEncoding=" + procEncoding +
+                            ", clientConnectorNodeIdx=" + nodeIdx
+                        );
+
+                        try (IgniteClient cli = connectClient(nodeIdx, login, pwd)) {
+                            ClientCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+                            for (int i = 0; i < nodesCnt; i++) {
+                                cache.put(i, i);
+
+                                assertEquals(i, cache.get(i));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** */
+    private static String getLogin(SecurityCredentials creds, int nodeIdx, String procEncoding) {
+        return (String)creds.getLogin() + '_' + nodeIdx + '_' + procEncoding;
+    }
+
+    /** */
+    private static boolean containsSurrogates(SecurityCredentials cred) {
+        return (Boolean)cred.getUserObject();
     }
 
     /** */
@@ -161,12 +223,12 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
             log,
             null,
             false,
-            Collections.singletonList("-Dfile.encoding=" + encoding)
+            parameters("-Dfile.encoding=" + encoding)
         );
     }
 
     /** */
-    private void startProcess(Class<?> runner, String encoding, String... args) throws Exception {
+    private void runProcess(Class<?> runner, String encoding, String... args) throws Exception {
         GridJavaProcess proc = GridJavaProcess.exec(
             runner.getName(),
             String.join(" ", args),
@@ -174,7 +236,7 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
             log::info,
             null,
             null,
-            Arrays.asList("-ea", "-DIGNITE_QUIET=false", "-Dfile.encoding=" + encoding),
+             parameters("-ea", "-DIGNITE_QUIET=false", "-Dfile.encoding=" + encoding),
             null);
 
         try {
@@ -190,6 +252,10 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
 
     /** */
     private void prepareCluster(int nodesCnt, boolean createTestCache) throws Exception {
+        String prev = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+        System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, Boolean.toString(isSurrogatesCharactersSupportEnabled));
+
         try (IgniteEx cli = startClientGrid(nodesCnt)) {
             assertTrue(GridTestUtils.waitForCondition(() -> cli.cluster().nodes().size() == nodesCnt + 1, getTestTimeout()));
 
@@ -203,13 +269,20 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
                     .setAffinity(new GridCacheModuloAffinityFunction(serversCnt, serversCnt)));
             }
         }
+        finally {
+            if (prev != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, prev);
+        }
     }
 
     /** */
-    private static void runQueryWithSuperUser(int nodeIdx, String qry) {
-        try (IgniteClient cli = connectClient(nodeIdx, DFAULT_USER_NAME, "ignite")) {
-            cli.query(new SqlFieldsQuery(qry)).getAll();
-        }
+    private List<String> parameters(String... params) {
+        List<String> res = new ArrayList<>(Arrays.asList(params));
+
+        if (isSurrogatesCharactersSupportEnabled)
+            res.add("-D" + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 + "=true");
+
+        return res;
     }
 
     /** */
@@ -219,5 +292,4 @@ public class UserCredentialsEncodingMultiJvmTest extends GridCommonAbstractTest 
             .setUserName(login)
             .setUserPassword(pwd));
     }
-
 }
