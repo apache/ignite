@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryDe
 import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteChangingBaselineCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineCacheQueryNodeRestartsSelfTest;
+import org.apache.ignite.internal.processors.query.BasicSqlTest;
 import org.apache.ignite.internal.processors.query.CreateIndexOnInvalidDataTypeTest;
 import org.apache.ignite.internal.processors.query.DisabledSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
@@ -94,6 +95,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    BasicSqlTest.class,
+
     ReducerRowsBufferTest.class,
 
     LazyOnDmlTest.class,
