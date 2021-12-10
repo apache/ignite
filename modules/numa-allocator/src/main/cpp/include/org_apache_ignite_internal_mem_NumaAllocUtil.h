@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef OPTANE_UTILS_ORG_APACHE_IGNITE_INTERNAL_MEM_NUMAALLOCUTIL_H
-#define OPTANE_UTILS_ORG_APACHE_IGNITE_INTERNAL_MEM_NUMAALLOCUTIL_H
+#ifndef _ORG_APACHE_IGNITE_INTERNAL_MEM_NUMAALLOCUTIL_H
+#define _ORG_APACHE_IGNITE_INTERNAL_MEM_NUMAALLOCUTIL_H
 
 #include <jni.h>
 
@@ -35,4 +35,4 @@ JNIEXPORT jint JNICALL Java_org_apache_ignite_internal_mem_NumaAllocUtil_nodesCo
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif // _ORG_APACHE_IGNITE_INTERNAL_MEM_NUMAALLOCUTIL_H

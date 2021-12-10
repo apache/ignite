@@ -83,20 +83,21 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void shutdown(boolean deallocate) {
+        if (!deallocate) {
+            used = 0;
+
+            return;
+        }
+
         if (regions != null) {
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
-                if (deallocate) {
-                    allocator.freeMemory(chunk.address());
+                allocator.freeMemory(chunk.address());
 
-                    // Safety.
-                    it.remove();
-                }
+                // Safety.
+                it.remove();
             }
-
-            if (!deallocate)
-                used = 0;
         }
     }
 

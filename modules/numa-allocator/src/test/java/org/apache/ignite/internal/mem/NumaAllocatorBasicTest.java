@@ -66,7 +66,9 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
     public static Iterable<Object[]> data() {
         return Stream.of(
             new LocalNumaAllocationStrategy(),
+            new InterleavedNumaAllocationStrategy(),
             new InterleavedNumaAllocationStrategy(IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT).toArray()),
+            new SimpleNumaAllocationStrategy(),
             new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1)
             )
             .flatMap(strategy -> Stream.of(new Object[]{strategy, true}, new Object[]{strategy, false}))
