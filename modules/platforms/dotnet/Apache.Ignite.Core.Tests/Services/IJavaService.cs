@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         Employee[] testEmployees(Employee[] emps);
-        
+
         /** */
         Account[] testAccounts();
 
@@ -206,6 +206,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         void testException(string exceptionClass);
+
+        /** */
+        object testRoundtrip(object x);
 
         /** */
         void sleep(long delayMs);

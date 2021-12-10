@@ -48,6 +48,9 @@ namespace Apache.Ignite.Core.Tests.Services
             "org.apache.ignite.platform.PlatformServiceCallCollectionsThinTask";
 
         /** */
+        private readonly bool _useBinaryArray;
+
+        /** */
         protected IIgnite Grid1;
 
         /** */
@@ -55,6 +58,18 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
+
+        /** */
+        public CallPlatformServiceTest(bool useBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
+        /** */
+        public CallPlatformServiceTest() : this(false)
+        {
+            // No-op.
+        }
 
         /// <summary>
         /// Start grids and deploy test service.
@@ -133,7 +148,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 
@@ -340,6 +356,16 @@ namespace Apache.Ignite.Core.Tests.Services
                 Id = reader.ReadInt("id");
                 Name = reader.ReadString("name");
             }
+        }
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class CallPlatformServiceTestBinaryArrays : CallPlatformServiceTest
+    {
+        /** */
+        public CallPlatformServiceTestBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }
