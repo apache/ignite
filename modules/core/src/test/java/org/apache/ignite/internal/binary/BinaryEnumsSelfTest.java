@@ -37,14 +37,13 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Contains tests for binary enums.
  */
 @SuppressWarnings("unchecked")
-public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
+public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";
 
@@ -74,11 +73,15 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         register = false;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
     }
 
@@ -617,8 +620,15 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(EnumType.TWO, arr2[1]);
         }
 
-        Object[] arrBinary1 = (Object[])cacheBinary1.get(1);
-        Object[] arrBinary2 = (Object[])cacheBinary2.get(1);
+        Object arr1 = cacheBinary1.get(1);
+        Object arr2 = cacheBinary2.get(1);
+
+        Object[] arrBinary1 = useBinaryArrays
+            ? ((BinaryArray)arr1).array()
+            : (Object[])arr1;
+        Object[] arrBinary2 = useBinaryArrays
+            ? ((BinaryArray)arr2).array()
+            : (Object[])arr2;
 
         assertEquals(2, arrBinary1.length);
         assertEquals(2, arrBinary2.length);

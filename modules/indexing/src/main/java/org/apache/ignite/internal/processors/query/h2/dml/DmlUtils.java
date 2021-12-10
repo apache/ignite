@@ -33,6 +33,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -111,6 +112,9 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
+            if (type == Value.ARRAY && val instanceof BinaryArray)
+                return val;
+
             if (type == Value.ARRAY && currCls != expCls) {
                 if (currCls != Object[].class) {
                     throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] " +

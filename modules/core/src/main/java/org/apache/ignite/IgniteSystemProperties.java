@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -56,6 +57,7 @@ import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_C
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
+import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
@@ -2007,6 +2009,14 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Throttle frequency for an index row inline size calculation and logging index inline size recommendation",
         type = Integer.class, defaults = "" + DFLT_THROTTLE_INLINE_SIZE_CALCULATION)
     public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
+    /**
+     * Enables storage of typed arrays.
+     * The default value is {@link BinaryArray#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     */
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
+        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
+    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
 
     /**
      * Enforces singleton.

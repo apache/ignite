@@ -1367,7 +1367,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
@@ -1475,7 +1480,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
