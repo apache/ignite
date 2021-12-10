@@ -516,7 +516,7 @@ class GridDeploymentCommunication {
                     fut.onDone(fake);
                 }
                 else
-                    fut.onDone((GridDeploymentResponse) msg);
+                    fut.onDone((GridDeploymentResponse)msg);
             }
         };
     }
