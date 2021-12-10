@@ -257,7 +257,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
             compTypeId2 = ctx.typeId(arr.compClsName);
 
         return compTypeId1 == compTypeId2
-            && Arrays.equals(this.arr, arr.arr);
+            && Arrays.deepEquals(this.arr, arr.arr);
     }
 
     /** {@inheritDoc} */

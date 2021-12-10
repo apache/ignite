@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.client.FunctionalTest.assertEqualsArraysAware;
 import static org.junit.Assert.assertArrayEquals;
 
 /** */
@@ -129,9 +130,12 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
     /** */
     @Test
-    public void testBoxedPrimitivesArrays() {
+    public void testPrimitivesArrays() {
         doTestBoxedPrimitivesArrays(srvCache);
         doTestBoxedPrimitivesArrays(cliCache);
+
+        doTestPrimitivesArrays(srvCache);
+        doTestPrimitivesArrays(cliCache);
     }
 
     /** */
@@ -369,6 +373,37 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
+    private void doTestPrimitivesArrays(IgniteCache<Object, Object> c) {
+        Object[] data = new Object[] {
+            new byte[] {1, 2, 3},
+            new short[] {1, 2, 3},
+            new int[] {1, 2, 3},
+            new long[] {1L, 2L, 3L},
+            new float[] {1f, 2f, 3f},
+            new double[] {1d, 2d, 3d},
+            new char[] {'a', 'b', 'c'},
+            new boolean[] {true, false}
+        };
+
+        for (Object item : data) {
+            c.put(1, item);
+
+            Object item0 = c.get(1);
+
+            assertTrue(c.replace(1, item, item));
+            assertTrue(c.remove(1));
+            assertEquals(item.getClass(), item0.getClass());
+            assertEqualsArraysAware(item, item0);
+
+            c.put(item, 1);
+
+            assertEquals(1, c.get(item));
+            assertTrue(c.replace(item, 1, 2));
+            assertTrue(c.remove(item));
+        }
+    }
+
+    /** */
     private void doTestBoxedPrimitivesArrays(IgniteCache<Object, Object> c) {
         Object[] data = new Object[] {
             new Byte[] {1, 2, 3},
@@ -387,9 +422,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             Object item0 = c.get(1);
 
-            if (useBinaryArrays)
-                assertTrue(c.replace(1, item, item));
-
+            assertTrue(c.replace(1, item, item));
             assertTrue(c.remove(1));
 
             if (useBinaryArrays)
@@ -401,9 +434,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             assertEquals(1, c.get(item));
 
-            if (useBinaryArrays)
-                assertTrue(c.replace(item, 1, 2));
-
+            assertTrue(c.replace(item, 1, 2));
             assertTrue(c.remove(item));
         }
     }
