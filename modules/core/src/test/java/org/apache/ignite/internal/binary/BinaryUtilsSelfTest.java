@@ -44,6 +44,8 @@ import static org.junit.Assert.assertArrayEquals;
 public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
     /** Object field name. */
     private static final String OBJECT_NAME = "object";
+
+    /** Number of readings of the object. */
     private static final int REPEAT_READS = 10;
 
     /** Binary object. */
@@ -98,12 +100,12 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
     
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
+
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
+
             SimpleObject that = (SimpleObject)o;
             return i == that.i;
         }

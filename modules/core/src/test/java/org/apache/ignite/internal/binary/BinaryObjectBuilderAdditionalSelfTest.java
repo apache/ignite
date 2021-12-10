@@ -1978,12 +1978,14 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
     /** */
     @Test
     public void testArrayFieldSeveralRead() throws Exception {
+        final int repeatReads = 10;
+
         try (Ignite ignite = startGrid(1)) {
             TestClass1[] expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
             
             BinaryObject arrObj = ignite.binary().toBinary(new TestClsWithArray(expArr));
             
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < repeatReads; i++) {
                 Object[] arrs;
                 if (useBinaryArrays)
                     arrs = ((BinaryArray)arrObj.field("arr")).array();
@@ -1995,7 +1997,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
             arrObj = ignite.binary().builder(TestClsWithArray.class.getName()).setField("arr", expArr).build();
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < repeatReads; i++) {
                 Object[] arrs;
                 if (useBinaryArrays)
                     arrs = ((BinaryArray)arrObj.field("arr")).array();
