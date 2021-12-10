@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.annotation;
+package org.apache.ignite.internal.configuration.processor.injectedname;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
 
 /**
- * This annotation marks configuration schema field as a configuration tree node.
- * <pre><code>
- * {@literal @}Config
- *  public class FooConfigurationSchema {
- *      {@literal @}ConfigValue
- *       public SomeOtherConfiguration someOther;
- * }
- * </code></pre>
+ * Schema with {@link InternalConfiguration} cannot have a field with {@link InjectedName}.
  */
-@Target({FIELD})
-@Retention(RUNTIME)
-@Documented
-public @interface ConfigValue {
+@InternalConfiguration
+public class ErrorInjectedName4ConfigurationSchema extends SimpleConfigurationSchema {
+    @InjectedName
+    public String name2;
 }

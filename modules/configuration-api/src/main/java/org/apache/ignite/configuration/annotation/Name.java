@@ -25,17 +25,39 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * This annotation marks configuration schema field as a configuration tree node.
+ * This annotation is used in conjunction with {@link ConfigValue} in case the nested schema contains a field with {@link InjectedName} in
+ * order to be able to set different default values for the field with {@link InjectedName}.
  * <pre><code>
  * {@literal @}Config
- *  public class FooConfigurationSchema {
+ *  public class DataRegionConfigurationSchema {
+ *      {@literal @InjectedName}
+ *       public String name;
+ *
+ *      {@literal @}Value
+ *       public long size;
+ * }
+ *
+ * {@literal @}Config
+ *  public class DataStorageConfigurationSchema {
+ *      {@literal @}Name("defaultInMemory")
  *      {@literal @}ConfigValue
- *       public SomeOtherConfiguration someOther;
+ *       public DataRegionConfigurationSchema defaultInMemoryRegion;
+ *
+ *      {@literal @}Name("defaultPersistent")
+ *      {@literal @}ConfigValue
+ *       public DataRegionConfigurationSchema defaultPersistentRegion;
  * }
  * </code></pre>
+ *
+ * @see ConfigValue
+ * @see InjectedName
  */
-@Target({FIELD})
+@Target(FIELD)
 @Retention(RUNTIME)
 @Documented
-public @interface ConfigValue {
+public @interface Name {
+    /**
+     * Returns the default value for {@link InjectedName}.
+     */
+    String value();
 }

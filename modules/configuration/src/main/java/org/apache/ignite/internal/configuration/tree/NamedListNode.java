@@ -150,7 +150,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
 
         checkNewKey(key);
 
-        ElementDescriptor element = newElementDescriptor();
+        ElementDescriptor element = newElementDescriptor(key);
 
         map.put(key, element);
 
@@ -173,7 +173,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
 
         checkNewKey(key);
 
-        ElementDescriptor element = newElementDescriptor();
+        ElementDescriptor element = newElementDescriptor(key);
 
         map.putByIndex(index, key, element);
 
@@ -201,7 +201,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
 
         checkNewKey(key);
 
-        ElementDescriptor element = newElementDescriptor();
+        ElementDescriptor element = newElementDescriptor(key);
 
         map.putAfter(precedingKey, key, element);
 
@@ -225,7 +225,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         }
 
         if (element == null) {
-            element = newElementDescriptor();
+            element = newElementDescriptor(key);
 
             reverseIdMap.put(element.internalId, key);
         } else {
@@ -281,6 +281,8 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
         map.rename(oldKey, newKey);
 
         reverseIdMap.put(element.internalId, newKey);
+
+        element.value.setInjectedNameFieldValue(newKey);
 
         return this;
     }
@@ -419,7 +421,7 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
             }
 
             if (element == null) {
-                element = newElementDescriptor();
+                element = newElementDescriptor(key);
 
                 reverseIdMap.put(element.internalId, key);
 
@@ -456,7 +458,11 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
 
             map.put(key, element);
 
-            src.descend(element.value);
+            InnerNode value = element.value;
+
+            value.setInjectedNameFieldValue(key);
+
+            src.descend(value);
         }
     }
 
@@ -469,12 +475,15 @@ public final class NamedListNode<N> implements NamedListChange<N, N>, Traversabl
     /**
      * Creates new element instance with initialized defaults.
      *
+     * @param key K Key for the value to be created.
      * @return New element instance with initialized defaults.
      */
-    private NamedListNode.ElementDescriptor newElementDescriptor() {
+    private NamedListNode.ElementDescriptor newElementDescriptor(String key) {
         InnerNode newElement = valSupplier.get();
 
         addDefaults(newElement);
+
+        newElement.setInjectedNameFieldValue(key);
 
         return new ElementDescriptor(newElement);
     }

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.configuration.processor;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,7 +30,13 @@ import com.squareup.javapoet.ClassName;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.configuration.annotation.DirectAccess;
+import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.Name;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.opentest4j.AssertionFailedError;
 
 /**
  * Test for basic code generation scenarios.
@@ -278,6 +286,130 @@ public class ItProcessorTest extends AbstractProcessorTest {
         }
     }
 
+    @Test
+    void wrongSchemaPostfix() {
+        String packageName = "org.apache.ignite.internal.configuration.processor";
+
+        ClassName schema = ClassName.get(packageName, "ConfigurationSchemaWithWrongPostfix");
+
+        Compilation compilation = compile(schema);
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(schema + " must end with 'ConfigurationSchema'");
+    }
+
+    /**
+     * Checks that compilation will fail due to misuse of {@link InjectedName}.
+     */
+    @Test
+    void testErrorInjectedNameFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.injectedname";
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName0ConfigurationSchema"),
+                "@InjectedName org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName0ConfigurationSchema.name"
+                        + " field must be a String"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName1ConfigurationSchema"),
+                "org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName1ConfigurationSchema contains more than"
+                        + " one field with @InjectedName"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName2ConfigurationSchema"),
+                "org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName2ConfigurationSchema.name must contain"
+                        + " only one @InjectedName"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName3ConfigurationSchema"),
+                "@InjectedName org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName3ConfigurationSchema.name"
+                        + " can only be present in a class annotated with @Config or @PolymorphicConfig"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName4ConfigurationSchema"),
+                "@InjectedName org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName4ConfigurationSchema.name2"
+                        + " can only be present in a class annotated with @Config or @PolymorphicConfig"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorInjectedName5ConfigurationSchema"),
+                "@InjectedName org.apache.ignite.internal.configuration.processor.injectedname.ErrorInjectedName5ConfigurationSchema.name2"
+                        + " can only be present in a class annotated with @Config or @PolymorphicConfig"
+        );
+    }
+
+    /**
+     * Checks that compilation will fail due to misuse of {@link Name}.
+     */
+    @Test
+    void testErrorNameFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.injectedname";
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorName0ConfigurationSchema"),
+                "@Name annotation can only be used with @ConfigValue: "
+                        + "org.apache.ignite.internal.configuration.processor.injectedname.ErrorName0ConfigurationSchema.simple"
+        );
+
+        assertThrowsEx(
+                IllegalStateException.class,
+                () -> batchCompile(packageName, "ErrorName1ConfigurationSchema"),
+                "Missing @Name for field: "
+                        + "org.apache.ignite.internal.configuration.processor.injectedname.ErrorName1ConfigurationSchema.simple"
+        );
+    }
+
+    /**
+     * Checks that compilation will succeed when using {@link InjectedName}.
+     */
+    @Test
+    void testSuccessInjectedNameFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.injectedname";
+
+        ClassName cls0 = ClassName.get(packageName, "SimpleConfigurationSchema");
+        ClassName cls1 = ClassName.get(packageName, "PolyConfigurationSchema");
+
+        BatchCompilation batchCompile = batchCompile(cls0, cls1);
+
+        assertThat(batchCompile.getCompilationStatus()).succeededWithoutWarnings();
+
+        assertEquals(2 * 3, batchCompile.generated().size());
+
+        assertTrue(batchCompile.getBySchema(cls0).allGenerated());
+        assertTrue(batchCompile.getBySchema(cls1).allGenerated());
+    }
+
+    /**
+     * Checks that compilation will succeed when using {@link Name}.
+     */
+    @Test
+    void testSuccessNameFieldCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.injectedname";
+
+        ClassName cls0 = ClassName.get(packageName, "SimpleConfigurationSchema");
+        ClassName cls1 = ClassName.get(packageName, "NameConfigurationSchema");
+
+        BatchCompilation batchCompile = batchCompile(cls0, cls1);
+
+        assertThat(batchCompile.getCompilationStatus()).succeededWithoutWarnings();
+
+        assertEquals(2 * 3, batchCompile.generated().size());
+
+        assertTrue(batchCompile.getBySchema(cls0).allGenerated());
+        assertTrue(batchCompile.getBySchema(cls1).allGenerated());
+    }
+
     /**
      * Compile set of classes.
      *
@@ -293,15 +425,19 @@ public class ItProcessorTest extends AbstractProcessorTest {
         return batchCompile(classes);
     }
 
-    @Test
-    void wrongSchemaPostfix() {
-        String packageName = "org.apache.ignite.internal.configuration.processor";
+    /**
+     * Extends {@link Assertions#assertThrows(Class, Executable)} to check for a substring in the error message.
+     *
+     * @param expErrCls Expected error class.
+     * @param exec Supplier.
+     * @param expSubStr Expected substring in error message.
+     * @throws AssertionFailedError If failed.
+     */
+    private void assertThrowsEx(Class<? extends Throwable> expErrCls, Executable exec, @Nullable String expSubStr) {
+        Throwable t = assertThrows(expErrCls, exec);
 
-        ClassName schema = ClassName.get(packageName, "ConfigurationSchemaWithWrongPostfix");
-
-        Compilation compilation = compile(schema);
-
-        assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining(schema + " must end with 'ConfigurationSchema'");
+        if (expSubStr != null) {
+            assertThat(t.getMessage(), containsString(expSubStr));
+        }
     }
 }

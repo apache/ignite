@@ -33,6 +33,7 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.ex
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.find;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.internalSchemaExtensions;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.polymorphicSchemaExtensions;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.removeLastKey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
@@ -793,6 +794,13 @@ public class ConfigurationUtilTest {
         exp.put("rootPolymorphic.polymorphicNamedCfg." + internalId + ".intVal", 0);
 
         assertEquals(exp, act);
+    }
+
+    @Test
+    void testRemoveLastKey() {
+        assertEquals(List.of(), removeLastKey(List.of()));
+        assertEquals(List.of(), removeLastKey(List.of("0")));
+        assertEquals(List.of("0"), removeLastKey(List.of("0", "1")));
     }
 
     /**

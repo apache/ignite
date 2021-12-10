@@ -49,7 +49,9 @@ import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.DirectAccess;
+import org.apache.ignite.configuration.annotation.InjectedName;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
+import org.apache.ignite.configuration.annotation.Name;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.PolymorphicConfig;
 import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
@@ -615,7 +617,7 @@ public class ConfigurationUtil {
      */
     public static List<Field> schemaFields(Class<?> schemaClass) {
         return Arrays.stream(schemaClass.getDeclaredFields())
-                .filter(f -> isValue(f) || isConfigValue(f) || isNamedConfigValue(f) || isPolymorphicId(f))
+                .filter(f -> isValue(f) || isConfigValue(f) || isNamedConfigValue(f) || isPolymorphicId(f) || isInjectedName(f))
                 .collect(toList());
     }
 
@@ -915,6 +917,50 @@ public class ConfigurationUtil {
                     ? orderedKeys.subList(0, node.size())
                     : orderedKeys
             );
+        }
+    }
+
+    /**
+     * Checks whether configuration schema field contains {@link InjectedName}.
+     *
+     * @param schemaField Configuration schema class field.
+     * @return {@code true} if the field contains {@link InjectedName}.
+     */
+    public static boolean isInjectedName(Field schemaField) {
+        return schemaField.isAnnotationPresent(InjectedName.class);
+    }
+
+    /**
+     * Checks whether configuration schema field contains {@link DirectAccess}.
+     *
+     * @param schemaField Configuration schema class field.
+     * @return {@code true} if the field contains {@link DirectAccess}.
+     */
+    public static boolean isDirectAccess(Field schemaField) {
+        return schemaField.isAnnotationPresent(DirectAccess.class);
+    }
+
+    /**
+     * Checks whether configuration schema field contains {@link Name}.
+     *
+     * @param schemaField Configuration schema class field.
+     * @return {@code true} if the field contains {@link Name}.
+     */
+    public static boolean containsNameAnnotation(Field schemaField) {
+        return schemaField.isAnnotationPresent(Name.class);
+    }
+
+    /**
+     * Removes the last key.
+     *
+     * @param keys Keys.
+     * @return New list.
+     */
+    public static List<String> removeLastKey(List<String> keys) {
+        if (keys.isEmpty() || keys.size() == 1) {
+            return List.of();
+        } else {
+            return List.copyOf(keys.subList(0, keys.size() - 1));
         }
     }
 }

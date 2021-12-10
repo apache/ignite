@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.DirectAccess;
+import org.apache.ignite.configuration.annotation.InjectedName;
 
 /**
  * {@link DynamicProperty} extension that implements {@link DirectConfigurationProperty}.
@@ -34,12 +35,13 @@ public class DirectDynamicProperty<T extends Serializable>
     /**
      * Constructor.
      *
-     * @param prefix     Property prefix.
-     * @param key        Property name.
-     * @param rootKey    Root key.
-     * @param changer    Configuration changer.
+     * @param prefix Property prefix.
+     * @param key Property name.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param readOnly   Value cannot be changed.
+     * @param readOnly Value cannot be changed.
+     * @param injectedNameField Configuration field with {@link InjectedName}.
      */
     public DirectDynamicProperty(
             List<String> prefix,
@@ -47,9 +49,10 @@ public class DirectDynamicProperty<T extends Serializable>
             RootKey<?, ?> rootKey,
             DynamicConfigurationChanger changer,
             boolean listenOnly,
-            boolean readOnly
+            boolean readOnly,
+            boolean injectedNameField
     ) {
-        super(prefix, key, rootKey, changer, listenOnly, readOnly);
+        super(prefix, key, rootKey, changer, listenOnly, readOnly, injectedNameField);
     }
 
     /** {@inheritDoc} */

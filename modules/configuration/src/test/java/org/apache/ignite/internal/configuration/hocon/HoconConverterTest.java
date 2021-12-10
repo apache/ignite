@@ -40,6 +40,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.InjectedName;
+import org.apache.ignite.configuration.annotation.Name;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.PolymorphicConfig;
 import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
@@ -68,7 +70,6 @@ public class HoconConverterTest {
         @NamedConfigValue(syntheticKeyName = "p")
         public HoconPrimitivesConfigurationSchema primitivesList;
 
-        /** Polymorphic config. */
         @NamedConfigValue(syntheticKeyName = "poly")
         public HoconPolymorphicConfigurationSchema polymorphicCfg;
     }
@@ -144,7 +145,6 @@ public class HoconConverterTest {
      */
     @PolymorphicConfig
     public static class HoconPolymorphicConfigurationSchema {
-        /** Polymorphic type id field. */
         @PolymorphicId
         public String typeId;
     }
@@ -154,7 +154,6 @@ public class HoconConverterTest {
      */
     @PolymorphicConfigInstance("first")
     public static class HoconFirstPolymorphicInstanceConfigurationSchema extends HoconPolymorphicConfigurationSchema {
-        /** Long value. */
         @Value(hasDefault = true)
         public int longVal = 0;
     }
@@ -164,14 +163,37 @@ public class HoconConverterTest {
      */
     @PolymorphicConfigInstance("second")
     public static class HoconSecondPolymorphicInstanceConfigurationSchema extends HoconPolymorphicConfigurationSchema {
-        /** Integer value. */
         @Value(hasDefault = true)
         public int intVal = 0;
+    }
+
+    /**
+     * Hocon root configuration schema for testing the support of {@link InjectedName}.
+     */
+    @ConfigurationRoot(rootName = "rootInjectedName", type = LOCAL)
+    public static class HoconInjectedNameRootConfigurationSchema {
+        @Name("testDefault")
+        @org.apache.ignite.configuration.annotation.ConfigValue
+        public HoconInjectedNameConfigurationSchema nested;
+
+        @NamedConfigValue(syntheticKeyName = "superName")
+        public HoconInjectedNameConfigurationSchema nestedNamed;
+    }
+
+    /**
+     * Configuration schema for testing the support of {@link InjectedName}.
+     */
+    @Config
+    public static class HoconInjectedNameConfigurationSchema {
+        @InjectedName
+        public String someName;
     }
 
     private static ConfigurationRegistry registry;
 
     private static HoconRootConfiguration configuration;
+
+    private static HoconInjectedNameRootConfiguration injectedNameRootConfig;
 
     /**
      * Before all.
@@ -179,7 +201,7 @@ public class HoconConverterTest {
     @BeforeAll
     public static void beforeAll() {
         registry = new ConfigurationRegistry(
-                List.of(HoconRootConfiguration.KEY),
+                List.of(HoconRootConfiguration.KEY, HoconInjectedNameRootConfiguration.KEY),
                 Map.of(),
                 new TestConfigurationStorage(LOCAL),
                 List.of(),
@@ -192,6 +214,7 @@ public class HoconConverterTest {
         registry.start();
 
         configuration = registry.getConfiguration(HoconRootConfiguration.KEY);
+        injectedNameRootConfig = registry.getConfiguration(HoconInjectedNameRootConfiguration.KEY);
     }
 
     /**
@@ -204,6 +227,7 @@ public class HoconConverterTest {
         registry = null;
 
         configuration = null;
+        injectedNameRootConfig = null;
     }
 
     /**
@@ -214,14 +238,21 @@ public class HoconConverterTest {
         configuration.change(cfg -> cfg
                 .changePrimitivesList(list -> list.namedListKeys().forEach(list::delete))
                 .changeArraysList(list -> list.namedListKeys().forEach(list::delete))
-                .changePolymorphicCfg(c -> {
-                })
+                .changePolymorphicCfg(c -> {})
+        ).get(1, SECONDS);
+
+        injectedNameRootConfig.change(c -> c
+                .changeNested(c0 -> {})
+                .changeNestedNamed(list -> list.namedListKeys().forEach(list::delete))
         ).get(1, SECONDS);
     }
 
     @Test
     public void toHoconBasic() {
-        assertEquals("root{arraysList=[],polymorphicCfg=[],primitivesList=[]}", asHoconStr(List.of()));
+        assertEquals(
+                "root{arraysList=[],polymorphicCfg=[],primitivesList=[]},rootInjectedName{nested{},nestedNamed=[]}",
+                asHoconStr(List.of())
+        );
 
         assertEquals("arraysList=[],polymorphicCfg=[],primitivesList=[]", asHoconStr(List.of("root")));
 
@@ -583,17 +614,17 @@ public class HoconConverterTest {
     @Test
     void testPolymorphicConfig() throws Throwable {
         // Check defaults.
-        assertEquals("root{arraysList=[],polymorphicCfg=[],primitivesList=[]}", asHoconStr(List.of()));
+        assertEquals("arraysList=[],polymorphicCfg=[],primitivesList=[]", asHoconStr(List.of("root")));
 
         // Check change type.
         change("root.polymorphicCfg = [{poly = name, typeId = second}]");
 
         assertInstanceOf(HoconSecondPolymorphicInstanceConfiguration.class, configuration.polymorphicCfg().get("name"));
-        assertEquals("root{arraysList=[],polymorphicCfg=[{intVal=0,poly=name,typeId=second}],primitivesList=[]}", asHoconStr(List.of()));
+        assertEquals("arraysList=[],polymorphicCfg=[{intVal=0,poly=name,typeId=second}],primitivesList=[]", asHoconStr(List.of("root")));
 
         // Check change field.
         change("root.polymorphicCfg.name.intVal = 10");
-        assertEquals("root{arraysList=[],polymorphicCfg=[{intVal=10,poly=name,typeId=second}],primitivesList=[]}", asHoconStr(List.of()));
+        assertEquals("arraysList=[],polymorphicCfg=[{intVal=10,poly=name,typeId=second}],primitivesList=[]", asHoconStr(List.of("root")));
 
         // Check error: unknown typeId.
         assertThrowsIllegalArgException(
@@ -605,6 +636,36 @@ public class HoconConverterTest {
         assertThrowsIllegalArgException(
                 () -> change("root.polymorphicCfg.name.longVal = 10"),
                 "'root.polymorphicCfg.name' configuration doesn't have the 'longVal' sub-configuration"
+        );
+    }
+
+    @Test
+    void testInjectedName() throws Throwable {
+        // Check defaults.
+        assertEquals("nested{},nestedNamed=[]", asHoconStr(List.of("rootInjectedName")));
+
+        // Checks get/set field with @InjectedName for nested config.
+        assertThrowsIllegalArgException(
+                () -> change("rootInjectedName.nested.someName = testName"),
+                "rootInjectedName.nested' configuration doesn't have the 'someName' sub-configuration"
+        );
+
+        assertThrowsIllegalArgException(
+                () -> asHoconStr(List.of("rootInjectedName"), "nested", "someName"),
+                "Configuration value 'rootInjectedName.nested.someName' has not been found"
+        );
+
+        // Checks get/set field with @InjectedName for nested named config.
+        change("rootInjectedName.nestedNamed = [{someName = foo}]");
+
+        assertEquals("nested{},nestedNamed=[{someName=foo}]", asHoconStr(List.of("rootInjectedName")));
+        assertEquals("[someName=foo]", asHoconStr(List.of("rootInjectedName", "nestedNamed")));
+        assertEquals("{}", asHoconStr(List.of("rootInjectedName", "nestedNamed", "foo")));
+
+        // Let's check that the NamedConfigValue#syntheticKeyName key will not work.
+        assertThrowsIllegalArgException(
+                () -> change("rootInjectedName.nestedNamed = [{superName = foo}]"),
+                "'rootInjectedName.nestedNamed[0].someName' configuration value is mandatory and must be a String"
         );
     }
 

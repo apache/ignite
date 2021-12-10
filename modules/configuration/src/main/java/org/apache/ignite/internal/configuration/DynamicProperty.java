@@ -25,8 +25,10 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.ConfigurationReadOnlyException;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.InjectedName;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
+import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.tostring.S;
 
 /**
@@ -36,15 +38,19 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     /** Value cannot be changed. */
     private final boolean readOnly;
 
+    /** Configuration field with {@link InjectedName}. */
+    private final boolean injectedNameField;
+
     /**
      * Constructor.
      *
-     * @param prefix     Property prefix.
-     * @param key        Property name.
-     * @param rootKey    Root key.
-     * @param changer    Configuration changer.
+     * @param prefix Property prefix.
+     * @param key Property name.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param readOnly   Value cannot be changed.
+     * @param readOnly Value cannot be changed.
+     * @param injectedNameField Configuration field with {@link InjectedName}.
      */
     public DynamicProperty(
             List<String> prefix,
@@ -52,17 +58,23 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
             RootKey<?, ?> rootKey,
             DynamicConfigurationChanger changer,
             boolean listenOnly,
-            boolean readOnly
+            boolean readOnly,
+            boolean injectedNameField
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
 
         this.readOnly = readOnly;
+        this.injectedNameField = injectedNameField;
     }
 
     /** {@inheritDoc} */
     @Override
     public T value() {
-        return refreshValue();
+        if (injectedNameField) {
+            return (T) ((InnerNode) refreshValue()).getInjectedNameFieldValue();
+        } else {
+            return refreshValue();
+        }
     }
 
     /** {@inheritDoc} */

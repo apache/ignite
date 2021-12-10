@@ -163,6 +163,10 @@ public static class DatetimeColumnConfigurationSchema extends ColumnConfiguratio
 Thus, a column can only be one of these (varchar, decimal and datetime) types and will contain the
 type, name and fields specific to it.
 
+### Additional annotations
+
+* `@InjectedName` - allows to get the key associated with the configuration in the named list, see javadoc for details.
+
 ## Generated API
 
 Configuration interfaces are generated at compile time. For the example above, the following code would be generated: 

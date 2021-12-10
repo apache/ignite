@@ -25,17 +25,40 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * This annotation marks configuration schema field as a configuration tree node.
+ * This annotation marks a configuration schema field as special (read-only) for getting the key associated with the configuration in the
+ * named list. Can be used for nested configuration schema as well, but then {@link Name} should be used.
  * <pre><code>
  * {@literal @}Config
- *  public class FooConfigurationSchema {
+ *  public class DataRegionConfigurationSchema {
+ *      {@literal @InjectedName}
+ *       public String name;
+ *
+ *      {@literal @}Value
+ *       public long size;
+ * }
+ *
+ * {@literal @}Config
+ *  public class DataStorageConfigurationSchema {
+ *      {@literal @}Name("default")
  *      {@literal @}ConfigValue
- *       public SomeOtherConfiguration someOther;
+ *       public DataRegionConfigurationSchema defaultRegion;
+ *
+ *      {@literal @}NamedConfigValue
+ *       public DataRegionConfigurationSchema regions;
  * }
  * </code></pre>
+ *
+ * <p>NOTE: Field must be a {@link String} and the only one (with this annotation) in the schema, field name is used instead of
+ * {@link NamedConfigValue#syntheticKeyName()}, it can be used in schemas with {@link Config} and {@link PolymorphicConfig}.
+ *
+ * @see Config
+ * @see PolymorphicConfig
+ * @see ConfigValue
+ * @see NamedConfigValue
+ * @see Name
  */
-@Target({FIELD})
+@Target(FIELD)
 @Retention(RUNTIME)
 @Documented
-public @interface ConfigValue {
+public @interface InjectedName {
 }
