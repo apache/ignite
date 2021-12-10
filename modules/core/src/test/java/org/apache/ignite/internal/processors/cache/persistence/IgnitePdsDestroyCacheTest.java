@@ -228,6 +228,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
         crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
 
+        // Cache group with multiple caches are important here, in this case cache removals are not so rapid.
         crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME + "_1")
             .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
 
@@ -262,6 +263,8 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
 
         destr.get();
 
+        // A little bit untipattern approach here, just because of async communication messaging nature.
+        // With redefined Failure handler we still need the same approach: wait some time and checks that it not raises.
         assertFalse(GridTestUtils.waitForCondition(() -> G.allGrids().size() < 3, 5_000));
 
         try {
