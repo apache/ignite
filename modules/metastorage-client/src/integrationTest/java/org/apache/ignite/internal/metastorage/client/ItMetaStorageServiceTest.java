@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.metastorage.client;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.raft.jraft.test.TestUtils.waitForTopology;
 import static org.apache.ignite.utils.ClusterServiceTestUtils.findLocalAddresses;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -854,33 +855,6 @@ public class ItMetaStorageServiceTest {
         } finally {
             metaStorageRaftGrpSvc.shutdown();
         }
-    }
-
-    /**
-     * Wait for topology.
-     *
-     * @param cluster The cluster.
-     * @param exp     Expected count.
-     * @param timeout The timeout in millis.
-     * @return {@code True} if topology size is equal to expected.
-     */
-    @SuppressWarnings("SameParameterValue")
-    private static boolean waitForTopology(ClusterService cluster, int exp, int timeout) {
-        long stop = System.currentTimeMillis() + timeout;
-
-        while (System.currentTimeMillis() < stop) {
-            if (cluster.topologyService().allMembers().size() >= exp) {
-                return true;
-            }
-
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                return false;
-            }
-        }
-
-        return false;
     }
 
     /**
