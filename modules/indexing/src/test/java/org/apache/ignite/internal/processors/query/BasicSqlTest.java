@@ -67,7 +67,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
     @Test
     public void validateKeyType() throws Exception {
         sql("CREATE TABLE TEST (ID0 INT, ID1 INT, VAL0 INT, VAL1 INT, PRIMARY KEY(ID0, ID1)) "
-                + "WITH\"CACHE_NAME=test,KEY_TYPE=TestType,VALUE_TYPE=VAL_TYPE,BACKUPS=1\"");
+                + "WITH \"CACHE_NAME=test,KEY_TYPE=TestType,VALUE_TYPE=VAL_TYPE\"");
 
         BinaryObjectBuilder bobKey0 = grid(0).binary().builder("key0");
         bobKey0.setField("ID0", 0);
