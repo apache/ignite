@@ -1887,7 +1887,7 @@ public class BinaryUtils {
                 int handlePos = start - in.readInt();
 
                 Object obj = handles.getHandle(handlePos, deserialize);
-    
+
                 if (obj == null) {
                     int retPos = in.position();
 
@@ -2147,7 +2147,7 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-        
+
         Object obj = handles.getHandle(hPos, deserialize);
 
         if (obj != null)
