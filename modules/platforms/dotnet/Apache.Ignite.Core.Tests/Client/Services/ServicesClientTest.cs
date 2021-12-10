@@ -44,6 +44,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             // No-op.
         }
 
+        /** */
+        public ServicesClientTest(bool useBinaryArray) : base(2, useBinaryArray: useBinaryArray)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Tears down the test.
         /// </summary>
@@ -305,8 +311,17 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
-            // Array types are not distinguished.
-            Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
+            if (!_useBinaryArray)
+            {
+                // Array types are not distinguished.
+                Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
+            }
+            else
+            {
+                Assert.AreEqual(9, svc.Foo(new object[] {new Person(0)}));
+                Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
+                Assert.AreEqual(10, svc.Foo(new Person[] {new Person(0)}));
+            }
         }
 
         /// <summary>
@@ -583,6 +598,18 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         private static IServices ServerServices
         {
             get { return Ignition.GetIgnite().GetServices(); }
+        }
+    }
+
+    /// <summary>
+    /// Tests for <see cref="IServicesClient"/>.
+    /// </summary>
+    public class ServicesClientTestBinaryArrays : ServicesClientTest
+    {
+        /** */
+        public ServicesClientTestBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }

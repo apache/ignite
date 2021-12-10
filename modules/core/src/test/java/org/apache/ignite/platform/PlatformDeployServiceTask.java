@@ -656,6 +656,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public Object testRoundtrip(Object x) {
+            return x;
+        }
+
+        /** */
         public void sleep(long delayMs) {
             try {
                 U.sleep(delayMs);
