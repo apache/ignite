@@ -24,6 +24,7 @@ import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -824,7 +825,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (X.hasCause(e, SSLException.class)) {
+                if (X.hasCause(e, SSLException.class) &&
+                    !X.hasCause(e, SocketException.class, SocketTimeoutException.class)) {
                     if (--sslConnectAttempts == 0)
                         throw new IgniteSpiException("Unable to establish secure connection. " +
                             "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);

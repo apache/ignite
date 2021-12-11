@@ -1561,7 +1561,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (X.hasCause(e, SSLException.class)) {
+                if (X.hasCause(e, SSLException.class) &&
+                    !X.hasCause(e, SocketException.class, SocketTimeoutException.class)) {
                     if (--sslConnectAttempts == 0)
                         throw new IgniteException("Unable to establish secure connection. " +
                             "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
