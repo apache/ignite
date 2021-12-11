@@ -36,6 +36,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -60,8 +61,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + Integer.toString(SERVER_PORT) + ".." +
-            Integer.toString(LAST_SERVER_PORT)));
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + SERVER_PORT + ".." + LAST_SERVER_PORT));
 
         cfg.setDiscoverySpi(new TcpDiscoverySpiWithOrderedIps().setIpFinder(ipFinder));
 
@@ -81,8 +81,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * Starts tcp test thread
      * @param workerFactory one of WorkerFactory
      */
-     protected void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
-        final ServerSocket srvSock = new ServerSocket(port, 10, InetAddress.getByName("127.0.0.1"));
+    protected void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
+        ServerSocket srvSock = getServerSocket(port);
 
         srvSocks.add(srvSock);
 
@@ -104,6 +104,13 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
                 }
             }
         }).start();
+    }
+
+    /**
+     * @param port Port.
+     */
+    @NotNull protected ServerSocket getServerSocket(int port) throws Exception {
+        return new ServerSocket(port, 10, InetAddress.getByName("127.0.0.1"));
     }
 
     /**
