@@ -24,7 +24,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH, OLDEST
+from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH, LATEST_2_8
 
 
 class PersistenceUpgradeTest(IgniteTest):
@@ -33,7 +33,7 @@ class PersistenceUpgradeTest(IgniteTest):
     """
 
     @cluster(num_nodes=1)
-    @parametrize(versions=[str(OLDEST), str(LATEST), str(DEV_BRANCH)])
+    @parametrize(versions=[str(LATEST_2_8), str(LATEST), str(DEV_BRANCH)])
     def upgrade_test(self, versions):
         """
         Basic upgrade test.
