@@ -46,7 +46,7 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
     private static final String OBJECT_NAME = "object";
 
     /** Number of readings of the object. */
-    private static final int REPEAT_READS = 10;
+    private static final int REPEAT_READS = 1;
 
     /** Binary object. */
     private BinaryObjectImpl binaryObject;
@@ -198,10 +198,10 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(binaryReaderEx.findFieldByName(objectName1));
 
-//        BinaryObject actObject = (BinaryObject)
-//                BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, false);
-//
-//        assertEquals(expObject, actObject.deserialize());
+        BinaryObject actObject = (BinaryObject)
+                BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, false);
+
+        assertEquals(expObject, actObject.deserialize());
 
         assertTrue(binaryReaderEx.findFieldByName(objectName2));
 

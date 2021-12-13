@@ -1929,7 +1929,7 @@ public class BinaryUtils {
                     in.position(start + po.length());
                 }
 
-                handles.setHandle(po, start, deserialize);
+                handles.setHandle(po, start, false);
 
                 return po;
             }
