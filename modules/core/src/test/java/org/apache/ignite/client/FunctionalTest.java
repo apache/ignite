@@ -429,13 +429,10 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
 
         thinCache.put(key, obj);
 
-/*
         assertTrue(thinCache.containsKey(key));
-*/
 
         Object cachedObj = thinCache.get(key);
 
-/*
         assertEqualsArraysAware(obj, cachedObj);
 
         assertEqualsArraysAware(obj, thickCache.get(key));
@@ -444,7 +441,6 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
 
         // Server-side comparison with the original object.
         assertTrue(thinCache.replace(key, obj, obj));
-*/
 
         // Server-side comparison with the restored object.
         assertTrue(thinCache.remove(key, cachedObj));
