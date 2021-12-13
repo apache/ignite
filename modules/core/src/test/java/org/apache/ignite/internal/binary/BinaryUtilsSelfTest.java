@@ -131,7 +131,90 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
             return object;
         }
     }
-    
+
+    /** Test class with object. */
+    public static class TestObjectHolderWithArray {
+        /** */
+        private final SimpleObject object;
+
+        /** */
+        private final SimpleObject[] objectArray;
+
+        /** */
+        public TestObjectHolderWithArray(SimpleObject object, SimpleObject[] objectArray) {
+            this.object = object;
+            this.objectArray = objectArray;
+        }
+
+        /** */
+        public SimpleObject getObject() {
+            return object;
+        }
+
+        /** */
+        public SimpleObject[] getObjectArray() {
+            return objectArray;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeserializedArrayWithHaldle() throws Exception {
+        final String objectName = "object";
+        final String objectArrayName = "objectArray";
+
+        SimpleObject expObject = new SimpleObject(1453);
+        SimpleObject[] expArr = new SimpleObject[] {expObject};
+
+        TestObjectHolderWithArray exp = new TestObjectHolderWithArray(expObject, expArr);
+
+        createBinaryObject(ignite(0), exp);
+//
+        for (int i = 0; i < REPEAT_READS; i++) {
+            assertTrue(binaryReaderEx.findFieldByName(objectName));
+
+            BinaryObject actObject = (BinaryObject)
+                    BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx);
+
+            assertEquals(expObject, actObject.deserialize());
+
+            assertTrue(binaryReaderEx.findFieldByName(objectArrayName));
+
+            Object[] unmarshBinary =
+                    (Object[])BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx);
+
+            assertArrayEquals(expArr,
+                    PlatformUtils.unwrapBinariesInArray(unmarshBinary));
+
+//            assertEquals(expObject, PlatformUtils.unwrapBinariesInArray(unmarshBinary)[1]);
+        }
+
+//        testReadSameObjects(false);
+
+        for (int i = 0; i < REPEAT_READS; i++) {
+            assertTrue(binaryReaderEx.findFieldByName(objectName));
+
+            BinaryObject actObject = (BinaryObject)
+                    BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
+
+            assertEquals(expObject, actObject.deserialize());
+
+            assertTrue(binaryReaderEx.findFieldByName(objectArrayName));
+
+            Object[] unmarshBinary =
+                    (Object[])BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
+
+            assertArrayEquals(expArr, unmarshBinary);
+
+//            assertEquals(expObject, unmarshBinary[1]);
+        }
+
+//        testReadSameObjects(true);
+//        testNotSameObjects();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -289,7 +372,7 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Creates necessary objects used in the BinaryUtils test.
      */
-    private void createBinaryObject(Ignite ignite, TestObjectHolder obj) {
+    private void createBinaryObject(Ignite ignite, Object obj) {
         binaryObject = ignite.binary().toBinary(obj);
         ldr = binaryObject.context().configuration().getClassLoader();
         in = BinaryHeapInputStream.create(binaryObject.array(), binaryObject.start());
