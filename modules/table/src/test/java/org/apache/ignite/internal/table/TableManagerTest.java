@@ -268,9 +268,6 @@ public class TableManagerTest extends IgniteAbstractTest {
         assertThrows(IgniteException.class, () -> igniteTables.createTable(tblFullName, createTableChange));
         assertThrows(IgniteException.class, () -> igniteTables.createTableAsync(tblFullName, createTableChange));
 
-        assertThrows(IgniteException.class, () -> igniteTables.createTableIfNotExists(tblFullName, createTableChange));
-        assertThrows(IgniteException.class, () -> igniteTables.createTableIfNotExistsAsync(tblFullName, createTableChange));
-
         assertThrows(IgniteException.class, () -> igniteTables.alterTable(tblFullName, addColumnChange));
         assertThrows(IgniteException.class, () -> igniteTables.alterTableAsync(tblFullName, addColumnChange));
 
@@ -396,10 +393,7 @@ public class TableManagerTest extends IgniteAbstractTest {
                         .changeReplicas(REPLICAS)
                         .changePartitions(PARTITIONS)));
 
-        assertSame(table, tblManagerFut.join()
-                .createTableIfNotExists(scmTbl.canonicalName(), tblCh -> SchemaConfigurationConverter.convert(scmTbl, tblCh)
-                        .changeReplicas(REPLICAS)
-                        .changePartitions(PARTITIONS)));
+        assertSame(table, tblManagerFut.join().table(scmTbl.canonicalName()));
     }
 
     /**

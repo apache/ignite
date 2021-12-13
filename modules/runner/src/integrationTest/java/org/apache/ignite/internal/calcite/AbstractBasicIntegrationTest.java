@@ -22,9 +22,7 @@ import static org.apache.ignite.internal.calcite.util.Commons.getAllFromCursor;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ItUtils;
@@ -32,10 +30,13 @@ import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.calcite.util.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
+import org.apache.ignite.internal.testframework.BaseIgniteAbstractTest;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
@@ -44,7 +45,10 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -53,49 +57,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class AbstractBasicIntegrationTest {
+public class AbstractBasicIntegrationTest extends BaseIgniteAbstractTest {
     private static final IgniteLogger LOG = IgniteLogger.forClass(AbstractBasicIntegrationTest.class);
 
-    /** Nodes bootstrap configuration. */
-    private static final Map<String, String> NODES_BOOTSTRAP_CFG = new LinkedHashMap<>() {
-        {
-            put("node0", "{\n"
-                    + "  \"node\": {\n"
-                    + "    \"metastorageNodes\":[ \"node0\" ]\n"
-                    + "  },\n"
-                    + "  \"network\": {\n"
-                    + "    \"port\":3344,\n"
-                    + "    \"nodeFinder\": {\n"
-                    + "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n"
-                    + "    }\n"
-                    + "  }\n"
-                    + "}");
+    /** Base port number. */
+    private static final int BASE_PORT = 3344;
 
-            put("node1", "{\n"
-                    + "  \"node\": {\n"
-                    + "    \"metastorageNodes\":[ \"node0\" ]\n"
-                    + "  },\n"
-                    + "  \"network\": {\n"
-                    + "    \"port\":3345,\n"
-                    + "    \"nodeFinder\":{\n"
-                    + "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n"
-                    + "    }\n"
-                    + "  }\n"
-                    + "}");
-
-            put("node2", "{\n"
-                    + "  \"node\": {\n"
-                    + "    \"metastorageNodes\":[ \"node0\" ]\n"
-                    + "  },\n"
-                    + "  \"network\": {\n"
-                    + "    \"port\":3346,\n"
-                    + "    \"nodeFinder\":{\n"
-                    + "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n"
-                    + "    }\n"
-                    + "  }\n"
-                    + "}");
-        }
-    };
+    /** Nodes bootstrap configuration pattern. */
+    private static final String NODE_BOOTSTRAP_CFG = "{\n"
+            + "  \"node\": {\n"
+            + "    \"metastorageNodes\":[ {} ]\n"
+            + "  },\n"
+            + "  \"network\": {\n"
+            + "    \"port\":{},\n"
+            + "    \"nodeFinder\":{\n"
+            + "      \"netClusterNodes\": [ {} ]\n"
+            + "    }\n"
+            + "  }\n"
+            + "}";
 
     /** Cluster nodes. */
     protected static final List<Ignite> CLUSTER_NODES = new ArrayList<>();
@@ -106,19 +85,41 @@ public class AbstractBasicIntegrationTest {
 
     /**
      * Before all.
+     *
+     * @param testInfo Test information oject.
      */
     @BeforeAll
-    static void startNodes() {
-        NODES_BOOTSTRAP_CFG.forEach((nodeName, configStr) ->
-                CLUSTER_NODES.add(IgnitionManager.start(nodeName, configStr, WORK_DIR.resolve(nodeName)))
-        );
+    void startNodes(TestInfo testInfo) {
+        //TODO: IGNITE-16034 Here we assume that Metastore consists into one node, and it starts at first.
+        String metastorageNodes = '\"' + IgniteTestUtils.testNodeName(testInfo, 0) + '\"';
+
+        String connectNodeAddr = "\"localhost:" + BASE_PORT + '\"';
+
+        for (int i = 0; i < nodes(); i++) {
+            String curNodeName = IgniteTestUtils.testNodeName(testInfo, i);
+
+            CLUSTER_NODES.add(IgnitionManager.start(curNodeName, IgniteStringFormatter.format(NODE_BOOTSTRAP_CFG,
+                    metastorageNodes,
+                    BASE_PORT + i,
+                    connectNodeAddr
+            ), WORK_DIR.resolve(curNodeName)));
+        }
+    }
+
+    /**
+     * Get a count of nodes in the Ignite cluster.
+     *
+     * @return Count of nodes.
+     */
+    protected int nodes() {
+        return 3;
     }
 
     /**
      * After all.
      */
     @AfterAll
-    static void stopNodes() throws Exception {
+    void stopNodes() throws Exception {
         LOG.info("Start tearDown()");
 
         IgniteUtils.closeAll(ItUtils.reverse(CLUSTER_NODES));
@@ -126,6 +127,28 @@ public class AbstractBasicIntegrationTest {
         CLUSTER_NODES.clear();
 
         LOG.info("End tearDown()");
+    }
+
+    /**
+     * Invokes before the test will start.
+     *
+     * @param testInfo Test information oject.
+     * @throws Exception If failed.
+     */
+    @BeforeEach
+    public void setup(TestInfo testInfo) throws Exception {
+        setupBase(testInfo, WORK_DIR);
+    }
+
+    /**
+     * Invokes after the test has finished.
+     *
+     * @param testInfo Test information oject.
+     * @throws Exception If failed.
+     */
+    @AfterEach
+    public void tearDown(TestInfo testInfo) throws Exception {
+        tearDownBase(testInfo);
     }
 
     protected static QueryChecker assertQuery(String qry) {

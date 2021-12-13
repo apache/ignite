@@ -75,21 +75,6 @@ public class ClientTables implements IgniteTables {
 
     /** {@inheritDoc} */
     @Override
-    public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
-        return createTableIfNotExistsAsync(name, tableInitChange).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(tableInitChange);
-
-        throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void dropTable(String name) {
         dropTableAsync(name).join();
     }

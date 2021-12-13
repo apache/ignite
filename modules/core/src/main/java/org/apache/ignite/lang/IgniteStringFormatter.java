@@ -60,7 +60,7 @@ import java.util.HashSet;
  *
  * <p>will return the string "File name is C:\file.zip".
  */
-public final class LoggerMessageHelper {
+public final class IgniteStringFormatter {
     /** Left brace. */
     private static final char DELIM_START = '{';
 

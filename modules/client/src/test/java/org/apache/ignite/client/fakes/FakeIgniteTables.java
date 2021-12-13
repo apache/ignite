@@ -87,28 +87,6 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
 
     /** {@inheritDoc} */
     @Override
-    public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
-        var newTable = getNewTable(name);
-
-        var oldTable = tables.putIfAbsent(name, newTable);
-
-        if (oldTable != null) {
-            return oldTable;
-        }
-
-        tablesById.put(newTable.tableId(), newTable);
-
-        return newTable;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
-        return CompletableFuture.completedFuture(createTableIfNotExists(name, tableInitChange));
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void dropTable(String name) {
         var table = tables.remove(name);
 

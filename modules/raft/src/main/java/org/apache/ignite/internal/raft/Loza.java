@@ -35,7 +35,7 @@ import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.util.IgniteSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteInternalException;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -193,7 +193,7 @@ public class Loza implements IgniteComponent {
 
         if (hasLocalRaft) {
             if (!raftServer.startRaftGroup(groupId, lsnrSupplier.get(), peers)) {
-                throw new IgniteInternalException(LoggerMessageHelper.format(
+                throw new IgniteInternalException(IgniteStringFormatter.format(
                         "Raft group on the node is already started [node={}, raftGrp={}]",
                         locNodeName,
                         groupId
@@ -262,7 +262,7 @@ public class Loza implements IgniteComponent {
 
         if (deltaNodes.stream().anyMatch(n -> locNodeName.equals(n.name()))) {
             if (!raftServer.startRaftGroup(groupId, lsnrSupplier.get(), peers)) {
-                throw new IgniteInternalException(LoggerMessageHelper.format(
+                throw new IgniteInternalException(IgniteStringFormatter.format(
                         "Raft group on the node is already started [node={}, raftGrp={}]",
                         locNodeName,
                         groupId

@@ -17,15 +17,7 @@
 
 package org.apache.ignite.internal.testframework;
 
-import static org.apache.ignite.internal.util.IgniteUtils.monotonicMs;
-import static org.apache.ignite.lang.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
-import static org.apache.ignite.lang.IgniteSystemProperties.getString;
-
-import java.lang.reflect.Method;
 import java.nio.file.Path;
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.internal.tostring.SensitiveDataLoggingPolicy;
-import org.apache.ignite.lang.IgniteLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -34,22 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * Ignite base test class.
  */
-@ExtendWith({SystemPropertiesExtension.class, WorkDirectoryExtension.class})
-public abstract class IgniteAbstractTest {
-    /** Logger. */
-    protected static IgniteLogger log;
-
-    /** Tets start milliseconds. */
-    private long testStartMs;
-
+@ExtendWith(WorkDirectoryExtension.class)
+public abstract class IgniteAbstractTest extends BaseIgniteAbstractTest {
     /** Work directory. */
     protected Path workDir;
-
-    /* Init test env. */
-    static {
-        S.setSensitiveDataLoggingPolicySupplier(() ->
-                SensitiveDataLoggingPolicy.valueOf(getString(IGNITE_SENSITIVE_DATA_LOGGING, "hash").toUpperCase()));
-    }
 
     /**
      * Invokes before the test will start.
@@ -60,14 +40,9 @@ public abstract class IgniteAbstractTest {
      */
     @BeforeEach
     public void setup(TestInfo testInfo, @WorkDirectory Path workDir) throws Exception {
-        log.info(">>> Starting test: {}#{}, displayName: {}, workDir: {}",
-                testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
-                testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
-                testInfo.getDisplayName(),
-                workDir.toAbsolutePath());
+        setupBase(testInfo, workDir);
 
         this.workDir = workDir;
-        this.testStartMs = monotonicMs();
     }
 
     /**
@@ -78,26 +53,6 @@ public abstract class IgniteAbstractTest {
      */
     @AfterEach
     public void tearDown(TestInfo testInfo) throws Exception {
-        log.info(">>> Stopping test: {}#{}, displayName: {}, cost: {}ms.",
-                testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
-                testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
-                testInfo.getDisplayName(), monotonicMs() - testStartMs);
-    }
-
-    /**
-     * Constructor.
-     */
-    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
-    protected IgniteAbstractTest() {
-        log = IgniteLogger.forClass(getClass());
-    }
-
-    /**
-     * Returns logger.
-     *
-     * @return Logger.
-     */
-    protected IgniteLogger logger() {
-        return log;
+        tearDownBase(testInfo);
     }
 }

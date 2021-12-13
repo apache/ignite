@@ -18,15 +18,15 @@
 package org.apache.ignite.lang;
 
 /**
- * This exception is thrown when a new table failed to be created, because a table with same name already exists.
+ * Exception is thrown when appropriate table can`t be found.
  */
-public class TableAlreadyExistsException extends IgniteException {
+public class TableNotFoundException extends IgniteException {
     /**
      * Create a new exception with given table name.
      *
      * @param name Table name.
      */
-    public TableAlreadyExistsException(String name) {
-        super(IgniteStringFormatter.format("Table already exists [name={}]", name));
+    public TableNotFoundException(String name) {
+        super(IgniteStringFormatter.format("Table does not exist [name={}]", name));
     }
 }

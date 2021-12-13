@@ -29,7 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.apache.ignite.utils.IgniteProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -189,6 +189,6 @@ public class IgnitionImpl implements Ignition {
 
         String banner = String.join("\n", BANNER);
 
-        LOG.info(() -> LoggerMessageHelper.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver), null);
+        LOG.info(() -> IgniteStringFormatter.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver), null);
     }
 }

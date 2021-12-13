@@ -27,6 +27,6 @@ public class IndexAlreadyExistsException extends IgniteException {
      * @param name Index name.
      */
     public IndexAlreadyExistsException(String name) {
-        super(LoggerMessageHelper.format("Index already exists [name={}]", name));
+        super(IgniteStringFormatter.format("Index already exists [name={}]", name));
     }
 }

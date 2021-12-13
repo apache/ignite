@@ -26,7 +26,7 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.internal.schema.configuration.SchemaDescriptorConverter;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.apache.ignite.schema.definition.TableDefinition;
 
 /**
@@ -117,7 +117,7 @@ public class SchemaUtils {
         // TODO: IGNITE-15774 Assertion just in case, proper validation should be implemented with the help of
         // TODO: configuration validators.
         assert droppedKeyCol.isEmpty() :
-                LoggerMessageHelper.format(
+                IgniteStringFormatter.format(
                         "Dropping of key column is forbidden: [schemaVer={}, col={}]",
                         newDesc.version(),
                         droppedKeyCol.get()

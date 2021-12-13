@@ -48,6 +48,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IndexAlreadyExistsException;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.lang.TableAlreadyExistsException;
+import org.apache.ignite.lang.TableNotFoundException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
@@ -347,8 +348,9 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * Checks that if a table would be created/dropped into any cluster node, this is visible to all
-     * other nodes.
+     * Checks that if a table would be created/dropped in any cluster node, this action reflects on all others.
+     * Table management operations should pass in linearize order: if an action completed in one node,
+     * the result has to be visible to another one.
      *
      * @throws Exception If failed.
      */
@@ -406,6 +408,10 @@ public class ItTablesApiTest extends IgniteAbstractTest {
             assertNull(ignite.tables().table(TABLE_NAME));
 
             assertNull(((IgniteTablesInternal) ignite.tables()).table(tblId));
+
+            assertThrows(TableNotFoundException.class, () -> dropTable(ignite, SCHEMA, SHORT_TABLE_NAME));
+
+            dropTableIfExists(ignite, SCHEMA, SHORT_TABLE_NAME);
         }
 
         ignite1Inhibitor.stopInhibit();
@@ -427,7 +433,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
         return node.tables().createTable(
                 schemaName + "." + shortTableName,
                 tblCh -> convert(SchemaBuilders.tableBuilder(schemaName, shortTableName).columns(
-                    cols).withPrimaryKey("key").build(), tblCh).changeReplicas(2).changePartitions(10)
+                        cols).withPrimaryKey("key").build(), tblCh).changeReplicas(2).changePartitions(10)
         );
     }
 
@@ -439,16 +445,48 @@ public class ItTablesApiTest extends IgniteAbstractTest {
      * @param shortTableName Table name.
      */
     protected Table createTableIfNotExists(Ignite node, String schemaName, String shortTableName) {
-        return node.tables().createTableIfNotExists(
-                schemaName + "." + shortTableName,
-                tblCh -> convert(SchemaBuilders.tableBuilder(schemaName, shortTableName).columns(Arrays.asList(
-                        SchemaBuilders.column("key", ColumnType.INT64).build(),
-                        SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
-                        SchemaBuilders.column("valStr", ColumnType.string())
-                                .withDefaultValueExpression("default").build()
-                        )).withPrimaryKey("key").build(),
-                        tblCh).changeReplicas(2).changePartitions(10)
-        );
+        try {
+            return node.tables().createTable(
+                    schemaName + "." + shortTableName,
+                    tblCh -> convert(SchemaBuilders.tableBuilder(schemaName, shortTableName).columns(Arrays.asList(
+                            SchemaBuilders.column("key", ColumnType.INT64).build(),
+                            SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
+                            SchemaBuilders.column("valStr", ColumnType.string())
+                                    .withDefaultValueExpression("default").build()
+                            )).withPrimaryKey("key").build(),
+                            tblCh).changeReplicas(2).changePartitions(10)
+            );
+        } catch (TableAlreadyExistsException ex) {
+            return node.tables().table(schemaName + "." + shortTableName);
+        }
+    }
+
+    /**
+     * Drops the table which name is specified.
+     * If the table does not exist, an exception will be thrown.
+     *
+     * @param node Cluster node.
+     * @param schemaName Schema name.
+     * @param shortTableName Table name.
+     */
+    protected void dropTable(Ignite node, String schemaName, String shortTableName) {
+        node.tables().dropTable(schemaName + "." + shortTableName);
+    }
+
+    /**
+     * Drops the table which name is specified.
+     * If the table did not exist, a dropping would ignore.
+     *
+     * @param node Cluster node.
+     * @param schemaName Schema name.
+     * @param shortTableName Table name.
+     */
+    protected void dropTableIfExists(Ignite node, String schemaName, String shortTableName) {
+        try {
+            node.tables().dropTable(schemaName + "." + shortTableName);
+        } catch (TableNotFoundException ex) {
+            log.info("Dropping the table ignored.", ex);
+        }
     }
 
     /**
@@ -468,10 +506,10 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     /**
      * Adds a column according to the column definition.
      *
-     * @param node Ignite node.
-     * @param schemaName Schema name.
+     * @param node           Ignite node.
+     * @param schemaName     Schema name.
      * @param shortTableName Table name.
-     * @param colDefinition Column defenition.
+     * @param colDefinition  Column defenition.
      */
     private void addColumnInternal(Ignite node, String schemaName, String shortTableName, ColumnDefinition colDefinition) {
         node.tables().alterTable(
@@ -488,8 +526,8 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     /**
      * Adds a column if it does not exist.
      *
-     * @param node Ignite node.
-     * @param schemaName Schema name.
+     * @param node           Ignite node.
+     * @param schemaName     Schema name.
      * @param shortTableName Table name.
      */
     protected void addColumnIfNotExists(Ignite node, String schemaName, String shortTableName) {

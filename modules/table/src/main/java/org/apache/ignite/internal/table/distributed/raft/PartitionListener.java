@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.table.distributed.raft;
 
-import static org.apache.ignite.lang.LoggerMessageHelper.format;
+import static org.apache.ignite.lang.IgniteStringFormatter.format;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

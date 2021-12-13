@@ -53,6 +53,7 @@ import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IndexAlreadyExistsException;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.lang.TableAlreadyExistsException;
+import org.apache.ignite.lang.TableNotFoundException;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -224,21 +225,20 @@ public class DdlWithMockedManagersTest extends IgniteAbstractTest {
 
         queryProc.query("PUBLIC", "DROP TABLE " + curMethodName);
 
-        // todo will be implemented after IGNITE-15926
-        /*SqlQueryProcessor finalQueryProc = queryProc;
-        
-        assertThrows(IgniteInternalCheckedException.class, () -> finalQueryProc.query("PUBLIC",
-            "DROP TABLE " + curMethodName + "_not_exist"));
-    
-        assertThrows(IgniteInternalCheckedException.class, () -> finalQueryProc.query("PUBLIC",
-            "DROP TABLE " + curMethodName));
+        SqlQueryProcessor finalQueryProc = queryProc;
 
-        assertThrows(IgniteInternalCheckedException.class, () -> finalQueryProc.query("PUBLIC",
-            "DROP TABLE PUBLIC." + curMethodName));
+        assertThrows(TableNotFoundException.class, () -> finalQueryProc.query("PUBLIC",
+                "DROP TABLE " + curMethodName + "_not_exist"));
+
+        assertThrows(TableNotFoundException.class, () -> finalQueryProc.query("PUBLIC",
+                "DROP TABLE " + curMethodName));
+
+        assertThrows(TableNotFoundException.class, () -> finalQueryProc.query("PUBLIC",
+                "DROP TABLE PUBLIC." + curMethodName));
+
+        queryProc.query("PUBLIC", "DROP TABLE IF EXISTS PUBLIC." + curMethodName + "_not_exist");
 
         queryProc.query("PUBLIC", "DROP TABLE IF EXISTS PUBLIC." + curMethodName);
-
-        queryProc.query("PUBLIC", "DROP TABLE PUBLIC." + curMethodName);*/
 
         assertTrue(tblManager.tables().stream().noneMatch(t -> t.name()
                 .equalsIgnoreCase("PUBLIC." + curMethodName)));
@@ -267,10 +267,9 @@ public class DdlWithMockedManagersTest extends IgniteAbstractTest {
 
         assertThrows(ColumnAlreadyExistsException.class, () -> finalQueryProc.query("PUBLIC", alterCmd));
 
-        // todo will be implemented after IGNITE-15926
-        /*String alterCmdNoTbl = String.format("ALTER TABLE %s ADD COLUMN (c3 varchar, c4 int)", curMethodName + "_notExist");
+        String alterCmdNoTbl = String.format("ALTER TABLE %s ADD COLUMN (c3 varchar, c4 int)", curMethodName + "_notExist");
 
-        queryProc.query("PUBLIC", alterCmdNoTbl);
+        assertThrows(TableNotFoundException.class, () -> queryProc.query("PUBLIC", alterCmdNoTbl));
 
         String alterIfExistsCmd = String.format("ALTER TABLE IF EXISTS %s ADD COLUMN (c3 varchar, c4 int)", curMethodName + "NotExist");
 
@@ -279,7 +278,6 @@ public class DdlWithMockedManagersTest extends IgniteAbstractTest {
         assertThrows(ColumnAlreadyExistsException.class, () -> finalQueryProc.query("PUBLIC", alterCmd));
 
         finalQueryProc.query("PUBLIC", String.format("ALTER TABLE %s DROP COLUMN c4", curMethodName));
-        */
 
         queryProc.query("PUBLIC", String.format("ALTER TABLE %s ADD COLUMN IF NOT EXISTS c3 varchar", curMethodName));
 

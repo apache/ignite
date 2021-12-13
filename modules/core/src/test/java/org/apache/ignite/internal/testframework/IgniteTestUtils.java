@@ -30,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteInternalException;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.TestInfo;
@@ -346,7 +346,7 @@ public final class IgniteTestUtils {
      * @return Node name.
      */
     public static String testNodeName(TestInfo testInfo, int idx) {
-        return LoggerMessageHelper.format("{}_{}_{}",
+        return IgniteStringFormatter.format("{}_{}_{}",
                 testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "null"),
                 testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "null"),
                 idx);

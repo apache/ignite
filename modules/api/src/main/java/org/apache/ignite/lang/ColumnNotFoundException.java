@@ -28,6 +28,6 @@ public class ColumnNotFoundException extends IgniteException {
      * @param fullName Table canonical name.
      */
     public ColumnNotFoundException(String columnName, String fullName) {
-        super(LoggerMessageHelper.format("Column '{}' does not exist in table '{}'", columnName, fullName));
+        super(IgniteStringFormatter.format("Column '{}' does not exist in table '{}'", columnName, fullName));
     }
 }

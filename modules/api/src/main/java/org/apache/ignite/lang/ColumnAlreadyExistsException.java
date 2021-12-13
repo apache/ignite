@@ -27,6 +27,6 @@ public class ColumnAlreadyExistsException extends IgniteException {
      * @param name Column name.
      */
     public ColumnAlreadyExistsException(String name) {
-        super(LoggerMessageHelper.format("Column already exists [name={}]", name));
+        super(IgniteStringFormatter.format("Column already exists [name={}]", name));
     }
 }

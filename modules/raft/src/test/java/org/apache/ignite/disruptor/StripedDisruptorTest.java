@@ -25,7 +25,7 @@ import com.lmax.disruptor.RingBuffer;
 import java.util.ArrayList;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.apache.ignite.raft.jraft.disruptor.GroupAware;
 import org.apache.ignite.raft.jraft.disruptor.StripedDisruptor;
 import org.junit.jupiter.api.Test;
@@ -70,10 +70,10 @@ public class StripedDisruptorTest extends IgniteAbstractTest {
 
             if (i % 10 == 0) {
                 assertTrue(IgniteTestUtils.waitForCondition(() -> handler1.applied == finalInt + 1, 10_000),
-                        LoggerMessageHelper.format("Batch was not commited [applied={}, expected={}, buffered={}]",
+                        IgniteStringFormatter.format("Batch was not commited [applied={}, expected={}, buffered={}]",
                                 handler1.applied, finalInt + 1, handler1.batch));
                 assertTrue(IgniteTestUtils.waitForCondition(() -> handler2.applied == finalInt + 1, 10_000),
-                        LoggerMessageHelper.format("Batch was not commited [applied={}, expected={}, buffered={}]",
+                        IgniteStringFormatter.format("Batch was not commited [applied={}, expected={}, buffered={}]",
                                 handler2.applied, finalInt + 1, handler2.batch));
             }
         }

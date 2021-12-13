@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.lang.IgniteStringFormatter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -522,7 +522,7 @@ public class IgniteUtils {
     public static void dumpStack(IgniteLogger log, String msg, Object... params) {
         String reason = "Dumping stack.";
 
-        var err = new Exception(LoggerMessageHelper.format(msg, params));
+        var err = new Exception(IgniteStringFormatter.format(msg, params));
 
         if (log != null) {
             log.error(reason, err);

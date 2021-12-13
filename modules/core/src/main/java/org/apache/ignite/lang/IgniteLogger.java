@@ -257,7 +257,7 @@ public class IgniteLogger {
      * Logs a message with an optional list of parameters.
      *
      * @param level  One of the log message level identifiers.
-     * @param msg    The string message format in {@link LoggerMessageHelper} format.
+     * @param msg    The string message format in {@link IgniteStringFormatter} format.
      * @param th     The {@code Throwable} associated with the log message.
      * @param params An optional list of parameters to the message (may be none).
      * @throws NullPointerException If {@code level} is {@code null}.
@@ -270,9 +270,9 @@ public class IgniteLogger {
         }
 
         if (th != null) {
-            log.log(level, LoggerMessageHelper.arrayFormat(msg, params), th);
+            log.log(level, IgniteStringFormatter.arrayFormat(msg, params), th);
         } else {
-            log.log(level, LoggerMessageHelper.arrayFormat(msg, params));
+            log.log(level, IgniteStringFormatter.arrayFormat(msg, params));
         }
     }
 

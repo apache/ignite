@@ -173,7 +173,7 @@ public class ItIgniteNodeRestartTest extends IgniteAbstractTest {
                         .build()
         ).build();
 
-        Table table = ignite.tables().createTableIfNotExists(
+        Table table = ignite.tables().createTable(
                 scmTbl1.canonicalName(), tbl -> SchemaConfigurationConverter.convert(scmTbl1, tbl).changePartitions(10));
 
         for (int i = 0; i < 100; i++) {
