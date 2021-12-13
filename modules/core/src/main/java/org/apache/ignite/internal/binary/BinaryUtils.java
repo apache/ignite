@@ -1936,7 +1936,6 @@ public class BinaryUtils {
                     po = po.deserialize();
                 }
 
-
                 return po;
             }
 
