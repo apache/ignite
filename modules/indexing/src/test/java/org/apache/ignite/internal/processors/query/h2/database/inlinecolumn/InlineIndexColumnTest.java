@@ -258,7 +258,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -329,7 +329,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -382,7 +382,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -446,7 +446,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -512,7 +512,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,
@@ -865,7 +865,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,

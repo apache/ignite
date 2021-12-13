@@ -65,7 +65,7 @@ public class FullPageIdTableTest {
 
         long mem = FullPageIdTable.requiredMemory(cnt);
 
-        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(log);
+        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(log, null);
 
         prov.initialize(new long[] {mem});
 
@@ -144,7 +144,7 @@ public class FullPageIdTableTest {
             ? RobinHoodBackwardShiftHashMap.requiredMemory(elementsCnt)
             : FullPageIdTable.requiredMemory(elementsCnt);
 
-        DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
+        DirectMemoryProvider prov = new UnsafeMemoryProvider(log, null);
 
         prov.initialize(new long[] {mem});
 

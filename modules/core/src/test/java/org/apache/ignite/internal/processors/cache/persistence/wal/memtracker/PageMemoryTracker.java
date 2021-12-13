@@ -244,7 +244,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         long[] chunks = new long[] {maxMemorySize};
 
-        memoryProvider = new UnsafeMemoryProvider(log);
+        memoryProvider = new UnsafeMemoryProvider(log, null);
 
         memoryProvider.initialize(chunks);
 

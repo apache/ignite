@@ -84,7 +84,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
 
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize((isCompression ? 70 : 10) * 1024 * 1024);
+            .setMaxSize((isCompression ? 700 : 100) * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)

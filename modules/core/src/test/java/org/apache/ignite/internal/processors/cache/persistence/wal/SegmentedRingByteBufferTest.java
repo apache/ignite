@@ -36,13 +36,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.ByteBufferHolder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.DirectByteBufferHolder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.OnheapByteBufferHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.ONHEAP;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.mmap.ByteBufferHolder.Type.DIRECT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.mmap.ByteBufferHolder.Type.ONHEAP;
 
 /**
  *
@@ -128,15 +131,34 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
         doTestMultiThreaded2(DIRECT);
     }
 
+    /** */
+    private ByteBufferHolder createBufferHolder(int cap, ByteBufferHolder.Type type) {
+        ByteBufferHolder ret;
+        switch (type) {
+            case ONHEAP:
+                ret = new OnheapByteBufferHolder(cap);
+
+                break;
+            case DIRECT:
+                ret = new DirectByteBufferHolder(cap);
+
+                break;
+            default:
+                throw new UnsupportedOperationException("This type of byte buffer is not supported: " + type);
+        }
+
+        return ret;
+    }
+
     /**
-     * @param mode Mode.
+     * @param bufType Buffer type.
      */
-    private void doTestAligned(SegmentedRingByteBuffer.BufferMode mode) {
+    private void doTestAligned(ByteBufferHolder.Type bufType) {
         int cap = 128;
 
         int size = 8;
 
-        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
+        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, createBufferHolder(cap, bufType));
 
         assertNull(buf.poll());
 
@@ -203,14 +225,14 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Mode.
+     * @param bufType Buffer type.
      */
-    private void doTestNotAligned(SegmentedRingByteBuffer.BufferMode mode) {
+    private void doTestNotAligned(ByteBufferHolder.Type bufType) {
         int size = 8;
 
         int cap = 32 - size / 2; // 3.5 long values.
 
-        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
+        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, createBufferHolder(cap, bufType));
 
         assertNull(buf.poll());
 
@@ -308,16 +330,17 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Mode.
+     * @param bufType Buffer type.
      */
     private void doTestNoOverflowMultiThreaded(
-        SegmentedRingByteBuffer.BufferMode mode
+        ByteBufferHolder.Type bufType
     ) throws org.apache.ignite.IgniteCheckedException, BrokenBarrierException, InterruptedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE,
+            createBufferHolder(cap, bufType));
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -417,14 +440,15 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Mode.
+     * @param bufType Buffer type.
      */
-    private void doTestMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException {
+    private void doTestMultiThreaded(ByteBufferHolder.Type bufType) throws org.apache.ignite.IgniteCheckedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE,
+            createBufferHolder(cap, bufType));
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -518,14 +542,15 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Mode.
+     * @param bufType Buffer type.
      */
-    private void doTestMultiThreaded2(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException {
+    private void doTestMultiThreaded2(ByteBufferHolder.Type bufType) throws org.apache.ignite.IgniteCheckedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE,
+            createBufferHolder(cap, bufType));
 
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 

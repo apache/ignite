@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,9 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.ByteBufferHolder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.DirectByteBufferHolder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.MmapProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -48,7 +50,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_T
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
 import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /**
@@ -94,6 +95,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** Fsync delay. */
     private final long fsyncDelay;
 
+    /** Mmap rpocessor instance */
+    private final MmapProcessor mmapProc;
+
     /**
      * @param cctx Context.
      * @param metrics Data storage metrics.
@@ -128,6 +132,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.fsyncDelay = fsyncDelay;
         walWriter = new WALWriter(log);
 
+        mmapProc = this.cctx.kernalContext().mmap();
+
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
             walSegmentSyncWorker = new WalSegmentSyncer(
                 cctx.igniteInstanceName(),
@@ -154,12 +160,13 @@ public class FileHandleManagerImpl implements FileHandleManager {
         SegmentedRingByteBuffer rbuf;
 
         if (mmap) {
-            MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
+            ByteBufferHolder buf = mmapProc.mmap(fileIO, (int)maxWalSegmentSize);
 
             rbuf = new SegmentedRingByteBuffer(buf, metrics);
         }
         else
-            rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize, DIRECT, metrics);
+            rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize,
+                new DirectByteBufferHolder(walBufferSize), metrics);
 
         rbuf.init(position);
 
@@ -174,7 +181,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         SegmentedRingByteBuffer rbuf;
 
         if (mmap) {
-            MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
+            ByteBufferHolder buf = mmapProc.mmap(fileIO, (int)maxWalSegmentSize);
 
             rbuf = new SegmentedRingByteBuffer(buf, metrics);
         }

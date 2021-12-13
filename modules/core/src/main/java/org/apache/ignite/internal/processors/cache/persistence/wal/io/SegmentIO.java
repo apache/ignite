@@ -27,13 +27,24 @@ public class SegmentIO extends FileIODecorator {
     /** Segment id. */
     private final long segmentId;
 
+    /** Path of segment. */
+    private final String path;
+
     /**
      * @param id Segment id.
      * @param delegate File I/O delegate
      */
-    public SegmentIO(long id, FileIO delegate) {
+    public SegmentIO(long id, FileIO delegate, String path) {
         super(delegate);
         segmentId = id;
+        this.path = path;
+    }
+
+    /**
+     * @return Path of segment file.
+     */
+    public String path() {
+        return path;
     }
 
     /**

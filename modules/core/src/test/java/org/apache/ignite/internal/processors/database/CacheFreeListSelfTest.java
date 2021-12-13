@@ -490,7 +490,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) {
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             pageSize,
             plcCfg,

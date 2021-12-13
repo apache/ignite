@@ -161,7 +161,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
 
         info(U.readableSize(mem, true));
 
-        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new JavaLogger());
+        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new JavaLogger(), null);
 
         prov.initialize(new long[] {mem});
 

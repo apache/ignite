@@ -47,6 +47,7 @@ public class FileHandleManagerFactory {
      * @param cctx Cache context.
      * @param metrics Data storage metrics.
      * @param mmap Using mmap.
+     * @param isPersistentMemory If {@code true}, file handle is created on persistent memory.
      * @param serializer Serializer.
      * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
@@ -55,10 +56,11 @@ public class FileHandleManagerFactory {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
+        boolean isPersistentMemory,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currHandleSupplier
     ) {
-        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
+        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker && !isPersistentMemory) {
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -69,17 +71,18 @@ public class FileHandleManagerFactory {
                 dsConf.getWalFsyncDelayNanos(),
                 dsConf.getWalThreadLocalBufferSize()
             );
-        else
-            return new FileHandleManagerImpl(
-                cctx,
-                metrics,
-                mmap,
-                serializer,
-                currHandleSupplier,
-                dsConf.getWalMode(),
-                dsConf.getWalBufferSize(),
-                dsConf.getWalSegmentSize(),
-                dsConf.getWalFsyncDelayNanos()
-            );
+        }
+
+        return new FileHandleManagerImpl(
+            cctx,
+            metrics,
+            mmap,
+            serializer,
+            currHandleSupplier,
+            dsConf.getWalMode(),
+            dsConf.getWalBufferSize(),
+            dsConf.getWalSegmentSize(),
+            dsConf.getWalFsyncDelayNanos()
+        );
     }
 }
