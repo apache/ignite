@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -110,6 +111,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private int typeId;
+
+    /** */
+    private int keyTypeId;
 
     /** */
     private String affKey;
@@ -253,6 +257,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int keyTypeId() {
+        return keyTypeId;
+    }
+
+    /** */
+    public void keyTypeId(int keyTypeId) {
+        this.keyTypeId = keyTypeId;
     }
 
     /** {@inheritDoc} */
@@ -589,13 +603,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
         if (key instanceof BinaryObject) {
-            String typeName = ((BinaryObject)key).type().typeName();
+            BinaryType keyType = ((BinaryObject)key).type();
 
-            if (!keyTypeName.equals(typeName)) {
+            if (keyTypeId != keyType.typeId()) {
                 throw new IgniteSQLException("Key type not is allowed for table ["
                         + "table=" + tblName + ", "
                         + "expectedKeyType=" + keyTypeName + ", "
-                        + "actualType=" + typeName + ']');
+                        + "actualType=" + keyType.typeName() + ']');
             }
         }
 

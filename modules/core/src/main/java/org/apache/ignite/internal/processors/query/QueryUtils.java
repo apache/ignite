@@ -534,6 +534,7 @@ public class QueryUtils {
         QueryTypeIdKey altTypeId = null;
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
+        int keyTypeId = ctx.cacheObjects().typeId(qryEntity.getKeyType());
 
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
@@ -597,6 +598,7 @@ public class QueryUtils {
         }
 
         desc.typeId(valTypeId);
+        desc.keyTypeId(keyTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
