@@ -638,10 +638,10 @@ public class IndexQueryProcessor {
         private final IndexRangeQuery qry;
 
         /** */
-        private final LinkedHashMap<String, IndexKeyDefinition> idxDef;
+        private final IndexRowComparator rowCmp;
 
         /** */
-        private final IndexRowComparator rowCmp;
+        private final boolean[] descOrderCache;
 
         /** */
         IndexQueryCriteriaClosure(
@@ -650,8 +650,14 @@ public class IndexQueryProcessor {
             IndexRowComparator rowCmp
         ) {
             this.qry = qry;
-            this.idxDef = idxDef;
             this.rowCmp = rowCmp;
+            descOrderCache = new boolean[qry.criteria.length];
+
+            for (int i = 0; i < qry.criteria.length; i++) {
+                RangeIndexQueryCriterion c = qry.criteria[i];
+
+                descOrderCache[i] = idxDef.get(c.field()).order().sortOrder() == DESC;
+            }
         }
 
         /** {@inheritDoc} */
@@ -682,7 +688,7 @@ public class IndexQueryProcessor {
             for (int i = 0; i < criteriaKeysCnt; i++) {
                 RangeIndexQueryCriterion c = qry.criteria[i];
 
-                boolean descOrder = idxDef.get(c.field()).order().sortOrder() == DESC;
+                boolean descOrder = descOrderCache[i];
 
                 if (low != null && low.key(i) != null) {
                     int cmp = rowCmp.compareRow(row, low, i);
