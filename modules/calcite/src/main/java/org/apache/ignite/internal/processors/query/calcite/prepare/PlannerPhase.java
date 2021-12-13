@@ -91,6 +91,8 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+
                 CoreRules.FILTER_MERGE,
                 CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                 CoreRules.FILTER_SET_OP_TRANSPOSE,
@@ -112,7 +114,6 @@ public enum PlannerPhase {
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
                 ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
-                ProjectScanMergeRule.INDEX_SCAN_SKIP_CORRELATED,
 
                 CoreRules.JOIN_PUSH_EXPRESSIONS,
                 CoreRules.PROJECT_MERGE,
@@ -210,7 +211,8 @@ public enum PlannerPhase {
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
                     FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
 
-                    LogicalOrToUnionRule.INSTANCE,
+                    LogicalOrToUnionRule.FILTER_INSTANCE,
+                    LogicalOrToUnionRule.SCAN_INSTANCE,
 
                     CorrelatedNestedLoopJoinRule.INSTANCE,
                     CorrelateToNestedLoopRule.INSTANCE,

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -30,7 +29,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
@@ -58,8 +56,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             Mappings.TargetMapping targetMapping = Commons.mapping(requiredColumns,
                 tbl.getRowType(typeFactory).getFieldCount());
             collation = collation.apply(targetMapping);
-            if (proj != null)
-                collation = TraitUtils.projectCollation(collation, proj, rowType);
         }
 
         IndexConditions idxCond = new IndexConditions();

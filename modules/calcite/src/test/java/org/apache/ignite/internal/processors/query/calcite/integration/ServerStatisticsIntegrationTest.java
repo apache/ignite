@@ -324,7 +324,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
                 "%s > %d and %s < %d", numericField, -1, numericField, 101))
                 .matches(QueryChecker.containsResultRowCount(allRowCnt)).check();
 
-            assertQuerySrv(String.format("select /*+ DISABLE_RULE('LogicalOrToUnionRule') */ * from all_types where " +
+            assertQuerySrv(String.format("select /*+ DISABLE_RULE('ScanLogicalOrToUnionRule') */ * from all_types where " +
                 "(%s > %d and %s < %d) or " +
                 "(int_field > -1 and int_field < 101)",
                 numericField, -1, numericField, 101))
