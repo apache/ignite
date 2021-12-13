@@ -506,10 +506,11 @@ public class QueryUtils {
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
-        } else {
+        }
+        else {
             if (valCls == null)
                 throw new IgniteCheckedException("Failed to find value class in the node classpath " +
-                        "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
+                    "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
 
             desc.valueClass(valCls);
             desc.keyClass(keyCls);
@@ -549,7 +550,7 @@ public class QueryUtils {
 
                 if (keyType != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
-                            (CacheDefaultBinaryAffinityKeyMapper) coCtx.defaultAffMapper();
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
@@ -564,18 +565,20 @@ public class QueryUtils {
                         }
                     }
                 }
-            } else
+            }
+            else
                 desc.customAffinityKeyMapper(true);
 
             desc.affinityKey(affField);
-        } else {
+        }
+        else {
             processClassMeta(qryEntity, desc, coCtx);
 
             AffinityKeyMapper keyMapper = cacheInfo.config().getAffinityMapper();
 
             if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                 String affField =
-                        ((GridCacheDefaultAffinityKeyMapper) keyMapper).affinityKeyPropertyName(desc.keyClass());
+                    ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
                     affField = desc.aliases().getOrDefault(affField, affField);
@@ -585,7 +588,8 @@ public class QueryUtils {
 
                     desc.affinityKey(affField);
                 }
-            } else
+            }
+            else
                 desc.customAffinityKeyMapper(true);
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
