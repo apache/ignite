@@ -424,13 +424,6 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         };
 
         for (Object item : data) {
-            c.put(item, 1);
-
-            assertTrue("" + item, c.containsKey(item));
-            assertEquals(1, c.get(item));
-            assertTrue(c.replace(item, 1, 2));
-            assertTrue(c.remove(item));
-
             c.put(1, item);
 
             Object item0 = c.get(1);
@@ -442,6 +435,13 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
                 assertEquals(item.getClass(), item0.getClass());
 
             assertTrue(Arrays.equals((Object[])item, (Object[])item0));
+
+            c.put(item, 1);
+
+            assertTrue(c.containsKey(item));
+            assertEquals(1, c.get(item));
+            assertTrue(c.replace(item, 1, 2));
+            assertTrue(c.remove(item));
 
         }
     }
