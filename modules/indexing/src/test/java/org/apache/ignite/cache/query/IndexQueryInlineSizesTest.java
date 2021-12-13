@@ -17,8 +17,10 @@
 
 package org.apache.ignite.cache.query;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -69,7 +71,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        crd = startGrid(0);
+        crd = startGrid(2);
 
         prepareTable(crd);
     }
@@ -77,53 +79,86 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testFixedInlineKeys() throws Exception {
-        try(Index idx = new Index(inlineSize, "fld2")) {
-            Random r = new Random();
-
-            int low = r.nextInt(CNT / 2);
-            int high = low + r.nextInt(CNT / 2);
-
-            IndexQuery<Integer, BinaryObject> qry = new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
-                .setCriteria(gt("fld1", low), lt("fld2", high));
-
-            List<?> result = crd.cache(TABLE_CACHE).withKeepBinary().query(qry).getAll();
-
-            assertEquals(high - low - 1, result.size());
+        try (Index idx = new Index(inlineSize, "fld1, fld2")) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld1", low), lt("fld2", high)));
         }
     }
 
     /** */
     @Test
     public void testVarInlineKeys() throws Exception {
-        try(Index idx = new Index(inlineSize, "fld3")) {
-            Random r = new Random();
-
-            int low = r.nextInt(CNT / 2);
-            int high = low + r.nextInt(CNT / 2);
-
-            IndexQuery<Integer, BinaryObject> qry = new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
-                .setCriteria(gt("fld1", low), lt("fld3", strFieldVal(high)));
-
-            List<?> result = crd.cache(TABLE_CACHE).withKeepBinary().query(qry).getAll();
-
-            assertEquals(high - low - 1, result.size());
+        try (Index idx = new Index(inlineSize, "fld1, fld3")) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld1", low), lt("fld3", strFieldVal(high))));
         }
+    }
+
+    /** */
+    @Test
+    public void testVarInlineKeysFirst() throws Exception {
+        try (Index idx = new Index(inlineSize, "fld3, fld1")) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld1", low), lt("fld3", strFieldVal(high))));
+        }
+    }
+
+    /** */
+    @Test
+    public void testNonInlinedKeys() throws Exception {
+        try (Index idx = new Index(inlineSize, "fld1, fld4")) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld1", low), lt("fld4", new BigDecimal(high))));
+        }
+    }
+
+    /** */
+    @Test
+    public void testNonInlinedKeysFirst() throws Exception {
+        try (Index idx = new Index(inlineSize, "fld4, fld1", 0)) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld1", low), lt("fld4", new BigDecimal(high))));
+        }
+    }
+
+    /** */
+    @Test
+    public void testVarlenAndNonInlined() throws Exception {
+        try (Index idx = new Index(inlineSize, "fld3, fld4")) {
+            check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(gt("fld3", strFieldVal(low)), lt("fld4", new BigDecimal(high))));
+        }
+    }
+
+    /** */
+    private void check(BiFunction<Integer, Integer, IndexQuery<Integer, BinaryObject>> qryBld) {
+        Random r = new Random();
+
+        int low = r.nextInt(CNT / 2);
+        int high = low + r.nextInt(CNT / 2);
+
+        IndexQuery<Integer, BinaryObject> qry = qryBld.apply(low, high);
+
+        List<?> result = crd.cache(TABLE_CACHE).withKeepBinary().query(qry).getAll();
+
+        assertEquals(high - low - 1, result.size());
     }
 
     /** */
     private void prepareTable(Ignite crd) {
         SqlFieldsQuery tblQry = new SqlFieldsQuery("create table " + TABLE +
-            "(id int PRIMARY KEY, fld1 int, fld2 int, fld3 varchar)" +
+            "(id int PRIMARY KEY, fld1 int, fld2 int, fld3 varchar, fld4 decimal)" +
             " with \"CACHE_NAME=" + TABLE_CACHE + ",VALUE_TYPE=" + VALUE_TYPE + "\";");
 
         crd.getOrCreateCache(CACHE).query(tblQry);
 
-        try(IgniteDataStreamer<Integer, BinaryObject> s = crd.dataStreamer(TABLE_CACHE)) {
+        try (IgniteDataStreamer<Integer, BinaryObject> s = crd.dataStreamer(TABLE_CACHE)) {
             IntStream.range(0, CNT).forEach((v) -> {
                 BinaryObject bo = crd.binary().builder(VALUE_TYPE)
                     .setField("fld1", v)
                     .setField("fld2", v)
                     .setField("fld3", strFieldVal(v))
+                    .setField("fld4", new BigDecimal(v))
                     .build();
 
                 s.addData(v, bo);
@@ -142,18 +177,23 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         private final String idxName;
 
         /** */
-        private Index(int inlineSize, String secondFld) {
+        private Index(int inlineSize, String flds) {
+            this(inlineSize, flds, inlineSize);
+        }
+
+        /** */
+        private Index(int inlineSize, String flds, int expInlineSize) {
             idxName = "IDX_" + inlineSize;
 
             SqlFieldsQuery idxQry = new SqlFieldsQuery(
-                "create index " + idxName + " on " + TABLE + "(fld1, " + secondFld + ") INLINE_SIZE " + inlineSize);
+                "create index " + idxName + " on " + TABLE + "(" + flds + ") INLINE_SIZE " + inlineSize);
 
             crd.cache(CACHE).query(idxQry).getAll();
 
             GridH2Table tbl = ((IgniteH2Indexing)crd.context().query().getIndexing()).schemaManager()
                 .dataTable("PUBLIC", TABLE);
 
-            assertEquals(inlineSize, ((H2TreeIndexBase)tbl.getIndex(idxName)).inlineSize());
+            assertEquals(expInlineSize, ((H2TreeIndexBase)tbl.getIndex(idxName)).inlineSize());
         }
 
         /** {@inheritDoc} */

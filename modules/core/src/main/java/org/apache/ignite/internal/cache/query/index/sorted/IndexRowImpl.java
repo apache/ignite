@@ -65,17 +65,12 @@ public class IndexRowImpl implements IndexRow {
         if (keyCache != null && keyCache[idx] != null)
             return keyCache[idx];
 
-        IndexKey key = extractKey(idx);
+        IndexKey key = rowHnd.indexKey(idx, cacheRow);
 
         if (keyCache != null)
             keyCache[idx] = key;
 
         return key;
-    }
-
-    /** Extracts index key from underlying storage. */
-    protected IndexKey extractKey(int idx) {
-        return rowHnd.indexKey(idx, cacheRow);
     }
 
     /** {@inheritDoc} */
