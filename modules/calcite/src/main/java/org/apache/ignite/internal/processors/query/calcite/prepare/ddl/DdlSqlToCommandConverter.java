@@ -17,16 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
-import static org.apache.calcite.sql.type.SqlTypeName.BOOLEAN;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.AFFINITY_KEY;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.BACKUPS;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.CACHE_GROUP;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.CACHE_NAME;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.DATA_REGION;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.ENCRYPTED;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.TEMPLATE;
-import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.PARTITIONS;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.REPLICAS;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import java.util.ArrayList;
@@ -41,8 +33,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -52,25 +46,20 @@ import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
+import org.apache.ignite.internal.util.Pair;
 import org.apache.ignite.lang.IgniteException;
 
 /**
- * DdlSqlToCommandConverter.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * DdlSqlToCommandConverter. TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class DdlSqlToCommandConverter {
-    /** Processor that validates a value is a Sql Identifier. */
-    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR = (opt, ctx) -> {
-        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier) opt.value()).isSimple()) {
-            throwOptionParsingException(opt, "a simple identifier", ctx.query());
-        }
-
-        return ((SqlIdentifier) opt.value()).getSimple();
-    };
-
     /** Processor that unconditionally throws an AssertionException. */
     private static final TableOptionProcessor<Void> UNSUPPORTED_OPTION_PROCESSOR = new TableOptionProcessor<>(
             null,
@@ -79,35 +68,22 @@ public class DdlSqlToCommandConverter {
             },
             null);
 
+    /** Checks positive num param. */
+    private BiFunction<IgniteSqlCreateTableOption, PlanningContext, Integer> positiveNumValidator = (opt, ctx) -> {
+        if (!(opt.value() instanceof SqlNumericLiteral)
+                || !((SqlNumericLiteral) opt.value()).isInteger()
+                || ((SqlLiteral) opt.value()).intValue(true) < 0
+        ) {
+            throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+        }
+
+        return ((SqlLiteral) opt.value()).intValue(true);
+    };
+
     /** Map of the supported table option processors. */
     private final Map<IgniteSqlCreateTableOptionEnum, TableOptionProcessor<?>> tblOptionProcessors = Stream.of(
-            new TableOptionProcessor<>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
-            new TableOptionProcessor<>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
-            new TableOptionProcessor<>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
-            new TableOptionProcessor<>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
-            new TableOptionProcessor<>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
-            new TableOptionProcessor<>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
-            new TableOptionProcessor<>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
-            //new TableOptionProcessor<>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
-            //new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
-            //CreateTableCommand::writeSynchronizationMode),
-            new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
-                if (!(opt.value() instanceof SqlNumericLiteral)
-                        || !((SqlNumericLiteral) opt.value()).isInteger()
-                        || ((SqlLiteral) opt.value()).intValue(true) < 0
-                ) {
-                    throwOptionParsingException(opt, "a non-negative integer", ctx.query());
-                }
-
-                return ((SqlLiteral) opt.value()).intValue(true);
-            }, CreateTableCommand::backups),
-            new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
-                if (!(opt.value() instanceof SqlLiteral) && ((SqlLiteral) opt.value()).getTypeName() != BOOLEAN) {
-                    throwOptionParsingException(opt, "a boolean", ctx.query());
-                }
-
-                return ((SqlLiteral) opt.value()).booleanValue();
-            }, CreateTableCommand::encrypted)
+            new TableOptionProcessor<>(REPLICAS, positiveNumValidator, CreateTableCommand::replicas),
+            new TableOptionProcessor<>(PARTITIONS, positiveNumValidator, CreateTableCommand::partitions)
     ).collect(Collectors.toMap(TableOptionProcessor::key, Function.identity()));
 
     /**
@@ -125,9 +101,25 @@ public class DdlSqlToCommandConverter {
             return convertDropTable((SqlDropTable) ddlNode, ctx);
         }
 
+        if (ddlNode instanceof IgniteSqlAlterTableAddColumn) {
+            return convertAlterTableAdd((IgniteSqlAlterTableAddColumn) ddlNode, ctx);
+        }
+
+        if (ddlNode instanceof IgniteSqlAlterTableDropColumn) {
+            return convertAlterTableDrop((IgniteSqlAlterTableDropColumn) ddlNode, ctx);
+        }
+
+        if (ddlNode instanceof IgniteSqlCreateIndex) {
+            return convertAddIndex((IgniteSqlCreateIndex) ddlNode, ctx);
+        }
+
+        if (ddlNode instanceof IgniteSqlDropIndex) {
+            return convertDropIndex((IgniteSqlDropIndex) ddlNode);
+        }
+
         throw new IgniteException("Unsupported operation ["
                 + "sqlNodeKind=" + ddlNode.getKind() + "; "
-                + "querySql=\"" + ctx.query() + "\"]"/*, IgniteQueryErrorCode.UNSUPPORTED_OPERATION*/);
+                + "querySql=\"" + ctx.query() + "\"]");
     }
 
     /**
@@ -141,7 +133,7 @@ public class DdlSqlToCommandConverter {
 
         createTblCmd.schemaName(deriveSchemaName(createTblNode.name(), ctx));
         createTblCmd.tableName(deriveObjectName(createTblNode.name(), ctx, "tableName"));
-        createTblCmd.ifNotExists(createTblNode.ifNotExists());
+        createTblCmd.ifTableExists(createTblNode.ifNotExists());
 
         if (createTblNode.createOptionList() != null) {
             for (SqlNode optNode : createTblNode.createOptionList().getList()) {
@@ -158,24 +150,24 @@ public class DdlSqlToCommandConverter {
 
         IgnitePlanner planner = ctx.planner();
 
-        List<ColumnDefinition> cols = new ArrayList<>();
+        List<ColumnDefinition> cols = new ArrayList<>(colDeclarations.size());
 
         for (SqlColumnDeclaration col : colDeclarations) {
             if (!col.name.isSimple()) {
                 throw new IgniteException("Unexpected value of columnName ["
                         + "expected a simple identifier, but was " + col.name + "; "
-                        + "querySql=\"" + ctx.query() + "\"]"/*, IgniteQueryErrorCode.PARSING*/);
+                        + "querySql=\"" + ctx.query() + "\"]");
             }
 
             String name = col.name.getSimple();
-            RelDataType type = planner.convert(col.dataType);
+            RelDataType relType = planner.convert(col.dataType);
 
             Object dflt = null;
             if (col.expression != null) {
                 dflt = ((SqlLiteral) col.expression).getValue();
             }
 
-            cols.add(new ColumnDefinition(name, type, dflt));
+            cols.add(new ColumnDefinition(name, relType, dflt));
         }
 
         createTblCmd.columns(cols);
@@ -188,7 +180,7 @@ public class DdlSqlToCommandConverter {
         if (pkConstraints.size() > 1) {
             throw new IgniteException("Unexpected amount of primary key constraints ["
                     + "expected at most one, but was " + pkConstraints.size() + "; "
-                    + "querySql=\"" + ctx.query() + "\"]"/*, IgniteQueryErrorCode.PARSING*/);
+                    + "querySql=\"" + ctx.query() + "\"]");
         }
 
         if (!nullOrEmpty(pkConstraints)) {
@@ -210,6 +202,67 @@ public class DdlSqlToCommandConverter {
     }
 
     /**
+     * Converts a given IgniteSqlAlterTableAddColumn AST to a AlterTableAddCommand.
+     *
+     * @param alterTblNode Root node of the given AST.
+     * @param ctx          Planning context.
+     */
+    private AlterTableAddCommand convertAlterTableAdd(IgniteSqlAlterTableAddColumn alterTblNode, PlanningContext ctx) {
+        AlterTableAddCommand alterTblCmd = new AlterTableAddCommand();
+
+        alterTblCmd.schemaName(deriveSchemaName(alterTblNode.name(), ctx));
+        alterTblCmd.tableName(deriveObjectName(alterTblNode.name(), ctx, "table name"));
+        alterTblCmd.ifTableExists(alterTblNode.ifExists());
+        alterTblCmd.ifColumnNotExists(alterTblNode.ifNotExistsColumn());
+
+        List<ColumnDefinition> cols = new ArrayList<>(alterTblNode.columns().size());
+
+        for (SqlNode colNode : alterTblNode.columns()) {
+            assert colNode instanceof SqlColumnDeclaration : colNode.getClass();
+
+            SqlColumnDeclaration col = (SqlColumnDeclaration) colNode;
+
+            assert col.name.isSimple();
+
+            Object dflt = null;
+            if (col.expression != null) {
+                dflt = ((SqlLiteral) col.expression).getValue();
+            }
+
+            String name = col.name.getSimple();
+            RelDataType relType = ctx.planner().convert(col.dataType);
+
+            cols.add(new ColumnDefinition(name, relType, dflt));
+        }
+
+        alterTblCmd.columns(cols);
+
+        return alterTblCmd;
+    }
+
+    /**
+     * Converts a given IgniteSqlAlterTableDropColumn AST to a AlterTableDropCommand.
+     *
+     * @param alterTblNode Root node of the given AST.
+     * @param ctx          Planning context.
+     */
+    private AlterTableDropCommand convertAlterTableDrop(IgniteSqlAlterTableDropColumn alterTblNode, PlanningContext ctx) {
+        AlterTableDropCommand alterTblCmd = new AlterTableDropCommand();
+
+        alterTblCmd.schemaName(deriveSchemaName(alterTblNode.name(), ctx));
+        alterTblCmd.tableName(deriveObjectName(alterTblNode.name(), ctx, "table name"));
+        alterTblCmd.ifTableExists(alterTblNode.ifExists());
+        alterTblCmd.ifColumnExists(alterTblNode.ifExistsColumn());
+
+        Set<String> cols = new HashSet<>(alterTblNode.columns().size());
+        alterTblNode.columns().forEach(c -> cols.add(((SqlIdentifier) c).getSimple()));
+
+        alterTblCmd.columns(cols);
+
+        return alterTblCmd;
+    }
+
+    /**
      * Converts a given DropTable AST to a DropTable command.
      *
      * @param dropTblNode Root node of the given AST.
@@ -220,9 +273,52 @@ public class DdlSqlToCommandConverter {
 
         dropTblCmd.schemaName(deriveSchemaName(dropTblNode.name, ctx));
         dropTblCmd.tableName(deriveObjectName(dropTblNode.name, ctx, "tableName"));
-        dropTblCmd.ifExists(dropTblNode.ifExists);
+        dropTblCmd.ifTableExists(dropTblNode.ifExists);
 
         return dropTblCmd;
+    }
+
+    /**
+     * Converts create index to appropriate wrapper.
+     */
+    private CreateIndexCommand convertAddIndex(IgniteSqlCreateIndex sqlCmd, PlanningContext ctx) {
+        CreateIndexCommand createIdxCmd = new CreateIndexCommand();
+
+        createIdxCmd.schemaName(deriveSchemaName(sqlCmd.tableName(), ctx));
+        createIdxCmd.tableName(deriveObjectName(sqlCmd.tableName(), ctx, "table name"));
+        createIdxCmd.indexName(sqlCmd.indexName().getSimple());
+
+        List<Pair<String, Boolean>> cols = new ArrayList<>(sqlCmd.columnList().size());
+
+        for (SqlNode col : sqlCmd.columnList().getList()) {
+            boolean desc = false;
+
+            if (col.getKind() == SqlKind.DESCENDING) {
+                col = ((SqlCall) col).getOperandList().get(0);
+
+                desc = true;
+            }
+
+            cols.add(new Pair<>(((SqlIdentifier) col).getSimple(), desc));
+        }
+
+        createIdxCmd.columns(cols);
+
+        createIdxCmd.ifIndexNotExists(sqlCmd.ifNotExists());
+
+        return createIdxCmd;
+    }
+
+    /**
+     * Converts drop index to appropriate wrapper.
+     */
+    private DropIndexCommand convertDropIndex(IgniteSqlDropIndex sqlCmd) {
+        DropIndexCommand dropCmd = new DropIndexCommand();
+
+        dropCmd.indexName(sqlCmd.idxName().getSimple());
+        dropCmd.ifExist(sqlCmd.ifExists());
+
+        return dropCmd;
     }
 
     /** Derives a schema name from the compound identifier. */
@@ -336,8 +432,8 @@ public class DdlSqlToCommandConverter {
          * Constructor.
          *
          * @param key       Option key this processor is supopsed to handle.
-         * @param validator Validator that derives a value from a {@link SqlNode}, validates it and then returns
-         *                  if validation passed, throws an exeption otherwise.
+         * @param validator Validator that derives a value from a {@link SqlNode}, validates it and then returns if validation passed,
+         *                  throws an exeption otherwise.
          * @param valSetter Setter sets the value recived from the validator to the given {@link CreateTableCommand}.
          */
         private TableOptionProcessor(
@@ -351,8 +447,8 @@ public class DdlSqlToCommandConverter {
         }
 
         /**
-         * Processes the given option, validates it's value and then sets the appropriate field in a given command,
-         * throws an exception if the validation failed.
+         * Processes the given option, validates it's value and then sets the appropriate field in a given command, throws an exception if
+         * the validation failed.
          *
          * @param opt Option to validate.
          * @param ctx Planning context.

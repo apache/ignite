@@ -25,18 +25,13 @@ import org.apache.ignite.schema.definition.ColumnDefinition;
  */
 public interface ColumnDefinitionBuilder extends SchemaObjectBuilder {
     /**
-     * Mark column as nullable.
+     * Set nullable attribute.
+     *
+     * @param nullable If {@code false}, null values will not be allowed for this column.
      *
      * @return {@code this} for chaining.
      */
-    ColumnDefinitionBuilder asNullable();
-
-    /**
-     * Mark column as non-nullable.
-     *
-     * @return {@code this} for chaining.
-     */
-    ColumnDefinitionBuilder asNonNull();
+    ColumnDefinitionBuilder asNullable(boolean nullable);
 
     /**
      * Sets column default value expression.

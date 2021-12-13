@@ -100,8 +100,8 @@ public class ItNoThreadsLeftTest extends IgniteAbstractTest {
     protected Table createTable(Ignite node, String schemaName, String shortTableName) {
         return node.tables().createTable(
                 schemaName + "." + shortTableName, tblCh -> convert(SchemaBuilders.tableBuilder(schemaName, shortTableName).columns(
-                                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
+                                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
                                 SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
                         ).withPrimaryKey("key").build(),
                         tblCh).changeReplicas(2).changePartitions(10)

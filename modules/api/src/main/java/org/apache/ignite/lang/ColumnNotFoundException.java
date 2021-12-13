@@ -15,10 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
+package org.apache.ignite.lang;
 
 /**
- * DROP TABLE statement.
+ * Exception is thrown when appropriate column is not found.
  */
-public class DropTableCommand extends AbstractTableDdlCommand {
+public class ColumnNotFoundException extends IgniteException {
+    /**
+     * Create a new exception with given column name.
+     *
+     * @param columnName Column name.
+     * @param fullName Table canonical name.
+     */
+    public ColumnNotFoundException(String columnName, String fullName) {
+        super(LoggerMessageHelper.format("Column '{}' does not exist in table '{}'", columnName, fullName));
+    }
 }

@@ -191,11 +191,11 @@ abstract class AbstractSchemaChangeTest {
     protected static void createTable(List<Ignite> nodes) {
         // Create table on node 0.
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
-                SchemaBuilders.column("valBlob", ColumnType.blobOf()).asNullable().build(),
-                SchemaBuilders.column("valDecimal", ColumnType.decimalOf()).asNullable().build(),
-                SchemaBuilders.column("valBigInt", ColumnType.numberOf()).asNullable().build(),
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
+                SchemaBuilders.column("valBlob", ColumnType.blobOf()).asNullable(true).build(),
+                SchemaBuilders.column("valDecimal", ColumnType.decimalOf()).asNullable(true).build(),
+                SchemaBuilders.column("valBigInt", ColumnType.numberOf()).asNullable(true).build(),
                 SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
 

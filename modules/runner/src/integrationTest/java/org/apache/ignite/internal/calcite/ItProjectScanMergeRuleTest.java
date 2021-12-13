@@ -49,12 +49,12 @@ public class ItProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
     @BeforeAll
     static void initTestData() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "PRODUCTS").columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("CATEGORY", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("CAT_ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("SUBCATEGORY", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("SUBCAT_ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("CATEGORY", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("CAT_ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("SUBCATEGORY", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("SUBCAT_ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .withIndex(

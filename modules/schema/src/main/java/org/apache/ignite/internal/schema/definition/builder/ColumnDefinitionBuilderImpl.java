@@ -52,16 +52,8 @@ public class ColumnDefinitionBuilderImpl implements ColumnDefinitionBuilder {
 
     /** {@inheritDoc} */
     @Override
-    public ColumnDefinitionBuilderImpl asNullable() {
-        nullable = true;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public ColumnDefinitionBuilderImpl asNonNull() {
-        nullable = false;
+    public ColumnDefinitionBuilderImpl asNullable(boolean nullable) {
+        this.nullable = nullable;
 
         return this;
     }

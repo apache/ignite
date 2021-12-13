@@ -17,6 +17,7 @@
 
 package org.apache.ignite.schema.definition.builder;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
@@ -27,6 +28,14 @@ import org.apache.ignite.schema.definition.index.IndexDefinition;
  * Table definition builder.
  */
 public interface TableDefinitionBuilder extends SchemaObjectBuilder {
+    /**
+     * Adds columns to the table.
+     *
+     * @param columns Table columns definitions.
+     * @return {@code This} for chaining.
+     */
+    TableDefinitionBuilder columns(List<ColumnDefinition> columns);
+
     /**
      * Adds columns to the table.
      *

@@ -86,10 +86,10 @@ public class KeyValueViewExample {
 
             TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "accounts")
                     .columns(
-                            SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
+                            SchemaBuilders.column("accountNumber", ColumnType.INT32).build(),
+                            SchemaBuilders.column("firstName", ColumnType.string()).asNullable(true).build(),
+                            SchemaBuilders.column("lastName", ColumnType.string()).asNullable(true).build(),
+                            SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable(true).build()
                     )
                     .withPrimaryKey("accountNumber")
                     .build();

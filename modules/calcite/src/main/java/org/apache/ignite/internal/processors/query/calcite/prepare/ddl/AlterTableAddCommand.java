@@ -17,8 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.util.List;
+
 /**
- * DROP TABLE statement.
+ * ALTER TABLE ... ADD COLUMN statement.
  */
-public class DropTableCommand extends AbstractTableDdlCommand {
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+public class AlterTableAddCommand extends AbstractTableDdlCommand {
+    /** Quietly ignore this command if column already exists. */
+    private boolean ifColumnNotExists;
+
+    /** Columns. */
+    private List<ColumnDefinition> cols;
+
+    public List<ColumnDefinition> columns() {
+        return cols;
+    }
+
+    public void columns(List<ColumnDefinition> cols) {
+        this.cols = cols;
+    }
+
+    public boolean ifColumnNotExists() {
+        return ifColumnNotExists;
+    }
+
+    public void ifColumnNotExists(boolean ifColumnNotExists) {
+        this.ifColumnNotExists = ifColumnNotExists;
+    }
 }

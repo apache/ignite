@@ -37,7 +37,7 @@ public class ColumnDefinitionBuilderTest {
     public void testCreateColumn() {
         ColumnDefinitionBuilder builder = SchemaBuilders.column("TEST", ColumnType.DOUBLE);
 
-        ColumnDefinition col = builder.asNonNull().withDefaultValueExpression("NOW()").build();
+        ColumnDefinition col = builder.withDefaultValueExpression("NOW()").build();
 
         assertEquals("TEST", col.name());
         assertEquals(ColumnType.DOUBLE, col.type());

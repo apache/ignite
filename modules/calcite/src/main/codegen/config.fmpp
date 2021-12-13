@@ -31,9 +31,13 @@ data: {
       "org.apache.calcite.sql.SqlDrop",
       "org.apache.calcite.sql.SqlLiteral",
       "org.apache.calcite.schema.ColumnStrategy",
+      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn",
+      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn",
       "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable",
-      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption"
+      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex",
+      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption",
       "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum",
+      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
     ]
 
@@ -42,34 +46,19 @@ data: {
     keywords: [
       "SEMI"
       "IF"
-      "TEMPLATE"
-      "BACKUPS"
-      "AFFINITY_KEY"
-      "ATOMICITY"
-      "WRITE_SYNCHRONIZATION_MODE"
-      "CACHE_GROUP"
-      "CACHE_NAME"
-      "DATA_REGION"
+      "REPLICAS"
+      "PARTITIONS"
+      "INDEX"
 #     "KEY_TYPE" // already presented in Calcite
-      "VALUE_TYPE"
-      "ENCRYPTED"
     ]
 
     # List of non-reserved keywords to add;
     # items in this list become non-reserved
     nonReservedKeywords: [
       "SEMI"
-      "TEMPLATE"
-      "BACKUPS"
-      "AFFINITY_KEY"
-      "ATOMICITY"
-      "WRITE_SYNCHRONIZATION_MODE"
-      "CACHE_GROUP"
-      "CACHE_NAME"
-      "DATA_REGION"
+      "REPLICAS"
+      "PARTITIONS"
 #     "KEY_TYPE" // already presented in Calcite
-      "VALUE_TYPE"
-      "ENCRYPTED"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -580,20 +569,23 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
+      "SqlAlterTable()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
     # Each must accept arguments "(SqlParserPos pos, boolean replace)".
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
-      "SqlCreateTable"
+      "SqlCreateTable",
+      "SqlCreateIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
     # Each must accept arguments "(SqlParserPos pos)".
     # Example: "SqlDropSchema".
     dropStatementParserMethods: [
-      "SqlDropTable"
+      "SqlDropTable",
+      "SqlDropIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.

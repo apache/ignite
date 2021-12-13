@@ -137,8 +137,8 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
     public void testRangeWithCache() {
         TableDefinition tblDef = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("VAL", ColumnType.INT32).asNonNull().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("VAL", ColumnType.INT32).build()
                 )
                 .withPrimaryKey("ID")
                 .build();

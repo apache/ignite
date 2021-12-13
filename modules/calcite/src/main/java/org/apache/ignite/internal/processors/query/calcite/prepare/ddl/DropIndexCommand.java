@@ -18,7 +18,30 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 /**
- * DROP TABLE statement.
+ * DROP INDEX statement.
  */
-public class DropTableCommand extends AbstractTableDdlCommand {
+public class DropIndexCommand implements DdlCommand {
+    /** Idx name. */
+    private String indexName;
+
+    /** If exist flag. */
+    private boolean ifExist;
+
+    /** Return idx name. */
+    public String indexName() {
+        return indexName;
+    }
+
+    /** Set idx name. */
+    public void indexName(String indexName) {
+        this.indexName = indexName;
+    }
+
+    public boolean ifExist() {
+        return ifExist;
+    }
+
+    public void ifExist(boolean ifExist) {
+        this.ifExist = ifExist;
+    }
 }

@@ -152,8 +152,8 @@ class ItDynamicTableCreationTest {
 
         // Create table on node 0.
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("val", ColumnType.INT32).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("val", ColumnType.INT32).asNullable(true).build()
         ).withPrimaryKey("key").build();
 
         clusterNodes.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
@@ -201,11 +201,11 @@ class ItDynamicTableCreationTest {
 
         // Create table on node 0.
         TableDefinition scmTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
-                SchemaBuilders.column("key", ColumnType.UUID).asNonNull().build(),
-                SchemaBuilders.column("affKey", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("valStr", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
-                SchemaBuilders.column("valNull", ColumnType.INT16).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.UUID).build(),
+                SchemaBuilders.column("affKey", ColumnType.INT64).build(),
+                SchemaBuilders.column("valStr", ColumnType.string()).asNullable(true).build(),
+                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
+                SchemaBuilders.column("valNull", ColumnType.INT16).asNullable(true).build()
         ).withPrimaryKey(
                 SchemaBuilders.primaryKey()
                         .withColumns("key", "affKey")

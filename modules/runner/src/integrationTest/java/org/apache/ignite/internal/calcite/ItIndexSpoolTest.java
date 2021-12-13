@@ -89,9 +89,9 @@ public class ItIndexSpoolTest extends AbstractBasicIntegrationTest {
     private Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("JID", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("VAL", ColumnType.string()).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("JID", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("VAL", ColumnType.string()).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .withIndex(

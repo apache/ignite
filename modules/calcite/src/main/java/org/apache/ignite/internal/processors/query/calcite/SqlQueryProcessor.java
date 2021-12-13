@@ -113,6 +113,7 @@ public class SqlQueryProcessor implements QueryProcessor {
                 msgSrvc,
                 planCache,
                 schemaHolder,
+                tableManager,
                 taskExecutor,
                 ArrayRowHandler.INSTANCE,
                 extensions

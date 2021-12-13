@@ -66,15 +66,15 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         assert !clusterNodes.isEmpty();
 
         TableDefinition perTbl = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
-                SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("AGE", ColumnType.INT32).asNullable().build(),
-                SchemaBuilders.column("ORGID", ColumnType.INT32).asNonNull().build()
+                SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                SchemaBuilders.column("AGE", ColumnType.INT32).asNullable(true).build(),
+                SchemaBuilders.column("ORGID", ColumnType.INT32).build()
         ).withPrimaryKey("ORGID").build();
 
         TableDefinition orgTbl = SchemaBuilders.tableBuilder("PUBLIC", "ORGANIZATION").columns(
-                SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("BIGDATA", ColumnType.decimalOf(20, 10)).asNullable().build()
+                SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                SchemaBuilders.column("BIGDATA", ColumnType.decimalOf(20, 10)).asNullable(true).build()
         ).withPrimaryKey("ID").build();
 
         clusterNodes.get(0).tables().createTable(perTbl.canonicalName(), tblCh ->

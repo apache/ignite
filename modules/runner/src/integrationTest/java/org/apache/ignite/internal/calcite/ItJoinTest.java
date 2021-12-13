@@ -37,19 +37,19 @@ public class ItJoinTest extends AbstractBasicIntegrationTest {
     public static void beforeTestsStarted() {
         createTable(
                 SchemaBuilders.tableBuilder("PUBLIC", "T1").columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("C1", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("C2", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("C3", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("C1", ColumnType.INT32).build(),
+                        SchemaBuilders.column("C2", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("C3", ColumnType.INT32).asNullable(true).build()
                 ).withPrimaryKey("ID")
         );
 
         createTable(
                 SchemaBuilders.tableBuilder("PUBLIC", "T2").columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("C1", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("C2", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("C3", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("C1", ColumnType.INT32).build(),
+                        SchemaBuilders.column("C2", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("C3", ColumnType.INT32).asNullable(true).build()
                 ).withPrimaryKey("ID")
         );
 

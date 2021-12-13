@@ -92,7 +92,8 @@ class ItSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
                 () -> tbl.insert(Tuple.create().set("key", 1L).set("valInt", -111).set("valStrNew", "str"))
         );
 
-        addColumn(grid, SchemaBuilders.column("valStrNew", ColumnType.string()).asNullable().withDefaultValueExpression("default").build());
+        addColumn(grid, SchemaBuilders.column("valStrNew", ColumnType.string())
+                .asNullable(true).withDefaultValueExpression("default").build());
 
         // Check old row conversion.
         Tuple keyTuple1 = Tuple.create().set("key", 1L);
@@ -170,7 +171,8 @@ class ItSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         );
 
         renameColumn(grid, "valInt", "val2");
-        addColumn(grid, SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().withDefaultValueExpression(-1).build());
+        addColumn(grid, SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true)
+                .withDefaultValueExpression(-1).build());
 
         // Check old row conversion.
         Tuple keyTuple1 = Tuple.create().set("key", 1L);
@@ -201,7 +203,8 @@ class ItSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
 
         createTable(grid);
 
-        final ColumnDefinition column = SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValueExpression("default")
+        final ColumnDefinition column = SchemaBuilders.column("val", ColumnType.string()).asNullable(true)
+                .withDefaultValueExpression("default")
                 .build();
 
         RecordView<Tuple> tbl = grid.get(0).tables().table(TABLE).recordView();

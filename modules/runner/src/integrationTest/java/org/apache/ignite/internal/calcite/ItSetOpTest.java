@@ -116,8 +116,8 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
     public void testSetOpBigBatch() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "BIG_TABLE1")
                 .columns(
-                        SchemaBuilders.column("KEY", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("VAL", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("KEY", ColumnType.INT32).build(),
+                        SchemaBuilders.column("VAL", ColumnType.INT32).asNullable(true).build()
                 )
                 .withPrimaryKey("KEY")
                 .build();
@@ -130,8 +130,8 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
 
         TableDefinition schTbl2 = SchemaBuilders.tableBuilder("PUBLIC", "BIG_TABLE2")
                 .columns(
-                        SchemaBuilders.column("KEY", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("VAL", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("KEY", ColumnType.INT32).build(),
+                        SchemaBuilders.column("VAL", ColumnType.INT32).asNullable(true).build()
                 )
                 .withPrimaryKey("KEY")
                 .build();
@@ -253,9 +253,9 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
     private static Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .build();

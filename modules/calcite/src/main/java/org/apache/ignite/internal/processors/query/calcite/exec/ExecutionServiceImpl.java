@@ -51,6 +51,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.NodeLeaveHandler;
 import org.apache.ignite.internal.processors.query.calcite.util.TransformingIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.util.Cancellable;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -145,6 +147,10 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
 
     private final Map<String, SqlExtension> extensions;
 
+    private final TableManager tableManager;
+
+    private final DdlCommandHandler ddlCmdHnd;
+
     /**
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
@@ -154,6 +160,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             MessageService msgSrvc,
             QueryPlanCache planCache,
             SchemaHolder schemaHolder,
+            TableManager tblManager,
             QueryTaskExecutor taskExecutor,
             RowHandler<RowT> handler,
             Map<String, SqlExtension> extensions
@@ -164,6 +171,9 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         this.schemaHolder = schemaHolder;
         this.taskExecutor = taskExecutor;
         this.extensions = extensions;
+        tableManager = tblManager;
+
+        ddlCmdHnd = new DdlCommandHandler(tableManager);
 
         locNodeId = topSrvc.localMember().id();
         qryPlanCache = planCache;
@@ -507,15 +517,22 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             case EXPLAIN:
                 return executeExplain((ExplainPlan) plan);
             case DDL:
-                return executeDdl((DdlPlan) plan);
+                return executeDdl((DdlPlan) plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
     }
 
-    private SqlCursor<List<?>> executeDdl(DdlPlan plan) {
-        throw new UnsupportedOperationException("plan=" + plan);
+    private SqlCursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
+        try {
+            ddlCmdHnd.handle(plan.command(), pctx);
+        } catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException("Failed to execute DDL statement [stmt=" + pctx.query()
+                + ", err=" + e.getMessage() + ']', e);
+        }
+
+        return Commons.createCursor(Collections.emptyIterator(), plan);
     }
 
     private SqlCursor<List<?>> executeExplain(ExplainPlan plan) {

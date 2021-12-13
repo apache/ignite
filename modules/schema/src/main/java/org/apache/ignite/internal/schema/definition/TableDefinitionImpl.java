@@ -31,6 +31,7 @@ import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.schema.definition.index.IndexDefinition;
 import org.apache.ignite.schema.modification.TableModificationBuilder;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Table.
@@ -100,6 +101,21 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     @Override
     public List<ColumnDefinition> columns() {
         return new ArrayList<>(colMap.values());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String canonicalName() {
+        return canonicalName(schemaName, name());
+    }
+
+    /**
+     * Creates canonical table name.
+     *
+     * @return Table with schema canonical name.
+     */
+    public static String canonicalName(@NotNull String schema, @NotNull String name) {
+        return schema + '.' + name;
     }
 
     /** {@inheritDoc} */

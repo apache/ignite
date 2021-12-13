@@ -201,17 +201,8 @@ public class SqlDdlParserTest {
     @Test
     public void createTableWithOptions() throws SqlParseException {
         String query = "create table my_table(id int) with"
-                + " template=\"my_template\","
-                + " backups=2,"
-                + " affinity_key=my_aff,"
-                + " atomicity=atomic,"
-                + " write_synchronization_mode=transactional,"
-                + " cache_group=my_cache_group,"
-                + " cache_name=my_cache_name,"
-                + " data_region=my_data_region,"
-                + " key_type=my_key_type,"
-                + " value_type=my_value_type,"
-                + " encrypted=true";
+                + " replicas=2,"
+                + " partitions=3";
 
         SqlNode node = parse(query);
 
@@ -219,17 +210,8 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable) node;
 
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "TEMPLATE", "my_template");
-        assertThatIntegerOptionPresent(createTable.createOptionList().getList(), "BACKUPS", 2);
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "AFFINITY_KEY", "MY_AFF");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "ATOMICITY", "ATOMIC");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "WRITE_SYNCHRONIZATION_MODE", "TRANSACTIONAL");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "CACHE_GROUP", "MY_CACHE_GROUP");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "CACHE_NAME", "MY_CACHE_NAME");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "DATA_REGION", "MY_DATA_REGION");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "KEY_TYPE", "MY_KEY_TYPE");
-        assertThatStringOptionPresent(createTable.createOptionList().getList(), "VALUE_TYPE", "MY_VALUE_TYPE");
-        assertThatBooleanOptionPresent(createTable.createOptionList().getList(), "ENCRYPTED", true);
+        assertThatIntegerOptionPresent(createTable.createOptionList().getList(), "REPLICAS", 2);
+        assertThatIntegerOptionPresent(createTable.createOptionList().getList(), "PARTITIONS", 3);
     }
 
     /**

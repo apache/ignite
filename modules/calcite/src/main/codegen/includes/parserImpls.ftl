@@ -43,27 +43,9 @@ SqlLiteral CreateTableOptionKey() :
 {
 }
 {
-    <TEMPLATE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.TEMPLATE, getPos()); }
+    <REPLICAS> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.REPLICAS, getPos()); }
 |
-    <BACKUPS> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.BACKUPS, getPos()); }
-|
-    <AFFINITY_KEY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.AFFINITY_KEY, getPos()); }
-|
-    <ATOMICITY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ATOMICITY, getPos()); }
-|
-    <WRITE_SYNCHRONIZATION_MODE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE, getPos()); }
-|
-    <CACHE_GROUP> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.CACHE_GROUP, getPos()); }
-|
-    <CACHE_NAME> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.CACHE_NAME, getPos()); }
-|
-    <DATA_REGION> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.DATA_REGION, getPos()); }
-|
-    <KEY_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.KEY_TYPE, getPos()); }
-|
-    <VALUE_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.VALUE_TYPE, getPos()); }
-|
-    <ENCRYPTED> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ENCRYPTED, getPos()); }
+    <PARTITIONS> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.PARTITIONS, getPos()); }
 }
 
 void CreateTableOption(List<SqlNode> list) :
@@ -164,6 +146,60 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
+SqlNode IndexedColumn() :
+{
+    final Span s;
+    SqlNode col;
+}
+{
+    col = SimpleIdentifier()
+    (
+        <ASC>
+    |   <DESC> {
+            col = SqlStdOperatorTable.DESC.createCall(getPos(), col);
+        }
+    )?
+    {
+        return col;
+    }
+}
+
+SqlNodeList IndexedColumnList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col = null;
+}
+{
+    <LPAREN> { s = span(); }
+    col = IndexedColumn() { list.add(col); }
+    (
+        <COMMA> col = IndexedColumn() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlCreate SqlCreateIndex(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier idxId;
+    final SqlIdentifier tblId;
+    final SqlNodeList columnList;
+}
+{
+    <INDEX>
+    ifNotExists = IfNotExistsOpt()
+    idxId = SimpleIdentifier()
+    <ON>
+    tblId = CompoundIdentifier()
+    columnList = IndexedColumnList()
+    {
+        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList);
+    }
+}
+
 boolean IfExistsOpt() :
 {
 }
@@ -184,6 +220,17 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropIndex(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier idxId;
+}
+{
+    <INDEX> ifExists = IfExistsOpt() idxId = CompoundIdentifier() {
+        return new IgniteSqlDropIndex(s.end(this), ifExists, idxId);
+    }
+}
+
 void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
 {
     final SqlDataTypeSpec dt;
@@ -198,4 +245,88 @@ void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
                 s.pos()));
         list.add(dt);
     }
+}
+
+SqlNodeList ColumnWithTypeList() :
+{
+    final Span s;
+    List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col;
+}
+{
+    <LPAREN> { s = span(); }
+    col = ColumnWithType() { list.add(col); }
+    (
+        <COMMA> col = ColumnWithType() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlNode ColumnWithType() :
+{
+    SqlIdentifier id;
+    SqlDataTypeSpec type;
+    boolean nullable = true;
+    final ColumnStrategy strategy;
+    final SqlNode dflt;
+    final Span s = Span.of();
+}
+{
+    id = SimpleIdentifier()
+    type = DataType()
+    [
+        <NOT> <NULL> {
+            nullable = false;
+        }
+    ]
+    (
+        <DEFAULT_> { s.add(this); } dflt = Literal() {
+            strategy = ColumnStrategy.DEFAULT;
+        }
+    |
+        {
+            dflt = null;
+            strategy = nullable ? ColumnStrategy.NULLABLE
+                : ColumnStrategy.NOT_NULLABLE;
+        }
+    )
+    {
+        return SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), dflt, strategy);
+    }
+}
+
+SqlNodeList ColumnWithTypeOrList() :
+{
+    SqlNode col;
+    SqlNodeList list;
+}
+{
+    col = ColumnWithType() { return new SqlNodeList(Collections.singletonList(col), col.getParserPosition()); }
+|
+    list = ColumnWithTypeList() { return list; }
+}
+
+SqlNode SqlAlterTable() :
+{
+    final Span s;
+    final boolean ifExists;
+    final SqlIdentifier id;
+    boolean colIgnoreErr;
+    SqlNode col;
+    SqlNodeList cols;
+}
+{
+    <ALTER> { s = span(); }
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    (
+        <ADD> [<COLUMN>] colIgnoreErr = IfNotExistsOpt() cols = ColumnWithTypeOrList() {
+            return new IgniteSqlAlterTableAddColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    |
+        <DROP> [<COLUMN>] colIgnoreErr = IfExistsOpt() cols = SimpleIdentifierOrList() {
+            return new IgniteSqlAlterTableDropColumn(s.end(this), ifExists, id, colIgnoreErr, cols);
+        }
+    )
 }

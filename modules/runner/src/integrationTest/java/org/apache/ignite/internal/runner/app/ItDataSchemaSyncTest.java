@@ -248,8 +248,8 @@ public class ItDataSchemaSyncTest extends IgniteAbstractTest {
     protected void createTable(Ignite node, String schemaName, String shortTableName) {
         // Create table on node 0.
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder(schemaName, shortTableName).columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("valInt", ColumnType.INT32).asNullable(true).build(),
                 SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
 

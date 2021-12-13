@@ -52,7 +52,7 @@ public interface AlterColumnBuilder {
     AlterColumnBuilder withNewDefault(Object defaultValue);
 
     /**
-     * Mark column as nullable.
+     * Set nullability attribute.
      *
      * @return {@code this} for chaining.
      */

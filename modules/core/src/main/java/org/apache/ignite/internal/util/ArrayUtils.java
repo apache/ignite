@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.Nullable;
 
@@ -287,13 +288,32 @@ public final class ArrayUtils {
      * <p>Note that unlike {@link Arrays#asList(Object[])}, this method is {@code null}-safe. If {@code null} is passed in, then empty list
      * will be returned.
      *
-     * @param vals Array of values
+     * @param vals Array of values.
      * @param <T>  Array type.
-     * @return {@link List} instance for array.
+     * @return Unmodifiable {@link List} instance for array.
      */
     @SafeVarargs
     public static <T> List<T> asList(@Nullable T... vals) {
-        return nullOrEmpty(vals) ? Collections.emptyList() : Arrays.asList(vals);
+        return nullOrEmpty(vals) ? Collections.emptyList() : List.of(vals);
+    }
+
+    /**
+     * Converts array to {@link Set}.
+     *
+     * <p>Note that unlike {@link Arrays#asList(Object[])}, this method is {@code null}-safe. If {@code null} is passed in, then empty set
+     * will be returned.
+     *
+     * @param vals Array of values.
+     * @param <T>  Array type.
+     * @return Unmodifiable {@link Set} instance for input array.
+     */
+    @SafeVarargs
+    public static <T> Set<T> asSet(@Nullable T... vals) {
+        if (nullOrEmpty(vals)) {
+            return Collections.emptySet();
+        } else {
+            return Set.of(vals);
+        }
     }
 
     /**

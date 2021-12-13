@@ -23,183 +23,21 @@ import org.jetbrains.annotations.Nullable;
 /**
  * CREATE TABLE statement.
  */
-public class CreateTableCommand implements DdlCommand {
-    /**
-     * Schema name upon which this statement has been issued - <b>not</b> the name of the schema where this new table will be created.
-     */
-    private String schemaName;
+public class CreateTableCommand extends AbstractTableDdlCommand {
+    /** Replicas number. */
+    private Integer replicas;
 
-    /** Table name. */
-    private String tblName;
-
-    /** Cache name upon which new cache configuration for this table must be based. */
-    private String templateName;
-
-    /** Name of new cache associated with this table. */
-    private String cacheName;
-
-    /** Name of cache key type. */
-    private String keyTypeName;
-
-    /** Name of cache value type. */
-    private String valTypeName;
-
-    /** Group to put new cache into. */
-    private String cacheGrp;
-
-    //    /** Atomicity mode for new cache. */
-    //    private CacheAtomicityMode atomicityMode;
-    //
-    //    /** Write sync mode. */
-    //    private CacheWriteSynchronizationMode writeSyncMode;
-
-    /** Backups number for new cache. */
-    private Integer backups;
-
-    /** Quietly ignore this command if table already exists. */
-    private boolean ifNotExists;
-
-    /** Columns. */
-    private List<ColumnDefinition> cols;
+    /** Number of partitions for the new table. */
+    private Integer partitions;
 
     /** Primary key columns. */
     private List<String> pkCols;
 
-    /** Name of the column that represents affinity key. */
-    private String affinityKey;
+    /** Affinity key columns. */
+    private List<String> affCols;
 
-    /** Data region. */
-    private String dataRegionName;
-
-    /** Encrypted flag. */
-    private boolean encrypted;
-
-    /**
-     * Get cache name upon which new cache configuration for this table must be based.
-     */
-    public String templateName() {
-        return templateName;
-    }
-
-    /**
-     * Set cache name upon which new cache configuration for this table must be based.
-     */
-    public void templateName(String templateName) {
-        this.templateName = templateName;
-    }
-
-    /**
-     * Get name of new cache associated with this table.
-     */
-    public String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * Set name of new cache associated with this table.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
-    }
-
-    /**
-     * Get name of cache key type.
-     */
-    public String keyTypeName() {
-        return keyTypeName;
-    }
-
-    /**
-     * Set name of cache key type.
-     */
-    public void keyTypeName(String keyTypeName) {
-        this.keyTypeName = keyTypeName;
-    }
-
-    /**
-     * Get name of cache value type.
-     */
-    public String valueTypeName() {
-        return valTypeName;
-    }
-
-    /**
-     * Set name of cache value type.
-     */
-    public void valueTypeName(String valTypeName) {
-        this.valTypeName = valTypeName;
-    }
-
-    /**
-     * Get group to put new cache into.
-     */
-    public String cacheGroup() {
-        return cacheGrp;
-    }
-
-    /**
-     * Set group to put new cache into.
-     */
-    public void cacheGroup(String cacheGrp) {
-        this.cacheGrp = cacheGrp;
-    }
-
-    //    /**
-    //     * @return Atomicity mode for new cache.
-    //     */
-    //    public CacheAtomicityMode atomicityMode() {
-    //        return atomicityMode;
-    //    }
-    //
-    //    /**
-    //     * @param atomicityMode Atomicity mode for new cache.
-    //     */
-    //    public void atomicityMode(CacheAtomicityMode atomicityMode) {
-    //        this.atomicityMode = atomicityMode;
-    //    }
-    //
-    //    /**
-    //     * @return Write sync mode for new cache.
-    //     */
-    //    public CacheWriteSynchronizationMode writeSynchronizationMode() {
-    //        return writeSyncMode;
-    //    }
-    //
-    //    /**
-    //     * @param writeSyncMode Write sync mode for new cache.
-    //     */
-    //    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSyncMode) {
-    //        this.writeSyncMode = writeSyncMode;
-    //    }
-
-    /**
-     * Get backups number for new cache.
-     */
-    @Nullable
-    public Integer backups() {
-        return backups;
-    }
-
-    /**
-     * Set backups number for new cache.
-     */
-    public void backups(Integer backups) {
-        this.backups = backups;
-    }
-
-    /**
-     * Get columns.
-     */
-    public List<ColumnDefinition> columns() {
-        return cols;
-    }
-
-    /**
-     * Set columns.
-     */
-    public void columns(List<ColumnDefinition> cols) {
-        this.cols = cols;
-    }
+    /** Columns. */
+    private List<ColumnDefinition> cols;
 
     /**
      * Get primary key columns.
@@ -216,86 +54,71 @@ public class CreateTableCommand implements DdlCommand {
     }
 
     /**
-     * Get name of the column that represents affinity key.
+     * Get replicas count.
      */
-    public String affinityKey() {
-        return affinityKey;
+    @Nullable
+    public Integer replicas() {
+        return replicas;
     }
 
     /**
-     * Set name of the column that represents affinity key.
+     * Set replicas count.
      */
-    public void affinityKey(String affinityKey) {
-        this.affinityKey = affinityKey;
+    @Nullable
+    public void replicas(int repl) {
+        replicas = repl;
     }
 
     /**
-     * Get schema name upon which this statement has been issued.
+     * Get partitions count.
      */
-    public String schemaName() {
-        return schemaName;
+    @Nullable
+    public Integer partitions() {
+        return partitions;
     }
 
     /**
-     * Set schema name upon which this statement has been issued.
+     * Set partitions count.
      */
-    public void schemaName(String schemaName) {
-        this.schemaName = schemaName;
+    public void partitions(Integer parts) {
+        partitions = parts;
     }
 
     /**
-     * Get table name.
+     * Table columns.
+     *
+     * @return Columns.
      */
-    public String tableName() {
-        return tblName;
+    public List<ColumnDefinition> columns() {
+        return cols;
     }
 
     /**
-     * Set table name.
+     * Table columns.
+     *
+     * @param cols Columns.
      */
-    public void tableName(String tblName) {
-        this.tblName = tblName;
+    public void columns(List<ColumnDefinition> cols) {
+        this.cols = cols;
     }
 
     /**
-     * Get quietly ignore flag of this command (ignore if table already exists).
+     * Affinity columns.
+     *
+     * @return Affinity key columns.
      */
-    public boolean ifNotExists() {
-        return ifNotExists;
+    @Nullable
+    public List<String> affColumns() {
+        return affCols;
     }
 
     /**
-     * Set quietly ignore flag to ignore this command if table already exists.
+     * Affinity columns.
+     *
+     * @param affCols Set affinity key columns.
      */
-    public void ifNotExists(boolean ifNotExists) {
-        this.ifNotExists = ifNotExists;
-    }
-
-    /**
-     * Get data region name.
-     */
-    public String dataRegionName() {
-        return dataRegionName;
-    }
-
-    /**
-     * Set data region name.
-     */
-    public void dataRegionName(String dataRegionName) {
-        this.dataRegionName = dataRegionName;
-    }
-
-    /**
-     * Get encrypted flag.
-     */
-    public boolean encrypted() {
-        return encrypted;
-    }
-
-    /**
-     * Set encrypted flag.
-     */
-    public void encrypted(boolean encrypted) {
-        this.encrypted = encrypted;
+    // todo: support aff columns https://issues.apache.org/jira/browse/IGNITE-16069
+    public void affColumns(List<String> affCols) {
+        this.affCols = affCols;
     }
 }

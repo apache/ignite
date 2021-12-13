@@ -55,11 +55,11 @@ public class ItSecondaryIndexTest extends AbstractBasicIntegrationTest {
     static void initTestData() {
         TableDefinition schema0 = SchemaBuilders.tableBuilder("PUBLIC", "DEVELOPER")
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("DEPID", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("CITY", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("AGE", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("DEPID", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("CITY", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("AGE", ColumnType.INT32).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .withIndex(
@@ -114,10 +114,10 @@ public class ItSecondaryIndexTest extends AbstractBasicIntegrationTest {
 
         TableDefinition schema1 = SchemaBuilders.tableBuilder("PUBLIC", "UNWRAP_PK")
                 .columns(
-                        SchemaBuilders.column("F1", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("F2", ColumnType.INT64).asNullable().build(),
-                        SchemaBuilders.column("F3", ColumnType.INT64).asNullable().build(),
-                        SchemaBuilders.column("F4", ColumnType.INT64).asNullable().build()
+                        SchemaBuilders.column("F1", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("F2", ColumnType.INT64).asNullable(true).build(),
+                        SchemaBuilders.column("F3", ColumnType.INT64).asNullable(true).build(),
+                        SchemaBuilders.column("F4", ColumnType.INT64).asNullable(true).build()
                 )
                 .withPrimaryKey(
                         SchemaBuilders.primaryKey().withColumns("F2", "F1").build()

@@ -86,8 +86,8 @@ public class SqlJdbcExample {
 
             TableDefinition citiesTableDef = SchemaBuilders.tableBuilder("PUBLIC", "CITIES")
                     .columns(
-                            SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
+                            SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                            SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build()
                     )
                     .withPrimaryKey("ID")
                     .build();
@@ -116,11 +116,11 @@ public class SqlJdbcExample {
 
             TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "ACCOUNTS")
                     .columns(
-                            SchemaBuilders.column("ACCOUNT_ID", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("CITY_ID", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("FIRST_NAME", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("LAST_NAME", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable().build()
+                            SchemaBuilders.column("ACCOUNT_ID", ColumnType.INT32).build(),
+                            SchemaBuilders.column("CITY_ID", ColumnType.INT32).build(),
+                            SchemaBuilders.column("FIRST_NAME", ColumnType.string()).asNullable(true).build(),
+                            SchemaBuilders.column("LAST_NAME", ColumnType.string()).asNullable(true).build(),
+                            SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable(true).build()
                     )
                     .withPrimaryKey("ACCOUNT_ID")
                     .build();

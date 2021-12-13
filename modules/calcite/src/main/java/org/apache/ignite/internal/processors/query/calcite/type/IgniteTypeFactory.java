@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.type;
 
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -38,6 +40,8 @@ import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
+import org.apache.ignite.schema.definition.ColumnType;
 
 /**
  * Ignite type factory.
@@ -136,8 +140,35 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /**
-     * Get result type by field data type.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Gets ColumnType type for given class.
+     *
+     * @param relType Rel type.
+     * @return ColumnType type or null.
+     */
+    public ColumnType columnType(RelDataType relType) {
+        assert relType != null;
+
+        Type javaType = getResultClass(relType);
+
+        if (javaType == byte[].class) {
+            return relType.getPrecision() == PRECISION_NOT_SPECIFIED ? ColumnType.blobOf() :
+                ColumnType.blobOf(relType.getPrecision());
+        } else if (javaType == String.class) {
+            return relType.getPrecision() == PRECISION_NOT_SPECIFIED ? ColumnType.string() :
+                ColumnType.stringOf(relType.getPrecision());
+        } else if (javaType == BigInteger.class) {
+            return relType.getPrecision() == PRECISION_NOT_SPECIFIED ? ColumnType.numberOf() :
+                ColumnType.numberOf(relType.getPrecision());
+        } else if (javaType == BigDecimal.class) {
+            return relType.getPrecision() == PRECISION_NOT_SPECIFIED ? ColumnType.decimalOf() :
+                ColumnType.decimalOf(relType.getPrecision(), relType.getScale());
+        } else {
+            return SchemaConfigurationConverter.columnType((Class<?>) javaType);
+        }
+    }
+
+    /**
+     * Returns resulting class.
      *
      * @param type Field logical type.
      * @return Result type.

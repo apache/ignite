@@ -96,6 +96,9 @@ public class IgniteImpl implements Ignite {
     /** Vault manager. */
     private final VaultManager vaultMgr;
 
+    /** Sql query engine. */
+    private final SqlQueryProcessor qryEngine;
+
     /** Configuration manager that handles node (local) configuration. */
     private final ConfigurationManager nodeCfgMgr;
 
@@ -122,9 +125,6 @@ public class IgniteImpl implements Ignite {
 
     /** Distributed table manager. */
     private final TableManager distributedTblMgr;
-
-    /** Query engine. */
-    private final SqlQueryProcessor qryEngine;
 
     /** Rest module. */
     private final RestModule restModule;

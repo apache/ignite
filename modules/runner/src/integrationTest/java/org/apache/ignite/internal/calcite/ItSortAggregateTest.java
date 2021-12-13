@@ -45,11 +45,11 @@ public class ItSortAggregateTest extends AbstractBasicIntegrationTest {
     static void initTestData() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("GRP0", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("GRP1", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("VAL0", ColumnType.INT32).asNullable().build(),
-                        SchemaBuilders.column("VAL1", ColumnType.INT32).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("GRP0", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("GRP1", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("VAL0", ColumnType.INT32).asNullable(true).build(),
+                        SchemaBuilders.column("VAL1", ColumnType.INT32).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .withIndex(

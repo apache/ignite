@@ -15,10 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
+package org.apache.ignite.lang;
 
 /**
- * DROP TABLE statement.
+ * Exception is thrown when appropriate index is not found.
  */
-public class DropTableCommand extends AbstractTableDdlCommand {
+public class IndexNotFoundException extends IgniteException {
+    /**
+     * Create a new exception with given index name.
+     *
+     * @param indexName Index canonical name.
+     */
+    public IndexNotFoundException(String indexName) {
+        super(LoggerMessageHelper.format("Index '{}' does not exist.", indexName));
+    }
 }

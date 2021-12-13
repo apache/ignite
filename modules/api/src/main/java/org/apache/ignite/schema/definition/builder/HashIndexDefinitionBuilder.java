@@ -17,6 +17,7 @@
 
 package org.apache.ignite.schema.definition.builder;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.schema.definition.index.HashIndexDefinition;
 
@@ -31,6 +32,14 @@ public interface HashIndexDefinitionBuilder extends SchemaObjectBuilder {
      * @return {@code this} for chaining.
      */
     HashIndexDefinitionBuilder withColumns(String... columns);
+
+    /**
+     * Sets indexed columns.
+     *
+     * @param columns Indexed columns.
+     * @return {@code this} for chaining.
+     */
+    HashIndexDefinitionBuilder withColumns(List<String> columns);
 
     /** {@inheritDoc} */
     @Override

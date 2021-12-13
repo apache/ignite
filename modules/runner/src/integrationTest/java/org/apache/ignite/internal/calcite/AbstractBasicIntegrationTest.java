@@ -139,9 +139,9 @@ public class AbstractBasicIntegrationTest {
 
     protected static Table createAndPopulateTable() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
-                SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable().build()
+                SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable(true).build()
         ).withPrimaryKey("ID").build();
 
         Table tbl = CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->

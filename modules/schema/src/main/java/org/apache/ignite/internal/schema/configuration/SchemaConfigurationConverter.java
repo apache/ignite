@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.HASH_INDEX_TYPE;
 import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.PARTIAL_INDEX_TYPE;
 import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.SORTED_INDEX_TYPE;
@@ -193,7 +194,7 @@ public class SchemaConfigurationConverter {
             case HASH_INDEX_TYPE:
                 String[] hashCols = ((HashIndexView) idxView).colNames();
 
-                return new HashIndexDefinitionImpl(name, hashCols);
+                return new HashIndexDefinitionImpl(name, asList(hashCols));
 
             case SORTED_INDEX_TYPE:
                 NamedListView<? extends IndexColumnView> sortedIndexColumns = ((SortedIndexView) idxView).columns();
@@ -575,7 +576,7 @@ public class SchemaConfigurationConverter {
             return ColumnType.decimalOf();
         }
 
-        return null;
+        throw new IllegalArgumentException("Type " + cls.getName() + " is not supported.");
     }
 
 }

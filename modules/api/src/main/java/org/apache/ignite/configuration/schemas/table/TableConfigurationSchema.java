@@ -43,7 +43,8 @@ public class TableConfigurationSchema {
     @Min(0)
     @Max(65000)
     @Value(hasDefault = true)
-    public int partitions = 1024;
+    // todo: https://issues.apache.org/jira/browse/IGNITE-16065, with prewious default it was impossible to start multi node cluster.
+    public int partitions = 20;
 
     /** Count of table partition replicas. */
     @Min(1)

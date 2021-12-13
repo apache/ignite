@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.schema.definition.index;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.definition.AbstractSchemaObject;
@@ -40,10 +39,10 @@ public class HashIndexDefinitionImpl extends AbstractSchemaObject implements Has
      * @param name    Index name.
      * @param columns Index columns.
      */
-    public HashIndexDefinitionImpl(String name, String[] columns) {
+    public HashIndexDefinitionImpl(String name, List<String> columns) {
         super(name);
 
-        this.columns = Arrays.stream(columns).map(IndexColumnDefinitionImpl::new).collect(Collectors.toUnmodifiableList());
+        this.columns = columns.stream().map(IndexColumnDefinitionImpl::new).collect(Collectors.toUnmodifiableList());
     }
 
 

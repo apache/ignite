@@ -96,8 +96,8 @@ public class RebalanceExample {
 
             TableDefinition tableDef = SchemaBuilders.tableBuilder("PUBLIC", "rebalance")
                     .columns(
-                            SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("value", ColumnType.string()).asNullable().build()
+                            SchemaBuilders.column("key", ColumnType.INT32).build(),
+                            SchemaBuilders.column("value", ColumnType.string()).asNullable(true).build()
                     )
                     .withPrimaryKey("key")
                     .build();

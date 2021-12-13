@@ -98,7 +98,6 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
     }
 
     /** Tests varchar min\max aggregates. */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15107")
     @Test
     public void testVarCharMinMax() {
         sql("CREATE TABLE TEST(val VARCHAR primary key, val1 integer);");
@@ -224,7 +223,6 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
     /**
      * Verifies that table modification events are passed to a calcite schema modification listener.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15107")
     @Test
     public void testIgniteSchemaAwaresAlterTableCommand() {
         String selectAllQry = "select * from test_tbl";
@@ -236,16 +234,16 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
 
         sql("alter table test_tbl add column new_col int");
 
-        assertQuery(selectAllQry).columnNames("ID", "NEW_COL", "VAL").check();
+        assertQuery(selectAllQry).columnNames("ID", "VAL", "NEW_COL").check();
 
         // column with such name already exists
         assertThrows(Exception.class, () -> sql("alter table test_tbl add column new_col int"));
 
-        assertQuery(selectAllQry).columnNames("ID", "NEW_COL", "VAL").check();
+        assertQuery(selectAllQry).columnNames("ID", "VAL", "NEW_COL").check();
 
         sql("alter table test_tbl add column if not exists new_col int");
 
-        assertQuery(selectAllQry).columnNames("ID", "NEW_COL", "VAL").check();
+        assertQuery(selectAllQry).columnNames("ID", "VAL", "NEW_COL").check();
 
         sql("alter table test_tbl drop column new_col");
 
@@ -320,8 +318,8 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
 
         createTable(
                 SchemaBuilders.tableBuilder("PUBLIC", "TEST_TBL").columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("C1", ColumnType.INT32).asNonNull().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("C1", ColumnType.INT32).asNullable(true).build()
                 ).withPrimaryKey("ID")
         );
 
@@ -396,9 +394,9 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
     private static Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
                 .columns(
-                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
-                        SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable().build()
+                        SchemaBuilders.column("ID", ColumnType.INT32).build(),
+                        SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true).build(),
+                        SchemaBuilders.column("SALARY", ColumnType.DOUBLE).asNullable(true).build()
                 )
                 .withPrimaryKey("ID")
                 .build();

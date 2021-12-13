@@ -21,36 +21,9 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
  * Enumerates the Ignite specific options for CREATE TABLE statement.
  */
 public enum IgniteSqlCreateTableOptionEnum {
-    /** A name of the required cache template. */
-    TEMPLATE,
+    /** A number of partition replicas. */
+    REPLICAS,
 
-    /** A number of partition backups. */
-    BACKUPS,
-
-    /** A name of the desired affinity key column. */
-    AFFINITY_KEY,
-
-    /** An atomicity mode for the underlying cache. */
-    ATOMICITY,
-
-    /** A write synchronization mode for the underlying cache. */
-    WRITE_SYNCHRONIZATION_MODE,
-
-    /** A name the group the underlying cache belongs to. */
-    CACHE_GROUP,
-
-    /** A name of the underlying cache created by the command. */
-    CACHE_NAME,
-
-    /** A name of the data region where table entries should be stored. */
-    DATA_REGION,
-
-    /** A name of the custom key type that is used from the key-value and other non-SQL APIs in Ignite. */
-    KEY_TYPE,
-
-    /** A name of the custom value type that is used from the key-value and other non-SQL APIs in Ignite. */
-    VALUE_TYPE,
-
-    /** This flag specified whether the encryption should be enabled for the underlying cache. */
-    ENCRYPTED,
+    /** A number of partitions. */
+    PARTITIONS,
 }

@@ -197,8 +197,8 @@ public class TableManagerTest extends IgniteAbstractTest {
     @Test
     public void testCreateTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_NAME).columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build()
         ).withPrimaryKey("key").build();
 
         Table table = mockManagersAndCreateTable(scmTbl, tblManagerFut);
@@ -216,8 +216,8 @@ public class TableManagerTest extends IgniteAbstractTest {
     @Test
     public void testDropTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build()
         ).withPrimaryKey("key").build();
 
         mockManagersAndCreateTable(scmTbl, tblManagerFut);
@@ -247,9 +247,9 @@ public class TableManagerTest extends IgniteAbstractTest {
 
         Consumer<TableChange> createTableChange = (TableChange change) ->
                 SchemaConfigurationConverter.convert(SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
-                                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
-                        ).withPrimaryKey("key").build(), change)
+                        SchemaBuilders.column("key", ColumnType.INT64).build(),
+                        SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build()
+                ).withPrimaryKey("key").build(), change)
                         .changeReplicas(REPLICAS)
                         .changePartitions(PARTITIONS);
 
@@ -313,8 +313,8 @@ public class TableManagerTest extends IgniteAbstractTest {
     @Test
     public void tableManagerStopTest() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build()
         ).withPrimaryKey("key").build();
 
         mockManagersAndCreateTable(scmTbl, tblManagerFut);
@@ -334,8 +334,8 @@ public class TableManagerTest extends IgniteAbstractTest {
     @Test
     public void testGetTableDuringCreation() {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_FOR_DROP_NAME).columns(
-                SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
+                SchemaBuilders.column("key", ColumnType.INT64).build(),
+                SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build()
         ).withPrimaryKey("key").build();
 
         Phaser phaser = new Phaser(2);
@@ -382,8 +382,8 @@ public class TableManagerTest extends IgniteAbstractTest {
     public void testDoubledCreateTable() throws Exception {
         TableDefinition scmTbl = SchemaBuilders.tableBuilder("PUBLIC", DYNAMIC_TABLE_NAME)
                 .columns(
-                        SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
-                        SchemaBuilders.column("val", ColumnType.INT64).asNullable().build())
+                        SchemaBuilders.column("key", ColumnType.INT64).build(),
+                        SchemaBuilders.column("val", ColumnType.INT64).asNullable(true).build())
                 .withPrimaryKey("key")
                 .build();
 

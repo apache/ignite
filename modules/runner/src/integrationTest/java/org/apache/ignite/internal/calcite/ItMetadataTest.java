@@ -89,10 +89,10 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
     @Test
     public void columnOrder() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "COLUMN_ORDER").columns(
-                SchemaBuilders.column("DOUBLE_C", ColumnType.DOUBLE).asNullable().build(),
-                SchemaBuilders.column("LONG_C", ColumnType.INT64).asNonNull().build(),
-                SchemaBuilders.column("STRING_C", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("INT_C", ColumnType.INT32).asNullable().build()
+                SchemaBuilders.column("DOUBLE_C", ColumnType.DOUBLE).asNullable(true).build(),
+                SchemaBuilders.column("LONG_C", ColumnType.INT64).build(),
+                SchemaBuilders.column("STRING_C", ColumnType.string()).asNullable(true).build(),
+                SchemaBuilders.column("INT_C", ColumnType.INT32).asNullable(true).build()
         ).withPrimaryKey("LONG_C").build();
 
         CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
