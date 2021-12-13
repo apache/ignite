@@ -602,7 +602,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
-        if (key instanceof BinaryObject) {
+        if (keyTypeName != null && key instanceof BinaryObject) {
             BinaryType keyType = ((BinaryObject)key).type();
 
             if (keyTypeId != keyType.typeId()) {
