@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -91,6 +95,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** Mapping from index keys to row fields. */
     private final ImmutableIntList idxFieldMapping;
 
+    /** Types of key fields stored in index. */
+    private final Type[] fieldsStoreTypes;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
@@ -134,6 +141,13 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         mvccSnapshot = ectx.mvccSnapshot();
         this.requiredColumns = requiredColumns;
         this.idxFieldMapping = idxFieldMapping;
+
+        RelDataType srcRowType = desc.rowType(ectx.getTypeFactory(), null);
+        IgniteTypeFactory typeFactory = ectx.getTypeFactory();
+        fieldsStoreTypes = new Type[srcRowType.getFieldCount()];
+
+        for (int i = 0; i < srcRowType.getFieldCount(); i++)
+            fieldsStoreTypes[i] = typeFactory.getResultClass(srcRowType.getFieldList().get(i).getType());
     }
 
     /** {@inheritDoc} */
@@ -166,9 +180,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         boolean nullSearchRow = true;
 
         for (int i = 0; i < idxFieldMapping.size(); ++i) {
-            Object key = rowHnd.get(idxFieldMapping.getInt(i), bound);
+            int fieldIdx = idxFieldMapping.getInt(i);
+            Object key = rowHnd.get(fieldIdx, bound);
 
             if (key != null) {
+                key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
+
                 keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).idxType(),
                     cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
 

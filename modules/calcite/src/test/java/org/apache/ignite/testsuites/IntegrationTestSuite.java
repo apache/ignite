@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DataTypesTest;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTe
 import org.apache.ignite.internal.processors.query.calcite.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.UnstableTopologyTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
