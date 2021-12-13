@@ -372,8 +372,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize(),
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
             ),
             persistenceEnabled
@@ -382,8 +382,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createVolatileDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize()
             ),
             false
         );
@@ -581,8 +581,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemRegionInitialSize(),
-            memCfg.getSystemRegionMaxSize()
+            memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+            memCfg.getSystemDataRegionConfiguration().getMaxSize()
         );
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =

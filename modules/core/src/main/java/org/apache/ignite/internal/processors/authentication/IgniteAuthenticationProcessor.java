@@ -47,7 +47,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -162,7 +162,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Starts processor. */
     public void startProcessor() throws IgniteCheckedException {
-        if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
+        if (!ctx.clientNode() && !CU.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
         }

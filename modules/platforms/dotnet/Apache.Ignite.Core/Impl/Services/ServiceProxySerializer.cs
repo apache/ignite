@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (handler != null)
                 return null;
 
-            if (type.IsArray)
+            if (type.IsArray || arg.GetType().IsArray)
                 return (writer, o) => writer.WriteArrayInternal((Array) o);
 
             if (arg is IDictionary)
