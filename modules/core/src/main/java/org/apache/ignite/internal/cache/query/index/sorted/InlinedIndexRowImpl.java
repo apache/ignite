@@ -46,10 +46,10 @@ public class InlinedIndexRowImpl extends IndexRowImpl {
     /** Offset to inlined keys for this row. */
     private final int inlineOffset;
 
-    /** */
-    private int lastOffset;
+    /** Inline offset of the last extracted key. */
+    private int lastKeyOffset;
 
-    /** */
+    /** Index of the last extracted key. */
     private int lastExtractedKeyIdx = -1;
 
     /** */
@@ -118,7 +118,7 @@ public class InlinedIndexRowImpl extends IndexRowImpl {
             if (keyIdx >= keyTypes.size())
                 return null;
 
-            int maxSize = inlineSize - lastOffset;
+            int maxSize = inlineSize - lastKeyOffset;
 
             InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
@@ -126,13 +126,13 @@ public class InlinedIndexRowImpl extends IndexRowImpl {
             if (keyType.inlineSize() < 0)
                 return null;
 
-            IndexKey k = keyType.get(pageAddr, inlineOffset + lastOffset, maxSize);
+            IndexKey k = keyType.get(pageAddr, inlineOffset + lastKeyOffset, maxSize);
 
             // No inlined keys anymore.
             if (k == null)
                 return null;
 
-            lastOffset += keyType.inlineSize(pageAddr, inlineOffset + lastOffset);
+            lastKeyOffset += keyType.inlineSize(pageAddr, inlineOffset + lastKeyOffset);
 
             return k;
         }

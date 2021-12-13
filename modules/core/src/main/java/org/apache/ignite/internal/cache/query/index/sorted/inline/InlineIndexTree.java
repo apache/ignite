@@ -437,10 +437,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object x)
+    @Override public IndexRow getRow(BPlusIO<IndexRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
 
-        return io.getLookupRow(this, pageAddr, idx, x);
+        return io.getLookupRow(this, pageAddr, idx);
     }
 
     /** */

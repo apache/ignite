@@ -43,6 +43,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -485,17 +487,17 @@ public class IndexQueryProcessor {
     ) throws IgniteCheckedException {
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
 
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> inlineFilter = null;
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = null;
 
         // No need in the additional filter step for queries with 0 or 1 criteria.
         if (qry.criteria.length > 1) {
             LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
 
-            inlineFilter = new InlineIndexRangeFilter(
+            treeFilter = new IndexQueryCriteriaClosure(
                 qry, idxDef, ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator());
         }
 
-        IndexQueryContext qryCtx = new IndexQueryContext(cacheFilter, inlineFilter, null);
+        IndexQueryContext qryCtx = new IndexQueryContext(cacheFilter, treeFilter, null);
 
         if (segmentsCnt == 1)
             return treeIndexRange(idx, 0, qry, qryCtx);
@@ -627,8 +629,11 @@ public class IndexQueryProcessor {
         }
     }
 
-    /** Checks wheter row is part of specified IndexQuery range. Use inline */
-    private static class InlineIndexRangeFilter implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
+    /**
+     * Checks wheter a row matches to specified IndexQuery criteria. It tries to check inlined keys first, and fetches
+     * a cache entry only if the inlined information is not full enough for checking.
+     */
+    private static class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
         /** */
         private final IndexRangeQuery qry;
 
@@ -639,7 +644,7 @@ public class IndexQueryProcessor {
         private final IndexRowComparator rowCmp;
 
         /** */
-        InlineIndexRangeFilter(
+        IndexQueryCriteriaClosure(
             IndexRangeQuery qry,
             LinkedHashMap<String, IndexKeyDefinition> idxDef,
             IndexRowComparator rowCmp
@@ -656,7 +661,9 @@ public class IndexQueryProcessor {
             long pageAddr,
             int idx
         ) throws IgniteCheckedException {
-            IndexRow r = io.getLookupRow(tree, pageAddr, idx, Boolean.TRUE);
+            long link = ((InlineIO)io).link(pageAddr, idx);
+
+            IndexRow r = ((InlineIndexTree)tree).createIndexRow(link, pageAddr, io.offset(idx));
 
             return !rowIsOutOfRange(r, qry.lower, qry.upper);
         }

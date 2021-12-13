@@ -3368,8 +3368,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param valCls Cache value class.
      * @param idxQryDesc Index query description.
-     * @param filter Optional user defined cache entries filter.
-     * @param filters Ignite specific cache entries filters.
+     * @param entryFilter Optional user defined cache entries filter.
+     * @param cacheFilter Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
@@ -3378,8 +3378,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String cacheName,
         String valCls,
         final IndexQueryDesc idxQryDesc,
-        @Nullable IgniteBiPredicate<K, V> filter,
-        final IndexingQueryFilter filters,
+        @Nullable IgniteBiPredicate<K, V> entryFilter,
+        final IndexingQueryFilter cacheFilter,
         boolean keepBinary
     ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
@@ -3391,7 +3391,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.INDEX, valCls, cctx,
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
-                        return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, filters, keepBinary);
+                        return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary);
                     }
                 }, true);
         }

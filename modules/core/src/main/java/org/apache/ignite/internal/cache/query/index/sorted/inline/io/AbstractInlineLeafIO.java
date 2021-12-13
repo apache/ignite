@@ -127,28 +127,6 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         return ((InlineIndexTree)tree).createIndexRow(link);
     }
 
-    /**
-     * @param tree Tree.
-     * @param pageAddr Page address.
-     * @param idx Index.
-     * @param useInline If {@code true} it creates a proxy object that tries to fetch fields values from inline.
-     * @return Lookup row.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public final IndexRow getLookupRow(
-        BPlusTree<IndexRow, ?> tree,
-        long pageAddr,
-        int idx,
-        Object useInline
-    ) throws IgniteCheckedException {
-        if (!(useInline != null && (Boolean)useInline))
-            return getLookupRow(tree, pageAddr, idx);
-
-        long link = PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
-
-        return ((InlineIndexTree)tree).createIndexRow(link, pageAddr, offset(idx));
-    }
-
     /** {@inheritDoc} */
     @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
         int srcOff = srcIo.offset(srcIdx);
