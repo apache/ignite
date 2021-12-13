@@ -157,6 +157,59 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Test class with object. */
+    public static class TestObjectHolder2 {
+        /** */
+        private final SimpleObject object1;
+
+        /** */
+        private final SimpleObject object2;
+
+        /** */
+        public TestObjectHolder2(SimpleObject object1, SimpleObject object2) {
+            this.object1 = object1;
+            this.object2 = object2;
+        }
+
+        /** */
+        public SimpleObject getObject1() {
+            return object1;
+        }
+
+        /** */
+        public SimpleObject getObject2() {
+            return object2;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeserialized2() throws Exception {
+        final String objectName1 = "object1";
+        final String objectName2 = "object2";
+
+        SimpleObject expObject = new SimpleObject(1453);
+
+        TestObjectHolder2 exp = new TestObjectHolder2(expObject, expObject);
+
+        createBinaryObject(ignite(0), exp);
+
+        assertTrue(binaryReaderEx.findFieldByName(objectName1));
+
+//        BinaryObject actObject = (BinaryObject)
+//                BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, false);
+//
+//        assertEquals(expObject, actObject.deserialize());
+
+        assertTrue(binaryReaderEx.findFieldByName(objectName2));
+
+        Object o = BinaryUtils.doReadObject(in, binaryObject.context(), ldr, binaryReaderEx);
+
+        assertEquals(expObject, o);
+    }
+
     /**
      * @throws Exception If failed.
      */
