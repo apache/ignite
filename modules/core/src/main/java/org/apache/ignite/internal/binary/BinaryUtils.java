@@ -1931,6 +1931,12 @@ public class BinaryUtils {
 
                 handles.setHandle(po, start, false);
 
+                if (deserialize) {
+                    handles.setHandle(po, start, true);
+                    po = po.deserialize();
+                }
+
+
                 return po;
             }
 
