@@ -26,15 +26,18 @@ import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectContainer;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.client.FunctionalTest.assertEqualsArraysAware;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL1;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL2;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL3;
 import static org.junit.Assert.assertArrayEquals;
 
 /** */
@@ -234,8 +237,10 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     private void doTestKeys(IgniteCache<Object, Object> c, Function<Object, Object> wrap) {
         List<?> keys = dataToTest();
 
-        for (int i = 0; i < keys.size(); i++)
+        for (int i = 0; i < keys.size(); i++) {
             c.put(wrap.apply(keys.get(i)), i);
+            c.containsKey(wrap.apply(keys.get(i)));
+        }
 
         for (int i = 0; i < keys.size(); i++)
             assertEquals(i, c.get(wrap.apply(keys.get(i))));
@@ -397,6 +402,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             c.put(item, 1);
 
+            assertTrue(c.containsKey(item));
             assertEquals(1, c.get(item));
             assertTrue(c.replace(item, 1, 2));
             assertTrue(c.remove(item));
@@ -414,10 +420,17 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             new Double[] {1d, 2d, 3d},
             new Character[] {'a', 'b', 'c'},
             new Boolean[] {true, false},
-            new CacheAtomicityMode[] { CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC }
+            new TestEnum[] {VAL1, VAL2, VAL3}
         };
 
         for (Object item : data) {
+            c.put(item, 1);
+
+            assertTrue("" + item, c.containsKey(item));
+            assertEquals(1, c.get(item));
+            assertTrue(c.replace(item, 1, 2));
+            assertTrue(c.remove(item));
+
             c.put(1, item);
 
             Object item0 = c.get(1);
@@ -430,12 +443,6 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             assertTrue(Arrays.equals((Object[])item, (Object[])item0));
 
-            c.put(item, 1);
-
-            assertEquals(1, c.get(item));
-
-            assertTrue(c.replace(item, 1, 2));
-            assertTrue(c.remove(item));
         }
     }
 

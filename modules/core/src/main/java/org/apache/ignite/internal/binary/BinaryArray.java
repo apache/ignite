@@ -152,7 +152,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @return Component type ID.
      */
     public int componentTypeId() {
-        return compTypeId;
+        // This can happen when binary type was not registered in time of binary array creation.
+        // In this case same type will be written differently:
+        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
+        // arr2 = [comTypeId=1234,compClsName=null]
+        // Overcome by calculation compTypeId based on compClsName.
+        return compTypeId == UNREGISTERED_TYPE_ID ? ctx.typeId(compClsName) : compTypeId;
     }
 
     /**
@@ -225,7 +230,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 31 * Objects.hash(compTypeId);
+        int result = 31 * Objects.hash(componentTypeId());
 
         result = 31 * result + IgniteUtils.hashCode(arr);
 
@@ -242,21 +247,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         BinaryArray arr = (BinaryArray)o;
 
-        int compTypeId1 = this.compTypeId;
-        int compTypeId2 = arr.compTypeId;
-
-        // This can happen when binary type was not registered in time of binary array creation.
-        // In this case same type will be written differently:
-        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
-        // arr2 = [comTypeId=1234,compClsName=null]
-        // Overcome by calculation compTypeId based on compClsName.
-        if (compTypeId1 == UNREGISTERED_TYPE_ID && compTypeId2 != UNREGISTERED_TYPE_ID)
-            compTypeId1 = ctx.typeId(compClsName);
-
-        if (compTypeId2 == UNREGISTERED_TYPE_ID && compTypeId1 != UNREGISTERED_TYPE_ID)
-            compTypeId2 = ctx.typeId(arr.compClsName);
-
-        return compTypeId1 == compTypeId2
+        return componentTypeId() == arr.componentTypeId()
             && Arrays.deepEquals(this.arr, arr.arr);
     }
 
