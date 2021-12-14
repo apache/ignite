@@ -187,7 +187,7 @@ public class RocksDbSortedIndexStorageTest {
         );
 
         return allColumnTypes
-                .map(type -> column(type.typeSpec().name(), type).asNullable().build())
+                .map(type -> column(type.typeSpec().name(), type).asNullable(true).build())
                 .collect(toUnmodifiableList());
     }
 
