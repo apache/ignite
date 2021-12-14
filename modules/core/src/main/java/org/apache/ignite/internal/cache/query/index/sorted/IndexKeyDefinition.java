@@ -23,8 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -73,16 +71,6 @@ public class IndexKeyDefinition implements Externalizable {
     /** */
     public int precision() {
         return precision;
-    }
-
-    /**
-     * @return {@code true} if specified key's type matches to the current type, otherwise {@code false}.
-     */
-    public boolean validate(IndexKey key) {
-        if (key == NullIndexKey.INSTANCE)
-            return true;
-
-        return idxType == key.type();
     }
 
     /** {@inheritDoc} */
