@@ -63,8 +63,8 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select trim(name) tr_name from person").columnNames("TR_NAME").check();
         assertQuery("select trim(name) from person").columnNames("TRIM(BOTH ' ' FROM NAME)").check();
-        assertQuery("select row(1), ceil(salary), floor(salary), position('text' IN salary) from person")
-                .columnNames("ROW(1)", "CEIL(SALARY)", "FLOOR(SALARY)", "POSITION('text' IN SALARY)").check();
+        assertQuery("select ceil(salary), floor(salary), position('text' IN salary) from person")
+                .columnNames("CEIL(SALARY)", "FLOOR(SALARY)", "POSITION('text' IN SALARY)").check();
 
         assertQuery("select count(*) from person").columnNames("COUNT(*)").check();
         assertQuery("select count(name) from person").columnNames("COUNT(NAME)").check();
