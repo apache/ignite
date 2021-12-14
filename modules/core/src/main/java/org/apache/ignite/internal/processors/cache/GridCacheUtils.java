@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
@@ -108,6 +110,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
@@ -2154,5 +2157,31 @@ public class GridCacheUtils {
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
         IgniteBiInClosure<CacheObject, GridCacheVersion> {
+    }
+
+    /** */
+    @Nullable public static TopologyValidator cacheExternalTopologyValidator(
+        IgnitePluginProcessor plugins,
+        String cacheName
+    ) throws IgniteCheckedException {
+        TopologyValidator res = null;
+
+        CacheTopologyValidatorProvider[] topValidatorProviders = plugins.extensions(CacheTopologyValidatorProvider.class);
+
+        if (!F.isEmpty(topValidatorProviders)) {
+            for (CacheTopologyValidatorProvider topValidatorProvider : topValidatorProviders) {
+                TopologyValidator cacheTopValidator = topValidatorProvider.create(cacheName);
+
+                if (cacheTopValidator != null) {
+                    if (res != null)
+                        throw new IgniteCheckedException("Multiple implementations of cache topology validator were" +
+                            " found across configured Ignite plugins [cacheName=" + cacheName + ']');
+
+                    res = cacheTopValidator;
+                }
+            }
+        }
+
+        return res;
     }
 }

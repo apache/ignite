@@ -69,6 +69,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -2538,6 +2539,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
+
+        TopologyValidator extTopValidator = CU.cacheExternalTopologyValidator(ctx.plugins(), cfg.getName());
+
+        if (extTopValidator != null) {
+            if (cfg.getTopologyValidator() != null) {
+                throw new IgniteCheckedException("Cache topology validator implementation is provided by Ignite plugin" +
+                    " and configured explicitly through the cache configuration. Use only one of these approaches to" +
+                    " specify cache topology validator [cacheName=" + cfg.getName() + ']');
+            }
+
+            cfg.setTopologyValidator(extTopValidator);
+        }
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
