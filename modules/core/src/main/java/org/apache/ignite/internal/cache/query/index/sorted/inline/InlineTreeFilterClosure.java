@@ -85,7 +85,7 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
         if (rowFilter != null)
             val = rowFilter.apply(tree, io, pageAddr, idx);
 
-        if (!val && mvccSnapshot != null)
+        if (val && mvccSnapshot != null)
             return applyMvcc((InlineIO)io, pageAddr, idx);
 
         return val;
