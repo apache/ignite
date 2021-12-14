@@ -29,6 +29,25 @@ is non-ambiguous (a type upcast, e.g. Int8 → Int16, or by means of a certain e
 the `CAST` expression).
  
 ### Data Layout
+We assume that there is exactly one valid binary representation for each key, thus binary keys representations can be 
+safely compared instead of keys themselves avoiding unnecessary deserialization. To achieve that, key columns are fixed 
+at a time of table created, and key columns can't be added or removed. All the key columns values must be provided 
+for a table operation, to resolve unambiguity of 'null or absent' column.     
+
 Data layout is documentation can be found [here](src/main/java/org/apache/ignite/internal/schema/README.md)
 
 ## Object-to-schema mapping
+
+Mappers API provides two interfaces for two different cases: 
+* [OneColumnMapper](../api/src/main/java/org/apache/ignite/table/mapper/OneColumnMapper.java) for the case, 
+when a whole object is mapped to a one column. 
+* [PojoMapper](../api/src/main/java/org/apache/ignite/table/mapper/OneColumnMapper.java) for the case, then object fields are
+mapped to columns.
+
+Mappers and Type converters designed as node specific stuff and never transferred among nodes.
+All the machinery translating user object to an intermediate (binary) representation is applied on the client side. 
+ 
+Mapper is used only for creating marshaller for user objects every time a schema has changed or Record/KeyValue view instance is created.
+**For better performance, a marshaller code can be generated and/or marshaller instance can be cached and reused.
+ 
+See [Mapper API](../api/src/main/java/org/apache/ignite/table/mapper/README.md) for details.
