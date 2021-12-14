@@ -264,35 +264,35 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndDelete(@NotNull Tuple rec) {
-        return getAndDeleteAsync(rec).join();
+    public Tuple getAndDelete(@NotNull Tuple keyRec) {
+        return getAndDeleteAsync(keyRec).join();
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
+    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple keyRec) {
+        Objects.requireNonNull(keyRec);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_DELETE,
-                (s, w) -> tbl.writeTuple(rec, s, w, false),
-                (schema, in) -> ClientTable.readValueTuple(schema, in, rec));
+                (s, w) -> tbl.writeTuple(keyRec, s, w, true),
+                (schema, in) -> ClientTable.readValueTuple(schema, in, keyRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> recs) {
-        return deleteAllAsync(recs).join();
+    public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> keyRecs) {
+        return deleteAllAsync(keyRecs).join();
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
+    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> keyRecs) {
+        Objects.requireNonNull(keyRecs);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_DELETE_ALL,
-                (s, w) -> tbl.writeTuples(recs, s, w, true),
+                (s, w) -> tbl.writeTuples(keyRecs, s, w, true),
                 (schema, in) -> tbl.readTuples(schema, in, true),
                 Collections.emptyList());
     }

@@ -230,34 +230,34 @@ public interface RecordView<R> {
     /**
      * Gets then deletes a record with the same key columns values from the table.
      *
-     * @param rec A record with key columns set. The record cannot be {@code null}.
+     * @param keyRec A record with key columns set. The record cannot be {@code null}.
      * @return Removed record or {@code null} if not existed.
      */
-    R getAndDelete(@NotNull R rec);
+    R getAndDelete(@NotNull R keyRec);
 
     /**
      * Asynchronously gets then deletes a record with the same key columns values from the table.
      *
-     * @param rec A record with key columns set. The record cannot be {@code null}.
+     * @param keyRec A record with key columns set. The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<R> getAndDeleteAsync(@NotNull R rec);
+    @NotNull CompletableFuture<R> getAndDeleteAsync(@NotNull R keyRec);
 
     /**
      * Remove records with the same key columns values as the given one has from the table.
      *
-     * @param recs Records with key columns set. The records cannot be {@code null}.
+     * @param keyRecs Records with key columns set. The records cannot be {@code null}.
      * @return Records with key columns set that did not exist.
      */
-    Collection<R> deleteAll(@NotNull Collection<R> recs);
+    Collection<R> deleteAll(@NotNull Collection<R> keyRecs);
 
     /**
      * Asynchronously remove records with the same key columns values as the given one has from the table.
      *
-     * @param recs Records with key columns set. The records cannot be {@code null}.
+     * @param keyRecs Records with key columns set. The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Collection<R>> deleteAllAsync(@NotNull Collection<R> recs);
+    @NotNull CompletableFuture<Collection<R>> deleteAllAsync(@NotNull Collection<R> keyRecs);
 
     /**
      * Remove given records from the table.

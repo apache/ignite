@@ -261,32 +261,32 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndDelete(@NotNull Tuple rec) {
-        return sync(getAndDeleteAsync(rec));
+    public Tuple getAndDelete(@NotNull Tuple keyRec) {
+        return sync(getAndDeleteAsync(keyRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
+    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple keyRec) {
+        Objects.requireNonNull(keyRec);
 
-        final Row keyRow = marshal(rec, true);
+        final Row keyRow = marshal(keyRec, true);
 
         return tbl.getAndDelete(keyRow, tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> recs) {
-        return sync(deleteAllAsync(recs));
+    public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> keyRecs) {
+        return sync(deleteAllAsync(keyRecs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
+    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> keyRecs) {
+        Objects.requireNonNull(keyRecs);
 
-        return tbl.deleteAll(mapToBinary(recs, true), tx).thenApply(this::wrap);
+        return tbl.deleteAll(mapToBinary(keyRecs, true), tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */

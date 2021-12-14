@@ -124,60 +124,60 @@ public class ClientMarshallerReader implements MarshallerReader {
     /** {@inheritDoc} */
     @Override
     public String readString() {
-        return unpacker.unpackString();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackString();
     }
 
     /** {@inheritDoc} */
     @Override
     public UUID readUuid() {
-        return unpacker.unpackUuid();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackUuid();
     }
 
     /** {@inheritDoc} */
     @Override
     public byte[] readBytes() {
-        return unpacker.readPayload(unpacker.unpackBinaryHeader());
+        return unpacker.tryUnpackNil() ? null : unpacker.readPayload(unpacker.unpackBinaryHeader());
     }
 
     /** {@inheritDoc} */
     @Override
     public BitSet readBitSet() {
-        return unpacker.unpackBitSet();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackBitSet();
     }
 
     /** {@inheritDoc} */
     @Override
     public BigInteger readBigInt() {
-        return unpacker.unpackNumber();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackNumber();
     }
 
     /** {@inheritDoc} */
     @Override
     public BigDecimal readBigDecimal() {
-        return unpacker.unpackDecimal();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackDecimal();
     }
 
     /** {@inheritDoc} */
     @Override
     public LocalDate readDate() {
-        return unpacker.unpackDate();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackDate();
     }
 
     /** {@inheritDoc} */
     @Override
     public LocalTime readTime() {
-        return unpacker.unpackTime();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackTime();
     }
 
     /** {@inheritDoc} */
     @Override
     public Instant readTimestamp() {
-        return unpacker.unpackTimestamp();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackTimestamp();
     }
 
     /** {@inheritDoc} */
     @Override
     public LocalDateTime readDateTime() {
-        return unpacker.unpackDateTime();
+        return unpacker.tryUnpackNil() ? null : unpacker.unpackDateTime();
     }
 }
