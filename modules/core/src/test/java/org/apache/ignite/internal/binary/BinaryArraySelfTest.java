@@ -61,6 +61,9 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     private static CacheAdapter<Object, Object> cliCache;
 
     /** */
+    private boolean cyclicArrNotSupported = false;
+
+    /** */
     private static final Function<Object, Object> TO_TEST_CLS = arr -> arr instanceof TestClass1[][]
         ? new TestClass2(null, (TestClass1[][])arr)
         : new TestClass2((TestClass1[])arr, null);
@@ -72,8 +75,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         server = startGrid(0);
         client = startClientGrid(1);
 
-        srvCache = new IgniteCacheAdapter<>(server.createCache("my-cache"));
-        cliCache = new IgniteCacheAdapter<>(client.getOrCreateCache("my-cache"));
+        srvCache = new IgniteCacheAdapter<>(server.createCache(DEFAULT_CACHE_NAME));
+        cliCache = new IgniteCacheAdapter<>(client.getOrCreateCache(DEFAULT_CACHE_NAME));
     }
 
     /** */
@@ -81,9 +84,12 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     public void testArrayKey() {
         doTestKeys(srvCache, arr -> arr);
         doTestKeys(cliCache, arr -> arr);
-
         try (IgniteClient thinClient = thinClient()) {
-            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), arr -> arr);
+            cyclicArrNotSupported = true;
+            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr);
+        }
+        finally {
+            cyclicArrNotSupported = false;
         }
     }
 
@@ -93,7 +99,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestKeys(srvCache, TO_TEST_CLS);
         doTestKeys(cliCache, TO_TEST_CLS);
         try (IgniteClient thinClient = thinClient()) {
-            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), TO_TEST_CLS);
+            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS);
         }
     }
 
@@ -106,8 +112,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(cliCache, arr -> arr, true, false);
 
         try (IgniteClient thinClient = thinClient()) {
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), arr -> arr, false, false);
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), arr -> arr, true, false);
+            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr, false, false);
+            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr, true, false);
         }
     }
 
@@ -119,8 +125,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(srvCache, TO_TEST_CLS, true, true);
         doTestValue(cliCache, TO_TEST_CLS, true, true);
         try (IgniteClient thinClient = thinClient()) {
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), TO_TEST_CLS, false, true);
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")), TO_TEST_CLS, true, true);
+            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS, false, true);
+            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS, true, true);
         }
     }
 
@@ -152,7 +158,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         putInBinaryGetRegular(srvCache);
         putInBinaryGetRegular(cliCache);
         try (IgniteClient thinClient = thinClient()) {
-            putInBinaryGetRegular(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")));
+            putInBinaryGetRegular(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
         }
     }
 
@@ -166,8 +172,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestPrimitivesArrays(cliCache);
 
         try (IgniteClient thinClient = thinClient()) {
-            doTestBoxedPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")));
-            doTestPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache("my-cache")));
+            doTestBoxedPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
+            doTestPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
         }
     }
 
@@ -325,22 +331,34 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     /** */
     private List<?> dataToTest() {
         TestClass1[][] arr5 = new TestClass1[3][2];
-        TestClass1[][] arr6 = new TestClass1[2][2];
 
         arr5[0] = new TestClass1[] {new TestClass1()};
         arr5[1] = new TestClass1[] {new TestClass1()};
 
-        // arr6[0] == arr6[1]
-        arr6[0] = new TestClass1[] {new TestClass1()};
-        arr6[1] = arr6[0];
+        if (cyclicArrNotSupported) {
+            return F.asList(
+                new TestClass1[0],
+                new TestClass1[1][2],
+                new TestClass1[] {new TestClass1(), new TestClass1()},
+                arr5
+            );
+        }
+        else {
+            TestClass1[][] arr6 = new TestClass1[2][2];
 
-        return F.asList(
-            new TestClass1[0],
-            new TestClass1[1][2],
-            new TestClass1[] {new TestClass1(), new TestClass1()},
-            arr5,
-            arr6
-        );
+            // arr6[0] == arr6[1]
+            arr6[0] = new TestClass1[] {new TestClass1()};
+            arr6[1] = arr6[0];
+
+            return F.asList(
+                new TestClass1[0],
+                new TestClass1[1][2],
+                new TestClass1[] {new TestClass1(), new TestClass1()},
+                arr5,
+                arr6
+            );
+        }
+
     }
 
     /** */

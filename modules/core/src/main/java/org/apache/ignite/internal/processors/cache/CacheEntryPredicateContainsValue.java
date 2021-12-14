@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -74,26 +74,8 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         Object thisVal = CU.value(this.val, cctx, false);
         Object cacheVal = CU.value(val, cctx, false);
 
-        if (thisVal.getClass().isArray()) {
-            if (thisVal instanceof Object[])
-                return cacheVal instanceof Object[] && Arrays.deepEquals((Object[])thisVal, (Object[])cacheVal);
-            else if (thisVal instanceof byte[])
-                return cacheVal instanceof byte[] && Arrays.equals((byte[])thisVal, (byte[])cacheVal);
-            else if (thisVal instanceof short[])
-                return cacheVal instanceof short[] && Arrays.equals((short[])thisVal, (short[])cacheVal);
-            else if (thisVal instanceof int[])
-                return cacheVal instanceof int[] && Arrays.equals((int[])thisVal, (int[])cacheVal);
-            else if (thisVal instanceof long[])
-                return cacheVal instanceof long[] && Arrays.equals((long[])thisVal, (long[])cacheVal);
-            else if (thisVal instanceof float[])
-                return cacheVal instanceof float[] && Arrays.equals((float[])thisVal, (float[])cacheVal);
-            else if (thisVal instanceof double[])
-                return cacheVal instanceof double[] && Arrays.equals((double[])thisVal, (double[])cacheVal);
-            else if (thisVal instanceof boolean[])
-                return cacheVal instanceof boolean[] && Arrays.equals((boolean[])thisVal, (boolean[])cacheVal);
-            else if (thisVal instanceof char[])
-                return cacheVal instanceof char[] && Arrays.equals((char[])thisVal, (char[])cacheVal);
-        }
+        if (thisVal.getClass().isArray())
+            return Objects.deepEquals(thisVal, cacheVal);
 
         return F.eq(thisVal, cacheVal);
     }
