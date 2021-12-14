@@ -205,7 +205,7 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(binaryReaderEx.findFieldByName(objectName2));
 
-        Object o = BinaryUtils.doReadObject(in, binaryObject.context(), ldr, binaryReaderEx);
+        Object o = BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
 
         assertEquals(expObject, o);
     }
@@ -249,15 +249,15 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < REPEAT_READS; i++) {
             assertTrue(binaryReaderEx.findFieldByName(objectName));
 
-            BinaryObject actObject = (BinaryObject)
+            SimpleObject actObject = (SimpleObject)
                     BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
 
-            assertEquals(expObject, actObject.deserialize());
+            assertEquals(expObject, actObject);
 
             assertTrue(binaryReaderEx.findFieldByName(objectArrayName));
 
-            Object[] unmarshBinary =
-                    (Object[])BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
+            SimpleObject[] unmarshBinary =
+                    (SimpleObject[])BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
 
             assertArrayEquals(expArr, unmarshBinary);
 
@@ -414,7 +414,7 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
             Object unmarshBinary =
                     BinaryUtils.unmarshal(in, binaryObject.context(), ldr, binaryReaderEx, false, true);
 
-            assertEquals(object, ((BinaryObject)unmarshBinary).deserialize());
+            assertEquals(object, unmarshBinary);
         }
 
         testReadSameObjects(true);

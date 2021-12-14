@@ -1765,6 +1765,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     streamPosition(retPos);
                 }
 
+                if (obj instanceof BinaryObject && getHandle(handlePos, true) != null) {
+                    obj = getHandle(handlePos, true);
+                }
+
                 break;
 
             case OBJ:

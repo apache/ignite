@@ -1602,8 +1602,8 @@ public class BinaryUtils {
         for (int i = 0; i < intfs.length; i++)
             intfs[i] = doReadClass(in, ctx, ldr);
 
+//        InvocationHandler ih = (InvocationHandler)doReadObject(in,ctx,ldr, handles, false,true);
         InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
-
         return Proxy.newProxyInstance(ldr != null ? ldr : U.gridClassLoader(), intfs, ih);
     }
 
@@ -1843,6 +1843,54 @@ public class BinaryUtils {
     }
 
     /**
+     * @return Object.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+        int start = in.position() - 1;
+
+        Object obj = handles.getHandle(start, deserialize);
+
+        if (obj != null)
+            return obj;
+
+        checkProtocolVersion(in.readByte());
+
+        int len = length(in, start);
+
+        BinaryObjectExImpl po;
+
+        if (detach) {
+            // In detach mode we simply copy object's content.
+            in.position(start);
+
+            po = new BinaryObjectImpl(ctx, in.readByteArray(len), 0);
+        }
+        else {
+            if (in.offheapPointer() == 0)
+                po = new BinaryObjectImpl(ctx, in.array(), start);
+            else
+                po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
+                        in.remaining() + in.position());
+
+            in.position(start + po.length());
+        }
+
+        handles.setHandle(po, start, false);
+
+        if (deserialize) {
+            Object deserialize1 = po.deserialize();
+
+            handles.setHandle(deserialize1, start, true);
+
+            return deserialize1;
+        }
+
+        return po;
+    }
+
+    /**
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
@@ -1875,69 +1923,17 @@ public class BinaryUtils {
      */
     @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
-        int start = in.position();
-
         byte flag = in.readByte();
 
         switch (flag) {
             case GridBinaryMarshaller.NULL:
                 return null;
 
-            case GridBinaryMarshaller.HANDLE: {
-                int handlePos = start - in.readInt();
+            case GridBinaryMarshaller.HANDLE:
+                return doReadHandle(in, ctx, ldr, handles, detach, deserialize);
 
-                Object obj = handles.getHandle(handlePos, deserialize);
-
-                if (obj == null) {
-                    int retPos = in.position();
-
-                    in.position(handlePos);
-
-                    obj = unmarshal(in, ctx, ldr, handles, detach, deserialize);
-
-                    in.position(retPos);
-                }
-
-                return obj;
-            }
-
-            case GridBinaryMarshaller.OBJ: {
-                Object obj = handles.getHandle(start, deserialize);
-
-                if (obj != null)
-                    return obj;
-
-                checkProtocolVersion(in.readByte());
-
-                int len = length(in, start);
-
-                BinaryObjectExImpl po;
-
-                if (detach) {
-                    // In detach mode we simply copy object's content.
-                    in.position(start);
-
-                    po = new BinaryObjectImpl(ctx, in.readByteArray(len), 0);
-                }
-                else {
-                    if (in.offheapPointer() == 0)
-                        po = new BinaryObjectImpl(ctx, in.array(), start);
-                    else
-                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
-                            in.remaining() + in.position());
-
-                    in.position(start + po.length());
-                }
-
-                handles.setHandle(po, start, false);
-
-                if (deserialize) {
-                    handles.setHandle(po, start, true);
-                    po = po.deserialize();
-                }
-
-                return po;
-            }
+            case GridBinaryMarshaller.OBJ:
+                return doReadObject(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.BYTE:
                 return in.readByte();
@@ -2063,6 +2059,38 @@ public class BinaryUtils {
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);
         }
+    }
+
+    /**
+     * @return Unmarshalled handle.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Object doReadHandle(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+                                      BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+        int start = in.position() - 1;
+        int handlePos = start - in.readInt();
+
+        Object obj = handles.getHandle(handlePos, deserialize);
+
+        if (obj == null) {
+            int retPos = in.position();
+
+            in.position(handlePos);
+
+            obj = unmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            in.position(retPos);
+        }
+
+        if (deserialize && obj instanceof BinaryObject) {
+            Object deserialize1 = ((BinaryObject)obj).deserialize();
+
+            handles.setHandle(deserialize1, start, true);
+
+            return deserialize1;
+        }
+
+        return obj;
     }
 
     /**
@@ -2287,7 +2315,7 @@ public class BinaryUtils {
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
+        return unmarshal(in, ctx, ldr, handles, detach, deserialize);
     }
 
     /**
