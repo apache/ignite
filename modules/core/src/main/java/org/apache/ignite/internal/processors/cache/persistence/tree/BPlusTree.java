@@ -1126,7 +1126,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         L upper,
         boolean lowIncl,
         boolean upIncl,
-        TreeRowClosure<L, T> c, Object x
+        TreeRowClosure<L, T> c,
+        Object x
     ) throws IgniteCheckedException {
         checkDestroyed();
 

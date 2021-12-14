@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
@@ -33,16 +34,37 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * 2. Comparison of different types is not supported.
  */
 public class IndexRowCompartorImpl implements IndexRowComparator {
+    /** Key type settings for this index. */
+    protected final IndexKeyTypeSettings keyTypeSettings;
+
+    /** */
+    public IndexRowCompartorImpl(IndexKeyTypeSettings settings) {
+        keyTypeSettings = settings;
+    }
+
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
-        if (curType == IndexKeyTypes.UNKNOWN)
+    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, InlineIndexKeyType type) {
+        if (type.type() == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        if (key == NullIndexKey.INSTANCE)
-            return 1;
+        // Value can be set up by user in query with different data type. Don't compare different types in this comparator.
+        if (sameType(key, type.type())) {
+            // If inlining of POJO is not supported then don't compare it here.
+            if (type.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
+                return type.compare(pageAddr, off, maxSize, key);
+            else
+                return CANT_BE_COMPARE;
+        }
 
-        // Check that types are different before that.
         return COMPARE_UNSUPPORTED;
+    }
+
+    /** */
+    private boolean sameType(IndexKey key, int idxType) {
+        if (key == NullIndexKey.INSTANCE)
+            return true;
+
+        return idxType == key.type();
     }
 
     /** {@inheritDoc} */

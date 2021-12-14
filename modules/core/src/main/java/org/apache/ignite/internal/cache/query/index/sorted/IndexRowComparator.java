@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 
 /**
@@ -25,15 +27,16 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
  */
 public interface IndexRowComparator {
     /**
-     * Compare index keys.
+     * Compare inlined index key with specified key. If it is impossible to compare inlined key, it returns special vals:
+     * {@code COMPARE_UNSUPPORTED} and {@code CANT_BE_COMPARE}, see {@link NullableInlineIndexKeyType}.
      *
      * @param pageAddr address of an index row.
      * @param off offset of an index key.
      * @param maxSize max size to read.
      * @param key key to compare with.
-     * @param curType type of index key.
+     * @param type inline type of index key.
      */
-    public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) throws IgniteCheckedException;
+    public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, InlineIndexKeyType type) throws IgniteCheckedException;
 
     /**
      * Compare index keys.
