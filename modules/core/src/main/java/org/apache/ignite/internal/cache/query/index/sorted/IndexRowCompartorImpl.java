@@ -47,8 +47,7 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
         if (type.type() == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        // Value can be set up by user in query with different data type.
-        // By default, do not compare different types.
+        // Value can be set up by user in query with different data type. Don't compare different types in this comparator.
         if (sameType(key, type.type())) {
             // If inlining of POJO is not supported then don't compare it here.
             if (type.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())

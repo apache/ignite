@@ -493,7 +493,7 @@ public class IndexQueryProcessor {
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = null;
 
         // No need in the additional filter step for queries with 0 or 1 criteria.
-        // Also skips filtering if the current search is unbounded (both boundaries equals to null).
+        // Also skips filtering if the current search is unbounded (both boundaries equal to null).
         if (qry.criteria.length > 1 && !(qry.lower == null && qry.upper == null)) {
             LinkedHashMap<String, IndexKeyDefinition> idxDef = idxProc.indexDefinition(idx.id()).indexKeyDefinitions();
 
@@ -786,7 +786,7 @@ public class IndexQueryProcessor {
         /** */
         private final BPlusIO<IndexRow> io;
 
-        /** */
+        /** Set it for accessing keys from underlying cache entry. */
         private IndexRow currRow;
 
         /** */
@@ -797,14 +797,14 @@ public class IndexQueryProcessor {
             this.io = io;
         }
 
-        /** */
+        /** Compare using inline. {@code keyType} is {@code null} for non-inlined keys. */
         private int compare(
             IndexRowComparator rowCmp,
             IndexRow o,
             int keyIdx,
             int off,
             int maxSize,
-            InlineIndexKeyType keyType
+            @Nullable InlineIndexKeyType keyType
         ) throws IgniteCheckedException {
             if (currRow == null) {
                 int cmp = COMPARE_UNSUPPORTED;
