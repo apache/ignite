@@ -4203,7 +4203,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         inner.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
         inner.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         inner.col = new ArrayList<>();
-        inner.map = new HashMap<>();
+        //inner.map = new HashMap<>();
         inner.enumVal = TestEnum.A;
         inner.enumArr = new TestEnum[] {TestEnum.A, TestEnum.B};
         inner.bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.ONE};
