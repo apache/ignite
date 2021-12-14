@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
+import org.apache.ignite.internal.processors.cache.PluggableCacheTopologyValidatorTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -61,6 +62,7 @@ public class IgniteTopologyValidatorTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorGridSplitCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PluggableCacheTopologyValidatorTest.class, ignoredTests);
 
         return suite;
     }
