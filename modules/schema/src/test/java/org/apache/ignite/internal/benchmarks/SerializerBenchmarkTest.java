@@ -23,6 +23,7 @@ import com.facebook.presto.bytecode.Access;
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.ClassDefinition;
 import com.facebook.presto.bytecode.ClassGenerator;
+import com.facebook.presto.bytecode.DynamicClassLoader;
 import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
@@ -35,8 +36,9 @@ import javax.annotation.processing.Generated;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.marshaller.Serializer;
-import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
+import org.apache.ignite.internal.schema.marshaller.KvMarshaller;
+import org.apache.ignite.internal.schema.marshaller.asm.AsmMarshallerGenerator;
+import org.apache.ignite.internal.schema.marshaller.reflection.ReflectionMarshallerFactory;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.util.Factory;
 import org.apache.ignite.internal.util.ObjectFactory;
@@ -61,17 +63,17 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Serializer benchmark.
  */
 @State(Scope.Benchmark)
-@Warmup(time = 30, timeUnit = TimeUnit.SECONDS)
-@Measurement(time = 60, timeUnit = TimeUnit.SECONDS)
-@BenchmarkMode({Mode.Throughput, Mode.AverageTime})
+@Warmup(time = 30, iterations = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(time = 60, iterations = 1, timeUnit = TimeUnit.SECONDS)
+@BenchmarkMode({Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Fork(jvmArgs = "-Djava.lang.invoke.stringConcat=BC_SB" /* Workaround for Java 9+ */, value = 1)
 public class SerializerBenchmarkTest {
     /** Random. */
     private Random rnd = new Random();
 
-    /** Reflection-based Serializer. */
-    private Serializer serializer;
+    /** Key-value marshaller. */
+    private KvMarshaller<Object, Object> marshaller;
 
     /** Test object factory. */
     private Factory<?> objectFactory;
@@ -84,8 +86,11 @@ public class SerializerBenchmarkTest {
     @Param({"ASM", "Java"})
     public String serializerName;
 
+    /** Schema. */
+    private SchemaDescriptor schema;
+
     /**
-     * Runner.
+     * Benchmark run method.
      */
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
@@ -96,8 +101,7 @@ public class SerializerBenchmarkTest {
     }
 
     /**
-     * Init.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Initialize.
      */
     @Setup
     public void init() {
@@ -107,6 +111,8 @@ public class SerializerBenchmarkTest {
 
         final Class<?> valClass;
 
+        Thread.currentThread().setContextClassLoader(new DynamicClassLoader(AsmMarshallerGenerator.getClassLoader()));
+
         if (fieldsCount == 0) {
             valClass = Long.class;
             objectFactory = (Factory<Object>) rnd::nextLong;
@@ -115,15 +121,17 @@ public class SerializerBenchmarkTest {
             objectFactory = new ObjectFactory<>(valClass);
         }
 
-        Column[] keyCols = new Column[]{new Column("key", INT64, true)};
-        Column[] valCols = mapFieldsToColumns(valClass);
-        final SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
+        schema = new SchemaDescriptor(
+                1,
+                new Column[]{new Column("key", INT64, true)},
+                mapFieldsToColumns(valClass)
+        );
 
-        if ("Java".equals(serializerName)) {
-            serializer = SerializerFactory.createJavaSerializerFactory().create(schema, Long.class, valClass);
-        } else {
-            serializer = SerializerFactory.createGeneratedSerializerFactory().create(schema, Long.class, valClass);
-        }
+        KvMarshaller<?, ?> marshaller = ("Java".equals(serializerName))
+                ? new ReflectionMarshallerFactory().create(schema, Long.class, valClass)
+                : new AsmMarshallerGenerator().create(schema, Long.class, valClass);
+
+        this.marshaller = (KvMarshaller<Object, Object>) marshaller;
     }
 
     /**
@@ -137,10 +145,10 @@ public class SerializerBenchmarkTest {
         Long key = rnd.nextLong();
 
         Object val = objectFactory.create();
-        BinaryRow row = serializer.serialize(key, val);
+        BinaryRow row = marshaller.marshal(key, val);
 
-        Object restoredKey = serializer.deserializeKey(new Row(serializer.schema(), row));
-        Object restoredVal = serializer.deserializeValue(new Row(serializer.schema(), row));
+        Object restoredKey = marshaller.unmarshalKey(new Row(schema, row));
+        Object restoredVal = marshaller.unmarshalValue(new Row(schema, row));
 
         bh.consume(restoredVal);
         bh.consume(restoredKey);
@@ -206,6 +214,6 @@ public class SerializerBenchmarkTest {
 
         body.ret();
 
-        return ClassGenerator.classGenerator(getClass().getClassLoader()).defineClass(classDef, Object.class);
+        return ClassGenerator.classGenerator(AsmMarshallerGenerator.getClassLoader()).defineClass(classDef, Object.class);
     }
 }

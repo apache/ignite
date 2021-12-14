@@ -183,7 +183,7 @@ public abstract class Marshaller {
     }
 
     /**
-     * Marshaller for POJOs/ The case when an object fields map to the columns.
+     * Marshaller for POJOs. The case when an object fields map to the columns.
      */
     static class ObjectMarshaller extends Marshaller {
         /** Column bindings. Array has same size and order as columns. */

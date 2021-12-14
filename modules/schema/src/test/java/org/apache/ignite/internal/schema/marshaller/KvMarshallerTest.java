@@ -68,6 +68,7 @@ import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaTestUtils;
+import org.apache.ignite.internal.schema.marshaller.asm.AsmMarshallerGenerator;
 import org.apache.ignite.internal.schema.marshaller.reflection.ReflectionMarshallerFactory;
 import org.apache.ignite.internal.schema.marshaller.reflection.SerializingConverter;
 import org.apache.ignite.internal.schema.row.Row;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.schema.testobjects.TestObjectWithPrivateConstr
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.table.mapper.Mapper;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
@@ -91,7 +93,10 @@ public class KvMarshallerTest {
      * Return list of marshaller factories for test.
      */
     private static List<MarshallerFactory> marshallerFactoryProvider() {
-        return List.of(new ReflectionMarshallerFactory());
+        return List.of(
+                new ReflectionMarshallerFactory(),
+                new AsmMarshallerGenerator()
+        );
     }
 
     /** Random. */
@@ -165,6 +170,8 @@ public class KvMarshallerTest {
     @ParameterizedTest
     @MethodSource("marshallerFactoryProvider")
     public void narrowType(MarshallerFactory factory) throws MarshallerException {
+        Assumptions.assumeFalse(factory instanceof AsmMarshallerGenerator, "Generated marshaller doesn't support truncated values, yet.");
+
         Column[] cols = new Column[]{
                 new Column("primitiveIntCol", INT32, false),
                 new Column("primitiveLongCol", INT64, false),
@@ -241,6 +248,8 @@ public class KvMarshallerTest {
     @ParameterizedTest
     @MethodSource("marshallerFactoryProvider")
     public void columnNameMapping(MarshallerFactory factory) throws MarshallerException {
+        Assumptions.assumeFalse(factory instanceof AsmMarshallerGenerator, "Generated marshaller doesn't support column mapping, yet.");
+
         SchemaDescriptor schema = new SchemaDescriptor(1,
                 new Column[]{new Column("key", INT64, false)},
                 new Column[]{
@@ -454,6 +463,8 @@ public class KvMarshallerTest {
     @ParameterizedTest
     @MethodSource("marshallerFactoryProvider")
     public void pojoMapping(MarshallerFactory factory) throws MarshallerException, IOException {
+        Assumptions.assumeFalse(factory instanceof AsmMarshallerGenerator, "Generated marshaller doesn't support column mapping.");
+
         final SchemaDescriptor schema = new SchemaDescriptor(
                 1,
                 new Column[]{new Column("key", INT64, false)},

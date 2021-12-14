@@ -33,8 +33,7 @@ import org.apache.ignite.lang.IgniteInternalException;
  */
 public class ColumnAccessCodeGenerator {
     /**
-     * CreateAccessor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Create code generator for column read/write methods.
      *
      * @param mode   Read-write mode.
      * @param colIdx Column index in the schema.

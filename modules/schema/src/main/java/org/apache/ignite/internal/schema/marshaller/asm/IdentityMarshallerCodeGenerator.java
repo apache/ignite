@@ -21,57 +21,39 @@ import com.facebook.presto.bytecode.BytecodeNode;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 
 /**
- * Generate {@link Serializer} method's bodies for simple types.
+ * Generate marshaller method's bodies for simple types.
  */
 class IdentityMarshallerCodeGenerator implements MarshallerCodeGenerator {
     /** Object field access expression generator. */
     private final ColumnAccessCodeGenerator columnAccessor;
 
-    /** Target class. */
-    private final Class<?> targetClass;
-
     /**
      * Constructor.
      *
-     * @param targetClass         Target class.
      * @param columnAccessor Row column code generator.
      */
-    IdentityMarshallerCodeGenerator(Class<?> targetClass, ColumnAccessCodeGenerator columnAccessor) {
-        this.targetClass = targetClass;
+    IdentityMarshallerCodeGenerator(ColumnAccessCodeGenerator columnAccessor) {
         this.columnAccessor = columnAccessor;
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean isSimpleType() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Class<?> targetClass() {
-        return targetClass;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public BytecodeNode getValue(ParameterizedType type, Variable key, int i) {
+    public BytecodeNode getValue(ParameterizedType marshallerClass, Variable key, int i) {
         return key;
     }
 
     /** {@inheritDoc} */
     @Override
-    public BytecodeNode marshallObject(ParameterizedType serializerClass, Variable asm, Variable obj) {
+    public BytecodeNode marshallObject(ParameterizedType marshallerClass, Variable asm, Variable obj) {
         return asm.invoke(columnAccessor.writeMethodName(), RowAssembler.class, obj.cast(columnAccessor.writeArgType()));
     }
 
     /** {@inheritDoc} */
     @Override
-    public BytecodeNode unmarshallObject(ParameterizedType type, Variable row, Variable obj) {
+    public BytecodeNode unmarshallObject(ParameterizedType type, Variable row, Variable obj, Variable objFactory) {
         return obj.set(
                 row.invoke(
                         columnAccessor.readMethodName(),

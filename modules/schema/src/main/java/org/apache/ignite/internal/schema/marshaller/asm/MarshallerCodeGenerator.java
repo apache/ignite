@@ -28,56 +28,40 @@ import com.facebook.presto.bytecode.Variable;
  */
 public interface MarshallerCodeGenerator {
     /**
-     * Get is simple type flag: {@code true} if it is simple object marshaller, {@code false} otherwise.
-     */
-    boolean isSimpleType();
-
-    /**
-     * Get target class.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Returns a code that access a field value of the {@code obj} for an associated column with given index.
      *
-     * @return Target class.
-     */
-    Class<?> targetClass();
-
-    /**
-     * GetValue.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     *
-     * @param serializerClass Serializer type.
+     * @param marshallerClass Marshaller class.
      * @param obj             Target object variable.
      * @param colIdx          Column index.
      * @return Object field value for given column.
      */
-    BytecodeNode getValue(ParameterizedType serializerClass, Variable obj, int colIdx);
+    BytecodeNode getValue(ParameterizedType marshallerClass, Variable obj, int colIdx);
 
     /**
-     * MarshallObject.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Returns a code that marshal the {@code obj} using the {@code assembler}.
      *
-     * @param serializerClass Serializer type
-     * @param asm             Row assembler.
+     * @param marshallerClass Marshaller class.
+     * @param assembler       Row assembler.
      * @param obj             Target object variable.
      * @return Unmarshall object code.
      */
-    BytecodeNode marshallObject(ParameterizedType serializerClass, Variable asm, Variable obj);
+    BytecodeNode marshallObject(ParameterizedType marshallerClass, Variable assembler, Variable obj);
 
     /**
-     * UnmarshallObject.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Returns a code that unmarshal key-part of a {@code row} to an {@code obj}.
      *
-     * @param serializerClass Serializer type
+     * @param marshallerClass Marshaller class.
      * @param row             Row.
      * @param obj             Result object variable.
+     * @param objFactory      Object factory variable.
      * @return Unmarshall object code.
      */
-    BytecodeNode unmarshallObject(ParameterizedType serializerClass, Variable row, Variable obj);
+    BytecodeNode unmarshallObject(ParameterizedType marshallerClass, Variable row, Variable obj, Variable objFactory);
 
     /**
-     * InitStaticHandlers.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Initialize static VarHandle instances for accessing a target class, which the {@code targetClassField} holds.
      *
-     * @param classDef    Class definition.
+     * @param classDef         Class definition.
      * @param targetClassField Target class field definition.
      */
     default void initStaticHandlers(ClassDefinition classDef, FieldDefinition targetClassField) {
