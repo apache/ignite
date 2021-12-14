@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.rocksdb.RocksIteratorAdapter;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.vault.VaultEntry;
@@ -146,19 +147,29 @@ public class PersistentVaultService implements VaultService {
     /** {@inheritDoc} */
     @Override
     public @NotNull Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey) {
-        try (var readOpts = new ReadOptions()) {
-            var lowerBound = new Slice(fromKey.bytes());
-            var upperBound = new Slice(toKey.bytes());
+        var readOpts = new ReadOptions();
 
-            readOpts
-                    .setIterateLowerBound(lowerBound)
-                    .setIterateUpperBound(upperBound);
+        var upperBound = new Slice(toKey.bytes());
 
-            RocksIterator it = db.newIterator(readOpts);
-            it.seekToFirst();
+        readOpts.setIterateUpperBound(upperBound);
 
-            return new RocksIteratorAdapter(it, lowerBound, upperBound);
-        }
+        RocksIterator it = db.newIterator(readOpts);
+
+        it.seek(fromKey.bytes());
+
+        return new RocksIteratorAdapter<>(it) {
+            @Override
+            protected VaultEntry decodeEntry(byte[] key, byte[] value) {
+                return new VaultEntry(new ByteArray(key), value);
+            }
+
+            @Override
+            public void close() throws Exception {
+                super.close();
+
+                IgniteUtils.closeAll(upperBound, readOpts);
+            }
+        };
     }
 
     /** {@inheritDoc} */

@@ -484,14 +484,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             return newDataRegion;
         });
 
-        TableStorage tableStorage = engine.createTable(
-                storageDir,
-                tableCfg,
-                dataRegion,
-                (tableCfgView, indexName) -> {
-                    throw new UnsupportedOperationException("Not implemented yet.");
-                }
-        );
+        TableStorage tableStorage = engine.createTable(storageDir, tableCfg, dataRegion);
 
         tableStorage.start();
 

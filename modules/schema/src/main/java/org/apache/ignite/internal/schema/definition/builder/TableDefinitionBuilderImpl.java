@@ -122,8 +122,8 @@ public class TableDefinitionBuilderImpl implements TableDefinitionBuilder {
     public TableDefinition build() {
         assert schemaName != null : "Database schema name must be specified.";
 
-        assert columns.size() > primaryKeyDefinition.columns().size() : "Key or/and value columns must be defined.";
         assert primaryKeyDefinition != null : "Primary key index must be configured.";
+        assert columns.size() > primaryKeyDefinition.columns().size() : "Key or/and value columns must be defined.";
 
         validateIndices(indices.values(), columns.values(), primaryKeyDefinition.affinityColumns());
 

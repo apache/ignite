@@ -15,64 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.vault.persistence;
+package org.apache.ignite.internal.rocksdb;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.Cursor;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.vault.VaultEntry;
-import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.Slice;
 
 /**
  * Adapter from a {@link RocksIterator} to a {@link Cursor}.
  */
-class RocksIteratorAdapter implements Cursor<VaultEntry> {
+public abstract class RocksIteratorAdapter<T> implements Cursor<T> {
     /**
      * RocksDB iterator.
      */
-    private final RocksIterator it;
-
-    /**
-     * Lower iteration bound. Needed for resource management.
-     */
-    private final Slice lowerBound;
-
-    /**
-     * Upper iteration bound. Needed for resource management.
-     */
-    private final Slice upperBound;
+    protected final RocksIterator it;
 
     /**
      * Constructor.
      *
-     * @param it         RocksDB iterator.
-     * @param lowerBound lower iteration bound (included).
-     * @param upperBound upper iteration bound (not included).
+     * @param it RocksDB iterator.
      */
-    RocksIteratorAdapter(RocksIterator it, Slice lowerBound, Slice upperBound) {
+    protected RocksIteratorAdapter(RocksIterator it) {
         this.it = it;
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
     }
 
     /** {@inheritDoc} */
     @NotNull
     @Override
-    public Iterator<VaultEntry> iterator() {
+    public Iterator<T> iterator() {
         return this;
     }
 
     /** {@inheritDoc} */
     @Override
     public void close() throws Exception {
-        IgniteUtils.closeAll(List.of(lowerBound, upperBound, it));
+        it.close();
     }
 
     /** {@inheritDoc} */
@@ -95,15 +76,26 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
 
     /** {@inheritDoc} */
     @Override
-    public VaultEntry next() {
+    public T next() {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
-        var result = new VaultEntry(new ByteArray(it.key()), it.value());
+        T result = decodeEntry(it.key(), it.value());
 
         it.next();
 
         return result;
     }
+
+    /**
+     * Converts the key and value, that the iterator is currently pointing at, into this cursor's value representation.
+     *
+     * <p>This method is called on each {@link #next()} method invocation.
+     *
+     * @param key Current DB key.
+     * @param value Current DB value.
+     * @return Cursor value representation.
+     */
+    protected abstract T decodeEntry(byte[] key, byte[] value);
 }

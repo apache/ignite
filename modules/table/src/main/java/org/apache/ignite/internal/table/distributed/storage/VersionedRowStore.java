@@ -32,6 +32,7 @@ import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.PartitionStorage;
 import org.apache.ignite.internal.storage.SearchRow;
+import org.apache.ignite.internal.storage.basic.BinarySearchRow;
 import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.internal.tx.TxManager;
@@ -86,7 +87,7 @@ public class VersionedRowStore {
     public BinaryRow get(@NotNull BinaryRow row, Timestamp ts) {
         assert row != null;
 
-        SearchRow key = extractAndWrapKey(row);
+        var key = new BinarySearchRow(row);
 
         DataRow readValue = storage.read(key);
 
@@ -121,7 +122,7 @@ public class VersionedRowStore {
     public void upsert(@NotNull BinaryRow row, Timestamp ts) {
         assert row != null;
 
-        SimpleDataRow key = new SimpleDataRow(extractAndWrapKey(row).keyBytes(), null);
+        var key = new BinarySearchRow(row);
 
         Pair<BinaryRow, BinaryRow> pair = resolve(unpack(storage.read(key)), ts);
 
@@ -156,7 +157,7 @@ public class VersionedRowStore {
     public boolean delete(BinaryRow row, Timestamp ts) {
         assert row != null;
 
-        SimpleDataRow key = new SimpleDataRow(extractAndWrapKey(row).keyBytes(), null);
+        var key = new BinarySearchRow(row);
 
         Pair<BinaryRow, BinaryRow> pair = resolve(unpack(storage.read(key)), ts);
 
@@ -193,7 +194,8 @@ public class VersionedRowStore {
      */
     public boolean insert(BinaryRow row, Timestamp ts) {
         assert row != null && row.hasValue() : row;
-        SimpleDataRow key = new SimpleDataRow(extractAndWrapKey(row).keyBytes(), null);
+
+        var key = new BinarySearchRow(row);
 
         Pair<BinaryRow, BinaryRow> pair = resolve(unpack(storage.read(key)), ts);
 
@@ -392,35 +394,6 @@ public class VersionedRowStore {
      */
     public void close() throws Exception {
         storage.close();
-    }
-
-    /**
-     * Extracts a key and a value from the {@link BinaryRow} and wraps it in a {@link DataRow}.
-     *
-     * @param row Binary row.
-     * @return Data row.
-     */
-    @NotNull
-    private static DataRow extractAndWrapKeyValue(@NotNull BinaryRow row) {
-        byte[] key = new byte[row.keySlice().capacity()];
-        row.keySlice().get(key);
-
-        return new SimpleDataRow(key, row.hasValue() ? row.bytes() : null);
-    }
-
-    /**
-     * Extracts a key from the {@link BinaryRow} and wraps it in a {@link SearchRow}.
-     *
-     * @param row Binary row.
-     * @return Search row.
-     */
-    @NotNull
-    private static SearchRow extractAndWrapKey(@NotNull BinaryRow row) {
-        // TODO asch IGNITE-15934 can reuse thread local byte buffer
-        byte[] key = new byte[row.keySlice().capacity()];
-        row.keySlice().get(key);
-
-        return new SimpleDataRow(key, null);
     }
 
     /**
@@ -715,40 +688,5 @@ public class VersionedRowStore {
      */
     public TxManager txManager() {
         return txManager;
-    }
-
-    /**
-     * Adapter that converts a {@link BinaryRow} into a {@link SearchRow}.
-     */
-    private static class BinarySearchRow implements SearchRow {
-        /** Search key. */
-        private final byte[] keyBytes;
-
-        /** Source row. */
-        private final BinaryRow sourceRow;
-
-        /**
-         * The constructor.
-         *
-         * @param row The search row.
-         */
-        BinarySearchRow(BinaryRow row) {
-            sourceRow = row;
-            keyBytes = new byte[row.keySlice().capacity()];
-
-            row.keySlice().get(keyBytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public byte @NotNull [] keyBytes() {
-            return keyBytes;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public @NotNull ByteBuffer key() {
-            return ByteBuffer.wrap(keyBytes);
-        }
     }
 }

@@ -57,15 +57,14 @@ public class ColumnFamily implements AutoCloseable {
      * @param handle    Column family handle.
      * @param cfName    Column family name.
      * @param cfOptions Column family options.
-     * @param options   Options for the column family options.
-     * @throws RocksDBException If failed.
+     * @param options   Options for the column family options (for resource management purposes).
      */
     public ColumnFamily(
             RocksDB db,
             ColumnFamilyHandle handle,
             String cfName,
             ColumnFamilyOptions cfOptions,
-            Options options
+            @Nullable Options options
     ) {
         this.db = db;
         this.cfName = cfName;
@@ -77,7 +76,21 @@ public class ColumnFamily implements AutoCloseable {
     /** {@inheritDoc} */
     @Override
     public void close() throws Exception {
-        IgniteUtils.closeAll(cfHandle, cfOptions, options);
+        // cfHandle is closed by the owning RocksDB instance
+        IgniteUtils.closeAll(cfOptions, options);
+    }
+
+    /**
+     * Removes all data associated with this Column Family and frees its resources.
+     *
+     * @throws Exception if an error has occurred during the destruction.
+     */
+    public void destroy() throws Exception {
+        db.dropColumnFamily(cfHandle);
+
+        db.destroyColumnFamilyHandle(cfHandle);
+
+        close();
     }
 
     /**

@@ -264,6 +264,11 @@ public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
         // No-op.
     }
 
+    @Override
+    public void destroy() {
+        map.clear();
+    }
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {

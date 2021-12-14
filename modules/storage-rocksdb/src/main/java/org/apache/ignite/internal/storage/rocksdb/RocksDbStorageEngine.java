@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
-import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.storage.engine.DataRegion;
 import org.apache.ignite.internal.storage.engine.StorageEngine;
@@ -68,20 +64,14 @@ public class RocksDbStorageEngine implements StorageEngine {
 
     /** {@inheritDoc} */
     @Override
-    public TableStorage createTable(
-            Path tablePath,
-            TableConfiguration tableCfg,
-            DataRegion dataRegion,
-            BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
-    ) {
+    public TableStorage createTable(Path tablePath, TableConfiguration tableCfg, DataRegion dataRegion) {
         assert dataRegion instanceof RocksDbDataRegion : dataRegion;
 
         return new RocksDbTableStorage(
                 tablePath,
                 tableCfg,
                 threadPool,
-                (RocksDbDataRegion) dataRegion,
-                indexComparatorFactory
+                (RocksDbDataRegion) dataRegion
         );
     }
 }

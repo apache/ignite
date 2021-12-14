@@ -28,13 +28,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.rocksdb.ColumnFamily;
+import org.apache.ignite.internal.rocksdb.RocksIteratorAdapter;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
 import org.apache.ignite.internal.storage.PartitionStorage;
@@ -283,7 +282,6 @@ public class RocksDbPartitionStorage implements PartitionStorage {
         return skippedRows;
     }
 
-
     /** {@inheritDoc} */
     @Nullable
     @Override
@@ -394,14 +392,21 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
     /** {@inheritDoc} */
     @Override
-    public void close() {
+    public void close() throws Exception {
+        data.close();
+    }
+
+    @Override
+    public void destroy() {
+        try {
+            data.destroy();
+        } catch (Exception e) {
+            throw new StorageException("Failed to stop a partition: partition ID = " + partId, e);
+        }
     }
 
     /** Cursor wrapper over the RocksIterator object with custom filter. */
-    private static class ScanCursor implements Cursor<DataRow> {
-        /** Iterator from RocksDB. */
-        private final RocksIterator iter;
-
+    private static class ScanCursor extends RocksIteratorAdapter<DataRow> {
         /** Custom filter predicate. */
         private final Predicate<SearchRow> filter;
 
@@ -412,66 +417,26 @@ public class RocksDbPartitionStorage implements PartitionStorage {
          * @param filter Filter.
          */
         private ScanCursor(RocksIterator iter, Predicate<SearchRow> filter) {
-            this.iter = iter;
-            this.filter = filter;
+            super(iter);
 
             iter.seekToFirst();
-        }
 
-        /** {@inheritDoc} */
-        @NotNull
-        @Override
-        public Iterator<DataRow> iterator() {
-            return this;
+            this.filter = filter;
         }
 
         /** {@inheritDoc} */
         @Override
         public boolean hasNext() {
-            while (isValid() && !filter.test(new SimpleDataRow(iter.key(), iter.value()))) {
-                iter.next();
+            while (super.hasNext() && !filter.test(new SimpleDataRow(it.key(), it.value()))) {
+                it.next();
             }
 
-            return isValid();
+            return super.hasNext();
         }
 
-        /**
-         * Checks iterator validity.
-         *
-         * @throws IgniteInternalException If iterator is not valid and {@link RocksIterator#status()} has thrown an exception.
-         */
-        private boolean isValid() {
-            if (iter.isValid()) {
-                return true;
-            }
-
-            try {
-                iter.status();
-
-                return false;
-            } catch (RocksDBException e) {
-                throw new IgniteInternalException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
         @Override
-        public DataRow next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-
-            var row = new SimpleDataRow(iter.key(), iter.value());
-
-            iter.next();
-
-            return row;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public void close() throws Exception {
-            iter.close();
+        protected DataRow decodeEntry(byte[] key, byte[] value) {
+            return new SimpleDataRow(key, value);
         }
     }
 
@@ -481,7 +446,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
      * @param keyValues Key rows.
      * @return List of keys as byte arrays.
      */
-    private List<byte[]> getKeys(List<? extends SearchRow> keyValues) {
+    private static List<byte[]> getKeys(List<? extends SearchRow> keyValues) {
         List<byte[]> keys = new ArrayList<>(keyValues.size());
 
         for (SearchRow keyValue : keyValues) {

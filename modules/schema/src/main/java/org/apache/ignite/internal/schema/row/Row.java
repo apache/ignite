@@ -458,6 +458,17 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Checks whether the given column contains a null value.
+     *
+     * @param col Column index.
+     * @param expectedType Column type (needed for type checking).
+     * @return {@code true} if this column contains a null value, {@code false} otherwise.
+     */
+    public boolean hasNullValue(int col, NativeTypeSpec expectedType) {
+        return findColumn(col, expectedType) < 0;
+    }
+
+    /**
      * Reads and decode time column value.
      *
      * @param off  Offset

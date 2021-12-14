@@ -151,7 +151,7 @@ public class SchemaDescriptorConverter {
      * @param colCfg Column definition.
      * @return Internal Column.
      */
-    private static Column convert(int columnOrder, ColumnDefinition colCfg) {
+    public static Column convert(int columnOrder, ColumnDefinition colCfg) {
         NativeType type = convert(colCfg.type());
 
         return new Column(columnOrder, colCfg.name(), type, colCfg.nullable(),

@@ -36,7 +36,7 @@ public interface PartitionStorage extends AutoCloseable {
      *
      * @return Partition id.
      */
-    public int partitionId();
+    int partitionId();
 
     /**
      * Reads a DataRow for a given key.
@@ -46,7 +46,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @throws StorageException If failed to read the data or the storage is already stopped.
      */
     @Nullable
-    public DataRow read(SearchRow key) throws StorageException;
+    DataRow read(SearchRow key) throws StorageException;
 
     /**
      * Reads {@link DataRow}s for a given collection of keys.
@@ -55,7 +55,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @return Data rows.
      * @throws StorageException If failed to read the data or the storage is already stopped.
      */
-    public Collection<DataRow> readAll(List<? extends SearchRow> keys);
+    Collection<DataRow> readAll(List<? extends SearchRow> keys);
 
     /**
      * Writes a DataRow into the storage.
@@ -63,7 +63,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @param row Data row.
      * @throws StorageException If failed to write the data or the storage is already stopped.
      */
-    public void write(DataRow row) throws StorageException;
+    void write(DataRow row) throws StorageException;
 
     /**
      * Writes a collection of {@link DataRow}s into the storage.
@@ -71,7 +71,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @param rows Data rows.
      * @throws StorageException If failed to write the data or the storage is already stopped.
      */
-    public void writeAll(List<? extends DataRow> rows) throws StorageException;
+    void writeAll(List<? extends DataRow> rows) throws StorageException;
 
     /**
      * Inserts a collection of {@link DataRow}s into the storage and returns a collection of rows that can't be inserted due to their keys
@@ -81,7 +81,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @return Collection of rows that could not be inserted.
      * @throws StorageException If failed to write the data or the storage is already stopped.
      */
-    public Collection<DataRow> insertAll(List<? extends DataRow> rows) throws StorageException;
+    Collection<DataRow> insertAll(List<? extends DataRow> rows) throws StorageException;
 
     /**
      * Removes a DataRow associated with a given Key.
@@ -89,7 +89,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @param key Search row.
      * @throws StorageException If failed to remove the data or the storage is already stopped.
      */
-    public void remove(SearchRow key) throws StorageException;
+    void remove(SearchRow key) throws StorageException;
 
     /**
      * Removes {@link DataRow}s mapped by given keys.
@@ -98,7 +98,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @return List of skipped data rows.
      * @throws StorageException If failed to remove the data or the storage is already stopped.
      */
-    public Collection<SearchRow> removeAll(List<? extends SearchRow> keys);
+    Collection<SearchRow> removeAll(List<? extends SearchRow> keys);
 
     /**
      * Removes {@link DataRow}s mapped by given keys and containing given values.
@@ -107,7 +107,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @return List of skipped data rows.
      * @throws StorageException If failed to remove the data or the storage is already stopped.
      */
-    public Collection<DataRow> removeAllExact(List<? extends DataRow> keyValues);
+    Collection<DataRow> removeAllExact(List<? extends DataRow> keyValues);
 
     /**
      * Executes an update with custom logic implemented by storage.UpdateClosure interface.
@@ -118,7 +118,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @throws StorageException If failed to read data or storage is already stopped.
      */
     @Nullable
-    public <T> T invoke(SearchRow key, InvokeClosure<T> clo) throws StorageException;
+    <T> T invoke(SearchRow key, InvokeClosure<T> clo) throws StorageException;
 
     /**
      * Creates cursor over the storage data.
@@ -127,7 +127,7 @@ public interface PartitionStorage extends AutoCloseable {
      * @return Cursor with filtered data.
      * @throws StorageException If failed to read data or storage is already stopped.
      */
-    public Cursor<DataRow> scan(Predicate<SearchRow> filter) throws StorageException;
+    Cursor<DataRow> scan(Predicate<SearchRow> filter) throws StorageException;
 
     /**
      * Creates a snapshot of the storage's current state in the specified directory.
@@ -144,4 +144,9 @@ public interface PartitionStorage extends AutoCloseable {
      * @param snapshotPath Path to the snapshot's directory.
      */
     void restoreSnapshot(Path snapshotPath);
+
+    /**
+     * Removes all data from this storage and frees all associated resources.
+     */
+    void destroy();
 }

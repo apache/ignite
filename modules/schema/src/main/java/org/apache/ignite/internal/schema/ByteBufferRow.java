@@ -137,7 +137,11 @@ public class ByteBufferRow implements BinaryRow {
     /** {@inheritDoc} */
     @Override
     public String readString(int off, int len) {
-        return new String(buf.array(), off, len, StandardCharsets.UTF_8);
+        if (buf.hasArray()) {
+            return new String(buf.array(), off, len, StandardCharsets.UTF_8);
+        } else {
+            return new String(readBytes(off, len), StandardCharsets.UTF_8);
+        }
     }
 
     /** {@inheritDoc} */

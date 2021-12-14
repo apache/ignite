@@ -74,7 +74,7 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
 
         dataRegion.start();
 
-        table = engine.createTable(workDir, tableCfg, dataRegion, (tableView, indexName) -> null);
+        table = engine.createTable(workDir, tableCfg, dataRegion);
 
         assertThat(table, is(instanceOf(RocksDbTableStorage.class)));
 

@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.storage.engine;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.function.BiFunction;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
-import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.internal.storage.StorageException;
 
 /**
@@ -56,13 +52,7 @@ public interface StorageEngine {
      * @param tablePath              Path to store table data.
      * @param tableCfg               Table configuration.
      * @param dataRegion             Data region for the table.
-     * @param indexComparatorFactory Comparator factory for SQL indexes.
      * @return New table storage.
      */
-    TableStorage createTable(
-            Path tablePath,
-            TableConfiguration tableCfg,
-            DataRegion dataRegion,
-            BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
-    );
+    TableStorage createTable(Path tablePath, TableConfiguration tableCfg, DataRegion dataRegion);
 }

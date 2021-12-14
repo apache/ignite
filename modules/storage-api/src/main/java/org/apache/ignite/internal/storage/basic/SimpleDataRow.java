@@ -39,6 +39,9 @@ public class SimpleDataRow implements DataRow {
      * @param value Value.
      */
     public SimpleDataRow(byte[] key, byte[] value) {
+        assert key != null;
+        assert value != null;
+
         this.key = key;
         this.value = value;
     }
