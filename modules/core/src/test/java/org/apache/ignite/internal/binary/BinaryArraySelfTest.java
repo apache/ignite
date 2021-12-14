@@ -61,9 +61,6 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     private static CacheAdapter<Object, Object> cliCache;
 
     /** */
-    private boolean cyclicArrNotSupported = false;
-
-    /** */
     private static final Function<Object, Object> TO_TEST_CLS = arr -> arr instanceof TestClass1[][]
         ? new TestClass2(null, (TestClass1[][])arr)
         : new TestClass2((TestClass1[])arr, null);
@@ -85,11 +82,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestKeys(srvCache, arr -> arr);
         doTestKeys(cliCache, arr -> arr);
         try (IgniteClient thinClient = thinClient()) {
-            cyclicArrNotSupported = true;
-            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr);
-        }
-        finally {
-            cyclicArrNotSupported = false;
+            // TODO: why is that working only for other cache?
+            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME + "2")), arr -> arr);
         }
     }
 
@@ -331,34 +325,22 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     /** */
     private List<?> dataToTest() {
         TestClass1[][] arr5 = new TestClass1[3][2];
+        TestClass1[][] arr6 = new TestClass1[2][2];
 
         arr5[0] = new TestClass1[] {new TestClass1()};
         arr5[1] = new TestClass1[] {new TestClass1()};
 
-        if (cyclicArrNotSupported) {
-            return F.asList(
-                new TestClass1[0],
-                new TestClass1[1][2],
-                new TestClass1[] {new TestClass1(), new TestClass1()},
-                arr5
-            );
-        }
-        else {
-            TestClass1[][] arr6 = new TestClass1[2][2];
+        // arr6[0] == arr6[1]
+        arr6[0] = new TestClass1[] {new TestClass1()};
+        arr6[1] = arr6[0];
 
-            // arr6[0] == arr6[1]
-            arr6[0] = new TestClass1[] {new TestClass1()};
-            arr6[1] = arr6[0];
-
-            return F.asList(
-                new TestClass1[0],
-                new TestClass1[1][2],
-                new TestClass1[] {new TestClass1(), new TestClass1()},
-                arr5,
-                arr6
-            );
-        }
-
+        return F.asList(
+            new TestClass1[0],
+            new TestClass1[1][2],
+            new TestClass1[] {new TestClass1(), new TestClass1()},
+            arr5,
+            arr6
+        );
     }
 
     /** */
