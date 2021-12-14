@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
@@ -135,6 +137,108 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
             assertEquals(1, rows.size());
             assertEquals(val.length(), rows.get(0).get(0));
+        }
+    }
+
+    /** */
+    @Test
+    public void testBinarySql() {
+        try {
+            executeSql("CREATE TABLE tbl(b BINARY(3), v VARBINARY)");
+
+            byte[] val = new byte[] {1, 2, 3};
+
+            // From parameters to internal, from internal to store, from store to internal and from internal to user.
+            executeSql("INSERT INTO tbl VALUES (?, ?)", val, val);
+
+            List<List<?>> res = executeSql("SELECT b, v FROM tbl");
+
+            assertEquals(1, res.size());
+            assertEquals(2, res.get(0).size());
+            assertTrue(Objects.deepEquals(val, res.get(0).get(0)));
+            assertTrue(Objects.deepEquals(val, res.get(0).get(1)));
+
+            executeSql("DELETE FROM tbl");
+
+            // From literal to internal, from internal to store, from store to internal and from internal to user.
+            executeSql("INSERT INTO tbl VALUES (x'1A2B3C', x'AABBCC')");
+
+            res = executeSql("SELECT b, v FROM tbl");
+
+            assertEquals(1, res.size());
+            assertEquals(2, res.get(0).size());
+            assertTrue(Objects.deepEquals(new byte[] {0x1A, 0x2B, 0x3C}, res.get(0).get(0)));
+            assertTrue(Objects.deepEquals(new byte[] {(byte)0xAA, (byte)0xBB, (byte)0xCC}, res.get(0).get(1)));
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS tbl");
+        }
+    }
+
+    /** Cache API - SQL API cross check. */
+    @Test
+    public void testBinaryCache() {
+        try {
+            IgniteCache<Integer, byte[]> cache = client.getOrCreateCache(new CacheConfiguration<Integer, byte[]>()
+                .setName("binary_cache")
+                .setSqlSchema("PUBLIC")
+                .setQueryEntities(F.asList(new QueryEntity(Integer.class, byte[].class).setTableName("binary_table")))
+            );
+
+            byte[] val = new byte[] {1, 2, 3};
+
+            // From cache to internal, from internal to user.
+            cache.put(1, val);
+
+            List<List<?>> res = executeSql("SELECT _val FROM binary_table");
+            assertEquals(1, res.size());
+            assertEquals(1, res.get(0).size());
+            assertTrue(Objects.deepEquals(val, res.get(0).get(0)));
+
+            // From literal to internal, from internal to cache.
+            executeSql("INSERT INTO binary_table (_KEY, _VAL) VALUES (2, x'010203')");
+            byte[] resVal = cache.get(2);
+            assertTrue(Objects.deepEquals(val, resVal));
+        }
+        finally {
+            client.destroyCache("binary_cache");
+        }
+    }
+
+    /** */
+    @Test
+    public void testBinaryAggregation() {
+        try {
+            executeSql("CREATE TABLE tbl(b varbinary)");
+            executeSql("INSERT INTO tbl VALUES (NULL)");
+            executeSql("INSERT INTO tbl VALUES (x'010203')");
+            executeSql("INSERT INTO tbl VALUES (x'040506')");
+            List<List<?>> res = executeSql("SELECT MIN(b), MAX(b) FROM tbl");
+
+            assertEquals(1, res.size());
+            assertEquals(2, res.get(0).size());
+            assertTrue(Objects.deepEquals(new byte[] {1, 2, 3}, res.get(0).get(0)));
+            assertTrue(Objects.deepEquals(new byte[] {4, 5, 6}, res.get(0).get(1)));
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS tbl");
+        }
+    }
+
+    /** */
+    @Test
+    public void testBinaryConcat() {
+        try {
+            executeSql("CREATE TABLE tbl(b varbinary)");
+            executeSql("INSERT INTO tbl VALUES (x'010203')");
+            List<List<?>> res = executeSql("SELECT b || x'040506' FROM tbl");
+
+            assertEquals(1, res.size());
+            assertEquals(1, res.get(0).size());
+            assertTrue(Objects.deepEquals(new byte[] {1, 2, 3, 4, 5, 6}, res.get(0).get(0)));
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS tbl");
         }
     }
 }

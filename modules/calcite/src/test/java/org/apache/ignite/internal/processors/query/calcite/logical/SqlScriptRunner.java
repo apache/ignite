@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -611,7 +612,10 @@ public class SqlScriptRunner {
                 for (int j = 0; j < expectedRow.size(); ++j) {
                     checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
-                        ", expected=" + expectedRow.get(j) + ", actual=" + row.get(j) + ']', expectedRow.get(j), row.get(j));
+                        ", expected=" + expectedRow.get(j) + ", actual=" + toString(row.get(j)) + ']',
+                        expectedRow.get(j),
+                        row.get(j)
+                    );
                 }
             }
         }
@@ -638,8 +642,8 @@ public class SqlScriptRunner {
                 }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)) &&
-                    !("(empty)".equals(expectedStr) && String.valueOf(actual).isEmpty()))
+                if (!String.valueOf(expectedStr).equals(toString(actual)) &&
+                    !("(empty)".equals(expectedStr) && toString(actual).isEmpty()))
                      throw new AssertionError(msg);
             }
         }
@@ -652,7 +656,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(String.valueOf(col).getBytes());
+                    messageDigest.update(toString(col).getBytes());
                     messageDigest.update(NL_BYTES);
                 }
             }
@@ -674,6 +678,14 @@ public class SqlScriptRunner {
             if (!res0.equals(expectedHash))
                 throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
                     ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
+        }
+
+        /** */
+        private String toString(Object res) {
+            if (res instanceof byte[])
+                return ByteString.toString((byte[])res, 16);
+            else
+                return String.valueOf(res);
         }
 
         /** {@inheritDoc} */

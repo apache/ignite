@@ -502,6 +502,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 BuiltInMethod.BOOLEAN_TO_STRING.method,
                                 operand));
                         break;
+                    case BINARY:
+                    case VARBINARY:
+                        convert = RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(IgniteBuiltInMethod.BYTESTRING_TO_STRING.method, operand));
+                        break;
                 }
                 break;
             case INTERVAL_YEAR:
@@ -537,6 +543,14 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                             )
                         );
                 }
+                break;
+            case BINARY:
+            case VARBINARY:
+                switch (sourceType.getSqlTypeName().getFamily()) {
+                    case CHARACTER:
+                        convert = Expressions.call(IgniteBuiltInMethod.STRING_TO_BYTESTRING.method, operand);
+                }
+                break;
         }
         if (targetType.getSqlTypeName() == SqlTypeName.DECIMAL)
             convert = ConverterUtils.convertToDecimal(operand, targetType);

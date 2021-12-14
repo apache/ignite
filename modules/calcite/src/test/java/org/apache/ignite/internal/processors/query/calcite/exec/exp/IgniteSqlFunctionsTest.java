@@ -28,7 +28,7 @@ public class IgniteSqlFunctionsTest {
     /** */
     @Test
     public void testBigDecimalToString() {
-        Assert.assertNull(IgniteSqlFunctions.toString(null));
+        Assert.assertNull(IgniteSqlFunctions.toString((BigDecimal)null));
 
         Assert.assertEquals(
             "10",

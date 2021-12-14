@@ -11,7 +11,16 @@ CREATE TABLE blobs (b varbinary, g INTEGER);
 
 # strings: hello -> \x68656C6C6F, r -> \x72
 statement ok
-INSERT INTO blobs VALUES ('hello', 0), (x'00' || 'whatisgoingon'::varbinary, 1), (NULL, 0), (x'FFFEFB', 1)
+INSERT INTO blobs VALUES ('hello', 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'00' || 'whatisgoingon'::varbinary, 1)
+
+statement ok
+INSERT INTO blobs VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'FFFEFB', 1)
 
 # simple aggregates only
 query IITT
@@ -30,7 +39,16 @@ fffefb	1
 
 # GROUP BY
 statement ok
-INSERT INTO blobs VALUES ('hello', 3), (x'00' || 'whatisgoingon'::varbinary, 9), (NULL, 0), (x'FFFEFB', 19)
+INSERT INTO blobs VALUES ('hello', 3)
+
+statement ok
+INSERT INTO blobs VALUES (x'00' || 'whatisgoingon'::varbinary, 9)
+
+statement ok
+INSERT INTO blobs VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'FFFEFB', 19)
 
 query II
 SELECT b, SUM(g) FROM blobs GROUP BY b ORDER BY b
@@ -45,7 +63,16 @@ statement ok
 CREATE TABLE blobs2 (b VARBINARY, g INTEGER);
 
 statement ok
-INSERT INTO blobs2 VALUES ('hello', 0), (x'00' || 'whatisgoingon'::varbinary, 100), (NULL, 0), (x'FFFEFB', 200)
+INSERT INTO blobs2 VALUES ('hello', 0)
+
+statement ok
+INSERT INTO blobs2 VALUES (x'00' || 'whatisgoingon'::varbinary, 100)
+
+statement ok
+INSERT INTO blobs2 VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs2 VALUES (x'FFFEFB', 200)
 
 # group by blobs.b, explicit JOIN
 query TR

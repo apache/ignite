@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -34,6 +35,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -140,6 +142,16 @@ public class IgniteSqlFunctions {
 
         return o instanceof Number ? toBigDecimal((Number)o, precision, scale)
             : toBigDecimal(o.toString(), precision, scale);
+    }
+
+    /** CAST(VARCHAR AS VARBINARY). */
+    public static ByteString toByteString(String s) {
+        return s == null ? null : new ByteString(s.getBytes(Commons.typeFactory().getDefaultCharset()));
+    }
+
+    /** CAST(VARBINARY AS VARCHAR). */
+    public static String toString(ByteString b) {
+        return b == null ? null : new String(b.getBytes(), Commons.typeFactory().getDefaultCharset());
     }
 
     /** */
