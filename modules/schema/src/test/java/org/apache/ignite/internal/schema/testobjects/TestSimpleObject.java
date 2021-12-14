@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema.testobjects;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.testframework.IgniteTestUtils;
  * Test object.
  */
 @SuppressWarnings("InstanceVariableMayNotBeInitialized")
-public class TestSimpleObject {
+public class TestSimpleObject implements Serializable {
     /**
      * Creates an object with random data.
      */

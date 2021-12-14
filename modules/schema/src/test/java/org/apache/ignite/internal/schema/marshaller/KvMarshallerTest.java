@@ -47,6 +47,10 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -65,13 +69,13 @@ import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaTestUtils;
 import org.apache.ignite.internal.schema.marshaller.reflection.ReflectionMarshallerFactory;
+import org.apache.ignite.internal.schema.marshaller.reflection.SerializingConverter;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithAllTypes;
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithNoDefaultConstructor;
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithPrivateConstructor;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ObjectFactory;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.table.mapper.Mapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicNode;
@@ -171,7 +175,6 @@ public class KvMarshallerTest {
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, columnsAllTypes());
-
         KvMarshaller<TestTruncatedObject, TestTruncatedObject> marshaller =
                 factory.create(schema, TestTruncatedObject.class, TestTruncatedObject.class);
 
@@ -246,11 +249,11 @@ public class KvMarshallerTest {
                         new Column("col3", STRING, false)
                 });
 
-        Mapper<TestKeyObject> keyMapper = Mapper.builderFor(TestKeyObject.class)
+        Mapper<TestKeyObject> keyMapper = Mapper.builder(TestKeyObject.class)
                 .map("id", "key")
                 .build();
 
-        Mapper<TestObject> valMapper = Mapper.builderFor(TestObject.class)
+        Mapper<TestObject> valMapper = Mapper.builder(TestObject.class)
                 .map("longCol", "col1")
                 .map("stringCol", "col3")
                 .build();
@@ -381,7 +384,7 @@ public class KvMarshallerTest {
         final Object key = TestObjectWithNoDefaultConstructor.randomObject(rnd);
         final Object val = TestObjectWithNoDefaultConstructor.randomObject(rnd);
 
-        assertThrows(IgniteInternalException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
+        assertThrows(IllegalArgumentException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
     }
 
     @ParameterizedTest
@@ -448,6 +451,67 @@ public class KvMarshallerTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("marshallerFactoryProvider")
+    public void pojoMapping(MarshallerFactory factory) throws MarshallerException, IOException {
+        final SchemaDescriptor schema = new SchemaDescriptor(
+                1,
+                new Column[]{new Column("key", INT64, false)},
+                new Column[]{new Column("val", BYTES, true),
+                });
+
+        final TestPojo pojo = new TestPojo(42);
+        final byte[] serializedPojo = serializeObject(pojo);
+
+        final KvMarshaller<Long, TestPojo> marshaller1 = factory.create(schema,
+                Mapper.of(Long.class, "key"),
+                Mapper.of(TestPojo.class, "val", new SerializingConverter<>()));
+
+        final KvMarshaller<Long, byte[]> marshaller2 = factory.create(schema,
+                Mapper.of(Long.class, "key"),
+                Mapper.of(byte[].class, "val"));
+
+        final KvMarshaller<Long, TestPojoWrapper> marshaller3 = factory.create(schema,
+                Mapper.of(Long.class, "key"),
+                Mapper.builder(TestPojoWrapper.class).map("pojoField", "val", new SerializingConverter<>()).build());
+
+        final KvMarshaller<Long, TestPojoWrapper> marshaller4 = factory.create(schema,
+                Mapper.of(Long.class, "key"),
+                Mapper.builder(TestPojoWrapper.class).map("rawField", "val").build());
+
+        BinaryRow row = marshaller1.marshal(1L, pojo);
+        BinaryRow row2 = marshaller2.marshal(1L, serializedPojo);
+        BinaryRow row3 = marshaller3.marshal(1L, new TestPojoWrapper(pojo));
+        BinaryRow row4 = marshaller4.marshal(1L, new TestPojoWrapper(serializedPojo));
+
+        // Verify all rows are equivalent.
+        assertArrayEquals(row.bytes(), row2.bytes());
+        assertArrayEquals(row.bytes(), row3.bytes());
+        assertArrayEquals(row.bytes(), row4.bytes());
+
+        // Check key.
+        assertEquals(1L, marshaller1.unmarshalKey(new Row(schema, row)));
+        assertEquals(1L, marshaller2.unmarshalKey(new Row(schema, row)));
+        assertEquals(1L, marshaller3.unmarshalKey(new Row(schema, row)));
+        assertEquals(1L, marshaller4.unmarshalKey(new Row(schema, row)));
+
+        // Check values.
+        assertEquals(pojo, marshaller1.unmarshalValue(new Row(schema, row)));
+        assertArrayEquals(serializedPojo, marshaller2.unmarshalValue(new Row(schema, row)));
+        assertEquals(new TestPojoWrapper(pojo), marshaller3.unmarshalValue(new Row(schema, row)));
+        assertEquals(new TestPojoWrapper(serializedPojo), marshaller4.unmarshalValue(new Row(schema, row)));
+    }
+
+    private byte[] serializeObject(TestPojo obj) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
+
+        try (ObjectOutputStream dos = new ObjectOutputStream(baos)) {
+            dos.writeObject(obj);
+        }
+
+        return baos.toByteArray();
+    }
+
     /**
      * Generate random key-value pair of given types and check serialization and deserialization works fine.
      *
@@ -466,8 +530,9 @@ public class KvMarshallerTest {
 
         SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
 
-        KvMarshaller<Object, Object> marshaller = factory.create(schema, (Class<Object>) key.getClass(), (Class<Object>) val.getClass());
-
+        KvMarshaller<Object, Object> marshaller = factory.create(schema,
+                Mapper.of((Class<Object>) key.getClass(), "key"),
+                Mapper.of((Class<Object>) val.getClass(), "val"));
         BinaryRow row = marshaller.marshal(key, val);
 
         Object key1 = marshaller.unmarshalKey(new Row(schema, row));
@@ -768,6 +833,79 @@ public class KvMarshallerTest {
         @Override
         public int hashCode() {
             return Objects.hash(primLongCol);
+        }
+    }
+
+    /**
+     * Test object represents a user object of arbitrary type.
+     */
+    static class TestPojo implements Serializable {
+        private static final long serialVersionUid = -1L;
+
+        int intField;
+
+        public TestPojo() {
+        }
+
+        public TestPojo(int intVal) {
+            this.intField = intVal;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            TestPojo testPojo = (TestPojo) o;
+            return intField == testPojo.intField;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(intField);
+        }
+    }
+
+    /**
+     * Wrapper for the {@link TestPojo}.
+     */
+    static class TestPojoWrapper {
+        TestPojo pojoField;
+
+        byte[] rawField;
+
+        public TestPojoWrapper() {
+        }
+
+        public TestPojoWrapper(TestPojo pojoField) {
+            this.pojoField = pojoField;
+        }
+
+        public TestPojoWrapper(byte[] rawField) {
+            this.rawField = rawField;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            TestPojoWrapper that = (TestPojoWrapper) o;
+            return Objects.equals(pojoField, that.pojoField)
+                    && Arrays.equals(rawField, that.rawField);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(pojoField);
+            result = 31 * result + Arrays.hashCode(rawField);
+            return result;
         }
     }
 }

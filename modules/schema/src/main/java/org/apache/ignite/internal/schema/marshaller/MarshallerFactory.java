@@ -42,11 +42,11 @@ public interface MarshallerFactory {
      * @param keyClass Key type.
      * @param valueClass Value type.
      * @return Key-value marshaller.
-     * @see Mapper#identity(Class)
+     * @see Mapper#of(Class)
      */
     default <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Class<K> keyClass,
             Class<V> valueClass) {
-        return create(schema, Mapper.identity(keyClass), Mapper.identity(valueClass));
+        return create(schema, Mapper.of(keyClass), Mapper.of(valueClass));
     }
 
     /**
@@ -64,9 +64,9 @@ public interface MarshallerFactory {
      * @param schema      Schema descriptor.
      * @param recordClass Record type.
      * @return Record marshaller.
-     * @see Mapper#identity(Class)
+     * @see Mapper#of(Class)
      */
     default <R> RecordMarshaller<R> create(SchemaDescriptor schema, Class<R> recordClass) {
-        return create(schema, Mapper.identity(recordClass));
+        return create(schema, Mapper.of(recordClass));
     }
 }

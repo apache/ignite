@@ -93,7 +93,7 @@ public class KeyValueViewOperationsTest {
         assertEquals(obj2, tbl.get(key));
 
         // Remove KV pair.
-        tbl.put(key, null);
+        tbl.remove(key);
 
         assertNull(tbl.get(key));
 
@@ -330,8 +330,8 @@ public class KeyValueViewOperationsTest {
         DummyInternalTableImpl table = new DummyInternalTableImpl(
                 new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
 
-        Mapper<TestKeyObject> keyMapper = Mapper.identity(TestKeyObject.class);
-        Mapper<TestObjectWithAllTypes> valMapper = Mapper.identity(TestObjectWithAllTypes.class);
+        Mapper<TestKeyObject> keyMapper = Mapper.of(TestKeyObject.class);
+        Mapper<TestObjectWithAllTypes> valMapper = Mapper.of(TestObjectWithAllTypes.class);
 
         Column[] valCols = {
                 new Column("primitiveByteCol", INT8, false),

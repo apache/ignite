@@ -17,47 +17,45 @@
 
 package org.apache.ignite.table.mapper;
 
-import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.Set;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Trivial mapper implementation that maps a column to a field with the same name.
+ * Simple mapper implementation that maps a whole object of the type {@link ObjectT} to a one column.
  *
- * @param <T> Target type.
+ * @param <ObjectT> Target type.
  */
-class IdentityMapper<T> implements Mapper<T> {
+class OneColumnMapperImpl<ObjectT> implements OneColumnMapper<ObjectT> {
     /** Target type. */
-    private final Class<T> targetType;
+    private final Class<ObjectT> targetType;
 
-    /** Class field names. */
-    private final Set<String> fieldsNames;
+    /** Column name. */
+    private final String mappedColumn;
 
-    /**
-     * Creates a mapper for given class.
-     *
-     * @param targetType Target class.
-     */
-    IdentityMapper(Class<T> targetType) {
+    /** Converter. */
+    private final TypeConverter<ObjectT, ?> converter;
+
+    OneColumnMapperImpl(@NotNull Class<ObjectT> targetType, @Nullable String mappedColumn, @Nullable TypeConverter<ObjectT, ?> converter) {
         this.targetType = targetType;
-
-        Field[] fields = targetType.getDeclaredFields();
-        fieldsNames = new HashSet<>(fields.length);
-
-        for (int i = 0; i < fields.length; i++) {
-            //TODO IGNITE-15787 Filter out 'transient' fields.
-            fieldsNames.add(fields[i].getName());
-        }
+        this.mappedColumn = mappedColumn;
+        this.converter = converter;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<T> targetType() {
+    @Override
+    public Class<ObjectT> targetType() {
         return targetType;
     }
 
     /** {@inheritDoc} */
-    @Override public String columnToField(@NotNull String columnName) {
-        return fieldsNames.contains(columnName) ? columnName : null;
+    @Override
+    public @Nullable String mappedColumn() {
+        return mappedColumn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable TypeConverter<ObjectT, ?> converter() {
+        return converter;
     }
 }

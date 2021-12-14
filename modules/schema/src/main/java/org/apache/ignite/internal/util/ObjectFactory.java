@@ -32,13 +32,14 @@ public class ObjectFactory<T> implements Factory<T> {
      * Constructor.
      *
      * @param clazz Class.
+     * @throws IllegalArgumentException If no default constructor found.
      */
     public ObjectFactory(Class<T> clazz) {
         try {
             cnstr = clazz.getDeclaredConstructor();
             cnstr.setAccessible(true);
         } catch (NoSuchMethodException e) {
-            throw new IgniteInternalException("Class has no default constructor: class=" + clazz.getName(), e);
+            throw new IllegalArgumentException("Class has no default constructor: class=" + clazz.getName(), e);
         }
     }
 

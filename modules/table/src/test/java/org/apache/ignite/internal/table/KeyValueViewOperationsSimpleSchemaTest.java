@@ -148,6 +148,10 @@ public class KeyValueViewOperationsSimpleSchemaTest {
         // Delete key.
         tbl.remove(2L);
         assertFalse(tbl.contains(2L));
+
+        // Replace.
+        assertTrue(tbl.replace(1L, null));
+        assertTrue(tbl.contains(1L));
     }
 
     @Test
@@ -206,8 +210,8 @@ public class KeyValueViewOperationsSimpleSchemaTest {
         tbl.put(1L, 22L);
         assertEquals(22L, tbl.get(1L));
 
-        // Check null value ignored.
-        assertThrows(Throwable.class, () -> tbl.remove(1L, null));
+        // Check value ignored.
+        tbl.remove(1L, null);
         assertEquals(22L, tbl.get(1L));
 
         // Delete KV pair with expected value.
@@ -233,11 +237,19 @@ public class KeyValueViewOperationsSimpleSchemaTest {
         assertEquals(22L, tbl.get(1L));
 
         // Remove existed KV pair.
-        assertThrows(Throwable.class, () -> tbl.replace(1L, null));
-        assertEquals(22L, tbl.get(1L));
+        assertTrue(tbl.replace(1L, null));
+        assertNull(tbl.get(1L));
 
-        assertTrue(tbl.replace(1L, 33L));
-        assertEquals(33L, tbl.get(1L));
+        // Ignore replace operation for non-existed KV pair.
+        assertFalse(tbl.replace(3L, 33L));
+        assertNull(tbl.get(3L));
+
+        tbl.put(3L, 33L);
+        assertEquals(33L, tbl.get(3L));
+
+        // Remove non-existed KV pair.
+        assertFalse(tbl.replace(2L, null));
+        assertNull(tbl.get(2L));
 
         assertThrows(Throwable.class, () -> tbl.replace(null, 33L));
     }
@@ -246,10 +258,10 @@ public class KeyValueViewOperationsSimpleSchemaTest {
     public void replaceExact() {
         KeyValueView<Long, Long> tbl = kvView();
 
-        // Insert KV pair.
-        assertThrows(Throwable.class, () -> tbl.replace(1L, null, 11L));
+        // Upsert non-existed KV pair.
+        assertFalse(tbl.replace(1L, null, 11L));
         assertNull(tbl.get(1L));
-        assertNull(tbl.get(2L));
+
         tbl.put(1L, 11L);
 
         // Ignore replace operation for non-existed KV pair.
@@ -260,13 +272,16 @@ public class KeyValueViewOperationsSimpleSchemaTest {
         assertTrue(tbl.replace(1L, 11L, 22L));
         assertEquals(22L, tbl.get(1L));
 
-        // Fail on replace with null.
-        assertThrows(Throwable.class, () -> tbl.replace(1L, 22L, null));
-        assertEquals(22L, tbl.get(1L));
+        // Replace with null value.
+        assertTrue(tbl.replace(1L, 22L, null));
+        assertNull(tbl.get(1L));
 
-        // Fail on replace with null.
-        assertThrows(Throwable.class, () -> tbl.replace(1L, null, 33L));
-        assertEquals(22L, tbl.get(1L));
+        // Replace null value.
+        assertTrue(tbl.replace(1L, null, 33L));
+        assertEquals(33L, tbl.get(1L));
+
+        // Remove non-existed KV pair.
+        assertFalse(tbl.replace(2L, null, null));
     }
 
     @Test
@@ -317,7 +332,7 @@ public class KeyValueViewOperationsSimpleSchemaTest {
     /**
      * Creates key-value view.
      *
-     * @param type   Value column native type.
+     * @param type       Value column native type.
      * @param valueClass Value class.
      */
     private <T> KeyValueViewImpl<Long, T> kvViewForValueType(NativeType type, Class<T> valueClass) {
@@ -330,13 +345,13 @@ public class KeyValueViewOperationsSimpleSchemaTest {
         DummyInternalTableImpl table = new DummyInternalTableImpl(
                 new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
 
-        Mapper<Long> keyMapper = Mapper.identity(Long.class);
-        Mapper<T> valMapper = Mapper.identity(valueClass);
+        Mapper<Long> keyMapper = Mapper.of(Long.class, "id");
+        Mapper<T> valMapper = Mapper.of(valueClass, "val");
 
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
                 new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", type, false)}
+                new Column[]{new Column("val", type, true)}
         );
 
         return new KeyValueViewImpl<>(

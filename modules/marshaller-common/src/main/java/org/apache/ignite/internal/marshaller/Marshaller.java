@@ -21,6 +21,9 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.Factory;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.table.mapper.Mapper;
+import org.apache.ignite.table.mapper.OneColumnMapper;
+import org.apache.ignite.table.mapper.PojoMapper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,31 +34,56 @@ public abstract class Marshaller {
     /**
      * Creates a marshaller for class.
      *
-     * @param cols   Columns in schema order.
-     * @param mapper Mapper.
+     * @param cols             Columns.
+     * @param mapper           Mapper.
      * @param requireAllFields If specified class should contain fields for all columns.
      * @return Marshaller.
      */
-    public static <T> Marshaller createMarshaller(MarshallerColumn[] cols, Mapper<T> mapper, boolean requireAllFields) {
+    public static <T> Marshaller createMarshaller(MarshallerColumn[] cols, @NotNull Mapper<T> mapper, boolean requireAllFields) {
+        if (mapper instanceof OneColumnMapper) {
+            return simpleMarshaller(cols, (OneColumnMapper<T>) mapper);
+        } else if (mapper instanceof PojoMapper) {
+            return pojoMarshaller(cols, (PojoMapper<T>) mapper, requireAllFields);
+        } else {
+            throw new IllegalArgumentException("Mapper of unsupported type: " + mapper.getClass());
+        }
+    }
+
+    /**
+     * Creates a marshaller for class.
+     *
+     * @param cols   Columns.
+     * @param mapper Mapper.
+     * @return Marshaller.
+     */
+    static <T> SimpleMarshaller simpleMarshaller(MarshallerColumn[] cols, @NotNull OneColumnMapper<T> mapper) {
         final BinaryMode mode = MarshallerUtil.mode(mapper.targetType());
 
-        if (mode != null) {
-            final MarshallerColumn col = cols[0];
+        final MarshallerColumn col = cols[0];
 
-            assert cols.length == 1;
-            assert mode == col.type() : "Target type is not compatible.";
-            assert !mapper.targetType().isPrimitive() : "Non-nullable types are not allowed.";
+        assert cols.length == 1;
+        assert mode == col.type() : "Target type is not compatible.";
+        assert !mapper.targetType().isPrimitive() : "Non-nullable types are not allowed.";
 
-            return new SimpleMarshaller(FieldAccessor.createIdentityAccessor(col.name(), 0, mode));
-        }
+        return new SimpleMarshaller(FieldAccessor.createIdentityAccessor(col.name(), 0, mode));
+    }
 
+    /**
+     * Creates a pojo marshaller for class.
+     *
+     * @param cols             Columns.
+     * @param mapper           Mapper.
+     * @param requireAllFields If specified class should contain fields for all columns.
+     * @return Pojo marshaller.
+     */
+    static <T> PojoMarshaller pojoMarshaller(MarshallerColumn[] cols, @NotNull PojoMapper<T> mapper, boolean requireAllFields) {
         FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length];
 
         // Build handlers.
         for (int i = 0; i < cols.length; i++) {
             final MarshallerColumn col = cols[i];
 
-            String fieldName = mapper.columnToField(col.name());
+            String fieldName = mapper.fieldForColumn(col.name());
 
             if (requireAllFields && fieldName == null) {
                 throw new IllegalArgumentException("No field found for column " + col.name());

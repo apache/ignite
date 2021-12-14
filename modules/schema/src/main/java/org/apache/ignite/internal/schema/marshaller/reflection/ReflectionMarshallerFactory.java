@@ -22,18 +22,21 @@ import org.apache.ignite.internal.schema.marshaller.KvMarshaller;
 import org.apache.ignite.internal.schema.marshaller.MarshallerFactory;
 import org.apache.ignite.internal.schema.marshaller.RecordMarshaller;
 import org.apache.ignite.table.mapper.Mapper;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Factory for reflection-based marshaller.
  */
 public class ReflectionMarshallerFactory implements MarshallerFactory {
     /** {@inheritDoc} */
-    @Override public <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Mapper<K> keyMapper, Mapper<V> valueMapper) {
+    @Override
+    public <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, @NotNull Mapper<K> keyMapper, @NotNull Mapper<V> valueMapper) {
         return new KvMarshallerImpl<>(schema, keyMapper, valueMapper);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> RecordMarshaller<R> create(SchemaDescriptor schema, Mapper<R> mapper) {
+    @Override
+    public <R> RecordMarshaller<R> create(SchemaDescriptor schema, @NotNull Mapper<R> mapper) {
         return new RecordMarshallerImpl<>(schema, mapper);
     }
 }

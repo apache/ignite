@@ -29,6 +29,7 @@ import org.apache.ignite.internal.schema.marshaller.MarshallerException;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.util.Pair;
+import org.apache.ignite.table.mapper.Mapper;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,8 +62,8 @@ public class JavaSerializer extends AbstractSerializer {
         this.keyClass = keyClass;
         this.valClass = valClass;
 
-        keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), keyClass, true);
-        valMarsh = Marshaller.createMarshaller(schema.valueColumns(), valClass, false);
+        keyMarsh = Marshaller.createMarshaller(schema.keyColumns().columns(), Mapper.of(keyClass), true);
+        valMarsh = Marshaller.createMarshaller(schema.valueColumns().columns(), Mapper.of(valClass), false);
     }
 
     /** {@inheritDoc} */
@@ -118,8 +119,9 @@ public class JavaSerializer extends AbstractSerializer {
      * @param key Key object.
      * @param val Value object.
      * @return Row assembler.
+     * @throws MarshallerException If failed to read key or value object content.
      */
-    private RowAssembler createAssembler(Object key, Object val) {
+    private RowAssembler createAssembler(Object key, Object val) throws MarshallerException {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
@@ -133,8 +135,9 @@ public class JavaSerializer extends AbstractSerializer {
      * @param marsh Marshaller.
      * @param obj   Object.
      * @return Object statistic.
+     * @throws MarshallerException If failed to read key or value object content.
      */
-    private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) {
+    private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) throws MarshallerException {
         if (obj == null || !cols.hasVarlengthColumns()) {
             return ObjectStatistic.ZERO_VARLEN_STATISTICS;
         }

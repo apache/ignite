@@ -284,7 +284,7 @@ public class RecordViewOperationsTest {
         DummyInternalTableImpl table = new DummyInternalTableImpl(
                 new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
 
-        Mapper<TestObjectWithAllTypes> recMapper = Mapper.identity(TestObjectWithAllTypes.class);
+        Mapper<TestObjectWithAllTypes> recMapper = Mapper.of(TestObjectWithAllTypes.class);
 
         Column[] valCols = {
                 new Column("primitiveByteCol", INT8, false),

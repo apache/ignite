@@ -15,11 +15,26 @@
  * limitations under the License.
  */
 
-/**
- * Contains user classes mapping API classes and mapper builders.
- *
- * @see org.apache.ignite.table.mapper.Mapper static factory methods.
- * @see org.apache.ignite.table.mapper.TypeConverter interface for building interceptors for custom type casting or value transformtaion.
- */
+package org.apache.ignite.internal.schema.testobjects;
 
-package org.apache.ignite.table.mapper;
+/**
+ * Test object.
+ */
+public class TestOuterObject {
+    private long id;
+
+    /**
+     * Inner class.
+     */
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class InnerObject {
+        private long id1;
+    }
+
+    /**
+     * Nested class.
+     */
+    public static class NestedObject {
+        private long id2;
+    }
+}

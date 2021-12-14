@@ -31,6 +31,7 @@ import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.table.mapper.Mapper;
+import org.apache.ignite.table.mapper.PojoMapper;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -53,8 +54,13 @@ public class RecordMarshallerImpl<R> implements RecordMarshaller<R> {
 
     /**
      * Creates KV marshaller.
+     *
+     * @param schema Schema descriptor.
+     * @param mapper Mapper for record objects.
      */
-    public RecordMarshallerImpl(SchemaDescriptor schema, Mapper<R> mapper) {
+    public RecordMarshallerImpl(SchemaDescriptor schema, @NotNull Mapper<R> mapper) {
+        assert mapper instanceof PojoMapper;
+
         this.schema = schema;
 
         recClass = mapper.targetType();
@@ -114,8 +120,9 @@ public class RecordMarshallerImpl<R> implements RecordMarshaller<R> {
      * @param key Key object.
      * @param val Value object.
      * @return Row assembler.
+     * @throws MarshallerException If failed to read key or value object content.
      */
-    private RowAssembler createAssembler(Object key, Object val) {
+    private RowAssembler createAssembler(Object key, Object val) throws MarshallerException {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), recMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), recMarsh, val);
 
@@ -124,14 +131,11 @@ public class RecordMarshallerImpl<R> implements RecordMarshaller<R> {
     }
 
     /**
-     * Reads object fields and gather statistic.
+     * Reads mapped object fields and gather statistic.
      *
-     * @param cols  Schema columns.
-     * @param marsh Marshaller.
-     * @param obj   Object.
-     * @return Object statistic.
+     * @throws MarshallerException If failed to read object content.
      */
-    private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) {
+    private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) throws MarshallerException {
         if (obj == null || !cols.hasVarlengthColumns()) {
             return ObjectStatistic.ZERO_VARLEN_STATISTICS;
         }

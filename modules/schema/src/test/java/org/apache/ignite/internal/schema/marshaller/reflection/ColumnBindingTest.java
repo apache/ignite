@@ -41,10 +41,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Objects;
 import java.util.Random;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
-import org.apache.ignite.internal.schema.marshaller.BinaryMode;
 import org.apache.ignite.internal.schema.marshaller.MarshallerException;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
@@ -58,9 +58,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
- * Check field accessor correctness.
+ * Check field binding correctness.
  */
-public class FieldAccessorTest {
+public class ColumnBindingTest {
     /** Random. */
     private Random rnd;
 
@@ -77,13 +77,12 @@ public class FieldAccessorTest {
     }
 
     /**
-     * FieldAccessor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * All native types field binding.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void fieldAccessor() throws Exception {
+    public void fieldBinding() throws Exception {
         Column[] cols = new Column[]{
                 new Column("primitiveByteCol", INT8, false),
                 new Column("primitiveShortCol", INT16, false),
@@ -120,32 +119,25 @@ public class FieldAccessorTest {
         final TestObjectWithAllTypes obj = TestObjectWithAllTypes.randomObject(rnd);
 
         for (int i = 0; i < cols.length; i++) {
-            FieldAccessor accessor = FieldAccessor
-                    .create(TestObjectWithAllTypes.class, cols[i].name(), cols[i], i);
-
-            accessor.write(rowAssembler, obj);
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestObjectWithAllTypes.class, cols[i].name(), null).write(rowAssembler, obj);
         }
 
         final TestObjectWithAllTypes restoredObj = new TestObjectWithAllTypes();
 
         for (int i = 0; i < cols.length; i++) {
-            FieldAccessor accessor = FieldAccessor
-                    .create(TestObjectWithAllTypes.class, cols[i].name(), cols[i], i);
-
-            accessor.read(row, restoredObj);
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestObjectWithAllTypes.class, cols[i].name(), null).read(row, restoredObj);
         }
 
         assertEquals(obj, restoredObj);
     }
 
     /**
-     * NullableFieldsAccessor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Nullable fields binding.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void nullableFieldsAccessor() throws Exception {
+    public void nullableFieldsBinding() throws Exception {
         Column[] cols = new Column[]{
                 new Column("intCol", INT32, true),
                 new Column("longCol", INT64, true),
@@ -162,64 +154,153 @@ public class FieldAccessorTest {
         final TestSimpleObject obj = TestSimpleObject.randomObject(rnd);
 
         for (int i = 0; i < cols.length; i++) {
-            FieldAccessor accessor = FieldAccessor
-                    .create(TestSimpleObject.class, cols[i].name(), cols[i], i);
-
-            accessor.write(rowAssembler, obj);
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestSimpleObject.class, cols[i].name(), null)
+                    .write(rowAssembler, obj);
         }
 
         final TestSimpleObject restoredObj = new TestSimpleObject();
 
         for (int i = 0; i < cols.length; i++) {
-            FieldAccessor accessor = FieldAccessor
-                    .create(TestSimpleObject.class, cols[i].name(), cols[i], i);
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestSimpleObject.class, cols[i].name(), null)
+                    .read(row, restoredObj);
+        }
 
-            accessor.read(row, restoredObj);
+        assertEquals(obj, restoredObj);
+    }
+
+
+    /**
+     * Fields binding with converter.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void fieldsBindingWithConverter() throws Exception {
+        Column[] cols = new Column[]{
+                new Column("data", BYTES, true),
+        };
+
+        final Pair<RowAssembler, Row> mocks = createMocks();
+
+        final RowAssembler rowAssembler = mocks.getFirst();
+        final Row row = mocks.getSecond();
+
+        TestObjectWrapper obj = new TestObjectWrapper();
+        obj.data = TestSimpleObject.randomObject(rnd);
+
+        for (int i = 0; i < cols.length; i++) {
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestObjectWrapper.class, cols[i].name(), new SerializingConverter())
+                    .write(rowAssembler, obj);
+        }
+
+        TestObjectWrapper restoredObj = new TestObjectWrapper();
+
+        for (int i = 0; i < cols.length; i++) {
+            ColumnBinding.createFieldBinding(cols[i].copy(i), TestObjectWrapper.class, cols[i].name(), new SerializingConverter())
+                    .read(row, restoredObj);
         }
 
         assertEquals(obj, restoredObj);
     }
 
     /**
-     * IdentityAccessor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Identity binding.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void identityAccessor() throws Exception {
-        final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
-                new Column("col0", STRING, true),
-                0,
-                BinaryMode.STRING);
+    public void identityBinding() throws Exception {
+        final ColumnBinding binding = ColumnBinding.createIdentityBinding(
+                new Column("val", STRING, true).copy(0),
+                String.class,
+                null
+        );
 
-        assertEquals("Some string", accessor.value("Some string"));
-
+        assertEquals("Some string", binding.value("Some string"));
         final Pair<RowAssembler, Row> mocks = createMocks();
 
-        accessor.write(mocks.getFirst(), "Other string");
-        assertEquals("Other string", accessor.read(mocks.getSecond()));
+        binding.write(mocks.getFirst(), "Other string");
+        assertEquals("Other string", binding.columnValue(mocks.getSecond()));
     }
 
     /**
-     * WrongIdentityAccessor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Identity binding with converter.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void wrongIdentityAccessor() {
-        final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
-                new Column("col0", STRING, true),
-                42,
-                BinaryMode.UUID);
+    public void identityBindingWithConverter() throws Exception {
+        final ColumnBinding binding = ColumnBinding.createIdentityBinding(
+                new Column("val", BYTES, true).copy(0),
+                TestSimpleObject.class,
+                new SerializingConverter());
 
-        assertEquals("Some string", accessor.value("Some string"));
+        final Pair<RowAssembler, Row> mocks = createMocks();
 
+        final RowAssembler rowAssembler = mocks.getFirst();
+        final Row row = mocks.getSecond();
+
+        final TestSimpleObject obj = TestSimpleObject.randomObject(rnd);
+
+        binding.write(rowAssembler, obj);
+
+        Object restoredObj = binding.columnValue(row);
+
+        assertEquals(obj, restoredObj);
+    }
+
+    /**
+     * Wrong identity binding.
+     */
+    @Test
+    public void wrongIdentityBinding() {
+        // Incompatible types.
+        final ColumnBinding binding = ColumnBinding.createIdentityBinding(
+                new Column("val", UUID, true).copy(0),
+                java.util.UUID.class,
+                null);
+
+        assertThrows(
+                MarshallerException.class,
+                () -> binding.value("Some string"));
         final Pair<RowAssembler, Row> mocks = createMocks();
 
         assertThrows(
                 MarshallerException.class,
-                () -> accessor.write(mocks.getFirst(), "Other string"),
-                "Failed to write field [id=42]"
+                () -> binding.write(mocks.getFirst(), "Other string")
+        );
+
+        // Implicit serialization is not supported yet.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ColumnBinding.createIdentityBinding(
+                        new Column("val", BYTES, true).copy(0),
+                        TestSimpleObject.class,
+                        null)
+        );
+    }
+
+    /**
+     * Wrong identity binding.
+     */
+    @Test
+    public void wrongBinding() {
+        // Incompatible types.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ColumnBinding.createFieldBinding(
+                        new Column("val", UUID, true).copy(0),
+                        TestObjectWrapper.class,
+                        "data", null)
+        );
+
+        // Implicit serialization is not supported yet.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ColumnBinding.createFieldBinding(
+                        new Column("val", BYTES, true).copy(0),
+                        TestObjectWrapper.class,
+                        "data", null)
         );
     }
 
@@ -302,5 +383,29 @@ public class FieldAccessorTest {
         Mockito.doAnswer(rowAnswer).when(mockedRow).decimalValue(Mockito.anyInt());
 
         return new Pair<>(mockedAsm, mockedRow);
+    }
+
+    /**
+     * Object wrapper.
+     */
+    static class TestObjectWrapper {
+        TestSimpleObject data;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            TestObjectWrapper that = (TestObjectWrapper) o;
+            return Objects.equals(data, that.data);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(data);
+        }
     }
 }

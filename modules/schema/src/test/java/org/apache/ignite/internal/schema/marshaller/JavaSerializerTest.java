@@ -66,7 +66,6 @@ import org.apache.ignite.internal.schema.testobjects.TestObjectWithAllTypes;
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithNoDefaultConstructor;
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithPrivateConstructor;
 import org.apache.ignite.internal.util.ObjectFactory;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
@@ -287,7 +286,7 @@ public class JavaSerializerTest {
         final Object key = TestObjectWithNoDefaultConstructor.randomObject(rnd);
         final Object val = TestObjectWithNoDefaultConstructor.randomObject(rnd);
 
-        assertThrows(IgniteInternalException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
+        assertThrows(IllegalArgumentException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
     }
 
     /**

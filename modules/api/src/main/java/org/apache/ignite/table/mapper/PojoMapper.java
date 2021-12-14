@@ -17,39 +17,30 @@
 
 package org.apache.ignite.table.mapper;
 
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Simple mapper implementation that map a column to a class field.
+ * Mapper implementation which maps fields of objects of type {@link T} to the columns by their names. Every mapped field either must be of
+ * natively supported type, or a converter must be provided.
  *
  * @param <T> Target type.
+ * @see OneColumnMapper
  */
-class DefaultColumnMapper<T> implements Mapper<T> {
-    /** Target type. */
-    private final Class<T> targetType;
-
-    /** Column-to-field name mapping. */
-    private final Map<String, String> mapping;
+public interface PojoMapper<T> extends Mapper<T> {
+    /**
+     * Returns a field name for a given column name when POJO individual fields are mapped to columns, otherwise fails.
+     *
+     * @param columnName Column name.
+     * @return Field name or {@code null} if no field mapped to a column.
+     * @throws IllegalStateException If a whole object is mapped to a single column.
+     */
+    @Nullable String fieldForColumn(@NotNull String columnName);
 
     /**
-     * Creates a mapper for given type.
+     * Returns type converter for given column.
      *
-     * @param targetType Target type.
-     * @param mapping Column-to-field name mapping.
+     * @return Type converter or {@code null} if not set.
      */
-    DefaultColumnMapper(Class<T> targetType, Map<String, String> mapping) {
-        this.targetType = targetType;
-        this.mapping = mapping;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<T> targetType() {
-        return targetType;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String columnToField(@NotNull String columnName) {
-        return mapping.get(columnName);
-    }
+    <FieldT, ColumnT> TypeConverter<FieldT, ColumnT> converterForColumn(@NotNull String columnName);
 }

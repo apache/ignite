@@ -87,7 +87,10 @@ public enum BinaryMode {
     DATETIME(NativeTypeSpec.DATETIME),
 
     /** Timestamp. */
-    TIMESTAMP(NativeTypeSpec.TIMESTAMP);
+    TIMESTAMP(NativeTypeSpec.TIMESTAMP),
+
+    /** User object. */
+    POJO(NativeTypeSpec.BYTES);
 
     /** Native type spec. */
     private final NativeTypeSpec typeSpec;

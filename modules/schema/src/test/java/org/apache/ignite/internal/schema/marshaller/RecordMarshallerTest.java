@@ -67,7 +67,6 @@ import org.apache.ignite.internal.schema.testobjects.TestObjectWithNoDefaultCons
 import org.apache.ignite.internal.schema.testobjects.TestObjectWithPrivateConstructor;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ObjectFactory;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.table.mapper.Mapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -183,7 +182,7 @@ public class RecordMarshallerTest {
                         new Column("col3", STRING, false)
                 });
 
-        Mapper<TestObject> mapper = Mapper.builderFor(TestObject.class)
+        Mapper<TestObject> mapper = Mapper.builder(TestObject.class)
                 .map("id", "key")
                 .map("intCol", "col1")
                 .map("stringCol", "col3")
@@ -281,7 +280,7 @@ public class RecordMarshallerTest {
 
         final Object rec = TestObjectWithNoDefaultConstructor.randomObject(rnd);
 
-        assertThrows(IgniteInternalException.class, () -> factory.create(schema, rec.getClass()));
+        assertThrows(IllegalArgumentException.class, () -> factory.create(schema, rec.getClass()));
     }
 
     @ParameterizedTest

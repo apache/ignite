@@ -123,10 +123,10 @@ public class InteropOperationsTest {
         KV_BIN_VIEW =  new KeyValueBinaryViewImpl(INT_TABLE, schemaRegistry, null, null);
 
         KV_VIEW = new KeyValueViewImpl<Long, Value>(INT_TABLE, schemaRegistry,
-                Mapper.identity(Long.class), Mapper.identity(Value.class), null);
+                Mapper.of(Long.class, "id"), Mapper.of(Value.class), null);
 
         R_BIN_VIEW = TABLE.recordView();
-        R_VIEW = TABLE.recordView(Mapper.identity(Row.class));
+        R_VIEW = TABLE.recordView(Mapper.of(Row.class));
     }
 
     /**
