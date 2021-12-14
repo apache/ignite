@@ -15,30 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.mem.NumaAllocatorBasicTest;
+import org.apache.ignite.internal.mem.NumaAllocatorUnitTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/**
- * Suite with tests for {@link IndexQuery}.
- */
+/** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
+    NumaAllocatorUnitTest.class,
+    NumaAllocatorBasicTest.class
 })
-public class IndexQueryTestSuite {
+public class NumaAllocatorTestSuite {
 }

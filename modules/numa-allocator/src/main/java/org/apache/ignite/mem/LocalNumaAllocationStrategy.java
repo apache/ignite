@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.mem;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
+import org.apache.ignite.internal.mem.NumaAllocUtil;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 
 /**
- * Suite with tests for {@link IndexQuery}.
+ * Local NUMA allocation strategy.
+ * <p>
+ * Memory will be allocated using {@code void* numa_alloc_onnode(size_t)} of {@code lubnuma}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
-})
-public class IndexQueryTestSuite {
+public class LocalNumaAllocationStrategy implements NumaAllocationStrategy, Serializable {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override public long allocateMemory(long size) {
+        return NumaAllocUtil.allocateLocal(size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return GridToStringBuilder.toString(LocalNumaAllocationStrategy.class, this);
+    }
 }

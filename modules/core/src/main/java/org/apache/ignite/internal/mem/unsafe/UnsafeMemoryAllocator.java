@@ -14,31 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.mem.unsafe;
 
-package org.apache.ignite.cache.query;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.mem.MemoryAllocator;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+/** */
+public class UnsafeMemoryAllocator implements MemoryAllocator {
+    /** {@inheritDoc} */
+    @Override public long allocateMemory(long size) {
+        return GridUnsafe.allocateMemory(size);
+    }
 
-/**
- * Suite with tests for {@link IndexQuery}.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
-})
-public class IndexQueryTestSuite {
+    /** {@inheritDoc} */
+    @Override public void freeMemory(long addr) {
+        GridUnsafe.freeMemory(addr);
+    }
 }

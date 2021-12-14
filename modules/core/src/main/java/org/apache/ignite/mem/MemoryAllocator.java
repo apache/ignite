@@ -14,31 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.cache.query;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.mem;
 
 /**
- * Suite with tests for {@link IndexQuery}.
+ * Base interface for offheap memory allocator.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
-})
-public class IndexQueryTestSuite {
+public interface MemoryAllocator {
+    /**
+     * @param size Size of allocated memory.
+     *
+     * @return Pointer to memory or {@code 0} if failed.
+     */
+    public long allocateMemory(long size);
+
+    /**
+     * Deallocates memory.
+     *
+     * @param addr Address of memory.
+     */
+    public void freeMemory(long addr);
 }

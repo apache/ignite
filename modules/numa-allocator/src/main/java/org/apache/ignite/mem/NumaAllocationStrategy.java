@@ -15,30 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.mem;
 
 /**
- * Suite with tests for {@link IndexQuery}.
+ * Basic interface for allocating memory on NUMA nodes with different policies using {@code libnuma}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
-})
-public class IndexQueryTestSuite {
+public interface NumaAllocationStrategy {
+    /**
+     * @param size Size of allocated memory.
+     *
+     * @return Pointer to memory.
+     */
+    public long allocateMemory(long size);
 }
