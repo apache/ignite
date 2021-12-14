@@ -270,7 +270,9 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             Object key = wrap.apply(keys.get(i));
 
             assertFalse(c.containsKey(key));
+
             c.put(key, i);
+
             assertTrue(c.containsKey(key));
             assertEquals(i, c.get(key));
             assertTrue(c.replace(key, i, i + 1));
