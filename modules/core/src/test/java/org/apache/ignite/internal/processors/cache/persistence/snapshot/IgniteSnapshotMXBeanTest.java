@@ -126,12 +126,9 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         DynamicMBean restoreMBean = metricRegistry(ignite.name(), null, SNAPSHOT_RESTORE_METRICS);
 
         assertEquals(0, getLongMetric("endTime", restoreMBean));
-        assertEquals(0, getLongMetric("totalPartitions", restoreMBean));
+        assertEquals(-1, getLongMetric("totalPartitions", restoreMBean));
         assertEquals(0, getLongMetric("processedPartitions", restoreMBean));
-        assertEquals(0, getLongMetric("totalPartitionsSize", restoreMBean));
-        assertEquals(0, getLongMetric("processedPartitionsSize", restoreMBean));
         assertTrue(String.valueOf(restoreMBean.getAttribute("snapshotName")).isEmpty());
-        assertTrue(String.valueOf(restoreMBean.getAttribute("cacheGroupNames")).isEmpty());
 
         Set<String> grpNames = new HashSet<>(F.asList(ccfg1.getName(), ccfg2.getName()));
 
@@ -148,18 +145,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             assertEquals(expPartCnt, getLongMetric("totalPartitions", mReg));
             assertEquals(expPartCnt, getLongMetric("processedPartitions", mReg));
 
-            long totalPartsSize = getLongMetric("totalPartitionsSize", mReg);
-
-            assertTrue(totalPartsSize > 0);
-            assertEquals(totalPartsSize, getLongMetric("processedPartitionsSize", mReg));
-
             assertEquals(SNAPSHOT_NAME, restoreMBean.getAttribute("snapshotName"));
-
-            String cacheGrpNames = (String)restoreMBean.getAttribute("cacheGroupNames");
-
-            assertNotNull(cacheGrpNames);
-
-            assertEquals(grpNames, Arrays.stream(cacheGrpNames.split(",")).collect(Collectors.toSet()));
         }
 
         assertSnapshotCacheKeys(ignite.cache(ccfg1.getName()));

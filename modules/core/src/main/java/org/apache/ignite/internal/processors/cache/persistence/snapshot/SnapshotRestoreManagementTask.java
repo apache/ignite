@@ -31,8 +31,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Snapshot restore management task.
  */
-abstract class SnapshotRestoreManagementTask<T> extends ComputeTaskAdapter<String, T> {
-   /**
+abstract class SnapshotRestoreManagementTask extends ComputeTaskAdapter<String, Boolean> {
+    /**
      * @param param Compute job argument.
      * @return Compute job.
      */
@@ -49,6 +49,20 @@ abstract class SnapshotRestoreManagementTask<T> extends ComputeTaskAdapter<Strin
             map.put(makeJob(snpName), node);
 
         return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+        boolean ret = false;
+
+        for (ComputeJobResult r : results) {
+            if (r.getException() != null)
+                throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
+
+            ret |= Boolean.TRUE.equals(r.getData());
+        }
+
+        return ret;
     }
 
     /** {@inheritDoc} */

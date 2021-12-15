@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -30,7 +28,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Snapshot restore cancel task.
  */
 @GridInternal
-class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask<Boolean> {
+class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -45,19 +43,5 @@ class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask<Boolean> {
                 return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName).get();
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-        boolean ret = false;
-
-        for (ComputeJobResult r : results) {
-            if (r.getException() != null)
-                throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
-
-            ret |= Boolean.TRUE.equals(r.getData());
-        }
-
-        return ret;
     }
 }

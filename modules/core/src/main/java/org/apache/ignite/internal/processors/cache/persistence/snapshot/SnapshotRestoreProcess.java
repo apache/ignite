@@ -193,16 +193,10 @@ public class SnapshotRestoreProcess {
             "The system time when the restore operation of a cluster snapshot on this node ended.");
         mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
             "The snapshot name of the last running cluster snapshot restore operation on this node.");
-        mreg.register("cacheGroupNames", () -> lastOpCtx.cacheGrpNames, String.class,
-            "The names of the cache groups that are being restored from the snapshot.");
         mreg.register("totalPartitions", () -> lastOpCtx.totalParts,
             "The total number of partitions to be restored on this node.");
         mreg.register("processedPartitions", () -> lastOpCtx.processedParts.get(),
             "The number of processed partitions on this node.");
-        mreg.register("totalPartitionsSize", () -> lastOpCtx.totalBytes,
-            "The total size of the partitions to be restored on this node.");
-        mreg.register("processedPartitionsSize", () -> lastOpCtx.processedBytes.get(),
-            "The total size of processed partitions on this node.");
     }
 
     /**
@@ -400,49 +394,6 @@ public class SnapshotRestoreProcess {
         }
 
         return false;
-    }
-
-    /**
-     * Get the status of the last local snapshot restore operation.
-     *
-     * @param snpName Snapshot name.
-     * @return Status details.
-     */
-    public @Nullable SnapshotRestoreStatusDetails status(String snpName) {
-        SnapshotRestoreContext opCtx = lastOpCtx;
-        ClusterSnapshotFuture fut0 = fut;
-
-        // Future is created only on node initiator, context is created on all nodes, but later.
-        boolean futValid = snpName.equals(fut0.name);
-        boolean ctxValid = snpName.equals(opCtx.snpName);
-
-        if (!ctxValid && !futValid)
-            return null;
-
-        if (ctxValid && futValid && !fut0.rqId.equals(opCtx.reqId)) {
-            // If the request ID does not match, we must read the metrics of the later operation.
-            if (fut0.startTime <= opCtx.startTime)
-                futValid = false;
-            else
-                ctxValid = false;
-        }
-
-        long startTime = futValid ? fut0.startTime : opCtx.startTime;
-        long endTime = futValid ? fut0.endTime : opCtx.endTime;
-        UUID reqId = futValid ? fut0.rqId : opCtx.reqId;
-        Throwable err = ctxValid ? opCtx.err.get() : fut0.interruptEx;
-
-        return new SnapshotRestoreStatusDetails(
-            reqId,
-            startTime,
-            endTime,
-            err == null ? null : err.getMessage(),
-            ctxValid ? opCtx.processedParts.get() : 0,
-            ctxValid ? opCtx.processedBytes.get() : 0,
-            ctxValid ? opCtx.cacheGrpNames : null,
-            ctxValid ? opCtx.totalParts : 0,
-            ctxValid ? opCtx.totalBytes : 0
-        );
     }
 
     /**
@@ -913,6 +864,7 @@ public class SnapshotRestoreProcess {
 
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
+            long totalParts = 0;
 
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheGroupName(dir);
@@ -946,6 +898,8 @@ public class SnapshotRestoreProcess {
 
                 if (leftParts.isEmpty())
                     continue;
+
+                totalParts += leftParts.size();
 
                 SnapshotMetadata full = findMetadataWithSamePartitions(locMetas,
                     grpId,
@@ -990,6 +944,8 @@ public class SnapshotRestoreProcess {
                             opCtx0.locProgress.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION));
 
+                            totalParts += 1;
+
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
                                 opCtx,
                                 snpCacheDir,
@@ -999,6 +955,8 @@ public class SnapshotRestoreProcess {
                     }
                 }
             }
+
+            opCtx0.totalParts = totalParts;
 
             // Load other partitions from remote nodes.
             List<PartitionRestoreFuture> rmtAwaitParts = rmtLoadParts.values().stream()
@@ -1059,6 +1017,8 @@ public class SnapshotRestoreProcess {
                                             snpFile,
                                             partFile.toFile(),
                                             snpFile.length());
+
+                                        opCtx0.processedParts.incrementAndGet();
 
                                         partFut.complete(partFile);
                                     }
@@ -1382,6 +1342,8 @@ public class SnapshotRestoreProcess {
 
                 IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
 
+                opCtx.processedParts.incrementAndGet();
+
                 return partFile;
             }, mgr.snapshotExecutorService())
             .whenComplete((r, t) -> opCtx.errHnd.accept(t))
@@ -1423,7 +1385,7 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
-        /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
+        /** Baseline discovery cache for node IDs that must be alive to complete the operation. */
         private final DiscoCache discoCache;
 
         /** Operational node id. */
@@ -1460,20 +1422,11 @@ public class SnapshotRestoreProcess {
         /** Operation start time. */
         private final long startTime;
 
-        /** Names of the restored cache groups. */
-        private final String cacheGrpNames;
-
         /** Number of processed (copied) partitions. */
-        private final AtomicLong processedParts = new AtomicLong();
-
-        /** Size of processed (copied) partitions in bytes. */
-        private final AtomicLong processedBytes = new AtomicLong();
+        private final AtomicLong processedParts = new AtomicLong(0);
 
         /** Total number of partitions to be restored. */
-        private volatile long totalParts;
-
-        /** Total size of the partitions to be restored in bytes. */
-        private volatile long totalBytes;
+        private volatile long totalParts = -1;
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
@@ -1486,7 +1439,10 @@ public class SnapshotRestoreProcess {
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
+         * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
          * @param cfgs Cache ID to configuration mapping.
+         * @param locNodeId Local node ID.
+         * @param locMetas List of snapshot metadata.
          */
         protected SnapshotRestoreContext(
             SnapshotOperationRequest req,
@@ -1505,8 +1461,6 @@ public class SnapshotRestoreProcess {
             metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
 
             startTime = 0;
-
-            cacheGrpNames = F.concat(F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName), ",");
         }
 
         /**
@@ -1514,13 +1468,9 @@ public class SnapshotRestoreProcess {
          */
         protected SnapshotRestoreContext() {
             reqId = opNodeId = null;
-//            dirs = null;
-//            opNodeId = null;
-//            nodes = null;
-            snpName = cacheGrpNames = "";
-            startTime = 0;
-
             discoCache = null;
+            snpName = "";
+            startTime = 0;
         }
 
         /**
