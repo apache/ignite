@@ -442,6 +442,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
+        restoreCacheGrpProc.registerMetrics();
+
         cctx.exchange().registerExchangeAwareComponent(this);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
@@ -936,16 +938,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Check if snapshot restore process is currently running.
-     *
-     * @param snpName Snapshot name.
-     * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
-     */
-    public boolean isRestoring(String snpName) {
-        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
-    }
-
-    /**
      * Check if the cache or group with the specified name is currently being restored from the snapshot.
      *
      * @param ccfg Cache configuration.
@@ -956,15 +948,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Status of the restore operation cluster-wide.
+     * Get the status of a cluster-wide restore operation.
      *
      * @param snpName Snapshot name.
-     * @return Future that will be completed when the status of the restore operation is received from all the server
-     * nodes. The result of this future will be {@code false} if the restore process with the specified snapshot name is
-     * not running on all nodes.
+     * @return Future that will be completed when the status of the restore operation is received from all server nodes.
+     *         The result of this future is the node ids mapping with restore operation state.
      */
-    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+    public IgniteFuture<Map<UUID, SnapshotRestoreStatusDetails>> clusterRestoreStatus(String snpName) {
         return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+    }
+
+    /**
+     * Get the status of the last local snapshot restore operation.
+     *
+     * @param snpName Snapshot name.
+     * @return Status of the last local snapshot restore operation, {@code null} if the snapshot name of the last
+     *         started operation differs from the specified one.
+     */
+    public @Nullable SnapshotRestoreStatusDetails localRestoreStatus(String snpName) {
+        return restoreCacheGrpProc.status(snpName);
     }
 
     /**
@@ -1866,9 +1868,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param taskCls Snapshot restore operation management task class.
      * @param snpName Snapshot name.
+     * @param <T> Type of the task result returning from {@link SnapshotRestoreManagementTask#reduce(List)} method.
+     * @return Task future.
      */
-    private IgniteFuture<Boolean> executeRestoreManagementTask(
-        Class<? extends ComputeTask<String, Boolean>> taskCls,
+    private <T> IgniteFuture<T> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, T>> taskCls,
         String snpName
     ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);

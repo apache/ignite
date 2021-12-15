@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -98,6 +100,9 @@ public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
     public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
+    /** Snapshot restore metrics prefix. */
+    public static final String SNAPSHOT_RESTORE_METRICS = "snapshot-restore";
+
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
 
@@ -125,11 +130,17 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
-    private volatile ClusterSnapshotFuture fut;
+    /**
+     * Future to be completed when the cache restore process is complete. By default, this is a stub.
+     * When the process is started the future is recreated on the initiator node and passed to the user.
+     */
+    private volatile ClusterSnapshotFuture fut = new ClusterSnapshotFuture();
 
-    /** Snapshot restore operation context. */
+    /** Current snapshot restore operation context (will be {@code null} when the operation is not running). */
     private volatile SnapshotRestoreContext opCtx;
+
+    /** Last snapshot restore operation context (saves the metrics of the last operation). */
+    private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext();
 
     /**
      * @param ctx Kernal context.
@@ -171,6 +182,30 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * Register local metrics.
+     */
+    protected void registerMetrics() {
+        MetricRegistry mreg = ctx.metric().registry(SNAPSHOT_RESTORE_METRICS);
+
+        mreg.register("startTime", () -> lastOpCtx.startTime,
+            "The system time of the start of the cluster snapshot restore operation on this node.");
+        mreg.register("endTime", () -> lastOpCtx.endTime,
+            "The system time when the restore operation of a cluster snapshot on this node ended.");
+        mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
+            "The snapshot name of the last running cluster snapshot restore operation on this node.");
+        mreg.register("cacheGroupNames", () -> lastOpCtx.cacheGrpNames, String.class,
+            "The names of the cache groups that are being restored from the snapshot.");
+        mreg.register("totalPartitions", () -> lastOpCtx.totalParts,
+            "The total number of partitions to be restored on this node.");
+        mreg.register("processedPartitions", () -> lastOpCtx.processedParts.get(),
+            "The number of processed partitions on this node.");
+        mreg.register("totalPartitionsSize", () -> lastOpCtx.totalBytes,
+            "The total size of the partitions to be restored on this node.");
+        mreg.register("processedPartitionsSize", () -> lastOpCtx.processedBytes.get(),
+            "The total size of processed partitions on this node.");
+    }
+
+    /**
      * Start cache group restore operation.
      *
      * @param snpName Snapshot name.
@@ -203,9 +238,7 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
-
-                fut0 = fut;
+                fut0 = fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
             }
         }
         catch (IgniteException e) {
@@ -319,7 +352,7 @@ public class SnapshotRestoreProcess {
 
         ClusterSnapshotFuture fut0 = fut;
 
-        return fut0 != null ? fut0.name : null;
+        return fut0.isDone() ? null : fut0.name;
     }
 
     /**
@@ -370,6 +403,49 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * Get the status of the last local snapshot restore operation.
+     *
+     * @param snpName Snapshot name.
+     * @return Status details.
+     */
+    public @Nullable SnapshotRestoreStatusDetails status(String snpName) {
+        SnapshotRestoreContext opCtx = lastOpCtx;
+        ClusterSnapshotFuture fut0 = fut;
+
+        // Future is created only on node initiator, context is created on all nodes, but later.
+        boolean futValid = snpName.equals(fut0.name);
+        boolean ctxValid = snpName.equals(opCtx.snpName);
+
+        if (!ctxValid && !futValid)
+            return null;
+
+        if (ctxValid && futValid && !fut0.rqId.equals(opCtx.reqId)) {
+            // If the request ID does not match, we must read the metrics of the later operation.
+            if (fut0.startTime <= opCtx.startTime)
+                futValid = false;
+            else
+                ctxValid = false;
+        }
+
+        long startTime = futValid ? fut0.startTime : opCtx.startTime;
+        long endTime = futValid ? fut0.endTime : opCtx.endTime;
+        UUID reqId = futValid ? fut0.rqId : opCtx.reqId;
+        Throwable err = ctxValid ? opCtx.err.get() : fut0.interruptEx;
+
+        return new SnapshotRestoreStatusDetails(
+            reqId,
+            startTime,
+            endTime,
+            err == null ? null : err.getMessage(),
+            ctxValid ? opCtx.processedParts.get() : 0,
+            ctxValid ? opCtx.processedBytes.get() : 0,
+            ctxValid ? opCtx.cacheGrpNames : null,
+            ctxValid ? opCtx.totalParts : 0,
+            ctxValid ? opCtx.totalBytes : 0
+        );
+    }
+
+    /**
      * @param reqId Request ID.
      * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
      *         starting the cache(s), the whole procedure is rolled back.
@@ -387,15 +463,6 @@ public class SnapshotRestoreProcess {
      * Finish local cache group restore process.
      *
      * @param reqId Request ID.
-     */
-    private void finishProcess(UUID reqId) {
-        finishProcess(reqId, null);
-    }
-
-    /**
-     * Finish local cache group restore process.
-     *
-     * @param reqId Request ID.
      * @param err Error, if any.
      */
     private void finishProcess(UUID reqId, @Nullable Throwable err) {
@@ -406,16 +473,21 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null && reqId.equals(opCtx0.reqId))
+        if (opCtx0 != null && reqId.equals(opCtx0.reqId)) {
             opCtx = null;
+
+            opCtx0.endTime = U.currentTimeMillis();
+        }
 
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
 
-            if (fut0 != null && reqId.equals(fut0.rqId)) {
-                fut = null;
+            if (!fut0.isDone() && reqId.equals(fut0.rqId)) {
+                ctx.pools().getSystemExecutorService().submit(() -> {
+                    fut0.endTime = U.currentTimeMillis();
 
-                ctx.pools().getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+                    fut0.onDone(null, err);
+                });
             }
         }
     }
@@ -449,7 +521,7 @@ public class SnapshotRestoreProcess {
         synchronized (this) {
             opCtx0 = opCtx;
 
-            if (fut != null && fut.name.equals(snpName)) {
+            if (!fut.isDone() && fut.name.equals(snpName)) {
                 fut0 = fut;
 
                 fut0.interruptEx = reason;
@@ -557,11 +629,11 @@ public class SnapshotRestoreProcess {
             SnapshotRestoreContext opCtx0 = prepareContext(req);
 
             synchronized (this) {
-                opCtx = opCtx0;
+                lastOpCtx = opCtx = opCtx0;
 
                 ClusterSnapshotFuture fut0 = fut;
 
-                if (fut0 != null)
+                if (!fut0.isDone() && fut0.interruptEx != null)
                     opCtx0.errHnd.accept(fut0.interruptEx);
             }
 
@@ -1124,7 +1196,7 @@ public class SnapshotRestoreProcess {
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         if (failure == null) {
-            finishProcess(reqId);
+            finishProcess(reqId, null);
 
             return;
         }
@@ -1385,11 +1457,32 @@ public class SnapshotRestoreProcess {
          */
         private final GridFutureAdapter<Void> locStopCachesCompleteFut = new GridFutureAdapter<>();
 
+        /** Operation start time. */
+        private final long startTime;
+
+        /** Names of the restored cache groups. */
+        private final String cacheGrpNames;
+
+        /** Number of processed (copied) partitions. */
+        private final AtomicLong processedParts = new AtomicLong();
+
+        /** Size of processed (copied) partitions in bytes. */
+        private final AtomicLong processedBytes = new AtomicLong();
+
+        /** Total number of partitions to be restored. */
+        private volatile long totalParts;
+
+        /** Total size of the partitions to be restored in bytes. */
+        private volatile long totalBytes;
+
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
+
+        /** Operation end time. */
+        private volatile long endTime;
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
@@ -1410,6 +1503,24 @@ public class SnapshotRestoreProcess {
             this.cfgs = cfgs;
 
             metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
+
+            startTime = 0;
+
+            cacheGrpNames = F.concat(F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName), ",");
+        }
+
+        /**
+         * Default constructor.
+         */
+        protected SnapshotRestoreContext() {
+            reqId = opNodeId = null;
+//            dirs = null;
+//            opNodeId = null;
+//            nodes = null;
+            snpName = cacheGrpNames = "";
+            startTime = 0;
+
+            discoCache = null;
         }
 
         /**
