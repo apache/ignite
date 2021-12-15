@@ -82,8 +82,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestKeys(srvCache, arr -> arr);
         doTestKeys(cliCache, arr -> arr);
         try (IgniteClient thinClient = thinClient()) {
-            // Why not failing with useBinaryArray=false.
-            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr);
+            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME + "2")), arr -> arr);
         }
     }
 
