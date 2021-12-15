@@ -282,9 +282,9 @@ class IgniteApplicationSpec(IgniteSpec):
 
     def __jackson(self):
         if not self.service.config.version.is_dev:
-            aws = self._module("aws")
+            ducktests = self._module("ducktests")
             return self.service.context.cluster.nodes[0].account.ssh_capture(
-                "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
+                "find %s -type f -name '*.jar' | grep jackson | tr '\n' ':' " % ducktests)
 
         return []
 
