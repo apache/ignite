@@ -1025,6 +1025,7 @@ tab:Windows[]
 ----
 control.bat --property get --name 'statistics.usage.state'
 ----
+--
 
 == Cache Consistency
 
@@ -1037,12 +1038,12 @@ The command allows to perform cache consistency check and repair (when possible)
 tab:Unix[]
 [source,shell]
 ----
-control.sh --enable-experimental --consistency repair cache-name partition
+control.sh --enable-experimental --consistency repair cache-name partition strategy
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --enable-experimental --consistency repair cache-name partition
+control.bat --enable-experimental --consistency repair cache-name partition strategy
 ----
 --
 Parameters:
@@ -1052,6 +1053,7 @@ Parameters:
 | Parameter | Description
 | `cache-name`| Cache to be checked/repaired..
 | `partition`| Cache's partition to be checked/repaired.
+| `strategy`| Repair strategy [LWW - default, PRIMARY, MAJORITY, REMOVE, CHECK_ONLY], optional.
 |===
 
 === Status

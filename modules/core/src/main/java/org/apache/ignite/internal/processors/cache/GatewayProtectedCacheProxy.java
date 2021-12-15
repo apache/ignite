@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -233,6 +234,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withReadRepair() {
+        return withReadRepair(ReadRepairStrategy.defaultStrategy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -245,7 +251,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 throw new UnsupportedOperationException("Read-repair is incompatible with near caches.");
 
             if (context().readThrough()) {
-                // Read Repair get operation produces different versions for same entries loaded via readThrough feature.
+                // Entries loaded via readThrough feature have inconsistent versions by design.
                 throw new UnsupportedOperationException("Read-repair is incompatible with caches that use readThrough.");
             }
 
@@ -257,12 +263,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                     "at least 1 backup configured for cache.");
             }
 
-            boolean readRepair = opCtx.readRepair();
-
-            if (readRepair)
+            if (opCtx.readRepairStrategy() == strategy)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepair(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepairStrategy(strategy), lock);
         }
         finally {
             onLeave(opGate);

@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -134,7 +135,11 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             String cacheName = argIter.nextArg("Expected cache name.");
             int part = argIter.nextNonNegativeIntArg("Expected partition.");
 
-            cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part);
+            ReadRepairStrategy strategy = argIter.hasNextSubArg() ?
+                ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy.")) :
+                ReadRepairStrategy.defaultStrategy();
+
+            cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
         }
         else if (cmd == STATUS)
             cmdArg = null;

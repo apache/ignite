@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -87,6 +88,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
             String cacheName = arg.cacheName();
+            ReadRepairStrategy strategy = arg.strategy();
+
             int p = arg.part();
             int batchSize = 1024;
             int statusDelay = 60_000; // Every minute.
@@ -111,7 +114,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (part == null)
                 return null; // Partition does not belong to the node.
 
-            log.info("Consistency check started [grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
+            log.info("Consistency check started " +
+                "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + ", strategy=" + strategy + "]");
 
             VisorConsistencyStatusTask.MAP.put(arg, "0/" + part.fullSize());
 
@@ -130,7 +134,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
                     GridCursor<? extends CacheDataRow> cursor = grpCtx.offheap().dataStore(part).cursor(cctx.cacheId());
 
-                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary().withReadRepair();
+                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary().withReadRepair(strategy);
 
                     do {
                         keys.clear();
@@ -200,7 +204,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             StringBuilder sb = new StringBuilder();
 
             for (CacheConsistencyViolationEvent evt : evts) {
-                for (Map.Entry<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> entry : evt.getEntries().entrySet()) {
+                for (Map.Entry<?, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> entry : evt.getEntries().entrySet()) {
                     Object key = entry.getKey();
 
                     if (cctx.affinity().partition(key) != part)
@@ -209,7 +213,11 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                     found++;
 
                     sb.append("Key: ").append(key)
-                        .append(" (Cache: ").append(evt.getCacheName()).append(")").append("\n");
+                        .append(" (cache: ").append(evt.getCacheName())
+                        .append(", strategy: ").append(evt.getStrategy()).append(")").append("\n");
+
+                    if (evt.getFixedEntries().containsKey(key))
+                        sb.append(" Fixed: ").append(evt.getFixedEntries().get(key)).append("\n");
 
                     for (Map.Entry<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> mapping : entry.getValue().entrySet()) {
                         ClusterNode node = mapping.getKey();
@@ -217,14 +225,19 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
                         sb.append("  Node: ").append(node).append("\n")
                             .append("    Value: ").append(info.getValue()).append("\n")
-                            .append("    Version: ").append(info.getVersion()).append("\n")
-                            .append("    Other cluster version: ").append(info.getVersion().otherClusterVersion()).append("\n")
-                            .append("    On primary: ").append(info.isPrimary()).append("\n")
-                            .append("    Considered as a correct value: ").append(info.isCorrect()).append("\n");
+                            .append("    Version: ").append(info.getVersion()).append("\n");
+
+                        if (info.getVersion() != null)
+                            sb.append("    Other cluster version: ").append(info.getVersion().otherClusterVersion()).append("\n");
+
+                        sb.append("    On primary: ").append(info.isPrimary()).append("\n");
 
                         if (info.isCorrect())
-                            fixed++;
+                            sb.append("    Considered as a CORRECT value!").append("\n");
                     }
+
+                    if (evt.getFixedEntries().containsKey(key))
+                        fixed++;
                 }
             }
 

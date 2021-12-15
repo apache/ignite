@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -189,6 +190,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
      * </ul>
      * @return Cache with explicit consistency check on each read and repair if necessary.
+     */
+    @IgniteExperimental
+    public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy);
+
+    /**
+     * <b>This is an experimental API.</b>
+     * <p>
+     * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt with default
+     * conflict resolve strategy.
+     *
+     * @see IgniteCache#withReadRepair(ReadRepairStrategy) for defails.
      */
     @IgniteExperimental
     public IgniteCache<K, V> withReadRepair();

@@ -294,7 +294,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        false,
+                        null,
                         DFLT_ALLOW_ATOMIC_OPS_IN_TX));
         }
         finally {
@@ -316,7 +316,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     false,
                     null,
                     false,
-                    false,
+                    null,
                     DFLT_ALLOW_ATOMIC_OPS_IN_TX));
     }
 
@@ -1566,7 +1566,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        false,
+                        null,
                         DFLT_ALLOW_ATOMIC_OPS_IN_TX));
         }
         finally {
@@ -1587,7 +1587,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     true,
                     null,
                     false,
-                    false,
+                    null,
                     DFLT_ALLOW_ATOMIC_OPS_IN_TX));
         }
         finally {

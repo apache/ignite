@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -85,58 +86,12 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> {
+            (ReadRepairData data) -> repairIfPossible.accept(data, () -> {
                 boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
 
-                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    // Recovery (inside tx).
-                    if (all)
-                        GETALL_CHECK_AND_FIX.accept(data);
-                    else
-                        GET_CHECK_AND_FIX.accept(data);
-
-                    check(data, fixByOtherTx, true); // Checks (inside tx).
-
-                    try {
-                        tx.commit();
-                    }
-                    catch (TransactionRollbackException e) {
-                        fail("Should not happen. " + e);
-                    }
-                }
-
-                check(data, !fixByOtherTx, true); // Checks (outside tx).
-            });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void testGetNull(Ignite initiator) throws Exception {
-        prepareAndCheck(
-            initiator,
-            1,
-            raw,
-            async,
-            misses,
-            nulls,
-            (ReadRepairData data) -> {
-                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GET_NULL.accept(data);
-
-                    checkEventMissed();
-
-                    try {
-                        tx.commit();
-                    }
-                    catch (TransactionRollbackException e) {
-                        fail("Should not happen. " + e);
-                    }
-                }
-
-                GET_NULL.accept(data); // Checks (outside tx).
-
-                checkEventMissed();
-            });
+                testReadRepair(initiator, data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, fixByOtherTx, true);
+            }));
     }
 
     /** {@inheritDoc} */
@@ -148,28 +103,49 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> {
+            (ReadRepairData data) -> repairIfPossible.accept(data, () -> {
                 // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
-                boolean fixByOtherTx = true;
+                testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true, true);
+            }));
+    }
 
-                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    // Recovery (inside tx).
-                    if (all)
-                        CONTAINS_ALL_CHECK_AND_FIX.accept(data);
-                    else
-                        CONTAINS_CHECK_AND_FIX.accept(data);
+    /** {@inheritDoc} */
+    @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
+            raw,
+            async,
+            misses,
+            nulls,
+            (ReadRepairData data) -> testReadRepair(initiator, data, all ? GET_ALL_NULL : GET_NULL, false, false));
+    }
 
-                    check(data, fixByOtherTx, true); // Checks (inside tx).
+    /**
+     *
+     */
+    private void testReadRepair(Ignite initiator, ReadRepairData data, Consumer<ReadRepairData> readOp,
+        boolean fixByOtherTx, boolean hit) {
+        try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
+            // Recovery (inside tx).
+            readOp.accept(data);
 
-                    try {
-                        tx.commit();
-                    }
-                    catch (TransactionRollbackException e) {
-                        fail("Should not happen. " + e);
-                    }
-                }
+            if (hit) // Checks (inside tx).
+                check(data, null, fixByOtherTx); // Hit.
+            else
+                checkEventMissed(); // Miss.
 
-                check(data, !fixByOtherTx, true); // Checks (outside tx).
-            });
+            try {
+                tx.commit();
+            }
+            catch (TransactionRollbackException e) {
+                fail("Should not happen. " + e);
+            }
+        }
+
+        if (hit) // Checks (outside tx).
+            check(data, null, !fixByOtherTx); // Hit.
+        else
+            checkEventMissed(); // Miss.
     }
 }

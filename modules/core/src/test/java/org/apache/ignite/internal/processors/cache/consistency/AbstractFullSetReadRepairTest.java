@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.ReadRepairStrategy;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
@@ -39,24 +45,29 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
 
         assert keys.size() == 1;
 
         for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
             Integer key = entry.getKey();
-            Integer latest = entry.getValue().latest;
+            Integer fixed = entry.getValue().fixed;
 
-            Integer res =
-                raw ?
-                    async ?
-                        cache.withReadRepair().getEntryAsync(key).get().getValue() :
-                        cache.withReadRepair().getEntry(key).getValue() :
-                    async ?
-                        cache.withReadRepair().getAsync(key).get() :
-                        cache.withReadRepair().get(key);
+            Integer res;
 
-            if (latest != null)
-                assertEquals(latest, res);
+            if (raw) {
+                CacheEntry<Integer, Integer> rawEntry = async ?
+                    cache.withReadRepair(strategy).getEntryAsync(key).get() :
+                    cache.withReadRepair(strategy).getEntry(key);
+
+                res = rawEntry != null ? rawEntry.getValue() : null;
+            }
+            else
+                res = async ?
+                    cache.withReadRepair(strategy).getAsync(key).get() :
+                    cache.withReadRepair(strategy).get(key);
+
+            assertEquals(fixed, res);
         }
     };
 
@@ -68,33 +79,32 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
 
         assert !keys.isEmpty();
 
         if (raw) {
             Collection<CacheEntry<Integer, Integer>> res =
                 async ?
-                    cache.withReadRepair().getEntriesAsync(keys).get() :
-                    cache.withReadRepair().getEntries(keys);
+                    cache.withReadRepair(strategy).getEntriesAsync(keys).get() :
+                    cache.withReadRepair(strategy).getEntries(keys);
 
             for (CacheEntry<Integer, Integer> entry : res) {
-                Integer latest = data.data.get(entry.getKey()).latest;
+                Integer fixed = data.data.get(entry.getKey()).fixed;
 
-                if (latest != null)
-                    assertEquals(latest, entry.getValue());
+                assertEquals(fixed, entry.getValue());
             }
         }
         else {
             Map<Integer, Integer> res =
                 async ?
-                    cache.withReadRepair().getAllAsync(keys).get() :
-                    cache.withReadRepair().getAll(keys);
+                    cache.withReadRepair(strategy).getAllAsync(keys).get() :
+                    cache.withReadRepair(strategy).getAll(keys);
 
             for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
-                Integer latest = data.data.get(entry.getKey()).latest;
+                Integer fixed = data.data.get(entry.getKey()).fixed;
 
-                if (latest != null)
-                    assertEquals(latest, entry.getValue());
+                assertEquals(fixed, entry.getValue());
             }
         }
     };
@@ -107,22 +117,53 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
 
         assert keys.size() == 1;
 
         for (Integer key : data.data.keySet()) { // Once.
-            Integer missed = key * -1; // Negative to gain null.
+            Integer missed = -key; // Negative to gain null.
 
             Object res =
                 raw ?
                     async ?
-                        cache.withReadRepair().getEntryAsync(missed).get() :
-                        cache.withReadRepair().getEntry(missed) :
+                        cache.withReadRepair(strategy).getEntryAsync(missed).get() :
+                        cache.withReadRepair(strategy).getEntry(missed) :
                     async ?
-                        cache.withReadRepair().getAsync(missed).get() :
-                        cache.withReadRepair().get(missed);
+                        cache.withReadRepair(strategy).getAsync(missed).get() :
+                        cache.withReadRepair(strategy).get(missed);
 
             assertEquals(null, res);
+        }
+    };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> GET_ALL_NULL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        boolean raw = data.raw;
+        boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
+
+        Set<Integer> missed = keys.stream().map(key -> -key).collect(Collectors.toCollection(TreeSet::new)); // Negative to gain null.
+
+        if (raw) {
+            Collection<CacheEntry<Integer, Integer>> res =
+                async ?
+                    cache.withReadRepair(strategy).getEntriesAsync(missed).get() :
+                    cache.withReadRepair(strategy).getEntries(missed);
+
+            assertTrue(res.isEmpty());
+        }
+        else {
+            Map<Integer, Integer> res =
+                async ?
+                    cache.withReadRepair(strategy).getAllAsync(missed).get() :
+                    cache.withReadRepair(strategy).getAll(missed);
+
+            assertTrue(res.isEmpty());
         }
     };
 
@@ -133,15 +174,19 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
 
         assert keys.size() == 1;
 
-        for (Integer key : data.data.keySet()) { // Once.
-            boolean res = async ?
-                cache.withReadRepair().containsKeyAsync(key).get() :
-                cache.withReadRepair().containsKey(key);
+        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
+            Integer key = entry.getKey();
+            Integer fixed = entry.getValue().fixed;
 
-            assertEquals(true, res);
+            boolean res = async ?
+                cache.withReadRepair(strategy).containsKeyAsync(key).get() :
+                cache.withReadRepair(strategy).containsKey(key);
+
+            assertEquals(fixed != null, res);
         }
     };
 
@@ -152,45 +197,102 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         boolean async = data.async;
+        ReadRepairStrategy strategy = data.strategy;
 
         boolean res = async ?
-            cache.withReadRepair().containsKeysAsync(keys).get() :
-            cache.withReadRepair().containsKeys(keys);
+            cache.withReadRepair(strategy).containsKeysAsync(keys).get() :
+            cache.withReadRepair(strategy).containsKeys(keys);
 
-        assertEquals(true, res);
+        boolean allFixed = true;
+
+        for (Integer key : keys) {
+            Integer fixed = data.data.get(key).fixed;
+
+            if (fixed == null)
+                allFixed = false;
+        }
+
+        assertEquals(allFixed, res);
     };
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> CHECK_FIXED = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        boolean raw = data.raw;
+    protected static final BiConsumer<ReadRepairData, IgniteIrreparableConsistencyViolationException> CHECK_FIXED =
+        (data, e) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            boolean raw = data.raw;
 
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
-            Integer key = entry.getKey();
-            Integer latest = entry.getValue().latest;
+            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
+                Integer key = entry.getKey();
 
-            Integer res = raw ?
-                cache.getEntry(key).getValue() :
-                cache.get(key);
+                // Checking only fixed entries, while entries listed at exception were not fixed.
+                if (e != null && (e.irreparableKeys().contains(key) || e.keys().contains(key)))
+                    continue;
 
-            if (latest != null)
-                assertEquals(latest, res);
+                Integer fixed = entry.getValue().fixed;
+
+                Integer res;
+
+                if (raw) {
+                    CacheEntry<Integer, Integer> rawEntry = cache.getEntry(key);
+
+                    res = rawEntry != null ? rawEntry.getValue() : null;
+                }
+                else
+                    res = cache.get(key);
+
+                assertEquals(fixed, res);
+            }
+        };
+
+    /**
+     *
+     */
+    protected final BiConsumer<ReadRepairData, Runnable> repairIfPossible = (data, r) -> {
+        try {
+            r.run();
+
+            assertTrue(data.repairable());
+        }
+        catch (Exception e) {
+            Throwable cause = e.getCause();
+
+            assertTrue(cause instanceof IgniteIrreparableConsistencyViolationException);
+            assertFalse(data.repairable());
+
+            check(data, (IgniteIrreparableConsistencyViolationException)cause, true);
         }
     };
 
     /**
      * @param data Data.
      */
-    protected void check(ReadRepairData data, boolean checkEvtRecorded, boolean checkFixed) {
-        if (checkEvtRecorded)
-            checkEvent(data, checkFixed);
+    protected void check(ReadRepairData data, IgniteIrreparableConsistencyViolationException e, boolean evtRecorded) {
+        Collection<?> irreparableKeys = e != null ? e.irreparableKeys() : null;
+
+        if (e != null) {
+            Collection<?> keys = e.keys();
+
+            if (keys != null)
+                assertTrue(Collections.disjoint(keys, irreparableKeys));
+
+            Collection<?> plannedToBeIrreparableKeys = data.data.entrySet().stream()
+                .filter(entry -> !entry.getValue().repairable)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+            assertEquals(plannedToBeIrreparableKeys, irreparableKeys);
+        }
+
+        assertEquals(irreparableKeys == null, data.repairable());
+
+        if (evtRecorded)
+            checkEvent(data, e);
         else
             checkEventMissed();
 
-        if (checkFixed)
-            CHECK_FIXED.accept(data);
+        CHECK_FIXED.accept(data, e);
     }
 
     /**
@@ -200,7 +302,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     public void test() throws Exception {
         for (Ignite node : G.allGrids()) {
             testGetVariations(node);
-            testGetNull(node);
+            testGetNullVariations(node);
             testContainsVariations(node);
         }
     }
@@ -214,7 +316,19 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         testGet(initiator, 2, true); // less than backups
         testGet(initiator, 3, true); // equals to backups
         testGet(initiator, 4, true); // equals to backups + primary
-        testGet(initiator, 10, true); // more than backups
+        testGet(initiator, 10, true); // more than backups + primary
+    }
+
+    /**
+     *
+     */
+    private void testGetNullVariations(Ignite initiator) throws Exception {
+        testGetNull(initiator, 1, false); // just get
+        testGetNull(initiator, 1, true); // 1 (all keys available at primary)
+        testGetNull(initiator, 2, true); // less than backups
+        testGetNull(initiator, 3, true); // equals to backups
+        testGetNull(initiator, 4, true); // equals to backups + primary
+        testGetNull(initiator, 10, true); // more than backups + primary
     }
 
     /**
@@ -226,7 +340,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         testContains(initiator, 2, true); // less than backups
         testContains(initiator, 3, true); // equals to backups
         testContains(initiator, 4, true); // equals to backups + primary
-        testContains(initiator, 10, true); // more than backups
+        testContains(initiator, 10, true); // more than backups + primary
     }
 
     /**
@@ -237,7 +351,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    protected abstract void testGetNull(Ignite initiator) throws Exception;
+    protected abstract void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception;
 
     /**
      *
