@@ -134,7 +134,7 @@ public class SnapshotRestoreProcess {
      * Future to be completed when the cache restore process is complete. By default, this is a stub.
      * When the process is started the future is recreated on the initiator node and passed to the user.
      */
-    private volatile ClusterSnapshotFuture fut = new ClusterSnapshotFuture();
+    private volatile ClusterSnapshotFuture fut;
 
     /** Current snapshot restore operation context (will be {@code null} when the operation is not running). */
     private volatile SnapshotRestoreContext opCtx;
@@ -346,7 +346,7 @@ public class SnapshotRestoreProcess {
 
         ClusterSnapshotFuture fut0 = fut;
 
-        return fut0.isDone() ? null : fut0.name;
+        return fut0 != null ? fut0.name : null;
     }
 
     /**
@@ -414,6 +414,15 @@ public class SnapshotRestoreProcess {
      * Finish local cache group restore process.
      *
      * @param reqId Request ID.
+     */
+    private void finishProcess(UUID reqId) {
+        finishProcess(reqId, null);
+    }
+
+    /**
+     * Finish local cache group restore process.
+     *
+     * @param reqId Request ID.
      * @param err Error, if any.
      */
     private void finishProcess(UUID reqId, @Nullable Throwable err) {
@@ -433,7 +442,9 @@ public class SnapshotRestoreProcess {
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
 
-            if (!fut0.isDone() && reqId.equals(fut0.rqId)) {
+            if (fut0 != null && reqId.equals(fut0.rqId)) {
+                fut = null;
+
                 ctx.pools().getSystemExecutorService().submit(() -> {
                     fut0.endTime = U.currentTimeMillis();
 
@@ -472,7 +483,7 @@ public class SnapshotRestoreProcess {
         synchronized (this) {
             opCtx0 = opCtx;
 
-            if (!fut.isDone() && fut.name.equals(snpName)) {
+            if (fut != null && fut.name.equals(snpName)) {
                 fut0 = fut;
 
                 fut0.interruptEx = reason;
@@ -584,7 +595,7 @@ public class SnapshotRestoreProcess {
 
                 ClusterSnapshotFuture fut0 = fut;
 
-                if (!fut0.isDone() && fut0.interruptEx != null)
+                if (fut0 != null && fut0.interruptEx != null)
                     opCtx0.errHnd.accept(fut0.interruptEx);
             }
 
@@ -1460,7 +1471,7 @@ public class SnapshotRestoreProcess {
 
             metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
 
-            startTime = 0;
+            startTime = U.currentTimeMillis();
         }
 
         /**
