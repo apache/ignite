@@ -30,6 +30,8 @@ import java.util.concurrent.Executors;
 /**
  * A simple TCP server that echoes back every byte that it receives. Can be used when some protocol-neutral property
  * of a TCP client (like socket closure handling) needs to be tested.
+ *
+ * This server must be operated (closed, address obtained, etc) from the same thread in which it was started.
  */
 class EchoServer implements AutoCloseable {
     /***/
