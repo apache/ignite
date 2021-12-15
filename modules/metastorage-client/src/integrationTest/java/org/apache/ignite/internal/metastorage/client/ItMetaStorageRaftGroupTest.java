@@ -27,18 +27,16 @@ import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.metastorage.server.KeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.raft.Loza;
@@ -276,13 +274,12 @@ public class ItMetaStorageRaftGroupTest {
             };
         });
 
-        Map<RaftServer, RaftGroupService> raftServersRaftGroups = prepareJraftMetaStorages(
-                replicatorStartedCounter,
+        List<Pair<RaftServer, RaftGroupService>> raftServersRaftGroups = prepareJraftMetaStorages(replicatorStartedCounter,
                 replicatorStoppedCounter);
 
-        Set<RaftServer> raftServers = raftServersRaftGroups.keySet();
+        List<RaftServer> raftServers = raftServersRaftGroups.stream().map(p -> p.key).collect(Collectors.toList());
 
-        NetworkAddress oldLeader = raftServersRaftGroups.get(metaStorageRaftSrv1).leader().address();
+        NetworkAddress oldLeader = raftServersRaftGroups.get(0).value.leader().address();
 
         Optional<RaftServer> oldLeaderServer = raftServers.stream()
                 .filter(s -> s.clusterService().topologyService().localMember().address().equals(oldLeader)).findFirst();
@@ -295,9 +292,14 @@ public class ItMetaStorageRaftGroupTest {
             fail();
         }
 
-        MetaStorageService metaStorageSvc = new MetaStorageServiceImpl(raftServersRaftGroups.get(liveServer.get()), "some_node");
+        RaftGroupService raftGroupServiceOfLiveServer = raftServersRaftGroups.stream()
+                .filter(p -> p.key.equals(liveServer.get()))
+                .findFirst().get().value;
 
-        Cursor<Entry> cursor = metaStorageSvc.range(EXPECTED_RESULT_ENTRY1.key(), new ByteArray(new byte[] {4}));
+        MetaStorageService metaStorageSvc = new MetaStorageServiceImpl(
+                raftGroupServiceOfLiveServer, "some_node");
+
+        Cursor<Entry> cursor = metaStorageSvc.range(EXPECTED_RESULT_ENTRY1.key(), new ByteArray(new byte[]{4}));
 
         assertTrue(TestUtils.waitForCondition(
                 () -> replicatorStartedCounter.get() == 2, 5_000), replicatorStartedCounter.get() + "");
@@ -306,7 +308,8 @@ public class ItMetaStorageRaftGroupTest {
 
         assertEquals(EXPECTED_RESULT_ENTRY1, (cursor.iterator().next()));
 
-        // ensure that leader has not been changed
+        // Ensure that leader has not been changed.
+        // In a stable topology unexpected leader election shouldn't happen.
         assertTrue(TestUtils.waitForCondition(
                 () -> replicatorStartedCounter.get() == 2, 5_000), replicatorStartedCounter.get() + "");
 
@@ -315,9 +318,9 @@ public class ItMetaStorageRaftGroupTest {
         oldLeaderServer.get().stop();
         cluster.stream().filter(c -> c.topologyService().localMember().address().equals(oldLeader)).findFirst().get().stop();
 
-        raftServersRaftGroups.get(liveServer.get()).refreshLeader().get();
+        raftGroupServiceOfLiveServer.refreshLeader().get();
 
-        assertNotSame(oldLeader, raftServersRaftGroups.get(liveServer.get()).leader().address());
+        assertNotSame(oldLeader, raftGroupServiceOfLiveServer.leader().address());
 
         // ensure that leader has been changed only once
         assertTrue(TestUtils.waitForCondition(
@@ -329,10 +332,8 @@ public class ItMetaStorageRaftGroupTest {
         assertEquals(EXPECTED_RESULT_ENTRY2, (cursor.iterator().next()));
     }
 
-    private Map<RaftServer, RaftGroupService> prepareJraftMetaStorages(
-            AtomicInteger replicatorStartedCounter,
-            AtomicInteger replicatorStoppedCounter
-    ) throws InterruptedException, ExecutionException {
+    private List<Pair<RaftServer, RaftGroupService>> prepareJraftMetaStorages(AtomicInteger replicatorStartedCounter,
+            AtomicInteger replicatorStoppedCounter) throws InterruptedException, ExecutionException {
         List<Peer> peers = new ArrayList<>();
 
         cluster.forEach(c -> peers.add(new Peer(c.topologyService().localMember().address())));
@@ -408,11 +409,11 @@ public class ItMetaStorageRaftGroupTest {
                 "Leaders: " + metaStorageRaftGrpSvc1.leader() + " " + metaStorageRaftGrpSvc2.leader() + " " + metaStorageRaftGrpSvc3
                         .leader());
 
-        Map<RaftServer, RaftGroupService> raftServersRaftGroups = new HashMap<>();
+        List<Pair<RaftServer, RaftGroupService>> raftServersRaftGroups = new ArrayList<>();
 
-        raftServersRaftGroups.put(metaStorageRaftSrv1, metaStorageRaftGrpSvc1);
-        raftServersRaftGroups.put(metaStorageRaftSrv2, metaStorageRaftGrpSvc2);
-        raftServersRaftGroups.put(metaStorageRaftSrv3, metaStorageRaftGrpSvc3);
+        raftServersRaftGroups.add(new Pair<>(metaStorageRaftSrv1, metaStorageRaftGrpSvc1));
+        raftServersRaftGroups.add(new Pair<>(metaStorageRaftSrv2, metaStorageRaftGrpSvc2));
+        raftServersRaftGroups.add(new Pair<>(metaStorageRaftSrv3, metaStorageRaftGrpSvc3));
 
         return raftServersRaftGroups;
     }
@@ -474,6 +475,22 @@ public class ItMetaStorageRaftGroupTest {
             int val = replicatorStoppedCounter.incrementAndGet();
 
             LOG.info("Replicator has been destroyed {} {}", peer, val);
+        }
+    }
+
+    /**
+     * Internal pair implementation.
+     *
+     * @param <K> Key
+     * @param <V> Value
+     */
+    private static class Pair<K, V> {
+        private final K key;
+        private final V value;
+
+        Pair(K key, V value) {
+            this.key = key;
+            this.value = value;
         }
     }
 }
