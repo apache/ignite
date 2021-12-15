@@ -27,7 +27,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -55,13 +57,17 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
      * @param topNodes Topology nodes.
      * @return Validation result.
      */
-    protected final CacheGroupValidation validateCacheGroup(CacheGroupContext grp, Collection<ClusterNode> topNodes) {
+    protected final CacheGroupValidation validateCacheGroup(
+        CacheGroupContext grp,
+        Collection<ClusterNode> topNodes,
+        IgnitePluginProcessor plugins
+    ) {
         Collection<Integer> lostParts = grp.isLocal() ?
             Collections.<Integer>emptyList() : grp.topology().lostPartitions();
 
-        boolean valid = true;
+        boolean valid = CU.validateTopologyExternal(plugins, topNodes);
 
-        if (!grp.systemCache()) {
+        if (!grp.systemCache() && valid) {
             TopologyValidator validator = grp.topologyValidator();
 
             if (validator != null)

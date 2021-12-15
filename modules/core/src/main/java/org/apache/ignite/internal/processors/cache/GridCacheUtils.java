@@ -110,7 +110,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
+import org.apache.ignite.plugin.PluggableTopologyValidator;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
@@ -2160,28 +2160,16 @@ public class GridCacheUtils {
     }
 
     /** */
-    @Nullable public static TopologyValidator cacheExternalTopologyValidator(
-        IgnitePluginProcessor plugins,
-        String cacheName
-    ) throws IgniteCheckedException {
-        TopologyValidator res = null;
+    public static boolean validateTopologyExternal(IgnitePluginProcessor plugins, Collection<ClusterNode> topNodes) {
+        PluggableTopologyValidator[] extTopValidator = plugins.extensions(PluggableTopologyValidator.class);
 
-        CacheTopologyValidatorProvider[] topValidatorProviders = plugins.extensions(CacheTopologyValidatorProvider.class);
-
-        if (!F.isEmpty(topValidatorProviders)) {
-            for (CacheTopologyValidatorProvider topValidatorProvider : topValidatorProviders) {
-                TopologyValidator cacheTopValidator = topValidatorProvider.create(cacheName);
-
-                if (cacheTopValidator != null) {
-                    if (res != null)
-                        throw new IgniteCheckedException("Multiple implementations of cache topology validator were" +
-                            " found across configured Ignite plugins [cacheName=" + cacheName + ']');
-
-                    res = cacheTopValidator;
-                }
+        if (!F.isEmpty(extTopValidator)) {
+            for (PluggableTopologyValidator validator : extTopValidator) {
+                if (!validator.validate(topNodes))
+                    return false;
             }
         }
 
-        return res;
+        return true;
     }
 }

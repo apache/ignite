@@ -26,13 +26,11 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluggableTopologyValidator;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /** */
@@ -71,6 +69,13 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** */
@@ -131,26 +136,18 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(CacheTopologyValidatorProvider.class, new TestTopologyValidatorProvider());
+            registry.registerExtension(PluggableTopologyValidator.class, new TestTopologyValidator());
         }
     }
 
     /** */
-    private static class TestTopologyValidatorProvider implements CacheTopologyValidatorProvider {
+    private static class TestTopologyValidator implements PluggableTopologyValidator {
         /** {@inheritDoc} */
-        @Override public @Nullable TopologyValidator create(String cacheName) {
-            if (DEFAULT_CACHE_NAME.equals(cacheName)) {
-                return new TopologyValidator() {
-                    @Override public boolean validate(Collection<ClusterNode> nodes) {
-                        if (validatorInvokedLatch != null)
-                            validatorInvokedLatch.countDown();
+        @Override public boolean validate(Collection<ClusterNode> nodes) {
+            if (validatorInvokedLatch != null)
+                validatorInvokedLatch.countDown();
 
-                        return true;
-                    }
-                };
-            }
-
-            return null;
+            return true;
         }
     }
 }

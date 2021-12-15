@@ -18,13 +18,8 @@
 package org.apache.ignite.plugin;
 
 import org.apache.ignite.configuration.TopologyValidator;
-import org.jetbrains.annotations.Nullable;
 
 /** */
-public interface CacheTopologyValidatorProvider extends Extension {
-    /**
-     * @param cacheName Name of the cache.
-     * @return {@link TopologyValidator} instance.
-     */
-    @Nullable public TopologyValidator create(String cacheName);
+public interface PluggableTopologyValidator extends TopologyValidator, Extension {
+    // No-op.
 }
