@@ -82,7 +82,25 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestKeys(srvCache, arr -> arr);
         doTestKeys(cliCache, arr -> arr);
         try (IgniteClient thinClient = thinClient()) {
-            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME + "2")), arr -> arr);
+            // Using other cache because
+            // 1. Removed entry store in `GridCacheAdapter#map`
+            // 2. Bytes representation of multidimensional BinaryArray from thin client and Ignite node differ.
+            // 2a. Thin client reads array from byte stream and preserve pointer equality (look at #dataToTest() -> arr6).
+            // 2b. Client node invoke `CacheObjectBinaryProcessorImpl#marshallToBinary` before storing
+            // which breaks link equality of array
+            // 3. During invocation of `put` node inserts key representation from previous invocation of methods from client node.
+            // 4. This lead to `ClientCache#containsKey` cant' find key because
+            // it invokes search based equality ofbyte[] key representaion.
+            //
+            // This doesn't happen in `useBinaryArrays=false` becuase Ignite node obtain `Object[]`
+            // from byte stream and invoke marshallToBinary for it which alose breaks pointer equality
+            // therefore during serialization handle will NOT be used.
+            // In `useBinaryArrays=true` node read `BinaryArray` from stream which mean no need to marshall to binary
+            // therefore link equality preserved which mean during serialization handle will be used.
+            doTestKeys(
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME + (useBinaryArrays ? "2" : ""))),
+                arr -> arr
+            );
         }
     }
 
@@ -105,8 +123,11 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(cliCache, arr -> arr, true, false);
 
         try (IgniteClient thinClient = thinClient()) {
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr, false, false);
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), arr -> arr, true, false);
+            ClientCacheAdapter<Object, Object> c =
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestValue(c, arr -> arr, false, false);
+            doTestValue(c, arr -> arr, true, false);
         }
     }
 
@@ -118,8 +139,11 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(srvCache, TO_TEST_CLS, true, true);
         doTestValue(cliCache, TO_TEST_CLS, true, true);
         try (IgniteClient thinClient = thinClient()) {
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS, false, true);
-            doTestValue(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS, true, true);
+            ClientCacheAdapter<Object, Object> c =
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestValue(c, TO_TEST_CLS, false, true);
+            doTestValue(c, TO_TEST_CLS, true, true);
         }
     }
 
@@ -165,8 +189,11 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestPrimitivesArrays(cliCache);
 
         try (IgniteClient thinClient = thinClient()) {
-            doTestBoxedPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
-            doTestPrimitivesArrays(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
+            ClientCacheAdapter<Object, Object> c = new
+                ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestBoxedPrimitivesArrays(c);
+            doTestPrimitivesArrays(c);
         }
     }
 
