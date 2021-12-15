@@ -2073,7 +2073,9 @@ public class BinaryUtils {
 
         int len = in.readInt();
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        Object[] arr = (deserialize && !BinaryObject.class.isAssignableFrom(compType))
+            ? (Object[])Array.newInstance(compType, len)
+            : new Object[len];
 
         handles.setHandle(arr, hPos);
 
@@ -2110,7 +2112,7 @@ public class BinaryUtils {
             compClsName = doReadClassName(in);
 
         int len = in.readInt();
-        
+
         Object[] arr = new Object[len];
 
         BinaryArray res = isEnumArray
