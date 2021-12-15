@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  * Entry processor that adds argument to cache entry.
  */
 public class PlatformAddArgEntryProcessor implements CacheEntryProcessor<Object, Long, Long> {
+    /** {@inheritDoc} */
     @Override public Long process(MutableEntry<Object, Long> mutableEntry, Object... args)
             throws EntryProcessorException {
         Long val = (Long)args[0];

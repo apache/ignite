@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.GB;
 
 /** */
 public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocationTest {
-
+    /** */
     public static final long PETA_BYTE = 1024 * GB;
 
     /** {@inheritDoc} */
@@ -126,6 +126,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         awaitPartitionMapExchange();
     }
 
+    /** */
     @NotNull private IgniteConfiguration cfgWithHugeRegion(String name) throws Exception {
         IgniteConfiguration cfg = getConfiguration(name);
 

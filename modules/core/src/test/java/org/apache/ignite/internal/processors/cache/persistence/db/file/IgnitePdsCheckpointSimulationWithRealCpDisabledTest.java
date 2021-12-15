@@ -1114,6 +1114,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      */
     private static class PartitionMetaStateRecordExcludeIterator
         extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+        /** */
         private PartitionMetaStateRecordExcludeIterator(
             GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
             super(it);

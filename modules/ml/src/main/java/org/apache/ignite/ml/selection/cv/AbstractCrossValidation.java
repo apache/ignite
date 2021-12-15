@@ -125,7 +125,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
      * Finds the best set of hyper-parameters based on Genetic Programming approach.
      */
     private CrossValidationResult scoreEvolutionAlgorithmSearchHyperparameterOptimization() {
-        EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy) paramGrid.getHyperParameterTuningStrategy();
+        EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy)paramGrid.getHyperParameterTuningStrategy();
 
         List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIdx()).generate();
 
@@ -180,7 +180,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
      * Finds the best set of hyperparameters based on Random Serach.
      */
     private CrossValidationResult scoreRandomSearchHyperparameterOptimization() {
-        RandomStrategy stgy = (RandomStrategy) paramGrid.getHyperParameterTuningStrategy();
+        RandomStrategy stgy = (RandomStrategy)paramGrid.getHyperParameterTuningStrategy();
 
         List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIdx()).generate();
 
@@ -192,7 +192,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         List<Double[]> rndParamSets = paramSetsCp.subList(0, stgy.getMaxTries());
 
         List<IgniteSupplier<TaskResult>> tasks = rndParamSets.stream()
-            .map(paramSet -> (IgniteSupplier<TaskResult>) (() -> calculateScoresForFixedParamSet(paramSet)))
+            .map(paramSet -> (IgniteSupplier<TaskResult>)(() -> calculateScoresForFixedParamSet(paramSet)))
             .collect(Collectors.toList());
 
         List<TaskResult> taskResults = environment.parallelismStrategy().submit(tasks).stream()
@@ -213,7 +213,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         CrossValidationResult cvRes = new CrossValidationResult();
 
         List<IgniteSupplier<TaskResult>> tasks = paramSets.stream()
-            .map(paramSet -> (IgniteSupplier<TaskResult>) (() -> calculateScoresForFixedParamSet(paramSet)))
+            .map(paramSet -> (IgniteSupplier<TaskResult>)(() -> calculateScoresForFixedParamSet(paramSet)))
             .collect(Collectors.toList());
 
         List<TaskResult> taskResults = environment.parallelismStrategy().submit(tasks).stream()

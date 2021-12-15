@@ -81,6 +81,7 @@ public class TreeNode implements IgniteModel<Vector, Double> {
         this.depth = 1;
     }
 
+    /** */
     public TreeNode() {
     }
 

@@ -93,6 +93,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
             "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
     }
 
+    /** */
     protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }

@@ -144,7 +144,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         SearchRow intersection) {
 
         Value v = intersection.getValue(columnIds[0]);
-        Geometry g = ((ValueGeometry) v.convertTo(Value.GEOMETRY)).getGeometry();
+        Geometry g = ((ValueGeometry)v.convertTo(Value.GEOMETRY)).getGeometry();
 
         int seg = segmentsCount() == 1 ? 0 : H2Utils.context(filter.getSession()).segment();
 

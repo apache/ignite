@@ -3,6 +3,7 @@
 %define _libdir /usr/lib
 %define _log %{_var}/log
 %define _sharedstatedir /var/lib
+%define _binaries_in_noarch_packages_terminate_build 0
 
 
 #-------------------------------------------------------------------------------

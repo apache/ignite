@@ -33,6 +33,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -89,7 +90,7 @@ public class DmlUtils {
             // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
             // precise Date instance. Let's satisfy it.
             if (val instanceof Date && currCls != Date.class && expCls == Date.class)
-                return new Date(((Date) val).getTime());
+                return new Date(((Date)val).getTime());
 
             // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
             if (type == Value.UUID && currCls == byte[].class) {
@@ -111,6 +112,9 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
+            if (type == Value.ARRAY && val instanceof BinaryArray)
+                return val;
+
             if (type == Value.ARRAY && currCls != expCls) {
                 if (currCls != Object[].class) {
                     throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] " +
@@ -290,7 +294,7 @@ public class DmlUtils {
         }
 
         return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
-            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
     /**
@@ -402,7 +406,7 @@ public class DmlUtils {
         }
 
         return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
-            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
     /**

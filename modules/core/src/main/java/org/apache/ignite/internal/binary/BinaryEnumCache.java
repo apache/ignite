@@ -49,7 +49,7 @@ public class BinaryEnumCache {
             }
 
             if (ord < vals.length)
-                return (T) vals[ord];
+                return (T)vals[ord];
             else
                 throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
                     "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');

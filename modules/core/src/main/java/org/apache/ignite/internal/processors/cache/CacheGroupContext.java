@@ -639,7 +639,7 @@ public class CacheGroupContext {
     /**
      * @return Cache shared context.
      */
-    public GridCacheSharedContext shared() {
+    public GridCacheSharedContext<?, ?> shared() {
         return ctx;
     }
 
@@ -758,14 +758,7 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
-        return cacheOrGroupName(ccfg);
-    }
-
-    /**
-     * @return Group name if it is specified, otherwise cache name.
-     */
-    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
+        return CU.cacheOrGroupName(ccfg);
     }
 
     /**
@@ -878,7 +871,7 @@ public class CacheGroupContext {
         if (ccfg.getCacheMode() != LOCAL) {
             if (!ctx.kernalContext().clientNode()) {
                 ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>) this::processAffinityAssignmentRequest);
+                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
             }
 
             preldr = new GridDhtPreloader(this);
@@ -1060,17 +1053,7 @@ public class CacheGroupContext {
     public void start() throws IgniteCheckedException {
         GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
-        if (affCache != null)
-            aff = affCache;
-        else
-            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-                cacheOrGroupName(),
-                grpId,
-                ccfg.getAffinity(),
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
-            );
+        aff = affCache == null ? GridAffinityAssignmentCache.create(ctx.kernalContext(), ccfg.getAffinity(), ccfg) : affCache;
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));

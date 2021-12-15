@@ -74,7 +74,7 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
 
     /** {@inheritDoc} */
     @Override protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
-        ZookeeperDiscoverySpi clone = (ZookeeperDiscoverySpi) super.cloneDiscoverySpi(discoverySpi);
+        ZookeeperDiscoverySpi clone = (ZookeeperDiscoverySpi)super.cloneDiscoverySpi(discoverySpi);
 
         if (USE_TEST_CLUSTER)
             clone.setZkConnectionString(getTestClusterZkConnectionString());

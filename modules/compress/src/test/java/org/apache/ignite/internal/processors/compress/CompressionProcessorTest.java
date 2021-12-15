@@ -929,11 +929,13 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         checkCompressDecompress(page, getContents, false);
     }
 
+    /** */
     private void checkIo(PageIO io, ByteBuffer page) throws IgniteCheckedException {
         assertSame(io, PageIO.getPageIO(bufferAddress(page)));
         assertSame(io, PageIO.getPageIO(page));
     }
 
+    /** */
     private void checkCompressDecompress(ByteBuffer page, Function<ByteBuffer, ?> getPageContents, boolean fullPage)
         throws IgniteCheckedException {
         PageIO.setCrc(page, 0xABCDEF13);

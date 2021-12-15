@@ -5265,10 +5265,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private class MvccTxSnapshotFuture extends MvccSnapshotFuture {
+        /** {@inheritDoc} */
         @Override public void onResponse(MvccSnapshot res) {
             onResponse0(res, this);
         }
 
+        /** {@inheritDoc} */
         @Override public void onError(IgniteCheckedException err) {
             setRollbackOnly();
 

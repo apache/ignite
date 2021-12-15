@@ -113,7 +113,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             throw new IgniteClientException(ClientStatus.FAILED,
                     "Filter must be a BinaryObject: " + filter.getClass());
 
-        BinaryObjectImpl bo = (BinaryObjectImpl) filter;
+        BinaryObjectImpl bo = (BinaryObjectImpl)filter;
 
         switch (filterPlatform) {
             case ClientPlatform.JAVA: {
@@ -121,7 +121,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                     PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
                     CacheEntryEventSerializableFilter rmtFilter =
-                            (CacheEntryEventSerializableFilter) prx.factory(ctx.kernalContext()).create();
+                            (CacheEntryEventSerializableFilter)prx.factory(ctx.kernalContext()).create();
 
                     return FactoryBuilder.factoryOf(rmtFilter);
                 }

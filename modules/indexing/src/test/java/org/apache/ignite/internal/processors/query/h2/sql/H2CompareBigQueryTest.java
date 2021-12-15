@@ -767,6 +767,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             return id;
         }
 
+        /** */
         public Object key(boolean useColocatedData) {
             return useColocatedData ? new AffinityKey<>(id, rootOrderId) : id;
         }

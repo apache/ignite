@@ -59,13 +59,15 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
                     WeightedPredictionsAggregator predictionsAggregator,
                     IgniteFunction<Double, Double> internalToExternalLblMapping) {
 
-        super((List<DecisionTreeModel>) models, predictionsAggregator);
+        super((List<DecisionTreeModel>)models, predictionsAggregator);
         this.internalToExternalLblMapping = internalToExternalLblMapping;
     }
 
+    /** */
     private GDBModel() {
     }
 
+    /** */
     public GDBModel withLblMapping(IgniteFunction<Double, Double> internalToExternalLblMapping) {
         this.internalToExternalLblMapping = internalToExternalLblMapping;
         return this;

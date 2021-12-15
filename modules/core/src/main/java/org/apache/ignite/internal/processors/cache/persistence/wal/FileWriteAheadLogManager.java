@@ -521,8 +521,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         for (File f : walWorkDir0.listFiles())
                             size += f.length();
 
-                        for (File f : walArchiveDir0.listFiles())
-                            size += f.length();
+                        if (isArchiverEnabled()) {
+                            for (File f : walArchiveDir0.listFiles())
+                                size += f.length();
+                        }
 
                         return size;
                     }
@@ -1487,9 +1489,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 if (e instanceof StorageException)
-                    throw (StorageException) e;
+                    throw (StorageException)e;
 
-                throw e instanceof IOException ? (IOException) e : new IOException(e);
+                throw e instanceof IOException ? (IOException)e : new IOException(e);
             }
         }
         catch (IOException e) {
@@ -2660,7 +2662,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     public static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
         // Write record type.
-        buf.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
+        buf.put((byte)(WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
         // Write position.
         RecordV1Serializer.putPosition(buf, new WALPointer(idx, 0, 0));
@@ -2865,7 +2867,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     currDesc = zipFile;
             }
 
-            return (ReadFileHandle) super.initReadHandle(currDesc, start);
+            return (ReadFileHandle)super.initReadHandle(currDesc, start);
         }
 
         /** {@inheritDoc} */
@@ -2887,9 +2889,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (start != null) {
                 if (!F.isEmpty(descs)) {
-                    if (descs[0].idx() > start.index())
+                    if (descs[0].idx() > start.index()) {
                         throw new IgniteCheckedException("WAL history is too short " +
                             "[descs=" + Arrays.asList(descs) + ", start=" + start + ']');
+                    }
 
                     for (AbstractFileDescriptor desc : descs) {
                         if (desc.idx() == start.index()) {

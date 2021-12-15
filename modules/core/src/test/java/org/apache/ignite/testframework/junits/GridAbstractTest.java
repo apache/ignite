@@ -1424,7 +1424,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         m.setAccessible(true);
 
-        return (DiscoverySpi) m.invoke(discoverySpi);
+        return (DiscoverySpi)m.invoke(discoverySpi);
     }
 
     /**
@@ -1947,7 +1947,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         marsh.setContext(new MarshallerContextTestImpl());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
+        marsh.setBinaryContext(ctx, cfg);
 
         return marsh;
     }

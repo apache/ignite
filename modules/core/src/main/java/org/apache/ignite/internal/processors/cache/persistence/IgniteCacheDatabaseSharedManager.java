@@ -372,8 +372,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize(),
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
             ),
             persistenceEnabled
@@ -382,8 +382,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createVolatileDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize()
             ),
             false
         );
@@ -581,8 +581,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemRegionInitialSize(),
-            memCfg.getSystemRegionMaxSize()
+            memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+            memCfg.getSystemDataRegionConfiguration().getMaxSize()
         );
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
@@ -1279,7 +1279,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (plcCfg.getMemoryAllocator() == null)
+            plcCfg.setMemoryAllocator(memCfg.getMemoryAllocator());
+
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
+            trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1318,7 +1322,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File allocPath = buildAllocPath(plcCfg);
 
         return allocPath == null ?
-            new UnsafeMemoryProvider(log) :
+            new UnsafeMemoryProvider(log, plcCfg.getMemoryAllocator()) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath);

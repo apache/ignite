@@ -105,6 +105,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      */
     private final class UpdateRowHandler extends PageHandler<T, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -364,6 +365,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             this.maskPartId = maskPartId;
         }
 
+        /** {@inheritDoc} */
         @Override public Long run(
             int cacheId,
             long pageId,

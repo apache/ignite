@@ -45,8 +45,6 @@ class LoadType(IntEnum):
     LONG_TXS = 2
 
 
-# pylint: disable=W0223
-# pylint: disable=no-member
 class PmeFreeSwitchTest(IgniteTest):
     """
     Tests PME free switch scenarios.

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
  * List of extra arguments.
  */
 public enum FindAndDeleteGarbageArg implements CommandArg {
+    /** */
     DELETE("--delete");
 
     /** Argument name. */

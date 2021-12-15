@@ -148,10 +148,6 @@ public class IgniteBenchmarkArguments {
     private boolean collocated;
 
     /** */
-    @Parameter(names = {"-stripe", "--singleStripe"}, description = "Generate keys belonging to single stripe per node")
-    private boolean singleStripe;
-
-    /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
@@ -254,6 +250,10 @@ public class IgniteBenchmarkArguments {
     private int cachesCnt = 1;
 
     /** */
+    @Parameter(names = {"-opc", "--operationsPerCache"}, description = "Number of cache operations")
+    private int opsPerCache = 1;
+
+    /** */
     @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
     private boolean persistentStoreEnabled;
 
@@ -288,6 +288,7 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    /** */
     @ParametersDelegate
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
@@ -467,6 +468,7 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    /** */
     public void setRange(int newVal) {
         range = newVal;
     }
@@ -553,13 +555,6 @@ public class IgniteBenchmarkArguments {
      */
     public boolean collocated() {
         return collocated;
-    }
-
-    /**
-     * @return Generate keys for single stripe per node.
-     */
-    public boolean singleStripe() {
-        return singleStripe;
     }
 
     /**
@@ -814,6 +809,13 @@ public class IgniteBenchmarkArguments {
      */
     public Map<String, String> systemProperties() {
         return sysProps;
+    }
+
+    /**
+     * @return Operations per cache.
+     */
+    public int opsPerCache() {
+        return opsPerCache;
     }
 
     /** {@inheritDoc} */

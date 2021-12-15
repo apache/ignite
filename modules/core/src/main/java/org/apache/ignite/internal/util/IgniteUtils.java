@@ -65,8 +65,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -199,7 +201,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -233,6 +234,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
@@ -253,6 +255,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -6263,7 +6266,7 @@ public abstract class IgniteUtils {
             return -1;
         }
 
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return (attr instanceof Long) ? (Long)attr : -1;
     }
 
     /**
@@ -12029,29 +12032,32 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Broadcasts given job to nodes that support ignite feature.
+     * Broadcasts given job to nodes that match filter.
      *
      * @param kctx Kernal context.
      * @param job Ignite job.
      * @param srvrsOnly Broadcast only on server nodes.
-     * @param feature Ignite feature.
+     * @param nodeFilter Node filter.
      */
-    public static void broadcastToNodesSupportingFeature(
+    public static IgniteFuture<Void> broadcastToNodesWithFilterAsync(
         GridKernalContext kctx,
         IgniteRunnable job,
         boolean srvrsOnly,
-        IgniteFeatures feature
+        IgnitePredicate<ClusterNode> nodeFilter
     ) {
         ClusterGroup cl = kctx.grid().cluster();
 
         if (srvrsOnly)
             cl = cl.forServers();
 
-        ClusterGroup grp = cl.forPredicate(node -> IgniteFeatures.nodeSupports(node, feature));
+        ClusterGroup grp = nodeFilter != null ? cl.forPredicate(nodeFilter) : cl;
+
+        if (grp.nodes().isEmpty())
+            return new IgniteFinishedFutureImpl<>();
 
         IgniteCompute compute = kctx.grid().compute(grp);
 
-        compute.broadcast(job);
+        return compute.broadcastAsync(job);
     }
 
     /**
@@ -12265,4 +12271,24 @@ public abstract class IgniteUtils {
         return safeAbs(hash % size);
     }
 
+    /**
+     * Invokes {@link ServerSocket#accept()} method on the passed server socked, working around the
+     * https://bugs.openjdk.java.net/browse/JDK-8247750 in the process.
+     *
+     * @param srvrSock Server socket.
+     * @return New socket.
+     * @throws IOException If an I/O error occurs when waiting for a connection.
+     * @see ServerSocket#accept()
+     */
+    public static Socket acceptServerSocket(ServerSocket srvrSock) throws IOException {
+        while (true) {
+            try {
+                return srvrSock.accept();
+            }
+            catch (SocketTimeoutException e) {
+                if (srvrSock.getSoTimeout() > 0)
+                    throw e;
+            }
+        }
+    }
 }

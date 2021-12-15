@@ -39,7 +39,7 @@ public class JavaIgniteDataFrameJoinExample {
     /** Test cache name. */
     private static final String CACHE_NAME = "testCache";
 
-    /** */
+    /** @param args Command line arguments. */
     public static void main(String args[]) {
 
         setupServerAndData();

@@ -447,8 +447,8 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             Object sqlStrKey;
 
             if (keyValEntry.getKey() instanceof SqlStrConvertedValHolder) {
-                originalKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).originalVal();
-                sqlStrKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).sqlStrVal();
+                originalKey = ((SqlStrConvertedValHolder)keyValEntry.getKey()).originalVal();
+                sqlStrKey = ((SqlStrConvertedValHolder)keyValEntry.getKey()).sqlStrVal();
             }
             else {
                 originalKey = keyValEntry.getKey();

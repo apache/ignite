@@ -66,9 +66,9 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
+        usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
             WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-        Command.usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
+        usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
             "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
     }
 

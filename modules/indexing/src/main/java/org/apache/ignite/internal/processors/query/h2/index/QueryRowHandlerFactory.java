@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -36,12 +37,12 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings)
         throws IgniteCheckedException {
 
-        QueryIndexDefinition def = (QueryIndexDefinition) sdef;
+        QueryIndexDefinition def = (QueryIndexDefinition)sdef;
 
-        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
         List<IndexColumn> h2IdxColumns = def.getColumns();
 
-        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, keyTypeSettings);
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
         return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes, keyTypeSettings);
     }

@@ -132,9 +132,9 @@ include::{sourceCodeFile}[tag=key-value-operations,indent=0]
 -------------------------------------------------------------------------------
 
 === Executing Scan Queries
-Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a normal link:key-value-api/using-scan-queries[scan query].
+Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a regular link:key-value-api/using-cache-queries[scan query].
 
-The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If you don't provide any predicate, the query returns all cache entries.
+The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If there is no predicate provided, the query returns all cache entries.
 
 NOTE: The classes of the predicates must be available on the server nodes of the cluster.
 

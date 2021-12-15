@@ -173,7 +173,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final SimpleTestObject simpleTestObj = (SimpleTestObject) o;
+            final SimpleTestObject simpleTestObj = (SimpleTestObject)o;
 
             return val != null ? val.equals(simpleTestObj.val) : simpleTestObj.val == null;
 
@@ -241,7 +241,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final SerializableTestObject that = (SerializableTestObject) o;
+            final SerializableTestObject that = (SerializableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 
@@ -303,7 +303,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final ExternalizableTestObject that = (ExternalizableTestObject) o;
+            final ExternalizableTestObject that = (ExternalizableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 
@@ -362,7 +362,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final BinarylizableTestObject that = (BinarylizableTestObject) o;
+            final BinarylizableTestObject that = (BinarylizableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 

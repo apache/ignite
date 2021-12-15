@@ -535,7 +535,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
             durableBackgroundTaskTestLsnr = new DurableBackgroundTaskTestListener(ctx.database().metaStorage());
 
-            ((GridCacheDatabaseSharedManager) ctx.cache().context().database())
+            ((GridCacheDatabaseSharedManager)ctx.cache().context().database())
                     .addCheckpointListener(durableBackgroundTaskTestLsnr);
         }
 

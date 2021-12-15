@@ -125,7 +125,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         if (shouldThrottle) {
             int throttleLevel = cntr.getAndIncrement();
 
-            long throttleParkTimeNs = (long) (STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
+            long throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
 
             Thread curThread = Thread.currentThread();
 

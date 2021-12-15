@@ -55,7 +55,6 @@ def constructible(cls):
     def __enter__(self):
         return self
 
-    # pylint: disable=unused-argument
     def __exit__(self, *args, **kwargs):
         pass
 

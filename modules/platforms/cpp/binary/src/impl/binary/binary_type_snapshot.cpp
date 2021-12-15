@@ -23,8 +23,10 @@ namespace ignite
     {
         namespace binary
         {
-            IGNITE_IMPORT_EXPORT BinaryTypeSnapshot::BinaryTypeSnapshot(std::string typeName, int32_t typeId) :
+            IGNITE_IMPORT_EXPORT BinaryTypeSnapshot::BinaryTypeSnapshot(const std::string& typeName,
+                const std::string& affFieldName, int32_t typeId) :
                 typeName(typeName),
+                affFieldName(affFieldName),
                 typeId(typeId),
                 fieldIds(),
                 fields()
@@ -34,6 +36,7 @@ namespace ignite
 
             BinaryTypeSnapshot::BinaryTypeSnapshot(const BinaryTypeSnapshot& another) :
                 typeName(another.typeName),
+                affFieldName(another.affFieldName),
                 typeId(another.typeId),
                 fieldIds(another.fieldIds),
                 fields(another.fields)

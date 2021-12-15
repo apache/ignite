@@ -81,11 +81,13 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** */
     @Before
     public void before() throws Exception {
         cleanPersistenceDir();
     }
 
+    /** */
     @After
     public void after() throws Exception {
         stopAllGrids();

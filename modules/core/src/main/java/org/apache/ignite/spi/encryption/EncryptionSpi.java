@@ -77,6 +77,7 @@ public interface EncryptionSpi extends IgniteSpi {
      *
      * @param data Data to decrypt.
      * @param key Encryption key.
+     * @return Encrypted data.
      */
     byte[] decrypt(byte[] data, Serializable key);
 
@@ -85,6 +86,7 @@ public interface EncryptionSpi extends IgniteSpi {
      *
      * @param data Data to decrypt.
      * @param key Encryption key.
+     * @param res Destination of the decrypted data.
      */
     void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res);
 

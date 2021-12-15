@@ -601,6 +601,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         }
     }
 
+    /** */
     private static class TestStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
         @Override public CacheStore create() {

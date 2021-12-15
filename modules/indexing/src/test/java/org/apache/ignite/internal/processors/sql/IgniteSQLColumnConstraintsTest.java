@@ -87,6 +87,7 @@ public class IgniteSQLColumnConstraintsTest extends AbstractIndexingCommonTest {
             " DEFAULT 1.345)", INTERNAL_ERROR);
     }
 
+    /** */
     @Test
     public void testCreateTableWithTooLongDecimalDefault() throws Exception {
         checkSQLThrows("CREATE TABLE too_long_decimal_default(id INT PRIMARY KEY, val DECIMAL(4, 2)" +

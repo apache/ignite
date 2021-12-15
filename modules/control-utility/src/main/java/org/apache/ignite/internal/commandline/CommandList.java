@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
@@ -99,7 +100,10 @@ public enum CommandList {
     DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
 
     /** Command to manage performance statistics. */
-    PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand());
+    PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand()),
+
+    /** Command to check/repair consistency. */
+    CONSISTENCY("--consistency", new ConsistencyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

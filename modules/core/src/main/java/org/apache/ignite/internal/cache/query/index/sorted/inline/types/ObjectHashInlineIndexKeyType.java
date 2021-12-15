@@ -28,12 +28,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<JavaObjectIndexKey> {
     /** */
     public ObjectHashInlineIndexKeyType() {
-        super(IndexKeyTypes.JAVA_OBJECT, (short) 4);
+        super(IndexKeyTypes.JAVA_OBJECT, (short)4);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, JavaObjectIndexKey val, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type());
         PageUtils.putInt(pageAddr, off + 1, val.hashCode());
 
         return keySize + 1;

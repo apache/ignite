@@ -102,6 +102,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
         this(new BasicJdbcIpFinderDialect());
     }
 
+    /** @param jdbcDialect SQL dialect to use with {@link TcpDiscoveryJdbcIpFinder}. */
     public TcpDiscoveryJdbcIpFinder(JdbcIpFinderDialect jdbcDialect) {
         setShared(true);
 

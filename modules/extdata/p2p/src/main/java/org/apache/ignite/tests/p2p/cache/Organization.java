@@ -29,20 +29,24 @@ public class Organization {
     /** Address. */
     Address addr;
 
+    /** */
     public Organization(String title, Person head, Address addr) {
         this.title = title;
         this.head = head;
         this.addr = addr;
     }
 
+    /** */
     public String getTitle() {
         return title;
     }
 
+    /** */
     public Person getHead() {
         return head;
     }
 
+    /** */
     public Address getAddr() {
         return addr;
     }

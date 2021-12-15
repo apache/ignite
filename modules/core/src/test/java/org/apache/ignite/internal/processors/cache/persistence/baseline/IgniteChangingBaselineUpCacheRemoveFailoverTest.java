@@ -63,6 +63,7 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

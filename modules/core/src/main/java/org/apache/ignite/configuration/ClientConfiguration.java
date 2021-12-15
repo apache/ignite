@@ -141,6 +141,7 @@ public final class ClientConfiguration implements Serializable {
      * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
      *
      * @param addrs Host addresses.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setAddresses(String... addrs) {
         if (addrs != null)
@@ -158,6 +159,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param finder Finds server node addresses.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setAddressesFinder(ClientAddressFinder finder) {
         addrFinder = finder;
@@ -174,6 +176,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param tcpNoDelay whether Nagle's algorithm is enabled.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
@@ -190,6 +193,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param timeout Send/receive timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setTimeout(int timeout) {
         this.timeout = timeout;
@@ -206,6 +210,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param sndBufSize Send buffer size.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSendBufferSize(int sndBufSize) {
         this.sndBufSize = sndBufSize;
@@ -222,6 +227,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param rcvBufSize Send buffer size.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setReceiveBufferSize(int rcvBufSize) {
         this.rcvBufSize = rcvBufSize;
@@ -238,6 +244,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param binaryCfg Configuration for Ignite Binary objects.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -254,6 +261,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param sslMode SSL mode.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslMode(SslMode sslMode) {
         this.sslMode = sslMode;
@@ -270,6 +278,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store path.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStorePath(String newVal) {
         sslClientCertKeyStorePath = newVal;
@@ -286,6 +295,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStorePassword(String newVal) {
         sslClientCertKeyStorePwd = newVal;
@@ -302,6 +312,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store type.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStoreType(String newVal) {
         sslClientCertKeyStoreType = newVal;
@@ -318,6 +329,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store path.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStorePath(String newVal) {
         sslTrustCertKeyStorePath = newVal;
@@ -334,6 +346,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStorePassword(String newVal) {
         sslTrustCertKeyStorePwd = newVal;
@@ -350,6 +363,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store type.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStoreType(String newVal) {
         sslTrustCertKeyStoreType = newVal;
@@ -366,6 +380,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl key algorithm.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslKeyAlgorithm(String newVal) {
         sslKeyAlgorithm = newVal;
@@ -382,6 +397,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Flag indicating if certificate validation errors should be ignored.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustAll(boolean newVal) {
         sslTrustAll = newVal;
@@ -398,6 +414,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl protocol.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslProtocol(SslProtocol newVal) {
         sslProto = newVal;
@@ -414,6 +431,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal User name.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setUserName(String newVal) {
         userName = newVal;
@@ -430,6 +448,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal User password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setUserPassword(String newVal) {
         userPwd = newVal;
@@ -446,6 +465,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal SSL Context Factory.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslContextFactory(Factory<SSLContext> newVal) {
         sslCtxFactory = newVal;
@@ -465,6 +485,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets transactions configuration.
      *
+     * @param txCfg Transactions configuration.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setTransactionConfiguration(ClientTransactionConfiguration txCfg) {
@@ -474,7 +495,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets a value indicating whether partition awareness should be enabled.
+     * @return A value indicating whether partition awareness should be enabled.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
@@ -493,6 +514,7 @@ public final class ClientConfiguration implements Serializable {
      * <p>
      * When {@code false}, only one connection is established at a given moment to a random server node.
      *
+     * @param partitionAwarenessEnabled Value indicating whether partition awareness should be enabled.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setPartitionAwarenessEnabled(boolean partitionAwarenessEnabled) {
@@ -502,7 +524,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets reconnect throttling period.
+     * @return reconnect throttling period.
      */
     public long getReconnectThrottlingPeriod() {
         return reconnectThrottlingPeriod;
@@ -511,6 +533,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets reconnect throttling period.
      *
+     * @param reconnectThrottlingPeriod Reconnect throttling period.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setReconnectThrottlingPeriod(long reconnectThrottlingPeriod) {
@@ -520,7 +543,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets reconnect throttling retries.
+     * @return Reconnect throttling retries.
      */
     public int getReconnectThrottlingRetries() {
         return reconnectThrottlingRetries;
@@ -529,6 +552,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets reconnect throttling retries.
      *
+     * @param reconnectThrottlingRetries Reconnect throttling retries.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
@@ -538,7 +562,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Get retry limit.
+     * @return Retry limit.
      */
     public int getRetryLimit() {
         return retryLimit;
@@ -549,6 +573,7 @@ public final class ClientConfiguration implements Serializable {
      * are available, Ignite will retry the request on every connection. When this property is greater than zero,
      * Ignite will limit the number of retries.
      *
+     * @param retryLimit Retry limit.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setRetryLimit(int retryLimit) {

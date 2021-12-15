@@ -36,6 +36,7 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -50,11 +51,13 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
         startGrids(NODE_CNT);
     }
 
+    /** */
     @Test
     public void testWronglySetAffinityFunctionForLocalCache() {
         Ignite node = ignite(NODE_CNT - 1);

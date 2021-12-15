@@ -29,6 +29,7 @@ import org.junit.Test;
  * Test of absence of gaps between jobs in compute
  */
 public class IgniteComputeJobOneThreadTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         FifoQueueCollisionSpi colSpi = new FifoQueueCollisionSpi();
         colSpi.setParallelJobsNumber(1);

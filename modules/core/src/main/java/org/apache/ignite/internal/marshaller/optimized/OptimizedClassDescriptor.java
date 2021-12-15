@@ -544,7 +544,7 @@ class OptimizedClassDescriptor {
 
                                 serFieldsDesc.setAccessible(true);
 
-                                ObjectStreamField[] serFields = (ObjectStreamField[]) serFieldsDesc.get(null);
+                                ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
 
                                 for (int i = 0; i < serFields.length; i++) {
                                     ObjectStreamField serField = serFields[i];
@@ -1098,6 +1098,7 @@ class OptimizedClassDescriptor {
         /** Fields. */
         private final List<FieldInfo> fields;
 
+        /** */
         private final Map<String, Integer> nameToIndex;
 
         /**

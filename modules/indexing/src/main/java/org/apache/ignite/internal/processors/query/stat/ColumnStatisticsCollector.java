@@ -173,7 +173,7 @@ public class ColumnStatisticsCollector {
      */
     private static int averageSize(long size, long total, long nullsCnt) {
         long averageSizeLong = (total - nullsCnt > 0) ? (size / (total - nullsCnt)) : 0;
-        return (averageSizeLong > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) averageSizeLong;
+        return (averageSizeLong > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)averageSizeLong;
     }
 
     /**

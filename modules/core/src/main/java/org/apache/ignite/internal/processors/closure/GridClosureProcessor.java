@@ -1757,6 +1757,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             BinaryRawWriter rawWriter = writer.rawWriter();
 
@@ -1764,6 +1765,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             rawWriter.writeObject(arg);
         }
 
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             BinaryRawReader rawReader = reader.rawReader();
 
@@ -1856,10 +1858,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.rawWriter().writeObject(c);
         }
 
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             c = reader.rawReader().readObject();
         }
@@ -1943,10 +1947,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.rawWriter().writeObject(r);
         }
 
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             r = reader.rawReader().readObject();
         }

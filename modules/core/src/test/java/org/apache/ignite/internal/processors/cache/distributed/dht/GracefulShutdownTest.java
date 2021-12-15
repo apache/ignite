@@ -52,6 +52,7 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
     /** Listening test logger. */
     ListeningTestLogger listeningLog;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

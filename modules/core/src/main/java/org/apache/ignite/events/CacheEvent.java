@@ -167,6 +167,7 @@ public class CacheEvent extends EventAdapter {
      *      don't have it in deserialized form.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Name of the task if cache event was caused by an operation initiated within task execution.
      */
     public CacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
         boolean near, Object key, IgniteUuid xid, String txLbl, Object lockId, Object newVal, boolean hasNewVal,
@@ -228,6 +229,7 @@ public class CacheEvent extends EventAdapter {
     /**
      * Gets cache entry associated with event.
      *
+     * @param <K> Cache entry type.
      * @return Cache entry associated with event.
      */
     public <K> K key() {

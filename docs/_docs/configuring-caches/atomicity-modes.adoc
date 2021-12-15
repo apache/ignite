@@ -53,11 +53,7 @@ The `TRANSACTIONAL` mode adds a performance cost to cache operations and should 
 
 a| An experimental mode that implements multiversion concurrency control (MVCC) and supports both key-value transactions and SQL transactions. See link:transactions/mvcc[Multiversion Concurrency Control] for details about and limitations of this mode.
 
-[WARNING]
-====
-MVCC implementation is in beta and should not be considered for production.
-====
-
+CAUTION: `TRANSACTIONAL_SNAPSHOT` is deprecated since 2.12 and will be removed in the next releases.
 
 |===
 

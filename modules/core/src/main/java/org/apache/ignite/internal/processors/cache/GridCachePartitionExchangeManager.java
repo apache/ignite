@@ -657,7 +657,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         .onAffinityChangeMessage(evt.eventNode(), msg);
             }
             else if (customMsg instanceof DynamicCacheChangeFailureMessage) {
-                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage) customMsg;
+                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage)customMsg;
 
                 if (msg.exchangeId().topologyVersion().topologyVersion() >=
                     affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
@@ -665,7 +665,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         .onDynamicCacheChangeFail(evt.eventNode(), msg);
             }
             else if (customMsg instanceof SnapshotDiscoveryMessage
-                && ((SnapshotDiscoveryMessage) customMsg).needExchange()) {
+                && ((SnapshotDiscoveryMessage)customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
@@ -2669,7 +2669,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
             if (task instanceof GridDhtPartitionsExchangeFuture) {
-                GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture) task;
+                GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
                 if (fut.initialVersion().compareTo(resVer) > 0) {
                     if (log.isInfoEnabled()) {
@@ -3300,7 +3300,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             assert fut.changedAffinity() :
                                 "Reassignment request started for exchange future which didn't change affinity " +
-                                    "[exchId=" + exchId + ", fut=" + exchFut + ']';
+                                    "[exchId=" + exchId + ", fut=" + fut + ']';
 
                             if (fut.hasInapplicableNodesForRebalance()) {
                                 GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
@@ -3311,15 +3311,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (fut.topologyVersion().equals(lastAffChangedVer))
                                     exchFut = fut;
                                 else if (lastAffChangedVer.after(exchId.topologyVersion())) {
-                                    // There is a new exchange which should trigger rebalancing.
-                                    // This reassignment request can be skipped.
-                                    if (log.isInfoEnabled()) {
-                                        log.info("Partitions reassignment request skipped due to affinity was already changed" +
-                                            " [reassignTopVer=" + exchId.topologyVersion() +
-                                            ", lastAffChangedTopVer=" + lastAffChangedVer + ']');
-                                    }
+                                    exchId = lastFut.exchangeId();
 
-                                    continue;
+                                    exchFut = lastFut;
+
+                                    exchFut.copyInapplicableNodesFrom(fut);
                                 }
                             }
                         }
@@ -3519,13 +3515,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 long rebId = cnt;
 
+                                final GridDhtPartitionExchangeId finalExchId = exchId;
                                 rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                                     @Override public void apply(IgniteInternalFuture<Boolean> f) {
                                         U.log(log, "Rebalancing scheduled [order=" + rebList +
                                             ", top=" + finalR.topologyVersion() +
                                             ", rebalanceId=" + rebId +
-                                            ", evt=" + exchId.discoveryEventName() +
-                                            ", node=" + exchId.nodeId() + ']');
+                                            ", evt=" + finalExchId.discoveryEventName() +
+                                            ", node=" + finalExchId.nodeId() + ']');
 
                                         finalR.requestPartitions();
                                     }

@@ -113,6 +113,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         }
     }
 
+    /** */
     private void doPutRemoveAll(Random rnd, IgniteCache<Integer, DbValue> cache, Map<Integer, DbValue> map,
         int keysCnt, boolean grow) {
         int putCnt = grow ? 20 + rnd.nextInt(10) : 1 + rnd.nextInt(5);
@@ -873,6 +874,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             assertEquals(map.get(entry.getKey()), entry.getValue());
     }
 
+    /** */
     @Test
     public void testPutGetRemoveMultipleBackward() throws Exception {
         final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
@@ -1211,6 +1213,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         }
     }
 
+    /** */
     private void checkEmpty(final GridCacheAdapter internalCache, final Object key) throws Exception {
         if (internalCache.isNear()) {
             checkEmpty(((GridNearCacheAdapter)internalCache).dht(), key);

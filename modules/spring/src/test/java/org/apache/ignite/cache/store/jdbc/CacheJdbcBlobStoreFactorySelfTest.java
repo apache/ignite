@@ -117,7 +117,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If store parameters is not the same as in configuration xml.
      */
     private void checkStore(IgniteCache<Integer, String> cache, Class<?> dataSrcCls) throws Exception {
-        CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
+        CacheJdbcBlobStore store = (CacheJdbcBlobStore)cache.getConfiguration(CacheConfiguration.class).
             getCacheStoreFactory().create();
 
         assertEquals(USER_NAME, GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));

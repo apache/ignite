@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -174,7 +175,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             res.a("        Type name=" + type.name());
             res.a(U.nl());
 
-            String pk = "_key_PK";
+            String pk = QueryUtils.PRIMARY_KEY_INDEX;
             String tblName = type.tableName();
 
             res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), tblName, pk));

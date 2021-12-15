@@ -39,7 +39,7 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
      * 3) partially remove necessarily for the query statistics and check that query plan will be changed
      * 4) partially collect statistics for extra column and check that query plan still unable to get all statistics
      *      it wants
-     * 5) partially collect statistics for the necessarily column and check that the query plan will restore to optimal
+     * 5) partially collect statistics for the necсessarily column and check that the query plan will restore to optimal
      */
     @Test
     public void testPartialDeletionCollection() throws Exception {

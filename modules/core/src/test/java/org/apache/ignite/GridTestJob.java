@@ -29,6 +29,7 @@ public class GridTestJob extends ComputeJobAdapter {
     @LoggerResource
     private IgniteLogger log;
 
+    /** */
     CountDownLatch latch;
 
     /** */

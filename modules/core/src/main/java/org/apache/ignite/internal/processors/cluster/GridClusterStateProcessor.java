@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -498,7 +497,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         ctx.event().addLocalEventListener(
             event -> {
-                DiscoveryEvent discoEvt = (DiscoveryEvent) event;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)event;
 
                 if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
                     return;
@@ -1458,14 +1457,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 boolean client = ctx.clientNode();
 
                 try {
-                    if (ctx.service() instanceof GridServiceProcessor) {
-                        GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
-
-                        srvcProc.onUtilityCacheStarted();
-
-                        srvcProc.onActivate(ctx);
-                    }
-
                     ctx.dataStructures().onActivate(ctx);
 
                     ctx.task().onActivate(ctx);

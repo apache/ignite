@@ -420,24 +420,24 @@ public class CommandProcessor {
             if (isDdl(cmdNative))
                 runCommandNativeDdl(sql, cmdNative);
             else if (cmdNative instanceof SqlBulkLoadCommand) {
-                res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+                res = processBulkLoadCommand((SqlBulkLoadCommand)cmdNative, qryId);
 
                 unregister = false;
             }
             else if (cmdNative instanceof SqlSetStreamingCommand)
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
             else if (cmdNative instanceof SqlKillQueryCommand)
-                processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+                processKillQueryCommand((SqlKillQueryCommand)cmdNative);
             else if (cmdNative instanceof SqlKillComputeTaskCommand)
-                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+                processKillComputeTaskCommand((SqlKillComputeTaskCommand)cmdNative);
             else if (cmdNative instanceof SqlKillTransactionCommand)
-                processKillTxCommand((SqlKillTransactionCommand) cmdNative);
+                processKillTxCommand((SqlKillTransactionCommand)cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
-                processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
+                processKillServiceTaskCommand((SqlKillServiceCommand)cmdNative);
             else if (cmdNative instanceof SqlKillScanQueryCommand)
-                processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
+                processKillScanQueryCommand((SqlKillScanQueryCommand)cmdNative);
             else if (cmdNative instanceof SqlKillContinuousQueryCommand)
-                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
+                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
             else
                 processTxCommand(cmdNative, params);
         }
@@ -576,6 +576,7 @@ public class CommandProcessor {
             .map(t -> {
                 if (t.key().schema() == null) {
                     StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
                     return new StatisticsObjectConfiguration(key, t.columns().values(),
                         t.maxPartitionObsolescencePercent());
                 }
@@ -738,11 +739,11 @@ public class CommandProcessor {
                 ctx.security().dropUser(dropCmd.userName());
             }
             else if (cmd instanceof SqlAnalyzeCommand)
-                processAnalyzeCommand((SqlAnalyzeCommand) cmd);
+                processAnalyzeCommand((SqlAnalyzeCommand)cmd);
             else if (cmd instanceof SqlRefreshStatitsicsCommand)
-                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand) cmd);
+                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmd);
             else if (cmd instanceof SqlDropStatisticsCommand)
-                processDropStatisticsCommand((SqlDropStatisticsCommand) cmd);
+                processDropStatisticsCommand((SqlDropStatisticsCommand)cmd);
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -813,7 +814,7 @@ public class CommandProcessor {
                     newIdx, cmd.ifNotExists(), 0);
             }
             else if (cmdH2 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex) cmdH2;
+                GridSqlDropIndex cmd = (GridSqlDropIndex)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 

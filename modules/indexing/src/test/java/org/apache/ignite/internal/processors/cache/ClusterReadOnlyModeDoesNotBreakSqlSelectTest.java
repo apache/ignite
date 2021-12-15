@@ -67,8 +67,8 @@ public class ClusterReadOnlyModeDoesNotBreakSqlSelectTest extends GridCommonAbst
         cleanPersistenceDir();
     }
 
-    @Test
     /** */
+    @Test
     public void test() throws Exception {
         Ignite crd = startGridsMultiThreaded(2);
 

@@ -2839,6 +2839,7 @@ public class ZookeeperDiscoveryImpl {
             commErrFut.onTopologyChange(rtState.top); // This can add new event, notify out of event process loop.
     }
 
+    /** */
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
@@ -4431,6 +4432,7 @@ public class ZookeeperDiscoveryImpl {
      * See {@link #cleanupPreviousClusterData}.
      */
     private class ClientLocalNodeWatcher extends PreviousNodeWatcher {
+        /** */
         final CheckJoinErrorWatcher joinErrorWatcher;
 
         /**

@@ -126,6 +126,10 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      * @param key Key.
      * @param val Value.
      * @param oldVal Old value.
+     * @param qryType Type of the query.
+     * @param contQryFilter Continuous query filter.
+     * @param taskName Name of the task if event was caused by an operation initiated within task execution.
+     * @param row Result set read row.
      */
     public CacheQueryReadEvent(
         ClusterNode node,

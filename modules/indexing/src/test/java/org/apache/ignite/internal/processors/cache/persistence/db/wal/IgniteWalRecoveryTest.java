@@ -1753,7 +1753,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(CACHE_2);
                 }
@@ -1813,7 +1813,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(CACHE_2);
                 }
@@ -1913,10 +1913,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * BigObject for test purposes that don't fit in page size.
      */
     private static class BigObject {
+        /** */
         private final int index;
 
+        /** */
         private final byte[] payload = new byte[4096];
 
+        /** */
         BigObject(int index) {
             this.index = index;
             // Create pseudo-random array.
@@ -1925,6 +1928,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     payload[i] = (byte)index;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -1935,6 +1939,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 Arrays.equals(payload, bigObject.payload);
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(index, payload);
         }

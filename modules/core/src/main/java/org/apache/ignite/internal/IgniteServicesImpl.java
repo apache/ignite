@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
@@ -41,9 +43,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link org.apache.ignite.IgniteServices} implementation.
  */
-public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
+public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServicesEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default timeout. */
+    public static final long DFLT_TIMEOUT = 0;
 
     /** */
     private GridKernalContext ctx;
@@ -370,12 +375,71 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, 0);
+        return (T)serviceProxy(name, svcItf, sticky, DFLT_TIMEOUT);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        final long timeout) throws IgniteException {
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        final long timeout
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, (Supplier<ServiceCallContext>)null, timeout);
+    }
+
+    /** */
+    public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        final long timeout,
+        final boolean keepBinary
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, null, timeout, keepBinary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable ServiceCallContext callCtx
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, callCtx, DFLT_TIMEOUT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable ServiceCallContext callCtx,
+        final long timeout
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, callCtx != null ? () -> callCtx : null, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        final long timeout
+    ) throws IgniteException {
+        return serviceProxy(name, svcItf, sticky, callCtxProvider, timeout, false);
+    }
+
+    /** */
+    private <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        final long timeout,
+        final boolean keepBinary
+    ) {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
@@ -384,7 +448,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, callCtxProvider, timeout, keepBinary);
         }
         finally {
             unguard();

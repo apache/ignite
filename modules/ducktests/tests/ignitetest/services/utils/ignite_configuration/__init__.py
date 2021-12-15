@@ -21,6 +21,7 @@ from typing import NamedTuple
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
+from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
@@ -31,7 +32,6 @@ from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, 
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
-# pylint: disable=no-member
 class IgniteConfiguration(NamedTuple):
     """
     Ignite configuration.
@@ -64,6 +64,7 @@ class IgniteConfiguration(NamedTuple):
     local_event_listeners: str = None
     include_event_types: str = None
     event_storage_spi: str = None
+    log4j_config: str = IgnitePathAware.IGNITE_LOG_CONFIG_NAME
 
     def __prepare_ssl(self, test_globals, shared_root):
         """
@@ -98,7 +99,6 @@ class IgniteConfiguration(NamedTuple):
 
         return config
 
-    # pylint: disable=protected-access
     def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
@@ -141,7 +141,6 @@ class IgniteThinClientConfiguration(NamedTuple):
             return self._replace(ssl_params=ssl_params)
         return self
 
-    # pylint: disable=unused-argument,protected-access
     def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.

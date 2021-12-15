@@ -287,6 +287,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         @LoggerResource
         private IgniteLogger log;
 
+        /** {@inheritDoc} */
         @Override public Boolean apply(Object param) {
             counter++;
 
@@ -324,6 +325,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         @JobContextResource
         private ComputeJobContext jobCtx;
 
+        /** {@inheritDoc} */
         @Override public Object apply(Integer holdccTimeout) {
             assert holdccTimeout >= 2000;
 

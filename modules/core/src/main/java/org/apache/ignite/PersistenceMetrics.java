@@ -33,6 +33,8 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average number of WAL records per second written during the last time interval.
      */
     public float getWalLoggingRate();
 
@@ -42,11 +44,13 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average number of bytes per second written during the last time interval.
      */
     public float getWalWritingRate();
 
     /**
-     * Gets the current number of WAL segments in the WAL archive.
+     * @return The current number of WAL segments in the WAL archive.
      */
     public int getWalArchiveSegments();
 
@@ -57,6 +61,8 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average WAL fsync duration in microseconds over the last time interval.
      */
     public float getWalFsyncTimeAverage();
 
