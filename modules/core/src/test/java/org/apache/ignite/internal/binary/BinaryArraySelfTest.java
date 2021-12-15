@@ -93,7 +93,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             // it invokes search based equality on `byte[]` key representaion.
             //
             // This doesn't happen in `useBinaryArrays=false` becuase Ignite node obtain `Object[]`
-            // from byte stream and invoke marshallToBinary for it which alose breaks pointer equality
+            // from byte stream and invoke marshallToBinary for it which also breaks pointer equality
             // therefore during serialization handle will NOT be used.
             // In `useBinaryArrays=true` node read `BinaryArray` from stream which mean no need to marshall to binary
             // therefore link equality preserved which mean during serialization handle will be used.
