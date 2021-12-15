@@ -28,12 +28,14 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -262,6 +264,67 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateAggregateFunction(aggCall, (SqlAggFunction)aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        // Workaround for https://issues.apache.org/jira/browse/CALCITE-4923
+        if (node instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect)node;
+
+            if (select.getFrom() instanceof SqlJoin) {
+                boolean hasStar = false;
+
+                for (SqlNode expr : select.getSelectList()) {
+                    if (expr instanceof SqlIdentifier && ((SqlIdentifier)expr).isStar()
+                        && ((SqlIdentifier)expr).names.size() == 1)
+                        hasStar = true;
+                }
+
+                performJoinRewrites((SqlJoin)select.getFrom(), hasStar);
+            }
+        }
+
+        return super.performUnconditionalRewrites(node, underFrom);
+    }
+
+    /** Rewrites JOIN clause if required */
+    private void performJoinRewrites(SqlJoin join, boolean hasStar) {
+        if (join.getLeft() instanceof SqlJoin)
+            performJoinRewrites((SqlJoin)join.getLeft(), hasStar || join.isNatural());
+
+        if (join.getRight() instanceof SqlJoin)
+            performJoinRewrites((SqlJoin)join.getRight(), hasStar || join.isNatural());
+
+        // Join with USING should be rewriten if SELECT conatins "star" in projects, NATURAL JOIN also has other issues
+        // and should be rewritten in any case.
+        if (join.isNatural() || (join.getConditionType() == JoinConditionType.USING && hasStar)) {
+            // Default Calcite validator can't expand "star" for NATURAL joins and joins with USING if some columns
+            // of join sources are filtered out by the addToSelectList method, and the count of columns in the
+            // selectList not equals to the count of fields in the corresponding rowType. Since we do filtering in the
+            // addToSelectList method (exclude _KEY and _VAL columns), to workaround the expandStar limitation we can
+            // wrap each table to a subquery. In this case columns will be filtered out on the subquery level and
+            // rowType of the subquery will have the same cardinality as selectList.
+            join.setLeft(rewriteTableToQuery(join.getLeft()));
+            join.setRight(rewriteTableToQuery(join.getRight()));
+        }
+    }
+
+    /** Wrap table to subquery "SELECT * FROM table". */
+    private SqlNode rewriteTableToQuery(SqlNode from) {
+        SqlNode src = from.getKind() == SqlKind.AS ? ((SqlCall)from).getOperandList().get(0) : from;
+
+        if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
+            String alias = deriveAlias(from, 0);
+
+            SqlSelect expandedQry = new SqlSelect(SqlParserPos.ZERO, null,
+                SqlNodeList.of(SqlIdentifier.star(SqlParserPos.ZERO)), src, null, null, null,
+                null, null, null, null, null);
+
+            return SqlValidatorUtil.addAlias(expandedQry, alias);
+        }
+        else
+            return from;
     }
 
     /** {@inheritDoc} */

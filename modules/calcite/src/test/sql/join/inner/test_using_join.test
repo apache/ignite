@@ -53,6 +53,11 @@ SELECT t2.a, t2.b, t2.c FROM t1 JOIN t2 USING(d)
 statement error
 SELECT t2.a, t2.b, t2.c FROM t1 JOIN t2 USING(t1.a)
 
+query IIII
+SELECT * FROM t1 JOIN t2 USING(a,b)
+----
+1	2	3	3
+
 # CONTROVERSIAL:
 # we do not allow this because it is ambiguous: "b" can be bind to both "t1.b" or "t2.b" and this would give
 # different results SQLite allows this, PostgreSQL does not
