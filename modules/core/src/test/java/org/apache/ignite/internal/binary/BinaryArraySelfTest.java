@@ -89,8 +89,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             // 2b. Client node invoke `CacheObjectBinaryProcessorImpl#marshallToBinary` before storing
             // which breaks link equality of array
             // 3. During invocation of `put` node inserts key representation from previous invocation of methods from client node.
-            // 4. This lead to `ClientCache#containsKey` cant' find key because
-            // it invokes search based equality ofbyte[] key representaion.
+            // 4. This lead to `ClientCache#containsKey` can't find key because
+            // it invokes search based equality on `byte[]` key representaion.
             //
             // This doesn't happen in `useBinaryArrays=false` becuase Ignite node obtain `Object[]`
             // from byte stream and invoke marshallToBinary for it which alose breaks pointer equality
