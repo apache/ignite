@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.PluggableCacheTopologyValidator;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -54,24 +55,36 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
     /**
      * @param grp Cache group.
+     * @param plugins Plugin manager that is required to perform validation through plugins.
      * @param topNodes Topology nodes.
      * @return Validation result.
      */
     protected final CacheGroupValidation validateCacheGroup(
         CacheGroupContext grp,
-        Collection<ClusterNode> topNodes,
-        IgnitePluginProcessor plugins
+        IgnitePluginProcessor plugins,
+        Collection<ClusterNode> topNodes
     ) {
         Collection<Integer> lostParts = grp.isLocal() ?
             Collections.<Integer>emptyList() : grp.topology().lostPartitions();
 
-        boolean valid = CU.validateTopologyExternal(plugins, topNodes);
+        boolean valid = true;
 
-        if (!grp.systemCache() && valid) {
-            TopologyValidator validator = grp.topologyValidator();
+        if (!grp.systemCache()) {
+            PluggableCacheTopologyValidator[] pluggableTopValidators = plugins.extensions(PluggableCacheTopologyValidator.class);
 
-            if (validator != null)
-                valid = validator.validate(topNodes);
+            if (!F.isEmpty(pluggableTopValidators)) {
+                for (PluggableCacheTopologyValidator validator : pluggableTopValidators) {
+                    if (!(valid = validator.validate(grp.cacheOrGroupName(), topNodes)))
+                        break;
+                }
+            }
+
+            if (valid) {
+                TopologyValidator validator = grp.topologyValidator();
+
+                if (validator != null)
+                    valid = validator.validate(topNodes);
+            }
         }
 
         return new CacheGroupValidation(valid, lostParts);

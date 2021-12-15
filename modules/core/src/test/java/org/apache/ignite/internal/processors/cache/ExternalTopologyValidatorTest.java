@@ -17,26 +17,38 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteCache;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluggableTopologyValidator;
+import org.apache.ignite.plugin.PluggableCacheTopologyValidator;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
 public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
     /** */
-    private static CountDownLatch validatorInvokedLatch;
+    private static final List<T2<String, Collection<UUID>>> topValidatorInvocations = new ArrayList<>();
+
+    /** */
+    public static boolean pluginTopValidationResult = true;
+
+    /** */
+    public static boolean cacheTopValidationResult = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -46,15 +58,15 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
     /** */
     private IgniteConfiguration getConfiguration(
         String igniteInstanceName,
-        boolean persistenceEnabled,
-        boolean configurePlugin
+        boolean isPersistenceEnabled,
+        boolean isPluginEnabled
     ) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (configurePlugin)
-            cfg.setPluginProviders(new TestPluginProvider());
+        if (isPluginEnabled)
+            cfg.setPluginProviders(new TestCacheTopologyValidatorPluginProvider());
 
-        if (persistenceEnabled) {
+        if (isPersistenceEnabled) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100 * (1 << 20))
@@ -69,6 +81,8 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        topValidatorInvocations.clear();
     }
 
     /** {@inheritDoc} */
@@ -80,42 +94,50 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testExternalValidator() throws Exception {
+    public void testPluggableTopologyValidator() throws Exception {
         startGrids(2);
 
-        validatorInvokedLatch = new CountDownLatch(2);
+        awaitPartitionMapExchange();
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
-        assertTrue(validatorInvokedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        checkTopologyValidatorInvocations(DEFAULT_CACHE_NAME, 1);
+
+        topValidatorInvocations.clear();
+
+        grid(0).createCache(new CacheConfiguration<>().setName("test_cache_0").setGroupName("test_cache_group"));
+        grid(0).createCache(new CacheConfiguration<>().setName("test_cache_1").setGroupName("test_cache_group"));
+
+        checkTopologyValidatorInvocations(DEFAULT_CACHE_NAME, 2);
+        checkTopologyValidatorInvocations("test_cache_group", 2);
     }
 
     /** */
     @Test
-    public void testExternalValidatorWithPersistence() throws Exception {
+    public void testPluggableTopologyValidatorWithPersistence() throws Exception {
         startGrid(getConfiguration(getTestIgniteInstanceName(0), true, true));
         startGrid(getConfiguration(getTestIgniteInstanceName(1), true, true));
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        grid(0).cluster().state(ACTIVE);
 
-        validatorInvokedLatch = new CountDownLatch(2);
+        awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache = grid(0).createCache(DEFAULT_CACHE_NAME);
+        grid(0).createCache(DEFAULT_CACHE_NAME);
 
-        assertTrue(validatorInvokedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        checkTopologyValidatorInvocations(DEFAULT_CACHE_NAME, 1);
 
-        cache.put(0, 0);
+        grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
 
         stopAllGrids();
 
         startGrid(getConfiguration(getTestIgniteInstanceName(0), true, true));
         startGrid(getConfiguration(getTestIgniteInstanceName(1), true, true));
 
-        validatorInvokedLatch = new CountDownLatch(2);
+        topValidatorInvocations.clear();
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        grid(0).cluster().state(ACTIVE);
 
-        assertTrue(validatorInvokedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        checkTopologyValidatorInvocations(DEFAULT_CACHE_NAME, 1);
 
         assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).get(0));
 
@@ -124,30 +146,116 @@ public class ExternalTopologyValidatorTest extends GridCommonAbstractTest {
         startGrid(getConfiguration(getTestIgniteInstanceName(0), true, false));
         startGrid(getConfiguration(getTestIgniteInstanceName(1), true, false));
 
+        topValidatorInvocations.clear();
+
+        grid(0).cluster().state(ACTIVE);
+
+        checkTopologyValidatorInvocations(DEFAULT_CACHE_NAME, 0);
+
         assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).get(0));
     }
 
     /** */
-    private static class TestPluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TestPluginProvider";
-        }
+    @Test
+    public void testCacheReadOnlyState() throws Exception {
+        startGrid(0);
 
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(PluggableTopologyValidator.class, new TestTopologyValidator());
+        pluginTopValidationResult = false;
+        cacheTopValidationResult = false;
+
+        try {
+            grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setTopologyValidator(new TestTopologyValidator()));
+
+            checkCachePut(DEFAULT_CACHE_NAME, false);
+
+            pluginTopValidationResult = true;
+
+            startGrid(1);
+
+            checkCachePut(DEFAULT_CACHE_NAME, false);
+
+            cacheTopValidationResult = true;
+
+            stopGrid(1);
+
+            checkCachePut(DEFAULT_CACHE_NAME, true);
+        }
+        finally {
+            pluginTopValidationResult = true;
+            cacheTopValidationResult = true;
         }
     }
 
     /** */
-    private static class TestTopologyValidator implements PluggableTopologyValidator {
+    private void checkTopologyValidatorInvocations(String cacheName, long expCnt) throws Exception {
+        awaitPartitionMapExchange();
+
+        List<T2<String, Collection<UUID>>> invocations = topValidatorInvocations.stream()
+            .filter(i -> cacheName.equals(i.get1()))
+            .collect(Collectors.toList());
+
+        assertEquals(expCnt * grid(0).cluster().nodes().size(), invocations.size());
+
+        assertTrue(invocations.stream().allMatch(i ->
+            i.get2().equals(grid(0).cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList()))));
+    }
+
+    /** */
+    private void checkCachePut(String cacheName, boolean isSuccessExpected) {
+        if (isSuccessExpected) {
+            grid(0).cache(cacheName).put(0, 0);
+
+            assertEquals(0, grid(0).cache(cacheName).get(0));
+        }
+        else {
+            GridTestUtils.assertThrows(
+                log,
+                () -> {
+                    grid(0).cache(cacheName).put(0, 0);
+
+                    return null;
+                },
+                CacheInvalidStateException.class,
+                "Failed to perform cache operation"
+            );
+        }
+    }
+
+    /** */
+    private static class TestTopologyValidator implements TopologyValidator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
-            if (validatorInvokedLatch != null)
-                validatorInvokedLatch.countDown();
+            return cacheTopValidationResult;
+        }
+    }
 
-            return true;
+    /** */
+    private static class TestCacheTopologyValidatorPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "PluggableCacheTopologyValidator";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(PluggableCacheTopologyValidator.class, new TestCacheTopologyValidator());
+        }
+    }
+
+    /** */
+    private static class TestCacheTopologyValidator implements PluggableCacheTopologyValidator {
+        /** {@inheritDoc} */
+        @Override public boolean validate(String cacheName, Collection<ClusterNode> nodes) {
+            topValidatorInvocations.add(new T2<>(
+                cacheName,
+                nodes.stream().map(ClusterNode::id).collect(Collectors.toList())
+            ));
+
+            return pluginTopValidationResult;
         }
     }
 }

@@ -58,7 +58,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategySupplier;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
@@ -110,7 +108,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.PluggableTopologyValidator;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
@@ -2157,19 +2154,5 @@ public class GridCacheUtils {
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
         IgniteBiInClosure<CacheObject, GridCacheVersion> {
-    }
-
-    /** */
-    public static boolean validateTopologyExternal(IgnitePluginProcessor plugins, Collection<ClusterNode> topNodes) {
-        PluggableTopologyValidator[] extTopValidator = plugins.extensions(PluggableTopologyValidator.class);
-
-        if (!F.isEmpty(extTopValidator)) {
-            for (PluggableTopologyValidator validator : extTopValidator) {
-                if (!validator.validate(topNodes))
-                    return false;
-            }
-        }
-
-        return true;
     }
 }
