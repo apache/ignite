@@ -79,7 +79,11 @@ public class CdcSelfTest extends AbstractCdcTest {
     public Supplier<MetricExporterSpi> metricExporter;
 
     /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, metricExporter={2}")
+    @Parameterized.Parameter(3)
+    public int pageSz;
+
+    /** */
+    @Parameterized.Parameters(name = "specificConsistentId={0},walMode={1},metricExporter={2},pageSz={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
@@ -87,8 +91,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             for (boolean specificConsistentId : new boolean[] {false, true}) {
                 Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
 
-                params.add(new Object[] {specificConsistentId, mode, null});
-                params.add(new Object[] {specificConsistentId, mode, jmx});
+                params.add(new Object[] {specificConsistentId, mode, null, 0});
+                params.add(new Object[] {specificConsistentId, mode, jmx, 8192});
             }
 
         return params;
@@ -109,6 +113,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+
+        if (pageSz != 0)
+            cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
