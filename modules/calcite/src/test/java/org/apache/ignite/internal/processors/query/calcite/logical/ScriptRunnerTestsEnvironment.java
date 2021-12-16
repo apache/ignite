@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface ScriptRunnerTestsEnvironment {
     /**
-     * @return Test scripts root directory.
+     * @return Test scripts root directory or single test file.
      */
     String scriptsDirOrSingleFile();
 

@@ -184,7 +184,7 @@ public class SqlScriptRunner {
         Script(Path test) throws IOException {
             fileName = test.getFileName().toString();
 
-            r = Files.newBufferedReader(test, StandardCharsets.UTF_8);
+            r = Files.newBufferedReader(test);
         }
 
         /** */
@@ -680,7 +680,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(String.valueOf(col).getBytes(Charset.forName(UTF_8.name())));
+                    messageDigest.update(String.valueOf(col).getBytes(UTF_8));
                     messageDigest.update(NL_BYTES);
                 }
             }
