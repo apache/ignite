@@ -243,17 +243,21 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      */
     public void fixWithMajority(Map<KeyCacheObject, EntryGetResult> fixedMap, Collection<?> inconsistentKeys)
         throws IgniteCheckedException {
+        /** */
         class ByteArrayWrapper {
             final byte[] arr;
 
+            /** */
             public ByteArrayWrapper(byte[] arr) {
                 this.arr = arr;
             }
 
+            /** */
             @Override public boolean equals(Object o) {
                 return Arrays.equals(arr, ((ByteArrayWrapper)o).arr);
             }
 
+            /** */
             @Override public int hashCode() {
                 return Arrays.hashCode(arr);
             }

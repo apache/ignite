@@ -166,7 +166,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /**
      *
      */
-    private  <K, V> void addResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut,
+    private <K, V> void addResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut,
         Map<K, V> map) throws IgniteCheckedException {
         for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
             EntryGetResult getRes = entry.getValue();

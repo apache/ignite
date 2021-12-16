@@ -57,7 +57,7 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
     /**
      * @param fut Future.
      */
-    public void add(IgniteInternalFuture<Void> fut){
+    public void add(IgniteInternalFuture<Void> fut) {
         size++; // All additions are from the same thread.
 
         fut.listen(this);

@@ -189,6 +189,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
      * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
      * </ul>
+     * @param strategy Read Repair strategy.
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
     @IgniteExperimental
@@ -201,6 +202,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * conflict resolve strategy.
      *
      * @see IgniteCache#withReadRepair(ReadRepairStrategy) for defails.
+     * @return Cache with explicit consistency check on each read and repair if necessary.
      */
     @IgniteExperimental
     public IgniteCache<K, V> withReadRepair();

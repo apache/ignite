@@ -134,7 +134,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Strategy.
      */
-    public ReadRepairStrategy getStrategy(){
+    public ReadRepairStrategy getStrategy() {
         return strategy;
     }
 

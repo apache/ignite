@@ -5041,7 +5041,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             try {
                 fut.onDone(f.get());
             }
-            catch (IgniteIrreparableConsistencyViolationException e1){
+            catch (IgniteIrreparableConsistencyViolationException e1) {
                 fut.onDone(e1);
             }
             catch (IgniteConsistencyViolationException e1) {

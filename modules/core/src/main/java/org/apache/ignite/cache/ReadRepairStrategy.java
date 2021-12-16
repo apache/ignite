@@ -54,6 +54,7 @@ public enum ReadRepairStrategy {
      * Provides strategy by name.
      *
      * @param name Text.
+     * @return Read Repair strategy.
      */
     public static ReadRepairStrategy fromString(String name) {
         for (ReadRepairStrategy strategy : values()) {
@@ -65,9 +66,9 @@ public enum ReadRepairStrategy {
     }
 
     /**
-     *
+     * @return Read Repair strategy.
      */
-    public static ReadRepairStrategy defaultStrategy(){
+    public static ReadRepairStrategy defaultStrategy() {
         return LWW;
     }
 }

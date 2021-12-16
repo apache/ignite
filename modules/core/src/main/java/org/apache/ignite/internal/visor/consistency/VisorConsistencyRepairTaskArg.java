@@ -89,7 +89,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /**
      *
      */
-    public ReadRepairStrategy strategy(){
+    public ReadRepairStrategy strategy() {
         return strategy;
     }
 

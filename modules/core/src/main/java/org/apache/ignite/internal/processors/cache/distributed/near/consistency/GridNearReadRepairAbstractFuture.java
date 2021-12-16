@@ -342,7 +342,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                             ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null), k -> new HashMap<>());
 
                     EntryGetResult res = fut.result().get(key);
-                    CacheEntryVersion ver = res != null ? res.version(): null;
+                    CacheEntryVersion ver = res != null ? res.version() : null;
 
                     Object val = res != null ? ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null) : null;
 
