@@ -64,6 +64,9 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** */
     private volatile GridH2Table tbl;
 
+    /** */
+    private volatile boolean idxRebuildInProgress;
+
     /**
      * @param ctx Kernal context.
      * @param desc Table descriptor.
@@ -140,7 +143,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public Map<String, IgniteIndex> indexes() {
-        return Collections.unmodifiableMap(indexes);
+        return idxRebuildInProgress ? Collections.emptyMap() : Collections.unmodifiableMap(indexes);
     }
 
     /** {@inheritDoc} */
@@ -150,12 +153,17 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public IgniteIndex getIndex(String idxName) {
-        return indexes.get(idxName);
+        return idxRebuildInProgress ? null : indexes.get(idxName);
     }
 
     /** {@inheritDoc} */
     @Override public void removeIndex(String idxName) {
         indexes.remove(idxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void markIndexRebuildInProgress(boolean mark) {
+        idxRebuildInProgress = mark;
     }
 
     /** {@inheritDoc} */

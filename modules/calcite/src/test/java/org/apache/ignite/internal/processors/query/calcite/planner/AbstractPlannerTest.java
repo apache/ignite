@@ -638,7 +638,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
+    protected BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
         SchemaPlus rootSchema = createRootSchema(false);
         SchemaPlus dfltSchema = null;
 
@@ -840,6 +840,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** */
         public String name() {
             return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void markIndexRebuildInProgress(boolean mark) {
+            throw new AssertionError();
         }
     }
 

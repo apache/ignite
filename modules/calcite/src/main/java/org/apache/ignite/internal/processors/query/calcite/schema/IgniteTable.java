@@ -141,4 +141,11 @@ public interface IgniteTable extends TranslatableTable {
      * Is table modifiable.
      */
     boolean isModifiable();
+
+    /**
+     * Mark table for index rebuild.
+     *
+     * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
+     */
+    void markIndexRebuildInProgress(boolean mark);
 }

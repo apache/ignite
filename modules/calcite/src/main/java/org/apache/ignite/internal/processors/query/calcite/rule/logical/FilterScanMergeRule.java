@@ -92,6 +92,12 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         RelNode res = createNode(cluster, scan, trait, condition);
 
+        if (res == null) {
+            cluster.getPlanner().prune(scan);
+
+            return;
+        }
+
         call.transformTo(res);
     }
 

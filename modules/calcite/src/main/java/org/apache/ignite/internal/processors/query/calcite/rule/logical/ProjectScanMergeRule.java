@@ -140,7 +140,15 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
             projects = null;
 
-        call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColumns));
+        T res = createNode(cluster, scan, traits, projects, cond, requiredColumns);
+
+        if (res == null) {
+            cluster.getPlanner().prune(scan);
+
+            return;
+        }
+
+        call.transformTo(res);
 
         if (!RexUtils.hasCorrelation(relProject.getProjects()))
             cluster.getPlanner().prune(relProject);

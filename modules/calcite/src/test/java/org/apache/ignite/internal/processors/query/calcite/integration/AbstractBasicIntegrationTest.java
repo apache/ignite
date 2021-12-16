@@ -82,9 +82,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected QueryChecker assertQuery(String qry) {
+        return assertQuery(client, qry);
+    }
+
+    /** */
+    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(client.context(), QueryEngine.class);
+                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
             }
         };
     }

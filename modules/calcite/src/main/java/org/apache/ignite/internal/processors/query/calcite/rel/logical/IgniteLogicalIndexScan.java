@@ -45,6 +45,9 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         IgniteTable tbl = table.unwrap(IgniteTable.class);
         IgniteIndex idx = tbl.getIndex(idxName);
 
+        if (idx == null) // Index was invalidated during planning.
+            return null;
+
         IndexConditions idxCond = idx.toIndexCondition(cluster, cond, requiredColumns);
 
         return new IgniteLogicalIndexScan(

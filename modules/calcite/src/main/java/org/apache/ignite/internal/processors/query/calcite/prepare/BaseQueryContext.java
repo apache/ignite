@@ -25,6 +25,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -87,6 +88,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
         EMPTY_CONTEXT = builder().build();
 
         EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
+
+        for (RelTraitDef<?> def : FRAMEWORK_CONFIG.getTraitDefs())
+            EMPTY_PLANNER.addRelTraitDef(def);
 
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -99,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -298,13 +301,101 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
+        ColocationGroup grp = ctx.group(rel.sourceId());
+
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
-        ColocationGroup group = ctx.group(rel.sourceId());
+        if (idx != null) {
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
-        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColumns);
+            return new ScanNode<>(ctx, rowType, rowsIter);
+        }
+        else {
+            // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
+            RelCollation collation = TraitUtils.collation(rel);
 
-        return new ScanNode<>(ctx, rowType, rowsIter);
+            boolean filterHasCorrelation = condition != null && RexUtils.hasCorrelation(condition);
+            boolean projectHasCorrelation = projects != null && RexUtils.hasCorrelation(projects);
+            boolean spoolNodeRequired = projectHasCorrelation || filterHasCorrelation;
+            boolean projNodeRequired = projects != null && spoolNodeRequired;
+            boolean hasCollation = collation != null && !collation.getFieldCollations().isEmpty();
+
+            Iterable<Row> rowsIter = tbl.scan(
+                ctx,
+                grp,
+                filterHasCorrelation ? null : filters,
+                projNodeRequired ? null : prj,
+                requiredColumns
+            );
+
+            Node<Row> node = new ScanNode<>(ctx, rowType, rowsIter);
+
+            if (hasCollation || spoolNodeRequired) {
+                if (spoolNodeRequired) {
+                    // Use original index collation, since rel collation can be already modified by projects.
+                    Mappings.TargetMapping targetMapping = Commons.mapping(requiredColumns,
+                        tbl.getRowType(typeFactory).getFieldCount());
+
+                    collation = rel.indexCollation().apply(targetMapping);
+                }
+                else {
+                    assert hasCollation;
+
+                    if (projects != null)
+                        rowType = rel.getRowType();
+                }
+
+                SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
+
+                sortNode.register(node);
+
+                node = sortNode;
+            }
+
+            if (spoolNodeRequired) {
+                if (requiredColumns != null && (lowerCond != null || upperCond != null)) {
+                    // Remap index find predicate according to rowType on the current phase.
+                    int cardinality = requiredColumns.cardinality();
+                    List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
+                    List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
+
+                    for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
+                        if (remappedLowerCond != null)
+                            remappedLowerCond.add(lowerCond.get(i));
+
+                        if (remappedUpperCond != null)
+                            remappedUpperCond.add(upperCond.get(i));
+                    }
+
+                    lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);
+                    upper = remappedUpperCond == null ? null : expressionFactory.rowSource(remappedUpperCond);
+                }
+
+                IndexSpoolNode<Row> spoolNode = IndexSpoolNode.createTreeSpool(
+                    ctx,
+                    rowType,
+                    collation,
+                    expressionFactory.comparator(collation),
+                    filterHasCorrelation ? filters : null, // Not correlated filter included into table scan.
+                    lower,
+                    upper
+                );
+
+                spoolNode.register(node);
+
+                node = spoolNode;
+            }
+
+            if (projNodeRequired) {
+                ProjectNode<Row> projectNode = new ProjectNode<>(ctx, rel.getRowType(), prj);
+
+                projectNode.register(node);
+
+                node = projectNode;
+            }
+
+            return node;
+        }
     }
 
     /** {@inheritDoc} */
