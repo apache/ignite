@@ -137,7 +137,7 @@ namespace ignite
                     responseMap[reqId] = rsp;
                 }
 
-                bool success = asyncPool.Get()->Send(id, mem, timeout);
+                bool success = asyncPool.Get()->Send(id, mem);
 
                 if (!success)
                 {
@@ -260,7 +260,7 @@ namespace ignite
 
                 outStream.WriteInt32(lenPos, outStream.Position() - 4);
 
-                return asyncPool.Get()->Send(id, mem, config.GetConnectionTimeout());
+                return asyncPool.Get()->Send(id, mem);
             }
 
             void DataChannel::OnHandshakeResponse(impl::interop::SP_InteropMemory msg)

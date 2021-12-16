@@ -19,7 +19,6 @@
 #define _IGNITE_NETWORK_WIN_ASYNC_CLIENT_POOL
 
 #include <stdint.h>
-#include <memory>
 
 #include <ignite/ignite_error.h>
 
@@ -30,79 +29,12 @@
 #include <ignite/network/async_handler.h>
 #include <ignite/network/tcp_range.h>
 
+#include "network/win_async_client.h"
+
 namespace ignite
 {
     namespace network
     {
-        struct IoOperationKind
-        {
-            enum Type
-            {
-                SEND,
-
-                RECEIVE,
-            };
-        };
-
-        struct IoOperation
-        {
-            /** Overlapped structure that should be passed to every IO operation. */
-            WSAOVERLAPPED overlapped;
-
-            /** Operation type. */
-            IoOperationKind::Type kind;
-
-            /** Bytes to be transferred. */
-            size_t toTransfer;
-
-            /** Already transferred data in bytes. */
-            size_t transferredSoFar;
-
-            /** Packet to be transferred. */
-            impl::interop::SP_InteropMemory packet;
-        };
-
-        /**
-         * Client state.
-         */
-        struct WinAsyncClientState
-        {
-            enum Type
-            {
-                DISCONNECTED,
-
-                CONNECTING,
-
-                CONNECTED,
-
-                SENDING,
-
-                RECEIVING_HEADER,
-
-                RECEIVING_BODY,
-            };
-        };
-
-        /**
-         * Windows-specific implementation of async network client.
-         */
-        struct WinAsyncClient
-        {
-            WinAsyncClient(SOCKET socket, const EndPoint& addr);
-
-            WinAsyncClient();
-
-            ~WinAsyncClient();
-
-            void Close();
-
-            SOCKET socket;
-            uint64_t id;
-            EndPoint addr;
-            TcpRange range;
-            WinAsyncClientState::Type state;
-        };
-
         /**
          * Windows-specific implementation of asynchronous client pool.
          */
@@ -141,11 +73,10 @@ namespace ignite
              *
              * @param id Client ID.
              * @param mem Data to be sent.
-             * @param timeout Timeout.
              * @return @c true if connection is present and @c false otherwise.
              * @throw IgniteError on error.
              */
-            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem, int32_t timeout);
+            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem);
 
             /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
@@ -265,13 +196,21 @@ namespace ignite
             uint64_t AddClient(SP_WinAsyncClient& client);
 
             /**
+             * Closes and releases memory allocated for client with specified ID.
+             *
+             * @param id Client ID.
+             * @return @c true if connection with specified ID was found.
+             */
+            bool CloseAndRelease(uint64_t id);
+
+            /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
              * re-connect. Error is not reported to handler.
              *
              * @param id Client ID.
              * @return @c true if connection with specified ID is found.
              */
-            bool Reset(uint64_t id);
+            bool Close(uint64_t id);
 
             /**
              * Throw window specific error with error code.

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string>
 #include <sstream>
+#include <vector>
 
 namespace ignite
 {

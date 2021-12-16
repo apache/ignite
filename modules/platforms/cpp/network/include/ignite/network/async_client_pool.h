@@ -66,11 +66,10 @@ namespace ignite
              *
              * @param id Client ID.
              * @param mem Data to be sent.
-             * @param timeout Timeout.
              * @return @c true if connection is present and @c false otherwise.
              * @throw IgniteError on error.
              */
-            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem, int32_t timeout) = 0;
+            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem) = 0;
 
             /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
