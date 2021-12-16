@@ -193,7 +193,7 @@ public class SqlScriptRunner {
         Script(Path test) throws IOException {
             fileName = test.getFileName().toString();
 
-            r = Files.newBufferedReader(test, StandardCharsets.UTF_8);
+            r = Files.newBufferedReader(test);
         }
 
         /** */
