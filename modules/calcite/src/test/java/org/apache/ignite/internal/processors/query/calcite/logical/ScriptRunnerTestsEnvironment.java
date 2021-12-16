@@ -31,7 +31,7 @@ public @interface ScriptRunnerTestsEnvironment {
     /**
      * @return Test scripts root directory.
      */
-    String scriptsRoot();
+    String scriptsDirOrSingleFile();
 
     /**
      * The Regular expression may be used by debug / development runs of the test scripts
