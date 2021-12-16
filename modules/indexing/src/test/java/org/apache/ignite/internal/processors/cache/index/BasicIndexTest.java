@@ -1524,7 +1524,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     
     /**
      * Checks that part of the composite key assembled in BinaryObjectBuilder can pass the validation correctly
-     if you specify Object type when creating the index.
+     * if you specify Object type when creating the index.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testCacheSecondaryCompositeIndex() throws Exception {
@@ -1533,23 +1535,25 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         startGrid();
         
         String cacheName = "TEST";
-        
+
+        List<QueryIndex> indexes = Collections.singletonList(
+            new QueryIndex("val_obj", QueryIndexType.SORTED).setInlineSize(inlineSize)
+        );
+
         grid().createCache(new CacheConfiguration<>()
-                .setName(cacheName)
-                .setSqlSchema(cacheName)
-                .setAffinity(new RendezvousAffinityFunction(false, 4))
-                .setQueryEntities(Collections.singleton(new QueryEntity()
-                        .setTableName(cacheName)
-                        .setKeyType(Integer.class.getName())
-                        .setKeyFieldName("id")
-                        .setValueType("TEST_VAL_SECONDARY_COMPOSITE")
-                        .addQueryField("id", Integer.class.getName(), null)
-                        .addQueryField("val_obj", Object.class.getName(), null)
-                        .setIndexes(Arrays.asList(
-                                        new QueryIndex(Arrays.asList("val_obj"), QueryIndexType.SORTED)
-                                                .setInlineSize(inlineSize)
-                                )
-                        ))));
+            .setName(cacheName)
+            .setSqlSchema(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(cacheName)
+                .setKeyType(Integer.class.getName())
+                .setKeyFieldName("id")
+                .setValueType("TEST_VAL_SECONDARY_COMPOSITE")
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("val_obj", Object.class.getName(), null)
+                .setIndexes(indexes)
+            ))
+        );
         
         BinaryObjectBuilder bob = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
         BinaryObjectBuilder bobInner = grid().binary().builder("inner");
