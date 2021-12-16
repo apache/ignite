@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -72,6 +73,9 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         Object thisVal = CU.value(this.val, cctx, false);
         Object cacheVal = CU.value(val, cctx, false);
+
+        if (thisVal.getClass().isArray())
+            return Objects.deepEquals(thisVal, cacheVal);
 
         return F.eq(thisVal, cacheVal);
     }

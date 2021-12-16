@@ -29,12 +29,15 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Checks service invocation for thin client.
@@ -49,9 +52,15 @@ public class ServicesTest extends AbstractThinClientTest {
     /** Cluster-singleton service name. */
     private static final String CLUSTER_SINGLTON_SERVICE_NAME = "cluster_svc";
 
+    /** */
+    protected boolean useBinaryArrays;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
+        BinaryArray.initUseBinaryArrays();
 
         startGrids(3);
 
@@ -70,6 +79,14 @@ public class ServicesTest extends AbstractThinClientTest {
 
         grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
             DEFAULT_CACHE_NAME, keyGrid1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+        BinaryArray.initUseBinaryArrays();
     }
 
     /**

@@ -50,31 +50,29 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     /** Ignite H2 session. */
     private final SessionInterface ses;
 
-    /** Key type settings for this index. */
-    private final IndexKeyTypeSettings keyTypeSettings;
-
     /** */
     public H2RowComparator(GridH2Table table, IndexKeyTypeSettings keyTypeSettings) {
+        super(keyTypeSettings);
+
         this.table = table;
-        this.keyTypeSettings = keyTypeSettings;
 
         coctx = table.rowDescriptor().context().cacheObjectContext();
         ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
-        int cmp = super.compareKey(pageAddr, off, maxSize, key, curType);
+    @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, InlineIndexKeyType type) {
+        int cmp = super.compareKey(pageAddr, off, maxSize, key, type);
 
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
 
-        int objType = key == NullIndexKey.INSTANCE ? curType : key.type();
+        int objType = key == NullIndexKey.INSTANCE ? type.type() : key.type();
 
-        int highOrder = Value.getHigherOrder(curType, objType);
+        int highOrder = Value.getHigherOrder(type.type(), objType);
 
         // H2 supports comparison between different types after casting them to single type.
-        if (highOrder != objType && highOrder == curType) {
+        if (highOrder != objType && highOrder == type.type()) {
             Value va = DataType.convertToValue(ses, key.key(), highOrder);
             va = va.convertTo(highOrder);
 

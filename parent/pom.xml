@@ -100,7 +100,7 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.11.0</log4j.version>
+        <log4j.version>2.16.0</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
@@ -364,6 +364,10 @@
                             <group>
                                 <title>MXBeans classes</title>
                                 <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
+                            </group>
+                            <group>
+                                <title>Memory allocator APIs</title>
+                                <packages>org.apache.ignite.mem</packages>
                             </group>
                             <group>
                                 <title>SPI: CheckPoint</title>

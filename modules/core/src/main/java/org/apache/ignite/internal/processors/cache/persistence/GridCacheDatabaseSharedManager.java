@@ -499,8 +499,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
-        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(storageCfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(storageCfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 

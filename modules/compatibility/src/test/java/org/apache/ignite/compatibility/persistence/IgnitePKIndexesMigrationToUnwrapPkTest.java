@@ -27,6 +27,7 @@ import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -248,14 +249,20 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            DataStorageConfiguration storageCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true)
-                        .setInitialSize(1024 * 1024 * 10).setMaxSize(1024 * 1024 * 15))
-                .setSystemRegionInitialSize(1024 * 1024 * 10)
-                .setSystemRegionMaxSize(1024 * 1024 * 15);
+                    new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setInitialSize(10 * 1024 * 1024)
+                            .setMaxSize(15 * 1024 * 1024)
+                )
+                .setSystemDataRegionConfiguration(
+                    new SystemDataRegionConfiguration()
+                            .setInitialSize(10 * 1024 * 1024)
+                            .setMaxSize(15 * 1024 * 1024)
+                );
 
-            cfg.setDataStorageConfiguration(memCfg);
+            cfg.setDataStorageConfiguration(storageCfg);
         }
     }
 }

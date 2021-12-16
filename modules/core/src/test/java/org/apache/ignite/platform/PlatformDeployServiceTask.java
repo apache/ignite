@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -412,14 +413,29 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public BinaryObject[] testBinaryObjectArray(BinaryObject[] arg) {
-            for (int i = 0; i < arg.length; i++) {
-                int field = arg[i].field("Field");
+        public BinaryObject[] testBinaryObjectArray(Object arg0) {
+            Object[] arg;
 
-                arg[i] = arg[i].toBuilder().setField("Field", field + 1).build();
+            if (BinaryArray.useBinaryArrays()) {
+                assertTrue(arg0 instanceof BinaryArray);
+
+                arg = ((BinaryArray)arg0).array();
+            }
+            else {
+                assertTrue(arg0 instanceof Object[]);
+
+                arg = (Object[])arg0;
             }
 
-            return arg;
+            BinaryObject[] res = new BinaryObject[arg.length];
+
+            for (int i = 0; i < arg.length; i++) {
+                int field = ((BinaryObject)arg[i]).field("Field");
+
+                res[i] = ((BinaryObject)arg[i]).toBuilder().setField("Field", field + 1).build();
+            }
+
+            return res;
         }
 
         /** */
@@ -637,6 +653,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 case "TestUnmappedException": throw new TestUnmappedException("Test");
                 default: throw new IgniteException("Unexpected exception class: " + exCls);
             }
+        }
+
+        /** */
+        public Object testRoundtrip(Object x) {
+            return x;
         }
 
         /** */

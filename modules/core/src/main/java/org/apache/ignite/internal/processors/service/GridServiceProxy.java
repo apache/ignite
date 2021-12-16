@@ -43,6 +43,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -110,6 +113,9 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
+    /** */
+    private final boolean keepBinary;
+
     /**
      * @param prj Grid projection.
      * @param name Service name.
@@ -118,6 +124,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      * @param callCtxProvider Caller context provider.
+     * @param keepBinary {@code True} if results should be in binary form.
      */
     public GridServiceProxy(ClusterGroup prj,
         String name,
@@ -125,7 +132,8 @@ public class GridServiceProxy<T> implements Serializable {
         boolean sticky,
         long timeout,
         GridKernalContext ctx,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        boolean keepBinary
     ) {
         assert timeout >= 0 : timeout;
 
@@ -133,6 +141,7 @@ public class GridServiceProxy<T> implements Serializable {
         this.ctx = ctx;
         this.name = name;
         this.sticky = sticky;
+        this.keepBinary = keepBinary;
 
         waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
@@ -160,7 +169,7 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Invoek the method.
+     * Invoke the method.
      *
      * @param mtd Method.
      * @param args Arugments.
@@ -209,13 +218,13 @@ public class GridServiceProxy<T> implements Serializable {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
                         // Execute service remotely.
-                        return ctx.closure().callAsyncNoFailover(
+                        return unmarshalResult(ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, callCtx),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
-                            true).get();
+                            true).get());
                     }
                 }
                 catch (InvocationTargetException e) {
@@ -319,6 +328,18 @@ public class GridServiceProxy<T> implements Serializable {
             if (callCtx != null)
                 ServiceCallContextHolder.current(null);
         }
+    }
+
+    /** */
+    private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (keepBinary && BinaryArray.useBinaryArrays() && marsh instanceof BinaryMarshaller) {
+            // To avoid deserializing of enum types and BinaryArrays.
+            return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
+        }
+        else
+            return U.unmarshal(marsh, res, null);
     }
 
     /**
@@ -463,7 +484,7 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * Callable proxy class.
      */
-    private static class ServiceProxyCallable implements IgniteCallable<Object>, Externalizable {
+    private static class ServiceProxyCallable implements IgniteCallable<byte[]>, Externalizable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
@@ -515,7 +536,7 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
+        @Override public byte[] call() throws Exception {
             ServiceContextImpl ctx = ignite.context().service().serviceContext(svcName);
 
             if (ctx == null || ctx.service() == null)
@@ -525,10 +546,14 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
+            Object res;
+
             if (ctx.service() instanceof PlatformService && mtd == null)
-                return callPlatformService((PlatformService)ctx.service());
+                res = callPlatformService((PlatformService)ctx.service());
             else
-                return callService(ctx.service(), mtd);
+                res = callService(ctx.service(), mtd);
+
+            return U.marshal(ignite.configuration().getMarshaller(), res);
         }
 
         /** */

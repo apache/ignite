@@ -975,8 +975,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(TX_LOG_CACHE_NAME);
-        cfg.setInitialSize(dscfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(dscfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(dscfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(dscfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(CU.isPersistenceEnabled(dscfg));
         cfg.setLazyMemoryAllocation(false);
 
