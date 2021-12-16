@@ -53,6 +53,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -3378,5 +3379,224 @@ public class GridFunc {
                 return dfltVal;
             }
         };
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if not null and array.
+     */
+    public static boolean isArr(Object val) {
+        return val != null && val.getClass().isArray();
+    }
+
+    /**
+     * Check for arrays equality.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return {@code True} if arrays equal.
+     */
+    public static boolean isArrEq(Object a1, Object a2) {
+        if (a1 == a2)
+            return true;
+
+        if (a1 == null || a2 == null)
+            return a1 != null || a2 != null;
+
+        if (a1.getClass() != a2.getClass())
+            return false;
+
+        if (a1 instanceof byte[])
+            return Arrays.equals((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return Arrays.equals((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return Arrays.equals((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return Arrays.equals((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return Arrays.equals((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return Arrays.equals((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return Arrays.equals((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return Arrays.equals((double[])a1, (double[])a2);
+        else if (a1 instanceof BinaryArray)
+            return a1.equals(a2);
+
+        return Arrays.deepEquals((Object[])a1, (Object[])a2);
+    }
+
+    /**
+     * Compare arrays.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to,
+     * or greater than the second.
+     */
+    public static int compareArr(Object a1, Object a2) {
+        if (a1 == a2)
+            return 0;
+
+        if (a1 == null || a2 == null)
+            return a1 != null ? 1 : -1;
+
+        if (a1.getClass() != a2.getClass()) {
+            throw new IllegalArgumentException(
+                "Can't compare arrays of different types[a1=" + a1.getClass() + ",a2=" + a2.getClass() + ']'
+            );
+        }
+
+        if (a1 instanceof byte[])
+            return compareArr((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return compareArr((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return compareArr((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return compareArr((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return compareArr((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return compareArr((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return compareArr((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return compareArr((double[])a1, (double[])a2);
+        else if (a1 instanceof Object[])
+            return compareArr((Object[])a1, (Object[])a2);
+
+        throw new IllegalStateException("Unknown array type " + a1.getClass());
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(Object[] a1, Object[] a2) {
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] == null || a2[i] == null) {
+                if (a1[i] != null || a2[i] != null)
+                    return a1[i] != null ? 1 : -1;
+
+                continue;
+            }
+
+            if (F.isArr(a1[i]) && F.isArr(a2[i])) {
+                int res = compareArr(a1[i], a2[i]);
+
+                if (res != 0)
+                    return res;
+            }
+
+            return ((Comparable)a1[i]).compareTo(a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(byte[] a1, byte[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Byte.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(boolean[] a1, boolean[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Boolean.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(short[] a1, short[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Short.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(char[] a1, char[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Character.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(int[] a1, int[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Integer.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(long[] a1, long[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Long.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(float[] a1, float[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Float.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArr(double[] a1, double[] a2) {
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Double.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
     }
 }

@@ -255,7 +255,6 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12313")
     @SuppressWarnings("ZeroLengthArrayAllocation")
     @Test
     public void testBinaryDataType() throws Exception {
