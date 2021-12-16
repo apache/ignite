@@ -3473,6 +3473,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(Object[] a1, Object[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
 
         for (int i = 0; i < l; i++) {
@@ -3498,6 +3501,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(byte[] a1, byte[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3511,6 +3517,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(boolean[] a1, boolean[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3524,6 +3533,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(short[] a1, short[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3537,6 +3549,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(char[] a1, char[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3550,6 +3565,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(int[] a1, int[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3563,6 +3581,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(long[] a1, long[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3576,6 +3597,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(float[] a1, float[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
@@ -3589,6 +3613,9 @@ public class GridFunc {
 
     /** Compare arrays. */
     public static int compareArr(double[] a1, double[] a2) {
+        if (a1 == a2)
+            return 0;
+
         int l = Math.min(a1.length, a2.length);
         int res;
 
