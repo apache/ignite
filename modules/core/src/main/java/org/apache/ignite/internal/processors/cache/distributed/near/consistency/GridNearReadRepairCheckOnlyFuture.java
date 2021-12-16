@@ -171,19 +171,20 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
             EntryGetResult getRes = entry.getValue();
 
-            ctx.addResult(map,
-                entry.getKey(),
-                getRes.value(),
-                skipVals,
-                keepCacheObjects,
-                deserializeBinary,
-                false,
-                getRes,
-                getRes.version(),
-                0,
-                0,
-                needVer,
-                U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())));
+            if (getRes != null)
+                ctx.addResult(map,
+                    entry.getKey(),
+                    getRes.value(),
+                    skipVals,
+                    keepCacheObjects,
+                    deserializeBinary,
+                    false,
+                    getRes,
+                    getRes.version(),
+                    0,
+                    0,
+                    needVer,
+                    U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())));
         }
     }
 }

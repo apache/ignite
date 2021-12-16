@@ -309,9 +309,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (!inconsistentKeys.isEmpty())
             throw new IgniteConsistencyViolationException(inconsistentKeys);
 
-        // Misses recorded to detect partial misses, but should not be propagated when the key is null at each node.
-        resMap.values().removeIf(Objects::isNull);
-
         return resMap;
     }
 
