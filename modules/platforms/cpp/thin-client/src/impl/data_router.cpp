@@ -22,6 +22,7 @@
 #include <iterator>
 #include <algorithm>
 
+#include <ignite/network/network.h>
 #include <ignite/network/utils.h>
 
 #include "impl/utility.h"
@@ -60,14 +61,22 @@ namespace ignite
                 if (ranges.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
 
-                asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit(), config.GetConnectionTimeout());
+                if (!asyncPool.IsValid())
+                {
+                    asyncPool = network::MakeAsyncClientPool();
+
+                    if (!asyncPool.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create async connection pool");
+                }
+
+                asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit());
 
                 EnsureConnected(config.GetConnectionTimeout());
             }
 
             void DataRouter::Close()
             {
-                asyncPool.Get()->Close();
+                asyncPool.Get()->Stop();
             }
 
             bool DataRouter::EnsureConnected(int32_t timeout)
@@ -112,7 +121,7 @@ namespace ignite
                     channel.Get()->ProcessMessage(msg);
             }
 
-            void DataRouter::OnConnectionBroken(uint64_t id, const IgniteError& err)
+            void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 

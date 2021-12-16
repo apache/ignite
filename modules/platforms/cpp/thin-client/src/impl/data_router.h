@@ -108,20 +108,20 @@ namespace ignite
                 virtual void OnConnectionError(const network::EndPoint& addr, const IgniteError& err);
 
                 /**
+                 * Callback that called on error during connection establishment.
+                 *
+                 * @param id Async client ID.
+                 * @param err Error.
+                 */
+                virtual void OnConnectionClosed(uint64_t id, const IgniteError* err);
+
+                /**
                  * Callback that called when new message is received.
                  *
                  * @param id Async client ID.
                  * @param msg Received message.
                  */
                 virtual void OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg);
-
-                /**
-                 * Callback that called on error during connection establishment.
-                 *
-                 * @param id Async client ID.
-                 * @param err Error.
-                 */
-                virtual void OnConnectionBroken(uint64_t id, const IgniteError& err);
 
                 /**
                  * Channel handshake completion callback.

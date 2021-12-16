@@ -44,23 +44,7 @@ namespace ignite
 
         bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout)
         {
-            static common::concurrent::CriticalSection initCs;
-            static bool networkInited = false;
-
-            // Initing networking if is not inited.
-            if (!networkInited)
-            {
-                common::concurrent::CsLockGuard lock(initCs);
-                if (!networkInited)
-                {
-                    WSADATA wsaData;
-
-                    networkInited = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
-
-                    if (!networkInited)
-                        utils::ThrowNetworkError("Networking initialisation failed: " + sockets::GetLastSocketErrorMessage());
-                }
-            }
+            sockets::InitWsa();
 
             InternalClose();
 
@@ -189,64 +173,9 @@ namespace ignite
 
         void TcpSocketClient::TrySetOptions()
         {
-            BOOL trueOpt = TRUE;
-            ULONG uTrueOpt = TRUE;
-            int bufSizeOpt = BUFFER_SIZE;
+            sockets::TrySetSocketOptions(socketHandle, BUFFER_SIZE, TRUE, TRUE, TRUE);
 
-            setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
-
-            setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
-
-            setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-            setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-            blocking = ioctlsocket(socketHandle, FIONBIO, &uTrueOpt) == SOCKET_ERROR;
-
-            int res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
-                reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-            if (SOCKET_ERROR == res)
-            {
-                // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
-                return;
-            }
-
-            // This option is available starting with Windows 10, version 1709.
-#if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
-            DWORD idleOpt = KEEP_ALIVE_IDLE_TIME;
-            DWORD idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
-
-            setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
-
-            setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
-                reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
-#else // use old hardcore WSAIoctl
-
-            // WinSock structure for KeepAlive timing settings
-            struct tcp_keepalive settings = { 0 };
-            settings.onoff = 1;
-            settings.keepalivetime = KEEP_ALIVE_IDLE_TIME * 1000;
-            settings.keepaliveinterval = KEEP_ALIVE_PROBES_PERIOD * 1000;
-
-            // pointers for WinSock call
-            DWORD bytesReturned;
-            WSAOVERLAPPED overlapped;
-            overlapped.hEvent = NULL;
-
-            // Set KeepAlive settings
-            WSAIoctl(
-                socketHandle,
-                SIO_KEEPALIVE_VALS,
-                &settings,
-                sizeof(struct tcp_keepalive),
-                NULL,
-                0,
-                &bytesReturned,
-                &overlapped,
-                NULL
-            );
-#endif
+            blocking = !sockets::SetNonBlockingMode(socketHandle, true);
         }
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)

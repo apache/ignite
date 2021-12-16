@@ -32,7 +32,8 @@ if (WIN32)
 
     list(APPEND SOURCES os/win/src/network/tcp_socket_client.cpp
             os/win/src/network/sockets.cpp
-            os/win/src/network/utils.cpp)
+            os/win/src/network/utils.cpp
+            os/win/src/network/win_async_client_pool.cpp)
 else()
     include_directories(os/linux/src)
 

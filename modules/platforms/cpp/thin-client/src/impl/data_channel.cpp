@@ -80,7 +80,7 @@ namespace ignite
 
             void DataChannel::Close()
             {
-                asyncPool.Get()->Reset(id);
+                asyncPool.Get()->Close(id, 0);
             }
 
             void DataChannel::SyncMessage(const Request &req, Response &rsp, int32_t timeout)
@@ -137,7 +137,7 @@ namespace ignite
                     responseMap[reqId] = rsp;
                 }
 
-                bool success = asyncPool.Get()->Send(mem, timeout);
+                bool success = asyncPool.Get()->Send(id, mem, timeout);
 
                 if (!success)
                 {
@@ -332,7 +332,7 @@ namespace ignite
 
                 IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, newMsg.c_str());
 
-                asyncPool.Get()->CloseWithError(id, err);
+                asyncPool.Get()->Close(id, &err);
             }
         }
     }

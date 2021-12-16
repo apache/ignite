@@ -17,6 +17,12 @@
 
 #include "network/sockets.h"
 
+#ifdef WIN32
+#   include "network/win_async_client_pool.h"
+#else // Other. Assume POSIX
+#   error "TODO for Linux"
+#endif
+
 #include <ignite/network/network.h>
 
 #include "network/ssl/ssl_gateway.h"
@@ -50,8 +56,7 @@ namespace ignite
 
         IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool()
         {
-            // TODO: Implement me.
-            return SP_AsyncClientPool();
+            return SP_AsyncClientPool(new WinAsyncClientPool);
         }
     }
 }
