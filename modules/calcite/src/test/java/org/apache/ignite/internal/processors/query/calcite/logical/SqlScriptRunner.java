@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.logical;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -57,6 +59,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.byteArray2HexString;
  *
  */
 public class SqlScriptRunner {
+    /** UTF-8 character name. */
+    static final Charset UTF_8 = StandardCharsets.UTF_8;
+
     /** Hashing label pattern. */
     private static final Pattern HASHING_PTRN = Pattern.compile("([0-9]+) values hashing to ([0-9a-fA-F]+)");
 
@@ -188,7 +193,7 @@ public class SqlScriptRunner {
         Script(Path test) throws IOException {
             fileName = test.getFileName().toString();
 
-            r = Files.newBufferedReader(test);
+            r = Files.newBufferedReader(test, StandardCharsets.UTF_8);
         }
 
         /** */
@@ -198,15 +203,11 @@ public class SqlScriptRunner {
 
         /** */
         String nextLineWithoutTrim() throws IOException {
-            if (r.ready()) {
-                String s = r.readLine();
+            String s = r.readLine();
 
-                lineNum++;
+            lineNum++;
 
-                return s;
-            }
-
-            return null;
+            return s;
         }
 
         /** */
@@ -623,9 +624,8 @@ public class SqlScriptRunner {
 
             if (expectedHash != null)
                 checkResultsHashed(res);
-            else {
+            else
                 checkResultTuples(res);
-            }
         }
 
         /** */
@@ -692,7 +692,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(SqlScriptRunner.toString(col).getBytes());
+                    messageDigest.update(SqlScriptRunner.toString(col).getBytes(Charset.forName(UTF_8.name())));
                     messageDigest.update(NL_BYTES);
                 }
             }
