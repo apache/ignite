@@ -310,10 +310,10 @@ public class BasicSqlTypesIndexTest extends AbstractIndexingCommonTest {
         String idxTypeStr = "BINARY";
         Class<byte[]> idxCls = byte[].class;
 
-        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArr, PK, "BACKUPS=1");
-        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArr, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
-        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArr, SECONDARY_DESC, "BACKUPS=1");
-        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArr, SECONDARY_ASC, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, PK, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, SECONDARY_DESC, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, SECONDARY_ASC, "BACKUPS=1");
     }
 
     /** */

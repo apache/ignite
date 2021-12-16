@@ -325,7 +325,7 @@ public class FullyConnectedComponentSearcher {
 
         /** {@inheritDoc} */
         @Override public int compare(Integer node1, Integer node2) {
-            return F.compareArr(connectionRow(node1), connectionRow(node2));
+            return F.compareArrays(connectionRow(node1), connectionRow(node2));
         }
     }
 }

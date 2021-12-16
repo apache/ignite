@@ -60,7 +60,7 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int h2 = o2.hashCode();
 
             if (h1 == h2)
-                return o1.equals(o2) ? 0 : F.compareArr(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy());
+                return o1.equals(o2) ? 0 : F.compareArrays(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy());
             else
                 return h1 > h2 ? 1 : -1;
         }

@@ -3385,7 +3385,7 @@ public class GridFunc {
      * @param val Value to check.
      * @return {@code True} if not null and array.
      */
-    public static boolean isArr(Object val) {
+    public static boolean isArray(Object val) {
         return val != null && val.getClass().isArray();
     }
 
@@ -3396,7 +3396,7 @@ public class GridFunc {
      * @param a2 Value 2.
      * @return {@code True} if arrays equal.
      */
-    public static boolean isArrEq(Object a1, Object a2) {
+    public static boolean arrayEq(Object a1, Object a2) {
         if (a1 == a2)
             return true;
 
@@ -3436,7 +3436,7 @@ public class GridFunc {
      * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to,
      * or greater than the second.
      */
-    public static int compareArr(Object a1, Object a2) {
+    public static int compareArrays(Object a1, Object a2) {
         if (a1 == a2)
             return 0;
 
@@ -3450,29 +3450,29 @@ public class GridFunc {
         }
 
         if (a1 instanceof byte[])
-            return compareArr((byte[])a1, (byte[])a2);
+            return compareArrays((byte[])a1, (byte[])a2);
         else if (a1 instanceof boolean[])
-            return compareArr((boolean[])a1, (boolean[])a2);
+            return compareArrays((boolean[])a1, (boolean[])a2);
         else if (a1 instanceof short[])
-            return compareArr((short[])a1, (short[])a2);
+            return compareArrays((short[])a1, (short[])a2);
         else if (a1 instanceof char[])
-            return compareArr((char[])a1, (char[])a2);
+            return compareArrays((char[])a1, (char[])a2);
         else if (a1 instanceof int[])
-            return compareArr((int[])a1, (int[])a2);
+            return compareArrays((int[])a1, (int[])a2);
         else if (a1 instanceof long[])
-            return compareArr((long[])a1, (long[])a2);
+            return compareArrays((long[])a1, (long[])a2);
         else if (a1 instanceof float[])
-            return compareArr((float[])a1, (float[])a2);
+            return compareArrays((float[])a1, (float[])a2);
         else if (a1 instanceof double[])
-            return compareArr((double[])a1, (double[])a2);
+            return compareArrays((double[])a1, (double[])a2);
         else if (a1 instanceof Object[])
-            return compareArr((Object[])a1, (Object[])a2);
+            return compareArrays((Object[])a1, (Object[])a2);
 
         throw new IllegalStateException("Unknown array type " + a1.getClass());
     }
 
     /** Compare arrays. */
-    public static int compareArr(Object[] a1, Object[] a2) {
+    public static int compareArrays(Object[] a1, Object[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3486,8 +3486,8 @@ public class GridFunc {
                 continue;
             }
 
-            if (F.isArr(a1[i]) && F.isArr(a2[i])) {
-                int res = compareArr(a1[i], a2[i]);
+            if (F.isArray(a1[i]) && F.isArray(a2[i])) {
+                int res = compareArrays(a1[i], a2[i]);
 
                 if (res != 0)
                     return res;
@@ -3500,7 +3500,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(byte[] a1, byte[] a2) {
+    public static int compareArrays(byte[] a1, byte[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3516,7 +3516,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(boolean[] a1, boolean[] a2) {
+    public static int compareArrays(boolean[] a1, boolean[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3532,7 +3532,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(short[] a1, short[] a2) {
+    public static int compareArrays(short[] a1, short[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3548,7 +3548,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(char[] a1, char[] a2) {
+    public static int compareArrays(char[] a1, char[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3564,7 +3564,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(int[] a1, int[] a2) {
+    public static int compareArrays(int[] a1, int[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3580,7 +3580,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(long[] a1, long[] a2) {
+    public static int compareArrays(long[] a1, long[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3596,7 +3596,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(float[] a1, float[] a2) {
+    public static int compareArrays(float[] a1, float[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3612,7 +3612,7 @@ public class GridFunc {
     }
 
     /** Compare arrays. */
-    public static int compareArr(double[] a1, double[] a2) {
+    public static int compareArrays(double[] a1, double[] a2) {
         if (a1 == a2)
             return 0;
 
@@ -3625,5 +3625,13 @@ public class GridFunc {
         }
 
         return Integer.compare(a1.length, a2.length);
+    }
+
+    /**
+     * Copy of {@link Integer#compare(int, int)} to be sure only {@link -1, 0, 1} returned
+     * which is not guarnteed by {@link Integer#compare(int, int)} method.
+     */
+    private static int compare(int x, int y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 }

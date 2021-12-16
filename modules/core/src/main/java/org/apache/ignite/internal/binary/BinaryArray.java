@@ -261,7 +261,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
             );
         }
 
-        return F.compareArr(arr, o.arr);
+        return F.compareArrays(arr, o.arr);
     }
 
     /** {@inheritDoc} */

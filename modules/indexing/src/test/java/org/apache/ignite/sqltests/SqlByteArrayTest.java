@@ -65,12 +65,12 @@ public class SqlByteArrayTest extends AbstractBinaryArraysTest {
         cache.query(new SqlFieldsQuery("INSERT INTO array_table (_key, _val) VALUES (?, ?)").setArgs(2, val1)).getAll();
 
         assertTrue(cache.containsKey(2));
-        assertEquals(0, F.compareArr(val1, cache.get(2)));
+        assertEquals(0, F.compareArrays(val1, cache.get(2)));
 
         cache.query(new SqlFieldsQuery("UPDATE array_table SET _val = ? WHERE _key = ? ").setArgs(val2, 2)).getAll();
 
         assertTrue(cache.containsKey(2));
-        assertEquals(0, F.compareArr(val2, cache.get(2)));
+        assertEquals(0, F.compareArrays(val2, cache.get(2)));
 
         cache.query(new SqlFieldsQuery("DELETE FROM array_table WHERE _key = ?").setArgs(2)).getAll();
 

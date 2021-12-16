@@ -325,7 +325,7 @@ public final class GridifyUtils {
 
             return res;
         }
-        else if (F.isArr(arg)) {
+        else if (F.isArray(arg)) {
             Collection res = new ArrayList();
 
             for (int i = 0; i < Array.getLength(arg); i++)

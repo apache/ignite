@@ -892,8 +892,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             if (secondBinary)
                 return -1; // Go to the left part.
             else {
-                if (F.isArr(first) && F.isArr(second))
-                    return F.compareArr(first, second);
+                if (F.isArray(first) && F.isArray(second))
+                    return F.compareArrays(first, second);
 
                 return ((Comparable)first).compareTo(second);
             }

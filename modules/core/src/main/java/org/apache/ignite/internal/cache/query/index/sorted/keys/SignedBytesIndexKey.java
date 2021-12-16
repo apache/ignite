@@ -28,6 +28,6 @@ public class SignedBytesIndexKey extends BytesIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return F.compareArr(key, ((BytesIndexKey)o).key);
+        return F.compareArrays(key, ((BytesIndexKey)o).key);
     }
 }
