@@ -29,9 +29,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface ScriptRunnerTestsEnvironment {
     /**
-     * @return Test scripts root directory or single test file.
+     * @return Test scripts root directory.
      */
-    String scriptsDirOrSingleFile();
+    String scriptsRoot();
 
     /**
      * The Regular expression may be used by debug / development runs of the test scripts
