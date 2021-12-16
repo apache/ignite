@@ -95,10 +95,10 @@ public class ScriptTestRunner extends Runner {
         this.testCls = testCls;
         ScriptRunnerTestsEnvironment env = testCls.getAnnotation(ScriptRunnerTestsEnvironment.class);
 
-        assert !F.isEmpty(env.scriptsDirOrSingleFile());
+        assert !F.isEmpty(env.scriptsRoot());
 
         nodes = env.nodes();
-        scriptsRoot = FS.getPath(env.scriptsDirOrSingleFile());
+        scriptsRoot = FS.getPath(env.scriptsRoot());
         testRegex = F.isEmpty(env.regex()) ? null : Pattern.compile(env.regex());
         restartCluster = env.restart();
         timeout = env.timeout();
@@ -112,26 +112,22 @@ public class ScriptTestRunner extends Runner {
     /** {@inheritDoc} */
     @Override public void run(final RunNotifier notifier) {
         try {
-            if (Files.isRegularFile(scriptsRoot))
-                runTest(scriptsRoot, notifier);
-            else {
-                Files.walk(scriptsRoot).sorted().forEach((p) -> {
-                    if (p.equals(scriptsRoot))
-                        return;
+            Files.walk(scriptsRoot).sorted().forEach((p) -> {
+                if (p.equals(scriptsRoot))
+                    return;
 
-                    if (Files.isDirectory(p)) {
-                        if (!F.isEmpty(Ignition.allGrids()) && restartCluster) {
-                            log.info(">>> Restart cluster");
+                if (Files.isDirectory(p)) {
+                    if (!F.isEmpty(Ignition.allGrids()) && restartCluster) {
+                        log.info(">>> Restart cluster");
 
-                            Ignition.stopAll(false);
-                        }
-
-                        return;
+                        Ignition.stopAll(false);
                     }
 
-                    runTest(p, notifier);
-                });
-            }
+                    return;
+                }
+
+                runTest(p, notifier);
+            });
         }
         catch (Exception e) {
             throw new RuntimeException(e);
