@@ -590,7 +590,8 @@ public class SqlScriptRunner {
 
                 if (expectedRes != null)
                     expectedRes.sort(ROW_COMPARATOR);
-            } else if (sortType == SortType.VALUESORT) {
+            }
+            else if (sortType == SortType.VALUESORT) {
                 List<Object> flattenRes = new ArrayList<>();
 
                 res.forEach(flattenRes::addAll);
