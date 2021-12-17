@@ -42,7 +42,7 @@ namespace ignite
         WinAsyncClient::~WinAsyncClient()
         {
             Close();
-            WaitPendingIo();
+            WaitForPendingIo();
         }
 
         void WinAsyncClient::Close()
@@ -56,7 +56,7 @@ namespace ignite
             }
         }
 
-        void WinAsyncClient::WaitPendingIo()
+        void WinAsyncClient::WaitForPendingIo()
         {
             while (!HasOverlappedIoCompleted(&currentSend.overlapped))
                 Sleep(0);

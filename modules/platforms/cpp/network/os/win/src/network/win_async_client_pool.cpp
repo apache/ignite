@@ -87,7 +87,7 @@ namespace ignite
             Join();
         }
 
-        WinAsyncClientPool::SP_WinAsyncClient WinAsyncClientPool::ConnectingThread::TryConnect(const TcpRange& range)
+        SP_WinAsyncClient WinAsyncClientPool::ConnectingThread::TryConnect(const TcpRange& range)
         {
             for (uint16_t port = range.port; port <= (range.port + range.range); ++port)
             {
@@ -108,7 +108,7 @@ namespace ignite
             return SP_WinAsyncClient();
         }
 
-        WinAsyncClientPool::SP_WinAsyncClient WinAsyncClientPool::ConnectingThread::TryConnect(const EndPoint& addr)
+        SP_WinAsyncClient WinAsyncClientPool::ConnectingThread::TryConnect(const EndPoint& addr)
         {
             addrinfo hints;
             memset(&hints, 0, sizeof(hints));
@@ -240,7 +240,7 @@ namespace ignite
 
             iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
             if (iocp == NULL)
-                ThrowWindowsError("Failed to create IOCP instance");
+                ThrowSystemError("Failed to create IOCP instance");
 
             nonConnected = addrs;
             asyncHandler = &handler;
@@ -257,24 +257,6 @@ namespace ignite
 
                 throw;
             }
-        }
-
-        void WinAsyncClientPool::ThrowWindowsError(const std::string& msg)
-        {
-            std::stringstream buf;
-
-            buf << "Windows system error: " << msg << ", system error code: " << GetLastError();
-
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
-        }
-
-        void WinAsyncClientPool::ThrowWsaError(const std::string& msg)
-        {
-            std::stringstream buf;
-
-            buf << "WSA system error: " << msg << ", WSA error code: " << WSAGetLastError();
-
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
         }
 
         void WinAsyncClientPool::Stop()
@@ -316,7 +298,7 @@ namespace ignite
 
                 HANDLE iocp0 = clientRef.AddToIocp(iocp);
                 if (iocp0 == NULL)
-                    ThrowWindowsError("Can not add socket to IOCP");
+                    ThrowSystemError("Can not add socket to IOCP");
 
                 iocp = iocp0;
 
@@ -334,11 +316,9 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
 
-                std::map<uint64_t, SP_WinAsyncClient>::iterator it = clientIdMap.find(id);
-                if (it == clientIdMap.end())
+                client = LockedFindClient(id);
+                if (!client.IsValid())
                     return false;
-
-                client = it->second;
             }
 
             return client.Get()->Send(mem);
@@ -368,7 +348,7 @@ namespace ignite
             }
 
             client.Get()->Close();
-            client.Get()->WaitPendingIo();
+            client.Get()->WaitForPendingIo();
 
             return true;
         }
@@ -379,13 +359,9 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
 
-                std::map<uint64_t, SP_WinAsyncClient>::iterator it = clientIdMap.find(id);
-                if (it == clientIdMap.end())
-                    return false;
+                client = LockedFindClient(id);
 
-                client = it->second;
-
-                if (client.Get()->IsClosed())
+                if (!client.IsValid() || client.Get()->IsClosed())
                     return false;
 
                 clientAddrMap.erase(client.Get()->GetAddress());
@@ -408,6 +384,33 @@ namespace ignite
 
             if (found)
                 asyncHandler->OnConnectionClosed(id, err);
+        }
+
+        void WinAsyncClientPool::ThrowSystemError(const std::string& msg)
+        {
+            std::stringstream buf;
+
+            buf << "Windows system error: " << msg << ", system error code: " << GetLastError();
+
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+        }
+
+        void WinAsyncClientPool::ThrowWsaError(const std::string& msg)
+        {
+            std::stringstream buf;
+
+            buf << "WSA system error: " << msg << ", WSA error code: " << WSAGetLastError();
+
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+        }
+
+        SP_WinAsyncClient WinAsyncClientPool::LockedFindClient(uint64_t id) const
+        {
+            std::map<uint64_t, SP_WinAsyncClient>::const_iterator it = clientIdMap.find(id);
+            if (it == clientIdMap.end())
+                return SP_WinAsyncClient();
+
+            return it->second;
         }
     }
 }

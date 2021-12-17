@@ -88,9 +88,6 @@ namespace ignite
 
         private:
 
-            /** Shared pointer to async client. */
-            typedef common::concurrent::SharedPointer<WinAsyncClient> SP_WinAsyncClient;
-
             /**
              * Async pool connecting thread.
              */
@@ -213,9 +210,17 @@ namespace ignite
             bool Close(uint64_t id);
 
             /**
+             * Find client by ID.
+             * @warning Should only be called with clientsCs lock held.
+             * @param id Client ID.
+             * @return Client. Null pointer if is not found.
+             */
+            SP_WinAsyncClient LockedFindClient(uint64_t id) const;
+
+            /**
              * Throw window specific error with error code.
              */
-            static void ThrowWindowsError(const std::string& msg);
+            static void ThrowSystemError(const std::string& msg);
 
             /**
              * Throw WSA specific error with error code.

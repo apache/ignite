@@ -152,7 +152,7 @@ namespace ignite
             /**
              * Wait for pending IO calls and wait till all IO are complete and reported.
              */
-            void WaitPendingIo();
+            void WaitForPendingIo();
 
         private:
             /** Socket. */
@@ -182,6 +182,9 @@ namespace ignite
             /** Packet that is currently received. */
             impl::interop::SP_InteropMemory recvPacket;
         };
+
+        /** Shared pointer to async client. */
+        typedef common::concurrent::SharedPointer<WinAsyncClient> SP_WinAsyncClient;
     }
 }
 
