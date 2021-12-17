@@ -20,21 +20,23 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 /** */
 public final class BytesCompareUtils {
     /** */
-    public static int compareNotNullSigned(byte[] arr0, byte[] arr1) {
+    public static int compareNotNullUnsigned(byte[] arr0, byte[] arr1) {
         if (arr0 == arr1)
             return 0;
         else {
             int commonLen = Math.min(arr0.length, arr1.length);
+            int unSignArr0;
+            int unSignArr1;
 
             for (int i = 0; i < commonLen; ++i) {
-                byte b0 = arr0[i];
-                byte b1 = arr1[i];
+                unSignArr0 = arr0[i] & 255;
+                unSignArr1 = arr1[i] & 255;
 
-                if (b0 != b1)
-                    return b0 > b1 ? 1 : -1;
+                if (unSignArr0 != unSignArr1)
+                    return unSignArr0 > unSignArr1 ? 1 : -1;
             }
 
-            return Integer.signum(arr0.length - arr1.length);
+            return Integer.signum(Integer.compare(arr0.length, arr1.length));
         }
     }
 }

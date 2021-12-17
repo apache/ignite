@@ -3505,11 +3505,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Byte.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Byte.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
@@ -3521,11 +3520,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Boolean.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Boolean.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
@@ -3537,11 +3535,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Short.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Short.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
@@ -3553,11 +3550,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Character.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Character.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
@@ -3569,11 +3565,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Integer.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Integer.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
@@ -3585,11 +3580,10 @@ public class GridFunc {
             return 0;
 
         int l = Math.min(a1.length, a2.length);
-        int res;
 
         for (int i = 0; i < l; i++) {
-            if ((res = Long.compare(a1[i], a2[i])) != 0)
-                return res;
+            if (a1[i] != a2[i])
+                return Long.compare(a1[i], a2[i]);
         }
 
         return Integer.compare(a1.length, a2.length);
