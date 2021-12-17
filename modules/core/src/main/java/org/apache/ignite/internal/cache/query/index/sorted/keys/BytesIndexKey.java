@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class BytesIndexKey implements IndexKey {
@@ -41,6 +42,6 @@ public class BytesIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return BytesCompareUtils.compareNotNullUnsigned(key, ((BytesIndexKey)o).key);
+        return F.compareNotNullUnsigned(key, ((BytesIndexKey)o).key);
     }
 }
