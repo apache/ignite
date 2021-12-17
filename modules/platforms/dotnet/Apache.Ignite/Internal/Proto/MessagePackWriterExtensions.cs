@@ -83,6 +83,18 @@ namespace Apache.Ignite.Internal.Proto
         }
 
         /// <summary>
+        /// Writes Ignite UUID.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        public static void WriteNoValue(this ref MessagePackWriter writer)
+        {
+            writer.WriteExtensionFormatHeader(
+                new ExtensionHeader((sbyte)ClientMessagePackType.NoValue, 1));
+
+            writer.Advance(1);
+        }
+
+        /// <summary>
         /// Writes an object.
         /// </summary>
         /// <param name="writer">Writer.</param>

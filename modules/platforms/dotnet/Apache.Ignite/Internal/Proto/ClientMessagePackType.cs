@@ -65,6 +65,11 @@ namespace Apache.Ignite.Internal.Proto
         /// <summary>
         /// Ignite UUID.
         /// </summary>
-        IgniteUuid = 9
+        IgniteUuid = 9,
+
+        /// <summary>
+        /// Absent value for a column.
+        /// </summary>
+        NoValue = 10
     }
 }

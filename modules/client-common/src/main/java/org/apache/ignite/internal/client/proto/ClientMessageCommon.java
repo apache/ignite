@@ -26,4 +26,7 @@ public class ClientMessageCommon {
 
     /** Magic bytes before handshake. */
     public static final byte[] MAGIC_BYTES = new byte[]{0x49, 0x47, 0x4E, 0x49}; // IGNI
+
+    /** Special "no value" object. */
+    public static final Object NO_VALUE = new Object();
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client.handler.requests.table;
 
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.NO_VALUE;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -311,7 +313,7 @@ class ClientTableCommon {
         var tuple = Tuple.create(cnt);
 
         for (int i = 0; i < cnt; i++) {
-            if (unpacker.tryUnpackNil()) {
+            if (unpacker.tryUnpackNoValue()) {
                 continue;
             }
 
@@ -437,10 +439,15 @@ class ClientTableCommon {
     }
 
     private static void writeColumnValue(ClientMessagePacker packer, Tuple tuple, Column col) {
-        var val = tuple.valueOrDefault(col.name(), null);
+        var val = tuple.valueOrDefault(col.name(), NO_VALUE);
 
         if (val == null) {
             packer.packNil();
+            return;
+        }
+
+        if (val == NO_VALUE) {
+            packer.packNoValue();
             return;
         }
 

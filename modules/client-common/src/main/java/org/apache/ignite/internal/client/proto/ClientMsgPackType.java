@@ -47,4 +47,7 @@ public class ClientMsgPackType {
 
     /** Ignite UUID. */
     public static final byte IGNITE_UUID = 9;
+
+    /** Absent value for a column. */
+    public static final byte NO_VALUE = 10;
 }

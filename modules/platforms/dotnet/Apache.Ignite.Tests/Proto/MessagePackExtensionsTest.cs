@@ -122,6 +122,33 @@ namespace Apache.Ignite.Tests.Proto
             CollectionAssert.AreEqual(JavaUuidBytes, bytes);
         }
 
+        [Test]
+        public void TestNoValue()
+        {
+            var res1 = WriteRead(
+                buf =>
+                {
+                    var w = buf.GetMessageWriter();
+
+                    w.Write(3);
+                    w.WriteNoValue();
+                    w.Write("abc");
+
+                    w.Flush();
+                },
+                m =>
+                {
+                    var r = new MessagePackReader(m);
+
+                    return (r.TryReadNoValue(), r.ReadInt32(), r.TryReadNoValue(), r.ReadString());
+                });
+
+            Assert.IsFalse(res1.Item1);
+            Assert.AreEqual(3, res1.Item2);
+            Assert.IsTrue(res1.Item3);
+            Assert.AreEqual("abc", res1.Item4);
+        }
+
         private static T WriteRead<T>(Action<PooledArrayBufferWriter> write, Func<ReadOnlyMemory<byte>, T> read)
         {
             var bufferWriter = new PooledArrayBufferWriter();

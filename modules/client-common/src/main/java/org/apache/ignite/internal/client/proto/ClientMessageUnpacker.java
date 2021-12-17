@@ -548,6 +548,29 @@ public class ClientMessageUnpacker implements AutoCloseable {
     }
 
     /**
+     * Tries to read a "no value" value.
+     *
+     * @return True when there was a "no value" value, false otherwise.
+     */
+    public boolean tryUnpackNoValue() {
+        assert refCnt > 0 : "Unpacker is closed";
+
+        int idx = buf.readerIndex();
+        byte code = buf.getByte(idx);
+
+        if (code == Code.FIXEXT1) {
+            byte extCode = buf.getByte(idx + 1);
+
+            if (extCode == ClientMsgPackType.NO_VALUE) {
+                buf.readerIndex(idx + 3);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Reads a payload.
      *
      * @param length Payload size.

@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import static org.apache.ignite.client.fakes.FakeIgniteTables.TABLE_ALL_COLUMNS;
 import static org.apache.ignite.client.fakes.FakeIgniteTables.TABLE_ONE_COLUMN;
+import static org.apache.ignite.client.fakes.FakeIgniteTables.TABLE_WITH_DEFAULT_VALUES;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -91,6 +92,12 @@ public class AbstractClientTableTest extends AbstractClientTest {
         server.tables().createTableIfNotExists(DEFAULT_TABLE, tbl -> tbl.changeReplicas(1));
 
         return client.tables().table(DEFAULT_TABLE);
+    }
+
+    protected Table tableWithDefaultValues() {
+        server.tables().createTableIfNotExists(TABLE_WITH_DEFAULT_VALUES, tbl -> tbl.changeReplicas(1));
+
+        return client.tables().table(TABLE_WITH_DEFAULT_VALUES);
     }
 
     protected static Tuple allClumnsTableKey(long id) {

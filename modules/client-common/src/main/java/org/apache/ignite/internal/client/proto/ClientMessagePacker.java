@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.proto;
 
 import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.NO_VALUE;
 import static org.msgpack.core.MessagePack.Code;
 
 import io.netty.buffer.ByteBuf;
@@ -79,6 +80,17 @@ public class ClientMessagePacker implements AutoCloseable {
         assert !closed : "Packer is closed";
 
         buf.writeByte(Code.NIL);
+    }
+
+    /**
+     * Writes a "no value" value.
+     */
+    public void packNoValue() {
+        assert !closed : "Packer is closed";
+
+        buf.writeByte(Code.FIXEXT1);
+        buf.writeByte(ClientMsgPackType.NO_VALUE);
+        buf.writeByte(0);
     }
 
     /**
@@ -644,6 +656,12 @@ public class ClientMessagePacker implements AutoCloseable {
     public void packObject(Object val) {
         if (val == null) {
             packNil();
+
+            return;
+        }
+
+        if (val == NO_VALUE) {
+            packNoValue();
 
             return;
         }

@@ -329,4 +329,47 @@ public class ClientTableTest extends AbstractClientTableTest {
         assertEquals(3L, skippedTuples[1].longValue("id"));
         assertEquals("z", skippedTuples[1].stringValue("name"));
     }
+
+    @Test
+    public void testColumnWithDefaultValueNotSetReturnsDefault() {
+        RecordView<Tuple> table = tableWithDefaultValues().recordView();
+
+        var tuple = Tuple.create()
+                .set("id", 1);
+
+        table.upsert(tuple);
+
+        var res = table.get(tuple);
+
+        assertEquals("def_str", res.stringValue("str"));
+        assertEquals("def_str2", res.stringValue("str_non_null"));
+    }
+
+    @Test
+    public void testNullableColumnWithDefaultValueSetNullReturnsNull() {
+        RecordView<Tuple> table = tableWithDefaultValues().recordView();
+
+        var tuple = Tuple.create()
+                .set("id", 1)
+                .set("str", null);
+
+        table.upsert(tuple);
+
+        var res = table.get(tuple);
+
+        assertNull(res.stringValue("str"));
+    }
+
+    @Test
+    public void testNonNullableColumnWithDefaultValueSetNullThrowsException() {
+        RecordView<Tuple> table = tableWithDefaultValues().recordView();
+
+        var tuple = Tuple.create()
+                .set("id", 1)
+                .set("str_non_null", null);
+
+        var ex = assertThrows(CompletionException.class, () -> table.upsert(tuple));
+
+        assertTrue(ex.getMessage().contains("null was passed, but column is not nullable"), ex.getMessage());
+    }
 }

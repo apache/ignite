@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.NO_VALUE;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -249,29 +251,20 @@ public class ClientTable implements Table {
             boolean keyOnly,
             boolean skipHeader
     ) {
-        // TODO: Special case for ClientTupleBuilder - it has columns in order
-        // TODO: Optimize (IGNITE-16082).
-        var vals = new Object[keyOnly ? schema.keyColumnCount() : schema.columns().length];
-        var tupleSize = tuple.columnCount();
-
-        for (var i = 0; i < tupleSize; i++) {
-            var colName = tuple.columnName(i);
-            var col = schema.column(colName);
-
-            if (keyOnly && !col.key()) {
-                continue;
-            }
-
-            vals[col.schemaIndex()] = tuple.value(i);
-        }
-
         if (!skipHeader) {
             out.packIgniteUuid(id);
             out.packInt(schema.version());
         }
 
-        for (var val : vals) {
-            out.packObject(val);
+        var columns = schema.columns();
+        var count = keyOnly ? schema.keyColumnCount() : columns.length;
+
+        for (var i = 0; i < count; i++) {
+            var col = columns[i];
+
+            Object v = tuple.valueOrDefault(col.name(), NO_VALUE);
+
+            out.packObject(v);
         }
     }
 
@@ -291,39 +284,22 @@ public class ClientTable implements Table {
             ClientMessagePacker out,
             boolean skipHeader
     ) {
-        // TODO: Handle missing values and null values differently (IGNITE-16093).
-        var vals = new Object[schema.columns().length];
-
-        for (var i = 0; i < key.columnCount(); i++) {
-            var colName = key.columnName(i);
-            var col = schema.column(colName);
-
-            if (!col.key()) {
-                continue;
-            }
-
-            vals[col.schemaIndex()] = key.value(i);
-        }
-
-        if (val != null) {
-            for (var i = 0; i < val.columnCount(); i++) {
-                var colName = val.columnName(i);
-                var col = schema.column(colName);
-
-                if (col.key()) {
-                    continue;
-                }
-
-                vals[col.schemaIndex()] = val.value(i);
-            }
-        }
-
         if (!skipHeader) {
             out.packIgniteUuid(id);
             out.packInt(schema.version());
         }
 
-        for (var v : vals) {
+        var columns = schema.columns();
+
+        for (var i = 0; i < columns.length; i++) {
+            var col = columns[i];
+
+            Object v = col.key()
+                    ? key.valueOrDefault(col.name(), NO_VALUE)
+                    : val != null
+                            ? val.valueOrDefault(col.name(), NO_VALUE)
+                            : NO_VALUE;
+
             out.packObject(v);
         }
     }

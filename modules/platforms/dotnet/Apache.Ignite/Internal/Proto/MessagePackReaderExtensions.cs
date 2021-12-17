@@ -143,6 +143,30 @@ namespace Apache.Ignite.Internal.Proto
             return res;
         }
 
+        /// <summary>
+        /// Reads <see cref="ClientMessagePackType.NoValue"/> if it is the next token.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns><c>true</c> if the next token was NoValue; <c>false</c> otherwise.</returns>
+        public static bool TryReadNoValue(this ref MessagePackReader reader)
+        {
+            if (reader.NextCode != MessagePackCode.FixExt1)
+            {
+                return false;
+            }
+
+            var header = reader.CreatePeekReader().ReadExtensionFormatHeader();
+
+            if (header.TypeCode != (sbyte)ClientMessagePackType.NoValue)
+            {
+                return false;
+            }
+
+            reader.ReadRaw(3);
+
+            return true;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ValidateExtensionType(
             ref MessagePackReader reader,

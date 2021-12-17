@@ -352,6 +352,11 @@ namespace Apache.Ignite.Internal.Table
                 }
                 else
                 {
+                    if (r.TryReadNoValue())
+                    {
+                        continue;
+                    }
+
                     tuple[column.Name] = r.ReadObject(column.Type);
                 }
             }
@@ -367,6 +372,11 @@ namespace Apache.Ignite.Internal.Table
 
             for (var index = 0; index < count; index++)
             {
+                if (r.TryReadNoValue())
+                {
+                    continue;
+                }
+
                 var column = columns[index];
                 tuple[column.Name] = r.ReadObject(column.Type);
             }
@@ -443,7 +453,7 @@ namespace Apache.Ignite.Internal.Table
 
                 if (colIdx < 0)
                 {
-                    w.WriteNil();
+                    w.WriteNoValue();
                 }
                 else
                 {
