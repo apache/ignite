@@ -7407,6 +7407,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get string representation of an object properly catching all exceptions.
+     *
+     * @param obj Object.
+     * @return Result or an empty string.
+     */
+    public static String toStringSafeNotNull(@Nullable Object obj) {
+        String str = toStringSafe(obj);
+
+        return str == null ? "" : str;
+    }
+
+    /**
      * Converts collection of integers into array.
      *
      * @param c Collection of integers.

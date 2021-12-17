@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -140,7 +141,7 @@ public class SnapshotRestoreProcess {
     private volatile SnapshotRestoreContext opCtx;
 
     /** Last snapshot restore operation context (saves the metrics of the last operation). */
-    private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext();
+    private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext(null, 0, "");
 
     /**
      * @param ctx Kernal context.
@@ -193,6 +194,10 @@ public class SnapshotRestoreProcess {
             "The system time when the restore operation of a cluster snapshot on this node ended.");
         mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
             "The snapshot name of the last running cluster snapshot restore operation on this node.");
+        mreg.register("requestId", () -> IgniteUtils.toStringSafeNotNull(lastOpCtx.reqId),
+            String.class, "The request ID of the last running cluster snapshot restore operation on this node.");
+        mreg.register("error", () -> IgniteUtils.toStringSafeNotNull(lastOpCtx.err.get()),
+            String.class, "Error message of the last running cluster snapshot restore operation on this node.");
         mreg.register("totalPartitions", () -> lastOpCtx.totalParts,
             "The total number of partitions to be restored on this node.");
         mreg.register("processedPartitions", () -> lastOpCtx.processedParts.get(),
@@ -232,7 +237,10 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut0 = fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
+                UUID reqId = UUID.randomUUID();
+
+                lastOpCtx = new SnapshotRestoreContext(reqId, U.currentTimeMillis(), snpName);
+                fut0 = fut = new ClusterSnapshotFuture(reqId, snpName);
             }
         }
         catch (IgniteException e) {
@@ -651,8 +659,10 @@ public class SnapshotRestoreProcess {
 
         DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
 
-        if (F.isEmpty(metas))
-            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap(), cctx.localNodeId(), Collections.emptyList());
+        if (F.isEmpty(metas)) {
+            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap(), cctx.localNodeId(),
+                Collections.emptyList(), 0);
+        }
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -708,7 +718,9 @@ public class SnapshotRestoreProcess {
         Map<Integer, StoredCacheData> cfgsById =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
-        return new SnapshotRestoreContext(req, discoCache0, cfgsById, cctx.localNodeId(), metas);
+        long startTime = req.requestId().equals(lastOpCtx.reqId) ? lastOpCtx.startTime : U.currentTimeMillis();
+
+        return new SnapshotRestoreContext(req, discoCache0, cfgsById, cctx.localNodeId(), metas, startTime);
     }
 
     /**
@@ -1460,28 +1472,30 @@ public class SnapshotRestoreProcess {
             DiscoCache discoCache,
             Map<Integer, StoredCacheData> cfgs,
             UUID locNodeId,
-            List<SnapshotMetadata> locMetas
+            List<SnapshotMetadata> locMetas,
+            long startTime
         ) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             opNodeId = req.operationalNodeId();
-            this.discoCache = discoCache;
 
+            this.discoCache = discoCache;
             this.cfgs = cfgs;
+            this.startTime = startTime;
 
             metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
-
-            startTime = U.currentTimeMillis();
         }
 
         /**
          * Default constructor.
          */
-        protected SnapshotRestoreContext() {
-            reqId = opNodeId = null;
+        protected SnapshotRestoreContext(UUID reqId, long startTime, String snpName) {
+            this.reqId = reqId;
+            this.startTime = startTime;
+            this.snpName = snpName;
+
+            opNodeId = null;
             discoCache = null;
-            snpName = "";
-            startTime = 0;
         }
 
         /**
