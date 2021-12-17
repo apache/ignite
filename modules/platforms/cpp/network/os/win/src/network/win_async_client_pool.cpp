@@ -55,20 +55,37 @@ namespace ignite
                 }
 
                 SP_WinAsyncClient client = TryConnect(range);
-                if (client.IsValid())
+
+                if (stopping)
                 {
-                    try
-                    {
-                        uint64_t id = clientPool.AddClient(client);
+                    client.Get()->Close();
 
-                        clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
-                    }
-                    catch (const IgniteError& err)
-                    {
-                        client.Get()->Close();
+                    return;
+                }
 
-                        clientPool.asyncHandler->OnConnectionError(client.Get()->GetAddress(), err);
-                    }
+                if (!client.IsValid())
+                    continue;
+
+                try
+                {
+                    uint64_t id = clientPool.AddClient(client);
+
+                    clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
+                }
+                catch (const IgniteError& err)
+                {
+                    client.Get()->Close();
+
+                    clientPool.asyncHandler->OnConnectionError(client.Get()->GetAddress(), err);
+                }
+
+                bool success = client.Get()->Receive(4);
+                if (!success)
+                {
+                    IgniteError err(IgniteError::IGNITE_ERR_GENERIC,
+                        "Can not initiate receiving of a first packet");
+
+                    clientPool.Close(client.Get()->GetId(), &err);
                 }
             }
         }
@@ -185,31 +202,64 @@ namespace ignite
             {
                 DWORD bytesTransferred = 0;
                 ULONG_PTR key = NULL;
-                LPOVERLAPPED overLapped = NULL;
+                LPOVERLAPPED overlapped = NULL;
 
-                BOOL ok = GetQueuedCompletionStatus(clientPool.iocp, &bytesTransferred, &key, &overLapped, INFINITE);
+                BOOL ok = GetQueuedCompletionStatus(clientPool.iocp, &bytesTransferred, &key, &overlapped, INFINITE);
 
-                if (!key || !overLapped)
+                if (stopping)
+                    break;
+
+                if (!key || !overlapped)
                     continue;
 
-                uint64_t id = static_cast<uint64_t>(key);
+                WinAsyncClient* client = reinterpret_cast<WinAsyncClient*>(key);
 
                 if (!ok || 0 == bytesTransferred)
                 {
                     IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
-                    clientPool.Close(id, &err);
-                    clientPool.CloseAndRelease(id);
+                    clientPool.CloseAndRelease(client->GetId(), &err);
 
                     continue;
                 }
 
-                // ...
+                try
+                {
+                    IoOperation* operation = reinterpret_cast<IoOperation*>(overlapped);
+                    switch (operation->kind)
+                    {
+                        case IoOperationKind::SEND:
+                        {
+                            client->ProcessSent(bytesTransferred);
+
+                            break;
+                        }
+
+                        case IoOperationKind::RECEIVE:
+                        {
+                            impl::interop::SP_InteropMemory packet = client->ProcessReceived(bytesTransferred);
+
+                            if (packet.IsValid())
+                                clientPool.asyncHandler->OnMessageReceived(client->GetId(), packet);
+
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
+                }
+                catch (const IgniteError& err)
+                {
+                    clientPool.Close(client->GetId(), &err);
+                }
             }
         }
 
         void WinAsyncClientPool::WorkerThread::Stop()
         {
             stopping = true;
+
+            PostQueuedCompletionStatus(clientPool.iocp, 0, 0, 0);
 
             Join();
         }
@@ -218,10 +268,13 @@ namespace ignite
             asyncHandler(0),
             connectingThread(*this),
             workerThread(*this),
+            connectionLimit(0),
             idGen(0),
+            iocp(NULL),
+            clientsCs(),
+            nonConnected(),
             clientIdMap(),
-            clientAddrMap(),
-            iocp(NULL)
+            clientAddrMap()
         {
             // No-op.
         }
@@ -351,6 +404,14 @@ namespace ignite
             client.Get()->WaitForPendingIo();
 
             return true;
+        }
+
+        void WinAsyncClientPool::CloseAndRelease(uint64_t id, const IgniteError* err)
+        {
+            bool found = CloseAndRelease(id);
+
+            if (found)
+                asyncHandler->OnConnectionClosed(id, err);
         }
 
         bool WinAsyncClientPool::Close(uint64_t id)

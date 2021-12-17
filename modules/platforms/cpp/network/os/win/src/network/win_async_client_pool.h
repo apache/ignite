@@ -201,6 +201,16 @@ namespace ignite
             bool CloseAndRelease(uint64_t id);
 
             /**
+             * Closes and releases memory allocated for client with specified ID.
+             * Error is reported to handler.
+             *
+             * @param id Client ID.
+             * @param err Error to report. May be null.
+             * @return @c true if connection with specified ID was found.
+             */
+            void CloseAndRelease(uint64_t id, const IgniteError* err);
+
+            /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
              * re-connect. Error is not reported to handler.
              *

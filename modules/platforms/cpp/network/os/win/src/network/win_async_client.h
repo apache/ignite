@@ -102,6 +102,32 @@ namespace ignite
             bool Send(const impl::interop::SP_InteropMemory& packet);
 
             /**
+             * Initiate receiving of packet of the specified length. Received data is written to the receive buffer.
+             *
+             * @param bytes Packet size in bytes.
+             * @return @c true on success.
+             */
+            bool Receive(size_t bytes);
+
+            /**
+             * Gets received data as a single buffer.
+             * Clears client's receive buffer.
+             *
+             * @return Data received so far.
+             */
+            impl::interop::SP_InteropMemory DetachReceiveBuffer();
+
+            /**
+             * Get client ID.
+             *
+             * @return Client ID.
+             */
+            uint64_t GetId() const
+            {
+                return id;
+            }
+
+            /**
              * Set ID.
              *
              * @param id ID to set.
@@ -133,6 +159,7 @@ namespace ignite
 
             /**
              * Set range.
+             *
              * @param range Range.
              */
             void SetRange(const TcpRange& range)
@@ -142,6 +169,7 @@ namespace ignite
 
             /**
              * Check whether client is closed.
+             *
              * @return @c true if closed.
              */
             bool IsClosed() const
@@ -154,7 +182,31 @@ namespace ignite
              */
             void WaitForPendingIo();
 
+            /**
+             * Process sent data.
+             *
+             * @param bytes Bytes.
+             * @return @c true on success.
+             */
+            bool ProcessSent(size_t bytes);
+
+            /**
+             * Process received bytes.
+             *
+             * @param bytes Number of received bytes.
+             * @return New packet if received completely or null.
+             */
+            impl::interop::SP_InteropMemory ProcessReceived(size_t bytes);
+
         private:
+            /**
+             * Send next packet in queue.
+             *
+             * @warning Can only be called when holding sendCs lock.
+             * @return @c true on success.
+             */
+            bool SendNextPacket();
+
             /** Socket. */
             SOCKET socket;
 
