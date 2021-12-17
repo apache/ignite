@@ -3639,7 +3639,7 @@ public class GridFunc {
     }
 
     /** */
-    public static int compareNotNullUnsigned(byte[] arr0, byte[] arr1) {
+    public static int compareArrayUnsigned(byte[] arr0, byte[] arr1) {
         if (arr0 == arr1)
             return 0;
 

@@ -42,6 +42,6 @@ public class BytesIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return F.compareNotNullUnsigned(key, ((BytesIndexKey)o).key);
+        return F.compareArrayUnsigned(key, ((BytesIndexKey)o).key);
     }
 }
