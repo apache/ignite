@@ -22,8 +22,13 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Reflection;
+    using System.Security.Authentication;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -62,6 +67,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private IIgnite _client;
+
+        /** */
+        private IIgniteClient _thinClient;
 
         /** */
         public ServicesTypeAutoResolveTest()
@@ -168,6 +176,24 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestJavaServiceRemote()
         {
             DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName));
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName));
         }
 
         /// <summary>
@@ -280,6 +306,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 "client_work");
 
             _client = Ignition.Start(cfg);
+            _thinClient = Ignition.StartClient(GetClientConfiguration());
         }
 
         /// <summary>
@@ -307,6 +334,21 @@ namespace Apache.Ignite.Core.Tests.Services
                     NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
                 },
                 LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
+            };
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        protected IgniteClientConfiguration GetClientConfiguration()
+        {
+            var port = IgniteClientConfiguration.DefaultPort;
+
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
+                SocketTimeout = TimeSpan.FromSeconds(15),
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
             };
         }
     }
