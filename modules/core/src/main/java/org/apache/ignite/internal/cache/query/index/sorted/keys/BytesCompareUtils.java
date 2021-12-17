@@ -18,14 +18,23 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 /** */
-public class SignedBytesIndexKey extends BytesIndexKey {
+public final class BytesCompareUtils {
     /** */
-    public SignedBytesIndexKey(byte[] key) {
-        super(key);
-    }
+    public static int compareNotNullSigned(byte[] arr0, byte[] arr1) {
+        if (arr0 == arr1)
+            return 0;
+        else {
+            int commonLen = Math.min(arr0.length, arr1.length);
 
-    /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        return BytesCompareUtils.compareNotNullSigned(key, ((BytesIndexKey)o).key);
+            for (int i = 0; i < commonLen; ++i) {
+                byte b0 = arr0[i];
+                byte b1 = arr1[i];
+
+                if (b0 != b1)
+                    return b0 > b1 ? 1 : -1;
+            }
+
+            return Integer.signum(arr0.length - arr1.length);
+        }
     }
 }
