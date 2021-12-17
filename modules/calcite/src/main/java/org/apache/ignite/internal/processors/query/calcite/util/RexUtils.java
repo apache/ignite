@@ -25,6 +25,9 @@ import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -626,17 +629,16 @@ public class RexUtils {
         return cors;
     }
 
-
     /**
      * NotNullKeys.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public static Set<Integer> notNullKeys(List<RexNode> row) {
+    public static IntSet notNullKeys(List<RexNode> row) {
         if (nullOrEmpty(row)) {
-            return Collections.emptySet();
+            return IntSets.EMPTY_SET;
         }
 
-        Set<Integer> keys = new HashSet<>();
+        IntSet keys = new IntOpenHashSet();
 
         for (int i = 0; i < row.size(); ++i) {
             if (isNotNull(row.get(i))) {

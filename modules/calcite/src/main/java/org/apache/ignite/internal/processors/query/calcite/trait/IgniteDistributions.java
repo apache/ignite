@@ -121,8 +121,8 @@ public class IgniteDistributions {
      * @param function Specific hash function.
      * @return Hash distribution.
      */
-    public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
-        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
+    public static IgniteDistribution hash(ImmutableIntList keys, DistributionFunction function) {
+        return canonize(new DistributionTrait(keys, function));
     }
 
     /**

@@ -98,6 +98,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.InternalIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
@@ -588,11 +589,11 @@ class RelJson {
         Map<String, Object> map = (Map<String, Object>) distribution;
         Number cacheId = (Number) map.get("cacheId");
         if (cacheId != null) {
-            return IgniteDistributions.hash((List<Integer>) map.get("keys"),
+            return IgniteDistributions.hash(ImmutableIntList.copyOf((List<Integer>) map.get("keys")),
                     DistributionFunction.affinity(cacheId.intValue(), cacheId));
         }
 
-        return IgniteDistributions.hash((List<Integer>) map.get("keys"), DistributionFunction.hash());
+        return IgniteDistributions.hash(ImmutableIntList.copyOf((List<Integer>) map.get("keys")), DistributionFunction.hash());
     }
 
     RelDataType toType(RelDataTypeFactory typeFactory, Object o) {

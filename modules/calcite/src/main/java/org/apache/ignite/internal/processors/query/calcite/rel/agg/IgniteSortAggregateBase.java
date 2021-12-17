@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.List;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -59,7 +60,7 @@ interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
     ) {
         RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
 
-        List<Integer> newCollation = maxPrefix(inputCollation.getKeys(), getGroupSet().asSet());
+        IntList newCollation = maxPrefix(inputCollation.getKeys(), getGroupSet().asSet());
 
         if (newCollation.size() < getGroupSet().cardinality()) {
             return List.of();

@@ -21,13 +21,18 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.util.CollectionUtils.concat;
 import static org.apache.ignite.internal.util.CollectionUtils.difference;
+import static org.apache.ignite.internal.util.CollectionUtils.setOf;
 import static org.apache.ignite.internal.util.CollectionUtils.union;
 import static org.apache.ignite.internal.util.CollectionUtils.viewReadOnly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.StreamSupport;
@@ -124,5 +129,48 @@ public class CollectionUtilsTest {
      */
     private <T> List<? extends T> collect(Iterable<? extends T> iterable) {
         return StreamSupport.stream(iterable.spliterator(), false).collect(toList());
+    }
+
+    /**
+     * Test setOf by populated and empty list.
+     */
+    @Test
+    void testSetOfList() {
+        List<Integer> list = Arrays.asList(1, 2, 3, 234, 3);
+
+        testSetOf(list);
+
+        testSetOf(Collections.emptyList());
+    }
+
+    /**
+     * Test setOf by populated and empty sets.
+     */
+    @Test
+    void testSetOfSet() {
+        Set<Integer> set = new HashSet<>();
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(234);
+
+        testSetOf(set);
+
+        testSetOf(Collections.emptySet());
+    }
+
+    private void testSetOf(Collection<Integer> data) {
+        Set<Integer> copy = setOf(data);
+
+        assertNotNull(copy);
+
+        for (Integer i : data) {
+            assertTrue(copy.contains(i));
+        }
+
+        assertEquals(new HashSet<>(data).size(), copy.size());
+
+        assertThrows(UnsupportedOperationException.class, () -> copy.add(42));
+        assertThrows(UnsupportedOperationException.class, () -> copy.remove(3));
     }
 }

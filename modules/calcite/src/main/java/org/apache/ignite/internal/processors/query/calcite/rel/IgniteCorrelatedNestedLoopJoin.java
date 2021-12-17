@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -107,9 +107,9 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         RelCollation leftCollation = TraitUtils.collation(left);
         RelCollation rightCollation = TraitUtils.collation(right);
 
-        List<Integer> newRightCollationFields = maxPrefix(rightCollation.getKeys(), joinInfo.leftKeys);
+        IntList newRightCollationFields = maxPrefix(rightCollation.getKeys(), joinInfo.leftKeys);
 
-        if (nullOrEmpty(newRightCollationFields)) {
+        if (newRightCollationFields.isEmpty()) {
             return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY), inputTraits));
         }
 

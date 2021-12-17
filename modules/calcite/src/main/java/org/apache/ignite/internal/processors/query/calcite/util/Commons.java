@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import static org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext.CLUSTER;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -598,12 +601,14 @@ public final class Commons {
      * @param elems Elems.
      * @return The longest possible prefix of {@code seq}.
      */
-    public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
-        List<T> res = new ArrayList<>();
+    public static IntList maxPrefix(ImmutableIntList seq, Collection<Integer> elems) {
+        IntList res = new IntArrayList();
 
-        Set<T> elems0 = new HashSet<>(elems);
+        IntOpenHashSet elems0 = new IntOpenHashSet(elems);
 
-        for (T e : seq) {
+        int e;
+        for (int i = 0; i < seq.size(); i++) {
+            e = seq.getInt(i);
             if (!elems0.remove(e)) {
                 break;
             }
@@ -613,6 +618,7 @@ public final class Commons {
 
         return res;
     }
+
 
     /**
      * Quietly closes given object ignoring possible checked exception.

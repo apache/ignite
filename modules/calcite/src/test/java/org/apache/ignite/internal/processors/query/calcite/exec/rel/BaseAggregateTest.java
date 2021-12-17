@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -490,12 +490,12 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
                 RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
                 root.register(aggChain);
 
-                Set<Integer> grpId = IntStream.range(0, grps).boxed().collect(Collectors.toSet());
+                IntSet grpId = new IntOpenHashSet(IntStream.range(0, grps).toArray());
 
                 while (root.hasNext()) {
                     Object[] row = root.next();
 
-                    grpId.remove(row[0]);
+                    grpId.remove(((Integer) row[0]).intValue());
 
                     assertEquals((rowsInGroup - 1) * rowsInGroup / 2, row[1]);
                 }
