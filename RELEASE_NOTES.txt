@@ -5,6 +5,7 @@ Apache Ignite In-Memory Distributed Database 2.11.1
 -----------------------------------------------------------
 
 * Fixed CVE-2021-44228, CVE-2021-45046 of ignite-log4j2 module by updating dependency log4j up to 2.16.0.
+* Added ability to build ODBC installers using CMake
 
 
 Apache Ignite In-Memory Distributed Database 2.11.0
