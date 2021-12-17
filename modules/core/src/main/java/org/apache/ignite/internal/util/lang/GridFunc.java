@@ -54,7 +54,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -3497,7 +3496,7 @@ public class GridFunc {
             return ((Comparable)a1[i]).compareTo(a2[i]);
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3513,7 +3512,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3529,7 +3528,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3545,7 +3544,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3561,7 +3560,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3577,7 +3576,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3593,7 +3592,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3609,7 +3608,7 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
+        return Integer.compare(a1.length, a2.length);
     }
 
     /** Compare arrays. */
@@ -3625,38 +3624,6 @@ public class GridFunc {
                 return res;
         }
 
-        return compare(a1.length, a2.length);
-    }
-
-    /**
-     * Copy of {@link Integer#compare(int, int)} to be sure only {@link -1, 0, 1} returned
-     * which is not guarnteed by {@link Integer#compare(int, int)} method.
-     *
-     * @see NullableInlineIndexKeyType#CANT_BE_COMPARE
-     */
-    private static int compare(int x, int y) {
-        return (x < y) ? -1 : ((x == y) ? 0 : 1);
-    }
-
-    /** */
-    public static int compareArrayUnsigned(byte[] arr0, byte[] arr1) {
-        if (arr0 == arr1)
-            return 0;
-
-        int l = Math.min(arr0.length, arr1.length);
-
-        int unSignArr0;
-        int unSignArr1;
-
-        for (int i = 0; i < l; ++i) {
-            unSignArr0 = arr0[i] & 255;
-            unSignArr1 = arr1[i] & 255;
-
-            if (unSignArr0 != unSignArr1)
-                return unSignArr0 > unSignArr1 ? 1 : -1;
-        }
-
-        return compare(arr0.length, arr1.length);
-
+        return Integer.compare(a1.length, a2.length);
     }
 }
