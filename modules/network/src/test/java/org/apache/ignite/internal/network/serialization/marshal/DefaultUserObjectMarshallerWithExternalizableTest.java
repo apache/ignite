@@ -21,21 +21,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
+import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link DefaultUserObjectMarshaller}.
+ * Tests for how {@link DefaultUserObjectMarshaller} handles {@link Externalizable}s.
  */
-class DefaultUserObjectMarshallerTest {
+class DefaultUserObjectMarshallerWithExternalizableTest {
     private final ClassDescriptorFactoryContext descriptorRegistry = new ClassDescriptorFactoryContext();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
 
@@ -50,24 +51,31 @@ class DefaultUserObjectMarshallerTest {
 
         ClassDescriptor expectedDescriptor = descriptorRegistry.getDescriptor(SimpleExternalizable.class);
         assertThat(expectedDescriptor, is(notNullValue()));
-        assertThat(marshalled.usedDescriptors(), is(equalTo(List.of(expectedDescriptor))));
+        assertThat(marshalled.usedDescriptors(), is(equalTo(Set.of(expectedDescriptor))));
     }
 
     @Test
     void marshalsAndUnmarshalsExternalizable() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new SimpleExternalizable(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = unmarshalNonNull(marshalled);
+
+        assertThat(unmarshalled.intValue, is(42));
+    }
+
+    private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes());
 
         assertThat(unmarshalled, is(notNullValue()));
-        assertThat(unmarshalled.intValue, is(42));
+
+        return unmarshalled;
     }
 
     @Test
     void appliesWriteReplaceOnExternalizable() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithWriteReplace(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = unmarshalNonNull(marshalled);
 
         assertThat(unmarshalled.intValue, is(equalTo(42 + WRITE_REPLACE_INCREMENT)));
     }
@@ -76,7 +84,7 @@ class DefaultUserObjectMarshallerTest {
     void appliesReadResolveOnExternalizable() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithReadResolve(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = unmarshalNonNull(marshalled);
 
         assertThat(unmarshalled.intValue, is(equalTo(42 + READ_RESOLVE_INCREMENT)));
     }
@@ -85,9 +93,43 @@ class DefaultUserObjectMarshallerTest {
     void appliesBothWriteReplaceAndReadResolveOnExternalizable() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithWriteReplaceReadResolve(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = unmarshalNonNull(marshalled);
 
         assertThat(unmarshalled.intValue, is(equalTo(42 + WRITE_REPLACE_INCREMENT + READ_RESOLVE_INCREMENT)));
+    }
+
+    @Test
+    void onlyUsesDescriptorOfReplacementWhenExternalizableIsReplacedWithSomethingDifferent() throws Exception {
+        MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithReplaceWithSimple(42));
+
+        ClassDescriptor replacementDescriptor = descriptorRegistry.getRequiredDescriptor(SimpleExternalizable.class);
+        assertThat(marshalled.usedDescriptors(), equalTo(Set.of(replacementDescriptor)));
+    }
+
+    @Test
+    void marshalsExternalizableWithReplaceWithNull() throws Exception {
+        MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithReplaceWithNull(42));
+
+        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+
+        assertThat(unmarshalled, is(nullValue()));
+    }
+
+    @Test
+    void onlyUsesDescriptorOfReplacementWhenExternalizableIsReplacedWithNull() throws Exception {
+        MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithReplaceWithNull(42));
+
+        ClassDescriptor replacementDescriptor = descriptorRegistry.getNullDescriptor();
+        assertThat(marshalled.usedDescriptors(), equalTo(Set.of(replacementDescriptor)));
+    }
+
+    @Test
+    void unmarshalsExternalizableWithResolveWithNull() throws Exception {
+        MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithResolveWithNull(42));
+
+        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+
+        assertThat(unmarshalled, is(nullValue()));
     }
 
     /**
@@ -123,7 +165,7 @@ class DefaultUserObjectMarshallerTest {
         }
 
         private Object writeReplace() {
-            return new ExternalizableWithWriteReplaceReadResolve(intValue + 1_000_000);
+            return new ExternalizableWithWriteReplace(intValue + 1_000_000);
         }
     }
 
@@ -154,6 +196,57 @@ class DefaultUserObjectMarshallerTest {
 
         private Object readResolve() {
             return new ExternalizableWithWriteReplaceReadResolve(intValue + 1_000);
+        }
+    }
+
+    private static class ExternalizableWithReplaceWithSimple implements Externalizable {
+        private int intValue;
+
+        public ExternalizableWithReplaceWithSimple() {
+        }
+
+        public ExternalizableWithReplaceWithSimple(int intValue) {
+            this.intValue = intValue;
+        }
+
+        private Object writeReplace() {
+            return new SimpleExternalizable(intValue);
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(intValue);
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException {
+            intValue = in.readInt();
+        }
+    }
+
+    private static class ExternalizableWithReplaceWithNull extends SimpleExternalizable {
+        public ExternalizableWithReplaceWithNull() {
+        }
+
+        public ExternalizableWithReplaceWithNull(int intValue) {
+            super(intValue);
+        }
+
+        private Object writeReplace() {
+            return null;
+        }
+    }
+
+    private static class ExternalizableWithResolveWithNull extends SimpleExternalizable {
+        public ExternalizableWithResolveWithNull() {
+        }
+
+        public ExternalizableWithResolveWithNull(int intValue) {
+            super(intValue);
+        }
+
+        private Object readResolve() {
+            return null;
         }
     }
 }

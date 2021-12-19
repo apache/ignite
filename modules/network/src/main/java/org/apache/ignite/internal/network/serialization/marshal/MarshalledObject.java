@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.network.serialization.marshal;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 
 /**
@@ -31,7 +31,7 @@ public class MarshalledObject {
     private final byte[] bytes;
 
     /** The descriptors that were used while marshalling the object. */
-    private final List<ClassDescriptor> usedDescriptors;
+    private final Set<ClassDescriptor> usedDescriptors;
 
     /**
      * Creates a new {@link MarshalledObject}.
@@ -39,12 +39,12 @@ public class MarshalledObject {
      * @param bytes           marshalled representation bytes
      * @param usedDescriptors the descriptors that were used to marshal the object
      */
-    public MarshalledObject(byte[] bytes, List<ClassDescriptor> usedDescriptors) {
+    public MarshalledObject(byte[] bytes, Set<ClassDescriptor> usedDescriptors) {
         Objects.requireNonNull(bytes, "bytes is null");
         Objects.requireNonNull(usedDescriptors, "usedDescriptors is null");
 
         this.bytes = Arrays.copyOf(bytes, bytes.length);
-        this.usedDescriptors = List.copyOf(usedDescriptors);
+        this.usedDescriptors = Set.copyOf(usedDescriptors);
     }
 
     /**
@@ -61,7 +61,7 @@ public class MarshalledObject {
      *
      * @return the descriptors that were used while marshalling the object
      */
-    public List<ClassDescriptor> usedDescriptors() {
+    public Set<ClassDescriptor> usedDescriptors() {
         return usedDescriptors;
     }
 }

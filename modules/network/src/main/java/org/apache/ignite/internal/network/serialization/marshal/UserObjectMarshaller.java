@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Marshals/unmarshals objects in accordance with User Object Serialization.
  *
@@ -26,11 +28,13 @@ public interface UserObjectMarshaller {
     /**
      * Marshals the provided object.
      *
-     * @param object object to marshal
+     * @param object        object to marshal
+     * @param declaredClass class of the object as it is seen externally; it may differ from object.getClass() only
+     *                      when it is for a primitive type (i.e. byte.class) or Void.class
      * @return marshalled representation
      * @throws MarshalException if marshalling fails
      */
-    MarshalledObject marshal(Object object) throws MarshalException;
+    MarshalledObject marshal(@Nullable Object object, Class<?> declaredClass) throws MarshalException;
 
     /**
      * Unmarshals an object.
@@ -40,5 +44,6 @@ public interface UserObjectMarshaller {
      * @return unmarshalled object
      * @throws UnmarshalException if unmarshalling fails
      */
+    @Nullable
     <T> T unmarshal(byte[] bytes) throws UnmarshalException;
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.network.serialization;
 
 import static org.apache.ignite.internal.network.serialization.BuiltinType.ARRAY_LIST;
+import static org.apache.ignite.internal.network.serialization.BuiltinType.BARE_OBJECT;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.BIT_SET;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.BOOLEAN;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.BOOLEAN_ARRAY;
@@ -52,7 +53,6 @@ import static org.apache.ignite.internal.network.serialization.BuiltinType.LONG;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.LONG_ARRAY;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.LONG_BOXED;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.NULL;
-import static org.apache.ignite.internal.network.serialization.BuiltinType.OBJECT;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.OBJECT_ARRAY;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.SHORT;
 import static org.apache.ignite.internal.network.serialization.BuiltinType.SHORT_ARRAY;
@@ -91,7 +91,7 @@ public class DefaultDescriptorsTest {
         assertEquals(13, BOOLEAN_BOXED.descriptorId());
         assertEquals(14, CHAR.descriptorId());
         assertEquals(15, CHAR_BOXED.descriptorId());
-        assertEquals(16, OBJECT.descriptorId());
+        assertEquals(16, BARE_OBJECT.descriptorId());
         assertEquals(17, STRING.descriptorId());
         assertEquals(18, UUID.descriptorId());
         assertEquals(19, IGNITE_UUID.descriptorId());

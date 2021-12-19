@@ -118,6 +118,47 @@ public class ClassDescriptorFactoryContext {
     }
 
     /**
+     * Gets a descriptor by the class or throws an exception if no such class is known.
+     *
+     * @param clazz Class.
+     * @return Descriptor.
+     */
+    public ClassDescriptor getRequiredDescriptor(Class<?> clazz) {
+        ClassDescriptor descriptor = getDescriptor(clazz);
+        if (descriptor == null) {
+            throw new IllegalStateException("No descriptor exists for " + clazz);
+        }
+        return descriptor;
+    }
+
+    /**
+     * Returns a descriptor for a built-in type.
+     *
+     * @param builtinType   built-in type for lookup
+     */
+    public ClassDescriptor getBuiltInDescriptor(BuiltinType builtinType) {
+        return getRequiredDescriptor(builtinType.descriptorId());
+    }
+
+    /**
+     * Returns a descriptor for {@code null} value.
+     *
+     * @return a descriptor for {@code null} value
+     */
+    public ClassDescriptor getNullDescriptor() {
+        return getDescriptor(Null.class);
+    }
+
+    /**
+     * Returns a descriptor for {@link Enum} built-in type.
+     *
+     * @return a descriptor for {@link Enum} built-in type
+     */
+    public ClassDescriptor getEnumDescriptor() {
+        return getDescriptor(Enum.class);
+    }
+
+    /**
      * Returns {@code true} if there is a descriptor for the id.
      *
      * @param descriptorId Descriptor id.

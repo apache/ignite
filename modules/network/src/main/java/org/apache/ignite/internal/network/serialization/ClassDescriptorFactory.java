@@ -166,7 +166,10 @@ public class ClassDescriptorFactory {
      * @return Class descriptor.
      */
     private ClassDescriptor serializable(int descriptorId, Class<? extends Serializable> clazz) {
-        return new ClassDescriptor(clazz, descriptorId, fields(clazz),
+        return new ClassDescriptor(
+                clazz,
+                descriptorId,
+                fields(clazz),
                 new Serialization(
                         SerializationType.SERIALIZABLE,
                         hasOverrideSerialization(clazz),
