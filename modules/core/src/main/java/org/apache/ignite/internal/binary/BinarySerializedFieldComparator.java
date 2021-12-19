@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Compares fiels in serialized form when possible.
@@ -246,16 +245,8 @@ public class BinarySerializedFieldComparator {
                 Object val1 = c1.currentField();
                 Object val2 = c2.currentField();
 
-                return isArray(val1) ? F.arrayEq(val1, val2) : F.eq(val1, val2);
+                return (F.isArray(val1) || val1 instanceof BinaryArray) ? F.arrayEq(val1, val2) : F.eq(val1, val2);
         }
-    }
-
-    /**
-     * @param field Field.
-     * @return {@code True} if field is array.
-     */
-    private static boolean isArray(@Nullable Object field) {
-        return F.isArray(field) || field instanceof BinaryArray;
     }
 
     /**
