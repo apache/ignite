@@ -15,28 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization;
+package org.apache.ignite.internal.network.serialization.marshal;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 
 /**
- * Serialization type.
+ * Caches {@link SpecialSerializationMethods} per class descriptor.
  */
-public enum SerializationType {
-    /** Used for predefined descriptors like primitive (or boxed int). See {@link BuiltinType}. */
-    BUILTIN(0),
-    /** Type for classes that are neither serializable nor externalizable.  */
-    ARBITRARY(1),
-    /** Externalizable. */
-    EXTERNALIZABLE(2),
-    /** Serializable (but not Externalizable). */
-    SERIALIZABLE(3);
+class SpecialSerializationMethodsCache {
+    private final ConcurrentMap<Integer, SpecialSerializationMethods> methodsMap = new ConcurrentHashMap<>();
 
-    private final int value;
-
-    SerializationType(int value) {
-        this.value = value;
-    }
-
-    public int value() {
-        return value;
+    public SpecialSerializationMethods methodsFor(ClassDescriptor descriptor) {
+        return methodsMap.computeIfAbsent(descriptor.descriptorId(), id -> new SpecialSerializationMethods(descriptor));
     }
 }

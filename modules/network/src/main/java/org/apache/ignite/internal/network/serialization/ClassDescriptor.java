@@ -49,9 +49,9 @@ public class ClassDescriptor {
     private final List<FieldDescriptor> fields;
 
     /**
-     * The type of the serialization mechanism for the class.
+     * How the class is to be serialized.
      */
-    private final int serializationType;
+    private final Serialization serialization;
 
     /**
      * Whether the class is final.
@@ -61,12 +61,12 @@ public class ClassDescriptor {
     /**
      * Constructor.
      */
-    public ClassDescriptor(@NotNull Class<?> clazz, int descriptorId, @NotNull List<FieldDescriptor> fields, int serializationType) {
+    public ClassDescriptor(@NotNull Class<?> clazz, int descriptorId, @NotNull List<FieldDescriptor> fields, Serialization serialization) {
         this.className = clazz.getName();
         this.clazz = clazz;
         this.descriptorId = descriptorId;
         this.fields = List.copyOf(fields);
-        this.serializationType = serializationType;
+        this.serialization = serialization;
         this.isFinal = Modifier.isFinal(clazz.getModifiers());
     }
 
@@ -110,12 +110,21 @@ public class ClassDescriptor {
     }
 
     /**
+     * Returns serialization.
+     *
+     * @return Serialization.
+     */
+    public Serialization serialization() {
+        return serialization;
+    }
+
+    /**
      * Returns serialization type.
      *
      * @return Serialization type.
      */
-    public int serializationType() {
-        return serializationType;
+    public SerializationType serializationType() {
+        return serialization.type();
     }
 
     /**
@@ -125,5 +134,42 @@ public class ClassDescriptor {
      */
     public boolean isFinal() {
         return isFinal;
+    }
+
+    /**
+     * Returns {@code true} if the described class should be serialized as a {@link java.io.Serializable} (but not
+     * using the mechanism for {@link java.io.Externalizable}).
+     *
+     * @return {@code true} if the described class should be serialized as a {@link java.io.Serializable}.
+     */
+    public boolean isSerializable() {
+        return serialization.type() == SerializationType.SERIALIZABLE;
+    }
+
+    /**
+     * Returns {@code true} if the described class should be serialized as an {@link java.io.Externalizable}.
+     *
+     * @return {@code true} if the described class should be serialized as an {@link java.io.Externalizable}.
+     */
+    public boolean isExternalizable() {
+        return serialization.type() == SerializationType.EXTERNALIZABLE;
+    }
+
+    /**
+     * Returns {@code true} if the described class has {@code writeReplace()} method.
+     *
+     * @return {@code true} if the described class has {@code writeReplace()} method
+     */
+    public boolean hasWriteReplace() {
+        return serialization.hasWriteReplace();
+    }
+
+    /**
+     * Returns {@code true} if the described class has {@code readResolve()} method.
+     *
+     * @return {@code true} if the described class has {@code readResolve()} method
+     */
+    public boolean hasReadResolve() {
+        return serialization.hasReadResolve();
     }
 }

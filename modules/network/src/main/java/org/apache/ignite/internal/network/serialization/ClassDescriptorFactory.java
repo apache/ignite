@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.network.serialization;
 
 import java.io.Externalizable;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -31,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +37,9 @@ import org.jetbrains.annotations.Nullable;
  * Class descriptor factory for the user object serialization.
  */
 public class ClassDescriptorFactory {
+    /** Means that no serialization override is present; used for readability instead of {@code false}. */
+    private static final boolean NO_SERIALIZATION_OVERRIDE = false;
+
     /**
      * Factory context.
      */
@@ -122,10 +122,15 @@ public class ClassDescriptorFactory {
         checkHasPublicNoArgConstructor(clazz);
 
         return new ClassDescriptor(
-            clazz,
-            descriptorId,
-            Collections.emptyList(),
-            SerializationType.EXTERNALIZABLE
+                clazz,
+                descriptorId,
+                Collections.emptyList(),
+                new Serialization(
+                        SerializationType.EXTERNALIZABLE,
+                        NO_SERIALIZATION_OVERRIDE,
+                        hasWriteReplace(clazz),
+                        hasReadResolve(clazz)
+                )
         );
     }
 
@@ -161,30 +166,30 @@ public class ClassDescriptorFactory {
      * @return Class descriptor.
      */
     private ClassDescriptor serializable(int descriptorId, Class<? extends Serializable> clazz) {
+        return new ClassDescriptor(clazz, descriptorId, fields(clazz),
+                new Serialization(
+                        SerializationType.SERIALIZABLE,
+                        hasOverrideSerialization(clazz),
+                        hasWriteReplace(clazz),
+                        hasReadResolve(clazz)
+                )
+        );
+    }
+
+    private boolean hasReadResolve(Class<? extends Serializable> clazz) {
+        return getReadResolve(clazz) != null;
+    }
+
+    private boolean hasWriteReplace(Class<? extends Serializable> clazz) {
+        return getWriteReplace(clazz) != null;
+    }
+
+    private boolean hasOverrideSerialization(Class<? extends Serializable> clazz) {
         Method writeObject = getWriteObject(clazz);
         Method readObject = getReadObject(clazz);
         Method readObjectNoData = getReadObjectNoData(clazz);
 
-        boolean overrideSerialization = writeObject != null && readObject != null && readObjectNoData != null;
-
-        Method writeReplace = getWriteReplace(clazz);
-        Method readResolve = getReadResolve(clazz);
-
-        int serializationType = SerializationType.SERIALIZABLE;
-
-        if (overrideSerialization) {
-            serializationType |= SerializationType.SERIALIZABLE_OVERRIDE;
-        }
-
-        if (writeReplace != null) {
-            serializationType |= SerializationType.SERIALIZABLE_WRITE_REPLACE;
-        }
-
-        if (readResolve != null) {
-            serializationType |= SerializationType.SERIALIZABLE_READ_RESOLVE;
-        }
-
-        return new ClassDescriptor(clazz, descriptorId, fields(clazz), serializationType);
+        return writeObject != null && readObject != null && readObjectNoData != null;
     }
 
     /**
@@ -195,7 +200,7 @@ public class ClassDescriptorFactory {
      * @return Class descriptor.
      */
     private ClassDescriptor arbitrary(int descriptorId, Class<?> clazz) {
-        return new ClassDescriptor(clazz, descriptorId, fields(clazz), SerializationType.ARBITRARY);
+        return new ClassDescriptor(clazz, descriptorId, fields(clazz), new Serialization(SerializationType.ARBITRARY));
     }
 
     /**
@@ -231,13 +236,7 @@ public class ClassDescriptorFactory {
     @Nullable
     private static Method getWriteReplace(Class<? extends Serializable> clazz) {
         try {
-            Method writeReplace = clazz.getDeclaredMethod("writeReplace");
-
-            if (!declaresExactExceptions(writeReplace, Set.of(ObjectStreamException.class))) {
-                return null;
-            }
-
-            return writeReplace;
+            return clazz.getDeclaredMethod("writeReplace");
         } catch (NoSuchMethodException e) {
             return null;
         }
@@ -253,13 +252,7 @@ public class ClassDescriptorFactory {
     @Nullable
     private static Method getReadResolve(Class<? extends Serializable> clazz) {
         try {
-            Method readResolve = clazz.getDeclaredMethod("readResolve");
-
-            if (!declaresExactExceptions(readResolve, Set.of(ObjectStreamException.class))) {
-                return null;
-            }
-
-            return readResolve;
+            return clazz.getDeclaredMethod("readResolve");
         } catch (NoSuchMethodException e) {
             return null;
         }
@@ -278,10 +271,6 @@ public class ClassDescriptorFactory {
             Method writeObject = clazz.getDeclaredMethod("writeObject", ObjectOutputStream.class);
 
             if (!Modifier.isPrivate(writeObject.getModifiers())) {
-                return null;
-            }
-
-            if (!declaresExactExceptions(writeObject, Set.of(IOException.class))) {
                 return null;
             }
 
@@ -308,10 +297,6 @@ public class ClassDescriptorFactory {
                 return null;
             }
 
-            if (!declaresExactExceptions(writeObject, Set.of(IOException.class, ClassNotFoundException.class))) {
-                return null;
-            }
-
             return writeObject;
         } catch (NoSuchMethodException e) {
             return null;
@@ -334,32 +319,9 @@ public class ClassDescriptorFactory {
                 return null;
             }
 
-            if (!declaresExactExceptions(writeObject, Set.of(ObjectStreamException.class))) {
-                return null;
-            }
-
             return writeObject;
         } catch (NoSuchMethodException e) {
             return null;
         }
-    }
-
-    /**
-     * Returns {@code true} if the method's declaration contains throwing only of
-     * specified exceptions.
-     *
-     * @param method Method.
-     * @param exceptions Set of exceptions.
-     * @return If the method throws exceptions.
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private static boolean declaresExactExceptions(Method method, Set<Class<? extends Throwable>> exceptions) {
-        Class<?>[] exceptionTypes = method.getExceptionTypes();
-
-        if (exceptionTypes.length != exceptions.size()) {
-            return false;
-        }
-
-        return Arrays.asList(exceptionTypes).containsAll(exceptions);
     }
 }

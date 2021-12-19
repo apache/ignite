@@ -42,7 +42,7 @@ public class ClassDescriptorFactoryContext {
      * Constructor.
      */
     public ClassDescriptorFactoryContext() {
-        for (DefaultType value : DefaultType.values()) {
+        for (BuiltinType value : BuiltinType.values()) {
             addPredefinedDescriptor(value.clazz(), value.asClassDescriptor());
         }
     }
@@ -101,6 +101,20 @@ public class ClassDescriptorFactoryContext {
         }
 
         return descriptorMap.get(descriptorId);
+    }
+
+    /**
+     * Returns a descriptor by its ID or throws an exception if the ID is not known.
+     *
+     * @param descriptorId ID by which to obtain a descriptor
+     * @return descriptor
+     */
+    public ClassDescriptor getRequiredDescriptor(int descriptorId) {
+        ClassDescriptor descriptor = getDescriptor(descriptorId);
+        if (descriptor == null) {
+            throw new IllegalStateException("No descriptor exists with ID=" + descriptorId);
+        }
+        return descriptor;
     }
 
     /**

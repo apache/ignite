@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization;
+package org.apache.ignite.internal.network.serialization.marshal;
+
+import org.apache.ignite.lang.IgniteInternalException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Serialization type.
+ * Thrown when a reflection operation fails.
  */
-public enum SerializationType {
-    /** Used for predefined descriptors like primitive (or boxed int). See {@link BuiltinType}. */
-    BUILTIN(0),
-    /** Type for classes that are neither serializable nor externalizable.  */
-    ARBITRARY(1),
-    /** Externalizable. */
-    EXTERNALIZABLE(2),
-    /** Serializable (but not Externalizable). */
-    SERIALIZABLE(3);
-
-    private final int value;
-
-    SerializationType(int value) {
-        this.value = value;
-    }
-
-    public int value() {
-        return value;
+public class ReflectionException extends IgniteInternalException {
+    public ReflectionException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }
