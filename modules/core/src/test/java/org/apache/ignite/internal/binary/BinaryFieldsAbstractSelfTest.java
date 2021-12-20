@@ -27,6 +27,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -460,7 +461,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             if (val instanceof BinaryObject)
                 val = ((BinaryObject)val).deserialize();
 
-            if (val != null && val.getClass().isArray()) {
+            if (F.isArray(expVal)) {
                 assertNotNull(expVal);
 
                 if (val instanceof byte[])

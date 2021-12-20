@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents an index key that stores as Java Object.
@@ -58,8 +59,11 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int h1 = o1.hashCode();
             int h2 = o2.hashCode();
 
-            if (h1 == h2)
-                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy());
+            if (h1 == h2) {
+                return o1.equals(o2)
+                    ? 0
+                    : Integer.signum(F.compareArrays(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy()));
+            }
             else
                 return h1 > h2 ? 1 : -1;
         }
