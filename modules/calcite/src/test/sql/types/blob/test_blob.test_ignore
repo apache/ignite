@@ -13,8 +13,8 @@ CREATE TABLE blobs (b varbinary);
 statement ok
 INSERT INTO blobs VALUES(x'aaffaa'), (x'AAFFAAAAFFAA'), (x'AAFFAAAAFFAAAAFFAA')
 
-query T
-SELECT * FROM blobs ORDER BY b
+query T rowsort
+SELECT * FROM blobs
 ----
 aaffaa
 aaffaaaaffaa
@@ -27,8 +27,8 @@ DELETE FROM blobs
 statement ok
 INSERT INTO blobs VALUES(x'aaffaa'), (x'aaffaaaaffaa'), (x'aaffaaaaffaaaaffaa')
 
-query T
-SELECT * FROM blobs ORDER BY b
+query T rowsort
+SELECT * FROM blobs
 ----
 aaffaa
 aaffaaaaffaa
@@ -41,8 +41,8 @@ DELETE FROM blobs
 statement ok
 INSERT INTO blobs VALUES(x'aa1199'), (x'aa1199aa1199'), (x'aa1199aa1199aa1199')
 
-query T
-SELECT * FROM blobs ORDER BY b
+query T rowsort
+SELECT * FROM blobs
 ----
 aa1199
 aa1199aa1199
@@ -96,8 +96,8 @@ INSERT INTO blob_empty VALUES(''), (''::VARBINARY)
 statement ok
 INSERT INTO blob_empty VALUES(NULL), (NULL::VARBINARY)
 
-query T
-SELECT * FROM blob_empty ORDER BY b
+query T rowsort
+SELECT * FROM blob_empty
 ----
 NULL
 NULL

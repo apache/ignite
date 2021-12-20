@@ -74,8 +74,8 @@ public class SqlScriptRunner {
         int rows = r1.size();
 
         for (int i = 0; i < rows; ++i) {
-            String s1 = String.valueOf(r1.get(i));
-            String s2 = String.valueOf(r2.get(i));
+            String s1 = toString(r1.get(i));
+            String s2 = toString(r2.get(i));
 
             if (!s1.equals(s2))
                 return s1.compareTo(s2);
@@ -154,6 +154,14 @@ public class SqlScriptRunner {
         try (QueryCursor<List<?>> cur = curs.get(0)) {
             return cur.getAll();
         }
+    }
+
+    /** */
+    private static String toString(Object res) {
+        if (res instanceof byte[])
+            return ByteString.toString((byte[])res, 16);
+        else
+            return String.valueOf(res);
     }
 
     /** */
@@ -612,7 +620,7 @@ public class SqlScriptRunner {
                 for (int j = 0; j < expectedRow.size(); ++j) {
                     checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
-                        ", expected=" + expectedRow.get(j) + ", actual=" + toString(row.get(j)) + ']',
+                        ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.toString(row.get(j)) + ']',
                         expectedRow.get(j),
                         row.get(j)
                     );
@@ -642,8 +650,8 @@ public class SqlScriptRunner {
                 }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(toString(actual)) &&
-                    !("(empty)".equals(expectedStr) && toString(actual).isEmpty()))
+                if (!String.valueOf(expectedStr).equals(SqlScriptRunner.toString(actual)) &&
+                    !("(empty)".equals(expectedStr) && SqlScriptRunner.toString(actual).isEmpty()))
                      throw new AssertionError(msg);
             }
         }
@@ -656,7 +664,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(toString(col).getBytes());
+                    messageDigest.update(SqlScriptRunner.toString(col).getBytes());
                     messageDigest.update(NL_BYTES);
                 }
             }
@@ -678,14 +686,6 @@ public class SqlScriptRunner {
             if (!res0.equals(expectedHash))
                 throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
                     ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
-        }
-
-        /** */
-        private String toString(Object res) {
-            if (res instanceof byte[])
-                return ByteString.toString((byte[])res, 16);
-            else
-                return String.valueOf(res);
         }
 
         /** {@inheritDoc} */
