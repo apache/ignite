@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -50,13 +51,6 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fillCache(grid(0).cache("TEST"), ROWS);
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).cache("TEST").clear();
 
@@ -65,10 +59,27 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        LinkedHashMap<String, Boolean> fields1 = new LinkedHashMap<>();
+        fields1.put("COL0", false);
+        fields1.put("COL3", true);
+
+        QueryEntity tbl1 = new QueryEntity()
+            .setTableName("TBL1")
+            .setKeyType(Integer.class.getName())
+            .setValueType(TestValTbl1.class.getName())
+            .setKeyFieldName("PK")
+            .addQueryField("PK", Integer.class.getName(), null)
+            .addQueryField("COL0", Integer.class.getName(), null)
+            .addQueryField("COL1", Integer.class.getName(), null)
+            .addQueryField("COL2", Integer.class.getName(), null)
+            .addQueryField("COL3", Integer.class.getName(), null)
+            .addQueryField("COL4", Integer.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex(fields1, QueryIndexType.SORTED)));
+
         QueryEntity part = new QueryEntity()
             .setTableName("TEST")
             .setKeyType(Integer.class.getName())
-            .setValueType(TestVal.class.getName())
+            .setValueType(TestValTest.class.getName())
             .setKeyFieldName("ID")
             .addQueryField("ID", Integer.class.getName(), null)
             .addQueryField("GRP0", Integer.class.getName(), null)
@@ -82,14 +93,16 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
                 new CacheConfiguration<>(part.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
                     .setCacheMode(CacheMode.PARTITIONED)
-                    .setQueryEntities(singletonList(part))
+                    .setQueryEntities(Arrays.asList(tbl1, part))
                     .setSqlSchema("PUBLIC")
             );
     }
 
     /** */
     @Test
-    public void mapReduceAggregate() {
+    public void mapReduceAggregate() throws InterruptedException {
+        fillCacheTest(grid(0).cache("TEST"), ROWS);
+
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> cursors = engine.query(
@@ -114,21 +127,80 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         });
     }
 
+    /** */
+    @Test
+    public void correctCollationsOnMapReduceSortAgg() throws InterruptedException {
+        fillCacheTbl1(grid(0).cache("TEST"), ROWS);
+
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors = engine.query(
+            null,
+            "PUBLIC",
+            "SELECT /*+ DISABLE_RULE('HashAggregateConverterRule' ,'HashSingleAggregateConverterRule', " +
+                "'HashMapReduceAggregateConverterRule', 'LogicalTableScanConverterRule') */" +
+                "PK FROM TBL1 WHERE (col3 < 54) AND col3 IN (SELECT col0 FROM TBL1 WHERE col3 >= 55) AND col4 " +
+                "IN (SELECT col1 FROM TBL1 WHERE (((col0 IS NULL AND (col4 > 56 AND col0 = 45))) OR col3 BETWEEN 20 AND 60)) " +
+                "ORDER BY 1 DESC",
+            X.EMPTY_OBJECT_ARRAY
+        );
+
+        List<List<?>> res = cursors.get(0).getAll();
+
+        assertEquals(0, res.size());
+    }
+
     /**
      * @param c Cache.
      * @param rows Rows count.
      */
-    private void fillCache(IgniteCache c, int rows) throws InterruptedException {
+    private void fillCacheTbl1(IgniteCache c, int rows) throws InterruptedException {
         c.clear();
 
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestVal(i));
+            c.put(i, new TestValTbl1(i));
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @param c Cache.
+     * @param rows Rows count.
+     */
+    private void fillCacheTest(IgniteCache c, int rows) throws InterruptedException {
+        c.clear();
+
+        for (int i = 0; i < rows; ++i)
+            c.put(i, new TestValTest(i));
 
         awaitPartitionMapExchange();
     }
 
     /** */
-    public static class TestVal {
+    public static class TestValTbl1 {
+        /** */
+        int col0;
+
+        /** */
+        int col1;
+
+        /** */
+        int col2;
+
+        /** */
+        int col3;
+
+        /** */
+        int col4;
+
+        /** */
+        TestValTbl1(int k) {
+            col0 = col1 = col2 = col3 = col4 = k;
+        }
+    }
+
+    /** */
+    public static class TestValTest {
         /** */
         int grp0;
 
@@ -142,7 +214,7 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         int val1;
 
         /** */
-        TestVal(int k) {
+        TestValTest(int k) {
             grp0 = k / 10;
             grp1 = k / 100;
 

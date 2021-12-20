@@ -203,29 +203,37 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
             pushUnordered();
     }
 
-    /** */
-    private void pushOrdered() throws Exception {
-         PriorityQueue<Pair<Row, Buffer>> heap =
-            new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
-
-        Iterator<Buffer> it = buffers.iterator();
-
+    /** Checks that all corresponding buffers are in ready state. */
+    private boolean checkAllBuffsReady(Iterator<Buffer> it) {
         while (it.hasNext()) {
             Buffer buf = it.next();
 
             switch (buf.check()) {
+                case READY:
+                    break;
                 case END:
                     it.remove();
-
-                    break;
-                case READY:
-                    heap.offer(Pair.of(buf.peek(), buf));
-
                     break;
                 case WAITING:
-
-                    return;
+                    return false;
             }
+        }
+        return true;
+    }
+
+    /** */
+    private void pushOrdered() throws Exception {
+        if (!checkAllBuffsReady(buffers.iterator()))
+            return;
+
+        PriorityQueue<Pair<Row, Buffer>> heap =
+            new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
+
+        for (Buffer buf : buffers) {
+            if (buf.check() == State.READY)
+                heap.offer(Pair.of(buf.peek(), buf));
+            else
+                throw new AssertionError("Unexpected buffer state: " + buf.check());
         }
 
         inLoop = true;

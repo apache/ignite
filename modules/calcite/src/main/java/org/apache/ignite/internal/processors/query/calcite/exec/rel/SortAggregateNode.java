@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
 
 /**
  *
@@ -230,9 +231,6 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         private final List<AccumulatorWrapper<Row>> accumWrps;
 
         /** */
-        private final RowHandler<Row> handler;
-
-        /** */
         private final Object[] grpKeys;
 
         /** */
@@ -240,13 +238,11 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             this.grpKeys = grpKeys;
 
             accumWrps = hasAccumulators() ? accFactory.get() : Collections.emptyList();
-
-            handler = context().rowHandler();
         }
 
         /** */
         private void add(Row row) {
-            if (type == AggregateType.REDUCE)
+            if (type == REDUCE)
                 addOnReducer(row);
             else
                 addOnMapper(row);
@@ -268,6 +264,8 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         /** */
         private void addOnReducer(Row row) {
+            RowHandler<Row> handler = context().rowHandler();
+
             List<Accumulator> accums = hasAccumulators() ?
                 (List<Accumulator>)handler.get(handler.columnCount(row) - 1, row)
                 : Collections.emptyList();

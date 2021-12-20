@@ -300,6 +300,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     ) throws IgniteSQLException {
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
+        assert schema != null : "Schema not found: " + schemaName;
+
         QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
 
         if (plan != null) {

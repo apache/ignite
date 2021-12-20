@@ -66,6 +66,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
                 RelDistribution distribution = table.distribution();
                 RelCollation collation = index.collation();
+
                 if (rel.projects() != null || rel.requiredColumns() != null) {
                     Mappings.TargetMapping mapping = createMapping(
                         rel.projects(),

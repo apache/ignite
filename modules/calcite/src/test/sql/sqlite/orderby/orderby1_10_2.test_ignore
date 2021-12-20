@@ -1,4 +1,3 @@
-# Ignore https://issues.apache.org/jira/browse/IGNITE-16138
 # Ignore https://issues.apache.org/jira/browse/IGNITE-16139
 
 statement ok
@@ -2069,10 +2068,6 @@ SELECT pk, col0 FROM tab4 WHERE col3 > 808 OR col0 IS NULL ORDER BY 1,2
 544
 725
 8
-
-query I valuesort label-1200
-SELECT pk FROM tab0 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab0 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab0 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1 DESC
-----
 
 query I valuesort label-1200
 SELECT pk FROM tab1 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab1 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab1 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1 DESC
