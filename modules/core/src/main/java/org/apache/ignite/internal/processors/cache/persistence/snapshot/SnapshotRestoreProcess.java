@@ -1466,6 +1466,7 @@ public class SnapshotRestoreProcess {
          * @param cfgs Cache ID to configuration mapping.
          * @param locNodeId Local node ID.
          * @param locMetas List of snapshot metadata.
+         * @param startTime Operation start time.
          */
         protected SnapshotRestoreContext(
             SnapshotOperationRequest req,
