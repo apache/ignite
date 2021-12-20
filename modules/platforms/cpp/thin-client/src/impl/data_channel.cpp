@@ -109,8 +109,8 @@ namespace ignite
 
                 interop::InteropInputStream inStream(mem.Get());
 
-                // Skipping size and reqId
-                inStream.Position(8);
+                // Skipping size (4 bytes) and reqId (8 bytes)
+                inStream.Position(12);
 
                 binary::BinaryReaderImpl reader(&inStream);
 
@@ -312,7 +312,6 @@ namespace ignite
                     reader.ReadString(error);
 
                     int32_t errorCode = reader.ReadInt32();
-
 
                     bool shouldRetry = IsVersionSupported(resVer) && resVer != currentVersion;
                     if (shouldRetry)
