@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.junit.Test;
 
 /**
@@ -45,39 +46,35 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration icfg = super.getConfiguration(igniteInstanceName);
 
-        if (isPluginTopValidator)
-            icfg.setPluginProviders(new TestCacheGroupTopologyValidatorPluginProvider());
-
-        CacheConfiguration[] ccfgs = icfg.getCacheConfiguration();
-
-        TopologyValidator val1 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        };
-
-        TopologyValidator val2 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() >= 2;
-            }
-        };
+        CacheConfiguration[] ccfgs = F.concat(
+            icfg.getCacheConfiguration(),
+            cacheConfiguration(igniteInstanceName).setName(CACHE_NAME_3),
+            cacheConfiguration(igniteInstanceName).setName(CACHE_NAME_4)
+        );
 
         for (CacheConfiguration ccfg : ccfgs) {
             if (CACHE_NAME_1.equals(ccfg.getName()) || CACHE_NAME_2.equals(ccfg.getName()))
-                ccfg.setGroupName(GROUP_1).setTopologyValidator(isPluginTopValidator ? null : val1);
+                ccfg.setGroupName(GROUP_1);
+            else if (CACHE_NAME_3.equals(ccfg.getName()) || CACHE_NAME_4.equals(ccfg.getName()))
+                ccfg.setGroupName(GROUP_2);
         }
 
-        CacheConfiguration ccfg3 = cacheConfiguration(igniteInstanceName)
-            .setName(CACHE_NAME_3)
-            .setGroupName(GROUP_2)
-            .setTopologyValidator(isPluginTopValidator ? null : val2);
+        if (isPluginTopValidatorProvider)
+            icfg.setPluginProviders(new TestCacheGroupTopologyValidatorPluginProvider());
+        else {
+            TopologyValidator val1 = new FirstCacheGroupTopologyValidator();
 
-        CacheConfiguration ccfg4 = cacheConfiguration(igniteInstanceName)
-            .setName(CACHE_NAME_4)
-            .setGroupName(GROUP_2)
-            .setTopologyValidator(isPluginTopValidator ? null : val2);
+            TopologyValidator val2 = new SecondCacheGroupTopologyValidator();
 
-        return icfg.setCacheConfiguration(F.concat(ccfgs, ccfg3, ccfg4));
+            for (CacheConfiguration ccfg : ccfgs) {
+                if (GROUP_1.equals(ccfg.getGroupName()))
+                    ccfg.setTopologyValidator(val1);
+                else if (GROUP_2.equals(ccfg.getGroupName()))
+                    ccfg.setTopologyValidator(val2);
+            }
+        }
+
+        return icfg.setCacheConfiguration(ccfgs);
     }
 
     /**
@@ -139,13 +136,34 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
     /** */
     private static class TestCacheGroupTopologyValidatorPluginProvider extends TestCacheTopologyValidatorPluginProvider {
         /** {@inheritDoc} */
-        @Override protected boolean doValidation(String cacheName, Collection<ClusterNode> nodes) {
-            if (cacheName.equals(GROUP_1))
-                return nodes.size() == 2;
-            else if (cacheName.equals(GROUP_2))
-                return nodes.size() >= 2;
+        @Override protected CacheTopologyValidatorProvider createTopologyValidatorProvider() {
+            return new CacheTopologyValidatorProvider() {
+                /** {@inheritDoc} */
+                @Override public TopologyValidator topologyValidator(String cacheName) {
+                    if (GROUP_1.equals(cacheName))
+                        return new FirstCacheGroupTopologyValidator();
+                    else if (GROUP_2.equals(cacheName))
+                        return new SecondCacheGroupTopologyValidator();
 
-            return true;
+                    return null;
+                }
+            };
+        }
+    }
+
+    /** */
+    private static class FirstCacheGroupTopologyValidator implements TopologyValidator {
+        /** {@inheritDoc} */
+        @Override public boolean validate(Collection<ClusterNode> nodes) {
+            return nodes.size() == 2;
+        }
+    }
+
+    /** */
+    private static class SecondCacheGroupTopologyValidator implements TopologyValidator {
+        /** {@inheritDoc} */
+        @Override public boolean validate(Collection<ClusterNode> nodes) {
+            return nodes.size() >= 2;
         }
     }
 }

@@ -17,17 +17,15 @@
 
 package org.apache.ignite.plugin;
 
-import java.util.Collection;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TopologyValidator;
 
 /** */
-public interface PluggableCacheTopologyValidator extends Extension {
+public interface CacheTopologyValidatorProvider extends Extension {
     /**
-     * Validates topology.
+     * Provides instance of {@link TopologyValidator} for the cache with specified name.
      *
      * @param cacheName Name of the cache or cache group.
-     * @param nodes Collection of nodes.
-     * @return {@code true} in case topology is valid for specified cache, otherwise {@code false}
+     * @return Instance of topology validator for the cache with specified name.
      */
-    public boolean validate(String cacheName, Collection<ClusterNode> nodes);
+    public TopologyValidator topologyValidator(String cacheName);
 }

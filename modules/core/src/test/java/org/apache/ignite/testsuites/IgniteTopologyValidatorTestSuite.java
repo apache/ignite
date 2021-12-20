@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheTopologyValidatorProviderTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
-import org.apache.ignite.internal.processors.cache.PluggableCacheTopologyValidatorTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -62,7 +62,7 @@ public class IgniteTopologyValidatorTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorGridSplitCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, PluggableCacheTopologyValidatorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheTopologyValidatorProviderTest.class, ignoredTests);
 
         return suite;
     }
