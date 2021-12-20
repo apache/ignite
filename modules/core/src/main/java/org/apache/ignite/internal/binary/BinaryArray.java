@@ -34,7 +34,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
@@ -43,7 +45,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * Binary object representing array.
  */
-public class BinaryArray implements BinaryObjectEx, Externalizable {
+public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
     /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
     public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
 
@@ -249,6 +251,17 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         return componentTypeId() == arr.componentTypeId()
             && Arrays.deepEquals(this.arr, arr.arr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull BinaryArray o) {
+        if (componentTypeId() != o.componentTypeId()) {
+            throw new IllegalArgumentException(
+                "Can't compare arrays of different types[this=" + componentTypeId() + ",that=" + o.componentTypeId() + ']'
+            );
+        }
+
+        return F.compareArrays(arr, o.arr);
     }
 
     /** {@inheritDoc} */
