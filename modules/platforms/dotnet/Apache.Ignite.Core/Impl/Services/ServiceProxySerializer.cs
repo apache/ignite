@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        public static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
         {
             var hnd = GetPlatformArgWriter(paramType, arg);
 
