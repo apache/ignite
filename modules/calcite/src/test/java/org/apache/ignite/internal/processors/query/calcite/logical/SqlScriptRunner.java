@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.logical;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -57,6 +59,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.byteArray2HexString;
  *
  */
 public class SqlScriptRunner {
+    /** UTF-8 character name. */
+    static final Charset UTF_8 = StandardCharsets.UTF_8;
+
     /** Hashing label pattern. */
     private static final Pattern HASHING_PTRN = Pattern.compile("([0-9]+) values hashing to ([0-9a-fA-F]+)");
 
@@ -77,11 +82,20 @@ public class SqlScriptRunner {
             String s1 = toString(r1.get(i));
             String s2 = toString(r2.get(i));
 
-            if (!s1.equals(s2))
-                return s1.compareTo(s2);
+            int comp = s1.compareTo(s2);
+            if (comp != 0)
+                return comp;
         }
 
         return 0;
+    };
+
+    /** Comparator for "valuesort" sort mode. */
+    private static final Comparator<Object> ITM_COMPARATOR = (r1, r2) -> {
+        String s1 = String.valueOf(r1);
+        String s2 = String.valueOf(r2);
+
+        return s1.compareTo(s2);
     };
 
     /** Test script path. */
@@ -189,15 +203,11 @@ public class SqlScriptRunner {
 
         /** */
         String nextLineWithoutTrim() throws IOException {
-            if (r.ready()) {
-                String s = r.readLine();
+            String s = r.readLine();
 
-                lineNum++;
+            lineNum++;
 
-                return s;
-            }
-
-            return null;
+            return s;
         }
 
         /** */
@@ -473,9 +483,6 @@ public class SqlScriptRunner {
             if (cmd.length > 3)
                 eqLabel = cmd[3].toLowerCase();
 
-            if (sortType == SortType.VALUESORT)
-                throw new IgniteException(sortType + " not supported.");
-
             for (int i = 0; i < resTypesChars.length(); i++) {
                 switch (resTypesChars.charAt(i)) {
                     case 'I':
@@ -593,6 +600,28 @@ public class SqlScriptRunner {
                 if (expectedRes != null)
                     expectedRes.sort(ROW_COMPARATOR);
             }
+            else if (sortType == SortType.VALUESORT) {
+                List<Object> flattenRes = new ArrayList<>();
+
+                res.forEach(flattenRes::addAll);
+
+                flattenRes.sort(ITM_COMPARATOR);
+
+                List<List<?>> resSizeAware = new ArrayList<>();
+                int rowLen = resTypes.size();
+                List rowRes = new ArrayList(rowLen);
+                for (Object item : flattenRes) {
+                    rowRes.add(item);
+
+                    if (--rowLen == 0) {
+                        resSizeAware.add(rowRes);
+                        rowRes = new ArrayList(rowLen);
+                        rowLen = resTypes.size();
+                    }
+                }
+
+                res = resSizeAware;
+            }
 
             if (expectedHash != null)
                 checkResultsHashed(res);
@@ -664,7 +693,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(SqlScriptRunner.toString(col).getBytes());
+                    messageDigest.update(SqlScriptRunner.toString(col).getBytes(Charset.forName(UTF_8.name())));
                     messageDigest.update(NL_BYTES);
                 }
             }
