@@ -1,7 +1,6 @@
 # name: test/sql/types/blob/test_blob_cast.test
 # description: Cast BLOB values
 # group: [blob]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15618
 
 statement ok
 PRAGMA enable_verification
@@ -16,57 +15,57 @@ a
 query T
 SELECT 'a'::VARCHAR::binary
 ----
-a
+61
 
 # Hex string with BLOB
 query T
-SELECT '\x20\x00\xFF'::binary
+SELECT x'2000FF'::varbinary
 ----
- \x00\xFF
+2000ff
 
 # CastFromBlob with hex string
 query T
-SELECT '\x20\x00\xFF'::BLOB::VARCHAR
+SELECT x'612061'::VARBINARY::VARCHAR
 ----
- \x00\xFF
+a a
 
 # CastFromBlob and after CastToBlob with hex string
 query T
-SELECT '\x20\x00\xFF'::BLOB::VARCHAR::BLOB
+SELECT x'612061'::VARBINARY::VARCHAR::VARBINARY
 ----
- \x00\xFF
+612061
 
 # CastFromBlob -> CastToBlob -> CastFromBlob with hex string
 query T
-SELECT '\x20\x00\xFF'::BLOB::VARCHAR::BLOB::VARCHAR
+SELECT x'612061'::VARBINARY::VARCHAR::VARBINARY::VARCHAR
 ----
- \x00\xFF
+a a
 
 # CastToBlob -> CastFromBlob -> CastToBlob with hex string
 query T
-SELECT '\x20\x00\xFF'::VARCHAR::BLOB::VARCHAR::BLOB
+SELECT x'612061'::VARCHAR::VARBINARY::VARCHAR::VARBINARY
 ----
- \x00\xFF
+612061
 
 statement error
-SELECT 1::BYTEA
+SELECT 1::VARBINARY
 
 statement error
-SELECT 1.0::BYTEA
+SELECT 1.0::VARBINARY
 
-# numeric -> bytea, not valid/implemented casts
+# numeric -> varbinary, not valid/implemented casts
 statement error
-SELECT 1::tinyint::BYTEA
-
-statement error
-SELECT 1::smallint::BYTEA
+SELECT 1::tinyint::VARBINARY
 
 statement error
-SELECT 1::integer::BYTEA
+SELECT 1::smallint::VARBINARY
 
 statement error
-SELECT 1::bigint::BYTEA
+SELECT 1::integer::VARBINARY
 
 statement error
-SELECT 1::decimal::BYTEA
+SELECT 1::bigint::VARBINARY
+
+statement error
+SELECT 1::decimal::VARBINARY
 

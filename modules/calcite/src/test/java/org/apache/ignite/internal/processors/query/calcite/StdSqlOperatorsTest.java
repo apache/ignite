@@ -23,7 +23,6 @@ import java.sql.Timestamp;
 import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -138,7 +137,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT LOWER('aA')").returns("aa").check();
         assertQuery("SELECT INITCAP('aA')").returns("Aa").check();
         assertQuery("SELECT TO_BASE64('aA')").returns("YUE=").check();
-        assertQuery("SELECT FROM_BASE64('YUE=')").returns(new ByteString(new byte[] {'a', 'A'})).check();
+        assertQuery("SELECT FROM_BASE64('YUE=')::VARCHAR").returns("aA").check();
         assertQuery("SELECT MD5('aa')").returns("4124bc0a9335c27f086f24ba207a4912").check();
         assertQuery("SELECT SHA1('aa')").returns("e0c9035898dd52fc65c41454cec9c4d2611bfb37").check();
         assertQuery("SELECT SUBSTRING('aAaA', 2, 2)").returns("Aa").check();
@@ -274,6 +273,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT LEAST('a', 'b')").returns("a").check();
         assertQuery("SELECT GREATEST('a', 'b')").returns("b").check();
         assertQuery("SELECT COMPRESS('')::VARCHAR").returns("").check();
+        assertQuery("SELECT OCTET_LENGTH(x'01')").returns(1).check();
     }
 
     /** */

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -64,7 +65,8 @@ public class TypeUtils {
         java.sql.Time.class,
         java.sql.Timestamp.class,
         Duration.class,
-        Period.class
+        Period.class,
+        byte[].class
     );
 
     /** */
@@ -280,6 +282,8 @@ public class TypeUtils {
         }
         else if (storageType == Period.class)
             return (int)((Period)val).toTotalMonths();
+        else if (storageType == byte[].class)
+            return new ByteString((byte[])val);
         else
             return val;
     }
@@ -300,6 +304,8 @@ public class TypeUtils {
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
             return Period.of((Integer)val / 12, (Integer)val % 12, 0);
+        else if (storageType == byte[].class && val instanceof ByteString)
+            return ((ByteString)val).getBytes();
         else
             return val;
     }

@@ -34,6 +34,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.avatica.AvaticaUtils;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -91,6 +92,7 @@ import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -297,6 +299,8 @@ class RelJson {
             return toJson((RelDataType)value);
         else if (value instanceof RelDataTypeField)
             return toJson((RelDataTypeField)value);
+        else if (value instanceof ByteString)
+            return toJson((ByteString)value);
         else
             throw new UnsupportedOperationException("type not serializable: "
                 + value + " (type " + value.getClass().getCanonicalName() + ")");
@@ -502,6 +506,8 @@ class RelJson {
 
                 if (type.getSqlTypeName() == SqlTypeName.SYMBOL)
                     literal = toEnum(literal);
+                else if (type.getSqlTypeName().getFamily() == SqlTypeFamily.BINARY)
+                    literal = toByteString(literal);
 
                 return rexBuilder.makeLiteral(literal, type, false);
             }
@@ -578,6 +584,13 @@ class RelJson {
 
         String name = (String)o;
         return (T)ENUM_BY_NAME.get(name);
+    }
+
+    /** */
+    private ByteString toByteString(Object o) {
+        assert o instanceof String;
+
+        return ByteString.of((String)o, 16);
     }
 
     /** */
@@ -911,5 +924,10 @@ class RelJson {
         map.put("kind", toJson(operator.kind));
         map.put("syntax", toJson(operator.getSyntax()));
         return map;
+    }
+
+    /** */
+    private Object toJson(ByteString val) {
+        return val.toString();
     }
 }

@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.parser.SqlParserUtil;
@@ -36,7 +37,13 @@ public enum IgniteBuiltInMethod {
     PARSE_INTERVAL_YEAR_MONTH(SqlParserUtil.class, "intervalToMonths", String.class, SqlIntervalQualifier.class),
 
     /** */
-    PARSE_INTERVAL_DAY_TIME(SqlParserUtil.class, "intervalToMillis", String.class, SqlIntervalQualifier.class);
+    PARSE_INTERVAL_DAY_TIME(SqlParserUtil.class, "intervalToMillis", String.class, SqlIntervalQualifier.class),
+
+    /** */
+    BYTESTRING_TO_STRING(IgniteSqlFunctions.class, "toString", ByteString.class),
+
+    /** */
+    STRING_TO_BYTESTRING(IgniteSqlFunctions.class, "toByteString", String.class);
 
     /** */
     public final Method method;

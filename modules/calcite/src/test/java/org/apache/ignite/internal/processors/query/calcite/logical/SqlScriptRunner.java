@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -73,8 +74,8 @@ public class SqlScriptRunner {
         int rows = r1.size();
 
         for (int i = 0; i < rows; ++i) {
-            String s1 = String.valueOf(r1.get(i));
-            String s2 = String.valueOf(r2.get(i));
+            String s1 = toString(r1.get(i));
+            String s2 = toString(r2.get(i));
 
             if (!s1.equals(s2))
                 return s1.compareTo(s2);
@@ -153,6 +154,14 @@ public class SqlScriptRunner {
         try (QueryCursor<List<?>> cur = curs.get(0)) {
             return cur.getAll();
         }
+    }
+
+    /** */
+    private static String toString(Object res) {
+        if (res instanceof byte[])
+            return ByteString.toString((byte[])res, 16);
+        else
+            return String.valueOf(res);
     }
 
     /** */
@@ -611,7 +620,10 @@ public class SqlScriptRunner {
                 for (int j = 0; j < expectedRow.size(); ++j) {
                     checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
-                        ", expected=" + expectedRow.get(j) + ", actual=" + row.get(j) + ']', expectedRow.get(j), row.get(j));
+                        ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.toString(row.get(j)) + ']',
+                        expectedRow.get(j),
+                        row.get(j)
+                    );
                 }
             }
         }
@@ -638,8 +650,8 @@ public class SqlScriptRunner {
                 }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)) &&
-                    !("(empty)".equals(expectedStr) && String.valueOf(actual).isEmpty()))
+                if (!String.valueOf(expectedStr).equals(SqlScriptRunner.toString(actual)) &&
+                    !("(empty)".equals(expectedStr) && SqlScriptRunner.toString(actual).isEmpty()))
                      throw new AssertionError(msg);
             }
         }
@@ -652,7 +664,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(String.valueOf(col).getBytes());
+                    messageDigest.update(SqlScriptRunner.toString(col).getBytes());
                     messageDigest.update(NL_BYTES);
                 }
             }
