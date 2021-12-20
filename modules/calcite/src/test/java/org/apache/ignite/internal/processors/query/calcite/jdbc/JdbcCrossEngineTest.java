@@ -28,6 +28,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -101,6 +102,7 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
         checkInsertDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
         checkInsertDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
         checkInsertDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
+        checkInsertDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
     }
 
     /** */
@@ -112,7 +114,11 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
                     execute(stmt, "INSERT INTO test (id) VALUES (0)");
 
                     List<List<Object>> res = executeQuery(stmt, "SELECT val FROM test");
-                    assertEquals(expectedVal, res.get(0).get(0));
+
+                    if (expectedVal.getClass().isArray())
+                        assertTrue(Objects.deepEquals(expectedVal, res.get(0).get(0)));
+                    else
+                        assertEquals(expectedVal, res.get(0).get(0));
                 }
                 finally {
                     execute(stmt, "DROP TABLE IF EXISTS test");
