@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -32,7 +33,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,7 +64,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     /** Rule instance to replace table scans with condition. */
     public static final RelOptRule SCAN_INSTANCE = new LogicalOrToUnionRule(Config.SCAN) {
         @Override protected RexNode getCondition(RelOptRuleCall call) {
-            final IgniteLogicalTableScan rel = call.rel(0);
+            final ProjectableFilterableTableScan rel = call.rel(0);
 
             return rel.condition();
         }
@@ -71,7 +74,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
         }
 
         @Override protected void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
-            IgniteLogicalTableScan scan = (IgniteLogicalTableScan)input;
+            ProjectableFilterableTableScan scan = (ProjectableFilterableTableScan)input;
 
             relBldr.push(IgniteLogicalTableScan.create(
                 scan.getCluster(),
@@ -105,10 +108,9 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
         RelNode input = getInput(call);
 
         RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
+        RelNode rel1 = createUnionAll(cluster, input, operands.get(1), operands.get(0));
 
-        call.transformTo(rel0, ImmutableMap.of(
-            createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
-        ));
+        call.transformTo(rel0, ImmutableMap.of(rel1, rel0));
     }
 
     /** */
@@ -156,6 +158,13 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     }
 
     /** */
+    private static boolean preMatch(ProjectableFilterableTableScan scan) {
+        return scan.condition() != null &&
+            scan.getTraitSet().getConvention() == Convention.NONE &&
+            !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes
+    }
+
+    /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
         /** */
@@ -166,15 +175,21 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
         /** */
         Config FILTER = DEFAULT
             .withDescription("FilterLogicalOrToUnionRule")
-            .withOperandSupplier(o -> o.operand(LogicalFilter.class).anyInputs())
+            .withOperandSupplier(o -> o.operand(LogicalFilter.class)
+            .inputs(
+                b0 -> b0.operand(LogicalFilter.class)
+                    .oneInput(b1 -> b1.operand(ProjectableFilterableTableScan.class)
+                        .predicate(LogicalOrToUnionRule::preMatch)
+                        .noInputs()))
+            )
             .as(Config.class);
 
         /** */
         Config SCAN = DEFAULT
             .withDescription("ScanLogicalOrToUnionRule")
-            .withOperandSupplier(o -> o.operand(IgniteLogicalTableScan.class)
-                .predicate(scan -> scan.condition() != null)
-                .anyInputs()
+            .withOperandSupplier(o -> o.operand(ProjectableFilterableTableScan.class)
+                .predicate(LogicalOrToUnionRule::preMatch)
+                .noInputs()
             )
             .as(Config.class);
     }

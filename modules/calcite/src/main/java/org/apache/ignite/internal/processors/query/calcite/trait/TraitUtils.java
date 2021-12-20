@@ -430,18 +430,24 @@ public class TraitUtils {
 
     /** */
     private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
+        ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> out = new ImmutableSet.Builder<>();
         fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
-        return out;
+        return out.build();
     }
 
     /** */
-    private static boolean fillRecursive(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits,
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> result, RelTraitSet[] combination, int idx) throws ControlFlowException {
+    private static boolean fillRecursive(
+        RelTraitSet outTraits,
+        List<List<RelTraitSet>> inTraits,
+        ImmutableSet.Builder<Pair<RelTraitSet,
+        List<RelTraitSet>>> result,
+        RelTraitSet[] combination,
+        int idx
+    ) throws ControlFlowException
+    {
         boolean processed = false, last = idx == inTraits.size() - 1;
         for (RelTraitSet t : inTraits.get(idx)) {
-            if (t.getConvention() != IgniteConvention.INSTANCE)
-                continue;
+            assert t.getConvention() == IgniteConvention.INSTANCE;
 
             processed = true;
             combination[idx] = t;

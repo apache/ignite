@@ -193,8 +193,10 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         List<RelTraitSet> inTraits) {
         CorrelationTrait nodeCorr = TraitUtils.correlation(nodeTraits);
 
-        Set<CorrelationId> selfCorrIds = new HashSet<>(CorrelationTrait.correlations(variablesSet).correlationIds());
-        selfCorrIds.addAll(nodeCorr.correlationIds());
+        ImmutableSet.Builder<CorrelationId> corrs = new ImmutableSet.Builder<>();
+        corrs.addAll(variablesSet);
+        corrs.addAll(nodeCorr.correlationIds());
+        ImmutableSet<CorrelationId> selfCorrIds = corrs.build();
 
         return Pair.of(nodeTraits,
             ImmutableList.of(
@@ -212,10 +214,14 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         if (!rightCorrIds.containsAll(variablesSet))
             return ImmutableList.of();
 
-        Set<CorrelationId> corrIds = new HashSet<>(rightCorrIds);
+        Set<CorrelationId> leftCorrIds = TraitUtils.correlation(inTraits.get(0)).correlationIds();
+
+        Set<CorrelationId> corrIds = new HashSet<>(rightCorrIds.size() + leftCorrIds.size());
+
+        corrIds.addAll(rightCorrIds);
 
         // Left + right
-        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+        corrIds.addAll(leftCorrIds);
 
         corrIds.removeAll(variablesSet);
 
