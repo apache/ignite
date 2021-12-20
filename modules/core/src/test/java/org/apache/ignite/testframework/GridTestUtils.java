@@ -1131,7 +1131,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final RunnableX task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
