@@ -21,7 +21,6 @@ import java.util.Set;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 /**
@@ -57,18 +56,4 @@ public interface InternalTransaction extends Transaction {
      * @return {@code True} if a partition is enlisted into the transaction.
      */
     boolean enlist(RaftGroupService svc);
-
-    /**
-     * Sets a thread of control for a transaction.
-     *
-     * @param t The thread.
-     */
-    void thread(Thread t);
-
-    /**
-     * Return a thread of control.
-     *
-     * @return The thread of control, if presents.
-     */
-    @Nullable Thread thread();
 }

@@ -55,7 +55,7 @@ public class Example {
         TxManagerImpl txManager = new TxManagerImpl(null, new HeapLockManager());
 
         return Collections.singletonList(new TableImpl(new DummyInternalTableImpl(new VersionedRowStore(
-                new ConcurrentHashMapPartitionStorage(), txManager), txManager), null, null));
+                new ConcurrentHashMapPartitionStorage(), txManager), txManager), null));
     }
 
     /**
@@ -67,7 +67,7 @@ public class Example {
     @MethodSource("tableFactory")
     public void useCase1(Table t) {
         // Search row will allow nulls even in non-null columns.
-        Tuple res = t.recordView().get(Tuple.create().set("id", 1).set("orgId", 1));
+        Tuple res = t.recordView().get(null, Tuple.create().set("id", 1).set("orgId", 1));
 
         String name = res.value("name");
         String lastName = res.value("latName");
@@ -95,7 +95,7 @@ public class Example {
 
         RecordView<Employee> employeeView = t.recordView(Employee.class);
 
-        Employee e = employeeView.get(new Employee(1, 1));
+        Employee e = employeeView.get(null, new Employee(1, 1));
 
         // As described in the IEP-54, we can have a truncated mapping.
         class TruncatedEmployee {
@@ -114,7 +114,7 @@ public class Example {
         RecordView<TruncatedEmployee> truncatedEmployeeView = t.recordView(TruncatedEmployee.class);
 
         // salary and department will not be sent over the network during this call.
-        TruncatedEmployee te = truncatedEmployeeView.get(new TruncatedEmployee(1, 1));
+        TruncatedEmployee te = truncatedEmployeeView.get(null, new TruncatedEmployee(1, 1));
     }
 
     /**
@@ -144,7 +144,7 @@ public class Example {
 
         KeyValueView<EmployeeKey, Employee> employeeKv = t.keyValueView(EmployeeKey.class, Employee.class);
 
-        employeeKv.get(new EmployeeKey(1, 1));
+        employeeKv.get(null, new EmployeeKey(1, 1));
 
         // As described in the IEP-54, we can have a truncated KV mapping.
         class TruncatedEmployee {
@@ -154,7 +154,7 @@ public class Example {
 
         KeyValueView<EmployeeKey, TruncatedEmployee> truncatedEmployeeKv = t.keyValueView(EmployeeKey.class, TruncatedEmployee.class);
 
-        TruncatedEmployee te = truncatedEmployeeKv.get(new EmployeeKey(1, 1));
+        TruncatedEmployee te = truncatedEmployeeKv.get(null, new EmployeeKey(1, 1));
     }
 
     /**
@@ -181,14 +181,14 @@ public class Example {
         }
 
         KeyValueView<Long, CreditCard> credCardKvView = t.keyValueView(Long.class, CreditCard.class);
-        CreditCard creditCard = credCardKvView.get(1L);
+        CreditCard creditCard = credCardKvView.get(null, 1L);
 
         KeyValueView<Long, BankAccount> backAccKvView = t.keyValueView(Long.class, BankAccount.class);
-        BankAccount bankAccount = backAccKvView.get(2L);
+        BankAccount bankAccount = backAccKvView.get(null, 2L);
 
         // Truncated view.
         KeyValueView<Long, BillingDetails> billingDetailsKvView = t.keyValueView(Long.class, BillingDetails.class);
-        BillingDetails billingDetails = billingDetailsKvView.get(2L);
+        BillingDetails billingDetails = billingDetailsKvView.get(null, 2L);
 
         // Without discriminator it is impossible to deserialize to correct type automatically.
         assert !(billingDetails instanceof CreditCard);
@@ -214,7 +214,7 @@ public class Example {
 
         final RecordView<BillingRecord> billingView = t.recordView(BillingRecord.class);
 
-        final BillingRecord br = billingView.get(new BillingRecord(1));
+        final BillingRecord br = billingView.get(null, new BillingRecord(1));
     }
 
     /**
@@ -265,10 +265,10 @@ public class Example {
                         })*/
                         .build());
 
-        OrderValue ov = orderKvView.get(new OrderKey(1, 1));
+        OrderValue ov = orderKvView.get(null, new OrderKey(1, 1));
 
         // Same with direct Row access and BinaryObject wrapper.
-        Tuple res = t.recordView().get(Tuple.create().set("id", 1).set("orgId", 1));
+        Tuple res = t.recordView().get(null, Tuple.create().set("id", 1).set("orgId", 1));
 
         byte[] objData = res.value("billingDetails");
         BinaryObject binObj = BinaryObjects.wrap(objData);
@@ -294,7 +294,7 @@ public class Example {
 
         final RecordView<OrderRecord> orderRecView = t.recordView(OrderRecord.class);
 
-        OrderRecord orderRecord = orderRecView.get(new OrderRecord(1, 1));
+        OrderRecord orderRecord = orderRecView.get(null, new OrderRecord(1, 1));
         binObj = orderRecord.billingDetails;
 
         // Manual deserialization is possible as well.
@@ -312,7 +312,7 @@ public class Example {
     @ParameterizedTest
     @MethodSource("tableFactory")
     public void useCase5(Table t) {
-        Tuple res = t.recordView().get(Tuple.create().set("id", 1).set("orgId", 1));
+        Tuple res = t.recordView().get(null, Tuple.create().set("id", 1).set("orgId", 1));
 
         byte[] objData = res.value("originalObject");
         BinaryObject binObj = BinaryObjects.wrap(objData);
@@ -339,7 +339,7 @@ public class Example {
         RecordView<Record> recordView = t.recordView(Record.class);
 
         // Similarly work with the binary objects.
-        Record rec = recordView.get(new Record(1, 1));
+        Record rec = recordView.get(null, new Record(1, 1));
 
         // Now assume that we have some POJO classes to deserialize the binary objects.
         class JavaPerson {
@@ -411,7 +411,7 @@ public class Example {
     @MethodSource("tableFactory")
     public void useCase6(Table t) {
         // Search row will allow nulls even in non-null columns.
-        Tuple res = t.recordView().get(Tuple.create().set("id", 1));
+        Tuple res = t.recordView().get(null, Tuple.create().set("id", 1));
 
         String name = res.value("name");
         String lastName = res.value("latName");
@@ -435,7 +435,7 @@ public class Example {
 
         KeyValueView<Long, Employee> employeeView = t.keyValueView(Long.class, Employee.class);
 
-        Employee e = employeeView.get(1L);
+        Employee e = employeeView.get(null, 1L);
     }
 
     /**
@@ -456,7 +456,7 @@ public class Example {
 
         KeyValueView<Long, BinaryObject> employeeView = t.keyValueView(Long.class, BinaryObject.class);
 
-        employeeView.put(1L, BinaryObjects.wrap(new byte[0] /* serialized Employee */));
+        employeeView.put(null, 1L, BinaryObjects.wrap(new byte[0] /* serialized Employee */));
 
         t.keyValueView(Mapper.of(Long.class), Mapper.of(Employee.class, "value"));
     }
@@ -574,11 +574,11 @@ public class Example {
         );
 
         // The values in next operations are equivalent, and lead to the same row value part content.
-        v1.put(1L, new Employee());
-        v2.put(2L, new Employee2());
-        v3.put(3L, new Employee2());
-        v4.put(4L, new UserObject());
-        v5.put(5L, new byte[]{/* serialized UserObject bytes */});
+        v1.put(null, 1L, new Employee());
+        v2.put(null, 2L, new Employee2());
+        v3.put(null, 3L, new Employee2());
+        v4.put(null, 4L, new UserObject());
+        v5.put(null, 5L, new byte[]{/* serialized UserObject bytes */});
 
         // Shortcut with classes for simple use-case
         KeyValueView<Long, String> v6 = t.keyValueView(
@@ -618,25 +618,25 @@ public class Example {
                 }
         );
 
-        UserObject obj = v4.get(1L); // indistinguishable absent value and null column
+        UserObject obj = v4.get(null, 1L); // indistinguishable absent value and null column
 
         // Optional way
         //        Optional<UserObject> optionalObj = v4.get(1L); // abuse of Optional type
 
         // NullableValue way
-        NullableValue<UserObject> nullableValue = v4.getNullable(1L);
+        NullableValue<UserObject> nullableValue = v4.getNullable(null, 1L);
 
-        UserObject userObject = v4.get(1L); // what if user uses this syntax for nullable column?
+        UserObject userObject = v4.get(null, 1L); // what if user uses this syntax for nullable column?
         // 1. Exception always
         // 2. Exception if column value is null (use getNullable)
 
         // Get or default
-        String str = v6.getOrDefault(1L, "default");
+        String str = v6.getOrDefault(null, 1L, "default");
 
         // ============================  PUT  ===============================================
 
-        v4.put(1L, null);
-        v4.remove(1L, null);
+        v4.put(null, 1L, null);
+        v4.remove(null, 1L, null);
     }
 
 

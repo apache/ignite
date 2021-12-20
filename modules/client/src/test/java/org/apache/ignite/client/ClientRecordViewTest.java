@@ -52,13 +52,13 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = defaultTable();
         RecordView<PersonPojo> pojoView = table.recordView(Mapper.of(PersonPojo.class));
 
-        table.recordView().upsert(tuple());
+        table.recordView().upsert(null, tuple());
 
         var key = new PersonPojo();
         key.id = DEFAULT_ID;
 
-        PersonPojo val = pojoView.get(key);
-        PersonPojo missingVal = pojoView.get(new PersonPojo());
+        PersonPojo val = pojoView.get(null, key);
+        PersonPojo missingVal = pojoView.get(null, new PersonPojo());
 
         assertEquals(DEFAULT_NAME, val.name);
         assertEquals(DEFAULT_ID, val.id);
@@ -70,10 +70,10 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = defaultTable();
         RecordView<Long> primitiveView = table.recordView(Mapper.of(Long.class));
 
-        table.recordView().upsert(tuple());
+        table.recordView().upsert(null, tuple());
 
-        Long val = primitiveView.get(DEFAULT_ID);
-        Long missingVal = primitiveView.get(-1L);
+        Long val = primitiveView.get(null, DEFAULT_ID);
+        Long missingVal = primitiveView.get(null, -1L);
 
         assertEquals(DEFAULT_ID, val);
         assertNull(missingVal);
@@ -84,9 +84,9 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = oneColumnTable();
         RecordView<String> primitiveView = table.recordView(Mapper.of(String.class));
 
-        primitiveView.upsert("abc");
+        primitiveView.upsert(null, "abc");
 
-        Tuple tuple = table.recordView().get(oneColumnTableKey("abc"));
+        Tuple tuple = table.recordView().get(null, oneColumnTableKey("abc"));
         assertEquals("abc", tuple.stringValue(0));
     }
 
@@ -96,14 +96,14 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
         RecordView<IncompletePojo> pojoView = table.recordView(IncompletePojo.class);
 
-        kvView.put(allClumnsTableKey(1), allColumnsTableVal("x"));
+        kvView.put(null, allClumnsTableKey(1), allColumnsTableVal("x"));
 
         var key = new IncompletePojo();
         key.id = "1";
         key.gid = 1;
 
         // This POJO does not have fields for all table columns, and this is ok.
-        IncompletePojo val = pojoView.get(key);
+        IncompletePojo val = pojoView.get(null, key);
 
         assertEquals(1, val.gid);
         assertEquals("1", val.id);
@@ -117,13 +117,13 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = fullTable();
         RecordView<AllColumnsPojo> pojoView = table.recordView(Mapper.of(AllColumnsPojo.class));
 
-        table.recordView().upsert(allColumnsTableVal("foo"));
+        table.recordView().upsert(null, allColumnsTableVal("foo"));
 
         var key = new AllColumnsPojo();
         key.gid = (int) (long) DEFAULT_ID;
         key.id = String.valueOf(DEFAULT_ID);
 
-        AllColumnsPojo res = pojoView.get(key);
+        AllColumnsPojo res = pojoView.get(null, key);
         assertEquals(11, res.zbyte);
         assertEquals(12, res.zshort);
         assertEquals(13, res.zint);
@@ -166,9 +166,9 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         val.znumber = BigInteger.valueOf(123);
         val.zuuid = uuid;
 
-        pojoView.upsert(val);
+        pojoView.upsert(null, val);
 
-        Tuple res = table.recordView().get(Tuple.create().set("id", "112").set("gid", 111));
+        Tuple res = table.recordView().get(null, Tuple.create().set("id", "112").set("gid", 111));
 
         assertNotNull(res);
         assertEquals(111, res.intValue("gid"));
@@ -194,7 +194,7 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
     public void testMissingKeyColumnThrowsException() {
         RecordView<NamePojo> recordView = defaultTable().recordView(NamePojo.class);
 
-        CompletionException e = assertThrows(CompletionException.class, () -> recordView.get(new NamePojo()));
+        CompletionException e = assertThrows(CompletionException.class, () -> recordView.get(null, new NamePojo()));
         IgniteClientException ice = (IgniteClientException) e.getCause();
 
         assertEquals("No field found for column id", ice.getMessage());
@@ -209,10 +209,10 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         rec.id = "1";
         rec.gid = 1;
 
-        pojoView.upsert(rec);
+        pojoView.upsert(null, rec);
 
-        IncompletePojoNullable res = pojoView.get(rec);
-        Tuple binRes = tupleView.get(Tuple.create().set("id", "1").set("gid", 1L));
+        IncompletePojoNullable res = pojoView.get(null, rec);
+        Tuple binRes = tupleView.get(null, Tuple.create().set("id", "1").set("gid", 1L));
 
         assertNotNull(res);
         assertNotNull(binRes);
@@ -238,15 +238,15 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = defaultTable();
         RecordView<PersonPojo> pojoView = table.recordView(Mapper.of(PersonPojo.class));
 
-        table.recordView().upsert(tuple());
-        table.recordView().upsert(tuple(100L, "100"));
+        table.recordView().upsert(null, tuple());
+        table.recordView().upsert(null, tuple(100L, "100"));
 
         Collection<PersonPojo> keys = List.of(
                 new PersonPojo(DEFAULT_ID, "blabla"),
                 new PersonPojo(101L, "1234"),
                 new PersonPojo(100L, "qwerty"));
 
-        PersonPojo[] res = pojoView.getAll(keys).toArray(new PersonPojo[0]);
+        PersonPojo[] res = pojoView.getAll(null, keys).toArray(new PersonPojo[0]);
 
         assertEquals(3, res.length);
 
@@ -266,9 +266,9 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         Table table = oneColumnTable();
         RecordView<String> primitiveView = table.recordView(Mapper.of(String.class));
 
-        primitiveView.upsertAll(List.of("a", "c"));
+        primitiveView.upsertAll(null, List.of("a", "c"));
 
-        String[] res = primitiveView.getAll(List.of("a", "b", "c")).toArray(new String[0]);
+        String[] res = primitiveView.getAll(null, List.of("a", "b", "c")).toArray(new String[0]);
 
         assertEquals("a", res[0]);
         assertNull(res[1]);
@@ -284,59 +284,62 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
                 new PersonPojo(100L, "100"),
                 new PersonPojo(101L, "101"));
 
-        pojoView.upsertAll(pojos);
+        pojoView.upsertAll(null, pojos);
 
-        assertEquals(DEFAULT_NAME, pojoView.get(new PersonPojo(DEFAULT_ID)).name);
-        assertEquals("100", pojoView.get(new PersonPojo(100L)).name);
-        assertEquals("101", pojoView.get(new PersonPojo(101L)).name);
+        assertEquals(DEFAULT_NAME, pojoView.get(null, new PersonPojo(DEFAULT_ID)).name);
+        assertEquals("100", pojoView.get(null, new PersonPojo(100L)).name);
+        assertEquals("101", pojoView.get(null, new PersonPojo(101L)).name);
     }
 
     @Test
     public void testGetAndUpsert() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        PersonPojo res1 = pojoView.getAndUpsert(new PersonPojo(DEFAULT_ID, "new_name"));
-        PersonPojo res2 = pojoView.getAndUpsert(new PersonPojo(100L, "name"));
+        PersonPojo res1 = pojoView.getAndUpsert(null, new PersonPojo(DEFAULT_ID, "new_name"));
+        PersonPojo res2 = pojoView.getAndUpsert(null, new PersonPojo(100L, "name"));
 
         assertEquals(DEFAULT_NAME, res1.name);
-        assertEquals("new_name", pojoView.get(new PersonPojo(DEFAULT_ID)).name);
+        assertEquals("new_name", pojoView.get(null, new PersonPojo(DEFAULT_ID)).name);
 
         assertNull(res2);
-        assertEquals("name", pojoView.get(new PersonPojo(100L)).name);
+        assertEquals("name", pojoView.get(null, new PersonPojo(100L)).name);
     }
 
     @Test
     public void testInsert() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        boolean res1 = pojoView.insert(new PersonPojo(DEFAULT_ID, "foobar"));
-        boolean res2 = pojoView.insert(new PersonPojo(100L, "100"));
+        boolean res1 = pojoView.insert(null, new PersonPojo(DEFAULT_ID, "foobar"));
+        boolean res2 = pojoView.insert(null, new PersonPojo(100L, "100"));
 
         assertFalse(res1);
         assertTrue(res2);
-        assertEquals("100", pojoView.get(new PersonPojo(100L)).name);
+        assertEquals("100", pojoView.get(null, new PersonPojo(100L)).name);
     }
 
     @Test
     public void testInsertAll() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        Collection<PersonPojo> res1 = pojoView.insertAll(List.of(new PersonPojo(10L, "10"), new PersonPojo(20L)));
-        Collection<PersonPojo> res2 = pojoView.insertAll(List.of(new PersonPojo(DEFAULT_ID), new PersonPojo(10L)));
-        Collection<PersonPojo> res3 = pojoView.insertAll(List.of(new PersonPojo(DEFAULT_ID, "new_name"), new PersonPojo(30L)));
+        Collection<PersonPojo> res1 = pojoView.insertAll(null, List.of(new PersonPojo(10L, "10"), new PersonPojo(20L)));
+        Collection<PersonPojo> res2 = pojoView.insertAll(null, List.of(new PersonPojo(DEFAULT_ID), new PersonPojo(10L)));
+        Collection<PersonPojo> res3 = pojoView.insertAll(
+                null,
+                List.of(new PersonPojo(DEFAULT_ID, "new_name"), new PersonPojo(30L))
+        );
 
         assertEquals(0, res1.size());
         assertEquals(2, res2.size());
         assertEquals(1, res3.size());
 
-        assertEquals("10", pojoView.get(new PersonPojo(10L)).name);
-        assertNull(pojoView.get(new PersonPojo(20L)).name);
+        assertEquals("10", pojoView.get(null, new PersonPojo(10L)).name);
+        assertNull(pojoView.get(null, new PersonPojo(20L)).name);
 
         assertEquals("new_name", res3.iterator().next().name);
     }
@@ -345,90 +348,90 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
     public void testReplace() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        assertFalse(pojoView.replace(new PersonPojo(-1L)));
-        assertTrue(pojoView.replace(new PersonPojo(DEFAULT_ID, "new_name")));
+        assertFalse(pojoView.replace(null, new PersonPojo(-1L)));
+        assertTrue(pojoView.replace(null, new PersonPojo(DEFAULT_ID, "new_name")));
 
-        assertNull(pojoView.get(new PersonPojo(-1L)));
-        assertEquals("new_name", pojoView.get(new PersonPojo(DEFAULT_ID)).name);
+        assertNull(pojoView.get(null, new PersonPojo(-1L)));
+        assertEquals("new_name", pojoView.get(null, new PersonPojo(DEFAULT_ID)).name);
     }
 
     @Test
     public void testReplaceExact() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        assertFalse(pojoView.replace(new PersonPojo(DEFAULT_ID, "x"), new PersonPojo(DEFAULT_ID, "new_name")));
-        assertFalse(pojoView.replace(new PersonPojo(-1L, "x"), new PersonPojo(DEFAULT_ID, "new_name")));
-        assertTrue(pojoView.replace(new PersonPojo(DEFAULT_ID, DEFAULT_NAME), new PersonPojo(DEFAULT_ID, "new_name2")));
+        assertFalse(pojoView.replace(null, new PersonPojo(DEFAULT_ID, "x"), new PersonPojo(DEFAULT_ID, "new_name")));
+        assertFalse(pojoView.replace(null, new PersonPojo(-1L, "x"), new PersonPojo(DEFAULT_ID, "new_name")));
+        assertTrue(pojoView.replace(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME), new PersonPojo(DEFAULT_ID, "new_name2")));
 
-        assertNull(pojoView.get(new PersonPojo(-1L)));
-        assertEquals("new_name2", pojoView.get(new PersonPojo(DEFAULT_ID)).name);
+        assertNull(pojoView.get(null, new PersonPojo(-1L)));
+        assertEquals("new_name2", pojoView.get(null, new PersonPojo(DEFAULT_ID)).name);
     }
 
     @Test
     public void testGetAndReplace() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        PersonPojo res1 = pojoView.getAndReplace(new PersonPojo(DEFAULT_ID, "new_name"));
-        PersonPojo res2 = pojoView.getAndReplace(new PersonPojo(100L, "name"));
+        PersonPojo res1 = pojoView.getAndReplace(null, new PersonPojo(DEFAULT_ID, "new_name"));
+        PersonPojo res2 = pojoView.getAndReplace(null, new PersonPojo(100L, "name"));
 
         assertEquals(DEFAULT_NAME, res1.name);
-        assertEquals("new_name", pojoView.get(new PersonPojo(DEFAULT_ID)).name);
+        assertEquals("new_name", pojoView.get(null, new PersonPojo(DEFAULT_ID)).name);
 
         assertNull(res2);
-        assertNull(pojoView.get(new PersonPojo(100L)));
+        assertNull(pojoView.get(null, new PersonPojo(100L)));
     }
 
     @Test
     public void testDelete() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        boolean res1 = pojoView.delete(new PersonPojo(DEFAULT_ID));
-        boolean res2 = pojoView.delete(new PersonPojo(100L, "name"));
+        boolean res1 = pojoView.delete(null, new PersonPojo(DEFAULT_ID));
+        boolean res2 = pojoView.delete(null, new PersonPojo(100L, "name"));
 
         assertTrue(res1);
         assertFalse(res2);
 
-        assertNull(pojoView.get(new PersonPojo(DEFAULT_ID)));
+        assertNull(pojoView.get(null, new PersonPojo(DEFAULT_ID)));
     }
 
     @Test
     public void testDeleteExact() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
-        pojoView.upsert(new PersonPojo(100L, "100"));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(100L, "100"));
 
-        boolean res1 = pojoView.deleteExact(new PersonPojo(DEFAULT_ID));
-        boolean res2 = pojoView.deleteExact(new PersonPojo(100L));
-        boolean res3 = pojoView.deleteExact(new PersonPojo(100L, "100"));
+        boolean res1 = pojoView.deleteExact(null, new PersonPojo(DEFAULT_ID));
+        boolean res2 = pojoView.deleteExact(null, new PersonPojo(100L));
+        boolean res3 = pojoView.deleteExact(null, new PersonPojo(100L, "100"));
 
         assertFalse(res1);
         assertFalse(res2);
         assertTrue(res3);
 
-        assertNotNull(pojoView.get(new PersonPojo(DEFAULT_ID)));
-        assertNull(pojoView.get(new PersonPojo(100L)));
+        assertNotNull(pojoView.get(null, new PersonPojo(DEFAULT_ID)));
+        assertNull(pojoView.get(null, new PersonPojo(100L)));
     }
 
     @Test
     public void testGetAndDelete() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsert(new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
+        pojoView.upsert(null, new PersonPojo(DEFAULT_ID, DEFAULT_NAME));
 
-        PersonPojo res1 = pojoView.getAndDelete(new PersonPojo(DEFAULT_ID));
-        PersonPojo res2 = pojoView.getAndDelete(new PersonPojo(100L));
+        PersonPojo res1 = pojoView.getAndDelete(null, new PersonPojo(DEFAULT_ID));
+        PersonPojo res2 = pojoView.getAndDelete(null, new PersonPojo(100L));
 
         assertEquals(DEFAULT_NAME, res1.name);
-        assertNull(pojoView.get(new PersonPojo(DEFAULT_ID)));
+        assertNull(pojoView.get(null, new PersonPojo(DEFAULT_ID)));
 
         assertNull(res2);
     }
@@ -437,34 +440,47 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
     public void testDeleteAll() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsertAll(List.of(new PersonPojo(1L, "1"), new PersonPojo(2L, "2"), new PersonPojo(3L, "3")));
+        pojoView.upsertAll(
+                null,
+                List.of(new PersonPojo(1L, "1"), new PersonPojo(2L, "2"), new PersonPojo(3L, "3"))
+        );
 
-        Collection<PersonPojo> res1 = pojoView.deleteAll(List.of(new PersonPojo(10L), new PersonPojo(20L)));
-        Collection<PersonPojo> res2 = pojoView.deleteAll(List.of(new PersonPojo(1L), new PersonPojo(3L)));
+        Collection<PersonPojo> res1 = pojoView.deleteAll(null, List.of(new PersonPojo(10L), new PersonPojo(20L)));
+        Collection<PersonPojo> res2 = pojoView.deleteAll(null, List.of(new PersonPojo(1L), new PersonPojo(3L)));
 
         assertEquals(2, res1.size());
         assertEquals(0, res2.size());
 
-        assertNull(pojoView.get(new PersonPojo(1L)));
-        assertEquals("2", pojoView.get(new PersonPojo(2L)).name);
-        assertNull(pojoView.get(new PersonPojo(3L)));
+        assertNull(pojoView.get(null, new PersonPojo(1L)));
+        assertEquals("2", pojoView.get(null, new PersonPojo(2L)).name);
+        assertNull(pojoView.get(null, new PersonPojo(3L)));
     }
 
     @Test
     public void testDeleteAllExact() {
         RecordView<PersonPojo> pojoView = defaultTable().recordView(Mapper.of(PersonPojo.class));
 
-        pojoView.upsertAll(List.of(new PersonPojo(1L, "1"), new PersonPojo(2L, "2"), new PersonPojo(3L, "3")));
+        pojoView.upsertAll(
+                null,
+                List.of(new PersonPojo(1L, "1"), new PersonPojo(2L, "2"), new PersonPojo(3L, "3"))
+        );
 
-        Collection<PersonPojo> res1 = pojoView.deleteAllExact(List.of(new PersonPojo(1L, "a"), new PersonPojo(3L, "b")));
-        Collection<PersonPojo> res2 = pojoView.deleteAllExact(List.of(new PersonPojo(1L, "1"), new PersonPojo(3L, "3")));
+        Collection<PersonPojo> res1 = pojoView.deleteAllExact(
+                null,
+                List.of(new PersonPojo(1L, "a"), new PersonPojo(3L, "b"))
+        );
+
+        Collection<PersonPojo> res2 = pojoView.deleteAllExact(
+                null,
+                List.of(new PersonPojo(1L, "1"), new PersonPojo(3L, "3"))
+        );
 
         assertEquals(2, res1.size());
         assertEquals(0, res2.size());
 
-        assertNull(pojoView.get(new PersonPojo(1L)));
-        assertEquals("2", pojoView.get(new PersonPojo(2L)).name);
-        assertNull(pojoView.get(new PersonPojo(3L)));
+        assertNull(pojoView.get(null, new PersonPojo(1L)));
+        assertEquals("2", pojoView.get(null, new PersonPojo(2L)).name);
+        assertNull(pojoView.get(null, new PersonPojo(3L)));
     }
 
     private static class PersonPojo {

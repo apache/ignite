@@ -46,7 +46,7 @@ public class ClientTupleInsertAllRequest {
         var table = readTable(in, tables);
         var tuples = readTuples(in, table, false);
 
-        return table.recordView().insertAllAsync(tuples).thenAccept(skippedTuples ->
+        return table.recordView().insertAllAsync(null, tuples).thenAccept(skippedTuples ->
             writeTuples(out, skippedTuples, table.schemaView(), true));
     }
 }

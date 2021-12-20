@@ -136,7 +136,7 @@ public class KeyValueViewExample {
                         .set("lastName", "Kulichenko")
                         .set("balance", 100.00d);
 
-                kvView.put(key, value);
+                kvView.put(null, key, value);
 
                 //--------------------------------------------------------------------------------------
                 //
@@ -146,7 +146,7 @@ public class KeyValueViewExample {
 
                 System.out.println("\nRetrieving a value using KeyValueView API...");
 
-                value = kvView.get(key);
+                value = kvView.get(null, key);
 
                 System.out.println(
                         "\nRetrieved value:\n"

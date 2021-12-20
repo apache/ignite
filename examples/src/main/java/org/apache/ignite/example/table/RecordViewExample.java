@@ -134,7 +134,7 @@ public class RecordViewExample {
                         .set("lastName", "Kulichenko")
                         .set("balance", 100.00d);
 
-                accounts.insert(newAccountTuple);
+                accounts.insert(null, newAccountTuple);
 
                 //--------------------------------------------------------------------------------------
                 //
@@ -146,7 +146,7 @@ public class RecordViewExample {
 
                 Tuple accountNumberTuple = Tuple.create().set("accountNumber", 123456);
 
-                Tuple accountTuple = accounts.get(accountNumberTuple);
+                Tuple accountTuple = accounts.get(null, accountNumberTuple);
 
                 System.out.println(
                         "\nRetrieved record:\n"

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshallerException;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshallerImpl;
 import org.apache.ignite.internal.schema.row.Row;
-import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.internal.tx.InternalTransaction;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueView;
@@ -47,52 +47,45 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     /** The marshaller. */
     private final TupleMarshallerImpl marsh;
 
-    /** Table manager. */
-    private final TableManager tblMgr;
-
     /**
      * The constructor.
      *
      * @param tbl       Table storage.
      * @param schemaReg Schema registry.
-     * @param tblMgr    Table manager.
-     * @param tx        The transaction.
      */
-    public KeyValueBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr, Transaction tx) {
-        super(tbl, schemaReg, tx);
-
-        this.tblMgr = tblMgr;
+    public KeyValueBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg) {
+        super(tbl, schemaReg);
 
         marsh = new TupleMarshallerImpl(schemaReg);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple get(@NotNull Tuple key) {
-        return sync(getAsync(key));
+    public Tuple get(@Nullable Transaction tx, @NotNull Tuple key) {
+        return sync(getAsync(tx, key));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple key) {
+    public @NotNull CompletableFuture<Tuple> getAsync(@Nullable Transaction tx, @NotNull Tuple key) {
         Objects.requireNonNull(key);
 
         Row keyRow = marshal(key, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.get(keyRow, tx)  // Load async.
+        return tbl.get(keyRow, (InternalTransaction) tx)  // Load async.
                 .thenApply(this::wrap) // Binary -> schema-aware row
                 .thenApply(TableRow::valueTuple); // Narrow to value.
     }
 
     /** {@inheritDoc} */
     @Override
-    public Map<Tuple, Tuple> getAll(@NotNull Collection<Tuple> keys) {
-        return sync(getAllAsync(keys));
+    public Map<Tuple, Tuple> getAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
+        return sync(getAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Map<Tuple, Tuple>> getAllAsync(@NotNull Collection<Tuple> keys) {
+    public @NotNull CompletableFuture<Map<Tuple, Tuple>> getAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
         Objects.requireNonNull(keys);
 
         List<BinaryRow> keyRows = new ArrayList<>(keys.size());
@@ -103,48 +96,48 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
             keyRows.add(keyRow);
         }
 
-        return tbl.getAll(keyRows, tx)
+        return tbl.getAll(keyRows, (InternalTransaction) tx)
                 .thenApply(ts -> ts.stream().filter(Objects::nonNull).filter(BinaryRow::hasValue).map(this::wrap)
                         .collect(Collectors.toMap(TableRow::keyTuple, TableRow::valueTuple)));
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean contains(@NotNull Tuple key) {
-        return get(key) != null;
+    public boolean contains(@Nullable Transaction tx, @NotNull Tuple key) {
+        return get(tx, key) != null;
     }
 
     /** {@inheritDoc} */
     @Override
-    public CompletableFuture<Boolean> containsAsync(@NotNull Tuple key) {
-        return getAsync(key).thenApply(Objects::nonNull);
+    public CompletableFuture<Boolean> containsAsync(@Nullable Transaction tx, @NotNull Tuple key) {
+        return getAsync(tx, key).thenApply(Objects::nonNull);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void put(@NotNull Tuple key, Tuple val) {
-        sync(putAsync(key, val));
+    public void put(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
+        sync(putAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Void> putAsync(@NotNull Tuple key, Tuple val) {
+    public @NotNull CompletableFuture<Void> putAsync(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.upsert(row, tx);
+        return tbl.upsert(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void putAll(@NotNull Map<Tuple, Tuple> pairs) {
-        sync(putAllAsync(pairs));
+    public void putAll(@Nullable Transaction tx, @NotNull Map<Tuple, Tuple> pairs) {
+        sync(putAllAsync(tx, pairs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Void> putAllAsync(@NotNull Map<Tuple, Tuple> pairs) {
+    public @NotNull CompletableFuture<Void> putAllAsync(@Nullable Transaction tx, @NotNull Map<Tuple, Tuple> pairs) {
         Objects.requireNonNull(pairs);
 
         List<BinaryRow> rows = new ArrayList<>(pairs.size());
@@ -155,87 +148,87 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
             rows.add(row);
         }
 
-        return tbl.upsertAll(rows, tx);
+        return tbl.upsertAll(rows, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndPut(@NotNull Tuple key, Tuple val) {
-        return sync(getAndPutAsync(key, val));
+    public Tuple getAndPut(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
+        return sync(getAndPutAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndPutAsync(@NotNull Tuple key, Tuple val) {
+    public @NotNull CompletableFuture<Tuple> getAndPutAsync(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.getAndUpsert(row, tx)
+        return tbl.getAndUpsert(row, (InternalTransaction) tx)
                 .thenApply(this::wrap) // Binary -> schema-aware row
                 .thenApply(TableRow::valueTuple); // Narrow to value.
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean putIfAbsent(@NotNull Tuple key, @NotNull Tuple val) {
-        return sync(putIfAbsentAsync(key, val));
+    public boolean putIfAbsent(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
+        return sync(putIfAbsentAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> putIfAbsentAsync(@NotNull Tuple key, Tuple val) {
+    public @NotNull CompletableFuture<Boolean> putIfAbsentAsync(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.insert(row, tx);
+        return tbl.insert(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean remove(@NotNull Tuple key) {
-        return sync(removeAsync(key));
+    public boolean remove(@Nullable Transaction tx, @NotNull Tuple key) {
+        return sync(removeAsync(tx, key));
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean remove(@NotNull Tuple key, @NotNull Tuple val) {
-        return sync(removeAsync(key, val));
+    public boolean remove(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
+        return sync(removeAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull Tuple key) {
+    public @NotNull CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull Tuple key) {
         Objects.requireNonNull(key);
 
         Row row = marshal(key, null); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.delete(row, tx);
+        return tbl.delete(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull Tuple key, @NotNull Tuple val) {
+    public @NotNull CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(val);
 
         Row row = marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.deleteExact(row, tx);
+        return tbl.deleteExact(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> removeAll(@NotNull Collection<Tuple> keys) {
+    public Collection<Tuple> removeAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
         Objects.requireNonNull(keys);
 
-        return sync(removeAllAsync(keys));
+        return sync(removeAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> removeAllAsync(@NotNull Collection<Tuple> keys) {
+    public @NotNull CompletableFuture<Collection<Tuple>> removeAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
         Objects.requireNonNull(keys);
 
         List<BinaryRow> keyRows = new ArrayList<>(keys.size());
@@ -246,54 +239,59 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
             keyRows.add(keyRow);
         }
 
-        return tbl.deleteAll(keyRows, tx)
+        return tbl.deleteAll(keyRows, (InternalTransaction) tx)
                 .thenApply(t -> t.stream().filter(Objects::nonNull).map(this::wrap).map(TableRow::valueTuple).collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndRemove(@NotNull Tuple key) {
+    public Tuple getAndRemove(@Nullable Transaction tx, @NotNull Tuple key) {
         Objects.requireNonNull(key);
 
-        return sync(getAndRemoveAsync(key));
+        return sync(getAndRemoveAsync(tx, key));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndRemoveAsync(@NotNull Tuple key) {
+    public @NotNull CompletableFuture<Tuple> getAndRemoveAsync(@Nullable Transaction tx, @NotNull Tuple key) {
         Objects.requireNonNull(key);
 
-        return tbl.getAndDelete(marshal(key, null), tx)
+        return tbl.getAndDelete(marshal(key, null), (InternalTransaction) tx)
                 .thenApply(this::wrap)
                 .thenApply(TableRow::valueTuple);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean replace(@NotNull Tuple key, @NotNull Tuple val) {
-        return sync(replaceAsync(key, val));
+    public boolean replace(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
+        return sync(replaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean replace(@NotNull Tuple key, @NotNull Tuple oldVal, @NotNull Tuple newVal) {
-        return sync(replaceAsync(key, oldVal, newVal));
+    public boolean replace(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple oldVal, @NotNull Tuple newVal) {
+        return sync(replaceAsync(tx, key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple key, @NotNull Tuple val) {
+    public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(val);
 
         Row row = marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.replace(row, tx);
+        return tbl.replace(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple key, @NotNull Tuple oldVal, @NotNull Tuple newVal) {
+    public @NotNull CompletableFuture<Boolean> replaceAsync(
+            @Nullable Transaction tx,
+            @NotNull Tuple key,
+            @NotNull Tuple oldVal,
+            @NotNull Tuple newVal
+    ) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(oldVal);
         Objects.requireNonNull(newVal);
@@ -301,22 +299,22 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
         Row oldRow = marshal(key, oldVal); // Convert to portable format to pass TX/storage layer.
         Row newRow = marshal(key, newVal); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.replace(oldRow, newRow, tx);
+        return tbl.replace(oldRow, newRow, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndReplace(@NotNull Tuple key, @NotNull Tuple val) {
-        return sync(getAndReplaceAsync(key, val));
+    public Tuple getAndReplace(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
+        return sync(getAndReplaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple key, @NotNull Tuple val) {
+    public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(val);
 
-        return tbl.getAndReplace(marshal(key, val), tx)
+        return tbl.getAndReplace(marshal(key, val), (InternalTransaction) tx)
                 .thenApply(this::wrap)
                 .thenApply(TableRow::valueTuple);
     }
@@ -324,6 +322,7 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     /** {@inheritDoc} */
     @Override
     public <R extends Serializable> R invoke(
+            @Nullable Transaction tx,
             @NotNull Tuple key,
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
@@ -334,6 +333,7 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     /** {@inheritDoc} */
     @Override
     public @NotNull <R extends Serializable> CompletableFuture<R> invokeAsync(
+            @Nullable Transaction tx,
             @NotNull Tuple key,
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
@@ -344,6 +344,7 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     /** {@inheritDoc} */
     @Override
     public <R extends Serializable> Map<Tuple, R> invokeAll(
+            @Nullable Transaction tx,
             @NotNull Collection<Tuple> keys,
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
@@ -354,17 +355,12 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     /** {@inheritDoc} */
     @Override
     public @NotNull <R extends Serializable> CompletableFuture<Map<Tuple, R>> invokeAllAsync(
+            @Nullable Transaction tx,
             @NotNull Collection<Tuple> keys,
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
     ) {
         throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public KeyValueBinaryViewImpl withTransaction(Transaction tx) {
-        return new KeyValueBinaryViewImpl(tbl, schemaReg, tblMgr, tx);
     }
 
     /**

@@ -45,6 +45,6 @@ public class ClientTupleDeleteRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, true);
 
-        return table.recordView().deleteAsync(tuple).thenAccept(out::packBoolean);
+        return table.recordView().deleteAsync(null, tuple).thenAccept(out::packBoolean);
     }
 }

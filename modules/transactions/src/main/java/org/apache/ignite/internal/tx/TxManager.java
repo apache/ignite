@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkAddress;
-import org.apache.ignite.tx.TransactionException;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -127,31 +126,6 @@ public interface TxManager extends IgniteComponent {
      * @return {@code True} if a local node.
      */
     boolean isLocal(NetworkAddress addr);
-
-    /**
-     * Sets a thread local transaction.
-     *
-     * @param tx The thread local transaction.
-     * @deprecated Should be removed after table API adjustment TODO IGNITE-15930.
-     */
-    @Deprecated
-    void setTx(InternalTransaction tx);
-
-    /**
-     * Returns a thread local transaction.
-     *
-     * @return The thread local transaction.
-     * @throws TransactionException Thrown on illegal access.
-     * @deprecated Should be removed after table API adjustment TODO IGNITE-15930.
-     */
-    @Deprecated
-    InternalTransaction tx() throws TransactionException;
-
-    /**
-     * Clears thread local transaction.
-     */
-    @Deprecated
-    void clearTx();
 
     /**
      * Returns a number of finished transactions.

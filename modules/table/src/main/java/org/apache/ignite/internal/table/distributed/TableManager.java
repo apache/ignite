@@ -548,8 +548,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
                 var table = new TableImpl(
                         internalTable,
-                        schemaRegistry,
-                        TableManager.this
+                        schemaRegistry
                 );
 
                 tables.put(name, table);

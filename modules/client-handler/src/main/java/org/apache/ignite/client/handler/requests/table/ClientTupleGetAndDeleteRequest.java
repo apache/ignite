@@ -46,7 +46,7 @@ public class ClientTupleGetAndDeleteRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, true);
 
-        return table.recordView().getAndDeleteAsync(tuple).thenAccept(
+        return table.recordView().getAndDeleteAsync(null, tuple).thenAccept(
                 resTuple -> ClientTableCommon.writeTupleOrNil(out, resTuple, TuplePart.VAL));
     }
 }

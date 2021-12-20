@@ -134,7 +134,7 @@ public class RebalanceExample {
                     Tuple key = Tuple.create().set("key", i);
                     Tuple value = Tuple.create().set("value", "test_" + i);
 
-                    kvView.put(key, value);
+                    kvView.put(null, key, value);
                 }
 
                 //--------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ public class RebalanceExample {
 
                 for (int i = 0; i < 10; i++) {
                     Tuple key = Tuple.create().set("key", i);
-                    Tuple value = kvView.get(key);
+                    Tuple value = kvView.get(null, key);
 
                     System.out.println("    " + i + " -> " + value.stringValue("value"));
                 }
@@ -202,7 +202,7 @@ public class RebalanceExample {
 
                 for (int i = 0; i < 10; i++) {
                     Tuple key = Tuple.create().set("key", i);
-                    Tuple value = kvView.get(key);
+                    Tuple value = kvView.get(null, key);
 
                     System.out.println("    " + i + " -> " + value.stringValue("value"));
                 }

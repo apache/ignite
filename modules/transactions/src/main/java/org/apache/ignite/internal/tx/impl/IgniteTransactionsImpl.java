@@ -73,12 +73,6 @@ public class IgniteTransactionsImpl implements IgniteTransactions {
     public <T> T runInTransaction(Function<Transaction, T> clo) throws TransactionException {
         InternalTransaction tx = txManager.begin();
 
-        Thread th = Thread.currentThread();
-
-        txManager.setTx(tx);
-
-        tx.thread(th);
-
         try {
             T ret = clo.apply(tx);
 
@@ -93,8 +87,6 @@ public class IgniteTransactionsImpl implements IgniteTransactions {
             }
 
             throw t;
-        } finally {
-            txManager.clearTx();
         }
     }
 }

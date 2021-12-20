@@ -195,7 +195,7 @@ public class AbstractBasicIntegrationTest {
             batch.add(toInsert);
 
             if (batch.size() == batchSize) {
-                Collection<Tuple> duplicates = view.insertAll(batch);
+                Collection<Tuple> duplicates = view.insertAll(null, batch);
 
                 if (!duplicates.isEmpty()) {
                     throw new AssertionError("Duplicated rows detected: " + duplicates);
@@ -206,7 +206,7 @@ public class AbstractBasicIntegrationTest {
         }
 
         if (!batch.isEmpty()) {
-            view.insertAll(batch);
+            view.insertAll(null, batch);
 
             batch.clear();
         }

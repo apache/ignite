@@ -30,7 +30,7 @@ import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshallerException;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshallerImpl;
 import org.apache.ignite.internal.schema.row.Row;
-import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.internal.tx.InternalTransaction;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.RecordView;
@@ -46,266 +46,254 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     /** Marshaller. */
     private final TupleMarshallerImpl marsh;
 
-    /** Table manager. */
-    private final TableManager tblMgr;
-
     /**
      * Constructor.
      *
      * @param tbl       The table.
      * @param schemaReg Table schema registry.
-     * @param tblMgr    Table manager.
-     * @param tx        The transaction.
      */
-    public RecordBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg, TableManager tblMgr, @Nullable Transaction tx) {
-        super(tbl, schemaReg, tx);
+    public RecordBinaryViewImpl(InternalTable tbl, SchemaRegistry schemaReg) {
+        super(tbl, schemaReg);
 
         marsh = new TupleMarshallerImpl(schemaReg);
-
-        this.tblMgr = tblMgr;
     }
 
     /** {@inheritDoc} */
     @Override
-    public RecordBinaryViewImpl withTransaction(Transaction tx) {
-        return new RecordBinaryViewImpl(tbl, schemaReg, tblMgr, tx);
+    public Tuple get(@Nullable Transaction tx, @NotNull Tuple keyRec) {
+        return sync(getAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple get(@NotNull Tuple keyRec) {
-        return sync(getAsync(keyRec));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple keyRec) {
+    public @NotNull CompletableFuture<Tuple> getAsync(@Nullable Transaction tx, @NotNull Tuple keyRec) {
         Objects.requireNonNull(keyRec);
 
         final Row keyRow = marshal(keyRec, true); // Convert to portable format to pass TX/storage layer.
 
-        return tbl.get(keyRow, tx).thenApply(this::wrap);
+        return tbl.get(keyRow, (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> getAll(@NotNull Collection<Tuple> keyRecs) {
-        return sync(getAllAsync(keyRecs));
+    public Collection<Tuple> getAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
+        return sync(getAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> getAllAsync(@NotNull Collection<Tuple> keyRecs) {
+    public @NotNull CompletableFuture<Collection<Tuple>> getAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
         Objects.requireNonNull(keyRecs);
 
-        return tbl.getAll(mapToBinary(keyRecs, true), tx).thenApply(this::wrap);
+        return tbl.getAll(mapToBinary(keyRecs, true), (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void upsert(@NotNull Tuple rec) {
-        sync(upsertAsync(rec));
+    public void upsert(@Nullable Transaction tx, @NotNull Tuple rec) {
+        sync(upsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Void> upsertAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Void> upsertAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.upsert(row, tx);
+        return tbl.upsert(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void upsertAll(@NotNull Collection<Tuple> recs) {
-        sync(upsertAllAsync(recs));
+    public void upsertAll(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
+        sync(upsertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<Tuple> recs) {
+    public @NotNull CompletableFuture<Void> upsertAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
         Objects.requireNonNull(recs);
 
-        return tbl.upsertAll(mapToBinary(recs, false), tx);
+        return tbl.upsertAll(mapToBinary(recs, false), (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndUpsert(@NotNull Tuple rec) {
-        return sync(getAndUpsertAsync(rec));
+    public Tuple getAndUpsert(@Nullable Transaction tx, @NotNull Tuple rec) {
+        return sync(getAndUpsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndUpsertAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Tuple> getAndUpsertAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.getAndUpsert(row, tx).thenApply(this::wrap);
+        return tbl.getAndUpsert(row, (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean insert(@NotNull Tuple rec) {
-        return sync(insertAsync(rec));
+    public boolean insert(@Nullable Transaction tx, @NotNull Tuple rec) {
+        return sync(insertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> insertAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Boolean> insertAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.insert(row, tx);
+        return tbl.insert(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> insertAll(@NotNull Collection<Tuple> recs) {
-        return sync(insertAllAsync(recs));
+    public Collection<Tuple> insertAll(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
+        return sync(insertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> insertAllAsync(@NotNull Collection<Tuple> recs) {
+    public @NotNull CompletableFuture<Collection<Tuple>> insertAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
         Objects.requireNonNull(recs);
 
-        return tbl.insertAll(mapToBinary(recs, false), tx).thenApply(this::wrap);
+        return tbl.insertAll(mapToBinary(recs, false), (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean replace(@NotNull Tuple rec) {
-        return sync(replaceAsync(rec));
+    public boolean replace(@Nullable Transaction tx, @NotNull Tuple rec) {
+        return sync(replaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean replace(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        return sync(replaceAsync(oldRec, newRec));
+    public boolean replace(@Nullable Transaction tx, @NotNull Tuple oldRec, @NotNull Tuple newRec) {
+        return sync(replaceAsync(tx, oldRec, newRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.replace(row, tx);
+        return tbl.replace(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
+    public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull Tuple oldRec, @NotNull Tuple newRec) {
         Objects.requireNonNull(oldRec);
         Objects.requireNonNull(newRec);
 
         final Row oldRow = marshal(oldRec, false);
         final Row newRow = marshal(newRec, false);
 
-        return tbl.replace(oldRow, newRow, tx);
+        return tbl.replace(oldRow, newRow, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndReplace(@NotNull Tuple rec) {
-        return sync(getAndReplaceAsync(rec));
+    public Tuple getAndReplace(@Nullable Transaction tx, @NotNull Tuple rec) {
+        return sync(getAndReplaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.getAndReplace(row, tx).thenApply(this::wrap);
+        return tbl.getAndReplace(row, (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean delete(@NotNull Tuple keyRec) {
-        return sync(deleteAsync(keyRec));
+    public boolean delete(@Nullable Transaction tx, @NotNull Tuple keyRec) {
+        return sync(deleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull Tuple keyRec) {
+    public @NotNull CompletableFuture<Boolean> deleteAsync(@Nullable Transaction tx, @NotNull Tuple keyRec) {
         Objects.requireNonNull(keyRec);
 
         final Row keyRow = marshal(keyRec, true);
 
-        return tbl.delete(keyRow, tx);
+        return tbl.delete(keyRow, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean deleteExact(@NotNull Tuple rec) {
-        return sync(deleteExactAsync(rec));
+    public boolean deleteExact(@Nullable Transaction tx, @NotNull Tuple rec) {
+        return sync(deleteExactAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Boolean> deleteExactAsync(@NotNull Tuple rec) {
+    public @NotNull CompletableFuture<Boolean> deleteExactAsync(@Nullable Transaction tx, @NotNull Tuple rec) {
         Objects.requireNonNull(rec);
 
         final Row row = marshal(rec, false);
 
-        return tbl.deleteExact(row, tx);
+        return tbl.deleteExact(row, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Tuple getAndDelete(@NotNull Tuple keyRec) {
-        return sync(getAndDeleteAsync(keyRec));
+    public Tuple getAndDelete(@Nullable Transaction tx, @NotNull Tuple keyRec) {
+        return sync(getAndDeleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple keyRec) {
+    public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@Nullable Transaction tx, @NotNull Tuple keyRec) {
         Objects.requireNonNull(keyRec);
 
         final Row keyRow = marshal(keyRec, true);
 
-        return tbl.getAndDelete(keyRow, tx).thenApply(this::wrap);
+        return tbl.getAndDelete(keyRow, (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> keyRecs) {
-        return sync(deleteAllAsync(keyRecs));
+    public Collection<Tuple> deleteAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
+        return sync(deleteAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> keyRecs) {
+    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
         Objects.requireNonNull(keyRecs);
 
-        return tbl.deleteAll(mapToBinary(keyRecs, true), tx).thenApply(this::wrap);
+        return tbl.deleteAll(mapToBinary(keyRecs, true), (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Collection<Tuple> deleteAllExact(@NotNull Collection<Tuple> recs) {
-        return sync(deleteAllExactAsync(recs));
+    public Collection<Tuple> deleteAllExact(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
+        return sync(deleteAllExactAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllExactAsync(@NotNull Collection<Tuple> recs) {
+    public @NotNull CompletableFuture<Collection<Tuple>> deleteAllExactAsync(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
         Objects.requireNonNull(recs);
 
-        return tbl.deleteAllExact(mapToBinary(recs, false), tx).thenApply(this::wrap);
+        return tbl.deleteAllExact(mapToBinary(recs, false), (InternalTransaction) tx).thenApply(this::wrap);
     }
 
     /** {@inheritDoc} */
     @Override
     public <T extends Serializable> T invoke(
+            @Nullable Transaction tx,
             @NotNull Tuple keyRec,
             InvokeProcessor<Tuple, Tuple, T> proc
     ) {
@@ -315,6 +303,7 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     /** {@inheritDoc} */
     @Override
     public @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(
+            @Nullable Transaction tx,
             @NotNull Tuple keyRec,
             InvokeProcessor<Tuple, Tuple, T> proc
     ) {
@@ -324,6 +313,7 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     /** {@inheritDoc} */
     @Override
     public <T extends Serializable> Map<Tuple, T> invokeAll(
+            @Nullable Transaction tx,
             @NotNull Collection<Tuple> keyRecs,
             InvokeProcessor<Tuple, Tuple, T> proc
     ) {
@@ -333,6 +323,7 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     /** {@inheritDoc} */
     @Override
     public @NotNull <T extends Serializable> CompletableFuture<Map<Tuple, T>> invokeAllAsync(
+            @Nullable Transaction tx,
             @NotNull Collection<Tuple> keyRecs,
             InvokeProcessor<Tuple, Tuple, T> proc
     ) {

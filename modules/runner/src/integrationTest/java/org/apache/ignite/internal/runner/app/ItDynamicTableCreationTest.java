@@ -167,8 +167,8 @@ class ItDynamicTableCreationTest {
         RecordView<Tuple> recView1 = tbl1.recordView();
         KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-        recView1.insert(Tuple.create().set("key", 1L).set("val", 111));
-        kvView1.put(Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
+        recView1.insert(null, Tuple.create().set("key", 1L).set("val", 111));
+        kvView1.put(null, Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
 
         // Get data on node 2.
         Table tbl2 = clusterNodes.get(2).tables().table(schTbl1.canonicalName());
@@ -178,18 +178,18 @@ class ItDynamicTableCreationTest {
         final Tuple keyTuple1 = Tuple.create().set("key", 1L);
         final Tuple keyTuple2 = Tuple.create().set("key", 2L);
 
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("key"));
-        assertEquals(1, (Long) recView2.get(keyTuple1).value("key"));
-        assertEquals(2, (Long) recView2.get(keyTuple2).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple1).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple2).value("key"));
+        assertEquals(1, (Long) recView2.get(null, keyTuple1).value("key"));
+        assertEquals(2, (Long) recView2.get(null, keyTuple2).value("key"));
 
-        assertEquals(111, (Integer) recView2.get(keyTuple1).value("val"));
-        assertEquals(111, (Integer) kvView2.get(keyTuple1).value("val"));
-        assertEquals(222, (Integer) recView2.get(keyTuple2).value("val"));
-        assertEquals(222, (Integer) kvView2.get(keyTuple2).value("val"));
+        assertEquals(111, (Integer) recView2.get(null, keyTuple1).value("val"));
+        assertEquals(111, (Integer) kvView2.get(null, keyTuple1).value("val"));
+        assertEquals(222, (Integer) recView2.get(null, keyTuple2).value("val"));
+        assertEquals(222, (Integer) kvView2.get(null, keyTuple2).value("val"));
 
-        assertThrows(IllegalArgumentException.class, () -> kvView1.get(keyTuple1).value("key"));
-        assertThrows(IllegalArgumentException.class, () -> kvView1.get(keyTuple2).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView1.get(null, keyTuple1).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView1.get(null, keyTuple2).value("key"));
     }
 
     /**
@@ -226,10 +226,10 @@ class ItDynamicTableCreationTest {
         RecordView<Tuple> recView1 = tbl1.recordView();
         KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-        recView1.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
+        recView1.insert(null, Tuple.create().set("key", uuid).set("affKey", 42L)
                 .set("valStr", "String value").set("valInt", 73).set("valNull", null));
 
-        kvView1.put(Tuple.create().set("key", uuid2).set("affKey", 4242L),
+        kvView1.put(null, Tuple.create().set("key", uuid2).set("affKey", 4242L),
                 Tuple.create().set("valStr", "String value 2").set("valInt", 7373).set("valNull", null));
 
         // Get data on node 2.
@@ -241,32 +241,32 @@ class ItDynamicTableCreationTest {
         final Tuple keyTuple2 = Tuple.create().set("key", uuid2).set("affKey", 4242L);
 
         // KV view must NOT return key columns in value.
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("affKey"));
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("key"));
-        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("affKey"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple1).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple1).value("affKey"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple2).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(null, keyTuple2).value("affKey"));
 
         // Record binary view MUST return key columns in value.
-        assertEquals(uuid, recView2.get(keyTuple1).value("key"));
-        assertEquals(42L, (Long) recView2.get(keyTuple1).value("affKey"));
-        assertEquals(uuid2, recView2.get(keyTuple2).value("key"));
-        assertEquals(4242L, (Long) recView2.get(keyTuple2).value("affKey"));
+        assertEquals(uuid, recView2.get(null, keyTuple1).value("key"));
+        assertEquals(42L, (Long) recView2.get(null, keyTuple1).value("affKey"));
+        assertEquals(uuid2, recView2.get(null, keyTuple2).value("key"));
+        assertEquals(4242L, (Long) recView2.get(null, keyTuple2).value("affKey"));
 
-        assertEquals("String value", recView2.get(keyTuple1).value("valStr"));
-        assertEquals(73, (Integer) recView2.get(keyTuple1).value("valInt"));
-        assertNull(recView2.get(keyTuple1).value("valNull"));
+        assertEquals("String value", recView2.get(null, keyTuple1).value("valStr"));
+        assertEquals(73, (Integer) recView2.get(null, keyTuple1).value("valInt"));
+        assertNull(recView2.get(null, keyTuple1).value("valNull"));
 
-        assertEquals("String value 2", recView2.get(keyTuple2).value("valStr"));
-        assertEquals(7373, (Integer) recView2.get(keyTuple2).value("valInt"));
-        assertNull(recView2.get(keyTuple2).value("valNull"));
+        assertEquals("String value 2", recView2.get(null, keyTuple2).value("valStr"));
+        assertEquals(7373, (Integer) recView2.get(null, keyTuple2).value("valInt"));
+        assertNull(recView2.get(null, keyTuple2).value("valNull"));
 
-        assertEquals("String value", kvView2.get(keyTuple1).value("valStr"));
-        assertEquals(73, (Integer) kvView2.get(keyTuple1).value("valInt"));
-        assertNull(kvView2.get(keyTuple1).value("valNull"));
+        assertEquals("String value", kvView2.get(null, keyTuple1).value("valStr"));
+        assertEquals(73, (Integer) kvView2.get(null, keyTuple1).value("valInt"));
+        assertNull(kvView2.get(null, keyTuple1).value("valNull"));
 
-        assertEquals("String value 2", kvView2.get(keyTuple2).value("valStr"));
-        assertEquals(7373, (Integer) kvView2.get(keyTuple2).value("valInt"));
-        assertNull(kvView2.get(keyTuple2).value("valNull"));
+        assertEquals("String value 2", kvView2.get(null, keyTuple2).value("valStr"));
+        assertEquals(7373, (Integer) kvView2.get(null, keyTuple2).value("valInt"));
+        assertNull(kvView2.get(null, keyTuple2).value("valNull"));
     }
 
     /**

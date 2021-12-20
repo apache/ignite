@@ -121,7 +121,7 @@ public class ItBaselineChangesTest {
         Table tbl1 = clusterNodes.get(1).tables().table(schTbl1.canonicalName());
         RecordView<Tuple> recView1 = tbl1.recordView();
 
-        recView1.insert(Tuple.create().set("key", 1L).set("val", 111));
+        recView1.insert(null, Tuple.create().set("key", 1L).set("val", 111));
 
         var metaStoreNode = clusterNodes.get(0);
 
@@ -149,7 +149,7 @@ public class ItBaselineChangesTest {
 
         final Tuple keyTuple1 = Tuple.create().set("key", 1L);
 
-        assertEquals(1, (Long) tbl4.recordView().get(keyTuple1).value("key"));
+        assertEquals(1, (Long) tbl4.recordView().get(null, keyTuple1).value("key"));
     }
 
     private String buildConfig(String metastoreNodeName, int nodeIdx) {

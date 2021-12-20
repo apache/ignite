@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.table.distributed.storage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.failedFuture;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +67,6 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupService;
-import org.apache.ignite.tx.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -174,14 +172,6 @@ public class InternalTableImpl implements InternalTable {
             BiFunction<Collection<BinaryRow>, InternalTransaction, Command> op,
             Function<CompletableFuture<R>[], CompletableFuture<T>> reducer
     ) {
-        if (tx == null) {
-            try {
-                tx = txManager.tx();
-            } catch (TransactionException e) {
-                return failedFuture(e);
-            }
-        }
-
         final boolean implicit = tx == null;
 
         final InternalTransaction tx0 = implicit ? txManager.begin() : tx;
@@ -220,14 +210,6 @@ public class InternalTableImpl implements InternalTable {
             Function<InternalTransaction, Command> op,
             Function<R, T> trans
     ) {
-        if (tx == null) {
-            try {
-                tx = txManager.tx();
-            } catch (TransactionException e) {
-                return failedFuture(e);
-            }
-        }
-
         final boolean implicit = tx == null;
 
         final InternalTransaction tx0 = implicit ? txManager.begin() : tx;

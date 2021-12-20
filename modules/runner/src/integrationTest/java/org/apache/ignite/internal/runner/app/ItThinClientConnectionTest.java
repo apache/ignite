@@ -143,16 +143,16 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
 
                 RecordView<Tuple> recView = table.recordView();
 
-                recView.upsert(tuple);
-                assertEquals("Hello", recView.get(keyTuple).stringValue(valCol));
+                recView.upsert(null, tuple);
+                assertEquals("Hello", recView.get(null, keyTuple).stringValue(valCol));
 
                 var kvView = table.keyValueView();
-                assertEquals("Hello", kvView.get(keyTuple).stringValue(valCol));
+                assertEquals("Hello", kvView.get(null, keyTuple).stringValue(valCol));
 
                 var pojoView = table.recordView(TestPojo.class);
-                assertEquals("Hello", pojoView.get(new TestPojo(1)).val);
+                assertEquals("Hello", pojoView.get(null, new TestPojo(1)).val);
 
-                assertTrue(recView.delete(keyTuple));
+                assertTrue(recView.delete(null, keyTuple));
             }
         }
     }

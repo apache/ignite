@@ -149,11 +149,11 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < ((i == 0) ? 1 : (1 << (i * 4 - 1))); j++) {
                 // Cache1 keys count: 1 of "0", 8 of "1", 128 of "2", 2048 of "3", 32768 of "4".
-                recordView1.insert(Tuple.create().set("KEY", key++).set("VAL", i));
+                recordView1.insert(null, Tuple.create().set("KEY", key++).set("VAL", i));
 
                 // Cache2 keys count: 1 of "5", 128 of "3", 32768 of "1".
                 if ((i & 1) == 0) {
-                    recordView2.insert(Tuple.create().set("KEY", key++).set("VAL", 5 - i));
+                    recordView2.insert(null, Tuple.create().set("KEY", key++).set("VAL", 5 - i));
                 }
             }
         }

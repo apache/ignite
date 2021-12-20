@@ -57,9 +57,6 @@ public class TransactionImpl implements InternalTransaction {
     /** Enlisted groups. */
     private Set<RaftGroupService> enlisted = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    /** Bounded thread. */
-    private Thread thread;
-
     /**
      * The constructor.
      *
@@ -178,17 +175,5 @@ public class TransactionImpl implements InternalTransaction {
                 commit ? txManager.commitAsync(timestamp) : txManager.rollbackAsync(timestamp);
 
         return CompletableFuture.allOf(futs);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void thread(Thread t) {
-        this.thread = t;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable Thread thread() {
-        return thread;
     }
 }

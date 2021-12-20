@@ -154,7 +154,7 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
         try {
 
             for (int i = 0; i < 100; i++) {
-                tbl.insert(Tuple.create().set("ID", i).set("VAL", i));
+                tbl.insert(null, Tuple.create().set("ID", i).set("VAL", i));
             }
 
             // Correlated INNER join.

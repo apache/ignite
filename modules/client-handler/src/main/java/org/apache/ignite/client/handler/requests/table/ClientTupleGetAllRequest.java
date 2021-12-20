@@ -47,7 +47,7 @@ public class ClientTupleGetAllRequest {
         var table = readTable(in, tables);
         var keyTuples = readTuples(in, table, true);
 
-        return table.recordView().getAllAsync(keyTuples).thenAccept(tuples ->
+        return table.recordView().getAllAsync(null, keyTuples).thenAccept(tuples ->
             writeTuplesNullable(out, tuples, TuplePart.KEY_AND_VAL, table.schemaView(), true));
     }
 }

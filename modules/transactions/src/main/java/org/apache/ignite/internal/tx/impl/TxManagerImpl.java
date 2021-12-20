@@ -46,7 +46,6 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
 import org.apache.ignite.tx.TransactionException;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 /**
@@ -80,11 +79,6 @@ public class TxManagerImpl implements TxManager, NetworkMessageHandler {
      * <p>TODO IGNITE-15932 use Storage for locks. Introduce limits, deny lock operation if the limit is exceeded.
      */
     private final ConcurrentHashMap<Timestamp, Map<LockKey, Boolean>> locks = new ConcurrentHashMap<>();
-
-    /**
-     * TODO IGNITE-15930.
-     */
-    private ThreadLocal<InternalTransaction> threadCtx = new ThreadLocal<>();
 
     /**
      * The constructor.
@@ -269,31 +263,6 @@ public class TxManagerImpl implements TxManager, NetworkMessageHandler {
     @Override
     public boolean isLocal(NetworkAddress node) {
         return clusterService.topologyService().localMember().address().equals(node);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setTx(InternalTransaction tx) {
-        threadCtx.set(tx);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    @Nullable
-    public InternalTransaction tx() throws TransactionException {
-        InternalTransaction tx = threadCtx.get();
-
-        if (tx != null && tx.thread() != Thread.currentThread()) {
-            throw new TransactionException("Transactional operation is attempted from another thread");
-        }
-
-        return tx;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void clearTx() {
-        threadCtx.remove();
     }
 
     /** {@inheritDoc} */

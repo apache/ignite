@@ -60,12 +60,12 @@ public class TxLocalTest extends TxAbstractTest {
         InternalTable table = new DummyInternalTableImpl(new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager),
                 txManager);
 
-        accounts = new TableImpl(table, new DummySchemaManagerImpl(ACCOUNTS_SCHEMA), null);
+        accounts = new TableImpl(table, new DummySchemaManagerImpl(ACCOUNTS_SCHEMA));
 
         InternalTable table2 = new DummyInternalTableImpl(new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager),
                 txManager);
 
-        customers = new TableImpl(table2, new DummySchemaManagerImpl(CUSTOMERS_SCHEMA), null);
+        customers = new TableImpl(table2, new DummySchemaManagerImpl(CUSTOMERS_SCHEMA));
     }
 
     @Disabled

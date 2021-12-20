@@ -211,8 +211,8 @@ class ItTableCreationTest {
         RecordView<Tuple> recView01 = tbl01.recordView();
         KeyValueView<Tuple, Tuple> kvView01 = tbl01.keyValueView();
 
-        recView01.insert(Tuple.create().set("key", 1L).set("val", 111));
-        kvView01.put(Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
+        recView01.insert(null, Tuple.create().set("key", 1L).set("val", 111));
+        kvView01.put(null, Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
 
         Table tbl02 = clusterNodes.get(2).tables().table("tbl1");
         RecordView<Tuple> recView02 = tbl02.recordView();
@@ -221,10 +221,10 @@ class ItTableCreationTest {
         final Tuple keyTuple01 = Tuple.create().set("key", 1L);
         final Tuple keyTuple02 = Tuple.create().set("key", 2L);
 
-        assertEquals(111, (Integer) recView02.get(keyTuple01).value("val"));
-        assertEquals(111, (Integer) kvView02.get(keyTuple01).value("val"));
-        assertEquals(222, (Integer) recView02.get(keyTuple02).value("val"));
-        assertEquals(222, (Integer) kvView02.get(keyTuple02).value("val"));
+        assertEquals(111, (Integer) recView02.get(null, keyTuple01).value("val"));
+        assertEquals(111, (Integer) kvView02.get(null, keyTuple01).value("val"));
+        assertEquals(222, (Integer) recView02.get(null, keyTuple02).value("val"));
+        assertEquals(222, (Integer) kvView02.get(null, keyTuple02).value("val"));
 
         /* Table 2. */
 
@@ -236,10 +236,11 @@ class ItTableCreationTest {
         RecordView<Tuple> recView11 = tbl11.recordView();
         KeyValueView<Tuple, Tuple> kvView11 = tbl11.keyValueView();
 
-        recView11.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
+        recView11.insert(null, Tuple.create().set("key", uuid).set("affKey", 42L)
                 .set("valStr", "String value").set("valInt", 73).set("valNullable", null));
 
         kvView11.put(
+                null,
                 Tuple.create().set("key", uuid2).set("affKey", 4242L),
                 Tuple.create().set("valStr", "String value 2").set("valInt", 7373).set("valNullable", null)
         );
@@ -252,17 +253,17 @@ class ItTableCreationTest {
         final Tuple keyTuple11 = Tuple.create().set("key", uuid).set("affKey", 42L);
         final Tuple keyTuple12 = Tuple.create().set("key", uuid2).set("affKey", 4242L);
 
-        assertEquals("String value", recView12.get(keyTuple11).value("valStr"));
-        assertEquals("String value", kvView12.get(keyTuple11).value("valStr"));
-        assertEquals("String value 2", recView12.get(keyTuple12).value("valStr"));
-        assertEquals("String value 2", kvView12.get(keyTuple12).value("valStr"));
-        assertEquals(73, (Integer) recView12.get(keyTuple11).value("valInt"));
-        assertEquals(73, (Integer) kvView12.get(keyTuple11).value("valInt"));
-        assertEquals(7373, (Integer) recView12.get(keyTuple12).value("valInt"));
-        assertEquals(7373, (Integer) kvView12.get(keyTuple12).value("valInt"));
-        assertNull(recView12.get(keyTuple11).value("valNullable"));
-        assertNull(kvView12.get(keyTuple11).value("valNullable"));
-        assertNull(recView12.get(keyTuple12).value("valNullable"));
-        assertNull(kvView12.get(keyTuple12).value("valNullable"));
+        assertEquals("String value", recView12.get(null, keyTuple11).value("valStr"));
+        assertEquals("String value", kvView12.get(null, keyTuple11).value("valStr"));
+        assertEquals("String value 2", recView12.get(null, keyTuple12).value("valStr"));
+        assertEquals("String value 2", kvView12.get(null, keyTuple12).value("valStr"));
+        assertEquals(73, (Integer) recView12.get(null, keyTuple11).value("valInt"));
+        assertEquals(73, (Integer) kvView12.get(null, keyTuple11).value("valInt"));
+        assertEquals(7373, (Integer) recView12.get(null, keyTuple12).value("valInt"));
+        assertEquals(7373, (Integer) kvView12.get(null, keyTuple12).value("valInt"));
+        assertNull(recView12.get(null, keyTuple11).value("valNullable"));
+        assertNull(kvView12.get(null, keyTuple11).value("valNullable"));
+        assertNull(recView12.get(null, keyTuple12).value("valNullable"));
+        assertNull(kvView12.get(null, keyTuple12).value("valNullable"));
     }
 }
