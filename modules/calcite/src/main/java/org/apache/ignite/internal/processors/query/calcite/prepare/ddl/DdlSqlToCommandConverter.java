@@ -194,6 +194,8 @@ public class DdlSqlToCommandConverter {
 
                 Object dflt = null;
                 if (col.expression != null) {
+                    assert col.expression instanceof SqlLiteral;
+
                     Type storageType = ctx.typeFactory().getResultClass(type);
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
