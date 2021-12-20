@@ -28,7 +28,8 @@ namespace ignite
     {
         WinAsyncClientPool::ConnectingThread::ConnectingThread(WinAsyncClientPool& clientPool) :
             clientPool(clientPool),
-            stopping(false)
+            stopping(false),
+            connectNeeded()
         {
             // No-op.
         }
@@ -44,7 +45,10 @@ namespace ignite
 
                     while (!clientPool.isConnectionNeeded())
                     {
+                        std::cout << "=============== ConnectingThread: no more nodes. Sleeping" << std::endl;
                         connectNeeded.Wait(clientPool.clientsCs);
+
+                        std::cout << "=============== ConnectingThread: Waking up..." << std::endl;
 
                         if (stopping)
                             return;
@@ -70,23 +74,18 @@ namespace ignite
                 {
                     uint64_t id = clientPool.AddClient(client);
 
-                    clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
+                    if (clientPool.asyncHandler)
+                        clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
                 }
                 catch (const IgniteError& err)
                 {
                     client.Get()->Close();
 
-                    clientPool.asyncHandler->OnConnectionError(client.Get()->GetAddress(), err);
+                    if (clientPool.asyncHandler)
+                        clientPool.asyncHandler->OnConnectionError(client.Get()->GetAddress(), err);
                 }
 
-                bool success = client.Get()->Receive(4);
-                if (!success)
-                {
-                    IgniteError err(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not initiate receiving of a first packet");
-
-                    clientPool.Close(client.Get()->GetId(), &err);
-                }
+                PostQueuedCompletionStatus(clientPool.iocp, 0, reinterpret_cast<ULONG_PTR>(client.Get()), 0);
             }
         }
 
@@ -206,18 +205,38 @@ namespace ignite
 
                 BOOL ok = GetQueuedCompletionStatus(clientPool.iocp, &bytesTransferred, &key, &overlapped, INFINITE);
 
+                std::cout << "=============== WorkerThread: Got event" << std::endl;
+
                 if (stopping)
                     break;
 
-                if (!key || !overlapped)
+                if (!key)
                     continue;
 
                 WinAsyncClient* client = reinterpret_cast<WinAsyncClient*>(key);
 
-                if (!ok || 0 == bytesTransferred)
+                if (!ok || (0 != overlapped && 0 == bytesTransferred))
                 {
+                    std::cout << "=============== WorkerThread: closing " << client->GetId() << std::endl;
+                    std::cout << "=============== WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
+
                     IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
                     clientPool.CloseAndRelease(client->GetId(), &err);
+
+                    continue;
+                }
+
+                if (!overlapped)
+                {
+                    // This mean new client is connected.
+                    std::cout << "=============== ConnectingThread: initiating recv " << client->GetId() << std::endl;
+                    bool success = client->Receive(IoOperation::PACKET_HEADER_SIZE);
+                    if (!success)
+                    {
+                        IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");
+
+                        clientPool.Close(client->GetId(), &err);
+                    }
 
                     continue;
                 }
@@ -229,6 +248,7 @@ namespace ignite
                     {
                         case IoOperationKind::SEND:
                         {
+                            std::cout << "=============== WorkerThread: processing send " << bytesTransferred << std::endl;
                             client->ProcessSent(bytesTransferred);
 
                             break;
@@ -236,9 +256,10 @@ namespace ignite
 
                         case IoOperationKind::RECEIVE:
                         {
+                            std::cout << "=============== WorkerThread: processing recv " << bytesTransferred << std::endl;
                             impl::interop::SP_InteropMemory packet = client->ProcessReceived(bytesTransferred);
 
-                            if (packet.IsValid())
+                            if (packet.IsValid() && clientPool.asyncHandler)
                                 clientPool.asyncHandler->OnMessageReceived(client->GetId(), packet);
 
                             break;
@@ -319,16 +340,16 @@ namespace ignite
 
         void WinAsyncClientPool::InternalStop()
         {
+            asyncHandler = 0;
             connectingThread.Stop();
-            workerThread.Stop();
 
             nonConnected.clear();
             clientIdMap.clear();
             clientAddrMap.clear();
 
-            CloseHandle(iocp);
+            workerThread.Stop();
 
-            asyncHandler = 0;
+            CloseHandle(iocp);
             iocp = NULL;
         }
 
@@ -410,7 +431,7 @@ namespace ignite
         {
             bool found = CloseAndRelease(id);
 
-            if (found)
+            if (found && asyncHandler)
                 asyncHandler->OnConnectionClosed(id, err);
         }
 
@@ -443,7 +464,8 @@ namespace ignite
         {
             bool found = Close(id);
 
-            if (found)
+            //TODO: Make sure handler is always called from other threads
+            if (found && asyncHandler)
                 asyncHandler->OnConnectionClosed(id, err);
         }
 

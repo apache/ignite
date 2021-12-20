@@ -24,8 +24,6 @@
 #include "network/sockets.h"
 #include "network/win_async_client.h"
 
-enum { PACKET_HEADER_SIZE = 4 };
-
 namespace ignite
 {
     namespace network
@@ -36,6 +34,7 @@ namespace ignite
             addr(addr),
             range()
         {
+            std::cout << "=============== WinAsyncClient: constructing " << socket << std::endl;
             memset(&currentSend, 0, sizeof(currentSend));
             currentSend.kind = IoOperationKind::SEND;
 
@@ -53,6 +52,8 @@ namespace ignite
         {
             if (socket)
             {
+                std::cout << "=============== WinAsyncClient: closing socket " << id << ", " << socket << std::endl;
+                shutdown(socket, SD_BOTH);
                 closesocket(socket);
                 socket = NULL;
                 sendPackets.clear();
@@ -63,10 +64,10 @@ namespace ignite
         void WinAsyncClient::WaitForPendingIo()
         {
             while (!HasOverlappedIoCompleted(&currentSend.overlapped))
-                Sleep(0);
+                GetOverlappedResult((HANDLE)socket, &currentSend.overlapped, NULL, TRUE);
 
             while (!HasOverlappedIoCompleted(&currentRecv.overlapped))
-                Sleep(0);
+                GetOverlappedResult((HANDLE)socket, &currentRecv.overlapped, NULL, TRUE);
         }
 
         HANDLE WinAsyncClient::AddToIocp(HANDLE iocp)
@@ -101,6 +102,7 @@ namespace ignite
             currentSend.toTransfer = packet0.Length();
             currentSend.transferredSoFar = 0;
 
+            std::cout << "=============== Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -129,7 +131,7 @@ namespace ignite
             buffer.buf = (CHAR*)(packet0.Data() + currentRecv.transferredSoFar);
             buffer.len = (ULONG)bytes;
 
-            int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentSend.overlapped, NULL);
+            int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
         }
@@ -164,7 +166,7 @@ namespace ignite
 
             packet0.Length(static_cast<int32_t>(currentRecv.transferredSoFar));
 
-            if (packet0.Length() == PACKET_HEADER_SIZE)
+            if (packet0.Length() == IoOperation::PACKET_HEADER_SIZE)
             {
                 int32_t msgLen = impl::binary::BinaryUtils::ReadInt32(packet0, 0);
 
@@ -177,7 +179,11 @@ namespace ignite
                 return impl::interop::SP_InteropMemory();
             }
 
-            return DetachReceiveBuffer();
+            impl::interop::SP_InteropMemory packet = DetachReceiveBuffer();
+
+            Receive(static_cast<size_t>(IoOperation::PACKET_HEADER_SIZE));
+
+            return packet;
         }
 
         bool WinAsyncClient::ProcessSent(size_t bytes)

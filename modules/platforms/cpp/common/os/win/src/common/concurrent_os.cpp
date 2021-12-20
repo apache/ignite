@@ -237,7 +237,7 @@ namespace ignite
 
             void Thread::Join()
             {
-                WaitForSingleObject(handle, 0);
+                WaitForSingleObject(handle, INFINITE);
             }
         }
     }

@@ -49,6 +49,12 @@ namespace ignite
          */
         struct IoOperation
         {
+            enum
+            {
+                /** Packet length header size. */
+                PACKET_HEADER_SIZE = 4
+            };
+
             /** Overlapped structure that should be passed to every IO operation. */
             WSAOVERLAPPED overlapped;
 
@@ -134,6 +140,8 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
+                std::cout << "=============== WinAsyncClient: SetId " << id << ", " << socket << std::endl;
+
                 this->id = id;
             }
 

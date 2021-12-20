@@ -83,11 +83,29 @@ namespace ignite
                 asyncPool.Get()->Close(id, 0);
             }
 
-            void DataChannel::SyncMessage(const Request &req, Response &rsp, int32_t timeout)
+            void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
             {
-                Future<interop::SP_InteropMemory> rspFut = AsyncMessage(req, timeout);
+                Future<interop::SP_InteropMemory> rspFut = AsyncMessage(req);
 
+                std::cout << "=============== SyncMessage: Waiting for response... " << std::endl;
+                bool success = rspFut.WaitFor(timeout);
+                std::cout << "=============== SyncMessage: Wait result: " << success << std::endl;
+
+                if (!success)
+                {
+                    common::concurrent::CsLockGuard lock(responseMutex);
+
+                    responseMap.erase(req.GetId());
+
+                    std::string msg = "Can not send message to remote host " +
+                        node.GetEndPoint().ToString() + ": timeout.";
+
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+                }
+
+                std::cout << "=============== SyncMessage: Getting value... " << std::endl;
                 interop::SP_InteropMemory mem = rspFut.GetValue();
+                std::cout << "=============== SyncMessage: Got value" << std::endl;
 
                 interop::InteropInputStream inStream(mem.Get());
 
@@ -97,9 +115,11 @@ namespace ignite
                 binary::BinaryReaderImpl reader(&inStream);
 
                 rsp.Read(reader, currentVersion);
+
+                std::cout << "=============== SyncMessage: Read value" << std::endl;
             }
 
-            int64_t DataChannel::GenerateRequestMessage(const Request &req, interop::InteropMemory &mem)
+            int64_t DataChannel::GenerateRequestMessage(Request &req, interop::InteropMemory &mem)
             {
                 interop::InteropOutputStream outStream(&mem);
                 binary::BinaryWriterImpl writer(&outStream, &typeMgr);
@@ -110,6 +130,7 @@ namespace ignite
                 req.Write(writer, currentVersion);
 
                 int64_t reqId = GenerateRequestId();
+                req.SetId(reqId);
 
                 outStream.WriteInt32(0, outStream.Position() - 4);
                 outStream.WriteInt16(4, req.GetOperationCode());
@@ -120,7 +141,7 @@ namespace ignite
                 return reqId;
             }
 
-            Future<interop::SP_InteropMemory> DataChannel::AsyncMessage(const Request &req, int32_t timeout)
+            Future<interop::SP_InteropMemory> DataChannel::AsyncMessage(Request &req)
             {
                 // Allocating 64 KB to decrease number of re-allocations.
                 enum { BUFFER_SIZE = 1024 * 64 };
@@ -129,12 +150,14 @@ namespace ignite
 
                 int64_t reqId = GenerateRequestMessage(req, *mem.Get());
 
-                common::Promise<interop::SP_InteropMemory> rsp;
+                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
+
+                common::Promise<interop::SP_InteropMemory>* rsp;
 
                 {
                     common::concurrent::CsLockGuard lock(responseMutex);
 
-                    responseMap[reqId] = rsp;
+                    rsp = &responseMap[reqId];
                 }
 
                 bool success = asyncPool.Get()->Send(id, mem);
@@ -145,17 +168,17 @@ namespace ignite
 
                     responseMap.erase(reqId);
 
-                    std::string msg = "Can not send message to remote host " +
-                        node.GetEndPoint().ToString() + ": timeout";
+                    std::string msg = "Can not send message to remote host " + node.GetEndPoint().ToString();
 
                     throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
                 }
 
-                return rsp.GetFuture();
+                return rsp->GetFuture();
             }
 
             void DataChannel::ProcessMessage(interop::SP_InteropMemory msg)
             {
+                std::cout << "=============== ProcessMessage: " << id << std::endl;
                 if (!handshakePerformed)
                 {
                     OnHandshakeResponse(msg);
@@ -169,6 +192,8 @@ namespace ignite
 
                 int64_t rspId = inStream.ReadInt64();
                 int16_t flags = inStream.ReadInt16();
+
+                std::cout << "=============== ProcessMessage: RspId = " << rspId << std::endl;
 
                 if (flags & Flag::NOTIFICATION)
                 {
@@ -188,7 +213,7 @@ namespace ignite
 
                     if (it != responseMap.end())
                     {
-                        common::Promise<interop::SP_InteropMemory> rsp = it->second;
+                        common::Promise<interop::SP_InteropMemory>& rsp = it->second;
 
                         rsp.SetValue(msg);
 
@@ -260,6 +285,8 @@ namespace ignite
 
                 outStream.WriteInt32(lenPos, outStream.Position() - 4);
 
+                outStream.Synchronize();
+
                 return asyncPool.Get()->Send(id, mem);
             }
 
@@ -315,6 +342,8 @@ namespace ignite
 
                     node.SetGuid(nodeGuid);
                 }
+
+                handshakePerformed = true;
 
                 stateHandler.OnHandshakeComplete(id);
             }

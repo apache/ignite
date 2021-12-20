@@ -64,6 +64,7 @@ namespace ignite
             {
                 typedef std::map<Guid, SP_DataChannel> ChannelsGuidMap;
                 typedef std::map<uint64_t, SP_DataChannel> ChannelsIdMap;
+                typedef std::set<uint64_t> ChannelsIdSet;
 
             public:
                 /** Default port. */
@@ -138,7 +139,7 @@ namespace ignite
                  * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
-                SP_DataChannel SyncMessage(const Request& req, Response& rsp);
+                SP_DataChannel SyncMessage(Request& req, Response& rsp);
 
                 /**
                  * Synchronously send request message and receive response.
@@ -149,7 +150,7 @@ namespace ignite
                  * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
-                SP_DataChannel SyncMessage(const Request& req, Response& rsp, const Guid& hint);
+                SP_DataChannel SyncMessage(Request& req, Response& rsp, const Guid& hint);
 
                 /**
                  * Synchronously send request message and receive response.
@@ -161,7 +162,7 @@ namespace ignite
                  * @return Channel that was used for request.
                  * @throw IgniteError on error.
                  */
-                SP_DataChannel SyncMessageNoMetaUpdate(const Request& req, Response& rsp);
+                SP_DataChannel SyncMessageNoMetaUpdate(Request& req, Response& rsp);
 
                 /**
                  * Update affinity mapping for the cache.
@@ -244,7 +245,7 @@ namespace ignite
                  * @param preferred Preferred channel to use.
                  * @throw IgniteError on error.
                  */
-                void SyncMessagePreferredChannelNoMetaUpdate(const Request& req, Response& rsp,
+                void SyncMessagePreferredChannelNoMetaUpdate(Request& req, Response& rsp,
                     const SP_DataChannel& preferred);
 
                 /**
@@ -299,8 +300,14 @@ namespace ignite
                 /** Partition awareness data channels. */
                 ChannelsGuidMap partChannels;
 
+                /** Channel that complete handshake successfully. */
+                ChannelsIdSet connectedChannels;
+
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;
+
+                /** Channels connection wait point. */
+                common::concurrent::ConditionVariable channelsWaitPoint;
 
                 /** Cache affinity manager. */
                 affinity::AffinityManager affinityManager;

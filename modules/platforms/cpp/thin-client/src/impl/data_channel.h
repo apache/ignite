@@ -133,7 +133,7 @@ namespace ignite
                  * @param timeout Timeout.
                  * @throw IgniteError on error.
                  */
-                void SyncMessage(const Request& req, Response& rsp, int32_t timeout);
+                void SyncMessage(Request& req, Response& rsp, int32_t timeout);
 
                 /**
                  * Process received message.
@@ -204,16 +204,15 @@ namespace ignite
                  * @param mem Memory to write request to.
                  * @return Message ID.
                  */
-                int64_t GenerateRequestMessage(const Request& req, interop::InteropMemory& mem);
+                int64_t GenerateRequestMessage(Request& req, interop::InteropMemory& mem);
 
                 /**
-                 * Asynchronously send request message and get a future for the response. Uses provided timeout.
+                 * Asynchronously send request message and get a future for the response.
                  *
                  * @param req Request message.
-                 * @param timeout Timeout.
                  * @throw IgniteError on error.
                  */
-                Future<interop::SP_InteropMemory> AsyncMessage(const Request &req, int32_t timeout);
+                Future<interop::SP_InteropMemory> AsyncMessage(Request &req);
 
                 /**
                  * Perform handshake request.

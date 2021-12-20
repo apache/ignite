@@ -203,6 +203,15 @@ namespace ignite
             {
             public:
                 /**
+                 * Constructor.
+                 */
+                Request() :
+                    id(0)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 virtual ~Request()
@@ -226,6 +235,30 @@ namespace ignite
                 {
                     // No-op.
                 }
+
+                /**
+                 * Set request ID.
+                 *
+                 * @param id ID.
+                 */
+                void SetId(int64_t id)
+                {
+                    this->id = id;
+                }
+
+                /**
+                 * Get request ID.
+                 *
+                 * @return ID.
+                 */
+                int64_t GetId() const
+                {
+                    return id;
+                }
+
+            private:
+                /** Request ID. Only set when request is sent. */
+                int64_t id;
             };
 
             /**

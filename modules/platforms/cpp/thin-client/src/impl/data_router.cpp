@@ -51,7 +51,7 @@ namespace ignite
 
             DataRouter::~DataRouter()
             {
-                // No-op.
+                Close();
             }
 
             void DataRouter::Connect()
@@ -71,7 +71,10 @@ namespace ignite
 
                 asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit());
 
-                EnsureConnected(config.GetConnectionTimeout());
+                bool connected = EnsureConnected(config.GetConnectionTimeout());
+
+                if (!connected)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
             }
 
             void DataRouter::Close()
@@ -81,14 +84,20 @@ namespace ignite
 
             bool DataRouter::EnsureConnected(int32_t timeout)
             {
-                //TODO: implement me.
-                //throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+                common::concurrent::CsLockGuard lock(channelsMutex);
 
-                return false;
+                if (!connectedChannels.empty())
+                    return true;
+
+                channelsWaitPoint.WaitFor(channelsMutex, timeout);
+
+                return !connectedChannels.empty();
             }
 
-            void DataRouter::OnConnectionSuccess(const network::EndPoint&, uint64_t id)
+            void DataRouter::OnConnectionSuccess(const network::EndPoint& addr, uint64_t id)
             {
+                std::cout << "=============== OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
+
                 SP_DataChannel channel(new DataChannel(id, asyncPool, config, typeMgr, *this));
 
                 {
@@ -103,10 +112,12 @@ namespace ignite
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
                 //TODO: implement me.
+                std::cout << "=============== OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
             }
 
             void DataRouter::OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg)
             {
+                std::cout << "=============== OnMessageReceived: " << id << ", " << msg.Get()->Length() << " bytes" << std::endl;
                 SP_DataChannel channel;
 
                 {
@@ -123,20 +134,33 @@ namespace ignite
 
             void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
+                std::cout << "=============== OnConnectionError: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
+
                 common::concurrent::CsLockGuard lock(channelsMutex);
+
+                connectedChannels.erase(id);
 
                 SP_DataChannel channel;
 
                 ChannelsIdMap::iterator it = channels.find(id);
                 if (it != channels.end())
+                {
+                    std::cout << "=============== OnConnectionError: (it == channels.end()) = " << (it == channels.end()) << std::endl;
+                    std::cout << "=============== OnConnectionError: id = " << id << ", it->first = " << it->first << std::endl;
                     channel = it->second;
+                }
 
                 InvalidateChannel(channel);
             }
 
             void DataRouter::OnHandshakeComplete(uint64_t id)
             {
+                std::cout << "=============== OnHandshakeComplete: " << id << std::endl;
+
                 common::concurrent::CsLockGuard lock(channelsMutex);
+
+                connectedChannels.insert(id);
+                channelsWaitPoint.NotifyOne();
 
                 SP_DataChannel channel;
 
@@ -152,7 +176,7 @@ namespace ignite
                 }
             }
 
-            SP_DataChannel DataRouter::SyncMessage(const Request &req, Response &rsp)
+            SP_DataChannel DataRouter::SyncMessage(Request &req, Response &rsp)
             {
                 SP_DataChannel channel = GetRandomChannel();
 
@@ -165,7 +189,7 @@ namespace ignite
                 return channel;
             }
 
-            SP_DataChannel DataRouter::SyncMessage(const Request &req, Response &rsp, const Guid &hint)
+            SP_DataChannel DataRouter::SyncMessage(Request &req, Response &rsp, const Guid &hint)
             {
                 SP_DataChannel channel = GetBestChannel(hint);
 
@@ -178,7 +202,7 @@ namespace ignite
                 return channel;
             }
 
-            SP_DataChannel DataRouter::SyncMessageNoMetaUpdate(const Request &req, Response &rsp)
+            SP_DataChannel DataRouter::SyncMessageNoMetaUpdate(Request &req, Response &rsp)
             {
                 SP_DataChannel channel = GetRandomChannel();
 
@@ -206,7 +230,7 @@ namespace ignite
                     affinityManager.UpdateAffinity(*ver);
             }
 
-            void DataRouter::SyncMessagePreferredChannelNoMetaUpdate(const Request &req, Response &rsp,
+            void DataRouter::SyncMessagePreferredChannelNoMetaUpdate(Request &req, Response &rsp,
                 const SP_DataChannel &preferred)
             {
                 SP_DataChannel channel = preferred;
@@ -215,10 +239,7 @@ namespace ignite
                     channel = GetRandomChannel();
 
                 if (!channel.IsValid())
-                {
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Can not connect to any available cluster node. Please restart client");
-                }
+                    EnsureConnected(config.GetConnectionTimeout());
 
                 try
                 {

@@ -120,6 +120,8 @@ namespace ignite
             }
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Promise);
+
             /** Shared state. */
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
@@ -206,6 +208,8 @@ namespace ignite
             }
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Promise);
+
             /** Shared state. */
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
@@ -296,6 +300,8 @@ namespace ignite
             }
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Promise);
+
             /** Shared state. */
             concurrent::SharedPointer< SharedState<SP_ValueType> > state;
         };

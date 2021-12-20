@@ -40,7 +40,7 @@ namespace ignite
         {
         public:
             /** Connection operation timeout in milliseconds (20 seconds). */
-            enum { DEFAULT_CONNECTION_TIMEOUT = 20000 };
+            enum { DEFAULT_CONNECTION_TIMEOUT = 2000 };
 
             /**
              * Default constructor.

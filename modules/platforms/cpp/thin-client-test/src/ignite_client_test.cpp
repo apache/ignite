@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(IgniteClientConnection)
 
     cfg.SetEndPoints("127.0.0.1:11110");
 
-    IgniteClient::Start(cfg);
+    IgniteClient client = IgniteClient::Start(cfg);
 }
 
 BOOST_AUTO_TEST_CASE(IgniteClientConnectionFailover)
