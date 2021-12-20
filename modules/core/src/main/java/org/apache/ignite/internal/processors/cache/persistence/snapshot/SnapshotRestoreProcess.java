@@ -141,7 +141,7 @@ public class SnapshotRestoreProcess {
     private volatile SnapshotRestoreContext opCtx;
 
     /** Last snapshot restore operation context (saves the metrics of the last operation). */
-    private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext(null, 0, "");
+    private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext();
 
     /**
      * @param ctx Kernal context.
@@ -239,8 +239,12 @@ public class SnapshotRestoreProcess {
 
                 UUID reqId = UUID.randomUUID();
 
-                lastOpCtx = new SnapshotRestoreContext(reqId, U.currentTimeMillis(), snpName);
-                fut0 = fut = new ClusterSnapshotFuture(reqId, snpName);
+                fut0 = new ClusterSnapshotFuture(reqId, snpName);
+
+                // Creating an empty context to track metrics on the initiator.
+                lastOpCtx = new SnapshotRestoreContext(reqId, snpName, fut0.startTime, null, null);
+
+                fut = fut0;
             }
         }
         catch (IgniteException e) {
@@ -657,12 +661,15 @@ public class SnapshotRestoreProcess {
         if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
             throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
 
+        long opStartTime = req.requestId().equals(lastOpCtx.reqId) ? lastOpCtx.startTime : U.currentTimeMillis();
+
         DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
 
-        if (F.isEmpty(metas)) {
-            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap(), cctx.localNodeId(),
-                Collections.emptyList(), 0);
-        }
+        SnapshotRestoreContext opCtx0 =
+            new SnapshotRestoreContext(req.requestId(), req.snapshotName(), opStartTime, req.operationalNodeId(), discoCache0);
+
+        if (F.isEmpty(metas))
+            return opCtx0.init(cctx.localNodeId(), Collections.emptyList(), Collections.emptyMap());
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -718,9 +725,7 @@ public class SnapshotRestoreProcess {
         Map<Integer, StoredCacheData> cfgsById =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
-        long startTime = req.requestId().equals(lastOpCtx.reqId) ? lastOpCtx.startTime : U.currentTimeMillis();
-
-        return new SnapshotRestoreContext(req, discoCache0, cfgsById, cctx.localNodeId(), metas, startTime);
+        return opCtx0.init(cctx.localNodeId(), metas, cfgsById);
     }
 
     /**
@@ -933,7 +938,7 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx.snpName),
+                    File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName),
                         Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
 
                     leftParts.removeIf(partFut -> {
@@ -943,7 +948,7 @@ public class SnapshotRestoreProcess {
 
                         if (doCopy) {
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
-                                opCtx,
+                                opCtx0,
                                 snpCacheDir,
                                 tmpCacheDir,
                                 partFut);
@@ -972,7 +977,7 @@ public class SnapshotRestoreProcess {
                             totalParts += 1;
 
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
-                                opCtx,
+                                opCtx0,
                                 snpCacheDir,
                                 tmpCacheDir,
                                 idxFut);
@@ -1464,42 +1469,39 @@ public class SnapshotRestoreProcess {
         private volatile long endTime;
 
         /**
-         * @param req Request to prepare cache group restore from the snapshot.
-         * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
-         * @param cfgs Cache ID to configuration mapping.
-         * @param locNodeId Local node ID.
-         * @param locMetas List of snapshot metadata.
-         * @param startTime Operation start time.
+         * Default constructor.
          */
-        protected SnapshotRestoreContext(
-            SnapshotOperationRequest req,
-            DiscoCache discoCache,
-            Map<Integer, StoredCacheData> cfgs,
-            UUID locNodeId,
-            List<SnapshotMetadata> locMetas,
-            long startTime
-        ) {
-            reqId = req.requestId();
-            snpName = req.snapshotName();
-            opNodeId = req.operationalNodeId();
-
-            this.discoCache = discoCache;
-            this.cfgs = cfgs;
-            this.startTime = startTime;
-
-            metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
+        protected SnapshotRestoreContext() {
+            this(null, "", 0, null, null);
         }
 
         /**
-         * Default constructor.
+         * @param reqId Request ID.
+         * @param snpName Snapshot name.
+         * @param startTime Operation start time.
+         * @param opNodeId Operational node id.
+         * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
          */
-        protected SnapshotRestoreContext(UUID reqId, long startTime, String snpName) {
+        protected SnapshotRestoreContext(UUID reqId, String snpName, long startTime, UUID opNodeId, DiscoCache discoCache) {
             this.reqId = reqId;
-            this.startTime = startTime;
             this.snpName = snpName;
+            this.startTime = startTime;
+            this.opNodeId = opNodeId;
+            this.discoCache = discoCache;
+        }
 
-            opNodeId = null;
-            discoCache = null;
+        /**
+         * @param locNodeId Local node ID.
+         * @param locMetas List of snapshot metadata.
+         * @param cfgs Cache ID to configuration mapping.
+         * @return {@code this} For chaining.
+         */
+        protected SnapshotRestoreContext init(UUID locNodeId, List<SnapshotMetadata> locMetas, Map<Integer, StoredCacheData> cfgs) {
+            metasPerNode.put(locNodeId, new ArrayList<>(locMetas));
+
+            this.cfgs = cfgs;
+
+            return this;
         }
 
         /**
