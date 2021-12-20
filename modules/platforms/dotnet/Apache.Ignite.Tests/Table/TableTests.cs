@@ -363,16 +363,13 @@ namespace Apache.Ignite.Tests.Table
             var res = await Table.GetAllAsync(Enumerable.Range(9, 4).Select(x => GetTuple(x)));
             var resArr = res.OrderBy(x => x?[0]).ToArray();
 
-            Assert.AreEqual(4, res.Count);
+            Assert.AreEqual(2, res.Count);
 
-            Assert.IsNull(resArr[0]);
-            Assert.IsNull(resArr[1]);
+            Assert.AreEqual(9, resArr[0]![0]);
+            Assert.AreEqual("9", resArr[0]![1]);
 
-            Assert.AreEqual(9, resArr[2]![0]);
-            Assert.AreEqual("9", resArr[2]![1]);
-
-            Assert.AreEqual(10, resArr[3]![0]);
-            Assert.AreEqual("10", resArr[3]![1]);
+            Assert.AreEqual(10, resArr[1]![0]);
+            Assert.AreEqual("10", resArr[1]![1]);
         }
 
         [Test]
@@ -380,8 +377,7 @@ namespace Apache.Ignite.Tests.Table
         {
             var res = await Table.GetAllAsync(new[] { GetTuple(-100) });
 
-            Assert.AreEqual(1, res.Count);
-            Assert.IsNull(res[0]);
+            Assert.AreEqual(0, res.Count);
         }
 
         [Test]

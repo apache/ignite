@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -327,6 +328,25 @@ public class KeyValueViewOperationsSimpleSchemaTest {
                 assertEquals(val, kvView.get(null, key));
             }
         }
+    }
+
+    @Test
+    public void getAll() {
+        KeyValueView<Long, Long> kvView = kvView();
+
+        kvView.putAll(
+                null,
+                Map.of(
+                        1L, 11L,
+                        3L, 33L
+                ));
+
+        Map<Long, Long> res = kvView.getAll(null, List.of(1L, 2L, 3L));
+
+        assertEquals(2, res.size());
+        assertEquals(11L, res.get(1L));
+        assertEquals(33L, res.get(3L));
+        assertNull(res.get(22L));
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.table;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypes;
@@ -54,23 +57,6 @@ import org.mockito.Mockito;
  * <p>TODO: IGNITE-14486 Add tests for invoke operations. Add tests for bulk operations. Add tests for async operations.
  */
 public class RecordBinaryViewOperationsTest {
-    /** Cluster service. */
-    private ClusterService clusterService;
-
-    /**
-     * Creates a table for tests.
-     *
-     * @return The table instance for test.
-     */
-    private InternalTable createTable() {
-        clusterService = Mockito.mock(ClusterService.class, RETURNS_DEEP_STUBS);
-        Mockito.when(clusterService.topologyService().localMember().address()).thenReturn(DummyInternalTableImpl.ADDR);
-
-        TxManagerImpl txManager = new TxManagerImpl(clusterService, new HeapLockManager());
-
-        return new DummyInternalTableImpl(new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
-    }
-
     @Test
     public void insert() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -347,6 +333,34 @@ public class RecordBinaryViewOperationsTest {
 
         assertEqualsRows(schema, tupleExpected0, tbl.get(null, keyTuple0));
         assertEqualsRows(schema, tuple1, tbl.get(null, keyTuple1));
+    }
+
+    @Test
+    public void getAll() {
+        SchemaDescriptor schema = new SchemaDescriptor(
+                1,
+                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("val", NativeTypes.INT64, false)}
+        );
+
+        RecordView<Tuple> tbl = createTableImpl(schema).recordView();
+
+        Tuple rec1 = Tuple.create().set("id", 1L).set("val", 11L);
+        Tuple rec3 = Tuple.create().set("id", 3L).set("val", 33L);
+
+        tbl.upsertAll(null, List.of(rec1, rec3));
+
+        Collection<Tuple> res = tbl.getAll(
+                null,
+                List.of(
+                        Tuple.create().set("id", 1L),
+                        Tuple.create().set("id", 2L),
+                        Tuple.create().set("id", 3L)
+                ));
+
+        assertEquals(2, res.size());
+        assertTrue(res.contains(rec1));
+        assertTrue(res.contains(rec1));
     }
 
     /**

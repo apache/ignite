@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.table;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -80,8 +84,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     CompletableFuture<V> getAsync(@Nullable Transaction tx, @NotNull K key) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key));
 
-        return tbl.get(keyRow, (InternalTransaction) tx)
-                .thenApply(this::unmarshalValue); // row -> deserialized obj.
+        return tbl.get(keyRow, (InternalTransaction) tx).thenApply(this::unmarshalValue);
     }
 
     /** {@inheritDoc} */
@@ -93,7 +96,9 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     /** {@inheritDoc} */
     @Override
     public @NotNull CompletableFuture<Map<K, V>> getAllAsync(@Nullable Transaction tx, @NotNull Collection<K> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        Collection<BinaryRow> rows = marshal(Objects.requireNonNull(keys));
+
+        return tbl.getAll(rows, (InternalTransaction) tx).thenApply(this::unmarshalPairs);
     }
 
     /** {@inheritDoc} */
@@ -107,8 +112,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     public CompletableFuture<Boolean> containsAsync(@Nullable Transaction tx, @NotNull K key) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key));
 
-        return tbl.get(keyRow, (InternalTransaction) tx)
-                .thenApply(Objects::nonNull);
+        return tbl.get(keyRow, (InternalTransaction) tx).thenApply(Objects::nonNull);
     }
 
     /** {@inheritDoc} */
@@ -123,8 +127,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     CompletableFuture<Void> putAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key), val);
 
-        return tbl.upsert(keyRow, (InternalTransaction) tx).thenAccept(ignore -> {
-        });
+        return tbl.upsert(keyRow, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +140,9 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     @Override
     public @NotNull
     CompletableFuture<Void> putAllAsync(@Nullable Transaction tx, @NotNull Map<K, V> pairs) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        Collection<BinaryRow> rows = marshal(Objects.requireNonNull(pairs));
+
+        return tbl.upsertAll(rows, (InternalTransaction) tx);
     }
 
     /** {@inheritDoc} */
@@ -187,6 +192,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     public @NotNull
     CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull K key) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key));
+
         return tbl.delete(keyRow, (InternalTransaction) tx);
     }
 
@@ -194,6 +200,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     @Override
     public @NotNull CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key), val);
+
         return tbl.deleteExact(keyRow, (InternalTransaction) tx);
     }
 
@@ -207,7 +214,9 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     @Override
     public @NotNull
     CompletableFuture<Collection<K>> removeAllAsync(@Nullable Transaction tx, @NotNull Collection<K> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        Collection<BinaryRow> rows = marshal(Objects.requireNonNull(keys));
+
+        return tbl.deleteAll(rows, (InternalTransaction) tx).thenApply(this::unmarshalKeys);
     }
 
     /** {@inheritDoc} */
@@ -221,6 +230,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     public @NotNull
     CompletableFuture<V> getAndRemoveAsync(@Nullable Transaction tx, @NotNull K key) {
         BinaryRow keyRow = marshal(Objects.requireNonNull(key));
+
         return tbl.getAndDelete(keyRow, (InternalTransaction) tx).thenApply(this::unmarshalValue);
     }
 
@@ -240,6 +250,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     @Override
     public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         BinaryRow row = marshal(Objects.requireNonNull(key), val);
+
         return tbl.replace(row, (InternalTransaction) tx);
     }
 
@@ -250,6 +261,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
 
         BinaryRow oldRow = marshal(key, oldVal);
         BinaryRow newRow = marshal(key, newVal);
+
         return tbl.replace(oldRow, newRow, (InternalTransaction) tx);
     }
 
@@ -263,7 +275,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     @Override
     public @NotNull
     CompletableFuture<V> getAndReplaceAsync(@Nullable Transaction tx, @NotNull K key, V val) {
-        BinaryRow row = marshal(key, val);
+        BinaryRow row = marshal(Objects.requireNonNull(key), val);
 
         return tbl.getAndReplace(row, (InternalTransaction) tx).thenApply(this::unmarshalValue);
     }
@@ -330,22 +342,16 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     }
 
     /**
-     * Unmarshal value object from given binary row.
+     * Marshal key.
      *
-     * @param binaryRow Binary row.
-     * @return Value object.
+     * @param key Key object.
+     * @return Binary row.
      */
-    private V unmarshalValue(BinaryRow binaryRow) {
-        if (binaryRow == null || !binaryRow.hasValue()) {
-            return null;
-        }
-
-        Row row = schemaReg.resolve(binaryRow);
-
-        KvMarshaller<K, V> marshaller = marshaller(row.schemaVersion());
+    private BinaryRow marshal(@NotNull K key) {
+        final KvMarshaller<K, V> marsh = marshaller(schemaReg.lastSchemaVersion());
 
         try {
-            return marshaller.unmarshalValue(row);
+            return marsh.marshal(key);
         } catch (MarshallerException e) {
             throw new IgniteException(e);
         }
@@ -369,16 +375,130 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     }
 
     /**
-     * Marshal key to a row.
+     * Marshal keys to a row.
      *
-     * @param key Key object.
-     * @return Binary row.
+     * @param keys Key objects.
+     * @return Binary rows.
      */
-    private BinaryRow marshal(@NotNull K key) {
+    @NotNull
+    public Collection<BinaryRow> marshal(@NotNull Collection<K> keys) {
         final KvMarshaller<K, V> marsh = marshaller(schemaReg.lastSchemaVersion());
 
+        List<BinaryRow> keyRows = new ArrayList<>(keys.size());
+
         try {
-            return marsh.marshal(key);
+            for (K key : keys) {
+                final BinaryRow keyRow = marsh.marshal(Objects.requireNonNull(key));
+
+                keyRows.add(keyRow);
+            }
+        } catch (MarshallerException e) {
+            throw new IgniteException(e);
+        }
+
+        return keyRows;
+    }
+
+    /**
+     * Marshal key-value pairs.
+     *
+     * @param pairs Key-value map.
+     * @return Binary rows.
+     */
+    @NotNull
+    public List<BinaryRow> marshal(@NotNull Map<K, V> pairs) {
+        final KvMarshaller<K, V> marsh = marshaller(schemaReg.lastSchemaVersion());
+
+        List<BinaryRow> rows = new ArrayList<>(pairs.size());
+
+        try {
+            for (Map.Entry<K, V> pair : pairs.entrySet()) {
+                final BinaryRow row = marsh.marshal(Objects.requireNonNull(pair.getKey()), pair.getValue());
+
+                rows.add(row);
+            }
+        } catch (MarshallerException e) {
+            throw new IgniteException(e);
+        }
+
+        return rows;
+    }
+
+    /**
+     * Marshal keys.
+     *
+     * @param rows Binary rows.
+     * @return Keys.
+     */
+    @NotNull
+    public Collection<K> unmarshalKeys(Collection<BinaryRow> rows) {
+        if (rows.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final KvMarshaller<K, V> marsh = marshaller(schemaReg.lastSchemaVersion());
+
+        List<K> keys = new ArrayList<>(rows.size());
+
+        try {
+            for (Row row : schemaReg.resolve(rows)) {
+                if (row != null) {
+                    keys.add(marsh.unmarshalKey(row));
+                }
+            }
+
+            return keys;
+        } catch (MarshallerException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Unmarshal value object from given binary row.
+     *
+     * @param binaryRow Binary row.
+     * @return Value object.
+     */
+    private V unmarshalValue(BinaryRow binaryRow) {
+        if (binaryRow == null || !binaryRow.hasValue()) {
+            return null;
+        }
+
+        Row row = schemaReg.resolve(binaryRow);
+
+        KvMarshaller<K, V> marshaller = marshaller(row.schemaVersion());
+
+        try {
+            return marshaller.unmarshalValue(row);
+        } catch (MarshallerException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Marshal key-value pairs.
+     *
+     * @param rows Binary rows.
+     * @return Key-value pairs.
+     */
+    @NotNull
+    public Map<K, V> unmarshalPairs(Collection<BinaryRow> rows) {
+        if (rows.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        final KvMarshaller<K, V> marsh = marshaller(schemaReg.lastSchemaVersion());
+
+        Map<K, V> pairs = new HashMap<>(rows.size());
+
+        try {
+            for (Row row : schemaReg.resolve(rows)) {
+                if (row != null) {
+                    pairs.put(marsh.unmarshalKey(row), marsh.unmarshalValue(row));
+                }
+            }
+
+            return pairs;
         } catch (MarshallerException e) {
             throw new IgniteException(e);
         }

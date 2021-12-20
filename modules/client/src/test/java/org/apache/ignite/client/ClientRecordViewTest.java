@@ -248,17 +248,16 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
 
         PersonPojo[] res = pojoView.getAll(null, keys).toArray(new PersonPojo[0]);
 
-        assertEquals(3, res.length);
+        assertEquals(2, res.length);
 
         assertNotNull(res[0]);
-        assertNull(res[1]);
-        assertNotNull(res[2]);
+        assertNotNull(res[1]);
 
         assertEquals(DEFAULT_ID, res[0].id);
         assertEquals(DEFAULT_NAME, res[0].name);
 
-        assertEquals(100L, res[2].id);
-        assertEquals("100", res[2].name);
+        assertEquals(100L, res[1].id);
+        assertEquals("100", res[1].name);
     }
 
     @Test
@@ -271,8 +270,7 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         String[] res = primitiveView.getAll(null, List.of("a", "b", "c")).toArray(new String[0]);
 
         assertEquals("a", res[0]);
-        assertNull(res[1]);
-        assertEquals("c", res[2]);
+        assertEquals("c", res[1]);
     }
 
     @Test

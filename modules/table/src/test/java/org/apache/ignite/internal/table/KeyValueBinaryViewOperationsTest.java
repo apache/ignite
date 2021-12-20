@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.table;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
@@ -30,12 +33,14 @@ import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorag
 import org.apache.ignite.internal.table.distributed.storage.VersionedRowStore;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
+import org.apache.ignite.internal.tx.LockManager;
+import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.internal.tx.impl.HeapLockManager;
 import org.apache.ignite.internal.tx.impl.TxManagerImpl;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
-import org.junit.jupiter.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -46,27 +51,6 @@ import org.mockito.Mockito;
  * ignored for value or exception is thrown?
  */
 public class KeyValueBinaryViewOperationsTest {
-    /**
-     * Cluster service.
-     */
-    private ClusterService clusterService;
-
-    /**
-     * Creates a table for tests.
-     *
-     * @return The test table.
-     */
-    private InternalTable createTable() {
-        clusterService = Mockito.mock(ClusterService.class, RETURNS_DEEP_STUBS);
-        Mockito.when(clusterService.topologyService().localMember().address())
-                .thenReturn(DummyInternalTableImpl.ADDR);
-
-        TxManagerImpl txManager = new TxManagerImpl(clusterService, new HeapLockManager());
-
-        return new DummyInternalTableImpl(
-                new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager), txManager);
-    }
-
     @Test
     public void put() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -75,8 +59,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -115,8 +98,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -145,8 +127,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -176,8 +157,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -212,8 +192,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -252,8 +231,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        final KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        final KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -304,8 +282,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -339,8 +316,7 @@ public class KeyValueBinaryViewOperationsTest {
                 new Column[]{new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueView<Tuple, Tuple> tbl =
-                new KeyValueBinaryViewImpl(createTable(), new DummySchemaManagerImpl(schema));
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -358,39 +334,57 @@ public class KeyValueBinaryViewOperationsTest {
         assertEqualsValues(schema, val2, tbl.get(null, key));
     }
 
-    /**
-     * Check key columns equality.
-     *
-     * @param schema Schema.
-     * @param expected Expected tuple.
-     * @param actual Actual tuple.
-     */
-    void assertEqualsKeys(SchemaDescriptor schema, Tuple expected, Tuple actual) {
-        int nonNullKey = 0;
+    @Test
+    public void getAll() {
+        SchemaDescriptor schema = new SchemaDescriptor(
+                1,
+                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("val", NativeTypes.INT64, false)}
+        );
 
-        for (int i = 0; i < schema.keyColumns().length(); i++) {
-            final Column col = schema.keyColumns().column(i);
+        KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
-            final Object val1 = expected.value(col.name());
-            final Object val2 = actual.value(col.name());
+        Tuple key1 = Tuple.create().set("id", 1L);
+        Tuple key2 = Tuple.create().set("id", 2L);
+        Tuple key3 = Tuple.create().set("id", 3L);
 
-            Assertions.assertEquals(val1, val2,
-                    "Value columns equality check failed: colIdx=" + col.schemaIndex());
+        tbl.putAll(
+                null,
+                Map.of(
+                        key1, Tuple.create().set("val", 11L),
+                        key3, Tuple.create().set("val", 33L)
+                ));
 
-            if (schema.isKeyColumn(i) && val1 != null) {
-                nonNullKey++;
-            }
-        }
+        Map<Tuple, Tuple> res = tbl.getAll(null, List.of(key1, key2, key3));
 
-        assertTrue(nonNullKey > 0, "At least one non-null key column must exist.");
+        assertEquals(2, res.size());
+        assertEquals(Tuple.create().set("val", 11L), res.get(key1));
+        assertEquals(Tuple.create().set("val", 33L), res.get(key3));
+        assertNull(res.get(key2));
+    }
+
+    @NotNull
+    private TableImpl createTable(SchemaDescriptor schema) {
+        ClusterService clusterService = Mockito.mock(ClusterService.class, RETURNS_DEEP_STUBS);
+        Mockito.when(clusterService.topologyService().localMember().address()).thenReturn(DummyInternalTableImpl.ADDR);
+
+        LockManager lockManager = new HeapLockManager();
+
+        TxManager txManager = new TxManagerImpl(clusterService, lockManager);
+
+        DummyInternalTableImpl table = new DummyInternalTableImpl(
+                new VersionedRowStore(new ConcurrentHashMapPartitionStorage(), txManager),
+                txManager);
+
+        return new TableImpl(table, new DummySchemaManagerImpl(schema));
     }
 
     /**
      * Check value columns equality.
      *
-     * @param schema Schema.
+     * @param schema   Schema.
      * @param expected Expected tuple.
-     * @param actual Actual tuple.
+     * @param actual   Actual tuple.
      */
     void assertEqualsValues(SchemaDescriptor schema, Tuple expected, Tuple actual) {
         for (int i = 0; i < schema.valueColumns().length(); i++) {
@@ -399,7 +393,7 @@ public class KeyValueBinaryViewOperationsTest {
             final Object val1 = expected.value(col.name());
             final Object val2 = actual.value(col.name());
 
-            Assertions.assertEquals(val1, val2, "Key columns equality check failed: colIdx=" + col.schemaIndex());
+            assertEquals(val1, val2, "Key columns equality check failed: colIdx=" + col.schemaIndex());
         }
     }
 }

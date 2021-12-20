@@ -39,6 +39,8 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -315,6 +317,31 @@ public class KeyValueViewOperationsTest {
         // try remove existed KV pair.
         assertThrows(Throwable.class, () -> tbl.replace(null, key, obj2, null));
         assertNotNull(tbl.get(null, key));
+    }
+
+    @Test
+    public void getAll() {
+        KeyValueView<TestKeyObject, TestObjectWithAllTypes> kvView = kvView();
+
+        final TestKeyObject key1 = TestKeyObject.randomObject(rnd);
+        final TestKeyObject key2 = TestKeyObject.randomObject(rnd);
+        final TestKeyObject key3 = TestKeyObject.randomObject(rnd);
+        final TestObjectWithAllTypes val1 = TestObjectWithAllTypes.randomObject(rnd);
+        final TestObjectWithAllTypes val3 = TestObjectWithAllTypes.randomObject(rnd);
+
+        kvView.putAll(
+                null,
+                Map.of(
+                        key1, val1,
+                        key3, val3
+                ));
+
+        Map<TestKeyObject, TestObjectWithAllTypes> res = kvView.getAll(null, List.of(key1, key2, key3));
+
+        assertEquals(2, res.size());
+        assertEquals(val1, res.get(key1));
+        assertEquals(val3, res.get(key3));
+        assertNull(res.get(key2));
     }
 
     /**
