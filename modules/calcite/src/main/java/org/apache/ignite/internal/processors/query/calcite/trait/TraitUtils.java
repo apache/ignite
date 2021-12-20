@@ -64,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.plan.RelOptUtil.permutationPushDownProject;
+import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
@@ -149,6 +150,8 @@ public class TraitUtils {
             return null;
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
+/*        if (fromTrait.getType() == ANY)
+            return RelOptRule.convert(rel, traits);*/
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
             return new IgniteTrimExchange(rel.getCluster(), traits, rel, toTrait);
         else {

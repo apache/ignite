@@ -38,7 +38,7 @@ import org.junit.runners.Suite;
     SqlDdlParserTest.class,
     IgniteSqlFunctionsTest.class,
 
-    ScriptTestSuite.class,
+    //ScriptTestSuite.class,
 })
 public class IgniteCalciteTestSuite {
 }

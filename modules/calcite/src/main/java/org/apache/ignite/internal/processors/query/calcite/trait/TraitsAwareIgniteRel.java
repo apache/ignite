@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.calcite.linq4j.Ord;
@@ -33,6 +34,11 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 public interface TraitsAwareIgniteRel extends IgniteRel {
     /** {@inheritDoc} */
     @Override public default List<RelNode> derive(List<List<RelTraitSet>> inTraits) {
+/*        System.err.println("derive: ");
+        for (List<RelTraitSet> l : inTraits)
+            for (RelTraitSet r : l)
+                System.err.println(r);*/
+
         return TraitUtils.derive(this, inTraits);
     }
 
