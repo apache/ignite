@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests Java service invocation.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceThinClient()
+        public void TestJavaServiceThinClient()
         {
             DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName));
         }
@@ -191,9 +191,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests Java service invocation.
         /// </summary>
         [Test]
-        public void TestCallPlatformServiceThinClient()
+        public void TestPlatformServiceThinClient()
         {
-            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName));
+            DoTestService(_thinClient.GetServices().ForDotNetService().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
@@ -329,10 +329,7 @@ namespace Apache.Ignite.Core.Tests.Services
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springConfigUrl,
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
-                },
+                BinaryConfiguration = BinaryConfiguration(),
                 LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
@@ -340,7 +337,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the client configuration.
         /// </summary>
-        protected IgniteClientConfiguration GetClientConfiguration()
+        private IgniteClientConfiguration GetClientConfiguration()
         {
             var port = IgniteClientConfiguration.DefaultPort;
 
@@ -348,7 +345,17 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
                 SocketTimeout = TimeSpan.FromSeconds(15),
-                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
+                BinaryConfiguration = BinaryConfiguration()
+            };
+        }
+
+        /** */
+        private BinaryConfiguration BinaryConfiguration()
+        {
+            return new BinaryConfiguration
+            {
+                NameMapper = new BinaryBasicNameMapper { NamespacePrefix = "org.", NamespaceToLower = true }
             };
         }
     }

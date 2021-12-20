@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         private readonly bool _serverKeepBinary;
 
         /** */
+        private readonly PlatformType _platformType;
+
+        /** */
         private readonly TimeSpan _timeout;
 
         /// <summary>
@@ -65,6 +68,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             IClientClusterGroup clusterGroup = null,
             bool keepBinary = false,
             bool serverKeepBinary = false,
+            PlatformType platformType = PlatformType.Java,
             TimeSpan timeout = default(TimeSpan))
         {
             Debug.Assert(ignite != null);
@@ -73,6 +77,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             _clusterGroup = clusterGroup;
             _keepBinary = keepBinary;
             _serverKeepBinary = serverKeepBinary;
+            _platformType = platformType;
             _timeout = timeout;
         }
 
@@ -126,13 +131,18 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /** <inheritdoc /> */
         public IServicesClient WithKeepBinary()
         {
-            return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _timeout);
+            return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _platformType, _timeout);
         }
 
         /** <inheritdoc /> */
         public IServicesClient WithServerKeepBinary()
         {
-            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _timeout);
+            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _platformType, _timeout);
+        }
+
+        public IServicesClient ForDotNetService()
+        {
+            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, _serverKeepBinary, PlatformType.DotNet, _timeout);
         }
 
         /// <summary>
@@ -172,11 +182,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                     w.WriteString(method.Name);
 
-                    w.WriteInt(args.Length);
-                    foreach (var arg in args)
-                    {
-                        w.WriteObjectDetached(arg);
-                    }
+                    ServiceProxySerializer.WriteMethodArguments(w, null, args, _platformType);
                 },
                 ctx =>
                 {

@@ -52,6 +52,24 @@ namespace Apache.Ignite.Core.Impl.Services
             if (arguments != null)
             {
                 writer.WriteBoolean(true);
+
+                WriteMethodArguments(writer, method, arguments, platformType);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            writer.WriteDictionary(callCtx == null ? null : ((ServiceCallContext) callCtx).Values());
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="method"></param>
+        /// <param name="arguments"></param>
+        /// <param name="platformType"></param>
+        public static void WriteMethodArguments(BinaryWriter writer, MethodBase method, object[] arguments, PlatformType platformType)
+        {
                 writer.WriteInt(arguments.Length);
 
                 if (platformType == PlatformType.DotNet)
@@ -74,11 +92,6 @@ namespace Apache.Ignite.Core.Impl.Services
                             arguments[i]);
                     }
                 }
-            }
-            else
-                writer.WriteBoolean(false);
-
-            writer.WriteDictionary(callCtx == null ? null : ((ServiceCallContext) callCtx).Values());
         }
 
         /// <summary>
@@ -224,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
+        public static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
         {
             var hnd = GetPlatformArgWriter(paramType, arg);
 
