@@ -263,7 +263,8 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
 
         destr.get();
 
-        // A little bit untipattern approach here, just because of async communication messaging nature.
+        // A little bit untipattern approach here, just because of async remapping, check
+        // GridNearOptimisticTxPrepareFutureAdapter.prepareOnTopology.
         // With redefined Failure handler we still need the same approach: wait some time and checks that it not raises.
         assertFalse(GridTestUtils.waitForCondition(() -> G.allGrids().size() < 3, 5_000));
 
