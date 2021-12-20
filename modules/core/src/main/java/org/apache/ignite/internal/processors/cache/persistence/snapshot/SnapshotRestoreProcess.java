@@ -271,7 +271,7 @@ public class SnapshotRestoreProcess {
         });
 
         String msg = "Cluster-wide snapshot restore operation started [reqId=" + fut0.rqId + ", snpName=" + snpName +
-            (cacheGrpNames == null ? "" : ", grps=" + cacheGrpNames) + ']';
+            (cacheGrpNames == null ? "" : ", caches=" + cacheGrpNames) + ']';
 
         if (log.isInfoEnabled())
             log.info(msg);
@@ -852,9 +852,10 @@ public class SnapshotRestoreProcess {
             }
 
             if (log.isInfoEnabled()) {
-                log.info("Starting snapshot preload operation to restore cache groups" +
-                    "[snapshot=" + opCtx0.snpName +
-                    ", caches=" + F.transform(opCtx0.dirs, File::getName) + ']');
+                log.info("Starting snapshot preload operation to restore cache groups " +
+                    "[reqId=" + reqId +
+                    ", snapshot=" + opCtx0.snpName +
+                    ", caches=" + F.transform(opCtx0.dirs, FilePageStoreManager::cacheGroupName) + ']');
             }
 
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
@@ -956,7 +957,8 @@ public class SnapshotRestoreProcess {
 
                         if (log.isInfoEnabled()) {
                             log.info("The snapshot was taken on the same cluster topology. The index will be copied to " +
-                                "restoring cache group if necessary [snpName=" + opCtx0.snpName + ", dir=" + dir.getName() + ']');
+                                "restoring cache group if necessary [reqId=" + reqId + ", snapshot=" + opCtx0.snpName +
+                                ", dir=" + dir.getName() + ']');
                         }
 
                         File idxFile = new File(snpCacheDir, FilePageStoreManager.getPartitionFileName(INDEX_PARTITION));
@@ -1001,8 +1003,9 @@ public class SnapshotRestoreProcess {
 
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    log.info("Trying to request partitions from remote nodes" +
-                        "[snapshot=" + opCtx0.snpName +
+                    log.info("Trying to request partitions from remote nodes " +
+                        "[reqId=" + reqId +
+                        ", snapshot=" + opCtx0.snpName +
                         ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         e -> partitionsMapToCompactString(e.getValue()))) + ']');
                 }
