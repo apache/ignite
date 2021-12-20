@@ -62,12 +62,12 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /// <summary>
-        ///
+        /// Writes method arguments like required for specific platform
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="method"></param>
-        /// <param name="arguments"></param>
-        /// <param name="platformType"></param>
+        /// <param name="writer">Writer.</param>
+        /// <param name="method">Method (optional, can be null).</param>
+        /// <param name="arguments">Arguments.</param>
+        /// <param name="platformType">The platform.</param>
         public static void WriteMethodArguments(BinaryWriter writer, MethodBase method, object[] arguments, PlatformType platformType)
         {
                 writer.WriteInt(arguments.Length);

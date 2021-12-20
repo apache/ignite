@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Net;
     using System.Reflection;
-    using System.Security.Authentication;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Log;
