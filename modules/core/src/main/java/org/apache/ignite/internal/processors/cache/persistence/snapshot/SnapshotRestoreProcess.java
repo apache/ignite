@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -194,9 +194,9 @@ public class SnapshotRestoreProcess {
             "The system time when the restore operation of a cluster snapshot on this node ended.");
         mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
             "The snapshot name of the last running cluster snapshot restore operation on this node.");
-        mreg.register("requestId", () -> IgniteUtils.toStringSafeNotNull(lastOpCtx.reqId),
+        mreg.register("requestId", () -> Optional.ofNullable(lastOpCtx.reqId).map(UUID::toString).orElse(""),
             String.class, "The request ID of the last running cluster snapshot restore operation on this node.");
-        mreg.register("error", () -> IgniteUtils.toStringSafeNotNull(lastOpCtx.err.get()),
+        mreg.register("error", () -> Optional.ofNullable(lastOpCtx.err.get()).map(Throwable::toString).orElse(""),
             String.class, "Error message of the last running cluster snapshot restore operation on this node.");
         mreg.register("totalPartitions", () -> lastOpCtx.totalParts,
             "The total number of partitions to be restored on this node.");
