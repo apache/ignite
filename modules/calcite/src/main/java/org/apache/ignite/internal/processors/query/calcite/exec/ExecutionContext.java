@@ -18,19 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -40,11 +36,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -53,16 +49,6 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
-    /** */
-    private final TimeZone timeZone = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
-
-    /** */
-    private static final SchemaPlus DFLT_SCHEMA = Frameworks.createRootSchema(false);
-
-    /** */
-    // TODO https://issues.apache.org/jira/browse/IGNITE-15276 Support other locales.
-    private static final Locale LOCALE = Locale.ENGLISH;
-
     /** */
     private final UUID qryId;
 
@@ -93,11 +79,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
-    /**
-     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
-     * throughout the query.
-     */
-    private final long startTs;
+    /** */
+    private final BaseDataContext baseDataContext;
 
     /** */
     private Object[] correlations = new Object[16];
@@ -131,14 +114,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.handler = handler;
         this.params = params;
 
+        baseDataContext = new BaseDataContext(qctx.typeFactory());
+
         expressionFactory = new ExpressionFactoryImpl<>(
             this,
             qctx.typeFactory(),
             qctx.config().getParserConfig().conformance()
         );
-
-        long ts = U.currentTimeMillis();
-        startTs = ts + timeZone.getOffset(ts);
     }
 
     /**
@@ -228,35 +210,27 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** {@inheritDoc} */
     @Override public SchemaPlus getRootSchema() {
-        return DFLT_SCHEMA;
+        return baseDataContext.getRootSchema();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTypeFactory getTypeFactory() {
-        return unwrap(BaseQueryContext.class).typeFactory();
+        return baseDataContext.getTypeFactory();
     }
 
     /** {@inheritDoc} */
     @Override public QueryProvider getQueryProvider() {
-        return null; // TODO
+        return baseDataContext.getQueryProvider();
     }
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
-        if (Variable.TIME_ZONE.camelName.equals(name))
-            return timeZone; // TODO DistributedSqlConfiguration#timeZone
-        if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
-            return startTs;
-        if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))
-            return startTs;
-        if (Variable.LOCALE.camelName.equals(name))
-            return LOCALE;
         if (name.startsWith("?"))
             return TypeUtils.toInternal(this, params.get(name));
 
-        return params.get(name);
+        return baseDataContext.get(name);
     }
 
     /**

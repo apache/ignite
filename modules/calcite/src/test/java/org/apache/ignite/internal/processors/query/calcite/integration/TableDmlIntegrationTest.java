@@ -16,8 +16,15 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -426,5 +433,86 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
             "WHEN MATCHED THEN UPDATE SET b = test1.b + 1 " +
             "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (0, b)", IgniteSQLException.class,
             "Failed to MERGE some keys due to keys conflict");
+    }
+
+    /** */
+    @Test
+    public void testInsertDefaultValue() {
+        checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
+        checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
+        checkDefaultValue("BIGINT", "10", 10L);
+        checkDefaultValue("INTEGER", "10", 10);
+        checkDefaultValue("SMALLINT", "10", (short)10);
+        checkDefaultValue("TINYINT", "10", (byte)10);
+        checkDefaultValue("DOUBLE", "10.01", 10.01d);
+        checkDefaultValue("FLOAT", "10.01", 10.01f);
+        checkDefaultValue("DECIMAL(4, 2)", "10.01", new BigDecimal("10.01"));
+        checkDefaultValue("CHAR(2)", "'10'", "10");
+        checkDefaultValue("VARCHAR", "'10'", "10");
+        checkDefaultValue("VARCHAR NOT NULL", "'10'", "10");
+        checkDefaultValue("VARCHAR(2)", "'10'", "10");
+        checkDefaultValue("INTERVAL DAYS TO SECONDS", "INTERVAL '10' DAYS", Duration.ofDays(10));
+        checkDefaultValue("INTERVAL YEARS TO MONTHS", "INTERVAL '10' MONTHS", Period.ofMonths(10));
+        checkDefaultValue("INTERVAL MONTHS", "INTERVAL '10' YEARS", Period.ofYears(10));
+        checkDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
+        checkDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
+        checkDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
+        checkDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
+        checkDefaultValue("VARBINARY", "x'010203'", new byte[] {1, 2, 3});
+
+        checkWrongDefault("VARCHAR", "10");
+        checkWrongDefault("INT", "'10'");
+        checkWrongDefault("INT", "TRUE");
+        checkWrongDefault("DATE", "10");
+        checkWrongDefault("DATE", "TIME '01:01:01'");
+        checkWrongDefault("TIME", "TIMESTAMP '2021-01-01 01:01:01'");
+        checkWrongDefault("BOOLEAN", "1");
+        checkWrongDefault("INTERVAL DAYS", "INTERVAL '10' MONTHS");
+        checkWrongDefault("INTERVAL MONTHS", "INTERVAL '10' DAYS");
+        checkWrongDefault("VARBINARY", "'10'");
+        checkWrongDefault("VARBINARY", "10");
+    }
+
+    /** */
+    private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
+        try {
+            executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ")");
+            executeSql("INSERT INTO test (dummy) VALUES (0)");
+
+            checkQueryResult("SELECT val FROM test", expectedVal);
+
+            executeSql("DELETE FROM test");
+            executeSql("INSERT INTO test (dummy, val) VALUES (0, DEFAULT)");
+
+            checkQueryResult("SELECT val FROM test", expectedVal);
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /** */
+    private void checkQueryResult(String sql, Object expectedVal) {
+        if (expectedVal.getClass().isArray()) {
+            List<List<?>> res = executeSql(sql);
+
+            assertEquals(1, res.size());
+            assertEquals(1, res.get(0).size());
+            assertTrue("Expected: " + Arrays.deepToString(new Object[] {expectedVal}) + ", actual: " +
+                Arrays.deepToString(new Object[] {res.get(0).get(0)}), Objects.deepEquals(expectedVal, res.get(0).get(0)));
+        }
+        else
+            assertQuery(sql).returns(expectedVal).check();
+    }
+
+    /** */
+    private void checkWrongDefault(String sqlType, String sqlVal) {
+        try {
+            assertThrows("CREATE TABLE test (val " + sqlType + " DEFAULT " + sqlVal + ")",
+                IgniteSQLException.class, "Cannot convert literal");
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS test");
+        }
     }
 }
