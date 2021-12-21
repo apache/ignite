@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
@@ -619,7 +618,7 @@ public class SnapshotRestoreProcess {
 
         DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
 
-        if (F.first(metas) == null)
+        if (F.isEmpty(metas))
             return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap(), cctx.localNodeId(), Collections.emptyList());
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
