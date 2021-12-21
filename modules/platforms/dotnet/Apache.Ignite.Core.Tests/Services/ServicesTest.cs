@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Services
         private const string SvcName = "Service1";
 
         /** */
+        private const string PlatformSvcName = "PlatformTestService";
+
+        /** */
         private const string CacheName = "cache1";
 
         /** */
@@ -63,6 +66,24 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         protected IIgnite[] Grids;
 
+        /* Deploy Java service name. */
+        private string _javaSvcName;
+
+        /** */
+        private readonly bool _useBinaryArray;
+
+        /** */
+        public ServicesTest()
+        {
+            // No-op.
+        }
+
+        /** */
+        public ServicesTest(bool useBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -76,6 +97,17 @@ namespace Apache.Ignite.Core.Tests.Services
         public void SetUp()
         {
             StartGrids();
+
+            Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+
+            _javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            // Verify descriptor
+            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
+            Assert.AreEqual(_javaSvcName, descriptor.Name);
+
+            descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
+            Assert.AreEqual(_javaSvcName, descriptor.Name);
         }
 
         /// <summary>
@@ -299,7 +331,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     .Build();
 
                 var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
-                
+
                 Assert.IsNull(proxy.ContextAttribute("not-exist-attribute"));
                 Assert.IsNull(proxy.ContextBinaryAttribute("not-exist-attribute"));
 
@@ -311,7 +343,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
-                
+
                 Assert.AreEqual(attrBinValue, proxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
@@ -544,13 +576,15 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestServiceDescriptors()
         {
+            var beforeDeploy = Services.GetServiceDescriptors().Count;
+
             Services.DeployKeyAffinitySingleton(SvcName, new TestIgniteServiceSerializable(), CacheName, 1);
 
             var descriptors = Services.GetServiceDescriptors();
 
-            Assert.AreEqual(1, descriptors.Count);
+            Assert.AreEqual(beforeDeploy + 1, descriptors.Count);
 
-            var desc = descriptors.Single();
+            var desc = descriptors.First(d => d.Name == SvcName);
 
             Assert.AreEqual(SvcName, desc.Name);
             Assert.AreEqual(CacheName, desc.CacheName);
@@ -919,24 +953,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            // Verify descriptor
-            var descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == javaSvcName);
-            Assert.AreEqual(javaSvcName, descriptor.Name);
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false, callContext());
-            var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestBinary(svc, binSvc);
-
-            DoTestJavaExceptions(svc, true);
-
-            Services.Cancel(javaSvcName);
+            DoAllServiceTests(_client.GetServices(), _javaSvcName, true, false);
         }
 
         /// <summary>
@@ -945,40 +962,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            // Verify descriptor
-            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
-            Assert.AreEqual(javaSvcName, descriptor.Name);
-
-            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false, callContext());
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestBinary(svc, binSvc);
-
-            DoTestJavaExceptions(svc);
-
-            Services.Cancel(javaSvcName);
-        }
-
-        /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true, callContext()));
-
-            DoTestService(svc);
-
-            DoTestJavaExceptions(svc);
+            DoAllServiceTests(Services, _javaSvcName, false, false);
         }
 
         /// <summary>
@@ -987,7 +971,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceRemote()
         {
-            DoTestPlatformService(_client.GetServices());
+            DoAllServiceTests(_client.GetServices(), PlatformSvcName, true, true);
         }
 
         /// <summary>
@@ -996,23 +980,37 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            DoTestPlatformService(Services);
+            DoAllServiceTests(Services, PlatformSvcName, false, true);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(_javaSvcName, true, callContext()));
+
+            DoTestService(svc);
+
+            DoTestJavaExceptions(svc);
         }
 
         /// <summary>
         /// Tests .Net service invocation.
         /// </summary>
-        public void DoTestPlatformService(IServices svcsForProxy)
+        public void DoAllServiceTests(IServices svcsForProxy, string svcName, bool isClient, bool isPlatform)
         {
-            const string platformSvcName = "PlatformTestService";
-
-            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName, false, callContext());
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(svcName, false, callContext());
+            var binSvc = svcsForProxy.WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(svcName, false);
 
             DoTestService(svc);
 
-            Services.Cancel(platformSvcName);
+            DoTestBinary(svc, binSvc, isPlatform);
+
+            if (!isPlatform)
+                DoTestJavaExceptions(svc, isClient);
         }
 
         /// <summary>
@@ -1236,14 +1234,14 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tets binary methods in services.
         /// </summary>
-        private void DoTestBinary(IJavaService svc, IJavaService binSvc)
+        private void DoTestBinary(IJavaService svc, IJavaService binSvc, bool isPlatform)
         {
             // Binary collections
             var arr = new[] {10, 11, 12}.Select(
                 x => new PlatformComputeBinarizable {Field = x}).ToArray();
             var arrOfObj = arr.ToArray<object>();
 
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr.ToList())
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
             var binarizableObjs = svc.testBinarizableArrayOfObjects(arrOfObj);
@@ -1256,7 +1254,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var bins = svc.testBinarizableArray(arr);
 
-            Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+            if (!isPlatform || _useBinaryArray)
+                Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+
             Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
 
             Assert.IsNull(svc.testBinarizableArray(null));
@@ -1371,7 +1371,8 @@ namespace Apache.Ignite.Core.Tests.Services
 #if NETCOREAPP
                     , TimestampConverter = new TimestampConverter()
 #endif
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 
@@ -1528,7 +1529,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object ContextAttribute(string name);
-            
+
             /** */
             object ContextBinaryAttribute(string name);
         }
@@ -1660,15 +1661,15 @@ namespace Apache.Ignite.Core.Tests.Services
             public object ContextAttribute(string name)
             {
                 IServiceCallContext ctx = _context.CurrentCallContext;
-                
+
                 return ctx == null ? null : ctx.GetAttribute(name);
             }
-            
+
             /** <inheritdoc /> */
             public object ContextBinaryAttribute(string name)
             {
                 IServiceCallContext ctx = _context.CurrentCallContext;
-                
+
                 return ctx == null ? null : ctx.GetBinaryAttribute(name);
             }
 
@@ -1821,15 +1822,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Interop class.
-        /// </summary>
-        public class PlatformComputeBinarizable
-        {
-            /** */
-            public int Field { get; set; }
-        }
-
-        /// <summary>
         /// Class has no an equals class in Java.
         /// </summary>
         public class PlatformComputeBinarizable2
@@ -1876,5 +1868,15 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 #endif
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class ServicesTestBinaryArrays : ServicesTest
+    {
+        /** */
+        public ServicesTestBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }
