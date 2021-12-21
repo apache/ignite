@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
 
     /// <summary>
     /// Services client.
@@ -87,9 +88,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         {
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
 
-            var platformType = ServiceDescriptor(serviceName).PlatformId == 0
-                ? PlatformType.Java
-                : PlatformType.DotNet;
+            var platformType = ServiceDescriptor(serviceName).PlatformType;
 
             return ServiceProxyFactory<T>.CreateProxy(
                 (method, args) => InvokeProxyMethod(serviceName, method, args, platformType)
