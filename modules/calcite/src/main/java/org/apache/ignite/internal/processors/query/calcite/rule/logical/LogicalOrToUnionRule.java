@@ -25,20 +25,64 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Converts OR to UNION ALL.
  */
-public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
-    /** Instance. */
-    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
+public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
+    /** Rule instance to replace filters. */
+    public static final RelOptRule FILTER_INSTANCE = new LogicalOrToUnionRule(Config.FILTER) {
+        @Override protected RexNode getCondition(RelOptRuleCall call) {
+            final LogicalFilter rel = call.rel(0);
+
+            return rel.getCondition();
+        }
+
+        @Override protected RelNode getInput(RelOptRuleCall call) {
+            final LogicalFilter rel = call.rel(0);
+
+            return rel.getInput();
+        }
+
+        @Override protected void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
+            relBldr.push(input).filter(condition);
+        }
+    };
+
+    /** Rule instance to replace table scans with condition. */
+    public static final RelOptRule SCAN_INSTANCE = new LogicalOrToUnionRule(Config.SCAN) {
+        @Override protected RexNode getCondition(RelOptRuleCall call) {
+            final IgniteLogicalTableScan rel = call.rel(0);
+
+            return rel.condition();
+        }
+
+        @Override protected RelNode getInput(RelOptRuleCall call) {
+            return call.rel(0);
+        }
+
+        @Override protected void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
+            IgniteLogicalTableScan scan = (IgniteLogicalTableScan)input;
+
+            relBldr.push(IgniteLogicalTableScan.create(
+                scan.getCluster(),
+                scan.getTraitSet(),
+                scan.getTable(),
+                scan.projects(),
+                condition,
+                scan.requiredColumns()
+            ));
+        }
+    };
 
     /**
      * Constructor.
@@ -51,20 +95,14 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        final LogicalFilter rel = call.rel(0);
-        final RelOptCluster cluster = rel.getCluster();
+        final RelOptCluster cluster = call.rel(0).getCluster();
 
-        RexNode dnf = RexUtil.toDnf(cluster.getRexBuilder(), rel.getCondition());
+        List<RexNode> operands = getOrOperands(cluster.getRexBuilder(), getCondition(call));
 
-        if (!dnf.isA(SqlKind.OR))
+        if (operands == null)
             return;
 
-        List<RexNode> operands = RelOptUtil.disjunctions(dnf);
-
-        if (operands.size() != 2 || RexUtil.find(SqlKind.IS_NULL).anyContain(operands))
-            return;
-
-        RelNode input = rel.getInput(0);
+        RelNode input = getInput(call);
 
         RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
 
@@ -72,6 +110,30 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
             createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
         ));
     }
+
+    /** */
+    protected abstract RexNode getCondition(RelOptRuleCall call);
+
+    /** */
+    protected abstract RelNode getInput(RelOptRuleCall call);
+
+    /** */
+    private static @Nullable List<RexNode> getOrOperands(RexBuilder rexBuilder, RexNode condition) {
+        RexNode dnf = RexUtil.toDnf(rexBuilder, condition);
+
+        if (!dnf.isA(SqlKind.OR))
+            return null;
+
+        List<RexNode> operands = RelOptUtil.disjunctions(dnf);
+
+        if (operands.size() != 2 || RexUtil.find(SqlKind.IS_NULL).anyContain(operands))
+            return null;
+
+        return operands;
+    }
+
+    /** */
+    protected abstract void buildInput(RelBuilder relBldr, RelNode input, RexNode condition);
 
     /**
      * Creates 'UnionAll' for conditions.
@@ -85,11 +147,10 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     private RelNode createUnionAll(RelOptCluster cluster, RelNode input, RexNode op1, RexNode op2) {
         RelBuilder relBldr = relBuilderFactory.create(cluster, null);
 
+        buildInput(relBldr, input, op1);
+        buildInput(relBldr, input, relBldr.and(op2, relBldr.or(relBldr.isNull(op1), relBldr.not(op1))));
+
         return relBldr
-            .push(input).filter(op1)
-            .push(input).filter(
-                relBldr.and(op2,
-                    relBldr.or(relBldr.isNull(op1), relBldr.not(op1))))
             .union(true)
             .build();
     }
@@ -100,19 +161,21 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
         /** */
         Config DEFAULT = RelRule.Config.EMPTY
             .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-            .withDescription("LogicalOrToUnionRule")
-            .as(Config.class)
-            .withOperandFor(LogicalFilter.class);
+            .as(Config.class);
 
-        /** Defines an operand tree for the given classes. */
-        default Config withOperandFor(Class<? extends Filter> filterClass) {
-            return withOperandSupplier(o -> o.operand(filterClass).anyInputs())
-                .as(Config.class);
-        }
+        /** */
+        Config FILTER = DEFAULT
+            .withDescription("FilterLogicalOrToUnionRule")
+            .withOperandSupplier(o -> o.operand(LogicalFilter.class).anyInputs())
+            .as(Config.class);
 
-        /** {@inheritDoc} */
-        @Override default LogicalOrToUnionRule toRule() {
-            return new LogicalOrToUnionRule(this);
-        }
+        /** */
+        Config SCAN = DEFAULT
+            .withDescription("ScanLogicalOrToUnionRule")
+            .withOperandSupplier(o -> o.operand(IgniteLogicalTableScan.class)
+                .predicate(scan -> scan.condition() != null)
+                .anyInputs()
+            )
+            .as(Config.class);
     }
 }

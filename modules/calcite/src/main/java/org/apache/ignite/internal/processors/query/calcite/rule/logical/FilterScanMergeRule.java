@@ -16,34 +16,21 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.util.ControlFlowException;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -54,41 +41,15 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
     extends RelRule<FilterScanMergeRule.Config> {
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new FilterScanMergeRule<IgniteLogicalIndexScan>(Config.INDEX_SCAN) {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalIndexScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalIndexScan scan,
-                RelTraitSet traits,
-                RexNode cond) {
-                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
-
-                if (!F.isEmpty(corrIds))
-                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
-
-                return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
-                    scan.projects(), cond, scan.requiredColumns());
-            }
-        };
+        new FilterIndexScanMergeRule(Config.INDEX_SCAN);
 
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new FilterScanMergeRule<IgniteLogicalTableScan>(Config.TABLE_SCAN) {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalTableScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalTableScan scan,
-                RelTraitSet traits,
-                RexNode cond) {
-                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
+        new FilterTableScanMergeRule(Config.TABLE_SCAN);
 
-                if (!F.isEmpty(corrIds))
-                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
-
-                return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
-                    cond, scan.requiredColumns());
-            }
-        };
+    /** Instance. */
+    public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN_SKIP_CORRELATED =
+        new FilterTableScanMergeRule(Config.TABLE_SCAN_SKIP_CORRELATED);
 
     /**
      * Constructor.
@@ -108,65 +69,28 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RexBuilder builder = RexUtils.builder(cluster);
 
         RexNode condition = filter.getCondition();
-        RexNode remaining = null;
-
-        if (scan.condition() != null)
-            condition = RexUtil.composeConjunction(builder, F.asList(scan.condition(), condition));
 
         if (scan.projects() != null) {
-            IgniteTypeFactory typeFactory = Commons.typeFactory(scan);
-
-            IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
-
-            RelDataType cols = tbl.getRowType(typeFactory, scan.requiredColumns());
-
-            Mappings.TargetMapping permutation = RexUtils.permutation(scan.projects(), cols, true);
-
-            List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
-
-            List<RexNode> condition0 = new ArrayList<>(conjunctions.size());
-            List<RexNode> remaining0 = new ArrayList<>(conjunctions.size());
-
             RexShuttle shuttle = new RexShuttle() {
                 @Override public RexNode visitInputRef(RexInputRef ref) {
-                    int targetRef = permutation.getTargetOpt(ref.getIndex());
-                    if (targetRef == -1)
-                        throw new ControlFlowException();
-                    return new RexInputRef(targetRef, ref.getType());
+                    return scan.projects().get(ref.getIndex());
                 }
             };
 
-            for (RexNode cond0 : conjunctions) {
-                try {
-                    condition0.add(shuttle.apply(cond0));
-                }
-                catch (ControlFlowException e) {
-                    remaining0.add(cond0);
-                }
-            }
-
-            condition = RexUtil.composeConjunction(builder, condition0, false);
-            remaining = RexUtil.composeConjunction(builder, remaining0, true);
+            condition = shuttle.apply(condition);
         }
+
+        if (scan.condition() != null)
+            condition = RexUtil.composeConjunction(builder, F.asList(scan.condition(), condition));
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
         // TODO SEARCH support
         condition = RexUtils.replaceInputRefs(RexUtil.expandSearch(builder, null, condition));
 
-        RelTraitSet trait = scan.getTraitSet();
-        CorrelationTrait filterCorr = TraitUtils.correlation(filter);
-
-        if (filterCorr.correlated())
-            trait = trait.replace(filterCorr);
+        // Set default traits, real traits will be calculated for physical node.
+        RelTraitSet trait = cluster.traitSet();
 
         RelNode res = createNode(cluster, scan, trait, condition);
-
-        if (remaining != null) {
-            res = relBuilderFactory.create(cluster, null)
-                .push(res)
-                .filter(remaining)
-                .build();
-        }
 
         call.transformTo(res);
     }
@@ -175,22 +99,71 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
     protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, RexNode cond);
 
     /** */
+    private static class FilterIndexScanMergeRule extends FilterScanMergeRule<IgniteLogicalIndexScan> {
+        /** */
+        private FilterIndexScanMergeRule(FilterScanMergeRule.Config cfg) {
+            super(cfg);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteLogicalIndexScan createNode(
+            RelOptCluster cluster,
+            IgniteLogicalIndexScan scan,
+            RelTraitSet traits,
+            RexNode cond
+        ) {
+            return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
+                scan.projects(), cond, scan.requiredColumns());
+        }
+    }
+
+    /** */
+    private static class FilterTableScanMergeRule extends FilterScanMergeRule<IgniteLogicalTableScan> {
+        /** */
+        private FilterTableScanMergeRule(FilterScanMergeRule.Config cfg) {
+            super(cfg);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteLogicalTableScan createNode(
+            RelOptCluster cluster,
+            IgniteLogicalTableScan scan,
+            RelTraitSet traits,
+            RexNode cond
+        ) {
+            return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
+                cond, scan.requiredColumns());
+        }
+    }
+
+    /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
         /** */
         Config DEFAULT = EMPTY.withRelBuilderFactory(RelFactories.LOGICAL_BUILDER).as(Config.class);
 
         /** */
-        Config TABLE_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeRule");
+        Config TABLE_SCAN = DEFAULT
+            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeRule", false);
 
         /** */
-        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule");
+        Config TABLE_SCAN_SKIP_CORRELATED = DEFAULT
+            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeSkipCorrelatedRule", true);
 
         /** */
-        default Config withScanRuleConfig(Class<? extends ProjectableFilterableTableScan> scanCls, String desc) {
+        Config INDEX_SCAN = DEFAULT
+            .withScanRuleConfig(IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule", false);
+
+        /** */
+        default Config withScanRuleConfig(
+            Class<? extends ProjectableFilterableTableScan> scanCls,
+            String desc,
+            boolean skipCorrelated
+        ) {
             return withDescription(desc)
-                .withOperandSupplier(b ->
-                    b.operand(LogicalFilter.class).oneInput(b1 -> b1.operand(scanCls).noInputs()))
+                .withOperandSupplier(b -> b.operand(LogicalFilter.class)
+                    .predicate(p -> !skipCorrelated || !RexUtils.hasCorrelation(p.getCondition()))
+                    .oneInput(b1 -> b1.operand(scanCls).noInputs()))
                 .as(Config.class);
         }
     }

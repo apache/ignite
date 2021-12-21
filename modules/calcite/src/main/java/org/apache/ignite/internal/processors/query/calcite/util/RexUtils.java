@@ -438,20 +438,6 @@ public class RexUtils {
     }
 
     /** */
-    public static Mappings.TargetMapping permutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
-        final Mappings.TargetMapping mapping =
-            Mappings.create(MappingType.PARTIAL_FUNCTION, nodes.size(), inputRowType.getFieldCount());
-
-        Class<? extends RexSlot> clazz = local ? RexLocalRef.class : RexInputRef.class;
-
-        for (Ord<RexNode> node : Ord.zip(nodes)) {
-            if (clazz.isInstance(node.e))
-                mapping.set(node.i, ((RexSlot)node.e).getIndex());
-        }
-        return mapping;
-    }
-
-    /** */
     public static Mappings.TargetMapping inversePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
         final Mappings.TargetMapping mapping =
             Mappings.create(MappingType.INVERSE_FUNCTION, nodes.size(), inputRowType.getFieldCount());
@@ -463,11 +449,6 @@ public class RexUtils {
                 mapping.set(node.i, ((RexSlot)node.e).getIndex());
         }
         return mapping;
-    }
-
-    /** */
-    public static Mappings.TargetMapping permutation(List<RexNode> nodes, RelDataType inputRowType) {
-        return permutation(nodes, inputRowType, false);
     }
 
     /** */
