@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.service.inner;
 
 import org.apache.ignite.services.Service;
 
+import java.io.Externalizable;
+
 /**
  * Service.
  */
-public interface MyService extends Service {
+public interface MyService extends Service, Externalizable {
     /** Custom hash code. */
     public static int HASH = 12345;
 

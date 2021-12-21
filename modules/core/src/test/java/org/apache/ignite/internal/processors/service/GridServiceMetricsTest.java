@@ -39,7 +39,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumHistogramEntries;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 
 /**
@@ -322,6 +321,24 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** @return Number of metrics contained in metric registry for {@code srvcName}. */
     private static int metricsCnt(IgniteEx ignite, String srvcName) {
         return Iterables.size(ignite.context().metric().registry(serviceMetricRegistryName(srvcName)));
+    }
+
+    /**
+     * Count total of histogram values.
+     *
+     * @param histogram Histogram to traverse.
+     * @return Sum of all entries of {@code histogram} buckets.
+     */
+    private static long sumHistogramEntries(HistogramMetric histogram) {
+        if (histogram == null)
+            return 0;
+
+        long sum = 0;
+
+        for (int i = 0; i < histogram.value().length; ++i)
+            sum += histogram.value()[i];
+
+        return sum;
     }
 
     /** @return Metric registry if it is found in {@code metricMgr} by name {@code srvcName}. Null otherwise. */

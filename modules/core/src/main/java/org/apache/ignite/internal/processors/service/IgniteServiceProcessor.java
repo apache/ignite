@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -2037,5 +2038,15 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     private static boolean metricIgnored(Class<?> cls) {
         return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls)
             || PlatformService.class.equals(cls);
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    public static String serviceMetricRegistryName(String srvcName) {
+        return MetricUtils.metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }

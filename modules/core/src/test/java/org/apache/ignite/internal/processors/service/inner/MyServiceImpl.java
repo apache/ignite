@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.service.inner;
 
 import org.apache.ignite.services.ServiceContext;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 /**
  * Package-private service implementation.
  */
@@ -51,5 +55,15 @@ class MyServiceImpl implements MyService {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return HASH;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.write(4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        in.readInt();
     }
 }
