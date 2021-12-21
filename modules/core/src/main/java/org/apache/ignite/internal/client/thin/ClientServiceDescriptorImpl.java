@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.UUID;
 import org.apache.ignite.client.ClientServiceDescriptor;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.Service;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +46,7 @@ class ClientServiceDescriptorImpl implements ClientServiceDescriptor {
     private final UUID originNodeId;
 
     /** */
-    private final byte platformId;
+    private final PlatformType platformType;
 
     /** */
     ClientServiceDescriptorImpl(
@@ -55,7 +56,7 @@ class ClientServiceDescriptorImpl implements ClientServiceDescriptor {
         int maxPerNodeCnt,
         String cacheName,
         UUID originNodeId,
-        byte platformId
+        PlatformType platformType
     ) {
         this.name = name;
         this.svcCls = svcCls;
@@ -63,7 +64,7 @@ class ClientServiceDescriptorImpl implements ClientServiceDescriptor {
         this.maxPerNodeCnt = maxPerNodeCnt;
         this.cacheName = cacheName;
         this.originNodeId = originNodeId;
-        this.platformId = platformId;
+        this.platformType = platformType;
     }
 
     /** {@inheritDoc} */
@@ -97,7 +98,7 @@ class ClientServiceDescriptorImpl implements ClientServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public byte platformId() {
-        return platformId;
+    @Override public PlatformType platformType() {
+        return platformType;
     }
 }

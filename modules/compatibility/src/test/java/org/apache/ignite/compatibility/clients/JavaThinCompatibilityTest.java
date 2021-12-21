@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -402,7 +403,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             assertEquals(1, svc.maxPerNodeCount());
             assertNull(svc.cacheName());
             assertEquals(grid(0).localNode().id(), svc.originNodeId());
-            assertEquals((byte)0, svc.platformId());
+            assertEquals(PlatformType.JAVA, svc.platformType());
         }
     }
 

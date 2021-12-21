@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.util.UUID;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.Service;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,12 +70,9 @@ public interface ClientServiceDescriptor {
     public UUID originNodeId();
 
     /**
-     * Platform id.
-     * <ul>
-     *     <li>{@code 0} is Java platform service.</li>
-     *     <li>{@code 1} is .Net platform service.</li>
-     * </ul>
-     * @return Map of number of service instances per node ID.
+     * Gets platform type.
+     *
+     * @return Platform type.
      */
-    public byte platformId();
+    public PlatformType platformType();
 }
