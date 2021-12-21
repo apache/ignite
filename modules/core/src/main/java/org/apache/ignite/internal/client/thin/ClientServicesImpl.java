@@ -29,6 +29,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
+import org.apache.ignite.client.PlatformType;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,7 +88,7 @@ class ClientServicesImpl implements ClientServices {
                 try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
                     int sz = res.in().readInt();
 
-                    Collection<ClientServiceDescriptor> svcs = new ArrayList<>();
+                    Collection<ClientServiceDescriptor> svcs = new ArrayList<>(sz);
 
                     for (int i = 0; i < sz; i++)
                         svcs.add(readServiceDescriptor(reader));
@@ -103,6 +104,8 @@ class ClientServicesImpl implements ClientServices {
 
     /** {@inheritDoc} */
     @Override public ClientServiceDescriptor serviceDescriptor(String name) {
+        A.notNullOrEmpty(name, "name");
+
         return ch.service(ClientOperation.SERVICE_GET_DESCRIPTOR,
             req -> {
                 checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx());
@@ -131,7 +134,7 @@ class ClientServicesImpl implements ClientServices {
             reader.readInt(),
             reader.readString(),
             reader.readUuid(),
-            reader.readByte()
+            reader.readByte() == 0 ? PlatformType.JAVA : PlatformType.DOTNET
         );
     }
 

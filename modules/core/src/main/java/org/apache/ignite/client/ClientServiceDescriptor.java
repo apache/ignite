@@ -76,5 +76,5 @@ public interface ClientServiceDescriptor {
      * </ul>
      * @return Map of number of service instances per node ID.
      */
-    public byte platformId();
+    public PlatformType platformType();
 }
