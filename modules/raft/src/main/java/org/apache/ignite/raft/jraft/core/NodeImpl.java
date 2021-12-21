@@ -1196,7 +1196,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-    
+
                 rpcClientService.connectAsync(peer.getEndpoint()).thenAccept(ok -> {
                     if (!ok) {
                         LOG.warn("Node {} failed to init channel, address={}.", getNodeId(), peer.getEndpoint());
@@ -2488,7 +2488,7 @@ public class NodeImpl implements Node, RaftServerService {
         return this.raftOptions;
     }
 
-    @OnlyForTest
+    @Override
     public long getCurrentTerm() {
         this.readLock.lock();
         try {
@@ -2753,7 +2753,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-    
+
                 rpcClientService.connectAsync(peer.getEndpoint()).thenAccept(ok -> {
                     if (!ok) {
                         LOG.warn("Node {} failed to init channel, address={}.", getNodeId(), peer.getEndpoint());
@@ -3400,10 +3400,10 @@ public class NodeImpl implements Node, RaftServerService {
             // Parallelize response and election
             done.sendResponse(resp);
             doUnlock = false;
-    
+
             LOG.info("Node {} received TimeoutNowRequest from {}, term={} and starts voting.", getNodeId(), request.serverId(),
                     savedTerm);
-            
+
             electSelf();
         }
         finally {

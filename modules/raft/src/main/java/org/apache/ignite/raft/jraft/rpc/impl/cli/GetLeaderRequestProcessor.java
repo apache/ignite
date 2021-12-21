@@ -87,6 +87,7 @@ public class GetLeaderRequestProcessor extends BaseCliRequestProcessor<GetLeader
             if (leader != null && !leader.isEmpty()) {
                 return msgFactory().getLeaderResponse()
                     .leaderId(leader.toString())
+                    .currentTerm(node.getCurrentTerm())
                     .build();
             }
         }

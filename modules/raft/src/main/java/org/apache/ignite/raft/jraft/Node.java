@@ -298,4 +298,11 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
      * @return node's target election priority value.
      */
     int getNodeTargetPriority();
+
+    /**
+     * Get the node's current term.
+     *
+     * @return node's current term.
+     */
+    long getCurrentTerm();
 }

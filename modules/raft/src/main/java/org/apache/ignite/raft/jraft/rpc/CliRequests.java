@@ -109,6 +109,8 @@ public final class CliRequests {
     @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_RESPONSE, autoSerializable = false)
     public interface GetLeaderResponse extends Message {
         String leaderId();
+
+        long currentTerm();
     }
 
     @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_REQUEST, autoSerializable = false)
