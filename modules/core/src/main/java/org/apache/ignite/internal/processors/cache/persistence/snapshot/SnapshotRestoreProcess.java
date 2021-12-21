@@ -826,7 +826,7 @@ public class SnapshotRestoreProcess {
                         }
                     }, snpMgr.snapshotExecutorService()) : CompletableFuture.completedFuture(null);
 
-            Map<String, GridAffinityAssignmentCache> affCache = new ConcurrentHashMap<>();
+            Map<String, GridAffinityAssignmentCache> affCache = new HashMap<>();
 
             for (StoredCacheData data : opCtx0.cfgs.values()) {
                 affCache.computeIfAbsent(CU.cacheOrGroupName(data.config()),
