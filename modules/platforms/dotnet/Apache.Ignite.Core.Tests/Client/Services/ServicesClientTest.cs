@@ -567,6 +567,36 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, task.Result);
         }
 
+        [Test]
+        public void TestGetServiceDescriptors()
+        {
+            DeployAndGetTestService();
+
+            var svcs = Client.GetServices().ServiceDescriptors();
+
+            Assert.AreEqual(1, svcs.Count);
+
+            var svc = svcs.First();
+
+            Assert.AreEqual(ServiceName, svc.Name);
+            Assert.AreEqual("org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl", svc.ServiceClass);
+            Assert.AreEqual(1, svc.TotalCount);
+            Assert.AreEqual(1, svc.MaxPerNodeCount);
+            Assert.IsNull(svc.CacheName);
+            Assert.AreEqual(Ignition.GetIgnite().GetCluster().GetLocalNode().Id, svc.OriginNodeId);
+            Assert.AreEqual(1, svc.PlatformId);
+
+            var svc1 = Client.GetServices().ServiceDescriptor(ServiceName);
+
+            Assert.AreEqual(svc.Name, svc1.Name);
+            Assert.AreEqual(svc.ServiceClass, svc1.ServiceClass);
+            Assert.AreEqual(svc.TotalCount, svc1.TotalCount);
+            Assert.AreEqual(svc.MaxPerNodeCount, svc1.MaxPerNodeCount);
+            Assert.AreEqual(svc.CacheName, svc1.CacheName);
+            Assert.AreEqual(svc.OriginNodeId, svc1.OriginNodeId);
+            Assert.AreEqual(svc.PlatformId, svc1.PlatformId);
+        }
+
         /// <summary>
         /// Deploys test service and returns client-side proxy.
         /// </summary>

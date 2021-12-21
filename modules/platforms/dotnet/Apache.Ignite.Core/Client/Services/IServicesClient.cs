@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Client.Services
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Ignite distributed services client.
     /// </summary>
@@ -37,6 +39,19 @@ namespace Apache.Ignite.Core.Client.Services
         /// <param name="serviceName">Service name.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
         T GetServiceProxy<T>(string serviceName) where T : class;
+
+        /// <summary>
+        /// Gets metadata about all deployed services in the grid.
+        /// </summary>
+        /// <returns>Metadata about all deployed services in the grid.</returns>
+        ICollection<IClientServiceDescriptor> ServiceDescriptors();
+
+        /// <summary>
+        /// Gets metadata about deployed services in the grid.
+        /// </summary>
+        /// <param name="serviceName">Service name</param>
+        /// <returns>Metadata about all deployed services in the grid.</returns>
+        IClientServiceDescriptor ServiceDescriptor(string serviceName);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.
