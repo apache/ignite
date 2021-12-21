@@ -44,6 +44,7 @@ import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.client.PlatformType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -402,7 +403,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             assertEquals(1, svc.maxPerNodeCount());
             assertNull(svc.cacheName());
             assertEquals(grid(0).localNode().id(), svc.originNodeId());
-            assertEquals((byte)0, svc.platformId());
+            assertEquals(PlatformType.JAVA, svc.platformType());
         }
     }
 
