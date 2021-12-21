@@ -71,6 +71,12 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     /** */
     private static final String CACHE_WITH_NODE_FILTER = "cacheWithFilter";
 
+    /**
+     * The number of cache keys to pre-create at node start. It is less than the number of partitions
+     * to check the case when not all partitions are physically created.
+     */
+    private static final int CACHE_KEYS_RANGE = CACHE_PARTITIONS_COUNT - 1;
+
     /** Node filter filter test restoring on some nodes only. */
     private static final IgnitePredicate<ClusterNode> ZERO_SUFFIX_NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode node) {
