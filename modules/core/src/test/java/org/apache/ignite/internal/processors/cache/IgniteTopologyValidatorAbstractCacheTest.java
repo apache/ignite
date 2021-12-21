@@ -65,7 +65,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     protected static String CACHE_NAME_2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected final int gridCount() {
         return 0;
     }
 
@@ -96,16 +96,14 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
             cfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);
 
+            TestCacheTopologyValidatorProvider topValidatorProvider = new TestCacheTopologyValidatorProvider();
+
             if (!isPluginTopValidatorProvider) {
-                for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
-                    if (cCfg.getName().equals(CACHE_NAME_1))
-                        cCfg.setTopologyValidator(new FirstCacheTopologyValidator());
-                    else if (cCfg.getName().equals(CACHE_NAME_2))
-                        cCfg.setTopologyValidator(new SecondCacheTopologyValidator());
-                }
+                for (CacheConfiguration cCfg : cfg.getCacheConfiguration())
+                    cCfg.setTopologyValidator(topValidatorProvider.topologyValidator(cCfg.getName()));
             }
             else
-                cfg.setPluginProviders(new TestCacheTopologyValidatorPluginProvider());
+                cfg.setPluginProviders(new TestCacheTopologyValidatorPluginProvider(topValidatorProvider));
         }
 
         return cfg;
@@ -312,6 +310,14 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
     /** */
     public static class TestCacheTopologyValidatorPluginProvider extends AbstractTestPluginProvider {
+        /** */
+        private final CacheTopologyValidatorProvider provider;
+
+        /** */
+        public TestCacheTopologyValidatorPluginProvider(CacheTopologyValidatorProvider provider) {
+            this.provider = provider;
+        }
+
         /** {@inheritDoc} */
         @Override public String name() {
             return "CacheTopologyValidatorProviderPlugin";
@@ -319,38 +325,30 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(CacheTopologyValidatorProvider.class, createTopologyValidatorProvider());
-        }
-
-        /** */
-        protected CacheTopologyValidatorProvider createTopologyValidatorProvider() {
-            return new CacheTopologyValidatorProvider() {
-                /** {@inheritDoc} */
-                @Override public TopologyValidator topologyValidator(String cacheName) {
-                    if (CACHE_NAME_1.equals(cacheName))
-                        return new FirstCacheTopologyValidator();
-                    if (CACHE_NAME_2.equals(cacheName))
-                        return new SecondCacheTopologyValidator();
-                    else
-                        return null;
-                }
-            };
+            registry.registerExtension(CacheTopologyValidatorProvider.class, provider);
         }
     }
 
     /** */
-    private static class FirstCacheTopologyValidator implements TopologyValidator {
+    private static class TestCacheTopologyValidatorProvider implements CacheTopologyValidatorProvider, Serializable {
         /** {@inheritDoc} */
-        @Override public boolean validate(Collection<ClusterNode> nodes) {
-            return servers(nodes) == 2;
-        }
-    }
-
-    /** */
-    private static class SecondCacheTopologyValidator implements TopologyValidator {
-        /** {@inheritDoc} */
-        @Override public boolean validate(Collection<ClusterNode> nodes) {
-            return servers(nodes) >= 2;
+        @Override public TopologyValidator topologyValidator(String cacheName) {
+            if (CACHE_NAME_1.equals(cacheName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return servers(nodes) == 2;
+                    }
+                };
+            }
+            else if (CACHE_NAME_2.equals(cacheName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return servers(nodes) >= 2;
+                    }
+                };
+            }
+            else
+                return null;
         }
     }
 }

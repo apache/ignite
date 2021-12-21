@@ -174,9 +174,6 @@ public class CacheTopologyValidatorProviderTest extends GridCommonAbstractTest {
         /** */
         private final String name;
 
-        /** */
-        private final int validationThreshold;
-
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
@@ -184,27 +181,25 @@ public class CacheTopologyValidatorProviderTest extends GridCommonAbstractTest {
 
         /** */
         private TestPluginProvider(String name, int validationThreshold) {
+            super(new TestCacheTopologyValidatorProvider(validationThreshold));
+
             this.name = name;
-            this.validationThreshold = validationThreshold;
         }
 
         /** */
-        private final TopologyValidator topValidator = new TopologyValidator() {
-            /** {@inheritDoc} */
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() > validationThreshold;
+        private static class TestCacheTopologyValidatorProvider implements CacheTopologyValidatorProvider {
+            /** */
+            private final int validationThreshold;
+
+            /** */
+            public TestCacheTopologyValidatorProvider(int validationThreshold) {
+                this.validationThreshold = validationThreshold;
             }
-        };
 
-
-        /** {@inheritDoc} */
-        @Override protected CacheTopologyValidatorProvider createTopologyValidatorProvider() {
-            return new CacheTopologyValidatorProvider() {
-                /** {@inheritDoc} */
-                @Override public TopologyValidator topologyValidator(String cacheName) {
-                    return topValidator;
-                }
-            };
+            /** {@inheritDoc} */
+            @Override public TopologyValidator topologyValidator(String cacheName) {
+                return nodes -> nodes.size() > validationThreshold;
+            }
         }
     }
 }
