@@ -137,6 +137,24 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         doRestoreAllGroups();
     }
 
+    /**
+     * Checks snapshot restore if not all "affinity" partitions have been physically created.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestoreWithEmptyPartitions() throws Exception {
+        int keysCnt = 1;
+
+        // Add only 1 key (only 1 partition will be created on the disk).
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false);
+
+        // The restore operation hangs during the "preload" phase.
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
     /** @throws Exception If failed. */
     private void doRestoreAllGroups() throws Exception {
         CacheConfiguration<Integer, Object> cacheCfg1 =

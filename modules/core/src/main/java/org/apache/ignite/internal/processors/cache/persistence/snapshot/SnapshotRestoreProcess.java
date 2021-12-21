@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
@@ -827,8 +826,10 @@ public class SnapshotRestoreProcess {
                         }
                     }, snpMgr.snapshotExecutorService()) : CompletableFuture.completedFuture(null);
 
+            Map<String, GridAffinityAssignmentCache> affCache = new ConcurrentHashMap<>();
+
             for (StoredCacheData data : opCtx0.cfgs.values()) {
-                opCtx0.affCache.computeIfAbsent(CU.cacheOrGroupName(data.config()),
+                affCache.computeIfAbsent(CU.cacheOrGroupName(data.config()),
                     grp -> calculateAffinity(ctx, data.config(), opCtx0.discoCache));
             }
 
@@ -847,8 +848,19 @@ public class SnapshotRestoreProcess {
 
                 Set<PartitionRestoreFuture> leftParts;
 
-                opCtx0.locProgress.put(grpId,
-                    nodeAffinityPartitions(opCtx0.affCache.get(cacheOrGrpName), locNode, PartitionRestoreFuture::new));
+                // Partitions contained in the snapshot.
+                Set<Integer> availableParts = new HashSet<>();
+
+                for (List<SnapshotMetadata> metaList : opCtx0.metasPerNode.values()) {
+                    for (SnapshotMetadata meta : metaList) {
+                        Set<Integer> parts = meta.partitions().get(grpId);
+
+                        if (parts != null)
+                            availableParts.addAll(parts);
+                    }
+                }
+
+                opCtx0.locProgress.put(grpId, nodeAffinityPartitions(affCache.get(cacheOrGrpName), locNode, availableParts));
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(opCtx0.locProgress.get(grpId)));
 
@@ -1304,16 +1316,17 @@ public class SnapshotRestoreProcess {
     /**
      * @param affCache Affinity cache.
      * @param node Cluster node to get assigned partitions.
+     * @param availableParts Partitions contained in the snapshot.
      * @return The set of partitions assigned to the given node.
      */
-    private static <T> Set<T> nodeAffinityPartitions(
+    private static Set<PartitionRestoreFuture> nodeAffinityPartitions(
         GridAffinityAssignmentCache affCache,
         ClusterNode node,
-        IntFunction<T> factory
+        Set<Integer> availableParts
     ) {
         return IntStream.range(0, affCache.partitions())
-            .filter(p -> affCache.idealAssignment().assignment().get(p).contains(node))
-            .mapToObj(factory)
+            .filter(p -> affCache.idealAssignment().assignment().get(p).contains(node) && availableParts.contains(p))
+            .mapToObj(PartitionRestoreFuture::new)
             .collect(Collectors.toSet());
     }
 
@@ -1380,9 +1393,6 @@ public class SnapshotRestoreProcess {
          * successfully and all the data deleted from disk).
          */
         private final GridFutureAdapter<Void> locStopCachesCompleteFut = new GridFutureAdapter<>();
-
-        /** Calculated affinity assignment cache per each cache group. */
-        private final Map<String, GridAffinityAssignmentCache> affCache = new ConcurrentHashMap<>();
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
