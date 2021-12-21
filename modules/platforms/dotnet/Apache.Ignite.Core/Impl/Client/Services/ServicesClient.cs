@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Client;
@@ -87,6 +88,33 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) => InvokeProxyMethod(serviceName, method, args));
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IClientServiceDescriptor> GetServiceDescriptors()
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptors,
+                ctx => { },
+                ctx =>
+                {
+                    var cnt = ctx.Reader.ReadInt();
+                    var res = new List<IClientServiceDescriptor>(cnt);
+
+                    for (var i = 0; i < cnt; i++)
+                        res.Add(new ClientServiceDescriptor(ctx.Reader));
+
+                    return res;
+                });
+        }
+
+        /** <inheritdoc /> */
+        public IClientServiceDescriptor GetServiceDescriptor(string serviceName)
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptor,
+                ctx => ctx.Writer.WriteString(serviceName),
+                ctx => new ClientServiceDescriptor(ctx.Reader));
         }
 
         /** <inheritdoc /> */
