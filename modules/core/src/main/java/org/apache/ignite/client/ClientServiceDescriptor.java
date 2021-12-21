@@ -69,12 +69,9 @@ public interface ClientServiceDescriptor {
     public UUID originNodeId();
 
     /**
-     * Platform id.
-     * <ul>
-     *     <li>{@code 0} is Java platform service.</li>
-     *     <li>{@code 1} is .Net platform service.</li>
-     * </ul>
-     * @return Map of number of service instances per node ID.
+     * Gets platform type.
+     *
+     * @return Platform type.
      */
     public PlatformType platformType();
 }
