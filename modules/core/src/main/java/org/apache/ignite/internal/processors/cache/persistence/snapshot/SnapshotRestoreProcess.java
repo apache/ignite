@@ -835,6 +835,9 @@ public class SnapshotRestoreProcess {
             // First preload everything from the local node.
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
 
+            Set<SnapshotMetadata> allMetas =
+                opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
+
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
 
@@ -848,18 +851,16 @@ public class SnapshotRestoreProcess {
                 Set<PartitionRestoreFuture> leftParts;
 
                 // Partitions contained in the snapshot.
-                Set<Integer> availableParts = new HashSet<>();
+                Set<Integer> availParts = new HashSet<>();
 
-                for (List<SnapshotMetadata> metaList : opCtx0.metasPerNode.values()) {
-                    for (SnapshotMetadata meta : metaList) {
-                        Set<Integer> parts = meta.partitions().get(grpId);
+                for (SnapshotMetadata meta : allMetas) {
+                    Set<Integer> parts = meta.partitions().get(grpId);
 
-                        if (parts != null)
-                            availableParts.addAll(parts);
-                    }
+                    if (parts != null)
+                        availParts.addAll(parts);
                 }
 
-                opCtx0.locProgress.put(grpId, nodeAffinityPartitions(affCache.get(cacheOrGrpName), locNode, availableParts));
+                opCtx0.locProgress.put(grpId, nodeAffinityPartitions(affCache.get(cacheOrGrpName), locNode, availParts));
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(opCtx0.locProgress.get(grpId)));
 
@@ -1315,16 +1316,16 @@ public class SnapshotRestoreProcess {
     /**
      * @param affCache Affinity cache.
      * @param node Cluster node to get assigned partitions.
-     * @param availableParts Partitions contained in the snapshot.
-     * @return The set of partitions assigned to the given node.
+     * @param availParts Partitions contained in the snapshot.
+     * @return The set of partition futures assigned to the given node.
      */
     private static Set<PartitionRestoreFuture> nodeAffinityPartitions(
         GridAffinityAssignmentCache affCache,
         ClusterNode node,
-        Set<Integer> availableParts
+        Set<Integer> availParts
     ) {
         return IntStream.range(0, affCache.partitions())
-            .filter(p -> affCache.idealAssignment().assignment().get(p).contains(node) && availableParts.contains(p))
+            .filter(p -> affCache.idealAssignment().assignment().get(p).contains(node) && availParts.contains(p))
             .mapToObj(PartitionRestoreFuture::new)
             .collect(Collectors.toSet());
     }

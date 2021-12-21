@@ -109,13 +109,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithEmptyPartitions() throws Exception {
         int keysCnt = dfltCacheCfg.getAffinity().partitions() / 2;
 
-        // Add only 1 key (only 1 partition will be created on the disk).
-        startGridsWithSnapshot(1, keysCnt, false);
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false);
 
-        // The restore operation hangs during the "preload" phase.
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
-        assertCacheKeys(grid(0).cache(DEFAULT_CACHE_NAME), keysCnt);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
 
     /**
