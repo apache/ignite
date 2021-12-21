@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     /// <summary>
     /// Implementation of client service descriptor.
     /// </summary>
-    public class ClientServiceDescriptor : IClientServiceDescriptor
+    internal class ClientServiceDescriptor : IClientServiceDescriptor
     {
         /// <summary>
         /// Constructor
