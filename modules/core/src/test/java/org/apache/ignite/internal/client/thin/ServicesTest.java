@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.binary.BinaryArray;
@@ -38,6 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Checks service invocation for thin client.
@@ -282,6 +284,69 @@ public class ServicesTest extends AbstractThinClientTest {
                 TestService.latch = null;
             }
         }
+    }
+
+    /** Test service descriptors returned correctly. */
+    @Test
+    public void testServiceDescriptors() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            Collection<ClientServiceDescriptor> svcs = client.services().serviceDescriptors();
+
+            assertNotNull(svcs);
+
+            assertEquals(3, svcs.size());
+
+            assertTrue(svcs.stream().filter(svc -> svc.name().equals(NODE_ID_SERVICE_NAME)).peek(svc -> {
+                assertEquals(NODE_ID_SERVICE_NAME, svc.name());
+                assertEquals(TestNodeIdService.class.getName(), svc.serviceClass());
+                assertEquals(0, svc.totalCount());
+                assertEquals(1, svc.maxPerNodeCount());
+                assertNull(svc.cacheName());
+                assertEquals(grid(0).localNode().id(), svc.originNodeId());
+                assertEquals((byte)0, svc.platformId());
+
+                assertDescriptorsEquals(svc, client.services().serviceDescriptor(NODE_ID_SERVICE_NAME));
+            }).findFirst().isPresent());
+
+            assertTrue(svcs.stream().filter(svc -> svc.name().equals(NODE_SINGLTON_SERVICE_NAME)).peek(svc -> {
+                assertEquals(NODE_SINGLTON_SERVICE_NAME, svc.name());
+                assertEquals(TestService.class.getName(), svc.serviceClass());
+                assertEquals(0, svc.totalCount());
+                assertEquals(1, svc.maxPerNodeCount());
+                assertNull(svc.cacheName());
+                assertEquals(grid(0).localNode().id(), svc.originNodeId());
+                assertEquals((byte)0, svc.platformId());
+
+                assertDescriptorsEquals(svc, client.services().serviceDescriptor(NODE_SINGLTON_SERVICE_NAME));
+            }).findFirst().isPresent());
+
+            assertTrue(svcs.stream().filter(svc -> svc.name().equals(CLUSTER_SINGLTON_SERVICE_NAME)).peek(svc -> {
+                assertEquals(CLUSTER_SINGLTON_SERVICE_NAME, svc.name());
+                assertEquals(TestService.class.getName(), svc.serviceClass());
+                assertEquals(1, svc.totalCount());
+                assertEquals(1, svc.maxPerNodeCount());
+                assertEquals(DEFAULT_CACHE_NAME, svc.cacheName());
+                assertEquals(grid(0).localNode().id(), svc.originNodeId());
+                assertEquals((byte)0, svc.platformId());
+
+                assertDescriptorsEquals(svc, client.services().serviceDescriptor(CLUSTER_SINGLTON_SERVICE_NAME));
+            }).findFirst().isPresent());
+
+            assertThrowsWithCause(() -> {
+                client.services().serviceDescriptor("unknown");
+            }, ClientException.class);
+        }
+    }
+
+    /** */
+    private void assertDescriptorsEquals(ClientServiceDescriptor svc, ClientServiceDescriptor svc1) {
+        assertEquals(svc1.name(), svc.name());
+        assertEquals(svc1.serviceClass(), svc.serviceClass());
+        assertEquals(svc1.totalCount(), svc.totalCount());
+        assertEquals(svc1.maxPerNodeCount(), svc.maxPerNodeCount());
+        assertEquals(svc1.cacheName(), svc.cacheName());
+        assertEquals(svc1.originNodeId(), svc.originNodeId());
+        assertEquals(svc1.platformId(), svc.platformId());
     }
 
     /** */

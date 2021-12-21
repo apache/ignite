@@ -31,14 +31,14 @@ import org.apache.ignite.lang.IgnitePredicate;
  * <pre name="code" class="java">
  * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
- * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg1 = new ServiceConfiguration();
  *
  * svcCfg1.setName("myClusterSingletonService");
  * svcCfg1.setMaxPerNodeCount(1);
  * svcCfg1.setTotalCount(1);
  * svcCfg1.setService(new MyClusterSingletonService());
  *
- * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg2 = new ServiceConfiguration();
  *
  * svcCfg2.setName("myNodeSingletonService");
  * svcCfg2.setMaxPerNodeCount(1);
@@ -76,6 +76,25 @@ public class ServiceConfiguration implements Serializable {
     /** Node filter. */
     @GridToStringExclude
     protected IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** Default constructor. */
+    public ServiceConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * Copy constructor.
+     * @param cfg Configuration to copy.
+     */
+    public ServiceConfiguration(ServiceConfiguration cfg) {
+        name = cfg.name;
+        svc = cfg.svc;
+        totalCnt = cfg.totalCnt;
+        maxPerNodeCnt = cfg.maxPerNodeCnt;
+        cacheName = cfg.cacheName;
+        affKey = cfg.affKey;
+        nodeFilter = cfg.nodeFilter;
+    }
 
     /**
      * Gets service name.
