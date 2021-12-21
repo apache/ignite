@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Services;
@@ -572,21 +573,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             DeployAndGetTestService();
 
-            var svcs = Client.GetServices().ServiceDescriptors();
+            var svcs = Client.GetServices().GetServiceDescriptors();
 
             Assert.AreEqual(1, svcs.Count);
 
             var svc = svcs.First();
 
             Assert.AreEqual(ServiceName, svc.Name);
-            Assert.AreEqual("org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl", svc.ServiceClass);
+            Assert.AreEqual(
+                "org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl",
+                svc.ServiceClass
+            );
             Assert.AreEqual(1, svc.TotalCount);
             Assert.AreEqual(1, svc.MaxPerNodeCount);
             Assert.IsNull(svc.CacheName);
             Assert.AreEqual(Ignition.GetIgnite().GetCluster().GetLocalNode().Id, svc.OriginNodeId);
-            Assert.AreEqual(1, svc.PlatformId);
+            Assert.AreEqual(PlatformType.DotNet, svc.PlatformType);
 
-            var svc1 = Client.GetServices().ServiceDescriptor(ServiceName);
+            var svc1 = Client.GetServices().GetServiceDescriptor(ServiceName);
 
             Assert.AreEqual(svc.Name, svc1.Name);
             Assert.AreEqual(svc.ServiceClass, svc1.ServiceClass);
@@ -594,7 +598,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(svc.MaxPerNodeCount, svc1.MaxPerNodeCount);
             Assert.AreEqual(svc.CacheName, svc1.CacheName);
             Assert.AreEqual(svc.OriginNodeId, svc1.OriginNodeId);
-            Assert.AreEqual(svc.PlatformId, svc1.PlatformId);
+            Assert.AreEqual(svc.PlatformType, svc1.PlatformType);
         }
 
         /// <summary>

@@ -130,6 +130,33 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
 
         /** <inheritdoc /> */
+        public ICollection<IClientServiceDescriptor> GetServiceDescriptors()
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptors,
+                ctx => { },
+                ctx =>
+                {
+                    var cnt = ctx.Reader.ReadInt();
+                    var res = new List<IClientServiceDescriptor>(cnt);
+
+                    for (var i = 0; i < cnt; i++)
+                        res.Add(new ClientServiceDescriptor(ctx.Reader));
+
+                    return res;
+                });
+        }
+
+        /** <inheritdoc /> */
+        public IClientServiceDescriptor GetServiceDescriptor(string serviceName)
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptor,
+                ctx => ctx.Writer.WriteString(serviceName),
+                ctx => new ClientServiceDescriptor(ctx.Reader));
+        }
+
+        /** <inheritdoc /> */
         public IServicesClient WithKeepBinary()
         {
             return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _timeout);

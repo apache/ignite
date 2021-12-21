@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common
-{
-    /// <summary>
-    /// Represents an Ignite platform.
-    /// </summary>
-    internal enum PlatformType
-    {
-        /// <summary>
-        /// Java platform.
-        /// </summary>
-        Java = 0,
+package org.apache.ignite.platform;
 
-        /// <summary>
-        /// .NET platform.
-        /// </summary>
-        DotNet = 1
-    }
+/**
+ * Interop platform type.
+ */
+public enum PlatformType {
+    /** Java platform. */
+    JAVA,
+
+    /** .NET platform. */
+    DOTNET
 }

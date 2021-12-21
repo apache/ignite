@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Client.Services
 {
     using System;
+    using Apache.Ignite.Core.Platform;
 
     /// <summary>
     /// Descriptor of Service.
@@ -62,13 +63,9 @@ namespace Apache.Ignite.Core.Client.Services
         Guid? OriginNodeId { get; }
 
         /// <summary>
-        /// Platform id.
-        /// <ul>
-        /// <li>0 is Java platform service.</li>
-        /// <li>1 is .Net platform service.</li>
-        /// </ul>
+        /// Platform type.
         /// </summary>
-        /// <returns>Platform id.</returns>
-        byte PlatformId { get; }
+        /// <returns>Platform type.</returns>
+        PlatformType PlatformType { get; }
     }
 }

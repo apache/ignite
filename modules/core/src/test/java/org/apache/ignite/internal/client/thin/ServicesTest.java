@@ -32,6 +32,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -303,7 +304,7 @@ public class ServicesTest extends AbstractThinClientTest {
                 assertEquals(1, svc.maxPerNodeCount());
                 assertNull(svc.cacheName());
                 assertEquals(grid(0).localNode().id(), svc.originNodeId());
-                assertEquals((byte)0, svc.platformId());
+                assertEquals(PlatformType.JAVA, svc.platformType());
 
                 assertDescriptorsEquals(svc, client.services().serviceDescriptor(NODE_ID_SERVICE_NAME));
             }).findFirst().isPresent());
@@ -315,7 +316,7 @@ public class ServicesTest extends AbstractThinClientTest {
                 assertEquals(1, svc.maxPerNodeCount());
                 assertNull(svc.cacheName());
                 assertEquals(grid(0).localNode().id(), svc.originNodeId());
-                assertEquals((byte)0, svc.platformId());
+                assertEquals(PlatformType.JAVA, svc.platformType());
 
                 assertDescriptorsEquals(svc, client.services().serviceDescriptor(NODE_SINGLTON_SERVICE_NAME));
             }).findFirst().isPresent());
@@ -327,7 +328,7 @@ public class ServicesTest extends AbstractThinClientTest {
                 assertEquals(1, svc.maxPerNodeCount());
                 assertEquals(DEFAULT_CACHE_NAME, svc.cacheName());
                 assertEquals(grid(0).localNode().id(), svc.originNodeId());
-                assertEquals((byte)0, svc.platformId());
+                assertEquals(PlatformType.JAVA, svc.platformType());
 
                 assertDescriptorsEquals(svc, client.services().serviceDescriptor(CLUSTER_SINGLTON_SERVICE_NAME));
             }).findFirst().isPresent());
@@ -346,7 +347,7 @@ public class ServicesTest extends AbstractThinClientTest {
         assertEquals(svc1.maxPerNodeCount(), svc.maxPerNodeCount());
         assertEquals(svc1.cacheName(), svc.cacheName());
         assertEquals(svc1.originNodeId(), svc.originNodeId());
-        assertEquals(svc1.platformId(), svc.platformId());
+        assertEquals(svc1.platformType(), svc.platformType());
     }
 
     /** */
