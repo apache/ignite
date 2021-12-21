@@ -1014,8 +1014,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceThinClient()
         {
-            var svc = _thinClient.GetServices().ForDotNetService().GetServiceProxy<IJavaService>(PlatformSvcName);
-            var binSvc = _thinClient.GetServices().ForDotNetService().WithKeepBinary().WithServerKeepBinary()
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName);
+            var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(PlatformSvcName);
 
             DoAllServiceTests(svc, binSvc, false, true, false);

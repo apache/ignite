@@ -55,9 +55,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         private readonly bool _serverKeepBinary;
 
         /** */
-        private readonly PlatformType _platformType;
-
-        /** */
         private readonly TimeSpan _timeout;
 
         /// <summary>
@@ -68,7 +65,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             IClientClusterGroup clusterGroup = null,
             bool keepBinary = false,
             bool serverKeepBinary = false,
-            PlatformType platformType = PlatformType.Java,
             TimeSpan timeout = default(TimeSpan))
         {
             Debug.Assert(ignite != null);
@@ -77,7 +73,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             _clusterGroup = clusterGroup;
             _keepBinary = keepBinary;
             _serverKeepBinary = serverKeepBinary;
-            _platformType = platformType;
             _timeout = timeout;
         }
 
@@ -92,7 +87,13 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         {
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
 
-            return ServiceProxyFactory<T>.CreateProxy((method, args) => InvokeProxyMethod(serviceName, method, args));
+            var platformType = ServiceDescriptor(serviceName).PlatformId == 0
+                ? PlatformType.Java
+                : PlatformType.DotNet;
+
+            return ServiceProxyFactory<T>.CreateProxy(
+                (method, args) => InvokeProxyMethod(serviceName, method, args, platformType)
+            );
         }
 
         /** <inheritdoc /> */
@@ -131,24 +132,19 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /** <inheritdoc /> */
         public IServicesClient WithKeepBinary()
         {
-            return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _platformType, _timeout);
+            return new ServicesClient(_ignite, _clusterGroup, true, _serverKeepBinary, _timeout);
         }
 
         /** <inheritdoc /> */
         public IServicesClient WithServerKeepBinary()
         {
-            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _platformType, _timeout);
-        }
-
-        public IServicesClient ForDotNetService()
-        {
-            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, _serverKeepBinary, PlatformType.DotNet, _timeout);
+            return new ServicesClient(_ignite, _clusterGroup, _keepBinary, true, _timeout);
         }
 
         /// <summary>
         /// Invokes the proxy method.
         /// </summary>
-        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args)
+        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args, PlatformType platformType)
         {
             return _ignite.Socket.DoOutInOp(
                 ClientOp.ServiceInvoke,
@@ -182,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                     w.WriteString(method.Name);
 
-                    ServiceProxySerializer.WriteMethodArguments(w, null, args, _platformType);
+                    ServiceProxySerializer.WriteMethodArguments(w, null, args, platformType);
                 },
                 ctx =>
                 {

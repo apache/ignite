@@ -66,12 +66,5 @@ namespace Apache.Ignite.Core.Client.Services
         /// </summary>
         /// <returns>Instance with server-side binary mode enabled.</returns>
         IServicesClient WithServerKeepBinary();
-
-        /// <summary>
-        /// Returns an instance for obtaining .Net services.
-        /// Service method serialization and deserialization will be .Net specific.
-        /// </summary>
-        /// <returns>Instance for obtaining platform services.</returns>
-        IServicesClient ForDotNetService();
     }
 }

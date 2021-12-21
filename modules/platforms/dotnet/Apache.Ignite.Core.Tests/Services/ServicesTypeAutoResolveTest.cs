@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestPlatformServiceThinClient()
         {
-            DoTestService(_thinClient.GetServices().ForDotNetService().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
