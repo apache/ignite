@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientServiceDescriptor" /> class.
         /// </summary>
-        /// <param name="reader">Reader</param>
+        /// <param name="reader">Reader.</param>
         public ClientServiceDescriptor(IBinaryRawReader reader)
         {
             if (reader == null)
