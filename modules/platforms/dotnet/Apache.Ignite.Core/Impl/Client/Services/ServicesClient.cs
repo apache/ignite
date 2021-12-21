@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClientServiceDescriptor> ServiceDescriptors()
+        public ICollection<IClientServiceDescriptor> GetServiceDescriptors()
         {
             return _ignite.Socket.DoOutInOp(
                 ClientOp.ServiceGetDescriptors,
@@ -109,18 +109,12 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
 
         /** <inheritdoc /> */
-        public IClientServiceDescriptor ServiceDescriptor(string serviceName)
+        public IClientServiceDescriptor GetServiceDescriptor(string serviceName)
         {
             return _ignite.Socket.DoOutInOp(
                 ClientOp.ServiceGetDescriptor,
                 ctx => ctx.Writer.WriteString(serviceName),
                 ctx => new ClientServiceDescriptor(ctx.Reader));
-        }
-
-        /** */
-        private IClientServiceDescriptor ReadServiceDescriptor(BinaryReader argReader)
-        {
-            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */

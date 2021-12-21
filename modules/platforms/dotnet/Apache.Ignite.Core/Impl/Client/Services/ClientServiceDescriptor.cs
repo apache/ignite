@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Services
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Services;
 
@@ -42,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             MaxPerNodeCount = reader.ReadInt();
             CacheName = reader.ReadString();
             OriginNodeId = reader.ReadGuid();
-            PlatformId = reader.ReadByte();
+            PlatformType = (Platform.PlatformType) reader.ReadByte();
         }
 
         /** <inheritdoc /> */
@@ -64,6 +63,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         public Guid? OriginNodeId { get; private set; }
 
         /** <inheritdoc /> */
-        public byte PlatformId { get; private set; }
+        public Platform.PlatformType PlatformType { get; private set; }
     }
 }

@@ -44,14 +44,14 @@ namespace Apache.Ignite.Core.Client.Services
         /// Gets metadata about all deployed services in the grid.
         /// </summary>
         /// <returns>Metadata about all deployed services in the grid.</returns>
-        ICollection<IClientServiceDescriptor> ServiceDescriptors();
+        ICollection<IClientServiceDescriptor> GetServiceDescriptors();
 
         /// <summary>
         /// Gets metadata about deployed services in the grid.
         /// </summary>
         /// <param name="serviceName">Service name</param>
         /// <returns>Metadata about all deployed services in the grid.</returns>
-        IClientServiceDescriptor ServiceDescriptor(string serviceName);
+        IClientServiceDescriptor GetServiceDescriptor(string serviceName);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.
