@@ -180,6 +180,7 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
         return (K)cfg.getAffinityKey();
     }
