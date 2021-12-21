@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     internal class ClientServiceDescriptor : IClientServiceDescriptor
     {
         /// <summary>
-        /// Constructor
+        /// Initializes a new instance of the <see cref="ClientServiceDescriptor" /> class.
         /// </summary>
         /// <param name="reader">Reader</param>
         public ClientServiceDescriptor(IBinaryRawReader reader)
