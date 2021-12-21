@@ -61,11 +61,6 @@ public interface ClientServices {
     /**
      * Gets metadata about all deployed services in the grid.
      *
-     * * .net implementation.
-     * * exception for previous server version test (backward compatibility).
-     * * ability to work of previous clinet (do we really need it?).
-     * * empty list test.
-     *
      * @return Metadata about all deployed services in the grid.
      */
     public Collection<ClientServiceDescriptor> serviceDescriptors();
