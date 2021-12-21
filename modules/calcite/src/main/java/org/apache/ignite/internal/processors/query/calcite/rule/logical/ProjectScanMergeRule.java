@@ -128,9 +128,6 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         else
             projects = RexUtils.replaceInputRefs(projects);
 
-        if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
-            projects = null;
-
         if (scanProjects != null) {
             if (projects != null) {
                 // Merge projects.
@@ -139,14 +136,13 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                         return scanProjects.get(ref.getIndex());
                     }
                 }.apply(projects);
-
-                // Check again after merge.
-                if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
-                    projects = null;
             }
             else
                 projects = scanProjects;
         }
+
+        if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
+            projects = null;
 
         call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColumns));
 

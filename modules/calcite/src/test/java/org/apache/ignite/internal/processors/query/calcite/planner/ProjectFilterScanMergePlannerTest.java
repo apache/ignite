@@ -83,7 +83,6 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
         );
     }
 
-
     /** */
     @Test
     public void testProjectFilterMergeIndex() throws Exception {
@@ -163,18 +162,17 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testIdentityFilterProjectMerge() throws Exception {
-        // The same as two projects merge, but outer project is identity and should be eliminated by project to scan
-        // merge rule.
-        String sql = "SELECT (SELECT a FROM (SELECT c, a+1 AS a FROM tbl) AS t2 WHERE t2.c = t1.c) FROM tbl AS t1";
+        // The same as two projects merge, but outer project is identity and should be eliminated together with inner
+        // project by project to scan merge rule.
+        String sql = "SELECT (SELECT a FROM (SELECT a, a+1 FROM tbl) AS t2 WHERE t2.a = t1.a) FROM tbl AS t1";
 
         assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteAggregate.class)
             .and(input(isInstanceOf(IgniteTableScan.class)
-                .and(scan -> scan.projects() != null)
-                .and(scan -> "[+($t0, 1)]".equals(scan.projects().toString()))
+                .and(scan -> scan.projects() == null)
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=($t1, $cor0.C)".equals(scan.condition().toString()))
-                .and(scan -> ImmutableBitSet.of(0, 2).equals(scan.requiredColumns()))
-            ))));
+                .and(scan -> "=($t0, $cor0.A)".equals(scan.condition().toString()))
+                .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
+            ))), "ProjectFilterTransposeRule");
     }
 
     /** */

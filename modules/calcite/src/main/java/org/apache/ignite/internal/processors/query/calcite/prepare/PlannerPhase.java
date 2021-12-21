@@ -73,10 +73,12 @@ public enum PlannerPhase {
     HEP_DECORRELATE("Heuristic phase to decorrelate subqueries") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return RuleSets.ofList(
-                CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
-                CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+            return ctx.rules(
+                RuleSets.ofList(
+                    CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
+                    CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
+                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+                )
             );
         }
 
@@ -90,15 +92,17 @@ public enum PlannerPhase {
     HEP_FILTER_PUSH_DOWN("Heuristic phase to push down filters") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return RuleSets.ofList(
-                FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+            return ctx.rules(
+                RuleSets.ofList(
+                    FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
 
-                CoreRules.FILTER_MERGE,
-                CoreRules.FILTER_AGGREGATE_TRANSPOSE,
-                CoreRules.FILTER_SET_OP_TRANSPOSE,
-                CoreRules.JOIN_CONDITION_PUSH,
-                CoreRules.FILTER_INTO_JOIN,
-                CoreRules.FILTER_PROJECT_TRANSPOSE
+                    CoreRules.FILTER_MERGE,
+                    CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+                    CoreRules.FILTER_SET_OP_TRANSPOSE,
+                    CoreRules.JOIN_CONDITION_PUSH,
+                    CoreRules.FILTER_INTO_JOIN,
+                    CoreRules.FILTER_PROJECT_TRANSPOSE
+                )
             );
         }
 
@@ -112,13 +116,15 @@ public enum PlannerPhase {
     HEP_PROJECT_PUSH_DOWN("Heuristic phase to push down and merge projects") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return RuleSets.ofList(
-                ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+            return ctx.rules(
+                RuleSets.ofList(
+                    ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
 
-                CoreRules.JOIN_PUSH_EXPRESSIONS,
-                CoreRules.PROJECT_MERGE,
-                CoreRules.PROJECT_REMOVE,
-                CoreRules.PROJECT_FILTER_TRANSPOSE
+                    CoreRules.JOIN_PUSH_EXPRESSIONS,
+                    CoreRules.PROJECT_MERGE,
+                    CoreRules.PROJECT_REMOVE,
+                    CoreRules.PROJECT_FILTER_TRANSPOSE
+                )
             );
         }
 
