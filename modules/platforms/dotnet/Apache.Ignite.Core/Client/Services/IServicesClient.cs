@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Client.Services
         ICollection<IClientServiceDescriptor> GetServiceDescriptors();
 
         /// <summary>
-        /// Gets metadata about deployed services in the grid.
+        /// Gets metadata about service deployed in the grid.
         /// </summary>
         /// <param name="serviceName">Service name</param>
         /// <returns>Metadata about all deployed services in the grid.</returns>
