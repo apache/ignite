@@ -179,6 +179,30 @@ public class IgniteRpcClient implements RpcClientEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void stopBlock(int cnt) {
+        ArrayList<Object[]> msgs = new ArrayList<>();
+
+        synchronized (this) {
+            while(cnt-- > 0) {
+                Object[] tmp = blockedMsgs.poll();
+
+                if (tmp == null)
+                    break;
+
+                msgs.add(tmp);
+            }
+
+            blockPred = null;
+        }
+
+        for (Object[] msg : msgs) {
+            Runnable r = (Runnable) msg[4];
+
+            r.run();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void recordMessages(BiPredicate<Object, String> predicate) {
         this.recordPred = predicate;
     }

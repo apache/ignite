@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.util;
 
 import java.io.Serializable;
+import org.apache.ignite.network.NetworkAddress;
 
 /**
  * A IP address with port.
@@ -31,6 +32,10 @@ public class Endpoint implements Copiable<Endpoint>, Serializable {
 
     public Endpoint() {
         super();
+    }
+
+    public Endpoint(NetworkAddress addr) {
+        this(addr.host(), addr.port());
     }
 
     public Endpoint(String address, int port) {

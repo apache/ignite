@@ -1833,11 +1833,18 @@ public class NodeImpl implements Node, RaftServerService {
                         stepDown(request.term(), false, new Status(RaftError.EHIGHERTERMRESPONSE,
                             "Raft node receives higher term RequestVoteRequest."));
                     }
+                    else if (candidateId.equals(leaderId)) { // Already follows a leader in this term.
+                        LOG.info("Node {} ignores RequestVoteRequest from {}, term={}, currTerm={}.", getNodeId(),
+                            request.serverId(), request.term(), this.currTerm);
+
+                        break;
+                    }
                 }
                 else {
                     // ignore older term
-                    LOG.info("Node {} ignore RequestVoteRequest from {}, term={}, currTerm={}.", getNodeId(),
+                    LOG.info("Node {} ignores RequestVoteRequest from {}, term={}, currTerm={}.", getNodeId(),
                         request.serverId(), request.term(), this.currTerm);
+
                     break;
                 }
 

@@ -29,13 +29,17 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
+import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
+import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.entity.EnumOutter;
 import org.apache.ignite.raft.jraft.entity.LogEntry;
 import org.apache.ignite.raft.jraft.entity.LogId;
 import org.apache.ignite.raft.jraft.entity.PeerId;
+import org.apache.ignite.raft.jraft.rpc.RpcClientEx;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
+import org.apache.ignite.raft.jraft.rpc.impl.core.DefaultRaftClientService;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.mockito.ArgumentCaptor;
 
@@ -195,5 +199,19 @@ public class TestUtils {
                 noneMatch(t -> t.getName().contains("JRaft")), 5_000),
             Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().contains("JRaft")).
                 sorted(comparing(Thread::getName)).collect(toList()).toString());
+    }
+
+    /**
+     * Returns a message sender for this node.
+     *
+     * @param node The node.
+     * @return The message sender.
+     */
+    public static RpcClientEx sender(Node node) {
+        NodeImpl node0 = (NodeImpl) node;
+
+        DefaultRaftClientService rpcService = (DefaultRaftClientService) node0.getRpcClientService();
+
+        return (RpcClientEx) rpcService.getRpcClient();
     }
 }

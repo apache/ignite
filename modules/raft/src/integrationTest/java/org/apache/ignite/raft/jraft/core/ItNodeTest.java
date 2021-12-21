@@ -37,6 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -2727,6 +2728,67 @@ public class ItNodeTest {
         }
 
         cluster.ensureSame();
+    }
+
+    @Test
+    public void testLeaderPropagatedBeforeVote() throws Exception {
+        // start five nodes
+        List<PeerId> peers = TestUtils.generatePeers(3);
+
+        cluster = new TestCluster("unitest", dataPath, peers, 3_000, testInfo);
+
+        for (PeerId peer : peers) {
+            RaftOptions opts = new RaftOptions();
+            opts.setElectionHeartbeatFactor(4); // Election timeout divisor.
+            assertTrue(cluster.start(peer.getEndpoint(), false, 300, false, null, opts));
+        }
+
+        List<NodeImpl> nodes = cluster.getNodes();
+
+        AtomicReference<String> guard = new AtomicReference();
+
+        // Block only one vote message.
+        for (NodeImpl node : nodes) {
+            RpcClientEx rpcClientEx = TestUtils.sender(node);
+            rpcClientEx.recordMessages((msg, nodeId) -> true);
+            rpcClientEx.blockMessages((msg, nodeId) -> {
+                if (msg instanceof RpcRequests.RequestVoteRequest) {
+                    RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest)msg;
+
+                    if (msg0.preVote())
+                        return false;
+
+                    if (guard.compareAndSet(null, nodeId))
+                        return true;
+                }
+
+                if (msg instanceof RpcRequests.AppendEntriesRequest && nodeId.equals(guard.get())) {
+                    RpcRequests.AppendEntriesRequest tmp = (RpcRequests.AppendEntriesRequest) msg;
+
+                    if (tmp.entriesList() != null && !tmp.entriesList().isEmpty()) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+
+        cluster.waitLeader();
+        Node leader = cluster.getLeader();
+        cluster.ensureLeader(leader);
+
+        RpcClientEx client = TestUtils.sender(leader);
+
+        client.stopBlock(1); // Unblock vote message.
+
+        // The follower shouldn't stop following on receiving stale vote request.
+        Node follower = cluster.getNode(new Endpoint(NetworkAddress.from(guard.get())));
+
+        boolean res =
+            waitForCondition(() -> ((MockStateMachine) follower.getOptions().getFsm()).getOnStopFollowingTimes() != 0, 1_000);
+
+        assertFalse(res, "The follower shouldn't stop following");
     }
 
     @Test
