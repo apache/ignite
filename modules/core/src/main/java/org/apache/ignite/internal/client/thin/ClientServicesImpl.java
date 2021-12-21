@@ -29,12 +29,12 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
-import org.apache.ignite.client.PlatformType;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.platform.PlatformServiceMethod;
+import org.apache.ignite.platform.PlatformType;
 
 /**
  * Implementation of {@link ClientServices}.

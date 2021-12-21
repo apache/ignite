@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.platform;
 
 /**
- * Type of the platform service implemented on.
+ * Interop platform type.
  */
 public enum PlatformType {
-    /** Service implemented on java platform. */
+    /** Java platform. */
     JAVA,
 
-    /** Service implemented on .Net platform. */
+    /** .NET platform. */
     DOTNET
 }

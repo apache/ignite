@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.UUID;
 import org.apache.ignite.client.ClientServiceDescriptor;
-import org.apache.ignite.client.PlatformType;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.Service;
 import org.jetbrains.annotations.Nullable;
 
