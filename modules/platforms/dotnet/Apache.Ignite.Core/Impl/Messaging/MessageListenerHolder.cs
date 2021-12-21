@@ -73,13 +73,29 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns></returns>
         public int Invoke(IBinaryStream input)
         {
-            var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
+            Guid? nodeId;
+            object msg;
 
-            var nodeId = rawReader.ReadGuid();
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
-            Debug.Assert(nodeId != null);
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
 
-            return _invoker(nodeId.Value, rawReader.ReadObject<object>()) ? 1 : 0;
+            try
+            {
+                var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
+
+                nodeId = rawReader.ReadGuid();
+
+                Debug.Assert(nodeId != null);
+
+                msg = rawReader.ReadObject<object>();
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
+
+            return _invoker(nodeId.Value, msg) ? 1 : 0;
         }
 
         /// <summary>
