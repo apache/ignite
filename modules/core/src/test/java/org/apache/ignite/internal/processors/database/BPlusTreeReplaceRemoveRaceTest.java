@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.Externalizable;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -41,15 +39,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Test is based on {@link BPlusTreeSelfTest} and has a partial copy of its code.
@@ -147,16 +144,14 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
      */
     protected static class TestPairTree extends BPlusTree<Pair, Pair> {
         /**
-         * @param reuseList Reuse list.
-         * @param canGetRow Can get row from inner page.
+         * Constructor.
+         *
          * @param cacheId Cache ID.
          * @param pageMem Page memory.
          * @param metaPageId Meta page ID.
          * @throws IgniteCheckedException If failed.
          */
         public TestPairTree(
-            ReuseList reuseList,
-            boolean canGetRow,
             int cacheId,
             PageMemory pageMem,
             long metaPageId,
@@ -170,7 +165,7 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
                 null,
                 new AtomicLong(),
                 metaPageId,
-                reuseList,
+                null,
                 new IOVersions<>(new TestPairInnerIO()),
                 new IOVersions<>(new TestPairLeafIO()),
                 PageIdAllocator.FLAG_IDX,
@@ -347,60 +342,31 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
      *
      * Several iterations are required for this, given that there's no guaranteed way to force a tree to perform page
      * modifications in the desired order. Typically, less than {@code 10} attempts have been required to get a
-     * corrupted tree. Value {@code 50} is arbitrary and has been chosen to be big enough for test to fail in case of
+     * corrupted tree. Value {@code 100} is arbitrary and has been chosen to be big enough for test to fail in case of
      * regression, but not too big so that test won't run for too long.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testConcurrentPutRemove() throws Exception {
-        for (int i = 0; i < 50; i++) {
-            TestPairTree tree = new TestPairTree(
-                null,
-                true,
-                CACHE_ID,
-                pageMem,
-                allocateMetaPage().pageId(),
-                lockTrackerManager
-            );
-
-            tree.putx(new Pair(1, 0));
-            tree.putx(new Pair(2, 0));
-            tree.putx(new Pair(4, 0));
-            tree.putx(new Pair(6, 0));
-            tree.putx(new Pair(7, 0));
-
-            // Split root.
-            tree.putx(new Pair(5, 0));
-
-            // Split its left subtree.
-            tree.putx(new Pair(3, 0));
+        for (int i = 0; i < 100; i++) {
+            TestPairTree tree = prepareBPlusTree();
 
             // Exact tree from the description is constructed at this point.
             CyclicBarrier barrier = new CyclicBarrier(2);
 
             // This is the replace operation.
-            IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(() -> {
-                try {
-                    barrier.await();
+            IgniteInternalFuture<?> putFut = runAsync(() -> {
+                barrier.await();
 
-                    tree.putx(new Pair(4, 999));
-                }
-                catch (IgniteCheckedException | BrokenBarrierException | InterruptedException e) {
-                    throw new IgniteException(e);
-                }
+                tree.putx(new Pair(4, 999));
             });
 
-            // This is the remove opertation.
-            IgniteInternalFuture<?> remFut = GridTestUtils.runAsync(() -> {
-                try {
-                    barrier.await();
+            // This is the remove operation.
+            IgniteInternalFuture<?> remFut = runAsync(() -> {
+                barrier.await();
 
-                    tree.removex(new Pair(5, -1));
-                }
-                catch (IgniteCheckedException | BrokenBarrierException | InterruptedException e) {
-                    throw new IgniteException(e);
-                }
+                tree.removex(new Pair(5, -1));
             });
 
             // Wait for both operations.
@@ -420,5 +386,85 @@ public class BPlusTreeReplaceRemoveRaceTest extends GridCommonAbstractTest {
             // Assert that it is valid.
             assertEquals(999, pair.getValue().intValue());
         }
+    }
+
+    /**
+     * Checks that there will be no corrupted B+tree during concurrent update and deletion
+     * of the same key that is contained in the inner and leaf nodes of the B+tree.
+     *
+     * NOTE: Test logic is the same as of {@link #testConcurrentPutRemove},
+     * the only difference is that it operates (puts and removes) on a single key.
+     * 
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConcurrentPutRemoveSameRow() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            TestPairTree tree = prepareBPlusTree();
+
+            // Exact tree from the description is constructed at this point.
+            CyclicBarrier barrier = new CyclicBarrier(2);
+
+            // This is the replace operation.
+            IgniteInternalFuture<?> putFut = runAsync(() -> {
+                barrier.await();
+
+                tree.putx(new Pair(5, 999));
+            });
+
+            // This is the remove operation.
+            IgniteInternalFuture<?> remFut = runAsync(() -> {
+                barrier.await();
+
+                tree.removex(new Pair(5, 0));
+            });
+
+            // Wait for both operations.
+            try {
+                putFut.get(1, TimeUnit.SECONDS);
+            }
+            finally {
+                remFut.get(1, TimeUnit.SECONDS);
+            }
+
+            // Just in case.
+            tree.validateTree();
+        }
+    }
+
+    /**
+     * Creates and fills a tree:
+     * <pre><code>
+     *                                    [ 5:0 ]
+     *                                /            \
+     *                 [ 2:0 | 4:0 ]                  [ 6:0 ]
+     *               /       |       \              /      |
+     * [ 1:0 | 2:0 ]->[ 3:0 | 4:0 ]->[ 5:0 ]->[ 6:0 ]->[ 7:0 ]
+     * </code></pre>
+     *
+     * @return New B+tree.
+     * @throws Exception If failed.
+     */
+    private TestPairTree prepareBPlusTree() throws Exception {
+        TestPairTree tree = new TestPairTree(
+            CACHE_ID,
+            pageMem,
+            allocateMetaPage().pageId(),
+            lockTrackerManager
+        );
+
+        tree.putx(new Pair(1, 0));
+        tree.putx(new Pair(2, 0));
+        tree.putx(new Pair(4, 0));
+        tree.putx(new Pair(6, 0));
+        tree.putx(new Pair(7, 0));
+
+        // Split root.
+        tree.putx(new Pair(5, 0));
+
+        // Split its left subtree.
+        tree.putx(new Pair(3, 0));
+
+        return tree;
     }
 }
