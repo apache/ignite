@@ -129,16 +129,12 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             projects = RexUtils.replaceInputRefs(projects);
 
         if (scanProjects != null) {
-            if (projects != null) {
-                // Merge projects.
-                projects = new RexShuttle() {
-                    @Override public RexNode visitLocalRef(RexLocalRef ref) {
-                        return scanProjects.get(ref.getIndex());
-                    }
-                }.apply(projects);
-            }
-            else
-                projects = scanProjects;
+            // Merge projects.
+            projects = new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                    return scanProjects.get(ref.getIndex());
+                }
+            }.apply(projects);
         }
 
         if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
