@@ -56,6 +56,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -597,7 +598,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Marshaller m = ctx.config().getMarshaller();
                         byte[] paramsBytes = U.marshal(m, args.toArray(new Object[0]));
                         final ClassLoader ldr = U.resolveClassLoader(ctx.config());
-                        Object[] params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+                        Object[] params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
+                            .unmarshal(paramsBytes, ldr));
 
                         H2Utils.bindParameters(stmt, F.asList(params));
 
