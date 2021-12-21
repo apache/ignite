@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 
@@ -26,12 +26,12 @@ import org.apache.ignite.mxbean.DataStorageMXBean;
  */
 public class DataStorageMXBeanImpl implements DataStorageMXBean {
     /** */
-    private final GridKernalContextImpl ctx;
+    private final GridKernalContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public DataStorageMXBeanImpl(GridKernalContextImpl ctx) {
+    public DataStorageMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

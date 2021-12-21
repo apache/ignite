@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -288,7 +287,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
+    @Override public void registerMxBeans() {
 
     }
 

@@ -62,7 +62,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFac
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
@@ -3039,10 +3038,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
+    @Override public void registerMxBeans() throws IgniteCheckedException {
         SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
 
-        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
+        ctx.mBeans().registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
     }
 
     /**

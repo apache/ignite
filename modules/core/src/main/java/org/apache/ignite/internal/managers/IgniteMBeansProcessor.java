@@ -22,11 +22,9 @@ import java.util.Set;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
-import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteMXBeanImpl;
 import org.apache.ignite.internal.QueryMXBeanImpl;
@@ -34,6 +32,7 @@ import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
@@ -65,15 +64,9 @@ import org.apache.ignite.mxbean.WorkersControlMXBean;
 /**
  * Class that registers and unregisters MBeans for kernal.
  */
-public class IgniteMBeansManager {
+public class IgniteMBeansProcessor extends GridProcessorAdapter {
     /** Ignite kernal */
     private final IgniteKernal kernal;
-
-    /** Ignite kernal context. */
-    private final GridKernalContextImpl ctx;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** MBean names stored to be unregistered later. */
     private final Set<ObjectName> mBeanNames = new HashSet<>();
@@ -81,10 +74,10 @@ public class IgniteMBeansManager {
     /**
      * @param kernal Grid kernal.
      */
-    public IgniteMBeansManager(IgniteKernal kernal) {
+    public IgniteMBeansProcessor(IgniteKernal kernal) {
+        super(kernal.context());
+
         this.kernal = kernal;
-        ctx = (GridKernalContextImpl)kernal.context();
-        log = ctx.log(IgniteMBeansManager.class);
     }
 
     /**
@@ -152,7 +145,7 @@ public class IgniteMBeansManager {
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
         registerMBean("Metrics", metricsMxBean.getClass().getSimpleName(), metricsMxBean, MetricsMxBean.class);
 
-        ctx.pools().registerMxBeans(this);
+        ctx.pools().registerMxBeans();
 
         if (U.IGNITE_TEST_FEATURES_ENABLED) {
             WorkersControlMXBean workerCtrlMXBean = new WorkersControlMXBeanImpl(ctx.workersRegistry());
@@ -168,7 +161,7 @@ public class IgniteMBeansManager {
             FailureHandlingMxBean.class);
 
         if (ctx.query().moduleEnabled())
-            ctx.query().getIndexing().registerMxBeans(this);
+            ctx.query().getIndexing().registerMxBeans();
 
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);
         registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,

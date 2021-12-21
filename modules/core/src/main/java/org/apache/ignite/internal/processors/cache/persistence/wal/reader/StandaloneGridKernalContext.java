@@ -40,6 +40,7 @@ import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.managers.IgniteMBeansProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -668,6 +669,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMBeansProcessor mBeans() {
         return null;
     }
 

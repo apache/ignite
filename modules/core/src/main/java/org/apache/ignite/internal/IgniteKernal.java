@@ -113,7 +113,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.GridManager;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.managers.IgniteMBeansProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -412,10 +412,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** The main kernal context which holds all the {@link GridComponent}s. */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
-
-    /** Helper which registers and unregisters MBeans. */
-    @GridToStringExclude
-    private IgniteMBeansManager mBeansMgr;
 
     /** Ignite configuration instance. */
     private IgniteConfiguration cfg;
@@ -1075,7 +1071,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(new DiagnosticProcessor(ctx));
 
-            mBeansMgr = new IgniteMBeansManager(this);
+            startProcessor(new IgniteMBeansProcessor(this));
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
@@ -1254,7 +1250,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 if (ctx.config().getPlatformConfiguration() != null)
                     startProcessor(new PlatformPluginProcessor(ctx));
 
-                mBeansMgr.registerMBeansDuringInitPhase();
+                ctx.mBeans().registerMBeansDuringInitPhase();
 
                 ctx.cluster().initDiagnosticListeners();
 
@@ -1348,7 +1344,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             ctx.cluster().registerMetrics();
 
             // Register MBeans.
-            mBeansMgr.registerMBeansAfterNodeStarted();
+            ctx.mBeans().registerMBeansAfterNodeStarted();
 
             boolean recon = false;
 
@@ -2580,7 +2576,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cache.blockGateways();
 
             // Unregister MBeans.
-            if (!mBeansMgr.unregisterAllMBeans())
+            if (!ctx.mBeans().unregisterAllMBeans())
                 errOnStop = true;
 
             // Stop components in reverse order.

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1030,45 +1029,44 @@ public class PoolProcessor extends GridProcessorAdapter {
     /**
      * Register thread pool JMX beans.
      *
-     * @param mbMgr Ignite MXBean manager.
      * @throws IgniteCheckedException On bean registration error.
      */
-    public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
-        registerExecutorMBean(mbMgr, "GridUtilityCacheExecutor", utilityCacheExecSvc);
-        registerExecutorMBean(mbMgr, "GridExecutionExecutor", execSvc);
-        registerExecutorMBean(mbMgr, "GridServicesExecutor", svcExecSvc);
-        registerExecutorMBean(mbMgr, "GridSystemExecutor", sysExecSvc);
-        registerExecutorMBean(mbMgr, "GridClassLoadingExecutor", p2pExecSvc);
-        registerExecutorMBean(mbMgr, "GridManagementExecutor", mgmtExecSvc);
-        registerExecutorMBean(mbMgr, "GridAffinityExecutor", affExecSvc);
-        registerExecutorMBean(mbMgr, "GridCallbackExecutor", callbackExecSvc);
-        registerExecutorMBean(mbMgr, "GridQueryExecutor", qryExecSvc);
-        registerExecutorMBean(mbMgr, "GridSchemaExecutor", schemaExecSvc);
-        registerExecutorMBean(mbMgr, "GridRebalanceExecutor", rebalanceExecSvc);
-        registerExecutorMBean(mbMgr, "GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
+    public void registerMxBeans() throws IgniteCheckedException {
+        registerExecutorMBean("GridUtilityCacheExecutor", utilityCacheExecSvc);
+        registerExecutorMBean("GridExecutionExecutor", execSvc);
+        registerExecutorMBean("GridServicesExecutor", svcExecSvc);
+        registerExecutorMBean("GridSystemExecutor", sysExecSvc);
+        registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
+        registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
+        registerExecutorMBean("GridAffinityExecutor", affExecSvc);
+        registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
+        registerExecutorMBean("GridQueryExecutor", qryExecSvc);
+        registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
+        registerExecutorMBean("GridRebalanceExecutor", rebalanceExecSvc);
+        registerExecutorMBean("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
-        registerStripedExecutorMBean(mbMgr, "GridDataStreamExecutor", dataStreamerExecSvc);
+        registerStripedExecutorMBean("GridDataStreamExecutor", dataStreamerExecSvc);
 
         if (idxExecSvc != null)
-            registerExecutorMBean(mbMgr, "GridIndexingExecutor", idxExecSvc);
+            registerExecutorMBean("GridIndexingExecutor", idxExecSvc);
 
         if (ctx.config().getConnectorConfiguration() != null)
-            registerExecutorMBean(mbMgr, "GridRestExecutor", restExecSvc);
+            registerExecutorMBean("GridRestExecutor", restExecSvc);
 
         if (stripedExecSvc != null) {
             // striped executor uses a custom adapter
-            registerStripedExecutorMBean(mbMgr, "StripedExecutor", stripedExecSvc);
+            registerStripedExecutorMBean("StripedExecutor", stripedExecSvc);
         }
 
         if (snpExecSvc != null)
-            registerExecutorMBean(mbMgr, "GridSnapshotExecutor", snpExecSvc);
+            registerExecutorMBean("GridSnapshotExecutor", snpExecSvc);
 
         if (thinClientExec != null)
-            registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
+            registerExecutorMBean("GridThinClientExecutor", thinClientExec);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
-                registerExecutorMBean(mbMgr, entry.getKey(), entry.getValue());
+                registerExecutorMBean(entry.getKey(), entry.getValue());
         }
     }
 
@@ -1079,8 +1077,8 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param exec Executor to register a bean for.
      * @throws IgniteCheckedException if registration fails.
      */
-    private void registerExecutorMBean(IgniteMBeansManager mgr, String name, ExecutorService exec) throws IgniteCheckedException {
-        mgr.registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
+    private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
+        ctx.mBeans().registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
     }
 
     /**
@@ -1090,8 +1088,8 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param exec Executor to register a bean for.
      * @throws IgniteCheckedException if registration fails.
      */
-    private void registerStripedExecutorMBean(IgniteMBeansManager mgr, String name, StripedExecutor exec) throws IgniteCheckedException {
-        mgr.registerMBean("Thread Pools", name, new StripedExecutorMXBeanAdapter(exec), StripedExecutorMXBean.class);
+    private void registerStripedExecutorMBean(String name, StripedExecutor exec) throws IgniteCheckedException {
+        ctx.mBeans().registerMBean("Thread Pools", name, new StripedExecutorMXBeanAdapter(exec), StripedExecutorMXBean.class);
     }
 
     /**

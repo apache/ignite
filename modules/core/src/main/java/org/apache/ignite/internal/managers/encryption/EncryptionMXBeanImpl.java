@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Collections;
-import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 
 /**
@@ -29,7 +29,7 @@ public class EncryptionMXBeanImpl implements EncryptionMXBean {
     private final GridEncryptionManager encryptionMgr;
 
     /** @param ctx Context. */
-    public EncryptionMXBeanImpl(GridKernalContextImpl ctx) {
+    public EncryptionMXBeanImpl(GridKernalContext ctx) {
         encryptionMgr = ctx.encryption();
     }
 

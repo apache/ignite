@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.managers.IgniteMBeansProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -357,6 +358,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
+    @GridToStringExclude
+    private IgniteMBeansProcessor mBeansProc;
+
+    /** */
     private Thread.UncaughtExceptionHandler hnd;
 
     /** */
@@ -592,6 +597,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
+        else if (comp instanceof IgniteMBeansProcessor)
+            mBeansProc = (IgniteMBeansProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1104,6 +1111,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
         return perfStatProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMBeansProcessor mBeans() {
+        return mBeansProc;
     }
 
     /** {@inheritDoc} */
