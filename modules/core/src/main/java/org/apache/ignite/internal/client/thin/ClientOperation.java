@@ -180,7 +180,13 @@ enum ClientOperation {
     COMPUTE_TASK_FINISHED(6001, ClientNotificationType.COMPUTE_TASK_FINISHED),
 
     /** Invoke service. */
-    SERVICE_INVOKE(7000);
+    SERVICE_INVOKE(7000),
+
+    /** Get service descriptors. */
+    SERVICE_GET_DESCRIPTORS(7001),
+
+    /** Get service descriptors. */
+    SERVICE_GET_DESCRIPTOR(7002);
 
     /** Code. */
     private final int code;
