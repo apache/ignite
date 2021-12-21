@@ -179,6 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /// <summary>
         /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
         /// </summary>
         [Test]
         public void TestJavaServiceThinClient()
@@ -187,7 +188,8 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
+        /// Tests Platform service invocation.
+        /// Types should be resolved implicitly.
         /// </summary>
         [Test]
         public void TestPlatformServiceThinClient()
