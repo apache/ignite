@@ -91,6 +91,10 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testCancelRestoreSnapshot() throws Exception {
+        // TODO IGNITE-14999 Support dynamic restoration of encrypted snapshots.
+        if (encryption)
+            return;
+
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
