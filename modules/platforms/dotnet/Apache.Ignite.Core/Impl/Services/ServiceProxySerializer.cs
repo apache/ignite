@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /// <summary>
-        /// Writes method arguments like required for specific platform
+        /// Writes method arguments like required for specific platform.
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="method">Method (optional, can be null).</param>
