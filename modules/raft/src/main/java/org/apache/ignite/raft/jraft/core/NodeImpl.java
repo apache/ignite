@@ -1158,7 +1158,7 @@ public class NodeImpl implements Node, RaftServerService {
 
     // should be in writeLock
     private void electSelf() {
-        long oldTerm;
+        long electSelfTerm;
         try {
             LOG.info("Node {} start vote and grant vote self, term={}.", getNodeId(), this.currTerm);
             if (!this.conf.contains(this.serverId)) {
@@ -1177,7 +1177,7 @@ public class NodeImpl implements Node, RaftServerService {
             LOG.debug("Node {} start vote timer, term={} .", getNodeId(), this.currTerm);
             this.voteTimer.start();
             this.voteCtx.init(this.conf.getConf(), this.conf.isStable() ? null : this.conf.getOldConf());
-            oldTerm = this.currTerm;
+            electSelfTerm = this.currTerm;
         }
         finally {
             this.writeLock.unlock();
@@ -1188,7 +1188,7 @@ public class NodeImpl implements Node, RaftServerService {
         this.writeLock.lock();
         try {
             // vote need defense ABA after unlock&writeLock
-            if (oldTerm != this.currTerm) {
+            if (electSelfTerm != this.currTerm) {
                 LOG.warn("Node {} raise term {} when getLastLogId.", getNodeId(), this.currTerm);
                 return;
             }
@@ -1202,14 +1202,14 @@ public class NodeImpl implements Node, RaftServerService {
                         LOG.warn("Node {} failed to init channel, address={}.", getNodeId(), peer.getEndpoint());
                         return ;
                     }
-                    final OnRequestVoteRpcDone done = new OnRequestVoteRpcDone(peer, this.currTerm, this);
+                    final OnRequestVoteRpcDone done = new OnRequestVoteRpcDone(peer, electSelfTerm, this);
                     done.request = raftOptions.getRaftMessagesFactory()
                             .requestVoteRequest()
                             .preVote(false) // It's not a pre-vote request.
                             .groupId(this.groupId)
                             .serverId(this.serverId.toString())
                             .peerId(peer.toString())
-                            .term(this.currTerm)
+                            .term(electSelfTerm)
                             .lastLogIndex(lastLogId.getIndex())
                             .lastLogTerm(lastLogId.getTerm())
                             .build();
@@ -1217,7 +1217,7 @@ public class NodeImpl implements Node, RaftServerService {
                 });
             }
 
-            this.metaStorage.setTermAndVotedFor(this.currTerm, this.serverId);
+            this.metaStorage.setTermAndVotedFor(electSelfTerm, this.serverId);
             this.voteCtx.grant(this.serverId);
             if (this.voteCtx.isGranted()) {
                 becomeLeader();
@@ -2719,7 +2719,7 @@ public class NodeImpl implements Node, RaftServerService {
 
     // in writeLock
     private void preVote() {
-        long oldTerm;
+        long preVoteTerm;
         try {
             LOG.info("Node {} term {} start preVote.", getNodeId(), this.currTerm);
             if (this.snapshotExecutor != null && this.snapshotExecutor.isInstallingSnapshot()) {
@@ -2732,7 +2732,7 @@ public class NodeImpl implements Node, RaftServerService {
                 LOG.warn("Node {} can't do preVote as it is not in conf <{}>.", getNodeId(), this.conf);
                 return;
             }
-            oldTerm = this.currTerm;
+            preVoteTerm = this.currTerm;
         }
         finally {
             this.writeLock.unlock();
@@ -2744,7 +2744,7 @@ public class NodeImpl implements Node, RaftServerService {
         this.writeLock.lock();
         try {
             // pre_vote need defense ABA after unlock&writeLock
-            if (oldTerm != this.currTerm) {
+            if (preVoteTerm != this.currTerm) {
                 LOG.warn("Node {} raise term {} when get lastLogId.", getNodeId(), this.currTerm);
                 return;
             }
@@ -2759,14 +2759,14 @@ public class NodeImpl implements Node, RaftServerService {
                         LOG.warn("Node {} failed to init channel, address={}.", getNodeId(), peer.getEndpoint());
                         return;
                     }
-                    final OnPreVoteRpcDone done = new OnPreVoteRpcDone(peer, this.currTerm);
+                    final OnPreVoteRpcDone done = new OnPreVoteRpcDone(peer, preVoteTerm);
                     done.request = raftOptions.getRaftMessagesFactory()
                             .requestVoteRequest()
                             .preVote(true) // it's a pre-vote request.
                             .groupId(this.groupId)
                             .serverId(this.serverId.toString())
                             .peerId(peer.toString())
-                            .term(this.currTerm + 1) // next term
+                            .term(preVoteTerm + 1) // next term
                             .lastLogIndex(lastLogId.getIndex())
                             .lastLogTerm(lastLogId.getTerm())
                             .build();

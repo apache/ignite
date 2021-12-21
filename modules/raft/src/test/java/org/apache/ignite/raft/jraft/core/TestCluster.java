@@ -74,7 +74,7 @@ public class TestCluster {
      * Important: due to sync disk ops (writing raft meta) during probe request processing this timeout should be high
      * enough to avoid test flakiness. Test environment might give another instability.
      */
-    private static final int ELECTION_TIMEOUT_MILLIS = 1000;
+    public static final int ELECTION_TIMEOUT_MILLIS = 1000;
 
     private static final IgniteLogger LOG = IgniteLogger.forClass(TestCluster.class);
 
