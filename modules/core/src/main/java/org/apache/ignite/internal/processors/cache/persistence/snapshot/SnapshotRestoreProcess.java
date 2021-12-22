@@ -42,7 +42,6 @@ import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -860,7 +859,10 @@ public class SnapshotRestoreProcess {
                         availParts.addAll(parts);
                 }
 
-                opCtx0.locProgress.put(grpId, nodeAffinityPartitions(affCache.get(cacheOrGrpName), locNode, availParts));
+                List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
+
+                opCtx0.locProgress.put(grpId, availParts.stream().filter(p -> assignment.get(p).contains(locNode))
+                    .map(PartitionRestoreFuture::new).collect(Collectors.toSet()));
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(opCtx0.locProgress.get(grpId)));
 
@@ -1311,23 +1313,6 @@ public class SnapshotRestoreProcess {
                 else
                     partFut.completeExceptionally(t);
             });
-    }
-
-    /**
-     * @param affCache Affinity cache.
-     * @param node Cluster node to get assigned partitions.
-     * @param availParts Partitions contained in the snapshot.
-     * @return The set of partition futures assigned to the given node.
-     */
-    private static Set<PartitionRestoreFuture> nodeAffinityPartitions(
-        GridAffinityAssignmentCache affCache,
-        ClusterNode node,
-        Set<Integer> availParts
-    ) {
-        return IntStream.range(0, affCache.partitions())
-            .filter(p -> affCache.idealAssignment().assignment().get(p).contains(node) && availParts.contains(p))
-            .mapToObj(PartitionRestoreFuture::new)
-            .collect(Collectors.toSet());
     }
 
     /**
