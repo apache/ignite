@@ -28,11 +28,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -257,9 +258,9 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
         checkClusterInReadOnlyMode(true, grid);
 
-        grid.utilityCache().put(new GridServiceAssignmentsKey("test"), "test");
+        grid.utilityCache().put(new UtilityCacheKey("test"), "test");
 
-        assertEquals("test", grid.utilityCache().get(new GridServiceAssignmentsKey("test")));
+        assertEquals("test", grid.utilityCache().get(new UtilityCacheKey("test")));
     }
 
     /** */
@@ -318,5 +319,39 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         assertCachesReadOnlyMode(readOnly, cacheNames());
 
         assertDataStreamerReadOnlyMode(readOnly, cacheNames());
+    }
+
+    /** */
+    public static class UtilityCacheKey extends GridCacheUtilityKey<UtilityCacheKey> {
+        /** Serial Version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Key. */
+        private final String key;
+
+        /** @param key Key. */
+        public UtilityCacheKey(String key) {
+            this.key = key;
+        }
+
+        /** @return Key. */
+        public String key() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean equalsx(UtilityCacheKey that) {
+            return key.equals(that.key());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return key.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(UtilityCacheKey.class, this);
+        }
     }
 }
