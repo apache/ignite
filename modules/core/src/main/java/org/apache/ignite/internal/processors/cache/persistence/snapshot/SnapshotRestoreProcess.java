@@ -839,6 +839,7 @@ public class SnapshotRestoreProcess {
             // First preload everything from the local node.
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
 
+            Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
 
@@ -868,8 +869,7 @@ public class SnapshotRestoreProcess {
                     .map(PartitionRestoreFuture::new)
                     .collect(Collectors.toSet());
 
-                opCtx0.locProgress.put(grpId, partFuts);
-
+                allParts.put(grpId, partFuts);
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(partFuts));
 
                 if (leftParts.isEmpty())
@@ -915,7 +915,7 @@ public class SnapshotRestoreProcess {
                         if (idxFile.exists()) {
                             PartitionRestoreFuture idxFut;
 
-                            opCtx0.locProgress.computeIfAbsent(grpId, g -> new HashSet<>())
+                            allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION));
 
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
@@ -968,7 +968,7 @@ public class SnapshotRestoreProcess {
                                     int grpId = CU.cacheId(cacheGroupName(snpFile.getParentFile()));
                                     int partId = partId(snpFile.getName());
 
-                                    PartitionRestoreFuture partFut = F.find(opCtx0.locProgress.get(grpId),
+                                    PartitionRestoreFuture partFut = F.find(allParts.get(grpId),
                                         null,
                                         new IgnitePredicate<PartitionRestoreFuture>() {
                                             @Override public boolean apply(PartitionRestoreFuture f) {
@@ -1007,12 +1007,12 @@ public class SnapshotRestoreProcess {
                 completeListExceptionally(rmtAwaitParts, e);
             }
 
-            List<PartitionRestoreFuture> allParts = opCtx0.locProgress.values().stream().flatMap(Collection::stream)
+            List<PartitionRestoreFuture> allPartFuts = allParts.values().stream().flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-            int size = allParts.size();
+            int size = allPartFuts.size();
 
-            CompletableFuture.allOf(allParts.toArray(new CompletableFuture[size]))
+            CompletableFuture.allOf(allPartFuts.toArray(new CompletableFuture[size]))
                 .runAfterBothAsync(metaFut, () -> {
                     try {
                         if (opCtx0.stopChecker.getAsBoolean())
@@ -1374,9 +1374,6 @@ public class SnapshotRestoreProcess {
 
         /** Stop condition checker. */
         private final BooleanSupplier stopChecker = () -> err.get() != null;
-
-        /** Progress of processing cache group partitions on the local node.*/
-        private final Map<Integer, Set<PartitionRestoreFuture>> locProgress = new HashMap<>();
 
         /**
          * The stop future responsible for stopping cache groups during the rollback phase. Will be completed when the rollback
