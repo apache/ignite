@@ -178,6 +178,33 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
     /** @throws Exception If failed. */
     @Test
+    public void testRestoreFromAnEmptyNode() throws Exception {
+        startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        // Start a new node without snapshot working directory.
+        Ignite emptyNode = startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
+
+        emptyNode.cluster().state(ClusterState.ACTIVE);
+
+        emptyNode.cache(DEFAULT_CACHE_NAME).destroy();
+        awaitPartitionMapExchange();
+
+        // Restore all cache groups.
+        emptyNode.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        awaitPartitionMapExchange(true, true, null, true);
+
+        for (Ignite grid : G.allGrids()) {
+            assertCacheKeys(grid.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+            assertCacheKeys(grid.cache(CACHE1), CACHE_KEYS_RANGE);
+            assertCacheKeys(grid.cache(CACHE2), CACHE_KEYS_RANGE);
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testRestoreNoRebalance() throws Exception {
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
         scc.cluster().state(ClusterState.ACTIVE);

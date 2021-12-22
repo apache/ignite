@@ -32,6 +32,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -1249,12 +1250,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     smfs.add(d.toFile());
             }
         }
+        catch (NoSuchFileException e) {
+            return Collections.emptyList();
+        }
         catch (IOException e) {
             throw new IgniteException(e);
         }
 
         if (smfs.isEmpty())
-            throw new IgniteException("Snapshot metadata files not found: " + snpName);
+            return Collections.emptyList();
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
