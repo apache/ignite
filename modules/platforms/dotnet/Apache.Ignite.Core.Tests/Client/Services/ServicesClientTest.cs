@@ -547,9 +547,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestNonExistentServiceNameCausesClientException()
         {
-            var svc = Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
-
-            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            var ex = Assert.Throws<IgniteClientException>(() => Client.GetServices().GetServiceProxy<ITestService>(ServiceName));
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
 
