@@ -87,9 +87,9 @@ namespace ignite
             {
                 Future<interop::SP_InteropMemory> rspFut = AsyncMessage(req);
 
-                std::cout << "=============== SyncMessage: Waiting for response... " << std::endl;
+//                std::cout << "=============== SyncMessage: Waiting for response... " << std::endl;
                 bool success = rspFut.WaitFor(timeout);
-                std::cout << "=============== SyncMessage: Wait result: " << success << std::endl;
+//                std::cout << "=============== SyncMessage: Wait result: " << success << std::endl;
 
                 if (!success)
                 {
@@ -103,9 +103,9 @@ namespace ignite
                     throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
                 }
 
-                std::cout << "=============== SyncMessage: Getting value... " << std::endl;
+//                std::cout << "=============== SyncMessage: Getting value... " << std::endl;
                 interop::SP_InteropMemory mem = rspFut.GetValue();
-                std::cout << "=============== SyncMessage: Got value" << std::endl;
+//                std::cout << "=============== SyncMessage: Got value" << std::endl;
 
                 interop::InteropInputStream inStream(mem.Get());
 
@@ -116,7 +116,7 @@ namespace ignite
 
                 rsp.Read(reader, currentVersion);
 
-                std::cout << "=============== SyncMessage: Read value" << std::endl;
+//                std::cout << "=============== SyncMessage: Read value" << std::endl;
             }
 
             int64_t DataChannel::GenerateRequestMessage(Request &req, interop::InteropMemory &mem)
@@ -150,7 +150,7 @@ namespace ignite
 
                 int64_t reqId = GenerateRequestMessage(req, *mem.Get());
 
-                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
+//                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
 
                 common::Promise<interop::SP_InteropMemory>* rsp;
 
@@ -197,6 +197,7 @@ namespace ignite
 
                 if (flags & Flag::NOTIFICATION)
                 {
+                    std::cout << "=============== ProcessMessage: NOTIFICATION" << std::endl;
                     common::concurrent::CsLockGuard lock(handlerMutex);
 
                     NotificationHandlerHolder& holder = handlerMap[rspId];
@@ -207,6 +208,8 @@ namespace ignite
                 }
                 else
                 {
+                    std::cout << "=============== ProcessMessage: RESPONSE" << std::endl;
+
                     common::concurrent::CsLockGuard lock(responseMutex);
 
                     ResponseMap::iterator it = responseMap.find(rspId);
@@ -255,6 +258,7 @@ namespace ignite
 
             bool DataChannel::Handshake(const ProtocolVersion& propVer)
             {
+                std::cout << "=============== Handshake: " << id  << ", " << propVer.ToString() << std::endl;
                 // Allocating 4 KB just in case.
                 enum {
                     BUFFER_SIZE = 1024 * 4
@@ -292,6 +296,7 @@ namespace ignite
 
             void DataChannel::OnHandshakeResponse(impl::interop::SP_InteropMemory msg)
             {
+                std::cout << "=============== OnHandshakeResponse: " << id << std::endl;
                 interop::InteropInputStream inStream(msg.Get());
 
                 inStream.Position(4);

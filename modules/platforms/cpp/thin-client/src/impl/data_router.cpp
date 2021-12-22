@@ -91,6 +91,8 @@ namespace ignite
 
                 channelsWaitPoint.WaitFor(channelsMutex, timeout);
 
+                std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "CONNECTED") << std::endl;
+
                 return !connectedChannels.empty();
             }
 
@@ -144,11 +146,7 @@ namespace ignite
 
                 ChannelsIdMap::iterator it = channels.find(id);
                 if (it != channels.end())
-                {
-                    std::cout << "=============== OnConnectionError: (it == channels.end()) = " << (it == channels.end()) << std::endl;
-                    std::cout << "=============== OnConnectionError: id = " << id << ", it->first = " << it->first << std::endl;
                     channel = it->second;
-                }
 
                 InvalidateChannel(channel);
             }

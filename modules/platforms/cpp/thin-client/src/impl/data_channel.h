@@ -177,6 +177,10 @@ namespace ignite
                 void DeserializeMessage(interop::InteropMemory* data, T& msg)
                 {
                     interop::InteropInputStream inStream(data);
+
+                    // Skipping size (4 bytes) and reqId (8 bytes)
+                    inStream.Position(12);
+
                     binary::BinaryReaderImpl reader(&inStream);
 
                     msg.Read(reader, currentVersion);

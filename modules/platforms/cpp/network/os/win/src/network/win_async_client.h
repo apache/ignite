@@ -33,6 +33,9 @@ namespace ignite
 {
     namespace network
     {
+        /**
+         * Operation kind.
+         */
         struct IoOperationKind
         {
             enum Type
@@ -75,6 +78,23 @@ namespace ignite
         {
         public:
             /**
+             * State.
+             */
+            struct State
+            {
+                enum Type
+                {
+                    CONNECTED,
+
+                    IN_POOL,
+
+                    SHUTDOWN,
+
+                    CLOSED,
+                };
+            };
+
+            /**
              * Constructor.
              *
              * @param socket Socket.
@@ -84,11 +104,33 @@ namespace ignite
 
             /**
              * Destructor.
+             *
+             * Should not be destructed from external threads.
+             * Can be destructed from WorkerThread.
              */
             ~WinAsyncClient();
 
             /**
+             * Shutdown client.
+             *
+             * Can be called from external threads.
+             * Can be called from WorkerThread.
+             */
+            void Shutdown();
+
+            /**
+             * Wait for pending IO calls and wait till all IO are complete and reported.
+             *
+             * Can be called from external threads.
+             * Can be called from WorkerThread.
+             */
+            void WaitForPendingIo();
+
+            /**
              * Close client.
+             *
+             * Should not be called from external threads.
+             * Can be called from WorkerThread.
              */
             void Close();
 
@@ -140,7 +182,7 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-                std::cout << "=============== WinAsyncClient: SetId " << id << ", " << socket << std::endl;
+//                std::cout << "=============== WinAsyncClient: SetId " << id << ", " << socket << std::endl;
 
                 this->id = id;
             }
@@ -186,11 +228,6 @@ namespace ignite
             }
 
             /**
-             * Wait for pending IO calls and wait till all IO are complete and reported.
-             */
-            void WaitForPendingIo();
-
-            /**
              * Process sent data.
              *
              * @param bytes Bytes.
@@ -213,7 +250,10 @@ namespace ignite
              * @warning Can only be called when holding sendCs lock.
              * @return @c true on success.
              */
-            bool SendNextPacket();
+            bool SendNextPacketLocked();
+
+            /** Client state. */
+            State::Type state;
 
             /** Socket. */
             SOCKET socket;

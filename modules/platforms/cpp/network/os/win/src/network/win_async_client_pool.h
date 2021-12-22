@@ -168,7 +168,7 @@ namespace ignite
                 /** Client pool. */
                 WinAsyncClientPool& clientPool;
 
-                /** Flag to signal that thread is stopping. */
+                /** Flag to signal that thread should stop. */
                 volatile bool stopping;
             };
 
@@ -183,10 +183,11 @@ namespace ignite
              * @warning May only be called in clientsCs critical section.
              * @return @c true if a new connection should be established.
              */
-            bool isConnectionNeeded() const;
+            bool isConnectionNeededLocked() const;
 
             /**
              * Add client to connection map. Notify user.
+             *
              * @param client Client.
              * @return Client ID.
              */
@@ -221,21 +222,22 @@ namespace ignite
 
             /**
              * Find client by ID.
+             *
              * @warning Should only be called with clientsCs lock held.
              * @param id Client ID.
              * @return Client. Null pointer if is not found.
              */
-            SP_WinAsyncClient LockedFindClient(uint64_t id) const;
+            SP_WinAsyncClient FindClientLocked(uint64_t id) const;
 
             /**
              * Throw window specific error with error code.
+             *
+             * @param msg Error message.
              */
             static void ThrowSystemError(const std::string& msg);
 
-            /**
-             * Throw WSA specific error with error code.
-             */
-            static void ThrowWsaError(const std::string& msg);
+            /** Flag indicating that pool is stopping. */
+            volatile bool stopping;
 
             /** Event handler. */
             AsyncHandler* asyncHandler;
@@ -257,6 +259,9 @@ namespace ignite
 
             /** Clients critical section. */
             common::concurrent::CriticalSection clientsCs;
+
+            /** Clients condition variable. Notified when no clients are left. */
+            common::concurrent::ConditionVariable clientsCv;
 
             /** Addresses to use for connection establishment. */
             std::vector<TcpRange> nonConnected;

@@ -43,12 +43,9 @@ namespace ignite
                 {
                     common::concurrent::CsLockGuard lock(clientPool.clientsCs);
 
-                    while (!clientPool.isConnectionNeeded())
+                    while (!clientPool.isConnectionNeededLocked())
                     {
-                        std::cout << "=============== ConnectingThread: no more nodes. Sleeping" << std::endl;
                         connectNeeded.Wait(clientPool.clientsCs);
-
-                        std::cout << "=============== ConnectingThread: Waking up..." << std::endl;
 
                         if (stopping)
                             return;
@@ -60,6 +57,9 @@ namespace ignite
 
                 SP_WinAsyncClient client = TryConnect(range);
 
+                if (!client.IsValid())
+                    continue;
+
                 if (stopping)
                 {
                     client.Get()->Close();
@@ -67,15 +67,11 @@ namespace ignite
                     return;
                 }
 
-                if (!client.IsValid())
-                    continue;
+                uint64_t id = 0;
 
                 try
                 {
-                    uint64_t id = clientPool.AddClient(client);
-
-                    if (clientPool.asyncHandler)
-                        clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
+                    id = clientPool.AddClient(client);
                 }
                 catch (const IgniteError& err)
                 {
@@ -83,7 +79,12 @@ namespace ignite
 
                     if (clientPool.asyncHandler)
                         clientPool.asyncHandler->OnConnectionError(client.Get()->GetAddress(), err);
+
+                    continue;
                 }
+
+                if (clientPool.asyncHandler)
+                    clientPool.asyncHandler->OnConnectionSuccess(client.Get()->GetAddress(), id);
 
                 PostQueuedCompletionStatus(clientPool.iocp, 0, reinterpret_cast<ULONG_PTR>(client.Get()), 0);
             }
@@ -107,17 +108,26 @@ namespace ignite
         {
             for (uint16_t port = range.port; port <= (range.port + range.range); ++port)
             {
+//                std::cout << "=============== ConnectingThread: port=" << port << std::endl;
+//                std::cout << "=============== ConnectingThread: range.port=" << range.port << std::endl;
+//                std::cout << "=============== ConnectingThread: range.range=" << range.range << std::endl;
+
                 EndPoint addr(range.host, port);
                 try
                 {
                     SP_WinAsyncClient client = TryConnect(addr);
+
+                    if (!client.IsValid())
+                        continue;
+
                     client.Get()->SetRange(range);
 
                     return client;
                 }
                 catch (const IgniteError& err)
                 {
-                    clientPool.asyncHandler->OnConnectionError(addr, err);
+                    if (clientPool.asyncHandler)
+                        clientPool.asyncHandler->OnConnectionError(addr, err);
                 }
             }
 
@@ -166,6 +176,7 @@ namespace ignite
                 if (SOCKET_ERROR == res)
                 {
                     closesocket(socket);
+                    socket = INVALID_SOCKET;
 
                     int lastError = WSAGetLastError();
 
@@ -229,7 +240,7 @@ namespace ignite
                 if (!overlapped)
                 {
                     // This mean new client is connected.
-                    std::cout << "=============== ConnectingThread: initiating recv " << client->GetId() << std::endl;
+                    std::cout << "=============== WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
                     bool success = client->Receive(IoOperation::PACKET_HEADER_SIZE);
                     if (!success)
                     {
@@ -286,6 +297,7 @@ namespace ignite
         }
 
         WinAsyncClientPool::WinAsyncClientPool() :
+            stopping(false),
             asyncHandler(0),
             connectingThread(*this),
             workerThread(*this),
@@ -307,6 +319,8 @@ namespace ignite
 
         void WinAsyncClientPool::Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit)
         {
+            stopping = false;
+
             if (asyncHandler)
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Client pool is already started");
 
@@ -340,12 +354,30 @@ namespace ignite
 
         void WinAsyncClientPool::InternalStop()
         {
+            stopping = true;
             asyncHandler = 0;
             connectingThread.Stop();
 
-            nonConnected.clear();
-            clientIdMap.clear();
-            clientAddrMap.clear();
+            {
+                common::concurrent::CsLockGuard lock(clientsCs);
+                nonConnected.clear();
+                clientAddrMap.clear();
+
+                std::map<uint64_t, SP_WinAsyncClient>::iterator it;
+                for (it = clientIdMap.begin(); it != clientIdMap.end(); ++it)
+                {
+                    WinAsyncClient& client = *it->second.Get();
+
+                    client.Shutdown();
+                }
+
+                if (!clientIdMap.empty())
+                {
+                    std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
+
+                    clientsCv.Wait(clientsCs);
+                }
+            }
 
             workerThread.Stop();
 
@@ -353,10 +385,9 @@ namespace ignite
             iocp = NULL;
         }
 
-        bool WinAsyncClientPool::isConnectionNeeded() const
+        bool WinAsyncClientPool::isConnectionNeededLocked() const
         {
-            return (connectionLimit == 0 && !nonConnected.empty())
-                   || (connectionLimit != 0 && connectionLimit > clientAddrMap.size());
+            return !nonConnected.empty() && (connectionLimit == 0 || connectionLimit > clientAddrMap.size());
         }
 
         uint64_t WinAsyncClientPool::AddClient(SP_WinAsyncClient& client)
@@ -386,15 +417,20 @@ namespace ignite
 
         bool WinAsyncClientPool::Send(uint64_t id, impl::interop::SP_InteropMemory mem)
         {
+            std::cout << "=============== Send: " << id << std::endl;
             SP_WinAsyncClient client;
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
 
-                client = LockedFindClient(id);
+                if (stopping)
+                    return false;
+
+                client = FindClientLocked(id);
                 if (!client.IsValid())
                     return false;
             }
 
+            std::cout << "=============== Send: Client found" << std::endl;
             return client.Get()->Send(mem);
         }
 
@@ -419,10 +455,17 @@ namespace ignite
                 }
 
                 clientIdMap.erase(it);
+
+                std::cout << "=============== WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
+                if (clientIdMap.empty())
+                {
+                    std::cout << "=============== WorkerThread: Notifying about empty" << std::endl;
+                    clientsCv.NotifyAll();
+                }
             }
 
-            client.Get()->Close();
             client.Get()->WaitForPendingIo();
+            client.Get()->Close();
 
             return true;
         }
@@ -441,7 +484,10 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
 
-                client = LockedFindClient(id);
+                if (stopping)
+                    return false;
+
+                client = FindClientLocked(id);
 
                 if (!client.IsValid() || client.Get()->IsClosed())
                     return false;
@@ -455,7 +501,7 @@ namespace ignite
                 connectingThread.WakeUp();
             }
 
-            client.Get()->Close();
+            client.Get()->Shutdown();
 
             return true;
         }
@@ -464,7 +510,6 @@ namespace ignite
         {
             bool found = Close(id);
 
-            //TODO: Make sure handler is always called from other threads
             if (found && asyncHandler)
                 asyncHandler->OnConnectionClosed(id, err);
         }
@@ -478,16 +523,7 @@ namespace ignite
             throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
         }
 
-        void WinAsyncClientPool::ThrowWsaError(const std::string& msg)
-        {
-            std::stringstream buf;
-
-            buf << "WSA system error: " << msg << ", WSA error code: " << WSAGetLastError();
-
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
-        }
-
-        SP_WinAsyncClient WinAsyncClientPool::LockedFindClient(uint64_t id) const
+        SP_WinAsyncClient WinAsyncClientPool::FindClientLocked(uint64_t id) const
         {
             std::map<uint64_t, SP_WinAsyncClient>::const_iterator it = clientIdMap.find(id);
             if (it == clientIdMap.end())

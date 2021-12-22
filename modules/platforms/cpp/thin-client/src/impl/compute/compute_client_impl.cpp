@@ -107,7 +107,7 @@ namespace ignite
 
                     channel.Get()->RegisterNotificationHandler(rsp.GetNotificationId(), handler);
 
-                    handler.Get()->GetFuture().Wait();
+                    handler.Get()->GetFuture().GetValue();
                 }
             }
         }

@@ -55,7 +55,7 @@ namespace ignite
 
                 LPTSTR errorText = NULL;
 
-                DWORD len = FormatMessage(
+                DWORD len = FormatMessageA(
                     // use system message tables to retrieve error text
                     FORMAT_MESSAGE_FROM_SYSTEM
                     // allocate buffer on local heap for error text
@@ -67,7 +67,7 @@ namespace ignite
                     error,
                     MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                     // output
-                    reinterpret_cast<LPTSTR>(&errorText),
+                    reinterpret_cast<LPSTR>(&errorText),
                     // minimum size for output buffer
                     0,
                     // arguments - see note
