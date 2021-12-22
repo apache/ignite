@@ -32,13 +32,13 @@ include::includes/install-ignite.adoc[]
 include::includes/starting-node.adoc[]
 
 NOTE: Ignite for C++ supports a thick client and a thin client.
-Because this guide focuses on the thick client, you can run the examples below, connecting to the Java-based nodes you just started.
+Because this guide focuses on the thin client, you can run the examples below, connecting to the Java-based nodes you just started.
 
-Once the cluster is started, you can use the Ignite C++ thick client to perform cache operations (things like getting or putting data, or using SQL).
+Once the cluster is started, you can use the Ignite C++ thin client to perform cache operations (things like getting or putting data, or using SQL).
 
 == Getting Started with Ignite and C++
 
-Ignite ships with a robust {cpp} thick client.
+Ignite ships with a robust {cpp} client.
 To get started with Ignite and {cpp}, you will need to be familiar with building {cpp} applications.
 
 . If you haven't already, download/install <<Installing Ignite,Apache Ignite>>.
@@ -55,7 +55,7 @@ tab:Win32[]
 [source,bat,subs="attributes,specialchars"]
 ----
 cd cmake-build-release
-cmake .. -DWITH_CORE=ON -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
 cmake --build . --target install  --config Release
 ----
 
@@ -63,7 +63,7 @@ tab:Win64[]
 [source,bat,subs="attributes,specialchars"]
 ----
 cd cmake-build-release
-cmake .. -DWITH_CORE=ON -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
 cmake --build . --target install  --config Release
 ----
 --
@@ -96,7 +96,7 @@ tab:Ubuntu[]
 [source,bash,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
 make
 sudo make install
 ----
@@ -105,7 +105,7 @@ tab:CentOS/RHEL[]
 [source,shell,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
 make
 sudo make install
 ----

@@ -190,7 +190,7 @@ tab:64-bit driver[]
 [source,shell]
 ----
 mkdir cmake-build-release-64
-cmake .. -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl 64-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\amd64
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl 64-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\amd64
 cmake --build . --target install --config Release
 ----
 
@@ -198,7 +198,7 @@ tab:32-bit driver[]
 [source,bat]
 ----
 mkdir cmake-build-release-32
-cmake .. -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl 32-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\x86
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl 32-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\x86
 cmake --build . --target install --config Release
 ----
 --
@@ -226,7 +226,7 @@ tab:Ubuntu[]
 [source,bash,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
 make
 sudo make install
 ----
@@ -235,7 +235,7 @@ tab:CentOS/RHEL[]
 [source,shell,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
 make
 sudo make install
 ----

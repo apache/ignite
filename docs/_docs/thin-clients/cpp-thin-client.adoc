@@ -33,7 +33,7 @@ tab:Win64[]
 cd %IGNITE_HOME%\platforms\cpp\
 mkdir cmake-build-release
 cd cmake-build-release
-cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake .. -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
 cmake --build . --target install --config Release
 ----
 
@@ -43,7 +43,7 @@ tab:Win32[]
 cd %IGNITE_HOME%\platforms\cpp\
 mkdir cmake-build-release
 cd cmake-build-release
-cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install-dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake .. -DWITH_CORE=OFF  -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install-dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
 cmake --build . --target install --config Release
 ----
 
@@ -51,7 +51,7 @@ tab:Ubuntu[]
 [source,bash,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
 make
 sudo make install
 ----
@@ -60,7 +60,7 @@ tab:CentOS/RHEL[]
 [source,shell,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
 make
 sudo make install
 ----
