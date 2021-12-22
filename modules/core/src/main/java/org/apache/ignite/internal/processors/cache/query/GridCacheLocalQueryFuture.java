@@ -38,7 +38,7 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
-    private Runnable run;
+    private final Runnable run;
 
     /** */
     private IgniteInternalFuture<?> fut;
@@ -55,9 +55,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        stream = new NodePageStream<>(ctx.localNodeId(), () -> {}, () -> {});
+        stream = new NodePageStream<>(ctx.localNodeId());
 
-        reducer = new UnsortedCacheQueryReducer<>(F.asMap(stream.nodeId(), stream));
+        reducer = new UnsortedCacheQueryReducer<>(F.asMap(stream.nodeId(), stream), qry.query().limit());
     }
 
     /**

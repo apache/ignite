@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -43,15 +44,30 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     private UUID pendingNodeId;
 
     /** */
-    protected MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
-        super(pageStreams);
+    private ConcurrentHashMap<UUID, Integer> available;
+
+    /** */
+    private final int pageSize;
+
+    /** */
+    protected MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams, int limit, int pageSize) {
+        super(pageStreams, limit);
+
+        this.pageSize = pageSize;
+
+        if (limitEnabled()) {
+            available = new ConcurrentHashMap<>();
+
+            for (NodePageStream<R> s: pageStreams.values())
+                available.put(s.nodeId(), 0);
+        }
     }
 
     /** @return Comparator for pages from nodes. */
     protected abstract CompletableFuture<Comparator<NodePage<R>>> pageComparator();
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() throws IgniteCheckedException {
+    @Override public boolean hasNext0() throws IgniteCheckedException {
         // Initial sort.
         if (nodePages == null) {
             // Compares head pages from all nodes to get the lowest value at the moment.
@@ -84,7 +100,7 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R nextX() throws IgniteCheckedException {
+    @Override public R next0() {
         if (nodePages.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 
@@ -98,5 +114,33 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
             pendingNodeId = page.nodeId();
 
         return o;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkLimit(int cnt) {
+        int l = limit;
+
+        for (NodePageStream<R> s: pageStreams.values()) {
+            if (l <= 0)
+                return true;
+
+            // Stream returns all data.
+            if (s.closed()) {
+                l -= s.dataSize();
+
+                continue;
+            }
+
+            int ds = s.dataSize();
+
+            // If data size equals to 2 pages, it means we don't request for new pages yet. So, don't know how many data delivered.
+            while (ds > pageSize * 2) {
+                l -= pageSize;
+
+                ds -= pageSize;
+            }
+        }
+
+        return false;
     }
 }

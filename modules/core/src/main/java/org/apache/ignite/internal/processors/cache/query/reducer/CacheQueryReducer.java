@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
@@ -36,15 +38,96 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     /** Page streams collection. */
     protected final Map<UUID, NodePageStream<T>> pageStreams;
 
+    /** Maximum number of entries to deliver, {@code 0} if query result isn't limited. */
+    protected final int limit;
+
+    /** Counter of delivered items. */
+    private final AtomicInteger cnt;
+
     /** */
-    protected CacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams) {
+    // TODO: test limit 0, -10
+    protected CacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams, int limit) {
         this.pageStreams = pageStreams;
+        this.limit = limit;
+
+        cnt = limitEnabled() ? new AtomicInteger() : null;
     }
 
     /** {@inheritDoc} */
-    @Override public void removeX() throws IgniteCheckedException {
+    @Override public final boolean hasNextX() throws IgniteCheckedException {
+        if (limitEnabled() && cnt.get() == limit)
+            return false;
+
+        return hasNext0();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final T nextX() {
+        if (limitEnabled())
+            cnt.incrementAndGet();
+
+        return next0();
+    }
+
+    /**
+     * Handles a new data page from specified node.
+     *
+     * @param nodeId Node ID of new data page.
+     * @param data Data page.
+     * @param last Whether it's a last page from node {@code nodeId}.
+     * @return {@code true} if query limit is specified and reducer has enough data to satisfy it, otherwise {@code false}.
+     */
+    public final boolean addPage(UUID nodeId, Collection<T> data, boolean last) {
+        NodePageStream<T> stream = pageStreams.get(nodeId);
+
+        if (stream == null)
+            return false;
+
+        stream.addPage(data, last);
+
+        if (limitEnabled()) {
+            boolean cancelRemote = checkLimit(cnt.get());
+
+            if (cancelRemote) {
+                for (NodePageStream<T> s: pageStreams.values()) {
+                    if (s.closed())
+                        continue;
+
+                    s.cancel(null);
+                }
+            }
+
+            return cancelRemote;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks underlying page streams for next element.
+     *
+     * @return {@code true} if reducer can deliver next element, otherwise {@code false}.
+     */
+    protected abstract boolean hasNext0() throws IgniteCheckedException;
+
+    /**
+     * Return next element from underlying page streams.
+     *
+     * @return Next element.
+     */
+    protected abstract T next0();
+
+    /** {@inheritDoc} */
+    @Override public final void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("CacheQueryReducer doesn't support removing items.");
     }
+
+    /**
+     * Checks whether the underlying streams locally contain enough data for satisfying {@code limit}.
+     *
+     * @return {@code true} if streams already have enough data for satisfying limit, otherwise {@code false}.
+     */
+    protected abstract boolean checkLimit(int cnt);
 
     /**
      * @return Object that completed the specified future.
@@ -67,5 +150,10 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
 
             throw new IgniteCheckedException("Page future was completed with unexpected error.", e);
         }
+    }
+
+    /** */
+    protected final boolean limitEnabled() {
+        return limit > 0;
     }
 }
