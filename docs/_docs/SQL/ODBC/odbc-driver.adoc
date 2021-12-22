@@ -164,25 +164,25 @@ Apache Ignite ODBC Driver was officially tested on:
 == Building ODBC Driver
 
 Ignite is shipped with pre-built installers for both 32- and 64-bit versions of the driver for Windows.
-So if you just want to install ODBC driver on Windows you may go straight to the <<Installing ODBC Driver>>
+So if you just want to install ODBC driver on Windows, you may go straight to the <<Installing ODBC Driver>>
 section for installation instructions.
 
-If you use Linux you will still need to build ODBC driver before you can install it.
-So if you are using Linux or if you still want to build the driver by yourself for Windows, then keep reading.
+For Linux, you will still need to build an ODBC driver before installing it.
+So if you are using Linux or still want to build the driver yourself for Windows, refer to the next section.
 
 === Building on Windows
 
-You should install these dependencies:
+To start with, install the dependencies below:
 
 * MS Visual C++ (10.0 and up), g++ (4.4.0 and up)
-* OpenSSL (32-bit and 64-bit versions)
+* OpenSSL (32-bit or 64-bit versions)
 * CMake 3.6+
 * http://wixtoolset.org[WiX Toolset] and add it to `%Path%`.
 
-Then do following:
+Then, perform the following:
 
 . Navigate to the `%IGNITE_HOME%\platforms\cpp` folder.
-. Build drivers and installers using following steps:
+. Build drivers and installers using the following steps:
 
 [tabs]
 --
