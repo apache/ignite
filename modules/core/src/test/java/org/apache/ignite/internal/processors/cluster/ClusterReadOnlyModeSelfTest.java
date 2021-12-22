@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -266,6 +267,9 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
                 return 0;
             }
         };
+
+        HashSet<String> sysTypes = GridTestUtils.getFieldValue(grid.context().marshallerContext(), "sysTypesSet");
+        sysTypes.add(key.getClass().getName());
 
         grid.utilityCache().put(key, "test");
 
