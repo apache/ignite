@@ -140,4 +140,71 @@ public class AbstractClientTableTest extends AbstractClientTest {
 
         return client.tables().table(TABLE_ONE_COLUMN);
     }
+
+    /** Person. */
+    protected static class PersonPojo {
+        public long id;
+
+        public String name;
+
+        public PersonPojo() {
+            // No-op.
+        }
+
+        public PersonPojo(long id) {
+            this.id = id;
+        }
+
+        public PersonPojo(long id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
+    /** Name column. */
+    protected static class NamePojo {
+        public String name;
+    }
+
+    /** Partial column set. */
+    protected static class IncompletePojo {
+        public byte zbyte;
+        public String id;
+        public int gid;
+        public String zstring;
+        public byte[] zbytes;
+    }
+
+    /** Partial column set. */
+    protected static class IncompletePojoNullable {
+        public int gid;
+        public String id;
+        public Byte zbyte;
+        public Short zshort;
+        public Integer zint;
+        public Long zlong;
+        public Float zfloat;
+        public Double zdouble;
+    }
+
+    /** Columns of all types. */
+    protected static class AllColumnsPojo {
+        public int gid;
+        public String id;
+        public byte zbyte;
+        public short zshort;
+        public int zint;
+        public long zlong;
+        public float zfloat;
+        public double zdouble;
+        public LocalDate zdate;
+        public LocalTime ztime;
+        public Instant ztimestamp;
+        public String zstring;
+        public byte[] zbytes;
+        public UUID zuuid;
+        public BitSet zbitmask;
+        public BigDecimal zdecimal;
+        public BigInteger znumber;
+    }
 }

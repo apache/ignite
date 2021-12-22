@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Table tests.
  */
+@SuppressWarnings("ZeroLengthArrayAllocation")
 public class ClientTableTest extends AbstractClientTableTest {
     @Test
     public void testGetWithMissedKeyColumnThrowsException() {
@@ -371,5 +372,14 @@ public class ClientTableTest extends AbstractClientTableTest {
         var ex = assertThrows(CompletionException.class, () -> table.upsert(null, tuple));
 
         assertTrue(ex.getMessage().contains("null was passed, but column is not nullable"), ex.getMessage());
+    }
+
+    @Test
+    public void testColumnTypeMismatchThrowsException() {
+        var tuple = Tuple.create().set("id", "str");
+
+        var ex = assertThrows(CompletionException.class, () -> defaultTable().recordView().upsert(null, tuple));
+
+        assertTrue(ex.getMessage().contains("Incorrect value type for column 'id': Expected Integer, but got String"), ex.getMessage());
     }
 }

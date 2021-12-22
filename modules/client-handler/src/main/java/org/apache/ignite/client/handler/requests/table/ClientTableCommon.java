@@ -46,6 +46,7 @@ import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
+import org.msgpack.core.MessageTypeException;
 
 /**
  * Common table functionality.
@@ -380,7 +381,13 @@ class ClientTableCommon {
     }
 
     private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, Tuple tuple, Column col) {
-        tuple.set(col.name(), unpacker.unpackObject(getClientDataType(col.type().spec())));
+        try {
+            int type = getClientDataType(col.type().spec());
+            Object val = unpacker.unpackObject(type);
+            tuple.set(col.name(), val);
+        } catch (MessageTypeException e) {
+            throw new IgniteException("Incorrect value type for column '" + col.name() + "': " + e.getMessage(), e);
+        }
     }
 
     private static int getClientDataType(NativeTypeSpec spec) {

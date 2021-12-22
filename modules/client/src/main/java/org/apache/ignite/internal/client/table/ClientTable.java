@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,6 +97,8 @@ public class ClientTable implements Table {
     /** {@inheritDoc} */
     @Override
     public <R> RecordView<R> recordView(Mapper<R> recMapper) {
+        Objects.requireNonNull(recMapper);
+
         return new ClientRecordView<>(this, recMapper);
     }
 
@@ -107,7 +110,10 @@ public class ClientTable implements Table {
     /** {@inheritDoc} */
     @Override
     public <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        Objects.requireNonNull(keyMapper);
+        Objects.requireNonNull(valMapper);
+
+        return new ClientKeyValueView<>(this, keyMapper, valMapper);
     }
 
     /** {@inheritDoc} */

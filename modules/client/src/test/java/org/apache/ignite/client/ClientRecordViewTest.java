@@ -27,13 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
@@ -479,67 +475,5 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         assertNull(pojoView.get(null, new PersonPojo(1L)));
         assertEquals("2", pojoView.get(null, new PersonPojo(2L)).name);
         assertNull(pojoView.get(null, new PersonPojo(3L)));
-    }
-
-    private static class PersonPojo {
-        public long id;
-
-        public String name;
-
-        public PersonPojo() {
-            // No-op.
-        }
-
-        public PersonPojo(long id) {
-            this.id = id;
-        }
-
-        public PersonPojo(long id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-    }
-
-    private static class NamePojo {
-        public String name;
-    }
-
-    private static class IncompletePojo {
-        public byte zbyte;
-        public String id;
-        public int gid;
-        public String zstring;
-        public byte[] zbytes;
-    }
-
-    private static class IncompletePojoNullable {
-        public int gid;
-        public String id;
-        public Byte zbyte;
-        public Short zshort;
-        public Integer zint;
-        public Long zlong;
-        public Float zfloat;
-        public Double zdouble;
-    }
-
-    private static class AllColumnsPojo {
-        public int gid;
-        public String id;
-        public byte zbyte;
-        public short zshort;
-        public int zint;
-        public long zlong;
-        public float zfloat;
-        public double zdouble;
-        public LocalDate zdate;
-        public LocalTime ztime;
-        public Instant ztimestamp;
-        public String zstring;
-        public byte[] zbytes;
-        public UUID zuuid;
-        public BitSet zbitmask;
-        public BigDecimal zdecimal;
-        public BigInteger znumber;
     }
 }
