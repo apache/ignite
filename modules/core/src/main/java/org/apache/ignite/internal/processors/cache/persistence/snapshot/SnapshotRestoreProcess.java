@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -862,9 +863,10 @@ public class SnapshotRestoreProcess {
                 }
 
                 List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
+                Predicate<Integer> partFilter = p -> p != INDEX_PARTITION && assignment.get(p).contains(locNode);
 
-                opCtx0.locProgress.put(grpId, availParts.stream().filter(p -> assignment.get(p).contains(locNode))
-                    .map(PartitionRestoreFuture::new).collect(Collectors.toSet()));
+                opCtx0.locProgress.put(grpId,
+                    availParts.stream().filter(partFilter).map(PartitionRestoreFuture::new).collect(Collectors.toSet()));
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(opCtx0.locProgress.get(grpId)));
 
