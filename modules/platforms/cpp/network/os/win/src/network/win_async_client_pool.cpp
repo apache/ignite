@@ -216,7 +216,7 @@ namespace ignite
 
                 BOOL ok = GetQueuedCompletionStatus(clientPool.iocp, &bytesTransferred, &key, &overlapped, INFINITE);
 
-                std::cout << "=============== WorkerThread: Got event" << std::endl;
+//                std::cout << "=============== WorkerThread: Got event" << std::endl;
 
                 if (stopping)
                     break;
@@ -228,8 +228,8 @@ namespace ignite
 
                 if (!ok || (0 != overlapped && 0 == bytesTransferred))
                 {
-                    std::cout << "=============== WorkerThread: closing " << client->GetId() << std::endl;
-                    std::cout << "=============== WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
+//                    std::cout << "=============== WorkerThread: closing " << client->GetId() << std::endl;
+//                    std::cout << "=============== WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
 
                     IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
                     clientPool.CloseAndRelease(client->GetId(), &err);
@@ -240,7 +240,7 @@ namespace ignite
                 if (!overlapped)
                 {
                     // This mean new client is connected.
-                    std::cout << "=============== WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
+//                    std::cout << "=============== WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
                     bool success = client->ReceiveAll(IoOperation::PACKET_HEADER_SIZE);
                     if (!success)
                     {
@@ -259,7 +259,7 @@ namespace ignite
                     {
                         case IoOperationKind::SEND:
                         {
-                            std::cout << "=============== WorkerThread: processing send " << bytesTransferred << std::endl;
+//                            std::cout << "=============== WorkerThread: processing send " << bytesTransferred << std::endl;
                             client->ProcessSent(bytesTransferred);
 
                             break;
@@ -267,7 +267,7 @@ namespace ignite
 
                         case IoOperationKind::RECEIVE:
                         {
-                            std::cout << "=============== WorkerThread: processing recv " << bytesTransferred << std::endl;
+//                            std::cout << "=============== WorkerThread: processing recv " << bytesTransferred << std::endl;
                             impl::interop::SP_InteropMemory packet = client->ProcessReceived(bytesTransferred);
 
                             if (packet.IsValid() && clientPool.asyncHandler)
@@ -373,7 +373,7 @@ namespace ignite
 
                 if (!clientIdMap.empty())
                 {
-                    std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
+//                    std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
 
                     clientsCv.Wait(clientsCs);
                 }
@@ -417,7 +417,7 @@ namespace ignite
 
         bool WinAsyncClientPool::Send(uint64_t id, impl::interop::SP_InteropMemory mem)
         {
-            std::cout << "=============== Send: " << id << std::endl;
+//            std::cout << "=============== Send: " << id << std::endl;
             SP_WinAsyncClient client;
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
@@ -430,7 +430,7 @@ namespace ignite
                     return false;
             }
 
-            std::cout << "=============== Send: Client found" << std::endl;
+//            std::cout << "=============== Send: Client found" << std::endl;
             return client.Get()->Send(mem);
         }
 
@@ -456,10 +456,10 @@ namespace ignite
 
                 clientIdMap.erase(it);
 
-                std::cout << "=============== WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
+//                std::cout << "=============== WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
                 if (clientIdMap.empty())
                 {
-                    std::cout << "=============== WorkerThread: Notifying about empty" << std::endl;
+//                    std::cout << "=============== WorkerThread: Notifying about empty" << std::endl;
                     clientsCv.NotifyAll();
                 }
             }

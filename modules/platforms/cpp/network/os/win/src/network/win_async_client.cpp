@@ -54,12 +54,12 @@ namespace ignite
             if (State::CLOSED != state)
                 Close();
 
-            std::cout << "=============== ~WinAsyncClient " << id << std::endl;
+//            std::cout << "=============== ~WinAsyncClient " << id << std::endl;
         }
 
         void WinAsyncClient::Shutdown()
         {
-            std::cout << "=============== WinAsyncClient::Shutdown " << id << std::endl;
+//            std::cout << "=============== WinAsyncClient::Shutdown " << id << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
 
             if (State::IN_POOL != state)
@@ -74,7 +74,7 @@ namespace ignite
 
         void WinAsyncClient::WaitForPendingIo()
         {
-            std::cout << "=============== WinAsyncClient::WaitForPendingIo " << id << std::endl;
+//            std::cout << "=============== WinAsyncClient::WaitForPendingIo " << id << std::endl;
             while (!HasOverlappedIoCompleted(&currentSend.overlapped))
                 GetOverlappedResult((HANDLE)socket, &currentSend.overlapped, NULL, TRUE);
 
@@ -84,7 +84,7 @@ namespace ignite
 
         void WinAsyncClient::Close()
         {
-            std::cout << "=============== WinAsyncClient::Close " << id << std::endl;
+//            std::cout << "=============== WinAsyncClient::Close " << id << std::endl;
             closesocket(socket);
 
             sendPackets.clear();
@@ -137,7 +137,7 @@ namespace ignite
             currentSend.toTransfer = packet0.Length();
             currentSend.transferredSoFar = 0;
 
-            std::cout << "=============== Send to " << id << " " << buffer.len << " bytes" << std::endl;
+//            std::cout << "=============== Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -162,7 +162,7 @@ namespace ignite
             buffer.buf = (CHAR*)(packet0.Data() + currentRecv.transferredSoFar);
             buffer.len = (ULONG)bytes;
 
-            std::cout << "=============== Recv from " << id << " " << buffer.len << " bytes" << std::endl;
+//            std::cout << "=============== Recv from " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -199,8 +199,8 @@ namespace ignite
 
         impl::interop::SP_InteropMemory WinAsyncClient::ProcessReceived(size_t bytes)
         {
-            std::cout << "=============== WinAsyncClient: currentRecv.transferredSoFar=" << currentRecv.transferredSoFar << std::endl;
-            std::cout << "=============== WinAsyncClient: currentRecv.toTransfer=" << currentRecv.toTransfer << std::endl;
+//            std::cout << "=============== WinAsyncClient: currentRecv.transferredSoFar=" << currentRecv.transferredSoFar << std::endl;
+//            std::cout << "=============== WinAsyncClient: currentRecv.toTransfer=" << currentRecv.toTransfer << std::endl;
 
             currentRecv.transferredSoFar += bytes;
 

@@ -91,14 +91,14 @@ namespace ignite
 
                 channelsWaitPoint.WaitFor(channelsMutex, timeout);
 
-                std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "CONNECTED") << std::endl;
+//                std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "CONNECTED") << std::endl;
 
                 return !connectedChannels.empty();
             }
 
             void DataRouter::OnConnectionSuccess(const network::EndPoint& addr, uint64_t id)
             {
-                std::cout << "=============== OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
+//                std::cout << "=============== OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
 
                 SP_DataChannel channel(new DataChannel(id, addr, asyncPool, config, typeMgr, *this));
 
@@ -114,12 +114,12 @@ namespace ignite
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
                 //TODO: implement me.
-                std::cout << "=============== OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
+//                std::cout << "=============== OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
             }
 
             void DataRouter::OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg)
             {
-                std::cout << "=============== OnMessageReceived: " << id << ", " << msg.Get()->Length() << " bytes" << std::endl;
+//                std::cout << "=============== OnMessageReceived: " << id << ", " << msg.Get()->Length() << " bytes" << std::endl;
                 SP_DataChannel channel;
 
                 {
@@ -136,7 +136,7 @@ namespace ignite
 
             void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
-                std::cout << "=============== OnConnectionError: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
+//                std::cout << "=============== OnConnectionError: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
@@ -153,7 +153,7 @@ namespace ignite
 
             void DataRouter::OnHandshakeComplete(uint64_t id)
             {
-                std::cout << "=============== OnHandshakeComplete: " << id << std::endl;
+//                std::cout << "=============== OnHandshakeComplete: " << id << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
