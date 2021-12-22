@@ -794,6 +794,11 @@ public class SnapshotRestoreProcess {
             if (ctx.isStopping())
                 throw new NodeStoppingException("Node is stopping: " + ctx.localNodeId());
 
+            Set<SnapshotMetadata> allMetas =
+                opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
+
+            AbstractSnapshotVerificationTask.checkMissedMetadata(allMetas);
+
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
@@ -833,9 +838,6 @@ public class SnapshotRestoreProcess {
 
             // First preload everything from the local node.
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
-
-            Set<SnapshotMetadata> allMetas =
-                opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
 
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
