@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import com.google.common.collect.Iterables;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,7 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 
 /**
  * Tests metrics of service invocations.
@@ -97,91 +95,57 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             findMetricRegistry(ignite.context().metric(), SRVC_NAME));
     }
 
-    /** Checks metric behaviour when launched several service instances. */
-    @Test
-    public void testMultipleDeployment() throws Throwable {
-        List<IgniteEx> servers = new ArrayList<>();
-
-        servers.add(startGrid(gridNum++));
-
-        IgniteEx server = servers.get(0);
-
-        IgniteEx client = startClientGrid(gridNum++);
-
-        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(server.context().metric(), SERVICE_METRIC_REGISTRY));
-
-        int totalInstance = 2;
-
-        int perNode = 2;
-
-        ServiceConfiguration srvcCfg = serviceCfg(MyServiceFactory.create(), totalInstance, perNode);
-
-        server.services().deploy(srvcCfg);
-
-        awaitPartitionMapExchange();
-
-        // Call proxies on the clients.
-        Stream.generate(() -> client.services().serviceProxy(SRVC_NAME, MyService.class, true))
-            .limit(totalInstance).forEach(srvc -> ((MyService)srvc).hello());
-
-        ReadOnlyMetricRegistry metrics = findMetricRegistry(server.context().metric(), SRVC_NAME);
-
-        // Total service calls number.
-        int callsCnt = 0;
-
-        for (Metric m : metrics) {
-            if (m instanceof HistogramMetric)
-                callsCnt += sumHistogramEntries((HistogramMetric)m);
-        }
-
-        assertEquals(callsCnt, totalInstance);
-
-        // Add servers more than service instances.
-        servers.add(startGrid(gridNum++));
-
-        servers.add(startGrid(gridNum++));
-
-        awaitPartitionMapExchange();
-
-        int deployedCnt = 0;
-
-        int metricsCnt = 0;
-
-        for (IgniteEx ignite : servers) {
-            if (ignite.services().service(SRVC_NAME) != null)
-                deployedCnt++;
-
-            if (findMetricRegistry(ignite.context().metric(), SRVC_NAME) != null)
-                metricsCnt++;
-        }
-
-        assertEquals(deployedCnt, metricsCnt);
-
-        assertEquals(metricsCnt, totalInstance);
-    }
-
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
     @Test
     public void testMetricsOnServiceDeployAndCancel() throws Exception {
-        List<IgniteEx> servers = startGrids(3, false);
+        List<IgniteEx> grids = startGrids(3, false);
 
         // 2 services per node.
-        servers.get(0).services().deploy(serviceCfg(MyServiceFactory.create(), servers.size(), 2));
+        grids.get(0).services().deploy(serviceCfg(MyServiceFactory.create(), grids.size() * 2, 2));
 
         awaitPartitionMapExchange();
 
-        int expectedCnt = Arrays.stream(MyService.class.getDeclaredMethods()).map(Method::getName).collect(Collectors.toSet()).size();
+        int expectedCnt = Arrays.stream(MyService.class.getDeclaredMethods()).map(Method::getName).collect(
+            Collectors.toSet()).size();
 
         // Make sure metrics are registered.
-        for (IgniteEx ignite : servers)
+        for (IgniteEx ignite : grids)
             assertEquals(metricsCnt(ignite, SRVC_NAME), expectedCnt);
 
-        servers.get(0).services().cancel(SRVC_NAME);
+        grids.get(0).services().cancel(SRVC_NAME);
 
         awaitPartitionMapExchange();
 
-        for (IgniteEx ignite : servers)
+        for (IgniteEx ignite : grids)
             assertEquals(metricsCnt(ignite, SRVC_NAME), 0);
+    }
+
+    /** Tests service metrics migrates correclty with the service redeployment. */
+    @Test
+    public void testRedeploy() throws Exception {
+        List<IgniteEx> grids = startGrids(3, false);
+
+        // 2 services per node.
+        grid(0).services().deploy(serviceCfg(MyServiceFactory.create(), 1, 0));
+
+        awaitPartitionMapExchange();
+
+        int expectedCnt = Arrays.stream(MyService.class.getDeclaredMethods()).map(Method::getName).collect(
+            Collectors.toSet()).size();
+
+        // Only same method metric count must persist across the cluster for the singleton.
+        assertEquals("Only one metric registry can persist for one service instance", expectedCnt,
+            grids.stream().map(grid -> metricsCnt(grid, SRVC_NAME)).mapToInt(Integer::intValue).sum());
+
+        for (int i = 0; i < grids.size(); ++i) {
+            if (metricsCnt(grid(i), SRVC_NAME) > 0) {
+                stopGrid(i);
+
+                awaitPartitionMapExchange();
+
+                break;
+            }
+        }
     }
 
     /** Tests service metrics for single service instance. */

@@ -262,8 +262,9 @@ public class ServiceConfiguration implements Serializable {
     }
 
     /**
-     * Enables or disables statistics for the service. If enabled, durations of the service's methods are measured and
-     * stored in histograms in metric registry {@link IgniteServiceProcessor#SERVICE_METRIC_REGISTRY} by service name.
+     * Enables or disables statistics for the service. If enabled, durations of the service's methods invocations are
+     * measured (in milliseconds) and stored in histograms of metric registry
+     * {@link IgniteServiceProcessor#SERVICE_METRIC_REGISTRY} by service name.
      * <p>
      * <b>NOTE:</b> Statistics are collected only for all service's interfaces except {@link Service} and
      * {@link Externalizable} if implemented. Statistics are not collected for methods not declared in any interface.
