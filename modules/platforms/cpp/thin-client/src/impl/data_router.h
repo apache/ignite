@@ -29,6 +29,7 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/common/promise.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/tcp_range.h>
 #include <ignite/network/async_client_pool.h>
@@ -129,7 +130,15 @@ namespace ignite
                  *
                  * @param id Channel ID.
                  */
-                virtual void OnHandshakeComplete(uint64_t id);
+                virtual void OnHandshakeSuccess(uint64_t id);
+
+                /**
+                 * Channel handshake error callback.
+                 *
+                 * @param id Channel ID.
+                 * @param err Error.
+                 */
+                virtual void OnHandshakeError(uint64_t id, const IgniteError& err);
 
                 /**
                  * Synchronously send request message and receive response.
@@ -308,6 +317,9 @@ namespace ignite
 
                 /** Channels connection wait point. */
                 common::concurrent::ConditionVariable channelsWaitPoint;
+
+                /** Last handshake error. */
+                std::auto_ptr<IgniteError> lastHandshakeError;
 
                 /** Cache affinity manager. */
                 affinity::AffinityManager affinityManager;

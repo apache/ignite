@@ -91,7 +91,16 @@ namespace ignite
 
                 channelsWaitPoint.WaitFor(channelsMutex, timeout);
 
-//                std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "CONNECTED") << std::endl;
+                if (lastHandshakeError.get())
+                {
+//                    std::cout << "=============== EnsureConnected: " << "ERROR" << std::endl;
+                    IgniteError err = *lastHandshakeError;
+                    lastHandshakeError.reset();
+
+                    throw err;
+                }
+
+//                std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "COMPLETE") << std::endl;
 
                 return !connectedChannels.empty();
             }
@@ -113,7 +122,7 @@ namespace ignite
 
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
-                //TODO: implement me.
+                // No-op. Log a message here once logging is ready.
 //                std::cout << "=============== OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
             }
 
@@ -151,14 +160,14 @@ namespace ignite
                 InvalidateChannel(channel);
             }
 
-            void DataRouter::OnHandshakeComplete(uint64_t id)
+            void DataRouter::OnHandshakeSuccess(uint64_t id)
             {
-//                std::cout << "=============== OnHandshakeComplete: " << id << std::endl;
+//                std::cout << "=============== OnHandshakeSuccess: " << id << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
                 connectedChannels.insert(id);
-                channelsWaitPoint.NotifyOne();
+                channelsWaitPoint.NotifyAll();
 
                 SP_DataChannel channel;
 
@@ -172,6 +181,16 @@ namespace ignite
                     if (!node.IsLegacy())
                         partChannels[node.GetGuid()] = channel;
                 }
+            }
+
+            void DataRouter::OnHandshakeError(uint64_t id, const IgniteError& err)
+            {
+//                std::cout << "=============== OnHandshakeError: " << id << ", " << err.GetText() << std::endl;
+
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                lastHandshakeError.reset(new IgniteError(err));
+                channelsWaitPoint.NotifyAll();
             }
 
             SP_DataChannel DataRouter::SyncMessage(Request &req, Response &rsp)

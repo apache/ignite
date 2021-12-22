@@ -325,7 +325,7 @@ namespace ignite
                         shouldRetry = DoHandshake(resVer);
 
                     if (!shouldRetry)
-                        SetChannelError(errorCode, error);
+                        SetHandshakeError(errorCode, error);
 
                     return;
                 }
@@ -351,7 +351,7 @@ namespace ignite
 
                 handshakePerformed = true;
 
-                stateHandler.OnHandshakeComplete(id);
+                stateHandler.OnHandshakeSuccess(id);
             }
 
             bool DataChannel::IsVersionSupported(const ProtocolVersion& ver)
@@ -359,7 +359,7 @@ namespace ignite
                 return supportedVersions.find(ver) != supportedVersions.end();
             }
 
-            void DataChannel::SetChannelError(int32_t code, const std::string& msg)
+            void DataChannel::SetHandshakeError(int32_t code, const std::string& msg)
             {
                 std::stringstream ss;
                 ss << code << ": " << msg;
@@ -367,7 +367,7 @@ namespace ignite
 
                 IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, newMsg.c_str());
 
-                asyncPool.Get()->Close(id, &err);
+                stateHandler.OnHandshakeError(id, err);
             }
         }
     }

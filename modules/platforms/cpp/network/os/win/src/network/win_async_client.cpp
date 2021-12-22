@@ -62,12 +62,10 @@ namespace ignite
 //            std::cout << "=============== WinAsyncClient::Shutdown " << id << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
 
-            if (State::IN_POOL != state)
+            if (State::CONNECTED != state && State::IN_POOL != state)
                 return;
 
             shutdown(socket, SD_BOTH);
-
-            CancelIo((HANDLE)socket);
 
             state = State::SHUTDOWN;
         }

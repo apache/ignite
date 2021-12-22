@@ -250,7 +250,7 @@ namespace ignite
                  * @param code Error code.
                  * @param msg Error message.
                  */
-                void SetChannelError(int32_t code, const std::string& msg);
+                void SetHandshakeError(int32_t code, const std::string& msg);
 
                 /**
                  * Check if the version is supported.

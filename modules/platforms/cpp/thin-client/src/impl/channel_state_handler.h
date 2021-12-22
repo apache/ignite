@@ -43,7 +43,15 @@ namespace ignite
                  *
                  * @param id Channel ID.
                  */
-                virtual void OnHandshakeComplete(uint64_t id) = 0;
+                virtual void OnHandshakeSuccess(uint64_t id) = 0;
+
+                /**
+                 * Channel handshake error callback.
+                 *
+                 * @param id Channel ID.
+                 * @param err Error.
+                 */
+                virtual void OnHandshakeError(uint64_t id, const IgniteError& err) = 0;
             };
         }
     }
