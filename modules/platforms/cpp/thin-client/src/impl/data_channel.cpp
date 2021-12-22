@@ -51,14 +51,14 @@ namespace ignite
             const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
                 supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-            DataChannel::DataChannel(uint64_t id, ignite::network::SP_AsyncClientPool asyncPool,
-                const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
-                ChannelStateHandler& stateHandler) :
+            DataChannel::DataChannel(uint64_t id, const network::EndPoint& addr,
+                ignite::network::SP_AsyncClientPool asyncPool, const ignite::thin::IgniteClientConfiguration& cfg,
+                binary::BinaryTypeManager& typeMgr, ChannelStateHandler& stateHandler) :
                 stateHandler(stateHandler),
                 handshakePerformed(false),
                 id(id),
                 asyncPool(asyncPool),
-                node(),
+                node(addr),
                 config(cfg),
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
@@ -88,7 +88,13 @@ namespace ignite
                 Future<interop::SP_InteropMemory> rspFut = AsyncMessage(req);
 
 //                std::cout << "=============== SyncMessage: Waiting for response... " << std::endl;
-                bool success = rspFut.WaitFor(timeout);
+
+                bool success = true;
+                if (timeout)
+                    success = rspFut.WaitFor(timeout);
+                else
+                    rspFut.Wait();
+
 //                std::cout << "=============== SyncMessage: Wait result: " << success << std::endl;
 
                 if (!success)
@@ -150,7 +156,7 @@ namespace ignite
 
                 int64_t reqId = GenerateRequestMessage(req, *mem.Get());
 
-//                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
+                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
 
                 common::Promise<interop::SP_InteropMemory>* rsp;
 

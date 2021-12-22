@@ -100,7 +100,7 @@ namespace ignite
             {
                 std::cout << "=============== OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
 
-                SP_DataChannel channel(new DataChannel(id, asyncPool, config, typeMgr, *this));
+                SP_DataChannel channel(new DataChannel(id, addr, asyncPool, config, typeMgr, *this));
 
                 {
                     common::concurrent::CsLockGuard lock(channelsMutex);

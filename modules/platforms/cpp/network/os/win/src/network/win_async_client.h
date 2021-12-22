@@ -158,6 +158,14 @@ namespace ignite
             bool Receive(size_t bytes);
 
             /**
+             * Initiate receiving of packet of the specified length. Received data is written to the receive buffer.
+             *
+             * @param bytes Packet size in bytes.
+             * @return @c true on success.
+             */
+            bool ReceiveAll(size_t bytes);
+
+            /**
              * Gets received data as a single buffer.
              * Clears client's receive buffer.
              *

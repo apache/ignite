@@ -146,23 +146,16 @@ namespace ignite
         bool WinAsyncClient::Receive(size_t bytes)
         {
             // We do not need locking on receive as we're always reading in a single thread at most.
-
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
 
             if (!recvPacket.IsValid())
                 DetachReceiveBuffer();
 
-            if (currentRecv.toTransfer != currentRecv.transferredSoFar)
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Internal error while receiving data from server: inconsistent buffer state");
-
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
-            currentRecv.toTransfer += bytes;
-
-            if (packet0.Capacity() < currentRecv.toTransfer)
-                packet0.Reallocate(static_cast<int32_t>(currentRecv.toTransfer));
+            if (packet0.Capacity() < packet0.Length() + bytes)
+                packet0.Reallocate(static_cast<int32_t>(packet0.Length() + bytes));
 
             DWORD flags = 0;
             WSABUF buffer;
@@ -173,6 +166,20 @@ namespace ignite
             int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
+        }
+
+        bool WinAsyncClient::ReceiveAll(size_t bytes)
+        {
+            if (!recvPacket.IsValid())
+                DetachReceiveBuffer();
+
+            if (currentRecv.toTransfer != currentRecv.transferredSoFar)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    "Internal error while receiving data from server: inconsistent buffer state");
+
+            currentRecv.toTransfer += bytes;
+
+            return Receive(bytes);
         }
 
         impl::interop::SP_InteropMemory WinAsyncClient::DetachReceiveBuffer()
@@ -192,18 +199,26 @@ namespace ignite
 
         impl::interop::SP_InteropMemory WinAsyncClient::ProcessReceived(size_t bytes)
         {
+            std::cout << "=============== WinAsyncClient: currentRecv.transferredSoFar=" << currentRecv.transferredSoFar << std::endl;
+            std::cout << "=============== WinAsyncClient: currentRecv.toTransfer=" << currentRecv.toTransfer << std::endl;
+
             currentRecv.transferredSoFar += bytes;
+
+            impl::interop::InteropMemory& packet0 = *recvPacket.Get();
+
+            packet0.Length(static_cast<int32_t>(currentRecv.transferredSoFar));
 
             if (currentRecv.transferredSoFar > currentRecv.toTransfer)
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                     "Internal error while receiving data from server: received more data than expected");
 
             if (currentRecv.transferredSoFar < currentRecv.toTransfer)
+            {
+                size_t left = currentRecv.toTransfer - currentRecv.transferredSoFar;
+                Receive(left);
+
                 return impl::interop::SP_InteropMemory();
-
-            impl::interop::InteropMemory& packet0 = *recvPacket.Get();
-
-            packet0.Length(static_cast<int32_t>(currentRecv.transferredSoFar));
+            }
 
             if (packet0.Length() == IoOperation::PACKET_HEADER_SIZE)
             {
@@ -213,14 +228,14 @@ namespace ignite
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Error while processing packet from server: received packet size is negative");
 
-                Receive(static_cast<size_t>(msgLen));
+                ReceiveAll(static_cast<size_t>(msgLen));
 
                 return impl::interop::SP_InteropMemory();
             }
 
             impl::interop::SP_InteropMemory packet = DetachReceiveBuffer();
 
-            Receive(static_cast<size_t>(IoOperation::PACKET_HEADER_SIZE));
+            ReceiveAll(static_cast<size_t>(IoOperation::PACKET_HEADER_SIZE));
 
             return packet;
         }

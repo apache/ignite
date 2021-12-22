@@ -241,7 +241,7 @@ namespace ignite
                 {
                     // This mean new client is connected.
                     std::cout << "=============== WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
-                    bool success = client->Receive(IoOperation::PACKET_HEADER_SIZE);
+                    bool success = client->ReceiveAll(IoOperation::PACKET_HEADER_SIZE);
                     if (!success)
                     {
                         IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");

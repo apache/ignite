@@ -99,12 +99,13 @@ namespace ignite
                  * Constructor.
                  *
                  * @param id Connection ID.
+                 * @param addr Address.
                  * @param asyncPool Async pool for connection.
                  * @param cfg Configuration.
                  * @param typeMgr Type manager.
                  * @param stateHandler State handler.
                  */
-                DataChannel(uint64_t id, ignite::network::SP_AsyncClientPool asyncPool,
+                DataChannel(uint64_t id, const network::EndPoint& addr, ignite::network::SP_AsyncClientPool asyncPool,
                     const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
                     ChannelStateHandler& stateHandler);
 
