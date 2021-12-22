@@ -36,6 +36,9 @@ class SchemaClassesInfo {
     /** Direct proxy class name postfix. */
     private static final String DIRECT_PROXY_CLASS_POSTFIX = "DirectProxy";
 
+    /** Node class name postfix. */
+    private static final String NODE_CLASS_POSTFIX = "Node";
+
     /** Configuration Schema class. */
     final Class<?> schemaClass;
 
@@ -78,7 +81,7 @@ class SchemaClassesInfo {
         cfgClassName = prefix + CONFIGURATION_CLASS_POSTFIX;
         directProxyClassName = prefix + DIRECT_PROXY_CLASS_POSTFIX;
 
-        nodeClassName = prefix + "Node";
+        nodeClassName = prefix + NODE_CLASS_POSTFIX;
         cfgImplClassName = prefix + "ConfigurationImpl";
     }
 
@@ -124,5 +127,15 @@ class SchemaClassesInfo {
      */
     static String configurationClassName(Class<?> schemaClass) {
         return prefix(schemaClass) + CONFIGURATION_CLASS_POSTFIX;
+    }
+
+    /**
+     * Get class name for the Node class.
+     *
+     * @param schemaClass Configuration schema class.
+     * @return Class name for the Node class.
+     */
+    static String nodeClassName(Class<?> schemaClass) {
+        return prefix(schemaClass) + NODE_CLASS_POSTFIX;
     }
 }

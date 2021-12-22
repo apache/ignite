@@ -57,10 +57,10 @@ public interface ConfigurationNotificationEvent<VIEWT> {
      * <p>For example, if we changed the child configuration, then we can get both the parent and the current child configuration.
      *
      * @param configClass Configuration interface, for example {@code RootConfiguration}.
-     * @param <T>         Configuration type.
+     * @param <T> Configuration type.
      * @return Configuration instance.
      */
-    @Nullable <T extends ConfigurationProperty> T config(Class<? extends ConfigurationProperty> configClass);
+    @Nullable <T extends ConfigurationProperty> T config(Class<?> configClass);
 
     /**
      * Returns the key of a named list item for the parent (any from the root) or current configuration.
@@ -69,8 +69,7 @@ public interface ConfigurationNotificationEvent<VIEWT> {
      * occurred.
      *
      * @param configClass Configuration interface, for example {@code TableConfiguration}.
-     * @param <T>         Configuration type.
      * @return Configuration instance.
      */
-    @Nullable <T extends ConfigurationProperty> String name(Class<? extends ConfigurationProperty> configClass);
+    @Nullable String name(Class<?> configClass);
 }

@@ -184,7 +184,19 @@ public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEW
 
     /** {@inheritDoc} */
     @Override
-    public Class<? extends ConfigurationProperty<NamedListView<VIEWT>>> configType() {
+    public Class<?> configType() {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Class<?>[] internalConfigTypes() {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Class<?> polymorphicInstanceConfigType() {
         throw new UnsupportedOperationException("Not supported.");
     }
 

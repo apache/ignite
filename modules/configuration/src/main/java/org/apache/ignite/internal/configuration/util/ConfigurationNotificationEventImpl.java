@@ -36,7 +36,7 @@ class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotifica
     private final long storageRevision;
 
     /** Configuration containers. */
-    private final Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs;
+    private final Map<Class<?>, ConfigurationContainer> configs;
 
     /**
      * Constructor.
@@ -50,7 +50,7 @@ class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotifica
             VIEWT oldValue,
             VIEWT newValue,
             long storageRevision,
-            Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs
+            Map<Class<?>, ConfigurationContainer> configs
     ) {
         this.oldValue = oldValue;
         this.newValue = newValue;
@@ -78,9 +78,7 @@ class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotifica
 
     /** {@inheritDoc} */
     @Override
-    public <T extends ConfigurationProperty> @Nullable T config(
-            Class<? extends ConfigurationProperty> configClass
-    ) {
+    public <T extends ConfigurationProperty> @Nullable T config(Class<?> configClass) {
         ConfigurationContainer container = configs.get(configClass);
 
         return container == null ? null : (T) container.config;
@@ -88,9 +86,7 @@ class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotifica
 
     /** {@inheritDoc} */
     @Override
-    public @Nullable <T extends ConfigurationProperty> String name(
-            Class<? extends ConfigurationProperty> configClass
-    ) {
+    public @Nullable String name(Class<?> configClass) {
         ConfigurationContainer container = configs.get(configClass);
 
         return container == null ? null : container.keyNamedConfig;

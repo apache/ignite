@@ -282,4 +282,12 @@ public abstract class ConfigurationNode<VIEWT> implements ConfigurationProperty<
 
         return changer.getRootNode(rootKey).accept(keys.get(0), visitor);
     }
+
+    /**
+     * Returns current value of the configuration.
+     */
+    @Nullable
+    protected final VIEWT currentValue() {
+        return val;
+    }
 }

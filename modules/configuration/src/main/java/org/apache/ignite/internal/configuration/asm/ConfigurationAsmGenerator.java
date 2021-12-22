@@ -28,6 +28,7 @@ import static com.facebook.presto.bytecode.ParameterizedType.type;
 import static com.facebook.presto.bytecode.ParameterizedType.typeFromJavaClassName;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantBoolean;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantClass;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantInt;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantNull;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantString;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.inlineIf;
@@ -35,8 +36,10 @@ import static com.facebook.presto.bytecode.expression.BytecodeExpressions.invoke
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.invokeStatic;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.isNotNull;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.isNull;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.newArray;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.newInstance;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.not;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.set;
 import static java.lang.invoke.MethodType.methodType;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -49,6 +52,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.configuration.asm.DirectProxyAsmGenerator.newDirectProxyLambda;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.changeClassName;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.configurationClassName;
+import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.nodeClassName;
 import static org.apache.ignite.internal.configuration.asm.SchemaClassesInfo.viewClassName;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.containsNameAnnotation;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.extensionsFields;
@@ -219,8 +223,17 @@ public class ConfigurationAsmGenerator {
     /** {@link InnerNode#setInjectedNameFieldValue}. */
     private static final Method SET_INJECTED_NAME_FIELD_VALUE_MTD;
 
+    /** {@code ConfigurationNode#currentValue}. */
+    private static final Method CURRENT_VALUE_MTD;
+
+    /** {@link DynamicConfiguration#isRemovedFromNamedList}. */
+    private static final Method IS_REMOVED_FROM_NAMED_LIST_MTD;
+
     /** {@code Node#convert} method name. */
     private static final String CONVERT_MTD_NAME = "convert";
+
+    /** Field name for method {@link DynamicConfiguration#internalConfigTypes}. */
+    private static final String INTERNAL_CONFIG_TYPES_FIELD_NAME = "_internalConfigTypes";
 
     static {
         try {
@@ -289,6 +302,10 @@ public class ConfigurationAsmGenerator {
             ADD_DEFAULTS_MTD = ConfigurationUtil.class.getDeclaredMethod("addDefaults", InnerNode.class);
 
             SET_INJECTED_NAME_FIELD_VALUE_MTD = InnerNode.class.getDeclaredMethod("setInjectedNameFieldValue", String.class);
+
+            CURRENT_VALUE_MTD = ConfigurationNode.class.getDeclaredMethod("currentValue");
+
+            IS_REMOVED_FROM_NAMED_LIST_MTD = DynamicConfiguration.class.getDeclaredMethod("isRemovedFromNamedList");
         } catch (NoSuchMethodException nsme) {
             throw new ExceptionInInitializerError(nsme);
         }
@@ -1670,15 +1687,27 @@ public class ConfigurationAsmGenerator {
             fieldDefs.put(fieldName, fieldDef);
         }
 
+        FieldDefinition internalConfigTypesFieldDef = null;
+
+        if (!internalExtensions.isEmpty()) {
+            internalConfigTypesFieldDef = classDef.declareField(
+                    of(PRIVATE, FINAL),
+                    INTERNAL_CONFIG_TYPES_FIELD_NAME,
+                    Class[].class
+            );
+        }
+
         // Constructor
         addConfigurationImplConstructor(
                 classDef,
                 schemaClass,
+                internalExtensions,
                 fieldDefs,
                 schemaFields,
                 internalFields,
                 polymorphicFields,
-                internalIdField
+                internalIdField,
+                internalConfigTypesFieldDef
         );
 
         // org.apache.ignite.internal.configuration.DynamicProperty#directProxy
@@ -1695,6 +1724,10 @@ public class ConfigurationAsmGenerator {
 
         // org.apache.ignite.internal.configuration.DynamicConfiguration#configType
         addCfgImplConfigTypeMethod(classDef, typeFromJavaClassName(schemaClassInfo.cfgClassName));
+
+        if (internalConfigTypesFieldDef != null) {
+            addCfgImplInternalConfigTypesMethod(classDef, internalConfigTypesFieldDef);
+        }
 
         if (!polymorphicExtensions.isEmpty()) {
             addCfgSpecificConfigTreeMethod(classDef, schemaClass, polymorphicExtensions, polymorphicTypeIdFieldDef);
@@ -1714,6 +1747,13 @@ public class ConfigurationAsmGenerator {
                     polymorphicExtensions,
                     fieldDefs,
                     polymorphicFields,
+                    polymorphicTypeIdFieldDef
+            );
+
+            addCfgImplPolymorphicInstanceConfigTypeMethod(
+                    classDef,
+                    schemaClass,
+                    polymorphicExtensions,
                     polymorphicTypeIdFieldDef
             );
         }
@@ -1770,20 +1810,25 @@ public class ConfigurationAsmGenerator {
      *
      * @param classDef Configuration impl class definition.
      * @param schemaClass Configuration schema class.
+     * @param internalExtensions Internal extensions of the configuration schema.
      * @param fieldDefs Field definitions for all fields of configuration impl class.
      * @param schemaFields Fields of the schema class.
      * @param internalFields Fields of internal extensions of the configuration schema.
      * @param polymorphicFields Fields of polymorphic extensions of the configuration schema.
      * @param internalIdField Internal id field or {@code null} if it's not present.
+     * @param internalConfigTypesFieldDef Field definition for {@link DynamicConfiguration#internalConfigTypes},
+     *      {@code null} if there are no internal extensions.
      */
     private void addConfigurationImplConstructor(
             ClassDefinition classDef,
             Class<?> schemaClass,
+            Set<Class<?>> internalExtensions,
             Map<String, FieldDefinition> fieldDefs,
             Collection<Field> schemaFields,
             Collection<Field> internalFields,
             Collection<Field> polymorphicFields,
-            @Nullable Field internalIdField
+            @Nullable Field internalIdField,
+            @Nullable FieldDefinition internalConfigTypesFieldDef
     ) {
         MethodDefinition ctor = classDef.declareConstructor(
                 of(PUBLIC),
@@ -1937,6 +1982,34 @@ public class ConfigurationAsmGenerator {
             }
         }
 
+        if (internalConfigTypesFieldDef != null) {
+            assert !internalExtensions.isEmpty() : classDef;
+
+            // Class[] tmp;
+            Variable tmpVar = ctor.getScope().createTempVariable(Class[].class);
+
+            BytecodeBlock initInternalConfigTypesField = new BytecodeBlock();
+
+            // tmp = new Class[size];
+            initInternalConfigTypesField.append(tmpVar.set(newArray(type(Class[].class), internalExtensions.size())));
+
+            int i = 0;
+
+            for (Class<?> extension : internalExtensions) {
+                // tmp[i] = InternalTableConfiguration.class;
+                initInternalConfigTypesField.append(set(
+                        tmpVar,
+                        constantInt(i++),
+                        constantClass(typeFromJavaClassName(configurationClassName(extension)))
+                ));
+            }
+
+            // this._internalConfigTypes = tmp;
+            initInternalConfigTypesField.append(setThisFieldCode(ctor, tmpVar, internalConfigTypesFieldDef));
+
+            ctorBody.append(initInternalConfigTypesField);
+        }
+
         ctorBody.ret();
     }
 
@@ -2083,7 +2156,9 @@ public class ConfigurationAsmGenerator {
     }
 
     /**
-     * Add {@link DynamicConfiguration#configType} method implementation to the class. It looks like the following code:
+     * Add {@link DynamicConfiguration#configType} method implementation to the class.
+     *
+     * <p>It looks like the following code:
      * <pre><code>
      * public Class configType() {
      *     return RootConfiguration.class;
@@ -2091,13 +2166,108 @@ public class ConfigurationAsmGenerator {
      * </code></pre>
      *
      * @param classDef Class definition.
-     * @param clazz    Definition of the configuration interface, for example {@code RootConfiguration}.
+     * @param clazz Definition of the configuration interface, for example {@code RootConfiguration}.
      */
     private static void addCfgImplConfigTypeMethod(ClassDefinition classDef, ParameterizedType clazz) {
         classDef.declareMethod(of(PUBLIC), "configType", type(Class.class))
                 .getBody()
                 .append(constantClass(clazz))
                 .retObject();
+    }
+
+    /**
+     * Add {@link DynamicConfiguration#internalConfigTypes} method implementation to the class.
+     *
+     * <p>It looks like the following code:
+     * <pre><code>
+     * public Class<?>[] internalConfigTypes() {
+     *     return new Class<?>[]{FirstInternalTableConfiguration.class, SecondInternalTableConfiguration.class};
+     * }
+     * </code></pre>
+     *
+     * @param classDef Class definition.
+     * @param internalConfigTypesDef Definition of the field in which the interfaces of the internal configuration extensions are stored.
+     */
+    private static void addCfgImplInternalConfigTypesMethod(ClassDefinition classDef, FieldDefinition internalConfigTypesDef) {
+        MethodDefinition internalConfigTypesMtd = classDef.declareMethod(of(PUBLIC), "internalConfigTypes", type(Class[].class));
+
+        internalConfigTypesMtd
+                .getBody()
+                .append(getThisFieldCode(internalConfigTypesMtd, internalConfigTypesDef))
+                .retObject();
+    }
+
+    /**
+     * Add {@link DynamicConfiguration#polymorphicInstanceConfigType} method implementation to the class.
+     *
+     * <p>It looks like the following code:
+     * <pre><code>
+     * public Class polymorphicInstanceConfigType() {
+     *      InnerNode val = this.isRemovedFromNamedList() ? this.currentValue() : this.refreshValue();
+     *      String typeId = val.polymorphicTypeId;
+     *      switch(typeId) {
+     *          case "hash":
+     *              return HashIndexConfiguration.class;
+     *          case "sorted"
+     *              return SortedIndexConfiguration.class;
+     *          default:
+     *              throw new ConfigurationWrongPolymorphicTypeIdException(typeId);
+     *      }
+     * }
+     * </code></pre>
+     *
+     * @param classDef Class definition.
+     * @param schemaClass Polymorphic configuration schema (parent).
+     * @param polymorphicExtensions Polymorphic configuration instance schemas (children).
+     * @param polymorphicTypeIdFieldDef Identification field for the polymorphic configuration instance.
+     */
+    private static void addCfgImplPolymorphicInstanceConfigTypeMethod(
+            ClassDefinition classDef,
+            Class<?> schemaClass,
+            Set<Class<?>> polymorphicExtensions,
+            FieldDefinition polymorphicTypeIdFieldDef
+    ) {
+        MethodDefinition polymorphicInstanceConfigTypeMtd = classDef.declareMethod(
+                of(PUBLIC),
+                "polymorphicInstanceConfigType",
+                type(Class.class)
+        );
+
+        // String tmpStr;
+        Variable tmpStrVar = polymorphicInstanceConfigTypeMtd.getScope().createTempVariable(String.class);
+
+        StringSwitchBuilder switchBuilder = new StringSwitchBuilder(polymorphicInstanceConfigTypeMtd.getScope())
+                .expression(tmpStrVar)
+                .defaultCase(throwException(ConfigurationWrongPolymorphicTypeIdException.class, tmpStrVar));
+
+        for (Class<?> polymorphicExtension : polymorphicExtensions) {
+            switchBuilder.addCase(
+                    polymorphicInstanceId(polymorphicExtension),
+                    constantClass(typeFromJavaClassName(configurationClassName(polymorphicExtension))).ret()
+            );
+        }
+
+        // ConfigNode
+        ParameterizedType nodeType = typeFromJavaClassName(nodeClassName(schemaClass));
+
+        // Object tmpObj;
+        Variable tmpObjVar = polymorphicInstanceConfigTypeMtd.getScope().createTempVariable(Object.class);
+
+        // this;
+        Variable thisVar = polymorphicInstanceConfigTypeMtd.getThis();
+
+        // tmpObj = this.isRemovedFromNamedList() ? this.currentValue() : this.refreshValue();
+        // tmpStr = ((ConfigNode) tmpObj).typeId;
+        // switch(tmpStr) ...
+        polymorphicInstanceConfigTypeMtd.getBody()
+                .append(tmpObjVar.set(inlineIf(
+                        thisVar.invoke(IS_REMOVED_FROM_NAMED_LIST_MTD),
+                        thisVar.invoke(CURRENT_VALUE_MTD),
+                        thisVar.invoke(REFRESH_VALUE_MTD))
+                ))
+                .append(tmpStrVar.set(tmpObjVar.cast(nodeType).getField(polymorphicTypeIdFieldDef.getName(), String.class)))
+                .append(switchBuilder.build())
+                .ret();
     }
 
     /**

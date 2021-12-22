@@ -30,6 +30,9 @@ import java.util.function.Consumer;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.InternalConfiguration;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
@@ -43,6 +46,9 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET extends VIEWT> extends
         implements ConfigurationTree<VIEWT, CHANGET> {
     /** Configuration members (leaves and nodes). */
     protected volatile Map<String, ConfigurationProperty<?>> members = new LinkedHashMap<>();
+
+    /** Removed from the named list. */
+    protected boolean removedFromNamedList;
 
     /**
      * Constructor.
@@ -176,12 +182,33 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET extends VIEWT> extends
     }
 
     /**
-     * Returns configuration interface.
+     * Returns the configuration interface, for example {@code RootConfiguration}.
      *
-     * @return Configuration interface, for example {@code RootConfiguration}.
      * @throws UnsupportedOperationException In the case of a named list.
      */
-    public abstract Class<? extends ConfigurationProperty<VIEWT>> configType();
+    public abstract Class<?> configType();
+
+    /**
+     * Returns the interfaces of the {@link InternalConfiguration internal configuration extensions} for example
+     * {@code InternalTableConfiguration}, {@code null} if absent.
+     *
+     * @throws UnsupportedOperationException In the case of a named list.
+     */
+    @Nullable
+    public Class<?>[] internalConfigTypes() {
+        return null;
+    }
+
+    /**
+     * Returns the interface of a {@link PolymorphicConfigInstance polymorphic configuration extension} for example
+     * {@code HashIndexConfiguration}, {@code null} if the configuration is not {@link PolymorphicConfig polymorphic}.
+     *
+     * @throws UnsupportedOperationException In the case of a named list.
+     */
+    @Nullable
+    public Class<?> polymorphicInstanceConfigType() {
+        return null;
+    }
 
     /**
      * Returns specific configuration tree.
@@ -239,5 +266,19 @@ public abstract class DynamicConfiguration<VIEWT, CHANGET extends VIEWT> extends
             P member
     ) {
         members.remove(member.key());
+    }
+
+    /**
+     * Mark that the configuration has been removed from the named list.
+     */
+    public void removedFromNamedList() {
+        removedFromNamedList = true;
+    }
+
+    /**
+     * Return {@code true} if the configuration has been removed from the named list.
+     */
+    public boolean isRemovedFromNamedList() {
+        return removedFromNamedList;
     }
 }
