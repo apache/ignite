@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -110,14 +111,14 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         // Make sure metrics are registered.
         for (IgniteEx ignite : grids)
-            assertEquals(metricsCnt(ignite, SRVC_NAME), expectedCnt);
+            assertEquals(metricsCnt(ignite), expectedCnt);
 
         grids.get(0).services().cancel(SRVC_NAME);
 
         awaitPartitionMapExchange();
 
         for (IgniteEx ignite : grids)
-            assertEquals(metricsCnt(ignite, SRVC_NAME), 0);
+            assertEquals(metricsCnt(ignite), 0);
     }
 
     /** Tests service metrics migrates correclty with the service redeployment. */
@@ -130,15 +131,16 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Only same method metric count must persist across the cluster for the singleton.
         int expectedCnt = Arrays.stream(MyService.class.getDeclaredMethods()).map(Method::getName).collect(
             Collectors.toSet()).size();
 
         // Only same method metric count must persist across the cluster for the singleton.
         assertEquals("Only one metric registry can persist for one service instance", expectedCnt,
-            grids.stream().map(grid -> metricsCnt(grid, SRVC_NAME)).mapToInt(Integer::intValue).sum());
+            grids.stream().map(GridServiceMetricsTest::metricsCnt).mapToInt(Integer::intValue).sum());
 
         for (int i = 0; i < grids.size(); ++i) {
-            if (metricsCnt(grid(i), SRVC_NAME) > 0) {
+            if (metricsCnt(grid(i)) > 0) {
                 stopGrid(i);
 
                 awaitPartitionMapExchange();
@@ -146,6 +148,10 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                 break;
             }
         }
+
+        // Only same method metric count must persist across the cluster for the singleton.
+        assertEquals("Only one metric registry can persist for one service instance", expectedCnt,
+            G.allGrids().stream().map(grid -> metricsCnt((IgniteEx)grid)).mapToInt(Integer::intValue).sum());
     }
 
     /** Tests service metrics for single service instance. */
@@ -282,9 +288,9 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         return svcCfg;
     }
 
-    /** @return Number of metrics contained in metric registry for {@code srvcName}. */
-    private static int metricsCnt(IgniteEx ignite, String srvcName) {
-        return Iterables.size(ignite.context().metric().registry(serviceMetricRegistryName(srvcName)));
+    /** @return Number of metrics contained in metric registry of the test service. */
+    private static int metricsCnt(IgniteEx ignite) {
+        return Iterables.size(ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME)));
     }
 
     /**
