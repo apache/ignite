@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -63,21 +64,11 @@ public abstract class AbstractSnapshotVerificationTask extends
         Set<SnapshotMetadata> allMetas = new HashSet<>();
         clusterMetas.values().forEach(allMetas::addAll);
 
-        Set<String> missed = null;
-
-        for (SnapshotMetadata meta : allMetas) {
-            if (missed == null)
-                missed = new HashSet<>(meta.baselineNodes());
-
-            missed.remove(meta.consistentId());
-
-            if (missed.isEmpty())
-                break;
+        try {
+            checkMissedMetadata(allMetas);
         }
-
-        if (!missed.isEmpty()) {
-            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
-                new IgniteException("Some metadata is missing from the snapshot: " + missed)));
+        catch (IgniteCheckedException e) {
+            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(), new IgniteException(e.getMessage())));
         }
 
         metas.putAll(clusterMetas);
@@ -104,6 +95,29 @@ public abstract class AbstractSnapshotVerificationTask extends
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
         // Handle all exceptions during the `reduce` operation.
         return ComputeJobResultPolicy.WAIT;
+    }
+
+    /**
+     * Ensures that all parts of the snapshot are available according to the metadata.
+     *
+     * @param clusterMetas List of snapshot metadata found in the cluster.
+     * @throws IgniteCheckedException If some metadata is missing.
+     */
+    public static void checkMissedMetadata(Collection<SnapshotMetadata> clusterMetas) throws IgniteCheckedException {
+        Set<String> missed = null;
+
+        for (SnapshotMetadata meta : clusterMetas) {
+            if (missed == null)
+                missed = new HashSet<>(meta.baselineNodes());
+
+            missed.remove(meta.consistentId());
+
+            if (missed.isEmpty())
+                break;
+        }
+
+        if (!missed.isEmpty())
+            throw new IgniteCheckedException("Some metadata is missing from the snapshot: " + missed);
     }
 
     /**
