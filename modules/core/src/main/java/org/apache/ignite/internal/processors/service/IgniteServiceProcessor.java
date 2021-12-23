@@ -111,7 +111,6 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
@@ -1284,9 +1283,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
 
-                if (cancelCnt >= ctxs.size())
-                    ctx.metric().remove(serviceMetricRegistryName(name));
-
                 cancel(ctxs, cancelCnt);
             }
             else if (ctxs.size() < assignCnt) {
@@ -1428,14 +1424,20 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
-    private void cancel(Iterable<ServiceContextImpl> ctxs, int cancelCnt) {
+    private void cancel(Collection<ServiceContextImpl> ctxs, int cancelCnt) {
         for (Iterator<ServiceContextImpl> it = ctxs.iterator(); it.hasNext(); ) {
-            cancel(it.next());
+            ServiceContextImpl svcCtx = it.next();
+
+            cancel(svcCtx);
 
             it.remove();
 
-            if (--cancelCnt == 0)
+            if (--cancelCnt == 0) {
+                if (ctxs.isEmpty())
+                    ctx.metric().remove(serviceMetricRegistryName(svcCtx.name()));
+
                 break;
+            }
         }
     }
 
@@ -1494,9 +1496,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         if (ctxs != null) {
             synchronized (ctxs) {
-                if (!ctxs.isEmpty())
-                    ctx.metric().remove(serviceMetricRegistryName(ctxs.iterator().next().name()));
-
                 cancel(ctxs, ctxs.size());
             }
         }
@@ -2021,7 +2020,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
             for (Method mtd : itf.getMethods()) {
-                if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
+                if (metricIgnored(mtd.getDeclaringClass()))
                     continue;
 
                 metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
@@ -2036,8 +2035,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return {@code True} if metrics should not be created for this class or interface.
      */
     private static boolean metricIgnored(Class<?> cls) {
-        return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls)
-            || PlatformService.class.equals(cls);
+        return Service.class.equals(cls) || Externalizable.class.equals(cls) || PlatformService.class.equals(cls);
     }
 
     /**
