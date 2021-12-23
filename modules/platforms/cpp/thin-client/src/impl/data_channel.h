@@ -187,6 +187,13 @@ namespace ignite
                     msg.Read(reader, currentVersion);
                 }
 
+                /**
+                 * Fail all pending requests.
+                 *
+                 * @param err Error.
+                 */
+                void FailPendingRequests(const IgniteError* err);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 

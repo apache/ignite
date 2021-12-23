@@ -655,6 +655,14 @@ namespace ignite
          * @return Full name.
          */
         IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
+
+        /**
+         * Get hex dump of binary data in string form.
+         * @param data Data.
+         * @param count Number of bytes.
+         * @return Hex dump string.
+         */
+        IGNITE_IMPORT_EXPORT std::string HexDump(const void* data, size_t count);
     }
 }
 
