@@ -1243,7 +1243,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         File snpDir = snapshotLocalDir(snpName);
 
-        if (!snpDir.exists())
+        if (!(snpDir.exists() && snpDir.isDirectory()))
             return Collections.emptyList();
 
         List<File> smfs = new ArrayList<>();
