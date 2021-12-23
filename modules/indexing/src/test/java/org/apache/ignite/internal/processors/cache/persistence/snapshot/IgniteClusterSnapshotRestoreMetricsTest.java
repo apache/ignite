@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,39 +32,44 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /**
  * Tests snapshot restore metrics.
  */
-public class IgniteClusterSnapshotRestoreMetricsTest extends AbstractSnapshotSelfTest {
-    /** TODO Remove this method after IGNITE-14999 to enable encryption. */
-    @Parameterized.Parameters(name = "Encryption is disabled")
-    public static Iterable<Boolean> disabledEncryption() {
-        return Collections.singletonList(false);
-    }
+public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapshotRestoreBaseTest {
+    /** Separate working directory prefix. */
+    private static final String DEDICATED_DIR_PREFIX = "dedicated-";
+
+    /** Number of nodes using a separate working directory. */
+    private static final int DEDICATED_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setMetricExporterSpi(new JmxMetricExporterSpi());
+
+        if (getTestIgniteInstanceIndex(igniteInstanceName) < DEDICATED_CNT) {
+            cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(),
+                DEDICATED_DIR_PREFIX + U.maskForFileName(cfg.getIgniteInstanceName())).toString());
+        }
+
+        return cfg;
     }
 
     /**
@@ -83,88 +90,92 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends AbstractSnapshotSel
             );
     }
 
+    /** {@inheritDoc} */
+    @Before
+    @Override public void beforeTestSnapshot() throws Exception {
+        super.beforeTestSnapshot();
+
+        cleanuo();
+    }
+
+    /** {@inheritDoc} */
+    @After
+    @Override public void afterTestSnapshot() throws Exception {
+        super.afterTestSnapshot();
+
+        cleanuo();
+    }
+
     /** @throws Exception If fails. */
     @Test
-    public void testRestoreSnapshot() throws Exception {
+    public void testRestoreSnapshotProgress() throws Exception {
         // Caches with differebt partition distribution.
         CacheConfiguration<Integer, Object> ccfg1 = cacheConfig("cache1").setBackups(0);
         CacheConfiguration<Integer, Object> ccfg2 = cacheConfig("cache2").setCacheMode(CacheMode.REPLICATED);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg1, ccfg2);
+        Ignite ignite = startGridsWithCache(DEDICATED_CNT, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg1, ccfg2);
 
-        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
-
-        assertEquals("Snapshot end time must be undefined on start.", 0, getLastSnapshotEndTime(snpMBean));
-
-        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
-
-        mxBean.createSnapshot(SNAPSHOT_NAME);
-
-        assertTrue(GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, TIMEOUT));
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         ignite.destroyCaches(F.asList(ccfg1.getName(), ccfg2.getName()));
         awaitPartitionMapExchange();
 
         // Add new empty node.
-        startGrid(3);
+        IgniteEx emptyNode = startGrid(DEDICATED_CNT);
         resetBaselineTopology();
 
-        DynamicMBean restoreMBean = metricRegistry(ignite.name(), null, SNAPSHOT_RESTORE_METRICS);
-
-        assertEquals(0, getLongMetric("endTime", restoreMBean));
-        assertEquals(-1, getLongMetric("totalPartitions", restoreMBean));
-        assertEquals(0, getLongMetric("processedPartitions", restoreMBean));
-        assertTrue(String.valueOf(restoreMBean.getAttribute("snapshotName")).isEmpty());
+        checkMetricsDefaults();
 
         Set<String> grpNames = new HashSet<>(F.asList(ccfg1.getName(), ccfg2.getName()));
 
-        mxBean.restoreSnapshot(SNAPSHOT_NAME, F.concat(grpNames, " ,"));
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames);
 
-        for (Ignite grid : G.allGrids()) {
-            DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
+        for (Ignite node : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(node.name(), null, SNAPSHOT_RESTORE_METRICS);
+            String nodeNameMsg = "node=" + node.name();
 
-            assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) > 0, TIMEOUT));
+            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) > 0, TIMEOUT));
 
-            IgniteInternalCache<?, ?> cache1 = ((IgniteEx)grid).cachex(ccfg1.getName());
-            IgniteInternalCache<?, ?> cache2 = ((IgniteEx)grid).cachex(ccfg2.getName());
+            int expParts = ((IgniteEx)node).cachex(ccfg1.getName()).context().topology().localPartitions().size() +
+                ((IgniteEx)node).cachex(ccfg2.getName()).context().topology().localPartitions().size();
 
-            int cache1Parts = cache1.context().topology().localPartitions().size();
+            // Cache2 is replicated - the index partition is being copied (on snapshot data nodes).
+            if (!emptyNode.name().equals(node.name()))
+                expParts += 1;
 
-            // Cache2 is replicated - the index partition is being copied.
-            int cache2Parts = cache2.context().topology().localPartitions().size() + 1;
+            assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
+            assertEquals(nodeNameMsg, "", mReg.getAttribute("error"));
 
-            String nodeNameMsg = "node=" + grid.name();
+            assertFalse(nodeNameMsg, ((String)mReg.getAttribute("requestId")).isEmpty());
 
-            assertEquals(nodeNameMsg, cache1Parts + cache2Parts, getLongMetric("totalPartitions", mReg));
-            assertEquals(nodeNameMsg, cache1Parts + cache2Parts, getLongMetric("processedPartitions", mReg));
+            assertEquals(nodeNameMsg, expParts, getLongMetric("totalPartitions", mReg));
+            assertEquals(nodeNameMsg, expParts, getLongMetric("processedPartitions", mReg));
 
             long startTime = getLongMetric("startTime", mReg);
             long endTime = getLongMetric("endTime", mReg);
 
             assertTrue(nodeNameMsg, startTime > 0);
-            assertTrue(nodeNameMsg, endTime > 0);
             assertTrue(nodeNameMsg, endTime >= startTime);
-
-            assertFalse(nodeNameMsg, ((String)mReg.getAttribute("requestId")).isEmpty());
-
-            assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
-            assertEquals(nodeNameMsg, "", mReg.getAttribute("error"));
         }
 
         assertSnapshotCacheKeys(ignite.cache(ccfg1.getName()));
         assertSnapshotCacheKeys(ignite.cache(ccfg2.getName()));
+    }
 
-        // Clear everything and check the error metric.
-        ignite.destroyCaches(F.asList(ccfg1.getName(), ccfg2.getName()));
-        awaitPartitionMapExchange();
+    /** @throws Exception If fails. */
+    @Test
+    public void testRestoreSnapshotError() throws Exception {
+        dfltCacheCfg.setCacheMode(CacheMode.REPLICATED);
 
-        String failingFilePath = Paths.get(CACHE_DIR_PREFIX + "cache2",
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        String failingFilePath = Paths.get(FilePageStoreManager.cacheDirName(dfltCacheCfg),
             PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
 
-        grid(0).context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
+        ignite.context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
             FileIO delegate = ioFactory.create(file, modes);
 
             if (file.getPath().endsWith(failingFilePath))
@@ -173,24 +184,53 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends AbstractSnapshotSel
             return delegate;
         });
 
-        long procStartTime = U.currentTimeMillis();
+        checkMetricsDefaults();
 
-        mxBean.restoreSnapshot(SNAPSHOT_NAME, null);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        for (Ignite grid : G.allGrids()) {
-            DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
+        for (Ignite node : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(node.name(), null, SNAPSHOT_RESTORE_METRICS);
 
-            assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) >= procStartTime, TIMEOUT));
+            String nodeNameMsg = "node=" + node.name();
 
-            String nodeNameMsg = "node=" + grid.name();
+            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) > 0, TIMEOUT));
 
             long startTime = getLongMetric("startTime", mReg);
             long endTime = getLongMetric("endTime", mReg);
 
-            assertTrue(nodeNameMsg, startTime >= procStartTime);
+            assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
+
+            assertFalse(nodeNameMsg, ((String)mReg.getAttribute("requestId")).isEmpty());
+
+            assertTrue(nodeNameMsg, startTime > 0);
             assertTrue(nodeNameMsg, endTime >= startTime);
             assertTrue(nodeNameMsg, ((String)mReg.getAttribute("error")).contains(testErrMsg));
-            assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkMetricsDefaults() throws Exception {
+        DynamicMBean mReg = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+
+        for (Ignite node : G.allGrids()) {
+            String nodeNameMsg = "node=" + node.name();
+
+            assertEquals(nodeNameMsg, 0, getLongMetric("endTime", mReg));
+            assertEquals(nodeNameMsg, -1, getLongMetric("totalPartitions", mReg));
+            assertEquals(nodeNameMsg, 0, getLongMetric("processedPartitions", mReg));
+            assertTrue(nodeNameMsg, String.valueOf(mReg.getAttribute("snapshotName")).isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void cleanuo() throws Exception {
+        FilenameFilter filter = (file, name) -> file.isDirectory() && name.startsWith(DEDICATED_DIR_PREFIX);
+
+        for (File file : new File(U.defaultWorkDirectory()).listFiles(filter))
+            U.delete(file);
     }
 }

@@ -186,6 +186,8 @@ public class SnapshotRestoreProcess {
      * Register local metrics.
      */
     protected void registerMetrics() {
+        assert !ctx.clientNode();
+
         MetricRegistry mreg = ctx.metric().registry(SNAPSHOT_RESTORE_METRICS);
 
         mreg.register("startTime", () -> lastOpCtx.startTime,

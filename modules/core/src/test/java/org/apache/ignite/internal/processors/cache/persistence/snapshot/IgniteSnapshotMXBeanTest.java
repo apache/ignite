@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -42,6 +43,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests {@link SnapshotMXBean}.
  */
 public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
+    /** Metric group name. */
+    private static final String METRIC_GROUP = "Snapshot";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -58,7 +62,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
             0, getLastSnapshotEndTime(snpMBean));
 
-        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
@@ -79,7 +83,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         IgniteEx startCli = startClientGrid(1);
         IgniteEx killCli = startClientGrid(2);
 
-        SnapshotMXBean mxBean = getMxBean(killCli.name(), "Snapshot", SnapshotMXBeanImpl.class,
+        SnapshotMXBean mxBean = getMxBean(killCli.name(), METRIC_GROUP, SnapshotMXBeanImpl.class,
             SnapshotMXBean.class);
 
         doSnapshotCancellationTest(startCli,
@@ -90,27 +94,36 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testRestoreSnapshot() throws Exception {
+        // TODO IGNITE-14999 Support dynamic restoration of encrypted snapshots.
+        if (encryption)
+            return;
+
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
+
+        DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+        DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
+
+        assertEquals(0, getLongMetric("endTime", mReg0));
+        assertEquals(0, getLongMetric("endTime", mReg1));
+
+        getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
+            .restoreSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg0) > 0, TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg1) > 0, TIMEOUT));
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testCancelRestoreSnapshot() throws Exception {
         // TODO IGNITE-14999 Support dynamic restoration of encrypted snapshots.
         if (encryption)
             return;
 
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-
-        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
-
-        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
-            0, getLastSnapshotEndTime(snpMBean));
-
-        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
-
-        mxBean.createSnapshot(SNAPSHOT_NAME);
-
-        assertTrue(GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, TIMEOUT));
-
-        ignite.destroyCache(dfltCacheCfg.getName());
-
-        awaitPartitionMapExchange();
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
@@ -121,7 +134,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-        IgniteInternalFuture<Boolean> interruptFut = GridTestUtils.runAsync(() -> {
+       IgniteInternalFuture<Boolean> interruptFut = GridTestUtils.runAsync(() -> {
             // Wait for the process to be interrupted.
             AtomicReference<?> errRef = U.field((Object)U.field((Object)U.field(
                 grid(0).context().cache().context().snapshotMgr(), "restoreCacheGrpProc"), "opCtx"), "err");
@@ -133,10 +146,14 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             return interrupted;
         });
 
-        mxBean.cancelSnapshotRestore(SNAPSHOT_NAME);
+        getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
+            .cancelSnapshotRestore(SNAPSHOT_NAME);
 
         assertTrue(interruptFut.get());
 
-        assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, "Operation has been canceled by the user");
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class,
+            "Operation has been canceled by the user");
+
+        assertNull(ignite.cache(DEFAULT_CACHE_NAME));
     }
 }
