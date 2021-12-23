@@ -97,6 +97,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @param pageId Forward page ID.
      */
     public final void setForward(long pageAddr, long pageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, FORWARD_OFF, pageId);
 
         assert getForward(pageAddr) == pageId;
@@ -115,6 +117,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @param rmvId Remove ID.
      */
     public final void setRemoveId(long pageAddr, long rmvId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, REMOVE_ID_OFF, rmvId);
 
         assert getRemoveId(pageAddr) == rmvId;
@@ -137,6 +141,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @param cnt Count.
      */
     public final void setCount(long pageAddr, int cnt) {
+        assertPageType(pageAddr);
+
         assert cnt >= 0 : cnt;
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
@@ -180,6 +186,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      */
     public final byte[] store(long pageAddr, int idx, L row, byte[] rowBytes, boolean needRowBytes)
         throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         int off = offset(idx);
 
         if (rowBytes == null) {
@@ -263,6 +271,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      */
     public byte[] insert(long pageAddr, int idx, L row, byte[] rowBytes, long rightId, boolean needRowBytes)
         throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         int cnt = getCount(pageAddr);
 
         // Move right all the greater elements to make a free slot for a new row link.
@@ -291,6 +301,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         int pageSize,
         PageMetrics metrics
     ) throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         initNewPage(fwdPageAddr, fwdId, pageSize, metrics);
 
         cnt -= mid;
@@ -311,6 +323,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @param fwdId New forward page ID.
      */
     public void splitExistingPage(long pageAddr, int mid, long fwdId) {
+        assertPageType(pageAddr);
+
         setCount(pageAddr, mid);
         setForward(pageAddr, fwdId);
     }
@@ -322,6 +336,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void remove(long pageAddr, int idx, int cnt) throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         cnt--;
 
         copyItems(pageAddr, pageAddr, idx + 1, idx, cnt - idx, false);
@@ -348,6 +364,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         boolean emptyBranch,
         int pageSize
     ) throws IgniteCheckedException {
+        assertPageType(leftPageAddr);
+
         int prntCnt = prntIo.getCount(prntPageAddr);
         int leftCnt = getCount(leftPageAddr);
         int rightCnt = getCount(rightPageAddr);
@@ -428,6 +446,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
 
     /** {@inheritDoc} */
     @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        assertPageType(page);
+
         copyPage(page, out, pageSize);
 
         long pageAddr = GridUnsafe.bufferAddress(out);
@@ -438,6 +458,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
 
     /** {@inheritDoc} */
     @Override public void restorePage(ByteBuffer compactPage, int pageSize) {
+        assertPageType(compactPage);
+
         assert compactPage.isDirect();
         assert compactPage.position() == 0;
         assert compactPage.limit() <= pageSize;
