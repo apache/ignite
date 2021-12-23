@@ -32,7 +32,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -1242,16 +1241,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            return Collections.emptyList();
+
         List<File> smfs = new ArrayList<>();
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snapshotLocalDir(snpName).toPath())) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
             for (Path d : ds) {
                 if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
                     smfs.add(d.toFile());
             }
-        }
-        catch (NoSuchFileException e) {
-            return Collections.emptyList();
         }
         catch (IOException e) {
             throw new IgniteException(e);
