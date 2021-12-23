@@ -459,11 +459,7 @@ public class SnapshotRestoreProcess {
             if (fut0 != null && reqId.equals(fut0.rqId)) {
                 fut = null;
 
-                ctx.pools().getSystemExecutorService().submit(() -> {
-                    fut0.endTime = U.currentTimeMillis();
-
-                    fut0.onDone(null, err);
-                });
+                ctx.pools().getSystemExecutorService().submit(() -> fut0.onDone(null, err));
             }
         }
     }
