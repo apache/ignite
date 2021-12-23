@@ -31,3 +31,6 @@ interested in):
     </dependencies>
     ...
 </project>
+
+Used third-party jetty libraries that use slf4j facade for logging.
+You can set up logging yourself.
