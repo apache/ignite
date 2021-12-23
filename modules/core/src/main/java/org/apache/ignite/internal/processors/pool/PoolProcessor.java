@@ -975,7 +975,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
 
-        if (!U.IGNITE_MBEANS_DISABLED) {
+        if (ctx.mBeans().isEnabled()) {
             ctx.mBeans().registerMBean(
                 THREAD_POOLS_MBEAN_GROUP,
                 name,
@@ -1037,7 +1037,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             int[].class,
             "Size of queue per stripe.");
 
-        if (!U.IGNITE_MBEANS_DISABLED) {
+        if (ctx.mBeans().isEnabled()) {
             ctx.mBeans().registerMBean(
                 THREAD_POOLS_MBEAN_GROUP,
                 name,

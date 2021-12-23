@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
-import javax.management.JMException;
-import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -191,8 +189,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
                         ", lastErr=" + lastErr + ']', lastErr);
 
-                if (!U.IGNITE_MBEANS_DISABLED)
-                    registerMBean();
+                if (ctx.mBeans().isEnabled()) {
+                    ctx.mBeans().registerMBean(
+                        "Clients",
+                        getClass().getSimpleName(),
+                        new ClientProcessorMXBeanImpl(),
+                        ClientProcessorMXBean.class
+                    );
+                }
 
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
                     new ClientConnectionViewWalker(),
@@ -211,49 +215,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         if (srv != null)
             srv.start();
-    }
-
-    /**
-     * Register an Ignite MBean for managing clients connections.
-     */
-    private void registerMBean() throws IgniteCheckedException {
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        String name = getClass().getSimpleName();
-
-        try {
-            ObjectName objName = U.registerMBean(
-                ctx.config().getMBeanServer(),
-                ctx.config().getIgniteInstanceName(),
-                "Clients", name, new ClientProcessorMXBeanImpl(), ClientProcessorMXBean.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Registered MBean: " + objName);
-        }
-        catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register MBean " + name, e);
-        }
-    }
-
-    /**
-     * Unregisters given MBean.
-     */
-    private void unregisterMBean() {
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        String name = getClass().getSimpleName();
-
-        try {
-            ObjectName objName = U.makeMBeanName(ctx.config().getIgniteInstanceName(), "Clients", name);
-
-            ctx.config().getMBeanServer().unregisterMBean(objName);
-
-            if (log.isDebugEnabled())
-                log.debug("Unregistered MBean: " + objName);
-        }
-        catch (JMException e) {
-            U.error(log, "Failed to unregister MBean: " + name, e);
-        }
     }
 
     /**
@@ -355,9 +316,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ctx.ports().deregisterPorts(getClass());
 
             execSvc = null;
-
-            if (!U.IGNITE_MBEANS_DISABLED)
-                unregisterMBean();
 
             if (log.isDebugEnabled())
                 log.debug("Client connector processor stopped.");

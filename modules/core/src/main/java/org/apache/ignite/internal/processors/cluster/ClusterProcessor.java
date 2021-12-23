@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.JMException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -173,9 +171,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** */
     private volatile DistributedMetaStorage metastorage;
-
-    /** */
-    private ObjectName mBean;
 
     /**
      * @param ctx Kernal context.
@@ -612,51 +607,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         IgniteClusterMXBeanImpl mxBeanImpl = new IgniteClusterMXBeanImpl(cluster);
 
-        if (!U.IGNITE_MBEANS_DISABLED) {
-            try {
-                mBean = U.registerMBean(
-                    ctx.config().getMBeanServer(),
-                    ctx.igniteInstanceName(),
-                    M_BEAN_NAME,
-                    mxBeanImpl.getClass().getSimpleName(),
-                    mxBeanImpl,
-                    IgniteClusterMXBean.class);
-
-                if (log.isDebugEnabled())
-                    log.debug("Registered " + M_BEAN_NAME + " MBean: " + mBean);
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to register MBean for cluster: ", e);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        unregisterMBean();
-    }
-
-    /**
-     * Unregister IgniteCluster MBean.
-     */
-    private void unregisterMBean() {
-        ObjectName mBeanName = mBean;
-
-        if (mBeanName == null)
-            return;
-
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        try {
-            ctx.config().getMBeanServer().unregisterMBean(mBeanName);
-
-            mBean = null;
-
-            if (log.isDebugEnabled())
-                log.debug("Unregistered " + M_BEAN_NAME + " MBean: " + mBeanName);
-        }
-        catch (JMException e) {
-            U.error(log, "Failed to unregister " + M_BEAN_NAME + " MBean: " + mBeanName, e);
+        if (ctx.mBeans().isEnabled()) {
+            ctx.mBeans().registerMBean(
+                M_BEAN_NAME,
+                mxBeanImpl.getClass().getSimpleName(),
+                mxBeanImpl,
+                IgniteClusterMXBean.class
+            );
         }
     }
 

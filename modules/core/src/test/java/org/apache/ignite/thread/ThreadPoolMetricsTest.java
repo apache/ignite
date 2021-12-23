@@ -17,13 +17,11 @@
 
 package org.apache.ignite.thread;
 
-import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -131,10 +129,11 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
                 .collect(Collectors.toSet())
                 .containsAll(THREAD_POOL_VIEWS));
 
-            MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-            for (String threadPoolName : THREAD_POOL_NAMES)
-                assertTrue(mbeanSrv.isRegistered(U.makeMBeanName(srv.name(), THREAD_POOLS_MBEAN_GROUP, threadPoolName)));
+            for (String threadPoolName : THREAD_POOL_NAMES) {
+                assertTrue(srv.configuration().getMBeanServer().isRegistered(
+                    U.makeMBeanName(srv.name(), THREAD_POOLS_MBEAN_GROUP, threadPoolName)
+                ));
+            }
         }
         finally {
             startUnblockedLatch.countDown();

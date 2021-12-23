@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.InstanceNotFoundException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerMXBean;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,20 +42,19 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
 
         pageLockTrackerManager.start();
 
-        registerMetricsMBean(
-            cctx.gridConfig(),
-            MBEAN_GROUP,
-            PageLockTrackerMXBean.MBEAN_NAME,
-            pageLockTrackerManager.mxBean(),
-            PageLockTrackerMXBean.class
-        );
+        if (cctx.kernalContext().mBeans().isEnabled()) {
+            cctx.kernalContext().mBeans().registerMBean(
+                MBEAN_GROUP,
+                PageLockTrackerMXBean.MBEAN_NAME,
+                pageLockTrackerManager.mxBean(),
+                PageLockTrackerMXBean.class
+            );
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);
-
-        unregisterMetricsMBean(cctx.gridConfig(), MBEAN_GROUP, PageLockTrackerMXBean.MBEAN_NAME);
 
         pageLockTrackerManager.stop();
     }
@@ -69,67 +66,5 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
      */
     public PageLockTrackerManager pageLockTracker() {
         return pageLockTrackerManager;
-    }
-
-    /**
-     * @param cfg Ignite configuration.
-     * @param groupName Name of group.
-     * @param mbeanName Metrics MBean name.
-     * @param impl Metrics implementation.
-     * @param clazz Metrics class type.
-     */
-    protected <T> void registerMetricsMBean(
-        IgniteConfiguration cfg,
-        String groupName,
-        String mbeanName,
-        T impl,
-        Class<T> clazz
-    ) {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        try {
-            U.registerMBean(
-                cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
-                groupName,
-                mbeanName,
-                impl,
-                clazz);
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to register MBean with name: " + mbeanName, e);
-        }
-    }
-
-    /**
-     * @param cfg Ignite configuration.
-     * @param groupName Name of group.
-     * @param name Name of MBean.
-     */
-    protected void unregisterMetricsMBean(
-        IgniteConfiguration cfg,
-        String groupName,
-        String name
-    ) {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        assert cfg != null;
-
-        try {
-            cfg.getMBeanServer().unregisterMBean(
-                U.makeMBeanName(
-                    cfg.getIgniteInstanceName(),
-                    groupName,
-                    name
-                ));
-        }
-        catch (InstanceNotFoundException ignored) {
-            // We tried to unregister a non-existing MBean, not a big deal.
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to unregister MBean for memory metrics: " + name, e);
-        }
     }
 }

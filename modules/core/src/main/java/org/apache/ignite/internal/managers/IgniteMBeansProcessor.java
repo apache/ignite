@@ -245,5 +245,11 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
 
             return false;
         }
+
+    }
+
+    /** */
+    public boolean isEnabled() {
+        return !U.IGNITE_MBEANS_DISABLED;
     }
 }
