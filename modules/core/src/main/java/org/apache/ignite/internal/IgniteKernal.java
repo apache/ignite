@@ -1346,6 +1346,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Register MBeans.
             ctx.mBeans().registerMBeansAfterNodeStarted();
 
+            if (!U.IGNITE_MBEANS_DISABLED && ctx.query().moduleEnabled())
+                ctx.query().getIndexing().registerMxBeans();
+
             boolean recon = false;
 
             // Callbacks.

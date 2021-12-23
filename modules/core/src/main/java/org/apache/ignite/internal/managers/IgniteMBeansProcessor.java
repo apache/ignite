@@ -145,8 +145,6 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
         registerMBean("Metrics", metricsMxBean.getClass().getSimpleName(), metricsMxBean, MetricsMxBean.class);
 
-        ctx.pools().registerMxBeans();
-
         if (U.IGNITE_TEST_FEATURES_ENABLED) {
             WorkersControlMXBean workerCtrlMXBean = new WorkersControlMXBeanImpl(ctx.workersRegistry());
 
@@ -159,9 +157,6 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
 
         registerMBean("Kernal", blockOpCtrlMXBean.getClass().getSimpleName(), blockOpCtrlMXBean,
             FailureHandlingMxBean.class);
-
-        if (ctx.query().moduleEnabled())
-            ctx.query().getIndexing().registerMxBeans();
 
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);
         registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,

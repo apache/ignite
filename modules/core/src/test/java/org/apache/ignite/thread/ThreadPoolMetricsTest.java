@@ -17,15 +17,18 @@
 
 package org.apache.ignite.thread;
 
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -38,29 +41,35 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS_MBEAN_GROUP;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests that thread pool metrics are available before the start of all Ignite components happened.
  */
 public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
-    /** Names of the general thread pool metrics. */
-    private static final Collection<String> THREAD_POOL_METRICS = Arrays.asList(
-        metricName(THREAD_POOLS, "GridUtilityCacheExecutor"),
-        metricName(THREAD_POOLS, "GridExecutionExecutor"),
-        metricName(THREAD_POOLS, "GridServicesExecutor"),
-        metricName(THREAD_POOLS, "GridSystemExecutor"),
-        metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
-        metricName(THREAD_POOLS, "GridManagementExecutor"),
-        metricName(THREAD_POOLS, "GridAffinityExecutor"),
-        metricName(THREAD_POOLS, "GridCallbackExecutor"),
-        metricName(THREAD_POOLS, "GridQueryExecutor"),
-        metricName(THREAD_POOLS, "GridSchemaExecutor"),
-        metricName(THREAD_POOLS, "GridRebalanceExecutor"),
-        metricName(THREAD_POOLS, "GridThinClientExecutor"),
-        metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
-        metricName(THREAD_POOLS, "GridDataStreamExecutor")
+    /** Names of the general thread pools. */
+    private static final Collection<String> THREAD_POOL_NAMES = Arrays.asList(
+        "GridUtilityCacheExecutor",
+        "GridExecutionExecutor",
+        "GridServicesExecutor",
+        "GridSystemExecutor",
+        "GridClassLoadingExecutor",
+        "GridManagementExecutor",
+        "GridAffinityExecutor",
+        "GridCallbackExecutor",
+        "GridQueryExecutor",
+        "GridSchemaExecutor",
+        "GridRebalanceExecutor",
+        "GridThinClientExecutor",
+        "GridRebalanceStripedExecutor",
+        "GridDataStreamExecutor"
     );
+
+    /** Names of the general thread pool metrics. */
+    private static final Collection<String> THREAD_POOL_METRICS = THREAD_POOL_NAMES.stream()
+        .map(name -> metricName(THREAD_POOLS, name))
+        .collect(Collectors.toList());
 
     /** Names of the system views for the thread pools. */
     private static final Collection<String> THREAD_POOL_VIEWS = Arrays.asList(
@@ -121,6 +130,11 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
                 .map(SystemView::name)
                 .collect(Collectors.toSet())
                 .containsAll(THREAD_POOL_VIEWS));
+
+            MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+            for (String threadPoolName : THREAD_POOL_NAMES)
+                assertTrue(mbeanSrv.isRegistered(U.makeMBeanName(srv.name(), THREAD_POOLS_MBEAN_GROUP, threadPoolName)));
         }
         finally {
             startUnblockedLatch.countDown();

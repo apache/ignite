@@ -136,6 +136,9 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
 
+    /** MBean group for thread pools. */
+    public static final String THREAD_POOLS_MBEAN_GROUP = "Thread Pools";
+
     /** Executor service. */
     @GridToStringExclude
     private ThreadPoolExecutor execSvc;
@@ -586,8 +589,8 @@ public class PoolProcessor extends GridProcessorAdapter {
         stopExecutors(log);
     }
 
-    /** Registers thread pools metrics and system views. */
-    public void registerMetrics() {
+    /** Registers thread pools metrics, MBeans, and system views. */
+    public void registerMetrics() throws IgniteCheckedException {
         monitorExecutor("GridUtilityCacheExecutor", utilityCacheExecSvc);
         monitorExecutor("GridExecutionExecutor", execSvc);
         monitorExecutor("GridServicesExecutor", svcExecSvc);
@@ -921,12 +924,12 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Creates a {@link MetricRegistry} for an executor.
+     * Registers specified {@link ExecutorService} as metric and as MBean.
      *
-     * @param name Name of the metric to register.
-     * @param execSvc Executor to register a metric for.
+     * @param name Name associated with the executor during monitoring.
+     * @param execSvc Executor to register.
      */
-    private void monitorExecutor(String name, ExecutorService execSvc) {
+    private void monitorExecutor(String name, ExecutorService execSvc) throws IgniteCheckedException {
         MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
@@ -971,15 +974,24 @@ public class PoolProcessor extends GridProcessorAdapter {
             mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
             mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
+
+        if (!U.IGNITE_MBEANS_DISABLED) {
+            ctx.mBeans().registerMBean(
+                THREAD_POOLS_MBEAN_GROUP,
+                name,
+                new ThreadPoolMXBeanAdapter(execSvc),
+                ThreadPoolMXBean.class
+            );
+        }
     }
 
     /**
-     * Creates a {@link MetricRegistry} for a stripped executor.
+     * Registers specified {@link StripedExecutor} as metric and as MBean.
      *
-     * @param name name of the bean to register
-     * @param svc Executor.
+     * @param name Name associated with the executor during monitoring.
+     * @param svc Executor to register.
      */
-    private void monitorStripedPool(String name, StripedExecutor svc) {
+    private void monitorStripedPool(String name, StripedExecutor svc) throws IgniteCheckedException {
         MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
 
         mreg.register("DetectStarvation",
@@ -1024,72 +1036,15 @@ public class PoolProcessor extends GridProcessorAdapter {
             svc::stripesQueueSizes,
             int[].class,
             "Size of queue per stripe.");
-    }
 
-    /**
-     * Register thread pool JMX beans.
-     *
-     * @throws IgniteCheckedException On bean registration error.
-     */
-    public void registerMxBeans() throws IgniteCheckedException {
-        registerExecutorMBean("GridUtilityCacheExecutor", utilityCacheExecSvc);
-        registerExecutorMBean("GridExecutionExecutor", execSvc);
-        registerExecutorMBean("GridServicesExecutor", svcExecSvc);
-        registerExecutorMBean("GridSystemExecutor", sysExecSvc);
-        registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
-        registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
-        registerExecutorMBean("GridAffinityExecutor", affExecSvc);
-        registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
-        registerExecutorMBean("GridQueryExecutor", qryExecSvc);
-        registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
-        registerExecutorMBean("GridRebalanceExecutor", rebalanceExecSvc);
-        registerExecutorMBean("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
-
-        registerStripedExecutorMBean("GridDataStreamExecutor", dataStreamerExecSvc);
-
-        if (idxExecSvc != null)
-            registerExecutorMBean("GridIndexingExecutor", idxExecSvc);
-
-        if (ctx.config().getConnectorConfiguration() != null)
-            registerExecutorMBean("GridRestExecutor", restExecSvc);
-
-        if (stripedExecSvc != null) {
-            // striped executor uses a custom adapter
-            registerStripedExecutorMBean("StripedExecutor", stripedExecSvc);
+        if (!U.IGNITE_MBEANS_DISABLED) {
+            ctx.mBeans().registerMBean(
+                THREAD_POOLS_MBEAN_GROUP,
+                name,
+                new StripedExecutorMXBeanAdapter(svc),
+                StripedExecutorMXBean.class
+            );
         }
-
-        if (snpExecSvc != null)
-            registerExecutorMBean("GridSnapshotExecutor", snpExecSvc);
-
-        if (thinClientExec != null)
-            registerExecutorMBean("GridThinClientExecutor", thinClientExec);
-
-        if (customExecs != null) {
-            for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
-                registerExecutorMBean(entry.getKey(), entry.getValue());
-        }
-    }
-
-    /**
-     * Registers a {@link ThreadPoolMXBean} for an executor.
-     *
-     * @param name Mame of the bean to register.
-     * @param exec Executor to register a bean for.
-     * @throws IgniteCheckedException if registration fails.
-     */
-    private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
-        ctx.mBeans().registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
-    }
-
-    /**
-     * Registers a {@link StripedExecutorMXBean} for an striped executor.
-     *
-     * @param name Mame of the bean to register.
-     * @param exec Executor to register a bean for.
-     * @throws IgniteCheckedException if registration fails.
-     */
-    private void registerStripedExecutorMBean(String name, StripedExecutor exec) throws IgniteCheckedException {
-        ctx.mBeans().registerMBean("Thread Pools", name, new StripedExecutorMXBeanAdapter(exec), StripedExecutorMXBean.class);
     }
 
     /**
