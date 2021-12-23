@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Client;
@@ -27,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Platform;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Services client.
@@ -86,12 +88,22 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /** <inheritdoc /> */
         public T GetServiceProxy<T>(string serviceName) where T : class
         {
+            return GetServiceProxy<T>(serviceName, null);
+        }
+
+        /** <inheritdoc /> */
+        public T GetServiceProxy<T>(string serviceName, IServiceCallContext callCtx) where T : class
+        {
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx",
+                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
 
             var platformType = GetServiceDescriptor(serviceName).PlatformType;
+            IDictionary callAttrs = callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
 
             return ServiceProxyFactory<T>.CreateProxy(
-                (method, args) => InvokeProxyMethod(serviceName, method, args, platformType)
+                (method, args) => InvokeProxyMethod(serviceName, method, args, platformType, callAttrs)
             );
         }
 
@@ -137,10 +149,9 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /// <summary>
         /// Invokes the proxy method.
         /// </summary>
-        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args, PlatformType platformType)
+        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args, PlatformType platformType, IDictionary callAttrs)
         {
-            return _ignite.Socket.DoOutInOp(
-                ClientOp.ServiceInvoke,
+            return _ignite.Socket.DoOutInOp(ClientOp.ServiceInvoke,
                 ctx =>
                 {
                     var w = ctx.Writer;
@@ -172,6 +183,16 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     w.WriteString(method.Name);
 
                     ServiceProxySerializer.WriteMethodArguments(w, null, args, platformType);
+
+                    if (ctx.Features.HasFeature(ClientBitmaskFeature.ServiceInvokeCtx))
+                    {
+                        w.WriteDictionary(callAttrs);
+                    }
+                    else if (callAttrs != null)
+                    {
+                        throw new IgniteClientException(
+                            "Passing caller context to the service is not supported by the server");
+                    }
                 },
                 ctx =>
                 {

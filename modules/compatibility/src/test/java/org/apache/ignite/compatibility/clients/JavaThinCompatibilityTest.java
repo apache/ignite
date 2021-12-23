@@ -57,7 +57,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
@@ -90,6 +92,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** {@inheritDoc} */
     @Override protected void initNode(Ignite ignite) {
         ignite.services().deployNodeSingleton("test_service", new EchoService());
+
+        if (ver.compareTo(VER_2_13_0) >= 0)
+            ignite.services().deployNodeSingleton("ctx_service", new CtxService());
 
         super.initNode(ignite);
     }
@@ -325,6 +330,18 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
+    private void testServicesWithCallerContext() throws Exception {
+        X.println(">>>> Testing services with caller context");
+
+        ServiceCallContext callCtx = ServiceCallContext.builder().put("key", "value").build();
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            assertEquals("value", client.services().serviceProxy("ctx_service", CtxServiceInterface.class, callCtx)
+                .attribute("key"));
+        }
+    }
+
+    /** */
     private void testContinuousQueries() throws Exception {
         X.println(">>>> Testing continuous queries");
 
@@ -380,8 +397,10 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             testContinuousQueries();
 
         if (clientVer.compareTo(VER_2_13_0) >= 0) {
-            if (serverVer.compareTo(VER_2_13_0) >= 0)
+            if (serverVer.compareTo(VER_2_13_0) >= 0) {
                 testServiceDescriptors();
+                testServicesWithCallerContext();
+            }
             else
                 testServiceDescriptorsThrows();
         }
@@ -457,6 +476,26 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         /** {@inheritDoc} */
         @Override public int echo(int val) {
             return val;
+        }
+    }
+
+    /** Service for testing the attributes of a service call context. */
+    public static interface CtxServiceInterface {
+        /** */
+        public String attribute(String name);
+    }
+
+    /** */
+    public static class CtxService implements Service, CtxServiceInterface {
+        /** Service context. */
+        @ServiceContextResource
+        private ServiceContext svcCtx;
+
+        /** {@inheritDoc} */
+        @Override public String attribute(String name) {
+            ServiceCallContext callCtx = svcCtx.currentCallContext();
+
+            return svcCtx == null ? null : callCtx.attribute(name);
         }
     }
 

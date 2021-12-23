@@ -82,12 +82,16 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Objects reader. */
     private final BinaryRawReaderEx reader;
 
+    /** Service call context attributes. */
+    private final Map<String, Object> callAttrs;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
+     * @param withCallCtx Flag indicating that the caller context has been transferred.
      */
-    public ClientServiceInvokeRequest(BinaryReaderExImpl reader) {
+    public ClientServiceInvokeRequest(BinaryReaderExImpl reader, boolean withCallCtx) {
         super(reader);
 
         name = reader.readString();
@@ -128,6 +132,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             args[i] = reader.readObjectDetached();
         }
 
+        callAttrs = withCallCtx ? reader.readMap() : null;
+
         reader.in().position(argsStartPos);
     }
 
@@ -157,7 +163,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 PlatformService proxy =
                     ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, false, timeout, true);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), false, args, null);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args, callAttrs);
             }
             else {
                 // Deserialize Java service arguments when not in keepBinary mode.
@@ -178,7 +184,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 if (!BinaryArray.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
-                res = proxy.invokeMethod(method, args, null);
+                res = proxy.invokeMethod(method, args, callAttrs);
             }
 
             return new ClientObjectResponse(requestId(), res);
