@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -72,7 +72,7 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0.jid > t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema,
+        IgniteRel phys = physicalPlan(sql, publicSchema,
             "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
 
         assertNotNull(phys);
@@ -80,5 +80,7 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
         IgniteTableSpool tblSpool = findFirstNode(phys, byClass(IgniteTableSpool.class));
 
         assertNotNull("Invalid plan:\n" + RelOptUtil.toString(phys), tblSpool);
+
+        checkSplitAndSerialization(phys, publicSchema);
     }
 }

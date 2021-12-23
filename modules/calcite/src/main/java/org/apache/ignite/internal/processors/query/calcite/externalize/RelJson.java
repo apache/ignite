@@ -53,6 +53,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl.JavaType;
@@ -188,6 +189,7 @@ class RelJson {
         register(enumByName, SqlSelectKeyword.class);
         register(enumByName, SqlTrimFunction.Flag.class);
         register(enumByName, TimeUnitRange.class);
+        register(enumByName, Spool.Type.class);
         ENUM_BY_NAME = enumByName.build();
     }
 
@@ -572,7 +574,7 @@ class RelJson {
     }
 
     /** */
-    private <T extends Enum<T>> T toEnum(Object o) {
+    <T extends Enum<T>> T toEnum(Object o) {
         if (o instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)o;
             String class_ = (String)map.get("class");

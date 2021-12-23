@@ -228,8 +228,16 @@ public class RelJsonReader {
 
         /** {@inheritDoc} */
         @Override public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
-            return Util.enumVal(enumClass,
-                getString(tag).toUpperCase(Locale.ROOT));
+            Object name = get(tag);
+            if (name instanceof String) {
+                // Some types of nodes (Join for joinType enum, for example) serialize names in lower case.
+                E res = Util.enumVal(enumClass, ((String)name).toUpperCase(Locale.ROOT));
+
+                if (res != null)
+                    return res;
+            }
+
+            return relJson.toEnum(name);
         }
 
         /** {@inheritDoc} */
