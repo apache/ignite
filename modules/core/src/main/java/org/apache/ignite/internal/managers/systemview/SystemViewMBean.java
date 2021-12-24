@@ -54,6 +54,7 @@ import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JMX bean to expose specific {@link SystemView} data.
@@ -280,7 +281,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
+        @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
             if (val == null)
                 data.put(name, val);
             else if (clazz.isEnum())

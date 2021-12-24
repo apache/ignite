@@ -51,6 +51,7 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
@@ -155,7 +156,7 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
                 Value[] data = new Value[sysView.walker().count()];
 
                 sysView.walker().visitAll(row, new AttributeWithValueVisitor() {
-                    @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
+                    @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
                         else
