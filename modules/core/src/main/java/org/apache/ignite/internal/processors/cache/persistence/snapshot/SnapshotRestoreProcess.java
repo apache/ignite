@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -887,13 +887,12 @@ public class SnapshotRestoreProcess {
                     grp -> calculateAffinity(ctx, data.config(), opCtx0.discoCache));
             }
 
-            // First preload everything from the local node.
-            List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(ctx.localNodeId());
-
+            Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
-            long totalParts = 0;
+            List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(locNode.id());
 
+            // First preload everything from the local node.
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
@@ -920,14 +919,12 @@ public class SnapshotRestoreProcess {
                     .map(PartitionRestoreFuture::new)
                     .collect(Collectors.toSet());
 
-                opCtx0.locProgress.put(grpId, partFuts);
+                allParts.put(grpId, partFuts);
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(partFuts));
 
                 if (leftParts.isEmpty())
                     continue;
-
-                totalParts += leftParts.size();
 
                 SnapshotMetadata full = findMetadataWithSamePartitions(locMetas,
                     grpId,
@@ -970,10 +967,8 @@ public class SnapshotRestoreProcess {
                         if (idxFile.exists()) {
                             PartitionRestoreFuture idxFut;
 
-                            opCtx0.locProgress.computeIfAbsent(grpId, g -> new HashSet<>())
+                            allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION));
-
-                            totalParts += 1;
 
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
                                 opCtx0,
@@ -984,8 +979,6 @@ public class SnapshotRestoreProcess {
                     }
                 }
             }
-
-            opCtx0.totalParts = totalParts;
 
             // Load other partitions from remote nodes.
             List<PartitionRestoreFuture> rmtAwaitParts = rmtLoadParts.values().stream()
@@ -1028,7 +1021,7 @@ public class SnapshotRestoreProcess {
                                     int grpId = CU.cacheId(cacheGroupName(snpFile.getParentFile()));
                                     int partId = partId(snpFile.getName());
 
-                                    PartitionRestoreFuture partFut = F.find(opCtx0.locProgress.get(grpId),
+                                    PartitionRestoreFuture partFut = F.find(allParts.get(grpId),
                                         null,
                                         new IgnitePredicate<PartitionRestoreFuture>() {
                                             @Override public boolean apply(PartitionRestoreFuture f) {
@@ -1069,12 +1062,14 @@ public class SnapshotRestoreProcess {
                 completeListExceptionally(rmtAwaitParts, e);
             }
 
-            List<PartitionRestoreFuture> allParts = opCtx0.locProgress.values().stream().flatMap(Collection::stream)
+            List<PartitionRestoreFuture> allPartFuts = allParts.values().stream().flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-            int size = allParts.size();
+            int size = allPartFuts.size();
 
-            CompletableFuture.allOf(allParts.toArray(new CompletableFuture[size]))
+            opCtx0.totalParts = size;
+
+            CompletableFuture.allOf(allPartFuts.toArray(new CompletableFuture[size]))
                 .runAfterBothAsync(metaFut, () -> {
                     try {
                         if (opCtx0.stopChecker.getAsBoolean())
@@ -1437,17 +1432,14 @@ public class SnapshotRestoreProcess {
         /** Stop condition checker. */
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
-        /** Progress of processing cache group partitions on the local node.*/
-        private final Map<Integer, Set<PartitionRestoreFuture>> locProgress = new HashMap<>();
-
         /** Operation start time. */
         private final long startTime;
 
         /** Number of processed (copied) partitions. */
-        private final AtomicLong processedParts = new AtomicLong(0);
+        private final AtomicInteger processedParts = new AtomicInteger(0);
 
         /** Total number of partitions to be restored. */
-        private volatile long totalParts = -1;
+        private volatile int totalParts = -1;
 
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
