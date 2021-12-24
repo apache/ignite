@@ -69,6 +69,6 @@ public class JmxExporterSpiTest extends GridCommonAbstractTest {
                 assertEquals(expTypes.remove(columnName), data.get("type"));
             });
 
-        assertTrue("Expected columns:" + expTypes.keySet(), (expTypes.isEmpty()));
+        assertTrue("Expected columns:" + expTypes.keySet(), expTypes.isEmpty());
     }
 }
