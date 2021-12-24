@@ -213,10 +213,11 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null) {
-                                if (svcCtx.isStatisticsEnabled()) {
-                                    return measureCall(svcCtx, mtd.getName(),
-                                        () -> callServiceLocally(svc, mtd, args, callCtx));
-                                }
+                                HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
+                                        svcCtx.metrics().findMetric(mtd.getName()) : null;
+
+                                if (hist != null)
+                                    return measureCall(hist, () -> callServiceLocally(svc, mtd, args, callCtx));
 
                                 return callServiceLocally(svc, mtd, args, callCtx);
                             }
@@ -472,27 +473,19 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * Calls the target, measures and registers its duration.
      *
-     * @param srvCtx   Service context.
-     * @param mtdName  Related method name.
-     * @param target   Target to call and measure.
+     * @param histogram Related metric.
+     * @param target    Target to call and measure.
      */
     private static <T> T measureCall(
-        ServiceContextImpl srvCtx,
-        String mtdName,
-        Callable<T> target
+            HistogramMetricImpl histogram,
+            Callable<T> target
     ) throws Exception {
         long startTime = System.nanoTime();
 
         try {
             return target.call();
-        }
-        finally {
-            long duration = System.nanoTime() - startTime;
-
-            HistogramMetricImpl histogram = srvCtx.metrics() == null ? null : srvCtx.metrics().findMetric(mtdName);
-
-            if (histogram != null)
-                histogram.value(duration);
+        } finally {
+            histogram.value(System.nanoTime() - startTime);
         }
     }
 
@@ -581,10 +574,13 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            if (ctx.isStatisticsEnabled())
-                return measureCall(ctx, mtdName, () -> callServiceAndUnmarshalResult(ctx, mtd));
-            else
-                return callServiceAndUnmarshalResult(ctx, mtd);
+            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ?
+                    ctx.metrics().findMetric(mtd.getName()) : null;
+
+            if (hist != null)
+                return measureCall(hist, () -> callServiceAndUnmarshalResult(ctx, mtd));
+
+            return callServiceAndUnmarshalResult(ctx, mtd);
         }
 
         /** */

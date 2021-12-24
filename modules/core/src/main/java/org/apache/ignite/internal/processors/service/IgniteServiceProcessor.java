@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -111,6 +110,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
@@ -2036,15 +2036,5 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private static boolean metricIgnored(Class<?> cls) {
         return Service.class.equals(cls) || Externalizable.class.equals(cls) || PlatformService.class.equals(cls);
-    }
-
-    /**
-     * Gives proper name for service metric registry.
-     *
-     * @param srvcName Name of the service.
-     * @return registry name for service {@code srvcName}.
-     */
-    public static String serviceMetricRegistryName(String srvcName) {
-        return MetricUtils.metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }
