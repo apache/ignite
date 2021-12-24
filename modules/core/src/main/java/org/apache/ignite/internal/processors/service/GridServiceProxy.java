@@ -598,7 +598,7 @@ public class GridServiceProxy<T> implements Serializable {
         /** */
         private Object callPlatformService(ServiceContextImpl svcCtx) {
             try {
-                return ((PlatformService)svcCtx).invokeMethod(mtdName, false, true, args,
+                return ((PlatformService)svcCtx.service()).invokeMethod(mtdName, false, true, args,
                     callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
             }
             catch (PlatformNativeException ne) {
