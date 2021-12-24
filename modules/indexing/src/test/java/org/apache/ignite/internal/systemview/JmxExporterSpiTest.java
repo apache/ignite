@@ -63,9 +63,7 @@ public class JmxExporterSpiTest extends GridCommonAbstractTest {
             .forEach(data -> {
                 String columnName = (String)data.get("columnName");
 
-                if (!expTypes.containsKey(columnName))
-                    fail("Unexpected column: " + columnName);
-
+                assertTrue("Unexpected column: " + columnName, expTypes.containsKey(columnName));
                 assertEquals(expTypes.remove(columnName), data.get("type"));
             });
 
