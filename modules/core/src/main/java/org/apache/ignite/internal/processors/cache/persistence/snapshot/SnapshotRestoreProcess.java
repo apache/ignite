@@ -1127,8 +1127,6 @@ public class SnapshotRestoreProcess {
         opCtx0.errHnd.accept(failure);
 
         if (failure != null) {
-            opCtx0.locStopCachesCompleteFut.onDone((Void)null);
-
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 rollbackRestoreProc.start(reqId, reqId);
 
@@ -1441,13 +1439,6 @@ public class SnapshotRestoreProcess {
 
         /** Progress of processing cache group partitions on the local node.*/
         private final Map<Integer, Set<PartitionRestoreFuture>> locProgress = new HashMap<>();
-
-        /**
-         * The stop future responsible for stopping cache groups during the rollback phase. Will be completed when the rollback
-         * process executes and all the cache group stop actions completes (the processCacheStopRequestOnExchangeDone finishes
-         * successfully and all the data deleted from disk).
-         */
-        private final GridFutureAdapter<Void> locStopCachesCompleteFut = new GridFutureAdapter<>();
 
         /** Operation start time. */
         private final long startTime;
