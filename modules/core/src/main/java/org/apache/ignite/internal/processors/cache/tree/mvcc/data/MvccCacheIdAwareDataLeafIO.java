@@ -79,11 +79,15 @@ public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset(idx) + 36, lockCrd);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset(idx) + 44, lockCntr);
     }
 }
