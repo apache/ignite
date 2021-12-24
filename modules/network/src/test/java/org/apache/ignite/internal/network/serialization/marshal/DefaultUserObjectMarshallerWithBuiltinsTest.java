@@ -67,7 +67,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsAndUnmarshalsNull() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(null);
 
-        Object unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(nullValue()));
     }
@@ -102,7 +102,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     }
 
     private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
-        T unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(notNullValue()));
 
@@ -146,7 +146,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsAndUnmarshalsBuiltInNonCollectionTypes(BuiltInTypeValue typeValue) throws Exception {
         MarshalledObject marshalled = marshaller.marshal(typeValue.value, typeValue.valueClass);
 
-        Object unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(equalTo(typeValue.value)));
         if (typeValue.builtinType != BuiltinType.VOID && typeValue.value.getClass().isArray()) {

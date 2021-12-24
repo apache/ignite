@@ -75,13 +75,13 @@ public class SerializationService {
     }
 
     /**
-     * Returns {@code true} if type descriptor id belongs to a built-in type, {@code false} otherwise.
+     * Returns {@code true} if type descriptor id belongs to the range reserved for built-in types, {@code false} otherwise.
      *
      * @param typeDescriptorId Type descriptor id.
-     * @return {@code true} if descriptor is built-in, {@code false} otherwise.
+     * @return {@code true} if descriptor belongs to the range reserved for built-in types, {@code false} otherwise.
      */
-    public boolean isBuiltIn(int typeDescriptorId) {
-        return userObjectSerializer.isBuiltIn(typeDescriptorId);
+    public boolean shouldBeBuiltIn(int typeDescriptorId) {
+        return userObjectSerializer.shouldBeBuiltIn(typeDescriptorId);
     }
 
     /**

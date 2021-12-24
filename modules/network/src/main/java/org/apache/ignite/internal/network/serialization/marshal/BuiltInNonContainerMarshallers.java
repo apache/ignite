@@ -82,17 +82,30 @@ class BuiltInNonContainerMarshallers {
         map.put(objectClass, builtInMarshaller);
     }
 
+    private static <T> void addSingle(
+            Map<Class<?>, BuiltInMarshaller<?>> map,
+            Class<T> objectClass,
+            ValueWriter<T> writer,
+            ContextlessValueReader<T> reader
+    ) {
+        addSingle(map, objectClass, writer, contextless(reader));
+    }
+
     private static <T> void addPrimitiveAndWrapper(
             Map<Class<?>, BuiltInMarshaller<?>> map,
             Class<?> primitiveClass,
             Class<T> wrapperClass,
             ValueWriter<T> writer,
-            ValueReader<T> reader
+            ContextlessValueReader<T> reader
     ) {
-        BuiltInMarshaller<T> builtInMarshaller = builtInMarshaller(wrapperClass, writer, reader);
+        BuiltInMarshaller<T> builtInMarshaller = builtInMarshaller(wrapperClass, writer, contextless(reader));
 
         map.put(primitiveClass, builtInMarshaller);
         map.put(wrapperClass, builtInMarshaller);
+    }
+
+    private static <T> ValueReader<T> contextless(ContextlessValueReader<T> reader) {
+        return (in, ctx) -> reader.read(in);
     }
 
     private static <T> BuiltInMarshaller<T> builtInMarshaller(Class<T> valueRefClass, ValueWriter<T> writer, ValueReader<T> reader) {
@@ -117,9 +130,9 @@ class BuiltInNonContainerMarshallers {
         return Set.of(descriptor);
     }
 
-    Object readBuiltIn(ClassDescriptor descriptor, DataInput input) throws IOException, UnmarshalException {
+    Object readBuiltIn(ClassDescriptor descriptor, DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
         BuiltInMarshaller<?> builtinMarshaller = findBuiltInMarshaller(descriptor);
-        return builtinMarshaller.unmarshal(input);
+        return builtinMarshaller.unmarshal(input, context);
     }
 
     private BuiltInMarshaller<?> findBuiltInMarshaller(ClassDescriptor descriptor) {
@@ -145,8 +158,20 @@ class BuiltInNonContainerMarshallers {
             writer.write(valueRefClass.cast(object), output);
         }
 
-        private Object unmarshal(DataInput input) throws IOException, UnmarshalException {
-            return reader.read(input);
+        private Object unmarshal(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
+            return reader.read(input, context);
         }
+    }
+
+    private interface ContextlessValueReader<T> {
+        /**
+         * Reads the next value from a {@link DataInput}.
+         *
+         * @param input     from where to read
+         * @return the value that was read
+         * @throws IOException          if an I/O problem occurs
+         * @throws UnmarshalException   if another problem (like {@link ClassNotFoundException}) occurs
+         */
+        T read(DataInput input) throws IOException, UnmarshalException;
     }
 }

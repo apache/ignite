@@ -74,9 +74,9 @@ class BuiltInContainerMarshallers {
         return writeCollection(Arrays.asList(array), arrayDescriptor, output);
     }
 
-    <T> T[] readGenericRefArray(DataInput input, ValueReader<T> elementReader)
+    <T> T[] readGenericRefArray(DataInput input, ValueReader<T> elementReader, UnmarshallingContext context)
             throws IOException, UnmarshalException {
-        return BuiltInMarshalling.readGenericRefArray(input, elementReader);
+        return BuiltInMarshalling.readGenericRefArray(input, elementReader, context);
     }
 
     Set<ClassDescriptor> writeBuiltInCollection(Collection<?> object, ClassDescriptor descriptor, DataOutput output)
@@ -138,10 +138,11 @@ class BuiltInContainerMarshallers {
     <T, C extends Collection<T>> C readBuiltInCollection(
             ClassDescriptor collectionDescriptor,
             ValueReader<T> elementReader,
-            DataInput input
+            DataInput input,
+            UnmarshallingContext context
     ) throws UnmarshalException, IOException {
         if (collectionDescriptor.isSingletonList()) {
-            return (C) singletonList(elementReader.read(input));
+            return (C) singletonList(elementReader.read(input, context));
         }
 
         IntFunction<C> collectionFactory = (IntFunction<C>) mutableBuiltInCollectionFactories.get(collectionDescriptor.clazz());
@@ -151,7 +152,7 @@ class BuiltInContainerMarshallers {
                     + " even though it is marked as a built-in");
         }
 
-        return BuiltInMarshalling.readCollection(input, collectionFactory, elementReader);
+        return BuiltInMarshalling.readCollection(input, collectionFactory, elementReader, context);
     }
 
     Set<ClassDescriptor> writeBuiltInMap(Map<?, ?> map, ClassDescriptor mapDescriptor, DataOutput output)
@@ -181,7 +182,8 @@ class BuiltInContainerMarshallers {
             ClassDescriptor mapDescriptor,
             ValueReader<K> keyReader,
             ValueReader<V> valueReader,
-            DataInput input
+            DataInput input,
+            UnmarshallingContext context
     ) throws UnmarshalException, IOException {
         @SuppressWarnings("unchecked")
         IntFunction<M> mapFactory = (IntFunction<M>) mutableBuiltInMapFactories.get(mapDescriptor.clazz());
@@ -191,6 +193,6 @@ class BuiltInContainerMarshallers {
                     + " even though it is marked as a built-in");
         }
 
-        return BuiltInMarshalling.readMap(input, mapFactory, keyReader, valueReader);
+        return BuiltInMarshalling.readMap(input, mapFactory, keyReader, valueReader, context);
     }
 }

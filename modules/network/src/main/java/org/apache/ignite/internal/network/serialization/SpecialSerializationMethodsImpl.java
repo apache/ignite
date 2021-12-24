@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Objects;
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Encapsulates special serialization methods like writeReplace()/readResolve() for convenient invocation.
  */
-class SpecialSerializationMethods {
+class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     /** MethodHandle that can be used to invoke writeReplace() on the target class. */
     @Nullable
     private final MethodHandle writeReplaceHandle;
@@ -43,7 +41,7 @@ class SpecialSerializationMethods {
      *
      * @param descriptor class descriptor on which class to operate
      */
-    public SpecialSerializationMethods(ClassDescriptor descriptor) {
+    public SpecialSerializationMethodsImpl(ClassDescriptor descriptor) {
         writeReplaceHandle = descriptor.hasWriteReplace() ? writeReplaceHandle(descriptor) : null;
         readResolveHandle = descriptor.hasReadResolve() ? readResolveHandle(descriptor) : null;
     }
@@ -86,7 +84,6 @@ class SpecialSerializationMethods {
         }
     }
 
-    @NotNull
     private static Method findReadResolveMethod(ClassDescriptor descriptor) {
         Method readResolveMethod;
         try {
@@ -101,19 +98,9 @@ class SpecialSerializationMethods {
         return readResolveMethod;
     }
 
-    /**
-     * Invokes {@code writeReplace()} on the target object. Should only be used if the target descriptor supports
-     * the method (that is, its serialization type is
-     * {@link org.apache.ignite.internal.network.serialization.SerializationType#SERIALIZABLE} or
-     * {@link org.apache.ignite.internal.network.serialization.SerializationType#EXTERNALIZABLE} and the class
-     * actually has writeReplace() method).
-     * If any of these conditions fail, a {@link NullPointerException} will be thrown.
-     *
-     * @param object target object on which to invoke the method
-     * @return invocation result
-     * @throws MarshalException if the invocation fails
-     */
-    public Object writeReplace(Object object) throws MarshalException {
+    /** {@inheritDoc} */
+    @Override
+    public Object writeReplace(Object object) throws SpecialMethodInvocationException {
         Objects.requireNonNull(writeReplaceHandle);
 
         try {
@@ -121,23 +108,13 @@ class SpecialSerializationMethods {
         } catch (Error e) {
             throw e;
         } catch (Throwable e) {
-            throw new MarshalException("writeReplace() invocation failed on " + object, e);
+            throw new SpecialMethodInvocationException("writeReplace() invocation failed on " + object, e);
         }
     }
 
-    /**
-     * Invokes {@code readResolve()} on the target object. Should only be used if the target descriptor supports
-     * the method (that is, its serialization type is
-     * {@link org.apache.ignite.internal.network.serialization.SerializationType#SERIALIZABLE} or
-     * {@link org.apache.ignite.internal.network.serialization.SerializationType#EXTERNALIZABLE} and the class
-     * actually has readResolve() method).
-     * If any of these conditions fail, a {@link NullPointerException} will be thrown.
-     *
-     * @param object target object on which to invoke the method
-     * @return invocation result
-     * @throws UnmarshalException if the invocation fails
-     */
-    public Object readResolve(Object object) throws UnmarshalException {
+    /** {@inheritDoc} */
+    @Override
+    public Object readResolve(Object object) throws SpecialMethodInvocationException {
         Objects.requireNonNull(readResolveHandle);
 
         try {
@@ -145,7 +122,7 @@ class SpecialSerializationMethods {
         } catch (Error e) {
             throw e;
         } catch (Throwable e) {
-            throw new UnmarshalException("readResolve() invocation failed on " + object, e);
+            throw new SpecialMethodInvocationException("readResolve() invocation failed on " + object, e);
         }
     }
 }

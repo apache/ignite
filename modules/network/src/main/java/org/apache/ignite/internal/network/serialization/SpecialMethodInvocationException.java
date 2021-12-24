@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
-import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Thrown when a reflection operation fails.
+ * Thrown when a serialization special method (like writeReplace()) invocation fails.
  */
-public class ReflectionException extends IgniteInternalException {
-    public ReflectionException(String msg, @Nullable Throwable cause) {
+public class SpecialMethodInvocationException extends IgniteInternalCheckedException {
+    public SpecialMethodInvocationException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

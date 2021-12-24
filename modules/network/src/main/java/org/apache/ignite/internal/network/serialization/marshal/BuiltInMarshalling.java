@@ -37,14 +37,14 @@ import org.jetbrains.annotations.NotNull;
 class BuiltInMarshalling {
     private static final ValueWriter<String> stringWriter = BuiltInMarshalling::writeString;
     private static final IntFunction<String[]> stringArrayFactory = String[]::new;
-    private static final ValueReader<String> stringReader = BuiltInMarshalling::readString;
+    private static final ValueReader<String> stringReader = (in, ctx) -> readString(in);
 
     private static final ValueWriter<BigDecimal> bigDecimalWriter = BuiltInMarshalling::writeBigDecimal;
     private static final IntFunction<BigDecimal[]> bigDecimalArrayFactory = BigDecimal[]::new;
-    private static final ValueReader<BigDecimal> bigDecimalReader = BuiltInMarshalling::readBigDecimal;
+    private static final ValueReader<BigDecimal> bigDecimalReader = (in, ctx) -> readBigDecimal(in);
 
     private static final ValueWriter<Enum<?>> enumWriter = BuiltInMarshalling::writeEnum;
-    private static final ValueReader<Enum<?>> enumReader = BuiltInMarshalling::readEnum;
+    private static final ValueReader<Enum<?>> enumReader = (in, ctx) -> readEnum(in);
 
     static void writeString(String string, DataOutput output) throws IOException {
         output.writeUTF(string);
@@ -263,22 +263,23 @@ class BuiltInMarshalling {
         }
     }
 
-    static <T> T[] readRefArray(DataInput input, IntFunction<T[]> arrayFactory, ValueReader<T> valueReader)
+    static <T> T[] readRefArray(DataInput input, IntFunction<T[]> arrayFactory, ValueReader<T> valueReader, UnmarshallingContext context)
             throws IOException, UnmarshalException {
         int length = input.readInt();
         T[] array = arrayFactory.apply(length);
         for (int i = 0; i < length; i++) {
-            array[i] = valueReader.read(input);
+            array[i] = valueReader.read(input, context);
         }
         return array;
     }
 
-    static <T> T[] readGenericRefArray(DataInput input, ValueReader<T> elementReader) throws IOException, UnmarshalException {
+    static <T> T[] readGenericRefArray(DataInput input, ValueReader<T> elementReader, UnmarshallingContext context)
+            throws IOException, UnmarshalException {
         String componentClassName = input.readUTF();
         Class<T> componentType = classByName(componentClassName, "component");
         @SuppressWarnings("unchecked")
         IntFunction<T[]> arrayFactory = len -> (T[]) Array.newInstance(componentType, len);
-        return readRefArray(input, arrayFactory, elementReader);
+        return readRefArray(input, arrayFactory, elementReader, context);
     }
 
 
@@ -286,16 +287,16 @@ class BuiltInMarshalling {
         writeRefArray(array, output, stringWriter);
     }
 
-    static String[] readStringArray(DataInput input) throws IOException, UnmarshalException {
-        return readRefArray(input, stringArrayFactory, stringReader);
+    static String[] readStringArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
+        return readRefArray(input, stringArrayFactory, stringReader, context);
     }
 
     static void writeBigDecimalArray(BigDecimal[] array, DataOutput output) throws IOException, MarshalException {
         writeRefArray(array, output, bigDecimalWriter);
     }
 
-    static BigDecimal[] readBigDecimalArray(DataInput input) throws IOException, UnmarshalException {
-        return readRefArray(input, bigDecimalArrayFactory, bigDecimalReader);
+    static BigDecimal[] readBigDecimalArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
+        return readRefArray(input, bigDecimalArrayFactory, bigDecimalReader, context);
     }
 
     static void writeEnumArray(Enum<?>[] array, DataOutput output) throws IOException, MarshalException {
@@ -303,10 +304,10 @@ class BuiltInMarshalling {
         writeRefArray(array, output, enumWriter);
     }
 
-    static Enum<?>[] readEnumArray(DataInput input) throws IOException, UnmarshalException {
+    static Enum<?>[] readEnumArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
         String enumClassName = input.readUTF();
         Class<? extends Enum<?>> enumClass = enumClass(enumClassName);
-        return readRefArray(input, len -> (Enum<?>[]) Array.newInstance(enumClass, len), enumReader);
+        return readRefArray(input, len -> (Enum<?>[]) Array.newInstance(enumClass, len), enumReader, context);
     }
 
     static <T> void writeCollection(Collection<T> collection, DataOutput output, ValueWriter<T> valueWriter)
@@ -317,12 +318,16 @@ class BuiltInMarshalling {
         }
     }
 
-    static <T, C extends Collection<T>> C readCollection(DataInput input, IntFunction<C> collectionFactory, ValueReader<T> valueReader)
-            throws IOException, UnmarshalException {
+    static <T, C extends Collection<T>> C readCollection(
+            DataInput input,
+            IntFunction<C> collectionFactory,
+            ValueReader<T> valueReader,
+            UnmarshallingContext context
+    ) throws IOException, UnmarshalException {
         int length = input.readInt();
         C collection = collectionFactory.apply(length);
         for (int i = 0; i < length; i++) {
-            collection.add(valueReader.read(input));
+            collection.add(valueReader.read(input, context));
         }
         return collection;
     }
@@ -340,12 +345,13 @@ class BuiltInMarshalling {
             DataInput input,
             IntFunction<M> mapFactory,
             ValueReader<K> keyReader,
-            ValueReader<V> valueReader
+            ValueReader<V> valueReader,
+            UnmarshallingContext context
     ) throws IOException, UnmarshalException {
         int length = input.readInt();
         M map = mapFactory.apply(length);
         for (int i = 0; i < length; i++) {
-            map.put(keyReader.read(input), valueReader.read(input));
+            map.put(keyReader.read(input, context), valueReader.read(input, context));
         }
         return map;
     }

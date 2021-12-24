@@ -137,7 +137,7 @@ public class PerSessionSerializationService {
         for (ClassDescriptorMessage clsMsg : remoteDescriptors) {
             int clsDescriptorId = clsMsg.descriptorId();
 
-            boolean isClsBuiltin = serializationService.isBuiltIn(clsDescriptorId);
+            boolean isClsBuiltin = serializationService.shouldBeBuiltIn(clsDescriptorId);
 
             if (isClsBuiltin) {
                 continue;
@@ -193,7 +193,7 @@ public class PerSessionSerializationService {
     }
 
     private Class<?> getClass(int descriptorId, String typeName) {
-        if (serializationService.isBuiltIn(descriptorId)) {
+        if (serializationService.shouldBeBuiltIn(descriptorId)) {
             return serializationService.getClassDescriptor(descriptorId).clazz();
         } else {
             return serializationService.getClassDescriptor(typeName).clazz();

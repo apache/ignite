@@ -173,7 +173,7 @@ public class MarshallableTest {
     }
 
     /** Stub implementation of the serializer, uses standard JDK serializable serialization to actually marshall an object. */
-    private class StubSerializer implements UserObjectSerializer {
+    private static class StubSerializer implements UserObjectSerializer {
 
         private final ClassDescriptorFactoryContext descriptorContext;
 
@@ -222,8 +222,8 @@ public class MarshallableTest {
 
         /** {@inheritDoc} */
         @Override
-        public boolean isBuiltIn(int typeDescriptorId) {
-            return ClassDescriptorFactoryContext.isBuiltIn(typeDescriptorId);
+        public boolean shouldBeBuiltIn(int typeDescriptorId) {
+            return ClassDescriptorFactoryContext.shouldBeBuiltIn(typeDescriptorId);
         }
     }
 }

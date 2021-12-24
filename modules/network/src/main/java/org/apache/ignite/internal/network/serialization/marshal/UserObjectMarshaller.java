@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,11 +40,13 @@ public interface UserObjectMarshaller {
     /**
      * Unmarshals an object.
      *
-     * @param bytes bytes representing the marshalled object
+     * @param bytes             bytes representing the marshalled object
+     * @param mergedDescriptors the remote descriptors that need to be used for unmarshalling plus our local descriptors
+     *                          (remote ones have the priority)
      * @param <T> expected type
      * @return unmarshalled object
      * @throws UnmarshalException if unmarshalling fails
      */
     @Nullable
-    <T> T unmarshal(byte[] bytes) throws UnmarshalException;
+    <T> T unmarshal(byte[] bytes, IdIndexedDescriptors mergedDescriptors) throws UnmarshalException;
 }

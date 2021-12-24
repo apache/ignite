@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+import org.apache.ignite.lang.IgniteInternalException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Caches {@link SpecialSerializationMethods} per class descriptor.
+ * Thrown when a reflection operation fails.
  */
-class SpecialSerializationMethodsCache {
-    private final ConcurrentMap<Integer, SpecialSerializationMethods> methodsMap = new ConcurrentHashMap<>();
-
-    public SpecialSerializationMethods methodsFor(ClassDescriptor descriptor) {
-        return methodsMap.computeIfAbsent(descriptor.descriptorId(), id -> new SpecialSerializationMethods(descriptor));
+public class ReflectionException extends IgniteInternalException {
+    public ReflectionException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

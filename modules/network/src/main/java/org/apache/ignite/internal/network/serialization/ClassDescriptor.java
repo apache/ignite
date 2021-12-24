@@ -58,6 +58,8 @@ public class ClassDescriptor {
      */
     private final boolean isFinal;
 
+    private final SpecialSerializationMethods serializationMethods;
+
     /**
      * Constructor.
      */
@@ -68,6 +70,8 @@ public class ClassDescriptor {
         this.fields = List.copyOf(fields);
         this.serialization = serialization;
         this.isFinal = Modifier.isFinal(clazz.getModifiers());
+
+        serializationMethods = new SpecialSerializationMethodsImpl(this);
     }
 
     /**
@@ -201,14 +205,23 @@ public class ClassDescriptor {
     }
 
     /**
-     * Returns {@code true} if the described class has writeReplace() method and it makes sense for the needs of
+     * Returns {@code true} if the described class has writeReplace() method, and it makes sense for the needs of
      * our serialization (i.e. it is SERIALIZABLE or EXTERNALIZABLE).
      *
-     * @return {@code true} if the described class has writeReplace() method and it makes sense for the needs of
+     * @return {@code true} if the described class has writeReplace() method, and it makes sense for the needs of
      *     our serialization
      */
     public boolean supportsWriteReplace() {
         return (isSerializable() || isExternalizable()) && hasWriteReplace();
+    }
+
+    /**
+     * Returns special serialization methods facility.
+     *
+     * @return special serialization methods facility
+     */
+    public SpecialSerializationMethods serializationMethods() {
+        return serializationMethods;
     }
 
     @Override

@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
-import java.io.DataInput;
-import java.io.IOException;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Knows how to read a value from a {@link DataInput}.
+ * A map-backed implementation of {@link IdIndexedDescriptors}.
  */
-interface ValueReader<T> {
-    /**
-     * Reads the next value from a {@link DataInput}.
-     *
-     * @param input     from where to read
-     * @param context   unmarshalling context
-     * @return the value that was read
-     * @throws IOException          if an I/O problem occurs
-     * @throws UnmarshalException   if another problem (like {@link ClassNotFoundException}) occurs
-     */
-    T read(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException;
+public class MapBackedIdIndexedDescriptors implements IdIndexedDescriptors {
+    private final Map<Integer, ClassDescriptor> descriptors;
+
+    public MapBackedIdIndexedDescriptors(Map<Integer, ClassDescriptor> descriptors) {
+        this.descriptors = descriptors;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Nullable
+    public ClassDescriptor getDescriptor(int descriptorId) {
+        return descriptors.get(descriptorId);
+    }
 }

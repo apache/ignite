@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class descriptor factory context.
  */
-public class ClassDescriptorFactoryContext {
+public class ClassDescriptorFactoryContext implements IdIndexedDescriptors {
     /** Quantity of descriptor ids reserved for the default descriptors. */
     private static final int DEFAULT_DESCRIPTORS_OFFSET_COUNT = 1000;
 
@@ -81,6 +81,7 @@ public class ClassDescriptorFactoryContext {
      * @param descriptorId Descriptor id.
      * @return Descriptor.
      */
+    @Override
     @Nullable
     public ClassDescriptor getDescriptor(int descriptorId) {
         return descriptorMap.get(descriptorId);
@@ -101,20 +102,6 @@ public class ClassDescriptorFactoryContext {
         }
 
         return descriptorMap.get(descriptorId);
-    }
-
-    /**
-     * Returns a descriptor by its ID or throws an exception if the ID is not known.
-     *
-     * @param descriptorId ID by which to obtain a descriptor
-     * @return descriptor
-     */
-    public ClassDescriptor getRequiredDescriptor(int descriptorId) {
-        ClassDescriptor descriptor = getDescriptor(descriptorId);
-        if (descriptor == null) {
-            throw new IllegalStateException("No descriptor exists with ID=" + descriptorId);
-        }
-        return descriptor;
     }
 
     /**
@@ -146,7 +133,7 @@ public class ClassDescriptorFactoryContext {
      * @return a descriptor for {@code null} value
      */
     public ClassDescriptor getNullDescriptor() {
-        return getDescriptor(Null.class);
+        return getRequiredDescriptor(Null.class);
     }
 
     /**
@@ -155,17 +142,7 @@ public class ClassDescriptorFactoryContext {
      * @return a descriptor for {@link Enum} built-in type
      */
     public ClassDescriptor getEnumDescriptor() {
-        return getDescriptor(Enum.class);
-    }
-
-    /**
-     * Returns {@code true} if there is a descriptor for the id.
-     *
-     * @param descriptorId Descriptor id.
-     * @return {@code true} if there is a descriptor for the id.
-     */
-    public boolean hasDescriptor(int descriptorId) {
-        return descriptorMap.containsKey(descriptorId);
+        return getRequiredDescriptor(Enum.class);
     }
 
     /**
@@ -187,13 +164,14 @@ public class ClassDescriptorFactoryContext {
     }
 
     /**
-     * Returns {@code true} if descriptor with the specified descriptor id is built-in, {@code false} otherwise.
+     * Returns {@code true} if descriptor with the specified descriptor id belongs to the range reserved for built-in
+     * types, {@code false} otherwise.
      *
      *
      * @param descriptorId Descriptor id.
-     * @return Whether descriptor is built-in.
+     * @return Whether descriptor should be a built-in.
      */
-    public static boolean isBuiltIn(int descriptorId) {
+    public static boolean shouldBeBuiltIn(int descriptorId) {
         return descriptorId < DEFAULT_DESCRIPTORS_OFFSET_COUNT;
     }
 }

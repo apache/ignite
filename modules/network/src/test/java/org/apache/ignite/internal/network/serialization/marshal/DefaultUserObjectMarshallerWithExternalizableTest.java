@@ -64,7 +64,7 @@ class DefaultUserObjectMarshallerWithExternalizableTest {
     }
 
     private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
-        T unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(notNullValue()));
 
@@ -110,7 +110,7 @@ class DefaultUserObjectMarshallerWithExternalizableTest {
     void marshalsExternalizableWithReplaceWithNull() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithReplaceWithNull(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(nullValue()));
     }
@@ -127,7 +127,7 @@ class DefaultUserObjectMarshallerWithExternalizableTest {
     void unmarshalsExternalizableWithResolveWithNull() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new ExternalizableWithResolveWithNull(42));
 
-        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes());
+        SimpleExternalizable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(nullValue()));
     }

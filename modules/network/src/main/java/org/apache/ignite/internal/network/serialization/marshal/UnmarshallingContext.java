@@ -17,21 +17,23 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.DataInput;
-import java.io.IOException;
+import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Knows how to read a value from a {@link DataInput}.
+ * Context of unmarshalling act. Created once per unmarshalling a root object.
  */
-interface ValueReader<T> {
-    /**
-     * Reads the next value from a {@link DataInput}.
-     *
-     * @param input     from where to read
-     * @param context   unmarshalling context
-     * @return the value that was read
-     * @throws IOException          if an I/O problem occurs
-     * @throws UnmarshalException   if another problem (like {@link ClassNotFoundException}) occurs
-     */
-    T read(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException;
+class UnmarshallingContext implements IdIndexedDescriptors {
+    private final IdIndexedDescriptors descriptors;
+
+    public UnmarshallingContext(IdIndexedDescriptors descriptors) {
+        this.descriptors = descriptors;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable ClassDescriptor getDescriptor(int descriptorId) {
+        return descriptors.getDescriptor(descriptorId);
+    }
 }
