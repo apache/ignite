@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.algo;
 
-import java.nio.ByteBuffer;
-import java.util.Random;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,59 +34,61 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.openjdk.jmh.annotations.Mode.AverageTime;
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
-/**
- *
- */
+/** */
 @State(Thread)
 @OutputTimeUnit(NANOSECONDS)
 @BenchmarkMode(AverageTime)
 @Fork(value = 1, jvmArgsAppend = {"-XX:+UnlockDiagnosticVMOptions"})
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
-public class BenchmarkCRC {
-    /** */
-    static final int SIZE = 1024;
-
-    /** */
-    static final int BUF_LEN = 4096;
-
+public class TxCountersBenchmark {
     /** */
     @State(Thread)
     public static class Context {
         /** */
-        final int[] results = new int[SIZE];
+        private static final int CACHE_CNT = 1;
 
         /** */
-        final ByteBuffer bb = ByteBuffer.allocate(BUF_LEN);
+        private static final int PART_CNT = 1;
+
+        /** */
+        final int[] caches = new int[] {CACHE_CNT};
+
+        /** */
+        final int[] parts = new int[] {PART_CNT};
 
         /** */
         @Setup
         public void setup() {
-            new Random().ints(BUF_LEN, Byte.MIN_VALUE, Byte.MAX_VALUE).forEach(k -> bb.put((byte)k));
+            for (int i = 0; i < CACHE_CNT; i++)
+                caches[i] = CU.cacheId("accounts-" + i);
+
+            for (int i = 0; i < PART_CNT; i++)
+                parts[i] = ThreadLocalRandom.current().nextInt(65535);
         }
     }
 
     /** */
     @Benchmark
-    public int[] pureJavaCrc32(Context context) {
-        for (int i = 0; i < SIZE; i++) {
-            context.bb.rewind();
+    public TxCounters txCounters(Context ctx) {
+        final TxCounters cntrs = new TxCounters();
 
-            context.results[i] = PureJavaCrc32.calcCrc32(context.bb, BUF_LEN);
-        }
+        for (int i = 0; i < ctx.caches.length; i++)
+            for (int j = 0; j < ctx.parts.length; j++)
+                cntrs.incrementUpdateCounter(ctx.caches[i], ctx.parts[j]);
 
-        return context.results;
+        return cntrs;
     }
 
     /** */
     @Benchmark
-    public int[] crc32(Context context) {
-        for (int i = 0; i < SIZE; i++) {
-            context.bb.rewind();
+    public TxCounters2 txCounters2(Context ctx) {
+        final TxCounters2 cntrs = new TxCounters2();
 
-            context.results[i] = FastCrc.calcCrc(context.bb, BUF_LEN);
-        }
+        for (int i = 0; i < ctx.caches.length; i++)
+            for (int j = 0; j < ctx.parts.length; j++)
+                cntrs.incrementUpdateCounter(ctx.caches[i], ctx.parts[j]);
 
-        return context.results;
+        return cntrs;
     }
 }

@@ -1456,6 +1456,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testIntsToLong() {
+        long x = U.in
+    }
+
     /**
      * Reading lines from a resource file and passing them to consumer.
      * If read string is {@code "null"}, it is converted to {@code null}.
@@ -1570,5 +1576,4 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0, U.hashToIndex(-8, 4));
         assertEquals(3, U.hashToIndex(-15, 4));
     }
-
 }

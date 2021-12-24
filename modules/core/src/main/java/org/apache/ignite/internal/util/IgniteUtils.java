@@ -7483,6 +7483,21 @@ public abstract class IgniteUtils {
         return ret;
     }
 
+    /** */
+    public static long toLong(int x, int y) {
+        return (((long)x) << 32) | (y & 0xffffffffL);
+    }
+
+    /** */
+    public static int fromLong1(long x) {
+        return (int)(x >> 32);
+    }
+
+    /** */
+    public static int fromLong2(long x) {
+        return (int)(x);
+    }
+
     /**
      * Copies all elements from collection to array and asserts that
      * array is big enough to hold the collection. This method should
