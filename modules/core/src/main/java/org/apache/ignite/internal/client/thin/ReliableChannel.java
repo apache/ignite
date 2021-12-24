@@ -251,10 +251,11 @@ final class ReliableChannel implements AutoCloseable {
                     if (leftAttempts > 0) {
                         // TODO: Provide correct values.
                         if (retryPlc == null || !retryPlc.shouldRetry(
-                                null,
-                                ClientOperationType.CACHE_GET,
-                                getRetryLimit() - leftAttempts,
-                                failure0)) {
+                                new ClientRetryPolicyContextImpl(
+                                        clientCfg,
+                                        ClientOperationType.CACHE_GET,
+                                        getRetryLimit() - leftAttempts,
+                                        failure0))) {
                             handleServiceAsync(fut, op, payloadWriter, payloadReader, leftAttempts, failure0);
 
                             return null;
@@ -820,6 +821,7 @@ final class ReliableChannel implements AutoCloseable {
 
     /** Get retry limit. */
     private int getRetryLimit() {
+        // TODO: Combine the logic with retry policy somehow.
         List<ClientChannelHolder> holders = channels;
 
         if (holders == null)

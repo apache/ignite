@@ -22,12 +22,8 @@ package org.apache.ignite.client;
  */
 public class ClientRetryReadPolicy implements ClientRetryPolicy {
     /** {@inheritDoc} */
-    @Override public boolean shouldRetry(
-            IgniteClient client,
-            ClientOperationType operationType,
-            int iteration,
-            ClientConnectionException exception) {
+    @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
         // TODO: Full list of read operations.
-        return operationType == ClientOperationType.CACHE_GET;
+        return context.operation() == ClientOperationType.CACHE_GET;
     }
 }

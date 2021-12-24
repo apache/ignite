@@ -23,7 +23,7 @@ package org.apache.ignite.client;
 public class ClientRetryAllPolicy implements ClientRetryPolicy {
     /** {@inheritDoc} */
     @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
-        // TODO: Use retry limit from configration.
-        return true;
+        return context.configuration().getRetryLimit() <= 0
+                || context.iteration() < context.configuration().getRetryLimit();
     }
 }

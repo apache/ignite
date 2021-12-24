@@ -17,12 +17,13 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.configuration.ClientConfiguration;
+
 /**
  * Retry policy context. See {@link ClientRetryPolicy#shouldRetry}.
  */
 public interface ClientRetryPolicyContext {
-    // TODO: Add access to configuration.
-    public IgniteClient client();
+    public ClientConfiguration configuration();
 
     public ClientOperationType operation();
 

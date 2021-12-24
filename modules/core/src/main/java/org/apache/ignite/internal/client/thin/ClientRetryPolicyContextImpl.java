@@ -20,14 +20,14 @@ package org.apache.ignite.internal.client.thin;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientOperationType;
 import org.apache.ignite.client.ClientRetryPolicyContext;
-import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 /**
  * Retry policy context.
  */
 class ClientRetryPolicyContextImpl implements ClientRetryPolicyContext {
     /** */
-    private final IgniteClient client;
+    private final ClientConfiguration configuration;
 
     /** */
     private final ClientOperationType operation;
@@ -41,22 +41,22 @@ class ClientRetryPolicyContextImpl implements ClientRetryPolicyContext {
     /**
      * Constructor.
      *
-     * @param client Client.
+     * @param configuration Configuration.
      * @param operation Operation.
      * @param iteration Iteration.
      * @param exception Exception.
      */
-    public ClientRetryPolicyContextImpl(IgniteClient client, ClientOperationType operation, int iteration,
+    public ClientRetryPolicyContextImpl(ClientConfiguration configuration, ClientOperationType operation, int iteration,
             ClientConnectionException exception) {
-        this.client = client;
+        this.configuration = configuration;
         this.operation = operation;
         this.iteration = iteration;
         this.exception = exception;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClient client() {
-        return client;
+    @Override public ClientConfiguration configuration() {
+        return configuration;
     }
 
     /** {@inheritDoc} */
