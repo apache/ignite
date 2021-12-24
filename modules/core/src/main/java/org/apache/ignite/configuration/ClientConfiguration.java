@@ -25,6 +25,7 @@ import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.ClientAddressFinder;
+import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
@@ -124,7 +125,7 @@ public final class ClientConfiguration implements Serializable {
     private int retryLimit = 0;
 
     /** Retry policy. */
-    private ClientRetryPolicy retryPolicy;
+    private ClientRetryPolicy retryPolicy = new ClientRetryAllPolicy();
 
     /** Executor for async operations continuations. */
     private Executor asyncContinuationExecutor;
@@ -598,6 +599,8 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets the retry policy. When a request fails due to a connection error, and multiple server connections
      * are available, Ignite will retry the request if the specified policy allows it.
+     * <p />
+     * Default is {@link ClientRetryAllPolicy}.
      *
      * @param retryPolicy Retry policy.
      * @return {@code this} for chaining.
