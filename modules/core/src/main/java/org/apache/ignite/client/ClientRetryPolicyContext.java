@@ -18,12 +18,15 @@
 package org.apache.ignite.client;
 
 /**
- * Retry policy that always returns {@code true} (TODO retry limit).
+ * Retry policy context. See {@link ClientRetryPolicy#shouldRetry}.
  */
-public class ClientRetryAllPolicy implements ClientRetryPolicy {
-    /** {@inheritDoc} */
-    @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
-        // TODO: Use retry limit from configration.
-        return true;
-    }
+public interface ClientRetryPolicyContext {
+    // TODO: Add access to configuration.
+    public IgniteClient client();
+
+    public ClientOperationType operation();
+
+    public int iteration();
+
+    public ClientConnectionException exception();
 }

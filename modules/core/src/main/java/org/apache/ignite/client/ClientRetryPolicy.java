@@ -24,11 +24,8 @@ public interface ClientRetryPolicy {
     /**
      * Gets a value indicating whether a client operation that has failed due to a connection issue should be retried.
      *
-     * @param client Ignite client instance.
-     * @param operationType Operation type.
-     * @param iteration Current iteration index (greater or equal to 0).
-     * @param exception Exception that caused the operation to fail.
+     * @param context Context.
      * @return {@code true} if the operation should be retried on another connection, {@code false} otherwise.
      */
-    public boolean shouldRetry(IgniteClient client, ClientOperationType operationType, int iteration, ClientConnectionException exception);
+    public boolean shouldRetry(ClientRetryPolicyContext context);
 }
