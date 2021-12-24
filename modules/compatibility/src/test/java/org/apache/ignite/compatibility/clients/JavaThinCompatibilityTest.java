@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.clients;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -404,6 +403,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             else
                 testServiceDescriptorsThrows();
         }
+
+        if (clientVer.compareTo(VER_2_13_0) >= 0 && serverVer.compareTo(VER_2_13_0) >= 0)
+            testServicesWithCallerContext();
     }
 
     /** */
@@ -411,11 +413,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         X.println(">>>> Testing services descriptors");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
-            Collection<ClientServiceDescriptor> svcs = client.services().serviceDescriptors();
+            assertEquals(2, client.services().serviceDescriptors().size());
 
-            assertEquals(1, svcs.size());
-
-            ClientServiceDescriptor svc = svcs.iterator().next();
+            ClientServiceDescriptor svc = client.services().serviceDescriptor("test_service");
 
             assertEquals("test_service", svc.name());
             assertEquals(EchoService.class.getName(), svc.serviceClass());
