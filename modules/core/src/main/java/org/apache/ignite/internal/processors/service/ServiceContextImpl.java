@@ -145,7 +145,7 @@ public class ServiceContextImpl implements ServiceContext {
     /**
      * @return Invocation metrics.
      */
-    ReadOnlyMetricRegistry metrics() {
+    @Nullable ReadOnlyMetricRegistry metrics() {
         return metrics;
     }
 
