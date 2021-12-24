@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.metric.AbstractExporterSpiTest.systemView;
+import static org.apache.ignite.internal.metric.JmxExporterSpiTest.systemView;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_TBL_COLS_VIEW;
 
 /**
