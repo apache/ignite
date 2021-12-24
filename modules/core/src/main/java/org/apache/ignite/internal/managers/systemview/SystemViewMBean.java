@@ -281,7 +281,9 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
 
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-            if (clazz.isEnum())
+            if (val == null)
+                data.put(name, val);
+            else if (clazz.isEnum())
                 data.put(name, ((Enum<?>)val).name());
             else if (clazz.isAssignableFrom(Class.class))
                 data.put(name, ((Class<?>)val).getName());

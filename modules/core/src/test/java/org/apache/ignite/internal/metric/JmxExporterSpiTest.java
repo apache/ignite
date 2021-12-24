@@ -494,22 +494,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public TabularDataSupport systemView(IgniteEx g, String name) {
-        try {
-            DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
-
-            MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
-
-            assertEquals(1, attrs.length);
-
-            return (TabularDataSupport)caches.getAttribute(VIEWS);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /** */
     public TabularDataSupport filteredSystemView(IgniteEx g, String name, Map<String, Object> filter) {
         try {
             DynamicMBean mbean = metricRegistry(g.name(), VIEWS, name);

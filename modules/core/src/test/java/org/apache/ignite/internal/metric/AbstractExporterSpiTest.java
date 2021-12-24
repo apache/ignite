@@ -20,9 +20,14 @@ package org.apache.ignite.internal.metric;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import javax.management.DynamicMBean;
+import javax.management.MBeanAttributeInfo;
+import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.VIEWS;
 
 /** */
 public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
@@ -71,5 +76,21 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
         mmgr.registry("other.prefix").longMetric("test2", "").add(43);
 
         mmgr.registry("other.prefix2").longMetric("test3", "").add(44);
+    }
+
+    /** */
+    public static TabularDataSupport systemView(IgniteEx g, String name) {
+        try {
+            DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
+
+            MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
+
+            assertEquals(1, attrs.length);
+
+            return (TabularDataSupport)caches.getAttribute(VIEWS);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
