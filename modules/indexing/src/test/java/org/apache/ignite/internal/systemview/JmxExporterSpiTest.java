@@ -58,7 +58,7 @@ public class JmxExporterSpiTest extends GridCommonAbstractTest {
 
         TabularDataSupport columns = systemView(ignite, SQL_TBL_COLS_VIEW);
 
-        columns.values().stream().map(o -> (CompositeData)o)
+        columns.values().stream().map(data -> (CompositeData)data)
             .filter(data -> tableName.equals(data.get("tableName")))
             .forEach(data -> {
                 String columnName = (String)data.get("columnName");
@@ -69,6 +69,6 @@ public class JmxExporterSpiTest extends GridCommonAbstractTest {
                 assertEquals(expTypes.remove(columnName), data.get("type"));
             });
 
-        assertTrue("Expected columns:" + expTypes.keySet(), expTypes.isEmpty());
+        assertTrue("Expected columns: " + expTypes.keySet(), expTypes.isEmpty());
     }
 }
