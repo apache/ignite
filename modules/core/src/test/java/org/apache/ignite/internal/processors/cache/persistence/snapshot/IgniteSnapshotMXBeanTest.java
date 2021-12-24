@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -60,14 +63,14 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
 
         assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
-            0, getLastSnapshotEndTime(snpMBean));
+            0, getLongMetric("LastSnapshotEndTime", snpMBean));
 
         SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
         assertTrue("Waiting for snapshot operation failed.",
-            GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, TIMEOUT));
+            GridTestUtils.waitForCondition(() -> getLongMetric("LastSnapshotEndTime", snpMBean) > 0, TIMEOUT));
 
         stopAllGrids();
 
@@ -155,5 +158,19 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             "Operation has been canceled by the user");
 
         assertNull(ignite.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * @param mBean Ignite snapshot restore MBean.
+     * @param name Metric name.
+     * @return Metric value.
+     */
+    private long getLongMetric(String name, DynamicMBean mBean) {
+        try {
+            return (long)mBean.getAttribute(name);
+        }
+        catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

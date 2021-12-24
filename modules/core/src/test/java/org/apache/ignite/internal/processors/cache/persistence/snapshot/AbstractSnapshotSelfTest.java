@@ -42,10 +42,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.management.AttributeNotFoundException;
-import javax.management.DynamicMBean;
-import javax.management.MBeanException;
-import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -551,33 +547,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals(valueBuilder().apply(i), cache.get(i));
-    }
-
-    /**
-     * @param mBean Ignite snapshot MBean.
-     * @return Value of snapshot end time.
-     */
-    protected static long getLastSnapshotEndTime(DynamicMBean mBean) {
-        try {
-            return (long)mBean.getAttribute("LastSnapshotEndTime");
-        }
-        catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * @param mBean Ignite snapshot restore MBean.
-     * @param name Metric name.
-     * @return Metric value.
-     */
-    protected static long getLongMetric(String name, DynamicMBean mBean) {
-        try {
-            return (long)mBean.getAttribute(name);
-        }
-        catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**

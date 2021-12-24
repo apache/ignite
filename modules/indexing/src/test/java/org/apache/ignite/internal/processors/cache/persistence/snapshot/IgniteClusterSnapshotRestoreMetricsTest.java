@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
+import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -130,17 +133,17 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames);
 
-        for (Ignite node : G.allGrids()) {
-            DynamicMBean mReg = metricRegistry(node.name(), null, SNAPSHOT_RESTORE_METRICS);
-            String nodeNameMsg = "node=" + node.name();
+        for (Ignite grid : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
+            String nodeNameMsg = "node=" + grid.name();
 
-            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) > 0, TIMEOUT));
+            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
 
-            int expParts = ((IgniteEx)node).cachex(ccfg1.getName()).context().topology().localPartitions().size() +
-                ((IgniteEx)node).cachex(ccfg2.getName()).context().topology().localPartitions().size();
+            int expParts = ((IgniteEx)grid).cachex(ccfg1.getName()).context().topology().localPartitions().size() +
+                ((IgniteEx)grid).cachex(ccfg2.getName()).context().topology().localPartitions().size();
 
             // Cache2 is replicated - the index partition is being copied (on snapshot data nodes).
-            if (!emptyNode.name().equals(node.name()))
+            if (!emptyNode.name().equals(grid.name()))
                 expParts += 1;
 
             assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
@@ -148,11 +151,11 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
 
             assertFalse(nodeNameMsg, ((String)mReg.getAttribute("requestId")).isEmpty());
 
-            assertEquals(nodeNameMsg, expParts, getLongMetric("totalPartitions", mReg));
-            assertEquals(nodeNameMsg, expParts, getLongMetric("processedPartitions", mReg));
+            assertEquals(nodeNameMsg, expParts, getNumMetric("totalPartitions", mReg));
+            assertEquals(nodeNameMsg, expParts, getNumMetric("processedPartitions", mReg));
 
-            long startTime = getLongMetric("startTime", mReg);
-            long endTime = getLongMetric("endTime", mReg);
+            long startTime = getNumMetric("startTime", mReg);
+            long endTime = getNumMetric("endTime", mReg);
 
             assertTrue(nodeNameMsg, startTime > 0);
             assertTrue(nodeNameMsg, endTime >= startTime);
@@ -188,15 +191,15 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        for (Ignite node : G.allGrids()) {
-            DynamicMBean mReg = metricRegistry(node.name(), null, SNAPSHOT_RESTORE_METRICS);
+        for (Ignite grid : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
 
-            String nodeNameMsg = "node=" + node.name();
+            String nodeNameMsg = "node=" + grid.name();
 
-            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg) > 0, TIMEOUT));
+            assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
 
-            long startTime = getLongMetric("startTime", mReg);
-            long endTime = getLongMetric("endTime", mReg);
+            long startTime = getNumMetric("startTime", mReg);
+            long endTime = getNumMetric("endTime", mReg);
 
             assertEquals(nodeNameMsg, SNAPSHOT_NAME, mReg.getAttribute("snapshotName"));
 
@@ -212,15 +215,29 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
      * @throws Exception If failed.
      */
     private void checkMetricsDefaults() throws Exception {
-        DynamicMBean mReg = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+        for (Ignite grid : G.allGrids()) {
+            String nodeNameMsg = "node=" + grid.name();
 
-        for (Ignite node : G.allGrids()) {
-            String nodeNameMsg = "node=" + node.name();
+            DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
 
-            assertEquals(nodeNameMsg, 0, getLongMetric("endTime", mReg));
-            assertEquals(nodeNameMsg, -1, getLongMetric("totalPartitions", mReg));
-            assertEquals(nodeNameMsg, 0, getLongMetric("processedPartitions", mReg));
+            assertEquals(nodeNameMsg, 0, getNumMetric("endTime", mReg));
+            assertEquals(nodeNameMsg, -1, getNumMetric("totalPartitions", mReg));
+            assertEquals(nodeNameMsg, 0, getNumMetric("processedPartitions", mReg));
             assertTrue(nodeNameMsg, String.valueOf(mReg.getAttribute("snapshotName")).isEmpty());
+        }
+    }
+
+    /**
+     * @param mBean Ignite snapshot restore MBean.
+     * @param name Metric name.
+     * @return Metric value.
+     */
+    private long getNumMetric(String name, DynamicMBean mBean) {
+        try {
+            return ((Number)mBean.getAttribute(name)).longValue();
+        }
+        catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
