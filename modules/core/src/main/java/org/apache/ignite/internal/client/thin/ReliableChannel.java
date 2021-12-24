@@ -44,6 +44,8 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientOperationType;
+import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -244,10 +246,19 @@ final class ReliableChannel implements AutoCloseable {
                     if (failure == null)
                         leftAttempts = getRetryLimit() - 1;
 
-                    if (leftAttempts > 0) {
-                        handleServiceAsync(fut, op, payloadWriter, payloadReader, leftAttempts, failure0);
+                    ClientRetryPolicy retryPlc = clientCfg.getRetryPolicy();
 
-                        return null;
+                    if (leftAttempts > 0) {
+                        // TODO: Provide correct values.
+                        if (retryPlc == null || !retryPlc.shouldRetry(
+                                null,
+                                ClientOperationType.CACHE_GET,
+                                getRetryLimit() - leftAttempts,
+                                failure0)) {
+                            handleServiceAsync(fut, op, payloadWriter, payloadReader, leftAttempts, failure0);
+
+                            return null;
+                        }
                     }
                 }
                 else {
