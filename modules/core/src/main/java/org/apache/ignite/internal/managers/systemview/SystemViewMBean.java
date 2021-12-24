@@ -282,12 +282,10 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
 
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
-            if (val == null)
-                data.put(name, val);
-            else if (clazz.isEnum())
-                data.put(name, ((Enum<?>)val).name());
+            if (clazz.isEnum())
+                data.put(name, val == null ? null : ((Enum<?>)val).name());
             else if (clazz.isAssignableFrom(Class.class))
-                data.put(name, ((Class<?>)val).getName());
+                data.put(name, val == null ? null : ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
                 clazz.isAssignableFrom(InetSocketAddress.class))
                 data.put(name, String.valueOf(val));
