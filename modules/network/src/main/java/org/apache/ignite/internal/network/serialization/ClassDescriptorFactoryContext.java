@@ -144,4 +144,15 @@ public class ClassDescriptorFactoryContext {
 
         descriptorMap.put(realDescriptorId, descriptor);
     }
+
+    /**
+     * Returns {@code true} if descriptor with the specified descriptor id is built-in, {@code false} otherwise.
+     *
+     *
+     * @param descriptorId Descriptor id.
+     * @return Whether descriptor is built-in.
+     */
+    public static boolean isBuiltIn(int descriptorId) {
+        return descriptorId < DEFAULT_DESCRIPTORS_OFFSET_COUNT;
+    }
 }

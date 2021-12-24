@@ -25,8 +25,8 @@ import io.netty.handler.stream.ChunkedInput;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.internal.network.direct.DirectMessageWriter;
+import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 
 /**
@@ -34,24 +34,21 @@ import org.apache.ignite.network.serialization.MessageSerializer;
  */
 public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
     /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry;
+    private final PerSessionSerializationService serializationService;
 
     /**
      * Constructor.
      *
-     * @param registry Serialization registry.
+     * @param serializationService Serialization service.
      */
-    public OutboundEncoder(MessageSerializationRegistry registry) {
-        serializationRegistry = registry;
+    public OutboundEncoder(PerSessionSerializationService serializationService) {
+        this.serializationService = serializationService;
     }
 
     /** {@inheritDoc} */
     @Override
     protected void encode(ChannelHandlerContext ctx, NetworkMessage msg, List<Object> out) throws Exception {
-        MessageSerializer<NetworkMessage> serializer =
-                serializationRegistry.createSerializer(msg.groupType(), msg.messageType());
-
-        out.add(new NetworkMessageChunkedInput(msg, serializer, serializationRegistry));
+        out.add(new NetworkMessageChunkedInput(msg, serializationService));
     }
 
     /**
@@ -73,17 +70,16 @@ public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
         /**
          * Constructor.
          *
-         * @param msg        Network message.
-         * @param serializer Serializer.
+         * @param msg                  Network message.
+         * @param serializationService Serialization service.
          */
         private NetworkMessageChunkedInput(
                 NetworkMessage msg,
-                MessageSerializer<NetworkMessage> serializer,
-                MessageSerializationRegistry registry
+                PerSessionSerializationService serializationService
         ) {
             this.msg = msg;
-            this.serializer = serializer;
-            this.writer = new DirectMessageWriter(registry, ConnectionManager.DIRECT_PROTOCOL_VERSION);
+            this.serializer = serializationService.createMessageSerializer(msg.groupType(), msg.messageType());
+            this.writer = new DirectMessageWriter(serializationService, ConnectionManager.DIRECT_PROTOCOL_VERSION);
         }
 
         /** {@inheritDoc} */

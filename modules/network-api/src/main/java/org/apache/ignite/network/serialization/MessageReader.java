@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 /**
@@ -271,6 +272,15 @@ public interface MessageReader {
      */
     public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
             MessageCollectionItemType valType, boolean linked);
+
+    /**
+     * Reads a field annotated with {@link Marshallable}.
+     *
+     * @param name Field name.
+     * @param <T>  Field's type.
+     * @return Marshallable object.
+     */
+    <T> T readMarshallable(String name);
 
     /**
      * Tells whether the last invocation of any of the {@code readXXX(...)} methods has fully written the value. {@code False} is returned

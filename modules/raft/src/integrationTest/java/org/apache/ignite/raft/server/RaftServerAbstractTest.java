@@ -21,11 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -47,8 +45,6 @@ abstract class RaftServerAbstractTest {
      * Server port offset.
      */
     protected static final int PORT = 20010;
-
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
     /** Test info. */
     TestInfo testInfo;
@@ -77,7 +73,6 @@ abstract class RaftServerAbstractTest {
                 testInfo,
                 port,
                 new StaticNodeFinder(servers),
-                SERIALIZATION_REGISTRY,
                 NETWORK_FACTORY
         );
 

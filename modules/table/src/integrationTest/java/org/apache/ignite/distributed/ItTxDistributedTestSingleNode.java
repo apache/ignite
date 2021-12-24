@@ -54,12 +54,10 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
@@ -80,8 +78,6 @@ public class ItTxDistributedTestSingleNode extends TxAbstractTest {
     private static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
 
     private static final TestScaleCubeClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
-
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
     private ClusterService client;
 
@@ -381,7 +377,6 @@ public class ItTxDistributedTestSingleNode extends TxAbstractTest {
                 testInfo,
                 port,
                 nodeFinder,
-                SERIALIZATION_REGISTRY,
                 NETWORK_FACTORY
         );
 

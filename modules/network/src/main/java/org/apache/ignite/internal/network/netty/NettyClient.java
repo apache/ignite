@@ -28,9 +28,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,8 +41,8 @@ public class NettyClient {
     /** A lock for start and stop operations. */
     private final Object startStopLock = new Object();
 
-    /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry;
+    /** Serialization service. */
+    private final SerializationService serializationService;
 
     /** Destination address. */
     private final SocketAddress address;
@@ -70,18 +71,18 @@ public class NettyClient {
      * Constructor.
      *
      * @param address               Destination address.
-     * @param serializationRegistry Serialization registry.
+     * @param serializationService  Serialization service.
      * @param manager               Client handshake manager.
      * @param messageListener       Message listener.
      */
     public NettyClient(
             SocketAddress address,
-            MessageSerializationRegistry serializationRegistry,
+            SerializationService serializationService,
             HandshakeManager manager,
             BiConsumer<SocketAddress, NetworkMessage> messageListener
     ) {
         this.address = address;
-        this.serializationRegistry = serializationRegistry;
+        this.serializationService = serializationService;
         this.handshakeManager = manager;
         this.messageListener = messageListener;
     }
@@ -108,12 +109,14 @@ public class NettyClient {
                 /** {@inheritDoc} */
                 @Override
                 public void initChannel(SocketChannel ch) {
+                    var sessionSerializationService = new PerSessionSerializationService(serializationService);
+
                     ch.pipeline().addLast(
-                            new InboundDecoder(serializationRegistry),
+                            new InboundDecoder(sessionSerializationService),
                             new HandshakeHandler(handshakeManager),
                             new MessageHandler(messageListener),
                             new ChunkedWriteHandler(),
-                            new OutboundEncoder(serializationRegistry),
+                            new OutboundEncoder(sessionSerializationService),
                             new IoExceptionSuppressingHandler()
                     );
                 }

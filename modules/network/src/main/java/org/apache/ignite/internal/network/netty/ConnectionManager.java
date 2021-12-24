@@ -39,11 +39,11 @@ import java.util.stream.Stream;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
 import org.apache.ignite.configuration.schemas.network.OutboundView;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -69,8 +69,8 @@ public class ConnectionManager {
     /** Clients. */
     private final Map<SocketAddress, NettyClient> clients = new ConcurrentHashMap<>();
 
-    /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry;
+    /** Serialization service. */
+    private final SerializationService serializationService;
 
     /** Message listeners. */
     private final List<BiConsumer<SocketAddress, NetworkMessage>> listeners = new CopyOnWriteArrayList<>();
@@ -91,7 +91,7 @@ public class ConnectionManager {
      * Constructor.
      *
      * @param networkConfiguration          Network configuration.
-     * @param registry                      Serialization registry.
+     * @param serializationService          Serialization service.
      * @param consistentId                  Consistent id of this node.
      * @param serverHandshakeManagerFactory Server handshake manager factory.
      * @param clientHandshakeManagerFactory Client handshake manager factory.
@@ -99,23 +99,22 @@ public class ConnectionManager {
      */
     public ConnectionManager(
             NetworkView networkConfiguration,
-            MessageSerializationRegistry registry,
+            SerializationService serializationService,
             String consistentId,
             Supplier<HandshakeManager> serverHandshakeManagerFactory,
             Supplier<HandshakeManager> clientHandshakeManagerFactory,
             NettyBootstrapFactory bootstrapFactory
     ) {
-        this.serializationRegistry = registry;
+        this.serializationService = serializationService;
         this.consistentId = consistentId;
         this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
 
         this.server = new NettyServer(
-                consistentId,
                 networkConfiguration,
                 serverHandshakeManagerFactory,
                 this::onNewIncomingChannel,
                 this::onMessage,
-                serializationRegistry,
+                serializationService,
                 bootstrapFactory
         );
 
@@ -227,7 +226,7 @@ public class ConnectionManager {
     private NettyClient connect(SocketAddress address) {
         var client = new NettyClient(
                 address,
-                serializationRegistry,
+                serializationService,
                 clientHandshakeManagerFactory.get(),
                 this::onMessage
         );

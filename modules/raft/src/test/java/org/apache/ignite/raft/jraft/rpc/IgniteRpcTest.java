@@ -17,12 +17,13 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.JRaftUtils;
@@ -35,10 +36,8 @@ import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
 
-import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
-
 /**
- *
+ * Ignite RPC test.
  */
 public class IgniteRpcTest extends AbstractRpcTest {
     /** The counter. */
@@ -50,7 +49,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
     /** Test info. */
     private final TestInfo testInfo;
 
-    /** */
+    /** Constructor. */
     public IgniteRpcTest(TestInfo testInfo) {
         this.testInfo = testInfo;
     }
@@ -66,11 +65,10 @@ public class IgniteRpcTest extends AbstractRpcTest {
     /** {@inheritDoc} */
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
         ClusterService service = ClusterServiceTestUtils.clusterService(
-            testInfo,
-            endpoint.getPort(),
-            new StaticNodeFinder(Collections.emptyList()),
-            new MessageSerializationRegistryImpl(),
-            new TestScaleCubeClusterServiceFactory()
+                testInfo,
+                endpoint.getPort(),
+                new StaticNodeFinder(Collections.emptyList()),
+                new TestScaleCubeClusterServiceFactory()
         );
 
         NodeOptions nodeOptions = new NodeOptions();
@@ -95,11 +93,10 @@ public class IgniteRpcTest extends AbstractRpcTest {
         int i = cntr.incrementAndGet();
 
         ClusterService service = ClusterServiceTestUtils.clusterService(
-            testInfo,
-            endpoint.getPort() - i,
-            new StaticNodeFinder(List.of(addressFromEndpoint(endpoint))),
-            new MessageSerializationRegistryImpl(),
-            new TestScaleCubeClusterServiceFactory()
+                testInfo,
+                endpoint.getPort() - i,
+                new StaticNodeFinder(List.of(addressFromEndpoint(endpoint))),
+                new TestScaleCubeClusterServiceFactory()
         );
 
         IgniteRpcClient client = new IgniteRpcClient(service) {
@@ -127,6 +124,8 @@ public class IgniteRpcTest extends AbstractRpcTest {
     }
 
     /**
+     * Waits for the cluster's topology to have the expected count of nodes.
+     *
      * @param service The service.
      * @param expected Expected count.
      * @param timeout The timeout.
@@ -136,13 +135,13 @@ public class IgniteRpcTest extends AbstractRpcTest {
         long stop = System.currentTimeMillis() + timeout;
 
         while (System.currentTimeMillis() < stop) {
-            if (service.topologyService().allMembers().size() == expected)
+            if (service.topologyService().allMembers().size() == expected) {
                 return true;
+            }
 
             try {
                 Thread.sleep(50);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 return false;
             }
         }

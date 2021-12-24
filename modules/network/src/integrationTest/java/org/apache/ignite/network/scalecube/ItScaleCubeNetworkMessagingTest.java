@@ -51,12 +51,10 @@ import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TestMessage;
-import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.network.annotations.MessageGroup;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -422,9 +420,6 @@ class ItScaleCubeNetworkMessagingTest {
         /** Network factory. */
         private final TestScaleCubeClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
-        /** Serialization registry. */
-        private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();
-
         /** Members of the cluster. */
         final List<ClusterService> members;
 
@@ -471,7 +466,6 @@ class ItScaleCubeNetworkMessagingTest {
                     testInfo,
                     addr.port(),
                     nodeFinder,
-                    serializationRegistry,
                     networkFactory
             );
 

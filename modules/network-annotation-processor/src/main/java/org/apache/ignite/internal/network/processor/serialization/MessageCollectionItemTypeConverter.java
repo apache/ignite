@@ -121,7 +121,7 @@ class MessageCollectionItemTypeConverter {
             return MessageCollectionItemType.UUID;
         } else if (typeUtils.isSameType(parameterType, IgniteUuid.class)) {
             return MessageCollectionItemType.IGNITE_UUID;
-        } else if (typeUtils.isSameType(parameterType, NetworkMessage.class)) {
+        } else if (typeUtils.isSubType(parameterType, NetworkMessage.class)) {
             return MessageCollectionItemType.MSG;
         } else if (typeUtils.isSameType(parameterType, BitSet.class)) {
             return MessageCollectionItemType.BIT_SET;

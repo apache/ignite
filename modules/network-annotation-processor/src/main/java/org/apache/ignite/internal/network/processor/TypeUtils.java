@@ -60,6 +60,19 @@ public class TypeUtils {
     }
 
     /**
+     * Returns {@code true} if the <i>erasure</i> of the first type is a subtype of the second type.
+     *
+     * @param type1 first type (represented by a mirror)
+     * @param type2 second type (represented by a {@code Class})
+     * @return {@code true} if the erasure of the first type is a subtype of the second type, {@code false} otherwise.
+     */
+    public boolean isSubType(TypeMirror type1, Class<?> type2) {
+        TypeMirror type2Mirror = typeMirrorFromClass(type2);
+
+        return types.isSubtype(erasure(type1), erasure(type2Mirror));
+    }
+
+    /**
      * Returns the primitive type represented by its boxed value or {@code null} if the given type is not a boxed primitive type.
      *
      * @param type boxed wrapper of a primitive type

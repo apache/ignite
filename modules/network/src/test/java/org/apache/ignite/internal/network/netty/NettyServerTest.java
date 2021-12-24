@@ -43,6 +43,7 @@ import org.apache.ignite.internal.configuration.testframework.ConfigurationExten
 import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
@@ -176,14 +177,13 @@ public class NettyServerTest {
         bootstrapFactory.start();
 
         server = new NettyServer(
-                "test",
                 serverCfg.value(),
                 () -> handshakeManager,
                 sender -> {
                 },
                 (socketAddress, message) -> {
                 },
-                registry,
+                new SerializationService(registry, null),
                 bootstrapFactory
         );
 
@@ -244,14 +244,13 @@ public class NettyServerTest {
         bootstrapFactory.start();
 
         var server = new NettyServer(
-                "test",
                 serverCfg.value(),
                 () -> mock(HandshakeManager.class),
                 null,
                 null,
                 null,
                 bootstrapFactory
-                );
+        );
 
         try {
             server.start().get(3, TimeUnit.SECONDS);

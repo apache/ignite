@@ -28,6 +28,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.apache.ignite.internal.network.processor.ProcessingException;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
@@ -69,6 +70,12 @@ class MessageWriterMethodResolver {
         TypeMirror getterReturnType = getter.getReturnType();
 
         String parameterName = getter.getSimpleName().toString();
+
+        if (getter.getAnnotation(Marshallable.class) != null) {
+            return CodeBlock.builder()
+                    .add("writeMarshallable($S, message.$L())", parameterName, parameterName)
+                    .build();
+        }
 
         String methodName = methodNameResolver.resolveBaseMethodName(getterReturnType);
 

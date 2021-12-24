@@ -34,6 +34,7 @@ import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -41,7 +42,6 @@ import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.NodeFinderFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
  * Cluster service factory that uses ScaleCube for messaging and topology services.
@@ -74,7 +74,7 @@ public class ScaleCubeClusterServiceFactory {
             public void start() {
                 String consistentId = context.getName();
 
-                MessageSerializationRegistry registry = context.getSerializationRegistry();
+                var serializationService = new SerializationService(context.getSerializationRegistry(), null);
 
                 UUID launchId = UUID.randomUUID();
 
@@ -84,7 +84,7 @@ public class ScaleCubeClusterServiceFactory {
 
                 connectionMgr = new ConnectionManager(
                         configView,
-                        registry,
+                        serializationService,
                         consistentId,
                         () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
                         () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),

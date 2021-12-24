@@ -45,8 +45,19 @@ public class FieldDescriptor {
      * Constructor.
      */
     public FieldDescriptor(@NotNull Field field, int typeDescriptorId) {
-        this.name = field.getName();
-        this.clazz = field.getType();
+        this(field.getName(), field.getType(), typeDescriptorId);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param fieldName .
+     * @param fieldClazz .
+     * @param typeDescriptorId .
+     */
+    public FieldDescriptor(@NotNull String fieldName, @NotNull Class<?> fieldClazz, int typeDescriptorId) {
+        this.name = fieldName;
+        this.clazz = fieldClazz;
         this.typeDescriptorId = typeDescriptorId;
     }
 

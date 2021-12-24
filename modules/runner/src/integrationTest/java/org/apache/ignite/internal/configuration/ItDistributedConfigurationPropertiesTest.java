@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.inmemory.InMemoryVaultService;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
@@ -116,7 +115,6 @@ public class ItDistributedConfigurationPropertiesTest {
                     testInfo,
                     addr.port(),
                     new StaticNodeFinder(memberAddrs),
-                    new MessageSerializationRegistryImpl(),
                     new TestScaleCubeClusterServiceFactory()
             );
 

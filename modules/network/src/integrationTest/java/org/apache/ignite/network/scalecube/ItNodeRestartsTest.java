@@ -28,8 +28,6 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
-import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -41,9 +39,6 @@ import org.junit.jupiter.api.TestInfo;
 class ItNodeRestartsTest {
     /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ItNodeRestartsTest.class);
-
-    /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();
 
     /** Network factory. */
     private final TestScaleCubeClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
@@ -117,7 +112,6 @@ class ItNodeRestartsTest {
                 testInfo,
                 addr.port(),
                 nodeFinder,
-                serializationRegistry,
                 networkFactory
         );
 

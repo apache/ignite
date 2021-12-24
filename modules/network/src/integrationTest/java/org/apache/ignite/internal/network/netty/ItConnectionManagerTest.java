@@ -47,6 +47,7 @@ import org.apache.ignite.internal.configuration.testframework.InjectConfiguratio
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NettyBootstrapFactory;
@@ -348,7 +349,7 @@ public class ItConnectionManagerTest {
 
         var manager = new ConnectionManager(
                 cfg,
-                registry,
+                new SerializationService(registry, null),
                 consistentId,
                 () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
                 () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),

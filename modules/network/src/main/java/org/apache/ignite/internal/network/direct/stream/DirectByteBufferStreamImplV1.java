@@ -44,6 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.internal.network.message.ClassDescriptorMessage;
+import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
+import org.apache.ignite.internal.network.serialization.SerializationResult;
 import org.apache.ignite.internal.util.ArrayFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -51,7 +54,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageReader;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -64,7 +66,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** Poison object. */
     private static final Object NULL = new Object();
 
-    private final MessageSerializationRegistry serializationRegistry;
+    /** Message serialization registry. */
+    private final PerSessionSerializationService serializationService;
 
     private ByteBuffer buf;
 
@@ -99,6 +102,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     @Nullable
     private MessageDeserializer<NetworkMessage> msgDeserializer;
+
+    @Nullable
+    private MessageSerializer<NetworkMessage> msgSerializer;
 
     private Iterator<?> mapIt;
 
@@ -136,6 +142,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     private long uuidLocId;
 
+    private int marshallableState;
+
+    private byte[] marshallable;
+
+    private List<ClassDescriptorMessage> descriptors;
+
     protected boolean lastFinished;
 
     /** byte-array representation of string. */
@@ -144,10 +156,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /**
      * Constructor.
      *
-     * @param serializationRegistry Message mappers.
+     * @param serializationService Serialization service.       .
      */
-    public DirectByteBufferStreamImplV1(MessageSerializationRegistry serializationRegistry) {
-        this.serializationRegistry = serializationRegistry;
+    public DirectByteBufferStreamImplV1(PerSessionSerializationService serializationService) {
+        this.serializationService = serializationService;
     }
 
     /** {@inheritDoc} */
@@ -589,12 +601,17 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                     writer.setCurrentWriteClass(msg.getClass());
 
-                    MessageSerializer<NetworkMessage> serializer =
-                            serializationRegistry.createSerializer(msg.groupType(), msg.messageType());
+                    if (msgSerializer == null) {
+                        msgSerializer = serializationService.createMessageSerializer(msg.groupType(), msg.messageType());
+                    }
 
                     writer.setBuffer(buf);
 
-                    lastFinished = serializer.writeMessage(msg, writer);
+                    lastFinished = msgSerializer.writeMessage(msg, writer);
+
+                    if (lastFinished) {
+                        msgSerializer = null;
+                    }
                 } finally {
                     writer.afterInnerMessageWrite(lastFinished);
                 }
@@ -1172,7 +1189,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 return null;
             }
 
-            msgDeserializer = serializationRegistry.createDeserializer(msgGroupType, msgType);
+            msgDeserializer = serializationService.createMessageDeserializer(msgGroupType, msgType);
         }
 
         // if the deserializer is not null then we have definitely finished parsing the header and can read the message
@@ -1341,6 +1358,81 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         map = null;
 
         return map0;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public <T> void writeMarshallable(T object, MessageWriter writer) {
+        switch (marshallableState) {
+            case 0:
+                if (marshallable == null) {
+                    // If object was not serialized to a byte array, serialize it
+                    SerializationResult res = serializationService.writeMarshallable(object);
+                    List<Integer> descriptorIds = res.ids();
+                    marshallable = res.array();
+                    // Get descriptors that were not previously sent to the remote node
+                    descriptors = serializationService.createClassDescriptorsMessages(descriptorIds);
+                }
+
+                writeCollection(descriptors, MessageCollectionItemType.MSG, writer);
+
+                if (!lastFinished) {
+                    return;
+                }
+
+                marshallableState++;
+
+                //noinspection fallthrough
+            case 1:
+                writeByteArray(marshallable);
+
+                if (!lastFinished) {
+                    return;
+                }
+
+                marshallable = null;
+                descriptors = null;
+                marshallableState = 0;
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown marshallableState: " + marshallableState);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public <T> T readMarshallable(MessageReader reader) {
+        switch (marshallableState) {
+            case 0:
+                descriptors = readCollection(MessageCollectionItemType.MSG, reader);
+
+                if (!lastFinished) {
+                    return null;
+                }
+
+                marshallableState++;
+
+                //noinspection fallthrough
+            case 1:
+                marshallable = readByteArray();
+
+                if (!lastFinished) {
+                    return null;
+                }
+
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown marshallableState: " + marshallableState);
+        }
+
+        T read = serializationService.readMarshallable(descriptors, marshallable);
+
+        marshallableState = 0;
+        marshallable = null;
+        descriptors = null;
+
+        return read;
     }
 
     /**

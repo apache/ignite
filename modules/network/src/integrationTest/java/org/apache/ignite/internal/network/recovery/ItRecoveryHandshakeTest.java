@@ -47,6 +47,7 @@ import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.netty.NettySender;
+import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -399,6 +400,7 @@ public class ItRecoveryHandshakeTest {
             ClientStageFail clientHandshakeFailAt
     ) {
         var registry = new TestMessageSerializationRegistryImpl();
+        var serializationService = new SerializationService(registry, null);
 
         var messageFactory = new NetworkMessagesFactory();
 
@@ -415,7 +417,7 @@ public class ItRecoveryHandshakeTest {
 
         var manager = new ConnectionManager(
                 cfg,
-                registry,
+                serializationService,
                 consistentId,
                 () -> new FailingRecoveryServerHandshakeManager(launchId, consistentId, serverHandshakeFailAt, messageFactory),
                 () -> new FailingRecoveryClientHandshakeManager(launchId, consistentId, clientHandshakeFailAt, messageFactory),
@@ -437,6 +439,7 @@ public class ItRecoveryHandshakeTest {
      */
     private ConnectionManager startManager(int port) {
         var registry = new TestMessageSerializationRegistryImpl();
+        var serializationService = new SerializationService(registry, null);
 
         var messageFactory = new NetworkMessagesFactory();
 
@@ -453,7 +456,7 @@ public class ItRecoveryHandshakeTest {
 
         var manager = new ConnectionManager(
                 cfg,
-                registry,
+                serializationService,
                 consistentId,
                 () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
                 () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.network;
 
+import org.apache.ignite.internal.network.message.ClassDescriptorMessage;
+import org.apache.ignite.internal.network.message.FieldDescriptorMessage;
 import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartResponseMessage;
@@ -41,4 +43,14 @@ public class NetworkMessageTypes {
      * Type for {@link HandshakeStartResponseMessage}.
      */
     public static final short HANDSHAKE_START_RESPONSE = 3;
+
+    /**
+     * Type for {@link ClassDescriptorMessage}.
+     */
+    public static final short CLASS_DESCRIPTOR_MESSAGE = 4;
+
+    /**
+     * Type for {@link FieldDescriptorMessage}.
+     */
+    public static final short FIELD_DESCRIPTOR_MESSAGE = 5;
 }

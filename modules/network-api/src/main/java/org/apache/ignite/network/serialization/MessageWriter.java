@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 /**
@@ -299,6 +300,16 @@ public interface MessageWriter {
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
             MessageCollectionItemType valType);
+
+    /**
+     * Writes a field annotated with {@link Marshallable}.
+     *
+     * @param name   Field name.
+     * @param object Marshallable object.
+     * @param <T>    Object's type.
+     * @return Whether a value was fully written.
+     */
+    <T> boolean writeMarshallable(String name, T object);
 
     /**
      * Returns {@code true} if the header of the current message has been written, {@code false} otherwise.

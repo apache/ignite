@@ -31,6 +31,7 @@ import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.MessagingService;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkAddress;
@@ -38,7 +39,6 @@ import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TopologyService;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.TestInfo;
 
 /**
@@ -53,17 +53,16 @@ public class ClusterServiceTestUtils {
      * @param testInfo                 Test info.
      * @param port                     Local port.
      * @param nodeFinder               Node finder.
-     * @param msgSerializationRegistry Message serialization registry.
      * @param clusterSvcFactory        Cluster service factory.
      */
     public static ClusterService clusterService(
             TestInfo testInfo,
             int port,
             NodeFinder nodeFinder,
-            MessageSerializationRegistry msgSerializationRegistry,
             TestScaleCubeClusterServiceFactory clusterSvcFactory
     ) {
-        var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), msgSerializationRegistry);
+        var messageSerializationRegistry = new MessageSerializationRegistryImpl();
+        var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), messageSerializationRegistry);
 
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
                 Collections.singleton(NetworkConfiguration.KEY),

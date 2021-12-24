@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.serialization.MessageReader;
 import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -433,4 +434,22 @@ public interface DirectByteBufferStream {
      */
     <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
             boolean linked, MessageReader reader);
+
+    /**
+     * Writes a field annotated with {@link Marshallable}.
+     *
+     * @param object Marshallable object.
+     * @param writer Writer.
+     * @param <T> Object's type.
+     */
+    <T> void writeMarshallable(T object, MessageWriter writer);
+
+    /**
+     * Reads a field annotated with {@link Marshallable}.
+     *
+     * @param reader Reader.
+     * @param <T> Field's type.
+     * @return Marshallable object.
+     */
+    <T> T readMarshallable(MessageReader reader);
 }

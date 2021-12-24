@@ -47,7 +47,6 @@ import org.apache.ignite.internal.tx.impl.HeapLockManager;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.persistence.PersistentVaultService;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
@@ -97,7 +96,6 @@ public class ItDistributedConfigurationStorageTest {
                     testInfo,
                     addr.port(),
                     new StaticNodeFinder(List.of(addr)),
-                    new MessageSerializationRegistryImpl(),
                     new TestScaleCubeClusterServiceFactory()
             );
 

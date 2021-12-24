@@ -26,11 +26,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.internal.network.direct.DirectMarshallingUtils;
 import org.apache.ignite.internal.network.direct.DirectMessageReader;
+import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageReader;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
  * Decodes {@link ByteBuf}s into {@link NetworkMessage}s.
@@ -45,16 +45,16 @@ public class InboundDecoder extends ByteToMessageDecoder {
     /** Message deserializer channel attribute key. */
     private static final AttributeKey<MessageDeserializer<NetworkMessage>> DESERIALIZER_KEY = AttributeKey.valueOf("DESERIALIZER");
 
-    /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry;
+    /** Serialization service. */
+    private final PerSessionSerializationService serializationService;
 
     /**
      * Constructor.
      *
-     * @param serializationRegistry Serialization registry.
+     * @param serializationService Serialization service.
      */
-    public InboundDecoder(MessageSerializationRegistry serializationRegistry) {
-        this.serializationRegistry = serializationRegistry;
+    public InboundDecoder(PerSessionSerializationService serializationService) {
+        this.serializationService = serializationService;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +66,7 @@ public class InboundDecoder extends ByteToMessageDecoder {
         MessageReader reader = readerAttr.get();
 
         if (reader == null) {
-            reader = new DirectMessageReader(serializationRegistry, ConnectionManager.DIRECT_PROTOCOL_VERSION);
+            reader = new DirectMessageReader(serializationService, ConnectionManager.DIRECT_PROTOCOL_VERSION);
             readerAttr.set(reader);
         }
 
@@ -81,7 +81,7 @@ public class InboundDecoder extends ByteToMessageDecoder {
                 // Read message type.
                 if (msg == null) {
                     if (buffer.remaining() >= NetworkMessage.MSG_TYPE_SIZE_BYTES) {
-                        msg = serializationRegistry.createDeserializer(DirectMarshallingUtils.getShort(buffer),
+                        msg = serializationService.createMessageDeserializer(DirectMarshallingUtils.getShort(buffer),
                                 DirectMarshallingUtils.getShort(buffer));
                     } else {
                         break;
@@ -110,6 +110,13 @@ public class InboundDecoder extends ByteToMessageDecoder {
                     out.add(msg.getMessage());
                 } else {
                     messageAttr.set(msg);
+                }
+
+                if (readBytes == 0) {
+                    // Zero bytes were read from the buffer.
+                    // This could've happened because for some types (like floats) we have to read N bytes at a time and there could be
+                    // less than N bytes available.
+                    break;
                 }
             } catch (Throwable e) {
                 if (LOG.isDebugEnabled()) {

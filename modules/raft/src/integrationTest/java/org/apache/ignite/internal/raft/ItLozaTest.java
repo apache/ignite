@@ -37,13 +37,11 @@ import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.MessagingService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
@@ -61,8 +59,6 @@ public class ItLozaTest {
 
     /** Server port offset. */
     private static final int PORT = 20010;
-
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
     @WorkDirectory
     private Path dataPath;
@@ -91,7 +87,6 @@ public class ItLozaTest {
                 testInfo,
                 port,
                 new StaticNodeFinder(srvs),
-                SERIALIZATION_REGISTRY,
                 NETWORK_FACTORY
         );
 
