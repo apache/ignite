@@ -26,12 +26,16 @@
 #include <ignite/impl/interop/interop_memory.h>
 
 #include <ignite/network/async_handler.h>
+#include <ignite/network/codec.h>
 #include <ignite/network/tcp_range.h>
 
 namespace ignite
 {
     namespace network
     {
+        /**
+         * Asynchronous client pool.
+         */
         class AsyncClientPool
         {
         public:
@@ -44,6 +48,19 @@ namespace ignite
             }
 
             /**
+             * Add codec factories.
+             * Should be called before client pool is started.
+             *
+             * Order of codecs matter.
+             * Data flow:
+             * On recv: socket => codecs[0] => ... => codecs.back() => application.
+             * On send: application => codecs.back() => ... => codecs[0] => socket.
+             *
+             * @param codecs Codec factories.
+             */
+            virtual void AddCodecs(const std::vector<SP_CodecFactory>& codecs) = 0;
+
+            /**
              * Start internal thread that establishes connections to provided addresses and asynchronously sends and
              * receives messages from them. Function returns either when thread is started and first connection is
              * established or failure happened.
@@ -52,6 +69,7 @@ namespace ignite
              * @param handler Async event handler.
              * @param timeout Connection establishment timeout.
              * @param connLimit Connection upper limit. Zero means limit is disabled.
+             *
              * @throw IgniteError on error.
              */
             virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit) = 0;
@@ -67,6 +85,7 @@ namespace ignite
              * @param id Client ID.
              * @param mem Data to be sent.
              * @return @c true if connection is present and @c false otherwise.
+             *
              * @throw IgniteError on error.
              */
             virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem) = 0;

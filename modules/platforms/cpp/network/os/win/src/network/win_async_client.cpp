@@ -28,12 +28,18 @@ namespace ignite
 {
     namespace network
     {
-        WinAsyncClient::WinAsyncClient(SOCKET socket, const EndPoint &addr) :
+        WinAsyncClient::WinAsyncClient(
+            SOCKET socket,
+            const EndPoint &addr,
+            const TcpRange& range,
+            const std::vector<SP_Codec>& codecs
+        ) :
+            codecs(codecs),
             state(State::CONNECTED),
             socket(socket),
             id(0),
             addr(addr),
-            range()
+            range(range)
         {
             memset(&currentSend, 0, sizeof(currentSend));
             currentSend.kind = IoOperationKind::SEND;

@@ -129,14 +129,12 @@ namespace ignite
                 EndPoint addr(range.host, port);
                 try
                 {
-                    SP_WinAsyncClient client = TryConnect(addr);
+                    SOCKET socket = TryConnect(addr);
 
-                    if (!client.IsValid())
-                        continue;
+                    std::vector<SP_Codec> codecs;
+                    clientPool.BuildCodecs(codecs);
 
-                    client.Get()->SetRange(range);
-
-                    return client;
+                    return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, codecs));
                 }
                 catch (const IgniteError& err)
                 {
@@ -148,7 +146,7 @@ namespace ignite
             return SP_WinAsyncClient();
         }
 
-        SP_WinAsyncClient WinAsyncClientPool::ConnectingThread::TryConnect(const EndPoint& addr)
+        SOCKET WinAsyncClientPool::ConnectingThread::TryConnect(const EndPoint& addr)
         {
             addrinfo hints;
             memset(&hints, 0, sizeof(hints));
@@ -210,7 +208,7 @@ namespace ignite
             if (socket == INVALID_SOCKET)
                 utils::ThrowNetworkError(lastErrorMsg);
 
-            return SP_WinAsyncClient(new WinAsyncClient(socket, addr));
+            return socket;
         }
 
         WinAsyncClientPool::WorkerThread::WorkerThread(WinAsyncClientPool& clientPool) :
@@ -332,6 +330,14 @@ namespace ignite
         WinAsyncClientPool::~WinAsyncClientPool()
         {
             InternalStop();
+        }
+
+        void WinAsyncClientPool::AddCodecs(const std::vector<SP_CodecFactory>& codecs)
+        {
+            if (asyncHandler)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Client pool is already started");
+
+            factories = codecs;
         }
 
         void WinAsyncClientPool::Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit)
@@ -548,6 +554,15 @@ namespace ignite
                 return SP_WinAsyncClient();
 
             return it->second;
+        }
+
+        void WinAsyncClientPool::BuildCodecs(std::vector<SP_Codec>& codecs)
+        {
+            codecs.clear();
+            codecs.reserve(factories.size());
+
+            for (std::vector<SP_CodecFactory>::iterator it = factories.begin(); it != factories.end(); ++it)
+                codecs.push_back(it->Get()->Build());
         }
     }
 }

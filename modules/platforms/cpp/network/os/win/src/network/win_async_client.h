@@ -26,6 +26,7 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/interop/interop_memory.h>
 
+#include <ignite/network/codec.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/tcp_range.h>
 
@@ -99,8 +100,11 @@ namespace ignite
              *
              * @param socket Socket.
              * @param addr Address.
+             * @param range Range.
+             * @param codecs Codecs.
              */
-            WinAsyncClient(SOCKET socket, const EndPoint& addr);
+            WinAsyncClient(SOCKET socket, const EndPoint& addr, const TcpRange& range,
+                const std::vector<SP_Codec>& codecs);
 
             /**
              * Destructor.
@@ -216,16 +220,6 @@ namespace ignite
             }
 
             /**
-             * Set range.
-             *
-             * @param range Range.
-             */
-            void SetRange(const TcpRange& range)
-            {
-                this->range = range;
-            }
-
-            /**
              * Check whether client is closed.
              *
              * @return @c true if closed.
@@ -259,6 +253,9 @@ namespace ignite
              * @return @c true on success.
              */
             bool SendNextPacketLocked();
+
+            /** Codecs. */
+            std::vector<SP_Codec> codecs;
 
             /** Client state. */
             State::Type state;

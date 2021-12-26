@@ -19,6 +19,8 @@
 #define _IGNITE_NETWORK_CODEC
 
 #include <ignite/ignite_error.h>
+
+#include <ignite/common/factory.h>
 #include <ignite/impl/interop/interop_memory.h>
 
 #include <ignite/network/data_buffer.h>
@@ -27,7 +29,11 @@ namespace ignite
 {
     namespace network
     {
-        class Codec
+        /**
+         * Codec class.
+         * Encodes and decodes data.
+         */
+        class IGNITE_IMPORT_EXPORT Codec
         {
         public:
             /**
@@ -59,8 +65,14 @@ namespace ignite
             virtual DataBuffer Decode(DataBuffer& data) = 0;
         };
 
-        // Type alias
+        // Shared pointer codec type alias.
         typedef common::concurrent::SharedPointer<Codec> SP_Codec;
+
+        /** Codec factory. */
+        typedef common::Factory<Codec> CodecFactory;
+
+        // Shared pointer to codec factory type alias.
+        typedef common::concurrent::SharedPointer<CodecFactory> SP_CodecFactory;
     }
 }
 

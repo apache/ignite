@@ -22,6 +22,7 @@
 #include <iterator>
 #include <algorithm>
 
+#include <ignite/network/length_prefix_codec.h>
 #include <ignite/network/network.h>
 #include <ignite/network/utils.h>
 
@@ -69,6 +70,10 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create async connection pool");
                 }
 
+                std::vector<network::SP_CodecFactory> codecs;
+                codecs.push_back(network::SP_CodecFactory(new network::LengthPrefixCodecFactory()));
+
+                asyncPool.Get()->AddCodecs(codecs);
                 asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit());
 
                 bool connected = EnsureConnected(config.GetConnectionTimeout());

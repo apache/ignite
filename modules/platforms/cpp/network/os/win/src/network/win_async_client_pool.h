@@ -52,6 +52,19 @@ namespace ignite
             virtual ~WinAsyncClientPool();
 
             /**
+             * Add codec factories.
+             * Should be called before client pool is started.
+             *
+             * Order of codecs matter.
+             * Data flow:
+             * On recv: socket => codecs[0] => ... => codecs.back() => application.
+             * On send: application => codecs.back() => ... => codecs[0] => socket.
+             *
+             * @param codecs Codec factories.
+             */
+            virtual void AddCodecs(const std::vector<SP_CodecFactory>& codecs);
+
+            /**
              * Start internal thread that establishes connections to provided addresses and asynchronously sends and
              * receives messages from them. Function returns either when when thread is started and first connection is
              * established or failure happens.
@@ -59,6 +72,7 @@ namespace ignite
              * @param addrs Addresses to connect to.
              * @param handler Async event handler.
              * @param connLimit Connection upper limit. Zero means limit is disabled.
+             *
              * @throw IgniteError on error.
              */
             virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit);
@@ -74,6 +88,7 @@ namespace ignite
              * @param id Client ID.
              * @param mem Data to be sent.
              * @return @c true if connection is present and @c false otherwise.
+             *
              * @throw IgniteError on error.
              */
             virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem);
@@ -87,7 +102,6 @@ namespace ignite
             virtual void Close(uint64_t id, const IgniteError* err);
 
         private:
-
             /**
              * Async pool connecting thread.
              */
@@ -127,9 +141,9 @@ namespace ignite
                 /**
                  * Try establish connection to address.
                  * @param addr Address.
-                 * @return New client.
+                 * @return Socket.
                  */
-                static SP_WinAsyncClient TryConnect(const EndPoint& addr);
+                static SOCKET TryConnect(const EndPoint& addr);
 
                 /** Client pool. */
                 WinAsyncClientPool& clientPool;
@@ -274,6 +288,11 @@ namespace ignite
 
             /** Client mapping EndPoint -> client */
             std::map<EndPoint, SP_WinAsyncClient> clientAddrMap;
+
+            /** Codec factories. */
+            std::vector<SP_CodecFactory> factories;
+
+            void BuildCodecs(std::vector<SP_Codec> &codecs);
         };
 
         // Type alias

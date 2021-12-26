@@ -27,7 +27,10 @@ namespace ignite
 {
     namespace network
     {
-        class LengthPrefixCodec : public Codec
+        /**
+         * Codec that decodes messages prefixed with int32 length.
+         */
+        class IGNITE_IMPORT_EXPORT LengthPrefixCodec : public Codec
         {
         public:
             enum
@@ -80,6 +83,31 @@ namespace ignite
 
             /** Current packet */
             impl::interop::SP_InteropMemory packet;
+        };
+
+        /**
+         * Factory for LengthPrefixCodec.
+         */
+        class IGNITE_IMPORT_EXPORT LengthPrefixCodecFactory : public CodecFactory
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            LengthPrefixCodecFactory()
+            {
+                // No-op.
+            }
+
+            /**
+             * Build instance.
+             *
+             * @return New instance of type @c T.
+             */
+            virtual SP_Codec Build()
+            {
+                return SP_Codec(new LengthPrefixCodec());
+            }
         };
     }
 }
