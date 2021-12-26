@@ -139,6 +139,9 @@ namespace ignite
 
                 /** Condition variable, which signalled when new connect is needed. */
                 common::concurrent::ConditionVariable connectNeeded;
+
+                /** Failed connection attempts. */
+                size_t failedAttempts;
             };
 
             /**
