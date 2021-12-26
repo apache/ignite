@@ -206,7 +206,7 @@ namespace ignite
                 /**
                  * Get cross-platform pointer in long form.
                  */
-                int64_t PointerLong();
+                int64_t PointerLong() const;
 
                 /**
                  * Get raw data pointer.
@@ -262,6 +262,7 @@ namespace ignite
             };
 
             typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
+            typedef common::concurrent::SharedPointer<const interop::InteropMemory> SP_ConstInteropMemory;
 
             /**
              * Interop unpooled memory.

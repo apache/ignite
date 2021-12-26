@@ -81,7 +81,7 @@ namespace ignite
         };
 
         // Type alias
-        typedef common::concurrent::SharedPointer<network::AsyncClientPool> SP_AsyncClientPool;
+        typedef common::concurrent::SharedPointer<AsyncClientPool> SP_AsyncClientPool;
     }
 }
 

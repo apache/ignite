@@ -23,14 +23,18 @@ find_package(OpenSSL REQUIRED)
 
 include_directories(include src ${OPENSSL_INCLUDE_DIR})
 
-set(SOURCES src/network/network.cpp
+set(SOURCES
+        src/network/data_buffer.cpp
+        src/network/length_prefix_codec.cpp
+        src/network/network.cpp
         src/network/ssl/secure_socket_client.cpp
         src/network/ssl/ssl_gateway.cpp)
 
 if (WIN32)
     include_directories(os/win/src)
 
-    list(APPEND SOURCES os/win/src/network/tcp_socket_client.cpp
+    list(APPEND SOURCES
+            os/win/src/network/tcp_socket_client.cpp
             os/win/src/network/sockets.cpp
             os/win/src/network/utils.cpp
             os/win/src/network/win_async_client.cpp
@@ -38,7 +42,8 @@ if (WIN32)
 else()
     include_directories(os/linux/src)
 
-    list(APPEND SOURCES os/linux/src/network/tcp_socket_client.cpp
+    list(APPEND SOURCES
+            os/linux/src/network/tcp_socket_client.cpp
             os/linux/src/network/sockets.cpp
             os/linux/src/network/utils.cpp)
 endif()

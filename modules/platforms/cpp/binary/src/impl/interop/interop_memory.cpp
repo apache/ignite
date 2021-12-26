@@ -100,7 +100,7 @@ namespace ignite
                 return memPtr;
             }
 
-            int64_t InteropMemory::PointerLong()
+            int64_t InteropMemory::PointerLong() const
             {
                 return reinterpret_cast<int64_t>(memPtr);
             }
