@@ -45,7 +45,7 @@ public class VisorCacheMetricsStatusTask extends VisorOneNodeTask<VisorCacheMetr
     }
 
     /**
-     * Job result is a map with metrics statuses for proccessed caches.
+     * Job result is a map with metrics statuses for processed caches.
      */
     private static class VisorCacheMetricsStatusJob extends VisorJob<VisorCacheMetricsStatusTaskArg,
         Map<String, Boolean>> {
@@ -73,10 +73,10 @@ public class VisorCacheMetricsStatusTask extends VisorOneNodeTask<VisorCacheMetr
             Map<String, Boolean> cacheMetricsStatusInfo = new TreeMap<>();
 
             for (String cacheName : cacheNames) {
-                IgniteInternalCache<Object, Object> cachex = ignite.cachex(cacheName);
+                IgniteInternalCache<Object, Object> cacheEx = ignite.cachex(cacheName);
 
-                if (cachex != null)
-                    cacheMetricsStatusInfo.put(cacheName, cachex.clusterMetrics().isStatisticsEnabled());
+                if (cacheEx != null)
+                    cacheMetricsStatusInfo.put(cacheName, cacheEx.clusterMetrics().isStatisticsEnabled());
             }
 
             return cacheMetricsStatusInfo;

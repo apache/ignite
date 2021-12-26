@@ -258,7 +258,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      *
      */
     @Test
-    public void testInvalidArgumets() {
+    public void testInvalidArguments() {
         checkInvalidArguments("Check arguments. Expected correct sub-command.");
 
         checkInvalidArguments("Check arguments. Expected correct sub-command.", "bad-command");
@@ -291,7 +291,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Check commands successfull execution.
+     * Check commands successful execution.
      *
      * @param expExitCode Expected exit code.
      * @param expectedOutput Expected command output.
@@ -352,7 +352,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Form expected <tt>--enable/disable</tt> command output with proccesed caches list.
+     * Form expected <tt>--enable/disable</tt> command output with processed caches list.
      *
      * @param cacheNames Cache names.
      */

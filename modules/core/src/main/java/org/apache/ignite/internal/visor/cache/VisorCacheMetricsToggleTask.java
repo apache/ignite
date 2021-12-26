@@ -42,7 +42,7 @@ public class VisorCacheMetricsToggleTask extends VisorOneNodeTask<VisorCacheMetr
     }
 
     /**
-     * Job result is a collection of proccessed cache names.
+     * Job result is a collection of processed cache names.
      */
     private static class VisorCacheMetricsToggleJob extends VisorJob<VisorCacheMetricsToggleTaskArg,
         Collection<String>> {

@@ -187,7 +187,7 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
      * Container for command arguments.
      */
     public static class Arguments {
-        /** Metris sub-command argument. */
+        /** Metrics sub-command argument. */
         private final CacheMetricsCommandArg subCmdArg;
 
         /** Apply to all caches flag. */
