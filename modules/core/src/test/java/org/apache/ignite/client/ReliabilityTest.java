@@ -221,7 +221,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests that retry limit of 1 effectively disables retry/failover.
+     * Tests that setting retry policy to null effectively disables retry/failover.
      */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
