@@ -30,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
+    /** */
+    public static final long UNKNOWN_VALUE = -1;
+
     /** Size changes for cache partitions made by transaction */
     private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
 
@@ -152,12 +155,12 @@ public class TxCounters {
      *
      * @return Counter or {@code null} if cache partition has not updates.
      */
-    public Long generateNextCounter(int cacheId, int partId) {
+    public long generateNextCounter(int cacheId, int partId) {
         for (PartitionUpdateCountersMessage msg : updCntrs) {
             if (msg.cacheId() == cacheId)
                 return msg.nextCounter(partId);
         }
 
-        return null;
+        return UNKNOWN_VALUE;
     }
 }

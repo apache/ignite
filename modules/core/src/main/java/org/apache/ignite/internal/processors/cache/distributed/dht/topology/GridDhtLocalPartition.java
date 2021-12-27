@@ -895,7 +895,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Null must never be returned on primary node.
             nextCntr = txCounters.generateNextCounter(cacheId, id());
 
-            assert nextCntr != null : this;
+            assert nextCntr != TxCounters.UNKNOWN_VALUE : this;
         }
 
         if (grp.sharedGroup())

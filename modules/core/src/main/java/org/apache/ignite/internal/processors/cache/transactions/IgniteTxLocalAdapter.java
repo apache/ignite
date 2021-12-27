@@ -752,7 +752,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         cached.isNear() ? null : explicitVer,
                                         resolveTaskName(),
                                         dhtVer,
-                                        null);
+                                        TxCounters.UNKNOWN_VALUE);
 
                                     if (updRes.success())
                                         txEntry.updateCounter(updRes.updateCounter());
@@ -785,7 +785,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 null,
                                                 resolveTaskName(),
                                                 dhtVer0,
-                                                null)
+                                                TxCounters.UNKNOWN_VALUE)
                                         );
                                     }
                                 }

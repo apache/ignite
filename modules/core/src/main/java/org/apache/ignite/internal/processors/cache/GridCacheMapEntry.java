@@ -1447,7 +1447,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable GridCacheVersion explicitVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
@@ -3563,7 +3563,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param tx Tx.
      * @param updateCntr Update counter.
      */
-    protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long updateCntr) {
+    protected long nextPartitionCounter(IgniteInternalTx tx, long updateCntr) {
         return 0;
     }
 
