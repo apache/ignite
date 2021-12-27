@@ -18,11 +18,11 @@
 package org.apache.ignite.client;
 
 /**
- * Retry policy that always returns {@code true}.
+ * Retry policy that always returns {@code false}.
  */
-public class ClientRetryAllPolicy implements ClientRetryPolicy {
+public class ClientRetryNonePolicy implements ClientRetryPolicy {
     /** {@inheritDoc} */
     @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
-        return true;
+        return false;
     }
 }
