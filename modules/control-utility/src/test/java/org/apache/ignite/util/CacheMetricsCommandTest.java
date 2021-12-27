@@ -35,7 +35,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.cache.CacheMetrics.SEP;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
@@ -274,20 +273,6 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_TWO,
             COMMAND_ENABLE, CACHE_ONE, CACHE_TWO);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testUsage() {
-        int exitCode = execute(CommandList.CACHE.text(), CacheCommandList.HELP.text());
-
-        assertEquals("Unexpected exit code", EXIT_CODE_OK, exitCode);
-
-        GridTestUtils.assertContains(log, testOut.toString(),
-            "--cache metrics --enable|--disable|--status cache1[,...,cacheN]|--all-caches" + SEP +
-                DOUBLE_INDENT + "Manages user cache metrics collection: enables, disables it or shows status.");
     }
 
     /**
