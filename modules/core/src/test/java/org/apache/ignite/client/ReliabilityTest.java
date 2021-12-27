@@ -281,14 +281,19 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @Test
     public void testRetryPolicyConvertOpAllOperationsSupported() {
-        long nullCount = Arrays.stream(ClientOperation.values()).filter(o -> o.toPublicOperationType() == null).count();
+        List<ClientOperation> nullOps = Arrays.stream(ClientOperation.values())
+                .filter(o -> o.toPublicOperationType() == null)
+                .collect(Collectors.toList());
 
-        long expectedNullCount = 5;
+        String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
+
+        long expectedNullCount = 7;
 
         String msg = expectedNullCount
-                + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too.";
+                + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
+                + nullOpsNames;
 
-        assertEquals(msg, expectedNullCount, nullCount);
+        assertEquals(msg, expectedNullCount, nullOps.size());
     }
 
     /**

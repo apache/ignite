@@ -229,7 +229,12 @@ public enum ClientOperation {
     @Nullable public ClientOperationType toPublicOperationType() {
         switch (this) {
             case CACHE_GET_OR_CREATE_WITH_NAME:
+            case CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
                 return ClientOperationType.CACHE_GET_OR_CREATE;
+
+            case CACHE_CREATE_WITH_CONFIGURATION:
+            case CACHE_CREATE_WITH_NAME:
+                return ClientOperationType.CACHE_CREATE;
 
             case CACHE_PUT:
                 return ClientOperationType.CACHE_PUT;
@@ -237,105 +242,129 @@ public enum ClientOperation {
             case CACHE_GET:
                 return ClientOperationType.CACHE_GET;
 
-            case CACHE_CREATE_WITH_CONFIGURATION:
-                return ClientOperationType.CACHE_CREATE;
-
             case CACHE_GET_NAMES:
                 return ClientOperationType.CACHE_GET_NAMES;
 
             case CACHE_DESTROY:
                 return ClientOperationType.CACHE_DESTROY;
 
-            case CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
-                return ClientOperationType.CACHE_GET_OR_CREATE;
-
-            case CACHE_CREATE_WITH_NAME:
-                return ClientOperationType.CACHE_CREATE;
-
             case CACHE_CONTAINS_KEY:
-                break;
+                return ClientOperationType.CACHE_CONTAINS_KEY;
+
             case CACHE_CONTAINS_KEYS:
-                break;
+                return ClientOperationType.CACHE_CONTAINS_KEYS;
+
             case CACHE_GET_CONFIGURATION:
-                break;
+                return ClientOperationType.CACHE_GET_CONFIGURATION;
+
             case CACHE_GET_SIZE:
-                break;
+                return ClientOperationType.CACHE_GET_SIZE;
+
             case CACHE_PUT_ALL:
-                break;
+                return ClientOperationType.CACHE_PUT_ALL;
+
             case CACHE_GET_ALL:
-                break;
+                return ClientOperationType.CACHE_GET_ALL;
+
             case CACHE_REPLACE_IF_EQUALS:
-                break;
             case CACHE_REPLACE:
-                break;
+                return ClientOperationType.CACHE_REPLACE;
+
             case CACHE_REMOVE_KEY:
-                break;
             case CACHE_REMOVE_IF_EQUALS:
-                break;
+                return ClientOperationType.CACHE_REMOVE_ONE;
+
             case CACHE_REMOVE_KEYS:
-                break;
+                return ClientOperationType.CACHE_REMOVE_MULTIPLE;
+
             case CACHE_REMOVE_ALL:
-                break;
+                return ClientOperationType.CACHE_REMOVE_EVERYTHING;
+
             case CACHE_GET_AND_PUT:
-                break;
+                return ClientOperationType.CACHE_GET_AND_PUT;
+
             case CACHE_GET_AND_REMOVE:
-                break;
+                return ClientOperationType.CACHE_GET_AND_REMOVE;
+
             case CACHE_GET_AND_REPLACE:
-                break;
+                return ClientOperationType.CACHE_GET_AND_REPLACE;
+
             case CACHE_PUT_IF_ABSENT:
-                break;
+                return ClientOperationType.CACHE_PUT_IF_ABSENT;
+
             case CACHE_GET_AND_PUT_IF_ABSENT:
-                break;
+                return ClientOperationType.CACHE_GET_AND_PUT_IF_ABSENT;
+
             case CACHE_CLEAR:
-                break;
+                return ClientOperationType.CACHE_CLEAR_EVERYTHING;
+
             case CACHE_CLEAR_KEY:
-                break;
+                return ClientOperationType.CACHE_CLEAR_ONE;
+
             case CACHE_CLEAR_KEYS:
-                break;
+                return ClientOperationType.CACHE_CLEAR_MULTIPLE;
+
             case CACHE_PARTITIONS:
-                break;
+                return ClientOperationType.CACHE_PARTITIONS;
+
             case QUERY_SCAN:
-                break;
+                return ClientOperationType.QUERY_SCAN;
+
             case QUERY_SQL:
-                break;
+            case QUERY_SQL_FIELDS:
+                return ClientOperationType.QUERY_SQL;
+
             case QUERY_CONTINUOUS:
-                break;
+                return ClientOperationType.QUERY_CONTINUOUS;
+
             case GET_BINARY_TYPE:
-                break;
+                return ClientOperationType.GET_BINARY_TYPE;
+
             case REGISTER_BINARY_TYPE_NAME:
-                break;
+                return ClientOperationType.REGISTER_BINARY_TYPE_NAME;
+
             case PUT_BINARY_TYPE:
-                break;
+                return ClientOperationType.PUT_BINARY_TYPE;
+
             case GET_BINARY_TYPE_NAME:
-                break;
+                return ClientOperationType.GET_BINARY_TYPE_NAME;
+
             case TX_START:
-                break;
+                return ClientOperationType.TRANSACTION_START;
+
             case CLUSTER_GET_STATE:
-                break;
+                return ClientOperationType.CLUSTER_GET_STATE;
+
             case CLUSTER_CHANGE_STATE:
-                break;
+                return ClientOperationType.CLUSTER_CHANGE_STATE;
+
             case CLUSTER_GET_WAL_STATE:
-                break;
+                return ClientOperationType.CLUSTER_GET_WAL_STATE;
+
             case CLUSTER_CHANGE_WAL_STATE:
-                break;
+                return ClientOperationType.CLUSTER_CHANGE_WAL_STATE;
+
             case CLUSTER_GROUP_GET_NODE_IDS:
-                break;
+                return ClientOperationType.CLUSTER_GROUP_GET_NODE_IDS;
+
             case CLUSTER_GROUP_GET_NODE_INFO:
-                break;
+                return ClientOperationType.CLUSTER_GROUP_GET_NODE_INFO;
+
             case COMPUTE_TASK_EXECUTE:
-                break;
+                return ClientOperationType.COMPUTE_TASK_EXECUTE;
+
             case SERVICE_INVOKE:
-                break;
+                return ClientOperationType.SERVICE_INVOKE;
+
             case SERVICE_GET_DESCRIPTORS:
-                break;
+                return ClientOperationType.SERVICE_GET_DESCRIPTORS;
+
             case SERVICE_GET_DESCRIPTOR:
-                break;
+                return ClientOperationType.SERVICE_GET_DESCRIPTOR;
 
             default:
                 return null;
         }
-
-        return null;
     }
 
     /** Enum mapping from code to values. */
