@@ -1946,55 +1946,50 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (txCntrs == null)
             return;
 
-        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCntrs.sizeDeltas();
+        Map<Long, AtomicLong> sizeDeltas = txCntrs.sizeDeltas();
 
-        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
-            Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> deltas = entry.getValue();
-
-            assert !F.isEmpty(deltas);
+        for (Map.Entry<Long, AtomicLong> entry : sizeDeltas.entrySet()) {
+            int cacheId = U.fromLong1(entry.getKey());
+            int p = U.fromLong2(entry.getKey());
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
             // Need to reserve on backups only
             boolean reserve = dht() && remote();
 
-            for (Map.Entry<Integer, AtomicLong> e : deltas.entrySet()) {
-                boolean invalid = false;
-                int p = e.getKey();
-                long delta = e.getValue().get();
+            boolean invalid = false;
+            long delta = entry.getValue().get();
 
-                try {
-                    GridDhtLocalPartition part = top.localPartition(p);
+            try {
+                GridDhtLocalPartition part = top.localPartition(p);
 
-                    if (!reserve || part != null && part.reserve()) {
-                        assert part != null;
+                if (!reserve || part != null && part.reserve()) {
+                    assert part != null;
 
-                        try {
-                            if (part.state() != GridDhtPartitionState.RENTING)
-                                part.dataStore().updateSize(cacheId, delta);
-                            else
-                                invalid = true;
-                        }
-                        finally {
-                            if (reserve)
-                                part.release();
-                        }
+                    try {
+                        if (part.state() != GridDhtPartitionState.RENTING)
+                            part.dataStore().updateSize(cacheId, delta);
+                        else
+                            invalid = true;
                     }
-                    else
-                        invalid = true;
+                    finally {
+                        if (reserve)
+                            part.release();
+                    }
                 }
-                catch (GridDhtInvalidPartitionException e1) {
+                else
                     invalid = true;
-                }
+            }
+            catch (GridDhtInvalidPartitionException e1) {
+                invalid = true;
+            }
 
-                if (invalid) {
-                    assert reserve;
+            if (invalid) {
+                assert reserve;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Trying to apply size delta for invalid partition: " +
-                            "[cacheId=" + cacheId + ", part=" + p + "]");
-                }
+                if (log.isDebugEnabled())
+                    log.debug("Trying to apply size delta for invalid partition: " +
+                        "[cacheId=" + cacheId + ", part=" + p + "]");
             }
         }
     }

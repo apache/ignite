@@ -446,77 +446,81 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     public void calculatePartitionUpdateCounters() throws IgniteTxRollbackCheckedException {
         TxCounters counters = txCounters(false);
 
-        if (counters != null && F.isEmpty(counters.updateCounters())) {
-            List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
+        if (counters == null || !F.isEmpty(counters.updateCounters()))
+            return;
 
-            for (Map.Entry<Integer, Map<Integer, AtomicLong>> record : counters.accumulatedUpdateCounters().entrySet()) {
-                int cacheId = record.getKey();
+        List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
 
-                Map<Integer, AtomicLong> partToCntrs = record.getValue();
+        for (Map.Entry<Long, AtomicLong> record : counters.accumulatedUpdateCounters().entrySet()) {
+            int cacheId = U.fromLong1(record.getKey());
+            int p = U.fromLong2(record.getKey());
 
-                assert partToCntrs != null;
+            PartitionUpdateCountersMessage msg = null;
 
-                if (F.isEmpty(partToCntrs))
-                    continue;
+            boolean existed = false;
 
-                PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
+            for (PartitionUpdateCountersMessage msg0 : cntrMsgs) {
+                if (msg0.cacheId() == cacheId) {
+                    msg = msg0;
 
-                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+                    existed = true;
 
-                GridDhtPartitionTopology top = ctx0.topology();
-
-                assert top != null;
-
-                for (Map.Entry<Integer, AtomicLong> e : partToCntrs.entrySet()) {
-                    AtomicLong acc = e.getValue();
-
-                    assert acc != null;
-
-                    long cntr = acc.get();
-
-                    assert cntr >= 0;
-
-                    if (cntr != 0) {
-                        int p = e.getKey();
-
-                        GridDhtLocalPartition part = top.localPartition(p);
-
-                        // Verify primary tx mapping.
-                        // LOST state is possible if tx is started over LOST partition.
-                        boolean valid = part != null &&
-                            (part.state() == OWNING || part.state() == LOST) &&
-                            part.primary(top.readyTopologyVersion());
-
-                        if (!valid) {
-                            // Local node is no longer primary for the partition, need to rollback a transaction.
-                            if (part != null && !part.primary(top.readyTopologyVersion())) {
-                                log.warning("Failed to prepare a transaction on outdated topology, rolling back " +
-                                    "[tx=" + CU.txString(this) +
-                                    ", readyTopVer=" + top.readyTopologyVersion() +
-                                    ", lostParts=" + top.lostPartitions() +
-                                    ", part=" + part.toString() + ']');
-
-                                throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
-                                    "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
-                            }
-
-                            // Trigger error.
-                            throw new AssertionError("Invalid primary mapping [tx=" + CU.txString(this) +
-                                ", readyTopVer=" + top.readyTopologyVersion() +
-                                ", lostParts=" + top.lostPartitions() +
-                                ", part=" + (part == null ? "NULL" : part.toString()) + ']');
-                        }
-
-                        msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
-                    }
+                    break;
                 }
-
-                if (msg.size() > 0)
-                    cntrMsgs.add(msg);
             }
 
-            counters.updateCounters(cntrMsgs);
+            if (msg == null)
+                msg = new PartitionUpdateCountersMessage(cacheId, 1);
+
+            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
+
+            assert top != null;
+
+            AtomicLong acc = record.getValue();
+
+            assert acc != null;
+
+            long cntr = acc.get();
+
+            assert cntr >= 0;
+
+            if (cntr != 0) {
+                GridDhtLocalPartition part = top.localPartition(p);
+
+                // Verify primary tx mapping.
+                // LOST state is possible if tx is started over LOST partition.
+                boolean valid = part != null &&
+                    (part.state() == OWNING || part.state() == LOST) &&
+                    part.primary(top.readyTopologyVersion());
+
+                if (!valid) {
+                    // Local node is no longer primary for the partition, need to rollback a transaction.
+                    if (part != null && !part.primary(top.readyTopologyVersion())) {
+                        log.warning("Failed to prepare a transaction on outdated topology, rolling back " +
+                            "[tx=" + CU.txString(this) +
+                            ", readyTopVer=" + top.readyTopologyVersion() +
+                            ", lostParts=" + top.lostPartitions() +
+                            ", part=" + part.toString() + ']');
+
+                        throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
+                            "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+                    }
+
+                    // Trigger error.
+                    throw new AssertionError("Invalid primary mapping [tx=" + CU.txString(this) +
+                        ", readyTopVer=" + top.readyTopologyVersion() +
+                        ", lostParts=" + top.lostPartitions() +
+                        ", part=" + (part == null ? "NULL" : part.toString()) + ']');
+                }
+
+                msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
+            }
+
+            if (msg.size() > 0 && !existed)
+                cntrMsgs.add(msg);
         }
+
+        counters.updateCounters(cntrMsgs);
     }
 
     /**

@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,10 +35,10 @@ public class TxCounters {
     public static final long UNKNOWN_VALUE = -1;
 
     /** Size changes for cache partitions made by transaction */
-    private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
+    private volatile Map<Long, AtomicLong> sizeDeltas;
 
     /** Per-partition update counter accumulator. */
-    private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
+    private volatile Map<Long, AtomicLong> updCntrsAcc;
 
     /** Final update counters for cache partitions in the end of transaction */
     private volatile Collection<PartitionUpdateCountersMessage> updCntrs;
@@ -53,6 +54,9 @@ public class TxCounters {
      * @param delta Size delta.
      */
     public void accumulateSizeDelta(int cacheId, int part, long delta) {
+        if (sizeDeltas == null)
+            sizeDeltas = new ConcurrentHashMap<>();
+
         AtomicLong accDelta = accumulator(sizeDeltas, cacheId, part);
 
         // here AtomicLong is used more as a container,
@@ -63,8 +67,8 @@ public class TxCounters {
     /**
      * @return Map of size changes for cache partitions made by transaction.
      */
-    public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
-        return sizeDeltas;
+    public Map<Long, AtomicLong> sizeDeltas() {
+        return sizeDeltas == null ? Collections.emptyMap() : sizeDeltas;
     }
 
     /**
@@ -84,8 +88,8 @@ public class TxCounters {
     /**
      * @return Accumulated update counters.
      */
-    public Map<Integer, Map<Integer, AtomicLong>> accumulatedUpdateCounters() {
-        return updCntrsAcc;
+    public Map<Long, AtomicLong> accumulatedUpdateCounters() {
+        return updCntrsAcc == null ? Collections.emptyMap() : updCntrsAcc;
     }
 
     /**
@@ -93,6 +97,9 @@ public class TxCounters {
      * @param part Partition number.
      */
     public void incrementUpdateCounter(int cacheId, int part) {
+        if (updCntrsAcc == null)
+            updCntrsAcc = new ConcurrentHashMap<>();
+
         accumulator(updCntrsAcc, cacheId, part).incrementAndGet();
     }
 
@@ -101,6 +108,9 @@ public class TxCounters {
      * @param part Partition number.
      */
     public void decrementUpdateCounter(int cacheId, int part) {
+        if (updCntrsAcc == null)
+            updCntrsAcc = new ConcurrentHashMap<>();
+
         long acc = accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
 
         assert acc >= 0;
@@ -112,27 +122,8 @@ public class TxCounters {
      * @param part Partition number.
      * @return Accumulator.
      */
-    private AtomicLong accumulator(Map<Integer, Map<Integer, AtomicLong>> accMap, int cacheId, int part) {
-        Map<Integer, AtomicLong> cacheAccs = accMap.get(cacheId);
-
-        if (cacheAccs == null) {
-            Map<Integer, AtomicLong> cacheAccs0 =
-                accMap.putIfAbsent(cacheId, cacheAccs = new ConcurrentHashMap<>());
-
-            if (cacheAccs0 != null)
-                cacheAccs = cacheAccs0;
-        }
-
-        AtomicLong acc = cacheAccs.get(part);
-
-        if (acc == null) {
-            AtomicLong accDelta0 = cacheAccs.putIfAbsent(part, acc = new AtomicLong());
-
-            if (accDelta0 != null)
-                acc = accDelta0;
-        }
-
-        return acc;
+    private AtomicLong accumulator(Map<Long, AtomicLong> accMap, int cacheId, int part) {
+        return accMap.computeIfAbsent(U.toLong(cacheId, part), key -> new AtomicLong());
     }
 
     /**
