@@ -178,7 +178,10 @@ namespace ignite
             using namespace impl::interop;
 
             if (!recvPacket.IsValid())
+            {
                 recvPacket = SP_InteropMemory(new InteropUnpooledMemory(bufLen));
+                recvPacket.Get()->Length(bufLen);
+            }
 
             currentRecv.toTransfer = 0;
             currentRecv.transferredSoFar = 0;
@@ -186,8 +189,7 @@ namespace ignite
 
         void WinAsyncClient::ProcessReceived(size_t bytes, AsyncHandler& handler)
         {
-            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: currentRecv.transferredSoFar=" << currentRecv.transferredSoFar << std::endl;
-            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: currentRecv.toTransfer=" << currentRecv.toTransfer << std::endl;
+            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: bytes=" << bytes << std::endl;
 
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
@@ -203,7 +205,10 @@ namespace ignite
                 return;
 
             if (codecIdx >= codecs.size())
+            {
                 handler.OnMessageReceived(id, buffer);
+                return;
+            }
 
             SP_Codec& currentCodec = codecs[codecIdx];
             while (!buffer.IsEmpty())

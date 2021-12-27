@@ -133,7 +133,7 @@ namespace ignite
 
             void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
             {
-                // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnMessageReceived: " << id << ", " << msg.Get()->Length() << " bytes" << std::endl;
+                // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnMessageReceived: " << id << ", " << msg.GetSize() << " bytes" << std::endl;
                 SP_DataChannel channel;
 
                 {
@@ -159,11 +159,11 @@ namespace ignite
                 SP_DataChannel channel;
 
                 ChannelsIdMap::iterator it = channels.find(id);
-                if (it != channels.end())
-                    channel = it->second;
+                if (it == channels.end())
+                    return;
 
+                channel = it->second;
                 InvalidateChannel(channel);
-
                 channel.Get()->FailPendingRequests(err);
             }
 
@@ -257,7 +257,7 @@ namespace ignite
             void DataRouter::SyncMessagePreferredChannelNoMetaUpdate(Request &req, Response &rsp,
                 const SP_DataChannel &preferred)
             {
-                SP_DataChannel channel = preferred;
+                SP_DataChannel channel(preferred);
 
                 if (!channel.IsValid())
                     channel = GetRandomChannel();

@@ -70,7 +70,7 @@ namespace ignite
             if (!data.IsValid())
                 return 0;
 
-            return data.Get()->Length() - position;
+            return length - position;
         }
 
         bool DataBuffer::IsEmpty() const
