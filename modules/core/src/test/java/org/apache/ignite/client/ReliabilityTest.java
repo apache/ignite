@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -274,9 +276,19 @@ public class ReliabilityTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that {@link ClientOperationType} is updated accordingly when {@link ClientOperation} is added.
+     */
     @Test
     public void testRetryPolicyConvertOpAllOperationsSupported() {
-        fail("TODO");
+        long nullCount = Arrays.stream(ClientOperation.values()).filter(o -> o.toPublicOperationType() == null).count();
+
+        long expectedNullCount = 5;
+
+        String msg = expectedNullCount
+                + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too.";
+
+        assertEquals(msg, expectedNullCount, nullCount);
     }
 
     /**

@@ -24,6 +24,8 @@ public enum ClientOperationType {
     // TODO: All types.
     CACHE_CREATE,
     CACHE_GET_OR_CREATE,
+    CACHE_GET_NAMES,
+    CACHE_DESTROY,
     CACHE_GET,
     CACHE_PUT
 }

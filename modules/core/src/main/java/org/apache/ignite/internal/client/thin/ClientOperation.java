@@ -19,10 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.client.ClientOperationType;
 import org.jetbrains.annotations.Nullable;
 
 /** Operation codes. */
-enum ClientOperation {
+public enum ClientOperation {
     /** Resource close. */
     RESOURCE_CLOSE(0),
 
@@ -217,6 +218,124 @@ enum ClientOperation {
      */
     public ClientNotificationType notificationType() {
         return notificationType;
+    }
+
+    /**
+     * Converts this internal operation code to public {@link ClientOperationType}.
+     *
+     * @return Corresponding {@link ClientOperationType}, or {@code null} if there is no match.
+     * Some operations, such as {@link #RESOURCE_CLOSE}, do not have a public counterpart.
+     */
+    @Nullable public ClientOperationType toPublicOperationType() {
+        switch (this) {
+            case RESOURCE_CLOSE:
+                return null;
+
+            case CACHE_GET_OR_CREATE_WITH_NAME:
+                return ClientOperationType.CACHE_GET_OR_CREATE;
+
+            case CACHE_PUT:
+                return ClientOperationType.CACHE_PUT;
+
+            case CACHE_GET:
+                return ClientOperationType.CACHE_GET;
+
+            case CACHE_CREATE_WITH_CONFIGURATION:
+                return ClientOperationType.CACHE_CREATE;
+
+            case CACHE_GET_NAMES:
+                return ClientOperationType.CACHE_GET_NAMES;
+
+            case CACHE_DESTROY:
+                return ClientOperationType.CACHE_DESTROY;
+
+            case CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
+                return ClientOperationType.CACHE_GET_OR_CREATE;
+
+            case CACHE_CREATE_WITH_NAME:
+                return ClientOperationType.CACHE_CREATE;
+
+            case CACHE_CONTAINS_KEY:
+                break;
+            case CACHE_CONTAINS_KEYS:
+                break;
+            case CACHE_GET_CONFIGURATION:
+                break;
+            case CACHE_GET_SIZE:
+                break;
+            case CACHE_PUT_ALL:
+                break;
+            case CACHE_GET_ALL:
+                break;
+            case CACHE_REPLACE_IF_EQUALS:
+                break;
+            case CACHE_REPLACE:
+                break;
+            case CACHE_REMOVE_KEY:
+                break;
+            case CACHE_REMOVE_IF_EQUALS:
+                break;
+            case CACHE_REMOVE_KEYS:
+                break;
+            case CACHE_REMOVE_ALL:
+                break;
+            case CACHE_GET_AND_PUT:
+                break;
+            case CACHE_GET_AND_REMOVE:
+                break;
+            case CACHE_GET_AND_REPLACE:
+                break;
+            case CACHE_PUT_IF_ABSENT:
+                break;
+            case CACHE_GET_AND_PUT_IF_ABSENT:
+                break;
+            case CACHE_CLEAR:
+                break;
+            case CACHE_CLEAR_KEY:
+                break;
+            case CACHE_CLEAR_KEYS:
+                break;
+            case CACHE_PARTITIONS:
+                break;
+            case QUERY_SCAN:
+                break;
+            case QUERY_SQL:
+                break;
+            case QUERY_CONTINUOUS:
+                break;
+            case GET_BINARY_TYPE:
+                break;
+            case REGISTER_BINARY_TYPE_NAME:
+                break;
+            case PUT_BINARY_TYPE:
+                break;
+            case GET_BINARY_TYPE_NAME:
+                break;
+            case TX_START:
+                break;
+            case CLUSTER_GET_STATE:
+                break;
+            case CLUSTER_CHANGE_STATE:
+                break;
+            case CLUSTER_GET_WAL_STATE:
+                break;
+            case CLUSTER_CHANGE_WAL_STATE:
+                break;
+            case CLUSTER_GROUP_GET_NODE_IDS:
+                break;
+            case CLUSTER_GROUP_GET_NODE_INFO:
+                break;
+            case COMPUTE_TASK_EXECUTE:
+                break;
+            case SERVICE_INVOKE:
+                break;
+            case SERVICE_GET_DESCRIPTORS:
+                break;
+            case SERVICE_GET_DESCRIPTOR:
+                break;
+        }
+
+        return null;
     }
 
     /** Enum mapping from code to values. */
