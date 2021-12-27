@@ -830,14 +830,9 @@ final class ReliableChannel implements AutoCloseable {
             return false;
         }
 
-        ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, convertOp(op), iteration, exception);
+        ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, op.toPublicOperationType(), iteration, exception);
 
         return plc.shouldRetry(ctx);
-    }
-
-    private ClientOperationType convertOp(ClientOperation op) {
-        // TODO
-        return ClientOperationType.CACHE_GET;
     }
 
     /**

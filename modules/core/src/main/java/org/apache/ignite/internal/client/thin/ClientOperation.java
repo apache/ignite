@@ -228,9 +228,6 @@ public enum ClientOperation {
      */
     @Nullable public ClientOperationType toPublicOperationType() {
         switch (this) {
-            case RESOURCE_CLOSE:
-                return null;
-
             case CACHE_GET_OR_CREATE_WITH_NAME:
                 return ClientOperationType.CACHE_GET_OR_CREATE;
 
@@ -333,6 +330,9 @@ public enum ClientOperation {
                 break;
             case SERVICE_GET_DESCRIPTOR:
                 break;
+
+            default:
+                return null;
         }
 
         return null;
