@@ -27,6 +27,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
+import org.apache.ignite.client.ClientRetryPolicyContext;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -600,14 +601,14 @@ public final class ClientConfiguration implements Serializable {
      * Sets the retry policy. When a request fails due to a connection error, and multiple server connections
      * are available, Ignite will retry the request if the specified policy allows it.
      * <p />
+     * When {@link ClientConfiguration#retryLimit} is set, retry count will be limited even if the specified policy returns {@code true}.
+     * <p />
      * Default is {@link ClientRetryAllPolicy}.
      *
      * @param retryPolicy Retry policy.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setRetryPolicy(ClientRetryPolicy retryPolicy) {
-        // TODO: Document how retryLimit and retryPolicy work together.
-        // TODO: Make sure default behavior does not change.
         this.retryPolicy = retryPolicy;
 
         return this;
