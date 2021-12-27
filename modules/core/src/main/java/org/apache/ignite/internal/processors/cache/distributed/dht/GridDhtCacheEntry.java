@@ -100,7 +100,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer,
         boolean primary,
         boolean init,
-        @Nullable Long primaryCntr) {
+        long primaryCntr) {
         try {
             return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, init, primaryCntr);
         }
@@ -115,7 +115,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long primaryCntr) {
+    @Override protected long nextPartitionCounter(IgniteInternalTx tx, long primaryCntr) {
         try {
             return locPart.nextUpdateCounter(cctx.cacheId(), tx, primaryCntr);
         }

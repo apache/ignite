@@ -457,7 +457,7 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion explicitVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -497,7 +497,7 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion explicitVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -562,7 +562,7 @@ public interface GridCacheEntryEx {
         boolean intercept,
         String taskName,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr,
+        long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;

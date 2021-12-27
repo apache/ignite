@@ -855,10 +855,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Next update index.
      */
     public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, boolean init,
-        @Nullable Long primaryCntr) {
+        long primaryCntr) {
         long nextCntr;
 
-        if (primaryCntr == null) // Primary node.
+        if (primaryCntr == TxCounters.UNKNOWN_VALUE) // Primary node.
             nextCntr = store.nextUpdateCounter();
         else {
             assert !init : "Initial update must generate a counter for partition " + this;
@@ -882,10 +882,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param tx Tx.
      * @param primaryCntr Primary counter.
      */
-    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
-        Long nextCntr;
+    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, long primaryCntr) {
+        long nextCntr;
 
-        if (primaryCntr != null)
+        if (primaryCntr != TxCounters.UNKNOWN_VALUE)
             nextCntr = primaryCntr;
         else {
             TxCounters txCounters = tx.txCounters(false);
@@ -895,7 +895,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Null must never be returned on primary node.
             nextCntr = txCounters.generateNextCounter(cacheId, id());
 
-            assert nextCntr != null : this;
+            assert nextCntr != TxCounters.UNKNOWN_VALUE : this;
         }
 
         if (grp.sharedGroup())

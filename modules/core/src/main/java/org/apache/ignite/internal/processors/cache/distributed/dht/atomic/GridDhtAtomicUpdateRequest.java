@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
@@ -363,11 +364,11 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public Long updateCounter(int updCntr) {
+    @Override public long updateCounter(int updCntr) {
         if (updateCntrs != null && updCntr < updateCntrs.size())
             return updateCntrs.get(updCntr);
 
-        return null;
+        return TxCounters.UNKNOWN_VALUE;
     }
 
     /** {@inheritDoc} */

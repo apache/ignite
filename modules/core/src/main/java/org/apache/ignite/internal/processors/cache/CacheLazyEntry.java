@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheInterceptorEntry;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +49,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     protected V val;
 
     /** Update counter. */
-    private Long updateCntr;
+    private long updateCntr;
 
     /**
      * @param cctx Cache context.
@@ -63,7 +64,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
             valObj,
             null,
             keepBinary,
-            null);
+            TxCounters.UNKNOWN_VALUE);
     }
 
     /**
@@ -79,7 +80,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
             null,
             val,
             keepBinary,
-            null);
+            TxCounters.UNKNOWN_VALUE);
     }
 
     /**
@@ -103,7 +104,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
             valObj,
             val,
             keepBinary,
-            null);
+            TxCounters.UNKNOWN_VALUE);
     }
 
     /**
@@ -121,7 +122,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
         CacheObject valObj,
         V val,
         boolean keepBinary,
-        Long updateCntr
+        long updateCntr
     ) {
         this.cctx = ctx;
         this.keyObj = keyObj;
@@ -192,7 +193,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public long getPartitionUpdateCounter() {
-        return updateCntr == null ? 0L : updateCntr;
+        return updateCntr == TxCounters.UNKNOWN_VALUE ? 0L : updateCntr;
     }
 
     /**

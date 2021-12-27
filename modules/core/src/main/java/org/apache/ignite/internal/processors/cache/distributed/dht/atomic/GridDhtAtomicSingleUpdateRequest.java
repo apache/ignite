@@ -241,7 +241,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public Long updateCounter(int updCntr) {
+    @Override public long updateCounter(int updCntr) {
         assert updCntr == 0 : updCntr;
 
         return updateCntr;

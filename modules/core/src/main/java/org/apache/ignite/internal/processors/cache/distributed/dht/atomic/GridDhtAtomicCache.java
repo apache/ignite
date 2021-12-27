@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -2576,7 +2577,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     intercept,
                     taskName,
                     /*prevVal*/null,
-                    /*updateCntr*/null,
+                    /*updateCntr*/TxCounters.UNKNOWN_VALUE,
                     dhtFut,
                     false);
 
@@ -2856,7 +2857,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*intercept*/false,
                         taskName,
                         null,
-                        null,
+                        TxCounters.UNKNOWN_VALUE,
                         dhtFut,
                         entryProcessor != null);
 
@@ -3288,7 +3289,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             CacheObject prevVal = req.previousValue(i);
 
                             EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
-                            Long updateIdx = req.updateCounter(i);
+                            long updateIdx = req.updateCounter(i);
 
                             GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                                 (val != null) ? UPDATE : DELETE;

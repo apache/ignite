@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -343,7 +344,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                         false,
                         null,
                         null,
-                        null,
+                        TxCounters.UNKNOWN_VALUE,
                         null,
                         false);
                 else

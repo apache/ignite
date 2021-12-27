@@ -1447,7 +1447,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable GridCacheVersion explicitVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
@@ -1661,7 +1661,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable GridCacheVersion explicitVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
@@ -2199,7 +2199,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.cache().metrics0().onInvokeRemove(old != null);
 
             if (lsnrCol != null) {
-                long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, false, null);
+                long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, false, TxCounters.UNKNOWN_VALUE);
 
                 cctx.continuousQueries().onEntryUpdated(
                     lsnrCol,
@@ -2266,7 +2266,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final boolean intercept,
         final String taskName,
         @Nullable final CacheObject prevVal,
-        @Nullable final Long updateCntr,
+        final long updateCntr,
         @Nullable final GridDhtAtomicAbstractUpdateFuture fut,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
@@ -2379,7 +2379,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         else
                             evtVal = (CacheObject)writeObj;
 
-                        assert !primary && updateCntr != null;
+                        assert !primary && updateCntr != TxCounters.UNKNOWN_VALUE;
 
                         onUpdateFinished(updateCntr);
 
@@ -3458,7 +3458,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 long updateCntr = 0;
 
                 if (!preload)
-                    updateCntr = nextPartitionCounter(topVer, true, true, null);
+                    updateCntr = nextPartitionCounter(topVer, true, true, TxCounters.UNKNOWN_VALUE);
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
@@ -3555,7 +3555,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Update counter.
      */
     protected long nextPartitionCounter(AffinityTopologyVersion topVer, boolean primary, boolean initial,
-        @Nullable Long primaryCntr) {
+        long primaryCntr) {
         return 0;
     }
 
@@ -3563,7 +3563,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param tx Tx.
      * @param updateCntr Update counter.
      */
-    protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long updateCntr) {
+    protected long nextPartitionCounter(IgniteInternalTx tx, long updateCntr) {
         return 0;
     }
 
@@ -5976,7 +5976,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean intercept;
 
         /** */
-        private final Long updateCntr;
+        private final long updateCntr;
 
         /** */
         private final boolean skipInterceptorOnConflict;
@@ -6019,7 +6019,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             @Nullable GridCacheVersion conflictVer,
             boolean conflictResolve,
             boolean intercept,
-            @Nullable Long updateCntr,
+            long updateCntr,
             boolean skipInterceptorOnConflict) {
             assert op == UPDATE || op == DELETE || op == TRANSFORM : op;
 

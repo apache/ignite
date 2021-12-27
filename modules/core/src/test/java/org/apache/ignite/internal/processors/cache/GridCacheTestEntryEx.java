@@ -485,7 +485,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion drVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     )
         throws IgniteCheckedException, GridCacheEntryRemovedException
     {
@@ -571,7 +571,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean intercept,
         String taskName,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr,
+        long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         boolean transformOp)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -597,7 +597,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion drVer,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr
+        long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 

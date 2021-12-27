@@ -377,7 +377,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param updCntr Update counter.
      * @return Update counter.
      */
-    public abstract Long updateCounter(int updCntr);
+    public abstract long updateCounter(int updCntr);
 
     /**
      * @param idx Near key index.
