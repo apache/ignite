@@ -1562,7 +1562,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         bobInner.setField("inner_uuid", UUID.randomUUID());
         
         bob.setField("val_obj", bobInner.build());
-
+        
         IgniteCache<Object, Object> cache = grid().cache(cacheName);
 
         cache.put(0, bob.build());
