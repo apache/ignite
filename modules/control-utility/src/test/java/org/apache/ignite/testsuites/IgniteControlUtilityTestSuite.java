@@ -55,8 +55,6 @@ import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-
-
 /**
  * Test suite for control utility.
  */
