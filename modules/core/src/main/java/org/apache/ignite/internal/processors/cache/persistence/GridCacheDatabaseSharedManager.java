@@ -950,11 +950,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void registerMetricsMBeans(IgniteConfiguration cfg) {
-        super.registerMetricsMBeans(cfg);
+    @Override protected void registerMetricsMBeans() throws IgniteCheckedException {
+        super.registerMetricsMBeans();
 
-        registerMetricsMBean(
-            cctx.kernalContext().config(),
+        cctx.kernalContext().mBeans().registerMBean(
             MBEAN_GROUP,
             MBEAN_NAME,
             persStoreMetrics,
@@ -1165,12 +1164,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
-
-        unregisterMetricsMBean(
-            cctx.gridConfig(),
-            MBEAN_GROUP,
-            MBEAN_NAME
-        );
 
         if (metaStorage != null)
             metaStorage.close();

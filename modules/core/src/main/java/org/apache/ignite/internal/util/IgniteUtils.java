@@ -389,6 +389,12 @@ public abstract class IgniteUtils {
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
+    /** */
+    public static final String IGNITE_INSTANCE_NAME_PROPERTY_KEY = "igniteInstanceName";
+
+    /** */
+    public static final String GROUP_PROPERTY_KEY = "group";
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -4932,10 +4938,10 @@ public abstract class IgniteUtils {
         appendJvmId(sb);
 
         if (igniteInstanceName != null && !igniteInstanceName.isEmpty())
-            sb.a("igniteInstanceName=").a(igniteInstanceName).a(',');
+            sb.a(IGNITE_INSTANCE_NAME_PROPERTY_KEY).a('=').a(igniteInstanceName).a(',');
 
         if (grp != null)
-            sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
+            sb.a(GROUP_PROPERTY_KEY).a('=').a(escapeObjectNameValue(grp)).a(',');
 
         sb.a("name=").a(escapeObjectNameValue(name));
 
@@ -4980,7 +4986,7 @@ public abstract class IgniteUtils {
      * @param s A string to be escape.
      * @return An escaped string.
      */
-    private static String escapeObjectNameValue(String s) {
+    public static String escapeObjectNameValue(String s) {
         if (alphanumericUnderscore(s))
             return s;
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -30,10 +29,10 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheMBeanGroupName;
 
 /**
  *
@@ -364,46 +363,12 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         cctx.kernalContext().resource().injectCacheName(rsrc, cfg.getName());
 
-        registerMbean(rsrc, cfg.getName(), near);
-    }
-
-    /**
-     * Registers MBean for cache components.
-     *
-     * @param obj Cache component.
-     * @param cacheName Cache name.
-     * @param near Near flag.
-     * @throws IgniteCheckedException If registration failed.
-     */
-    private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
-        throws IgniteCheckedException {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        assert obj != null;
-
-        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
-
-        assert srvr != null;
-
-        cacheName = U.maskName(cacheName);
-
-        cacheName = near ? cacheName + "-near" : cacheName;
-
-        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
-
-        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                try {
-                    U.registerMBean(srvr, cctx.kernalContext().igniteInstanceName(), cacheName, obj.getClass().getName(),
-                        mbeanImpl, (Class<Object>)itf);
-                }
-                catch (Throwable e) {
-                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
-                }
-
-                break;
-            }
+        if (cctx.kernalContext().mBeans().isEnabled()) {
+            cctx.kernalContext().mBeans().tryToRegisterAsMBean(
+                cacheMBeanGroupName(cfg.getName(), near),
+                rsrc.getClass().getName(),
+                rsrc
+            );
         }
     }
 
@@ -419,56 +384,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      */
     void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
-            unregisterMbean(rsrc, cfg.getName(), near);
-
             try {
                 cctx.kernalContext().resource().cleanupGeneric(rsrc);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cleanup resource: " + rsrc, e);
-            }
-        }
-    }
-
-    /**
-     * Unregisters MBean for cache components.
-     *
-     * @param o Cache component.
-     * @param cacheName Cache name.
-     * @param near Near flag.
-     */
-    private void unregisterMbean(Object o, @Nullable String cacheName, boolean near) {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        assert o != null;
-
-        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
-
-        assert srvr != null;
-
-        cacheName = U.maskName(cacheName);
-
-        cacheName = near ? cacheName + "-near" : cacheName;
-
-        boolean needToUnregister = o instanceof IgniteMBeanAware;
-
-        if (!needToUnregister) {
-            for (Class<?> itf : o.getClass().getInterfaces()) {
-                if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                    needToUnregister = true;
-
-                    break;
-                }
-            }
-        }
-
-        if (needToUnregister) {
-            try {
-                srvr.unregisterMBean(U.makeMBeanName(cctx.kernalContext().igniteInstanceName(), cacheName, o.getClass().getName()));
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to unregister MBean for component: " + o, e);
             }
         }
     }

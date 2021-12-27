@@ -2155,4 +2155,14 @@ public class GridCacheUtils {
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
         IgniteBiInClosure<CacheObject, GridCacheVersion> {
     }
+
+    /** */
+    public static String cacheMBeanGroupName(String cacheName, boolean near) {
+        cacheName = U.maskName(cacheName);
+
+        if (near)
+            cacheName += "-near";
+
+        return cacheName;
+    }
 }

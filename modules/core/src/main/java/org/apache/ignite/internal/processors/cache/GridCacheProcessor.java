@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -187,7 +186,6 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
-import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -222,6 +220,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheMBeanGroupName;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
@@ -547,11 +546,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getInterceptor(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
-        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
-            unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
-            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
-        }
-
         cctx.cleanup();
 
         cachesInfo.cleanupRemovedCache(cctx.name());
@@ -567,15 +561,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Object obj : grp.configuredUserObjects())
             cleanup(cfg, obj, false);
 
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                ctx.config().getMBeanServer().unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(),
-                    CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName()));
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
-            }
-        }
+        if (!grp.systemCache() && ctx.mBeans().isEnabled())
+            ctx.mBeans().unregisterMBean(CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName());
 
         grp.metrics().remove(destroy);
 
@@ -593,8 +580,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
-            unregisterMbean(rsrc, cfg.getName(), near);
-
             try {
                 ctx.resource().cleanupGeneric(rsrc);
             }
@@ -1065,6 +1050,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cache.stop();
 
             cache.removeMetrics(destroy);
+
+            if (ctx.kernalContext().mBeans().isEnabled() && !CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name()))
+                cache.unregisterMBeans();
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
@@ -2564,14 +2552,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
 
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
-                    grp.cacheOrGroupName(), new CacheGroupMetricsMXBeanImpl(grp), CacheGroupMetricsMXBean.class);
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to register MBean for cache group: " + grp.name(), e);
-            }
+        if (!grp.systemCache() && ctx.mBeans().isEnabled()) {
+            ctx.mBeans().registerMBean(
+                CACHE_GRP_METRICS_MBEAN_GRP,
+                grp.cacheOrGroupName(),
+                new CacheGroupMetricsMXBeanImpl(grp),
+                CacheGroupMetricsMXBean.class
+            );
         }
 
         assert old == null : old.name();
@@ -4916,76 +4903,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        assert obj != null;
-
-        MBeanServer srvr = ctx.config().getMBeanServer();
-
-        assert srvr != null;
-
-        cacheName = U.maskName(cacheName);
-
-        cacheName = near ? cacheName + "-near" : cacheName;
-
-        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
-
-        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                try {
-                    U.registerMBean(srvr, ctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
-                        (Class<Object>)itf);
-                }
-                catch (Throwable e) {
-                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
-                }
-
-                break;
-            }
-        }
-    }
-
-    /**
-     * Unregisters MBean for cache components.
-     *
-     * @param o Cache component.
-     * @param cacheName Cache name.
-     * @param near Near flag.
-     */
-    private void unregisterMbean(Object o, @Nullable String cacheName, boolean near) {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        assert o != null;
-
-        MBeanServer srvr = ctx.config().getMBeanServer();
-
-        assert srvr != null;
-
-        cacheName = U.maskName(cacheName);
-
-        cacheName = near ? cacheName + "-near" : cacheName;
-
-        boolean needToUnregister = o instanceof IgniteMBeanAware;
-
-        if (!needToUnregister) {
-            for (Class<?> itf : o.getClass().getInterfaces()) {
-                if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                    needToUnregister = true;
-
-                    break;
-                }
-            }
-        }
-
-        if (needToUnregister) {
-            try {
-                srvr.unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to unregister MBean for component: " + o, e);
-            }
+        if (ctx.mBeans().isEnabled()) {
+            ctx.mBeans().tryToRegisterAsMBean(
+                cacheMBeanGroupName(cacheName, near),
+                obj.getClass().getName(),
+                obj
+            );
         }
     }
 

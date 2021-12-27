@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.managers;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
@@ -50,6 +54,7 @@ import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.DefragmentationMXBean;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
@@ -61,12 +66,23 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 
+import static org.apache.ignite.internal.util.IgniteUtils.GROUP_PROPERTY_KEY;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_INSTANCE_NAME_PROPERTY_KEY;
+import static org.apache.ignite.internal.util.IgniteUtils.escapeObjectNameValue;
+import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
+
 /**
  * Class that registers and unregisters MBeans for kernal.
  */
 public class IgniteMBeansProcessor extends GridProcessorAdapter {
     /** Ignite kernal */
     private final IgniteKernal kernal;
+
+    /** */
+    private final MBeanServer mBeanSrv;
+
+    /** */
+    private final String igniteInstanceName;
 
     /** MBean names stored to be unregistered later. */
     private final Set<ObjectName> mBeanNames = new HashSet<>();
@@ -78,6 +94,9 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
         super(kernal.context());
 
         this.kernal = kernal;
+
+        mBeanSrv = ctx.config().getMBeanServer();
+        igniteInstanceName = ctx.igniteInstanceName();
     }
 
     /**
@@ -195,9 +214,13 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
 
         try {
             ObjectName objName = U.registerMBean(
-                ctx.config().getMBeanServer(),
-                ctx.config().getIgniteInstanceName(),
-                grp, name, impl, itf);
+                mBeanSrv,
+                igniteInstanceName,
+                grp,
+                name,
+                impl,
+                itf
+            );
 
             if (log.isDebugEnabled())
                 log.debug("Registered MBean: " + objName);
@@ -206,6 +229,25 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register MBean " + name, e);
+        }
+    }
+
+    /** */
+    public void unregisterMBeanGroup(String grp) {
+        mBeanSrv.queryNames(null, null).stream()
+            .filter(name ->
+                Objects.equals(name.getKeyProperty(IGNITE_INSTANCE_NAME_PROPERTY_KEY), igniteInstanceName) &&
+                Objects.equals(name.getKeyProperty(GROUP_PROPERTY_KEY), escapeObjectNameValue(grp)))
+            .forEach(this::unregisterMBean);
+    }
+
+    /** */
+    public void unregisterMBean(String grp, String name) {
+        try {
+            unregisterMBean(makeMBeanName(igniteInstanceName, grp, name));
+        }
+        catch (MalformedObjectNameException e) {
+           throw new IgniteException(e);
         }
     }
 
@@ -251,5 +293,32 @@ public class IgniteMBeansProcessor extends GridProcessorAdapter {
     /** */
     public boolean isEnabled() {
         return !U.IGNITE_MBEANS_DISABLED;
+    }
+
+    /** */
+    public void tryToRegisterAsMBean(String grp, String name, Object obj) throws IgniteCheckedException {
+        assert obj != null;
+
+        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
+
+        Class<?> mBeanItf = null;
+
+        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
+            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
+                mBeanItf = itf;
+
+                break;
+            }
+        }
+
+        if (mBeanItf == null)
+            return;
+
+        registerMBean(
+            grp,
+            name,
+            mbeanImpl,
+            (Class<Object>)mBeanItf
+        );
     }
 }

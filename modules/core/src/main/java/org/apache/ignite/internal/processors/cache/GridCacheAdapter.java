@@ -639,6 +639,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()), destroy);
     }
 
+    /** */
+    public void unregisterMBeans() {
+        if (!ctx.kernalContext().isStopping())
+            ctx.kernalContext().mBeans().unregisterMBeanGroup(CU.cacheMBeanGroupName(ctx.name(), isNear()));
+    }
+
     /**
      * Stop info.
      *
