@@ -1562,8 +1562,29 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         bobInner.setField("inner_uuid", UUID.randomUUID());
         
         bob.setField("val_obj", bobInner.build());
-        
-        grid().cache(cacheName).put(0, bob.build());
+
+        IgniteCache<Object, Object> cache = grid().cache(cacheName);
+
+        cache.put(0, bob.build());
+
+        BinaryObjectBuilder alice = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder aliceInner = grid().binary().builder("inner2");
+
+        aliceInner.setField("inner_k2", 0);
+        aliceInner.setField("inner_uuid2", UUID.randomUUID());
+
+        alice.setField("val_obj", aliceInner.build());
+
+        cache.put(1, alice.build());
+
+        List<List<?>> rows = execSql(cache.withKeepBinary(), "SELECT id, val_obj FROM " + cacheName);
+
+        assertEquals(2, rows.size());
+
+        for (List<?> row : rows) {
+            assertNotNull(row.get(0));
+            assertNotNull("id = " + row.get(0), row.get(1));
+        }
     }
 
     /** */
