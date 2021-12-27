@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Map;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -52,7 +50,11 @@ public class PartitionUpdateCountersMessage implements Message {
 
     /** Used for assigning counters to cache entries during tx finish. */
     @GridDirectTransient
-    private Map<Integer, Long> counters;
+    private int[] parts;
+
+    /** */
+    @GridDirectTransient
+    private long[] counters;
 
     /** */
     public PartitionUpdateCountersMessage() {
@@ -112,19 +114,6 @@ public class PartitionUpdateCountersMessage implements Message {
 
     /**
      * @param idx Item number.
-     * @param value Initial partition counter.
-     */
-    public void initialCounter(int idx, long value) {
-        if (idx >= size)
-            throw new ArrayIndexOutOfBoundsException();
-
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
-
-        GridUnsafe.putLong(data, off, value);
-    }
-
-    /**
-     * @param idx Item number.
      * @return Update counter delta.
      */
     public long updatesCount(int idx) {
@@ -160,22 +149,24 @@ public class PartitionUpdateCountersMessage implements Message {
      */
     public long nextCounter(int partId) {
         if (counters == null) {
-            counters = U.newHashMap(size);
+            parts = new int[size];
+            counters = new long[size];
 
-            for (int i = 0; i < size; i++)
-                counters.put(partition(i), initialCounter(i));
+            for (int i = 0; i < size; i++) {
+                parts[i] = partition(i);
+                counters[i] = initialCounter(i);
+            }
         }
 
-        Long cntr0 = counters.computeIfPresent(partId, (key, cntr) -> cntr + 1);
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i] == partId) {
+                counters[i]++;
 
-        return cntr0 == null ? TxCounters.UNKNOWN_VALUE : cntr0;
-    }
+                return counters[i];
+            }
+        }
 
-    /**
-     * Clears message.
-     */
-    public void clear() {
-        size = 0;
+        return TxCounters.UNKNOWN_VALUE;
     }
 
     /**
