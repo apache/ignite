@@ -274,6 +274,11 @@ public class ReliabilityTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testRetryPolicyConvertOpAllOperationsSupported() {
+        fail("TODO");
+    }
+
     /**
      * Test that failover doesn't lead to silent query inconsistency.
      */
