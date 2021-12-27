@@ -28,7 +28,6 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -193,17 +192,12 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
         /** */
-        Config DEFAULT = RelRule.Config.EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-            .as(Config.class);
-
-        /** */
-        Config SCAN = DEFAULT
+        Config SCAN = ImmutableLogicalOrToUnionRule.Config.builder()
+            .withRuleFactory(LogicalOrToUnionRule::new)
             .withDescription("ScanLogicalOrToUnionRule")
             .withOperandSupplier(o -> o.operand(IgniteLogicalTableScan.class)
                 .predicate(scan -> scan.condition() != null)
-                .noInputs()
-            )
-            .as(Config.class);
+                .noInputs())
+            .build();
     }
 }
