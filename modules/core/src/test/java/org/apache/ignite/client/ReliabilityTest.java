@@ -31,6 +31,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -193,6 +194,33 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests that retry limit of 1 effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testRetryLimitDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryLimit(1)
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
      * Test that failover doesn't lead to silent query inconsistency.
      */
     @Test
@@ -304,7 +332,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test reconnection throttling.
      */
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     public void testReconnectionThrottling() throws Exception {
         int throttlingRetries = 5;
         long throttlingPeriod = 3_000L;
