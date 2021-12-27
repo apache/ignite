@@ -882,10 +882,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param tx Tx.
      * @param primaryCntr Primary counter.
      */
-    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
-        Long nextCntr;
+    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, long primaryCntr) {
+        long nextCntr;
 
-        if (primaryCntr != null)
+        if (primaryCntr != TxCounters.UNKNOWN_VALUE)
             nextCntr = primaryCntr;
         else {
             TxCounters txCounters = tx.txCounters(false);
