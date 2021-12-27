@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -157,7 +158,7 @@ public class PartitionUpdateCountersMessage implements Message {
      *
      * @return Next counter for partition.
      */
-    public Long nextCounter(int partId) {
+    public long nextCounter(int partId) {
         if (counters == null) {
             counters = U.newHashMap(size);
 
@@ -165,7 +166,9 @@ public class PartitionUpdateCountersMessage implements Message {
                 counters.put(partition(i), initialCounter(i));
         }
 
-        return counters.computeIfPresent(partId, (key, cntr) -> cntr + 1);
+        Long cntr0 = counters.computeIfPresent(partId, (key, cntr) -> cntr + 1);
+
+        return cntr0 == null ? TxCounters.UNKNOWN_VALUE : cntr0;
     }
 
     /**
