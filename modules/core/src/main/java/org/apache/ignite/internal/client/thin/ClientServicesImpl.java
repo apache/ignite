@@ -96,7 +96,7 @@ class ClientServicesImpl implements ClientServices {
                     return svcs;
                 }
                 catch (IOException e) {
-                    throw new ClientError(e);
+                    throw new ClientException(e);
                 }
             }
         );
@@ -119,7 +119,7 @@ class ClientServicesImpl implements ClientServices {
                     return readServiceDescriptor(reader);
                 }
                 catch (IOException e) {
-                    throw new ClientError(e);
+                    throw new ClientException(e);
                 }
             }
         );
