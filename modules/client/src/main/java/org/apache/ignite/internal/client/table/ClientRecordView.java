@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +59,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public R get(@Nullable Transaction tx, @NotNull R keyRec) {
-        return getAsync(tx, keyRec).join();
+        return sync(getAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -74,7 +76,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public Collection<R> getAll(@Nullable Transaction tx, @NotNull Collection<R> keyRecs) {
-        return getAllAsync(tx, keyRecs).join();
+        return sync(getAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
@@ -92,7 +94,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public void upsert(@Nullable Transaction tx, @NotNull R rec) {
-        upsertAsync(tx, rec).join();
+        sync(upsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -109,7 +111,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public void upsertAll(@Nullable Transaction tx, @NotNull Collection<R> recs) {
-        upsertAllAsync(tx, recs).join();
+        sync(upsertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
@@ -126,7 +128,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public R getAndUpsert(@Nullable Transaction tx, @NotNull R rec) {
-        return getAndUpsertAsync(tx, rec).join();
+        return sync(getAndUpsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -143,7 +145,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public boolean insert(@Nullable Transaction tx, @NotNull R rec) {
-        return insertAsync(tx, rec).join();
+        return sync(insertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -160,7 +162,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public Collection<R> insertAll(@Nullable Transaction tx, @NotNull Collection<R> recs) {
-        return insertAllAsync(tx, recs).join();
+        return sync(insertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
@@ -178,13 +180,13 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull R rec) {
-        return replaceAsync(tx, rec).join();
+        return sync(replaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull R oldRec, @NotNull R newRec) {
-        return replaceAsync(tx, oldRec, newRec).join();
+        return sync(replaceAsync(tx, oldRec, newRec));
     }
 
     /** {@inheritDoc} */
@@ -213,7 +215,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public R getAndReplace(@Nullable Transaction tx, @NotNull R rec) {
-        return getAndReplaceAsync(tx, rec).join();
+        return sync(getAndReplaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -230,7 +232,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public boolean delete(@Nullable Transaction tx, @NotNull R keyRec) {
-        return deleteAsync(tx, keyRec).join();
+        return sync(deleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -247,7 +249,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public boolean deleteExact(@Nullable Transaction tx, @NotNull R rec) {
-        return deleteExactAsync(tx, rec).join();
+        return sync(deleteExactAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -264,7 +266,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public R getAndDelete(@Nullable Transaction tx, @NotNull R keyRec) {
-        return getAndDeleteAsync(tx, keyRec).join();
+        return sync(getAndDeleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -281,7 +283,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public Collection<R> deleteAll(@Nullable Transaction tx, @NotNull Collection<R> keyRecs) {
-        return deleteAllAsync(tx, keyRecs).join();
+        return sync(deleteAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
@@ -299,7 +301,7 @@ public class ClientRecordView<R> implements RecordView<R> {
     /** {@inheritDoc} */
     @Override
     public Collection<R> deleteAllExact(@Nullable Transaction tx, @NotNull Collection<R> recs) {
-        return deleteAllExactAsync(tx, recs).join();
+        return sync(deleteAllExactAsync(tx, recs));
     }
 
     /** {@inheritDoc} */

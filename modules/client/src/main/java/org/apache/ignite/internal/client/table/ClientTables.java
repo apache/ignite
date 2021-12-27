@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +48,7 @@ public class ClientTables implements IgniteTables {
     /** {@inheritDoc} */
     @Override
     public Table createTable(String name, Consumer<TableChange> tableInitChange) {
-        return createTableAsync(name, tableInitChange).join();
+        return sync(createTableAsync(name, tableInitChange));
     }
 
     /** {@inheritDoc} */
@@ -61,7 +63,7 @@ public class ClientTables implements IgniteTables {
     /** {@inheritDoc} */
     @Override
     public void alterTable(String name, Consumer<TableChange> tableChange) {
-        alterTableAsync(name, tableChange).join();
+        sync(alterTableAsync(name, tableChange));
     }
 
     /** {@inheritDoc} */
@@ -76,7 +78,7 @@ public class ClientTables implements IgniteTables {
     /** {@inheritDoc} */
     @Override
     public void dropTable(String name) {
-        dropTableAsync(name).join();
+        sync(dropTableAsync(name));
     }
 
     /** {@inheritDoc} */
@@ -90,7 +92,7 @@ public class ClientTables implements IgniteTables {
     /** {@inheritDoc} */
     @Override
     public List<Table> tables() {
-        return tablesAsync().join();
+        return sync(tablesAsync());
     }
 
     /** {@inheritDoc} */
@@ -112,7 +114,7 @@ public class ClientTables implements IgniteTables {
     /** {@inheritDoc} */
     @Override
     public Table table(String name) {
-        return tableAsync(name).join();
+        return sync(tableAsync(name));
     }
 
     /** {@inheritDoc} */

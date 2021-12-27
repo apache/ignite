@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.tx;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.client.ClientChannel;
@@ -78,7 +80,7 @@ public class ClientTransaction implements Transaction {
     /** {@inheritDoc} */
     @Override
     public void commit() throws TransactionException {
-        commitAsync().join();
+        sync(commitAsync());
     }
 
     /** {@inheritDoc} */
@@ -92,7 +94,7 @@ public class ClientTransaction implements Transaction {
     /** {@inheritDoc} */
     @Override
     public void rollback() throws TransactionException {
-        rollbackAsync().join();
+        sync(rollbackAsync());
     }
 
     /** {@inheritDoc} */

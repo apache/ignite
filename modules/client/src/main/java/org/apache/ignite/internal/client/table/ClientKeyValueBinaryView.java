@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +59,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple get(@Nullable Transaction tx, @NotNull Tuple key) {
-        return getAsync(tx, key).join();
+        return sync(getAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -74,7 +76,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Map<Tuple, Tuple> getAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
-        return getAllAsync(tx, keys).join();
+        return sync(getAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
@@ -92,7 +94,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean contains(@Nullable Transaction tx, @NotNull Tuple key) {
-        return containsAsync(tx, key).join();
+        return sync(containsAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -109,7 +111,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public void put(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
-        putAsync(tx, key, val).join();
+        sync(putAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -128,7 +130,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public void putAll(@Nullable Transaction tx, @NotNull Map<Tuple, Tuple> pairs) {
-        putAllAsync(tx, pairs).join();
+        sync(putAllAsync(tx, pairs));
     }
 
     /** {@inheritDoc} */
@@ -145,7 +147,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndPut(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
-        return getAndPutAsync(tx, key, val).join();
+        return sync(getAndPutAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -162,7 +164,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean putIfAbsent(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
-        return putIfAbsentAsync(tx, key, val).join();
+        return sync(putIfAbsentAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -179,13 +181,13 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean remove(@Nullable Transaction tx, @NotNull Tuple key) {
-        return removeAsync(tx, key).join();
+        return sync(removeAsync(tx, key));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean remove(@Nullable Transaction tx, @NotNull Tuple key, @NotNull Tuple val) {
-        return removeAsync(tx, key, val).join();
+        return sync(removeAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -214,7 +216,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Collection<Tuple> removeAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keys) {
-        return removeAllAsync(tx, keys).join();
+        return sync(removeAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
@@ -232,7 +234,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndRemove(@Nullable Transaction tx, @NotNull Tuple key) {
-        return getAndRemoveAsync(tx, key).join();
+        return sync(getAndRemoveAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -249,13 +251,13 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
-        return replaceAsync(tx, key, val).join();
+        return sync(replaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull Tuple key, Tuple oldVal, Tuple newVal) {
-        return replaceAsync(tx, key, oldVal, newVal).join();
+        return sync(replaceAsync(tx, key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
@@ -286,7 +288,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndReplace(@Nullable Transaction tx, @NotNull Tuple key, Tuple val) {
-        return getAndReplaceAsync(tx, key, val).join();
+        return sync(getAndReplaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */

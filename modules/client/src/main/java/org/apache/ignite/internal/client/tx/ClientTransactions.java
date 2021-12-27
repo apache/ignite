@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.tx;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.client.ReliableChannel;
 import org.apache.ignite.internal.client.proto.ClientOp;
@@ -49,7 +51,7 @@ public class ClientTransactions implements IgniteTransactions {
     /** {@inheritDoc} */
     @Override
     public Transaction begin() {
-        return beginAsync().join();
+        return sync(beginAsync());
     }
 
     /** {@inheritDoc} */

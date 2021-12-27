@@ -21,6 +21,7 @@ import static org.apache.ignite.client.IgniteClientConfiguration.DFLT_CONNECT_TI
 import static org.apache.ignite.client.IgniteClientConfiguration.DFLT_RECONNECT_THROTTLING_PERIOD;
 import static org.apache.ignite.client.IgniteClientConfiguration.DFLT_RECONNECT_THROTTLING_RETRIES;
 import static org.apache.ignite.client.IgniteClientConfiguration.DFLT_RETRY_LIMIT;
+import static org.apache.ignite.internal.client.ClientUtils.sync;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -171,7 +172,7 @@ public interface IgniteClient extends Ignite {
          * @return Ignite client.
          */
         public IgniteClient build() {
-            return buildAsync().join();
+            return sync(buildAsync());
         }
 
         /**

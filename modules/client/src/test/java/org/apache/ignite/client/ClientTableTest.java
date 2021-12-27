@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.fakes.FakeSchemaRegistry;
 import org.apache.ignite.internal.client.table.ClientTuple;
 import org.apache.ignite.table.RecordView;
@@ -45,7 +44,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
         var key = Tuple.create().set("name", "123");
 
-        var ex = assertThrows(CompletionException.class, () -> table.get(null, key));
+        var ex = assertThrows(IgniteClientException.class, () -> table.get(null, key));
 
         assertTrue(ex.getMessage().contains("Missed key column: id"),
                 ex.getMessage());
@@ -369,7 +368,7 @@ public class ClientTableTest extends AbstractClientTableTest {
                 .set("id", 1)
                 .set("str_non_null", null);
 
-        var ex = assertThrows(CompletionException.class, () -> table.upsert(null, tuple));
+        var ex = assertThrows(IgniteClientException.class, () -> table.upsert(null, tuple));
 
         assertTrue(ex.getMessage().contains("null was passed, but column is not nullable"), ex.getMessage());
     }
@@ -378,7 +377,7 @@ public class ClientTableTest extends AbstractClientTableTest {
     public void testColumnTypeMismatchThrowsException() {
         var tuple = Tuple.create().set("id", "str");
 
-        var ex = assertThrows(CompletionException.class, () -> defaultTable().recordView().upsert(null, tuple));
+        var ex = assertThrows(IgniteClientException.class, () -> defaultTable().recordView().upsert(null, tuple));
 
         assertTrue(ex.getMessage().contains("Incorrect value type for column 'id': Expected Integer, but got String"), ex.getMessage());
     }

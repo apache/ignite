@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +59,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple get(@Nullable Transaction tx, @NotNull Tuple keyRec) {
-        return getAsync(tx, keyRec).join();
+        return sync(getAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -74,7 +76,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Collection<Tuple> getAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
-        return getAllAsync(tx, keyRecs).join();
+        return sync(getAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
@@ -92,7 +94,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public void upsert(@Nullable Transaction tx, @NotNull Tuple rec) {
-        upsertAsync(tx, rec).join();
+        sync(upsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -110,7 +112,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public void upsertAll(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
-        upsertAllAsync(tx, recs).join();
+        sync(upsertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
@@ -127,7 +129,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndUpsert(@Nullable Transaction tx, @NotNull Tuple rec) {
-        return getAndUpsertAsync(tx, rec).join();
+        return sync(getAndUpsertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -144,7 +146,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean insert(@Nullable Transaction tx, @NotNull Tuple rec) {
-        return insertAsync(tx, rec).join();
+        return sync(insertAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -161,7 +163,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Collection<Tuple> insertAll(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
-        return insertAllAsync(tx, recs).join();
+        return sync(insertAllAsync(tx, recs));
     }
 
     /** {@inheritDoc} */
@@ -179,13 +181,13 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull Tuple rec) {
-        return replaceAsync(tx, rec).join();
+        return sync(replaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        return replaceAsync(tx, oldRec, newRec).join();
+        return sync(replaceAsync(tx, oldRec, newRec));
     }
 
     /** {@inheritDoc} */
@@ -217,7 +219,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndReplace(@Nullable Transaction tx, @NotNull Tuple rec) {
-        return getAndReplaceAsync(tx, rec).join();
+        return sync(getAndReplaceAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -234,7 +236,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean delete(@Nullable Transaction tx, @NotNull Tuple keyRec) {
-        return deleteAsync(tx, keyRec).join();
+        return sync(deleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -251,7 +253,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public boolean deleteExact(@Nullable Transaction tx, @NotNull Tuple rec) {
-        return deleteExactAsync(tx, rec).join();
+        return sync(deleteExactAsync(tx, rec));
     }
 
     /** {@inheritDoc} */
@@ -268,7 +270,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Tuple getAndDelete(@Nullable Transaction tx, @NotNull Tuple keyRec) {
-        return getAndDeleteAsync(tx, keyRec).join();
+        return sync(getAndDeleteAsync(tx, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -285,7 +287,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Collection<Tuple> deleteAll(@Nullable Transaction tx, @NotNull Collection<Tuple> keyRecs) {
-        return deleteAllAsync(tx, keyRecs).join();
+        return sync(deleteAllAsync(tx, keyRecs));
     }
 
     /** {@inheritDoc} */
@@ -303,7 +305,7 @@ public class ClientRecordBinaryView implements RecordView<Tuple> {
     /** {@inheritDoc} */
     @Override
     public Collection<Tuple> deleteAllExact(@Nullable Transaction tx, @NotNull Collection<Tuple> recs) {
-        return deleteAllExactAsync(tx, recs).join();
+        return sync(deleteAllExactAsync(tx, recs));
     }
 
     /** {@inheritDoc} */

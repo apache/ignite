@@ -30,7 +30,6 @@ import java.math.BigInteger;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
@@ -190,10 +189,9 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
     public void testMissingKeyColumnThrowsException() {
         RecordView<NamePojo> recordView = defaultTable().recordView(NamePojo.class);
 
-        CompletionException e = assertThrows(CompletionException.class, () -> recordView.get(null, new NamePojo()));
-        IgniteClientException ice = (IgniteClientException) e.getCause();
+        IgniteClientException e = assertThrows(IgniteClientException.class, () -> recordView.get(null, new NamePojo()));
 
-        assertEquals("No field found for column id", ice.getMessage());
+        assertEquals("No field found for column id", e.getMessage());
     }
 
     @Test

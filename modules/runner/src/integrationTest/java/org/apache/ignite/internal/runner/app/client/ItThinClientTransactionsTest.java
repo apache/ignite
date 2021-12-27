@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientException;
 import org.apache.ignite.table.KeyValueView;
@@ -191,8 +190,8 @@ public class ItThinClientTransactionsTest extends ItAbstractThinClientTest {
         Transaction tx = client().transactions().begin();
         kvView.put(tx, -100, "1");
 
-        var ex = assertThrows(CompletionException.class, () -> kvView.get(null, -100));
-        assertThat(ex.getCause().getMessage(), containsString("TimeoutException"));
+        IgniteClientException ex = assertThrows(IgniteClientException.class, () -> kvView.get(null, -100));
+        assertThat(ex.getMessage(), containsString("TimeoutException"));
 
         tx.rollback();
     }
@@ -237,12 +236,12 @@ public class ItThinClientTransactionsTest extends ItAbstractThinClientTest {
             }
         };
 
-        var ex = assertThrows(CompletionException.class, () -> kvView().put(tx, 1, "1"));
+        var ex = assertThrows(IgniteClientException.class, () -> kvView().put(tx, 1, "1"));
 
         String expected = "Unsupported transaction implementation: "
                 + "'class org.apache.ignite.internal.runner.app.client.ItThinClientTransactionsTest";
 
-        assertThat(ex.getCause().getMessage(), startsWith(expected));
+        assertThat(ex.getMessage(), startsWith(expected));
     }
 
     @Test
@@ -252,10 +251,9 @@ public class ItThinClientTransactionsTest extends ItAbstractThinClientTest {
         try (IgniteClient client2 = IgniteClient.builder().addresses(getNodeAddress()).build()) {
             RecordView<Tuple> recordView = client2.tables().tables().get(0).recordView();
 
-            var ex = assertThrows(CompletionException.class, () -> recordView.upsert(tx, Tuple.create()));
-            var iex = (IgniteClientException) ex.getCause();
+            IgniteClientException ex = assertThrows(IgniteClientException.class, () -> recordView.upsert(tx, Tuple.create()));
 
-            assertEquals("Transaction context has been lost due to connection errors.", iex.getMessage());
+            assertEquals("Transaction context has been lost due to connection errors.", ex.getMessage());
         }
     }
 

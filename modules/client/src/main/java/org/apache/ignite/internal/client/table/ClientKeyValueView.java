@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.ClientUtils.sync;
 import static org.apache.ignite.internal.client.table.ClientTable.writeTx;
 
 import java.io.Serializable;
@@ -77,7 +78,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public V get(@Nullable Transaction tx, @NotNull K key) {
-        return getAsync(tx, key).join();
+        return sync(getAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -94,7 +95,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public Map<K, V> getAll(@Nullable Transaction tx, @NotNull Collection<K> keys) {
-        return getAllAsync(tx, keys).join();
+        return sync(getAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
@@ -116,7 +117,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public boolean contains(@Nullable Transaction tx, @NotNull K key) {
-        return containsAsync(tx, key).join();
+        return sync(containsAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -133,7 +134,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public void put(@Nullable Transaction tx, @NotNull K key, V val) {
-        putAsync(tx, key, val).join();
+        sync(putAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -150,7 +151,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public void putAll(@Nullable Transaction tx, @NotNull Map<K, V> pairs) {
-        putAllAsync(tx, pairs).join();
+        sync(putAllAsync(tx, pairs));
     }
 
     /** {@inheritDoc} */
@@ -181,7 +182,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public V getAndPut(@Nullable Transaction tx, @NotNull K key, V val) {
-        return getAndPutAsync(tx, key, val).join();
+        return sync(getAndPutAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -198,7 +199,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public boolean putIfAbsent(@Nullable Transaction tx, @NotNull K key, @NotNull V val) {
-        return putIfAbsentAsync(tx, key, val).join();
+        return sync(putIfAbsentAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -215,13 +216,13 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public boolean remove(@Nullable Transaction tx, @NotNull K key) {
-        return removeAsync(tx, key).join();
+        return sync(removeAsync(tx, key));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean remove(@Nullable Transaction tx, @NotNull K key, V val) {
-        return removeAsync(tx, key, val).join();
+        return sync(removeAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -249,7 +250,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public Collection<K> removeAll(@Nullable Transaction tx, @NotNull Collection<K> keys) {
-        return removeAllAsync(tx, keys).join();
+        return sync(removeAllAsync(tx, keys));
     }
 
     /** {@inheritDoc} */
@@ -271,7 +272,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public V getAndRemove(@Nullable Transaction tx, @NotNull K key) {
-        return getAndRemoveAsync(tx, key).join();
+        return sync(getAndRemoveAsync(tx, key));
     }
 
     /** {@inheritDoc} */
@@ -288,7 +289,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull K key, V val) {
-        return replaceAsync(tx, key, val).join();
+        return sync(replaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
@@ -296,7 +297,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     public boolean replace(@Nullable Transaction tx, @NotNull K key, V oldVal, V newVal) {
         Objects.requireNonNull(key);
 
-        return replaceAsync(tx, key, oldVal, newVal).join();
+        return sync(replaceAsync(tx, key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
@@ -330,7 +331,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     /** {@inheritDoc} */
     @Override
     public V getAndReplace(@Nullable Transaction tx, @NotNull K key, V val) {
-        return getAndReplaceAsync(tx, key, val).join();
+        return sync(getAndReplaceAsync(tx, key, val));
     }
 
     /** {@inheritDoc} */
