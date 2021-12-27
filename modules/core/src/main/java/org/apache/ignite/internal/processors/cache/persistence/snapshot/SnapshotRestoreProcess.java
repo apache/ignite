@@ -428,15 +428,6 @@ public class SnapshotRestoreProcess {
      * Finish local cache group restore process.
      *
      * @param reqId Request ID.
-     */
-    private void finishProcess(UUID reqId) {
-        finishProcess(reqId, null);
-    }
-
-    /**
-     * Finish local cache group restore process.
-     *
-     * @param reqId Request ID.
      * @param err Error, if any.
      */
     private void finishProcess(UUID reqId, @Nullable Throwable err) {
@@ -1408,7 +1399,7 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
-        /** Baseline discovery cache for node IDs that must be alive to complete the operation. */
+        /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
         private final DiscoCache discoCache;
 
         /** Operational node id. */
@@ -1432,6 +1423,12 @@ public class SnapshotRestoreProcess {
         /** Stop condition checker. */
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
+        /** Cache ID to configuration mapping. */
+        private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
+
+        /** Graceful shutdown future. */
+        private volatile IgniteFuture<?> stopFut;
+
         /** Operation start time. */
         private final long startTime;
 
@@ -1440,12 +1437,6 @@ public class SnapshotRestoreProcess {
 
         /** Total number of partitions to be restored. */
         private volatile int totalParts = -1;
-
-        /** Cache ID to configuration mapping. */
-        private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
-
-        /** Graceful shutdown future. */
-        private volatile IgniteFuture<?> stopFut;
 
         /** Operation end time. */
         private volatile long endTime;

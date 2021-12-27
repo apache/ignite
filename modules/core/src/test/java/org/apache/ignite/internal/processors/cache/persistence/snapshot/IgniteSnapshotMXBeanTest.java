@@ -165,7 +165,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
      * @param name Metric name.
      * @return Metric value.
      */
-    private long getLongMetric(String name, DynamicMBean mBean) {
+    private static long getLongMetric(String name, DynamicMBean mBean) {
         try {
             return (long)mBean.getAttribute(name);
         }
