@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.table.ClientTable.writeTx;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.client.IgniteClientException;
+import org.apache.ignite.internal.client.PayloadOutputChannel;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.client.proto.TuplePart;
@@ -31,6 +34,7 @@ import org.apache.ignite.internal.marshaller.MarshallerException;
 import org.apache.ignite.internal.marshaller.MarshallerUtil;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.mapper.Mapper;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,11 +71,12 @@ class ClientRecordSerializer<R> {
         return mapper;
     }
 
-    public void writeRec(@Nullable  R rec, ClientSchema schema, ClientMessagePacker out, TuplePart part) {
-        out.packIgniteUuid(tableId);
-        out.packInt(schema.version());
+    public void writeRec(@Nullable Transaction tx, @Nullable R rec, ClientSchema schema, PayloadOutputChannel out, TuplePart part) {
+        out.out().packIgniteUuid(tableId);
+        writeTx(tx, out);
+        out.out().packInt(schema.version());
 
-        writeRecRaw(rec, schema, out, part);
+        writeRecRaw(rec, schema, out.out(), part);
     }
 
     public void writeRecRaw(@Nullable R rec, ClientSchema schema, ClientMessagePacker out, TuplePart part) {
@@ -85,12 +90,20 @@ class ClientRecordSerializer<R> {
         }
     }
 
-    public void writeRecs(@Nullable R rec, @Nullable R rec2, ClientSchema schema, ClientMessagePacker out, TuplePart part) {
-        out.packIgniteUuid(tableId);
-        out.packInt(schema.version());
+    public void writeRecs(
+            @Nullable Transaction tx,
+            @Nullable R rec,
+            @Nullable R rec2,
+            ClientSchema schema,
+            PayloadOutputChannel out,
+            TuplePart part
+    ) {
+        out.out().packIgniteUuid(tableId);
+        writeTx(tx, out);
+        out.out().packInt(schema.version());
 
         Marshaller marshaller = schema.getMarshaller(mapper, part);
-        ClientMarshallerWriter writer = new ClientMarshallerWriter(out);
+        ClientMarshallerWriter writer = new ClientMarshallerWriter(out.out());
 
         try {
             marshaller.writeObject(rec, writer);
@@ -100,13 +113,20 @@ class ClientRecordSerializer<R> {
         }
     }
 
-    public void writeRecs(@NotNull Collection<R> recs, ClientSchema schema, ClientMessagePacker out, TuplePart part) {
-        out.packIgniteUuid(tableId);
-        out.packInt(schema.version());
-        out.packInt(recs.size());
+    public void writeRecs(
+            @Nullable Transaction tx,
+            @NotNull Collection<R> recs,
+            ClientSchema schema,
+            PayloadOutputChannel out,
+            TuplePart part
+    ) {
+        out.out().packIgniteUuid(tableId);
+        writeTx(tx, out);
+        out.out().packInt(schema.version());
+        out.out().packInt(recs.size());
 
         Marshaller marshaller = schema.getMarshaller(mapper, part);
-        ClientMarshallerWriter writer = new ClientMarshallerWriter(out);
+        ClientMarshallerWriter writer = new ClientMarshallerWriter(out.out());
 
         try {
             for (R rec : recs) {

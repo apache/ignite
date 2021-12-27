@@ -58,7 +58,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
         table.upsert(null, tuple);
 
-        Tuple key = tuple(123L);
+        Tuple key = tuple(DEFAULT_ID);
         var resTuple = table.get(null, key);
 
         assertEquals(DEFAULT_NAME, resTuple.stringValue("name"));

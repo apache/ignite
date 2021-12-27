@@ -54,6 +54,9 @@ import org.apache.ignite.client.handler.requests.table.ClientTupleReplaceExactRe
 import org.apache.ignite.client.handler.requests.table.ClientTupleReplaceRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertAllRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertRequest;
+import org.apache.ignite.client.handler.requests.tx.ClientTransactionBeginRequest;
+import org.apache.ignite.client.handler.requests.tx.ClientTransactionCommitRequest;
+import org.apache.ignite.client.handler.requests.tx.ClientTransactionRollbackRequest;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.internal.client.proto.ClientErrorCode;
 import org.apache.ignite.internal.client.proto.ClientMessageCommon;
@@ -66,6 +69,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.IgniteTransactions;
 
 /**
  * Handles messages from thin clients.
@@ -78,25 +82,37 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
     /** Ignite tables API. */
     private final IgniteTables igniteTables;
 
+    /** Ignite tables API. */
+    private final IgniteTransactions igniteTransactions;
+
+    /** JDBC Handler. */
+    private final JdbcQueryEventHandler jdbcQueryEventHandler;
+
+    /** Connection resources. */
+    private final ClientResourceRegistry resources = new ClientResourceRegistry();
+
     /** Context. */
     private ClientContext clientContext;
-
-    /** Handler. */
-    private final JdbcQueryEventHandler handler;
 
     /**
      * Constructor.
      *
-     * @param igniteTables Ignite tables API entry point.
-     * @param processor    Sql query processor.
+     * @param igniteTables       Ignite tables API entry point.
+     * @param igniteTransactions Transactions API.
+     * @param processor          Sql query processor.
      */
-    public ClientInboundMessageHandler(IgniteTables igniteTables,
+    public ClientInboundMessageHandler(
+            IgniteTables igniteTables,
+            IgniteTransactions igniteTransactions,
             QueryProcessor processor) {
         assert igniteTables != null;
+        assert igniteTransactions != null;
+        assert processor != null;
 
         this.igniteTables = igniteTables;
+        this.igniteTransactions = igniteTransactions;
 
-        this.handler = new JdbcQueryEventHandlerImpl(processor, new JdbcMetadataCatalog(igniteTables));
+        this.jdbcQueryEventHandler = new JdbcQueryEventHandlerImpl(processor, new JdbcMetadataCatalog(igniteTables));
     }
 
     /** {@inheritDoc} */
@@ -113,6 +129,14 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
                 processOperation(ctx, unpacker, packer);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        resources.clean();
+
+        super.channelInactive(ctx);
     }
 
     private void handshake(ChannelHandlerContext ctx, ClientMessageUnpacker unpacker, ClientMessagePacker packer) {
@@ -268,79 +292,88 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
                 return ClientTableGetRequest.process(in, out, igniteTables);
 
             case ClientOp.TUPLE_UPSERT:
-                return ClientTupleUpsertRequest.process(in, igniteTables);
+                return ClientTupleUpsertRequest.process(in, igniteTables, resources);
 
             case ClientOp.TUPLE_GET:
-                return ClientTupleGetRequest.process(in, out, igniteTables);
+                return ClientTupleGetRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_UPSERT_ALL:
-                return ClientTupleUpsertAllRequest.process(in, igniteTables);
+                return ClientTupleUpsertAllRequest.process(in, igniteTables, resources);
 
             case ClientOp.TUPLE_GET_ALL:
-                return ClientTupleGetAllRequest.process(in, out, igniteTables);
+                return ClientTupleGetAllRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_GET_AND_UPSERT:
-                return ClientTupleGetAndUpsertRequest.process(in, out, igniteTables);
+                return ClientTupleGetAndUpsertRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_INSERT:
-                return ClientTupleInsertRequest.process(in, out, igniteTables);
+                return ClientTupleInsertRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_INSERT_ALL:
-                return ClientTupleInsertAllRequest.process(in, out, igniteTables);
+                return ClientTupleInsertAllRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_REPLACE:
-                return ClientTupleReplaceRequest.process(in, out, igniteTables);
+                return ClientTupleReplaceRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_REPLACE_EXACT:
-                return ClientTupleReplaceExactRequest.process(in, out, igniteTables);
+                return ClientTupleReplaceExactRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_GET_AND_REPLACE:
-                return ClientTupleGetAndReplaceRequest.process(in, out, igniteTables);
+                return ClientTupleGetAndReplaceRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_DELETE:
-                return ClientTupleDeleteRequest.process(in, out, igniteTables);
+                return ClientTupleDeleteRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_DELETE_ALL:
-                return ClientTupleDeleteAllRequest.process(in, out, igniteTables);
+                return ClientTupleDeleteAllRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_DELETE_EXACT:
-                return ClientTupleDeleteExactRequest.process(in, out, igniteTables);
+                return ClientTupleDeleteExactRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_DELETE_ALL_EXACT:
-                return ClientTupleDeleteAllExactRequest.process(in, out, igniteTables);
+                return ClientTupleDeleteAllExactRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_GET_AND_DELETE:
-                return ClientTupleGetAndDeleteRequest.process(in, out, igniteTables);
+                return ClientTupleGetAndDeleteRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.TUPLE_CONTAINS_KEY:
-                return ClientTupleContainsKeyRequest.process(in, out, igniteTables);
+                return ClientTupleContainsKeyRequest.process(in, out, igniteTables, resources);
 
             case ClientOp.SQL_EXEC:
-                return ClientSqlExecuteRequest.execute(in, out, handler);
+                return ClientSqlExecuteRequest.execute(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_EXEC_BATCH:
-                return ClientSqlExecuteBatchRequest.process(in, out, handler);
+                return ClientSqlExecuteBatchRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_NEXT:
-                return ClientSqlFetchRequest.process(in, out, handler);
+                return ClientSqlFetchRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_CURSOR_CLOSE:
-                return ClientSqlCloseRequest.process(in, out, handler);
+                return ClientSqlCloseRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_TABLE_META:
-                return ClientSqlTableMetadataRequest.process(in, out, handler);
+                return ClientSqlTableMetadataRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_COLUMN_META:
-                return ClientSqlColumnMetadataRequest.process(in, out, handler);
+                return ClientSqlColumnMetadataRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_SCHEMAS_META:
-                return ClientSqlSchemasMetadataRequest.process(in, out, handler);
+                return ClientSqlSchemasMetadataRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_PK_META:
-                return ClientSqlPrimaryKeyMetadataRequest.process(in, out, handler);
+                return ClientSqlPrimaryKeyMetadataRequest.process(in, out, jdbcQueryEventHandler);
 
             case ClientOp.SQL_QUERY_META:
-                return ClientSqlQueryMetadataRequest.process(in, out, handler);
+                return ClientSqlQueryMetadataRequest.process(in, out, jdbcQueryEventHandler);
+
+            case ClientOp.TX_BEGIN:
+                return ClientTransactionBeginRequest.process(out, igniteTransactions, resources);
+
+            case ClientOp.TX_COMMIT:
+                return ClientTransactionCommitRequest.process(in, resources);
+
+            case ClientOp.TX_ROLLBACK:
+                return ClientTransactionRollbackRequest.process(in, resources);
 
             default:
                 throw new IgniteException("Unexpected operation code: " + opCode);

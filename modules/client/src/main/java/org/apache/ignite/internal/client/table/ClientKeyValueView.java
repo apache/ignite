@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.table;
 
+import static org.apache.ignite.internal.client.table.ClientTable.writeTx;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.IgniteClientException;
-import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.PayloadOutputChannel;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.client.proto.ClientOp;
 import org.apache.ignite.internal.client.proto.TuplePart;
@@ -82,12 +84,11 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<V> getAsync(@Nullable Transaction tx, @NotNull K key) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET,
-                (schema, out) -> keySer.writeRec(key, schema, out, TuplePart.KEY),
-                (inSchema, in) -> valSer.readRec(inSchema, in, TuplePart.VAL));
+                (s, w) -> keySer.writeRec(tx, key, s, w, TuplePart.KEY),
+                (s, r) -> valSer.readRec(s, r, TuplePart.VAL));
     }
 
     /** {@inheritDoc} */
@@ -100,7 +101,6 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Map<K, V>> getAllAsync(@Nullable Transaction tx, @NotNull Collection<K> keys) {
         Objects.requireNonNull(keys);
-        throwUnsupportedIfTxNotNull(tx);
 
         if (keys.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
@@ -108,7 +108,7 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_ALL,
-                (schema, out) -> keySer.writeRecs(keys, schema, out, TuplePart.KEY),
+                (s, w) -> keySer.writeRecs(tx, keys, s, w, TuplePart.KEY),
                 this::readGetAllResponse,
                 Collections.emptyMap());
     }
@@ -123,11 +123,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public CompletableFuture<Boolean> containsAsync(@Nullable Transaction tx, @NotNull K key) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_CONTAINS_KEY,
-                (schema, out) -> keySer.writeRec(key, schema, out, TuplePart.KEY),
+                (s, w) -> keySer.writeRec(tx, key, s, w, TuplePart.KEY),
                 ClientMessageUnpacker::unpackBoolean);
     }
 
@@ -141,11 +140,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Void> putAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_UPSERT,
-                (s, w) -> writeKeyValue(s, w, key, val),
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
                 r -> null);
     }
 
@@ -159,7 +157,6 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Void> putAllAsync(@Nullable Transaction tx, @NotNull Map<K, V> pairs) {
         Objects.requireNonNull(pairs);
-        throwUnsupportedIfTxNotNull(tx);
 
         if (pairs.isEmpty()) {
             return CompletableFuture.completedFuture(null);
@@ -168,13 +165,14 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_UPSERT_ALL,
                 (s, w) -> {
-                    w.packIgniteUuid(tbl.tableId());
-                    w.packInt(s.version());
-                    w.packInt(pairs.size());
+                    w.out().packIgniteUuid(tbl.tableId());
+                    writeTx(tx, w);
+                    w.out().packInt(s.version());
+                    w.out().packInt(pairs.size());
 
                     for (Entry<K, V> e : pairs.entrySet()) {
-                        keySer.writeRecRaw(e.getKey(), s, w, TuplePart.KEY);
-                        valSer.writeRecRaw(e.getValue(), s, w, TuplePart.VAL);
+                        keySer.writeRecRaw(e.getKey(), s, w.out(), TuplePart.KEY);
+                        valSer.writeRecRaw(e.getValue(), s, w.out(), TuplePart.VAL);
                     }
                 },
                 r -> null);
@@ -190,11 +188,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<V> getAndPutAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_UPSERT,
-                (s, w) -> writeKeyValue(s, w, key, val),
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
                 (s, r) -> valSer.readRec(s, r, TuplePart.VAL));
     }
 
@@ -208,11 +205,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Boolean> putIfAbsentAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_INSERT,
-                (s, w) -> writeKeyValue(s, w, key, val),
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
                 ClientMessageUnpacker::unpackBoolean);
     }
 
@@ -232,11 +228,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull K key) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_DELETE,
-                (s, w) -> keySer.writeRec(key, s, w, TuplePart.KEY),
+                (s, w) -> keySer.writeRec(tx, key, s, w, TuplePart.KEY),
                 ClientMessageUnpacker::unpackBoolean);
     }
 
@@ -244,11 +239,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Boolean> removeAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_DELETE_EXACT,
-                (s, w) -> writeKeyValue(s, w, key, val),
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
                 ClientMessageUnpacker::unpackBoolean);
     }
 
@@ -262,7 +256,6 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Collection<K>> removeAllAsync(@Nullable Transaction tx, @NotNull Collection<K> keys) {
         Objects.requireNonNull(keys);
-        throwUnsupportedIfTxNotNull(tx);
 
         if (keys.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyList());
@@ -270,8 +263,8 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_DELETE_ALL,
-                (schema, out) -> keySer.writeRecs(keys, schema, out, TuplePart.KEY),
-                (inSchema, in) -> keySer.readRecs(inSchema, in, false, TuplePart.KEY),
+                (s, w) -> keySer.writeRecs(tx, keys, s, w, TuplePart.KEY),
+                (s, r) -> keySer.readRecs(s, r, false, TuplePart.KEY),
                 Collections.emptyList());
     }
 
@@ -285,11 +278,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<V> getAndRemoveAsync(@Nullable Transaction tx, @NotNull K key) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_DELETE,
-                (s, w) -> keySer.writeRec(key, s, w, TuplePart.KEY),
+                (s, w) -> keySer.writeRec(tx, key, s, w, TuplePart.KEY),
                 (s, r) -> valSer.readRec(s, r, TuplePart.VAL));
     }
 
@@ -303,7 +295,6 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public boolean replace(@Nullable Transaction tx, @NotNull K key, V oldVal, V newVal) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return replaceAsync(tx, key, oldVal, newVal).join();
     }
@@ -312,11 +303,10 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_REPLACE,
-                (s, w) -> writeKeyValue(s, w, key, val),
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
                 ClientMessageUnpacker::unpackBoolean);
     }
 
@@ -324,16 +314,15 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<Boolean> replaceAsync(@Nullable Transaction tx, @NotNull K key, V oldVal, V newVal) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutOpAsync(
                 ClientOp.TUPLE_REPLACE_EXACT,
                 (s, w) -> {
-                    keySer.writeRec(key, s, w, TuplePart.KEY);
-                    valSer.writeRecRaw(oldVal, s, w, TuplePart.VAL);
+                    keySer.writeRec(tx, key, s, w, TuplePart.KEY);
+                    valSer.writeRecRaw(oldVal, s, w.out(), TuplePart.VAL);
 
-                    keySer.writeRecRaw(key, s, w, TuplePart.KEY);
-                    valSer.writeRecRaw(newVal, s, w, TuplePart.VAL);
+                    keySer.writeRecRaw(key, s, w.out(), TuplePart.KEY);
+                    valSer.writeRecRaw(newVal, s, w.out(), TuplePart.VAL);
                 },
                 ClientMessageUnpacker::unpackBoolean);
     }
@@ -348,12 +337,11 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
     @Override
     public @NotNull CompletableFuture<V> getAndReplaceAsync(@Nullable Transaction tx, @NotNull K key, V val) {
         Objects.requireNonNull(key);
-        throwUnsupportedIfTxNotNull(tx);
 
         return tbl.doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_REPLACE,
-                (s, w) -> writeKeyValue(s, w, key, val),
-                (inSchema, in) -> valSer.readRec(inSchema, in, TuplePart.VAL));
+                (s, w) -> writeKeyValue(s, w, tx, key, val),
+                (s, r) -> valSer.readRec(s, r, TuplePart.VAL));
     }
 
     /** {@inheritDoc} */
@@ -400,9 +388,9 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    private void writeKeyValue(ClientSchema s, ClientMessagePacker w, @NotNull K key, V val) {
-        keySer.writeRec(key, s, w, TuplePart.KEY);
-        valSer.writeRecRaw(val, s, w, TuplePart.VAL);
+    private void writeKeyValue(ClientSchema s, PayloadOutputChannel w, @Nullable Transaction tx, @NotNull K key, V val) {
+        keySer.writeRec(tx, key, s, w, TuplePart.KEY);
+        valSer.writeRecRaw(val, s, w.out(), TuplePart.VAL);
     }
 
     private HashMap<K, V> readGetAllResponse(ClientSchema schema, ClientMessageUnpacker in) {
@@ -424,13 +412,6 @@ public class ClientKeyValueView<K, V> implements KeyValueView<K, V> {
             return res;
         } catch (MarshallerException e) {
             throw new IgniteClientException(e.getMessage(), e);
-        }
-    }
-
-    private static void throwUnsupportedIfTxNotNull(Transaction tx) {
-        if (tx != null) {
-            // TODO: IGNITE-15240.
-            throw new UnsupportedOperationException("Not implemented yet.");
         }
     }
 }

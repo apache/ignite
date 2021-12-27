@@ -19,8 +19,10 @@ package org.apache.ignite.client.handler.requests.table;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTx;
 
 import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.client.handler.ClientResourceRegistry;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -32,19 +34,22 @@ public class ClientTupleInsertRequest {
     /**
      * Processes the request.
      *
-     * @param in     Unpacker.
-     * @param out    Packer.
-     * @param tables Ignite tables.
+     * @param in        Unpacker.
+     * @param out       Packer.
+     * @param tables    Ignite tables.
+     * @param resources Resource registry.
      * @return Future.
      */
     public static CompletableFuture<Void> process(
             ClientMessageUnpacker in,
             ClientMessagePacker out,
-            IgniteTables tables
+            IgniteTables tables,
+            ClientResourceRegistry resources
     ) {
         var table = readTable(in, tables);
+        var tx = readTx(in, resources);
         var tuple = readTuple(in, table, false);
 
-        return table.recordView().insertAsync(null, tuple).thenAccept(out::packBoolean);
+        return table.recordView().insertAsync(tx, tuple).thenAccept(out::packBoolean);
     }
 }

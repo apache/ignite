@@ -625,6 +625,7 @@ namespace Apache.Ignite.Internal.Table
             var w = buf.GetMessageWriter();
 
             w.Write(Id);
+            w.WriteNil(); // Transaction ID (TODO: IGNITE-16208).
             w.Write(schema.Version);
             w.Flush();
 
@@ -657,6 +658,7 @@ namespace Apache.Ignite.Internal.Table
             bool keyOnly = false)
         {
             w.Write(Id);
+            w.WriteNil(); // Transaction ID (TODO: IGNITE-16208).
             w.Write(schema.Version);
 
             WriteTuple(ref w, schema, tuple, keyOnly);

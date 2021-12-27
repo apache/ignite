@@ -110,4 +110,13 @@ public class ClientOp {
 
     /** Get query metadata. */
     public static final int SQL_QUERY_META = 42;
+
+    /** Begin transaction. */
+    public static final int TX_BEGIN = 43;
+
+    /** Commit transaction. */
+    public static final int TX_COMMIT = 44;
+
+    /** Rollback transaction. */
+    public static final int TX_ROLLBACK = 45;
 }

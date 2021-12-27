@@ -57,7 +57,12 @@ public interface IgniteTransactions {
      *
      * @throws TransactionException If a transaction can't be finished successfully.
      */
-    void runInTransaction(Consumer<Transaction> clo) throws TransactionException;
+    default void runInTransaction(Consumer<Transaction> clo) throws TransactionException {
+        runInTransaction(tx -> {
+            clo.accept(tx);
+            return null;
+        });
+    }
 
     /**
      * Executes a closure within a transaction and returns a result.
@@ -73,5 +78,23 @@ public interface IgniteTransactions {
      *
      * @throws TransactionException If a transaction can't be finished successfully.
      */
-    <T> T runInTransaction(Function<Transaction, T> clo) throws TransactionException;
+    default <T> T runInTransaction(Function<Transaction, T> clo) throws TransactionException {
+        Transaction tx = begin();
+
+        try {
+            T ret = clo.apply(tx);
+
+            tx.commit();
+
+            return ret;
+        } catch (Throwable t) {
+            try {
+                tx.rollback(); // Try rolling back on user exception.
+            } catch (Exception e) {
+                t.addSuppressed(e);
+            }
+
+            throw t;
+        }
+    }
 }

@@ -25,7 +25,7 @@ import org.apache.ignite.client.IgniteClientException;
 /**
  * Processing thin client requests and responses.
  */
-interface ClientChannel extends AutoCloseable {
+public interface ClientChannel extends AutoCloseable {
     /**
      * Send request and handle response asynchronously for client operation.
      *

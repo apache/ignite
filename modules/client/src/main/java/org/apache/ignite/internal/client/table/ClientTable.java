@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.client.table;
 
-import static org.apache.ignite.internal.client.proto.ClientMessageCommon.NO_VALUE;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -31,10 +25,11 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.client.IgniteClientException;
+import org.apache.ignite.internal.client.PayloadOutputChannel;
 import org.apache.ignite.internal.client.ReliableChannel;
-import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.client.proto.ClientOp;
+import org.apache.ignite.internal.client.tx.ClientTransaction;
 import org.apache.ignite.internal.tostring.IgniteToStringBuilder;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -43,6 +38,7 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.mapper.Mapper;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -210,268 +206,38 @@ public class ClientTable implements Table {
     }
 
     /**
-     * Writes {@link Tuple}.
+     * Writes transaction, if present.
      *
-     * @param tuple Tuple.
-     * @param schema Schema.
-     * @param out Out.
+     * @param tx  Transaction.
+     * @param out Packer.
      */
-    public void writeTuple(
-            @NotNull Tuple tuple,
-            ClientSchema schema,
-            ClientMessagePacker out
-    ) {
-        writeTuple(tuple, schema, out, false, false);
-    }
+    public static void writeTx(@Nullable Transaction tx, PayloadOutputChannel out) {
+        if (tx == null) {
+            out.out().packNil();
+        } else {
+            ClientTransaction clientTx = getClientTx(tx);
 
-    /**
-     * Writes {@link Tuple}.
-     *
-     * @param tuple Tuple.
-     * @param schema Schema.
-     * @param out Out.
-     * @param keyOnly Key only.
-     */
-    public void writeTuple(
-            @NotNull Tuple tuple,
-            ClientSchema schema,
-            ClientMessagePacker out,
-            boolean keyOnly
-    ) {
-        writeTuple(tuple, schema, out, keyOnly, false);
-    }
-
-    /**
-     * Writes {@link Tuple}.
-     *
-     * @param tuple Tuple.
-     * @param schema Schema.
-     * @param out Out.
-     * @param keyOnly Key only.
-     * @param skipHeader Skip header.
-     */
-    public void writeTuple(
-            @NotNull Tuple tuple,
-            ClientSchema schema,
-            ClientMessagePacker out,
-            boolean keyOnly,
-            boolean skipHeader
-    ) {
-        if (!skipHeader) {
-            out.packIgniteUuid(id);
-            out.packInt(schema.version());
-        }
-
-        var columns = schema.columns();
-        var count = keyOnly ? schema.keyColumnCount() : columns.length;
-
-        for (var i = 0; i < count; i++) {
-            var col = columns[i];
-
-            Object v = tuple.valueOrDefault(col.name(), NO_VALUE);
-
-            out.packObject(v);
-        }
-    }
-
-    /**
-     * Writes key and value {@link Tuple}.
-     *
-     * @param key Key tuple.
-     * @param val Value tuple.
-     * @param schema Schema.
-     * @param out Out.
-     * @param skipHeader Skip header.
-     */
-    public void writeKvTuple(
-            @NotNull Tuple key,
-            @Nullable Tuple val,
-            ClientSchema schema,
-            ClientMessagePacker out,
-            boolean skipHeader
-    ) {
-        if (!skipHeader) {
-            out.packIgniteUuid(id);
-            out.packInt(schema.version());
-        }
-
-        var columns = schema.columns();
-
-        for (var i = 0; i < columns.length; i++) {
-            var col = columns[i];
-
-            Object v = col.key()
-                    ? key.valueOrDefault(col.name(), NO_VALUE)
-                    : val != null
-                            ? val.valueOrDefault(col.name(), NO_VALUE)
-                            : NO_VALUE;
-
-            out.packObject(v);
-        }
-    }
-
-    /**
-     * Writes pairs {@link Tuple}.
-     *
-     * @param pairs Key tuple.
-     * @param schema Schema.
-     * @param out Out.
-     */
-    public void writeKvTuples(Map<Tuple, Tuple> pairs, ClientSchema schema, ClientMessagePacker out) {
-        out.packIgniteUuid(id);
-        out.packInt(schema.version());
-        out.packInt(pairs.size());
-
-        for (Map.Entry<Tuple, Tuple> pair : pairs.entrySet()) {
-            writeKvTuple(pair.getKey(), pair.getValue(), schema, out, true);
-        }
-    }
-
-    /**
-     * Writes {@link Tuple}'s.
-     *
-     * @param tuples Tuples.
-     * @param schema Schema.
-     * @param out Out.
-     * @param keyOnly Key only.
-     */
-    public void writeTuples(
-            @NotNull Collection<Tuple> tuples,
-            ClientSchema schema,
-            ClientMessagePacker out,
-            boolean keyOnly
-    ) {
-        out.packIgniteUuid(id);
-        out.packInt(schema.version());
-        out.packInt(tuples.size());
-
-        for (var tuple : tuples) {
-            writeTuple(tuple, schema, out, keyOnly, true);
-        }
-    }
-
-    private static Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
-        var tuple = new ClientTuple(schema);
-
-        var colCnt = keyOnly ? schema.keyColumnCount() : schema.columns().length;
-
-        for (var i = 0; i < colCnt; i++) {
-            tuple.setInternal(i, in.unpackObject(schema.columns()[i].type()));
-        }
-
-        return tuple;
-    }
-
-    static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in, Tuple keyTuple) {
-        var tuple = new ClientTuple(schema);
-
-        for (var i = 0; i < schema.columns().length; i++) {
-            ClientColumn col = schema.columns()[i];
-
-            Object value = i < schema.keyColumnCount()
-                    ? keyTuple.value(col.name())
-                    : in.unpackObject(schema.columns()[i].type());
-
-            tuple.setInternal(i, value);
-        }
-
-        return tuple;
-    }
-
-    static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in) {
-        var keyColCnt = schema.keyColumnCount();
-        var colCnt = schema.columns().length;
-
-        var valTuple = new ClientTuple(schema, keyColCnt, schema.columns().length - 1);
-
-        for (var i = keyColCnt; i < colCnt; i++) {
-            ClientColumn col = schema.columns()[i];
-            Object val = in.unpackObject(col.type());
-
-            valTuple.setInternal(i - keyColCnt, val);
-        }
-
-        return valTuple;
-    }
-
-    static IgniteBiTuple<Tuple, Tuple> readKvTuple(ClientSchema schema, ClientMessageUnpacker in) {
-        var keyColCnt = schema.keyColumnCount();
-        var colCnt = schema.columns().length;
-
-        var keyTuple = new ClientTuple(schema, 0, keyColCnt - 1);
-        var valTuple = new ClientTuple(schema, keyColCnt, schema.columns().length - 1);
-
-        for (var i = 0; i < colCnt; i++) {
-            ClientColumn col = schema.columns()[i];
-            Object val = in.unpackObject(col.type());
-
-            if (i < keyColCnt) {
-                keyTuple.setInternal(i, val);
-            } else {
-                valTuple.setInternal(i - keyColCnt, val);
+            if (clientTx.channel() != out.clientChannel()) {
+                throw new IgniteClientException("Transaction context has been lost due to connection errors.");
             }
-        }
 
-        return new IgniteBiTuple<>(keyTuple, valTuple);
+            out.out().packLong(clientTx.id());
+        }
     }
 
-    /**
-     * Reads {@link Tuple} pairs.
-     *
-     * @param schema Schema.
-     * @param in In.
-     * @return Tuple pairs.
-     */
-    public Map<Tuple, Tuple> readKvTuplesNullable(ClientSchema schema, ClientMessageUnpacker in) {
-        var cnt = in.unpackInt();
-        Map<Tuple, Tuple> res = new HashMap<>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            var hasValue = in.unpackBoolean();
-
-            if (hasValue) {
-                var pair = readKvTuple(schema, in);
-
-                res.put(pair.get1(), pair.get2());
-            }
+    private static ClientTransaction getClientTx(@NotNull Transaction tx) {
+        if (!(tx instanceof ClientTransaction)) {
+            throw new IgniteClientException("Unsupported transaction implementation: '"
+                    + tx.getClass()
+                    + "'. Use IgniteClient.transactions() to start transactions.");
         }
 
-        return res;
-    }
-
-    Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
-        return readTuples(schema, in, false);
-    }
-
-    Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
-        var cnt = in.unpackInt();
-        var res = new ArrayList<Tuple>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            res.add(readTuple(schema, in, keyOnly));
-        }
-
-        return res;
-    }
-
-    Collection<Tuple> readTuplesNullable(ClientSchema schema, ClientMessageUnpacker in) {
-        var cnt = in.unpackInt();
-        var res = new ArrayList<Tuple>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            var tuple = in.unpackBoolean()
-                    ? readTuple(schema, in, false)
-                    : null;
-
-            res.add(tuple);
-        }
-
-        return res;
+        return (ClientTransaction) tx;
     }
 
     <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
-            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            BiConsumer<ClientSchema, PayloadOutputChannel> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader
     ) {
         return doSchemaOutInOpAsync(opCode, writer, reader, null);
@@ -479,26 +245,26 @@ public class ClientTable implements Table {
 
     <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
-            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            BiConsumer<ClientSchema, PayloadOutputChannel> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader,
             T defaultValue
     ) {
         return getLatestSchema()
                 .thenCompose(schema ->
                         ch.serviceAsync(opCode,
-                                w -> writer.accept(schema, w.out()),
+                                w -> writer.accept(schema, w),
                                 r -> readSchemaAndReadData(schema, r.in(), reader, defaultValue)))
                 .thenCompose(t -> loadSchemaAndReadData(t, reader));
     }
 
     <T> CompletableFuture<T> doSchemaOutOpAsync(
             int opCode,
-            BiConsumer<ClientSchema, ClientMessagePacker> writer,
+            BiConsumer<ClientSchema, PayloadOutputChannel> writer,
             Function<ClientMessageUnpacker, T> reader) {
         return getLatestSchema()
                 .thenCompose(schema ->
                         ch.serviceAsync(opCode,
-                                w -> writer.accept(schema, w.out()),
+                                w -> writer.accept(schema, w),
                                 r -> reader.apply(r.in())));
     }
 

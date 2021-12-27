@@ -18,10 +18,12 @@
 package org.apache.ignite.client.fakes;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;
+import org.apache.ignite.tx.Transaction;
 
 /**
  * Fake Ignite.
@@ -49,7 +51,22 @@ public class FakeIgnite implements Ignite {
     /** {@inheritDoc} */
     @Override
     public IgniteTransactions transactions() {
-        return null;
+        return new IgniteTransactions() {
+            @Override
+            public IgniteTransactions withTimeout(long timeout) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Transaction begin() {
+                return beginAsync().join();
+            }
+
+            @Override
+            public CompletableFuture<Transaction> beginAsync() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /**

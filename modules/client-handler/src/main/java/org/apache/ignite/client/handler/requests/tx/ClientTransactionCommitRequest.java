@@ -15,38 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.handler.requests.table;
-
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTx;
+package org.apache.ignite.client.handler.requests.tx;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.handler.ClientResourceRegistry;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.Transaction;
 
 /**
- * Client tuple upsert request.
+ * Client transaction commit request.
  */
-public class ClientTupleUpsertRequest {
+public class ClientTransactionCommitRequest {
     /**
      * Processes the request.
      *
      * @param in        Unpacker.
-     * @param tables    Ignite tables.
-     * @param resources Resource registry.
+     * @param resources Resources.
      * @return Future.
      */
-    public static CompletableFuture<Void> process(
-            ClientMessageUnpacker in,
-            IgniteTables tables,
-            ClientResourceRegistry resources
-    ) {
-        var table = readTable(in, tables);
-        var tx = readTx(in, resources);
-        var tuple = readTuple(in, table, false);
+    public static CompletableFuture<Void> process(ClientMessageUnpacker in, ClientResourceRegistry resources) {
+        long resourceId = in.unpackLong();
 
-        return table.recordView().upsertAsync(tx, tuple);
+        Transaction t = resources.remove(resourceId).get(Transaction.class);
+
+        return t.commitAsync();
     }
 }

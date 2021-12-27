@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.IgniteTransactions;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,11 +49,14 @@ public class ClientHandlerModule implements IgniteComponent {
     /** Ignite tables API. */
     private final IgniteTables igniteTables;
 
+    /** Ignite transactions API. */
+    private final IgniteTransactions igniteTransactions;
+
     /** Netty channel. */
     private volatile Channel channel;
 
     /** Processor. */
-    private final QueryProcessor processor;
+    private final QueryProcessor queryProcessor;
 
     /** Netty bootstrap factory. */
     private final NettyBootstrapFactory bootstrapFactory;
@@ -60,23 +64,26 @@ public class ClientHandlerModule implements IgniteComponent {
     /**
      * Constructor.
      *
-     * @param processor         Sql query processor.
-     * @param igniteTables      Ignite.
-     * @param registry          Configuration registry.
-     * @param bootstrapFactory  Bootstrap factory.
+     * @param queryProcessor     Sql query processor.
+     * @param igniteTables       Ignite.
+     * @param igniteTransactions Transactions.
+     * @param registry           Configuration registry.
+     * @param bootstrapFactory   Bootstrap factory.
      */
     public ClientHandlerModule(
-            QueryProcessor processor,
+            QueryProcessor queryProcessor,
             IgniteTables igniteTables,
+            IgniteTransactions igniteTransactions,
             ConfigurationRegistry registry,
             NettyBootstrapFactory bootstrapFactory) {
         assert igniteTables != null;
         assert registry != null;
-        assert processor != null;
+        assert queryProcessor != null;
         assert bootstrapFactory != null;
 
-        this.processor = processor;
+        this.queryProcessor = queryProcessor;
         this.igniteTables = igniteTables;
+        this.igniteTransactions = igniteTransactions;
         this.registry = registry;
         this.bootstrapFactory = bootstrapFactory;
     }
@@ -138,7 +145,7 @@ public class ClientHandlerModule implements IgniteComponent {
                     protected void initChannel(Channel ch) {
                         ch.pipeline().addLast(
                                 new ClientMessageDecoder(),
-                                new ClientInboundMessageHandler(igniteTables, processor));
+                                new ClientInboundMessageHandler(igniteTables, igniteTransactions, queryProcessor));
                     }
                 })
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout());

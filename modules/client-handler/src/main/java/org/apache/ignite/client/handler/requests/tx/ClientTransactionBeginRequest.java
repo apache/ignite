@@ -15,38 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.handler.requests.table;
-
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
-import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTx;
+package org.apache.ignite.client.handler.requests.tx;
 
 import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.client.handler.ClientResource;
 import org.apache.ignite.client.handler.ClientResourceRegistry;
-import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.tx.IgniteTransactions;
 
 /**
- * Client tuple upsert request.
+ * Client transaction begin request.
  */
-public class ClientTupleUpsertRequest {
+public class ClientTransactionBeginRequest {
     /**
      * Processes the request.
      *
-     * @param in        Unpacker.
-     * @param tables    Ignite tables.
-     * @param resources Resource registry.
+     * @param out          Packer.
+     * @param transactions Transactions.
+     * @param resources    Resources.
      * @return Future.
      */
     public static CompletableFuture<Void> process(
-            ClientMessageUnpacker in,
-            IgniteTables tables,
-            ClientResourceRegistry resources
-    ) {
-        var table = readTable(in, tables);
-        var tx = readTx(in, resources);
-        var tuple = readTuple(in, table, false);
-
-        return table.recordView().upsertAsync(tx, tuple);
+            ClientMessagePacker out,
+            IgniteTransactions transactions,
+            ClientResourceRegistry resources) {
+        return transactions.beginAsync().thenAccept(t -> out.packLong(resources.put(new ClientResource(t, t::rollback))));
     }
 }

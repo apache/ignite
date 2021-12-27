@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.client.handler.ClientResourceRegistry;
 import org.apache.ignite.internal.client.proto.ClientDataType;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
@@ -45,7 +46,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageTypeException;
 
 /**
@@ -378,6 +381,21 @@ class ClientTableCommon {
         } catch (NodeStoppingException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Reads transaction.
+     *
+     * @param in Unpacker.
+     * @param resources Resource registry.
+     * @return Transaction, if present, or null.
+     */
+    public static @Nullable Transaction readTx(ClientMessageUnpacker in, ClientResourceRegistry resources) {
+        if (in.tryUnpackNil()) {
+            return null;
+        }
+
+        return resources.get(in.unpackLong()).get(Transaction.class);
     }
 
     private static void readAndSetColumnValue(ClientMessageUnpacker unpacker, Tuple tuple, Column col) {

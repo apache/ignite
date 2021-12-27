@@ -70,7 +70,13 @@ public class TestServer implements AutoCloseable {
 
         bootstrapFactory.start();
 
-        module = new ClientHandlerModule(((FakeIgnite) ignite).queryEngine(), ignite.tables(), cfg, bootstrapFactory);
+        module = new ClientHandlerModule(
+                ((FakeIgnite) ignite).queryEngine(),
+                ignite.tables(),
+                ignite.transactions(),
+                cfg,
+                bootstrapFactory
+        );
 
         module.start();
     }

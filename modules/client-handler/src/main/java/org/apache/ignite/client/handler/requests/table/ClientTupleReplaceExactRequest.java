@@ -20,8 +20,10 @@ package org.apache.ignite.client.handler.requests.table;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readSchema;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
+import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTx;
 
 import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.client.handler.ClientResourceRegistry;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -33,22 +35,25 @@ public class ClientTupleReplaceExactRequest {
     /**
      * Processes the request.
      *
-     * @param in     Unpacker.
-     * @param out    Packer.
-     * @param tables Ignite tables.
+     * @param in        Unpacker.
+     * @param out       Packer.
+     * @param tables    Ignite tables.
+     * @param resources Resource registry.
      * @return Future.
      */
     public static CompletableFuture<Void> process(
             ClientMessageUnpacker in,
             ClientMessagePacker out,
-            IgniteTables tables
+            IgniteTables tables,
+            ClientResourceRegistry resources
     ) {
         var table = readTable(in, tables);
+        var tx = readTx(in, resources);
         var schema = readSchema(in, table);
 
         var oldTuple = readTuple(in, false, schema);
         var newTuple = readTuple(in, false, schema);
 
-        return table.recordView().replaceAsync(null, oldTuple, newTuple).thenAccept(out::packBoolean);
+        return table.recordView().replaceAsync(tx, oldTuple, newTuple).thenAccept(out::packBoolean);
     }
 }
