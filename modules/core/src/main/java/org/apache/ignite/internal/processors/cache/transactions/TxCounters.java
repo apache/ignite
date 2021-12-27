@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,7 +37,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
+    private volatile Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Counter tracking number of entries locked by tx. */
     private final AtomicInteger lockCntr = new AtomicInteger();
@@ -69,16 +68,6 @@ public class TxCounters {
      * @param updCntrs Final update counters.
      */
     public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = U.newHashMap(updCntrs.size());
-
-        for (PartitionUpdateCountersMessage cntr : updCntrs)
-            this.updCntrs.put(cntr.cacheId(), cntr);
-    }
-
-    /**
-     * @param updCntrs Final update counters.
-     */
-    public void updateCounters(Map<Integer, PartitionUpdateCountersMessage> updCntrs) {
         this.updCntrs = updCntrs;
     }
 
@@ -86,7 +75,7 @@ public class TxCounters {
      * @return Final update counters.
      */
     @Nullable public Collection<PartitionUpdateCountersMessage> updateCounters() {
-        return updCntrs == null ? null : updCntrs.values();
+        return updCntrs;
     }
 
     /**
@@ -164,11 +153,11 @@ public class TxCounters {
      * @return Counter or {@code null} if cache partition has not updates.
      */
     public Long generateNextCounter(int cacheId, int partId) {
-        PartitionUpdateCountersMessage msg = updCntrs.get(cacheId);
+        for (PartitionUpdateCountersMessage msg : updCntrs) {
+            if (msg.cacheId() == cacheId)
+                return msg.nextCounter(partId);
+        }
 
-        if (msg == null)
-            return null;
-
-        return msg.nextCounter(partId);
+        return null;
     }
 }

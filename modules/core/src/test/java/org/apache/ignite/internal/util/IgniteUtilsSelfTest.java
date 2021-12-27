@@ -1598,4 +1598,5 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0, U.hashToIndex(-8, 4));
         assertEquals(3, U.hashToIndex(-15, 4));
     }
+
 }
