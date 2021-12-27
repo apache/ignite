@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -447,7 +446,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
-            List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
+            Map<Integer, PartitionUpdateCountersMessage> cntrMsgs = new HashMap<>();
 
             for (Map.Entry<Integer, Map<Integer, AtomicLong>> record : counters.accumulatedUpdateCounters().entrySet()) {
                 int cacheId = record.getKey();
@@ -512,7 +511,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
 
                 if (msg.size() > 0)
-                    cntrMsgs.add(msg);
+                    cntrMsgs.put(cacheId, msg);
             }
 
             counters.updateCounters(cntrMsgs);

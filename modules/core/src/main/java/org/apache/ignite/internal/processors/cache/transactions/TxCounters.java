@@ -35,7 +35,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
 
     /** Per-partition update counter accumulator. */
-    private final Map<Long, AtomicLong> updCntrsAcc = new HashMap<>();
+    private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
     private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
@@ -76,6 +76,13 @@ public class TxCounters {
     }
 
     /**
+     * @param updCntrs Final update counters.
+     */
+    public void updateCounters(Map<Integer, PartitionUpdateCountersMessage> updCntrs) {
+        this.updCntrs = updCntrs;
+    }
+
+    /**
      * @return Final update counters.
      */
     @Nullable public Collection<PartitionUpdateCountersMessage> updateCounters() {
@@ -86,7 +93,7 @@ public class TxCounters {
      * @return Accumulated update counters.
      */
     public Map<Integer, Map<Integer, AtomicLong>> accumulatedUpdateCounters() {
-        return null; //TODO: FIXME updCntrsAcc;
+        return updCntrsAcc;
     }
 
     /**
@@ -94,12 +101,7 @@ public class TxCounters {
      * @param part Partition number.
      */
     public void incrementUpdateCounter(int cacheId, int part) {
-        long key = U.toLong(cacheId, part);
-
-        if (!updCntrsAcc.containsKey(key))
-            updCntrsAcc.put(key, new AtomicLong());
-
-        updCntrsAcc.get(key).incrementAndGet();
+        accumulator(updCntrsAcc, cacheId, part).incrementAndGet();
     }
 
     /**
@@ -107,12 +109,7 @@ public class TxCounters {
      * @param part Partition number.
      */
     public void decrementUpdateCounter(int cacheId, int part) {
-        long key = U.toLong(cacheId, part);
-
-        if (!updCntrsAcc.containsKey(key))
-            updCntrsAcc.put(key, new AtomicLong());
-
-        long acc = updCntrsAcc.get(key).decrementAndGet();
+        long acc = accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
 
         assert acc >= 0;
     }

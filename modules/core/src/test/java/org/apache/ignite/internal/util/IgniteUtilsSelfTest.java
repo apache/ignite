@@ -1459,7 +1459,29 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIntsToLong() {
-        long x = U.in
+        checkToLong(0, 0);
+        checkToLong(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        checkToLong(Integer.MIN_VALUE, Integer.MIN_VALUE);
+        checkToLong(0, Integer.MAX_VALUE);
+        checkToLong(0, Integer.MIN_VALUE);
+        checkToLong(0, Integer.MAX_VALUE);
+        checkToLong(0, Integer.MIN_VALUE);
+        checkToLong(1, -1);
+        checkToLong(-1, 1);
+        checkToLong(-1, -1);
+        checkToLong(1234567, -1234567);
+        checkToLong(-1234567, -1234567);
+        checkToLong(-1234567, 1234567);
+        checkToLong(1234567, 1234567);
+
+    }
+
+    /** */
+    private void checkToLong(int x, int y) {
+        long l = U.toLong(x, y);
+
+        assertEquals(x, U.fromLong1(l));
+        assertEquals(y, U.fromLong2(l));
     }
 
     /**
