@@ -50,7 +50,7 @@ public enum ProtocolBitmaskFeature {
     QRY_PARTITIONS_BATCH_SIZE(7),
 
     /** Handle of {@link ClientServices#serviceDescriptors()}. */
-    GET_SERVICE_DESCRIPTORS(8);
+    GET_SERVICE_DESCRIPTORS(9);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

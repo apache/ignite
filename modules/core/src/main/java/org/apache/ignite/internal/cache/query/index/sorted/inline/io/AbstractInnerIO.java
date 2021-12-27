@@ -41,6 +41,7 @@ public abstract class AbstractInnerIO extends BPlusInnerIO<IndexRow> implements 
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.link() != 0;
+        assertPageType(pageAddr);
 
         IORowHandler.store(pageAddr, off, row, storeMvccInfo());
     }
@@ -66,6 +67,8 @@ public abstract class AbstractInnerIO extends BPlusInnerIO<IndexRow> implements 
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
+        assertPageType(dstPageAddr);
+
         IORowHandler.store(dstPageAddr, offset(dstIdx), (InlineIO)srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
