@@ -123,7 +123,7 @@ namespace ignite
                  * @param id Async client ID.
                  * @param msg Received message.
                  */
-                virtual void OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg);
+                virtual void OnMessageReceived(uint64_t id, const network::DataBuffer& msg);
 
                 /**
                  * Channel handshake completion callback.

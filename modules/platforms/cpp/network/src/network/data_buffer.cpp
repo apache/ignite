@@ -29,8 +29,9 @@ namespace ignite
             // No-op.
         }
 
-        DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0, int32_t pos) :
+        DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0, int32_t pos, int32_t len) :
             position(pos),
+            length(len),
             data(data0)
         {
             // No-op.
@@ -38,7 +39,7 @@ namespace ignite
 
         int8_t DataBuffer::GetByte()
         {
-            if (IsConsumed())
+            if (IsEmpty())
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Codec error: Not enough data to read next byte");
 
             int8_t val = data.Get()->Data()[position];
@@ -72,7 +73,7 @@ namespace ignite
             return data.Get()->Length() - position;
         }
 
-        bool DataBuffer::IsConsumed() const
+        bool DataBuffer::IsEmpty() const
         {
             return GetSize() <= 0;
         }
@@ -88,6 +89,26 @@ namespace ignite
         void DataBuffer::Advance(int32_t val)
         {
             position += val;
+        }
+
+        impl::interop::InteropInputStream DataBuffer::GetInputStream() const
+        {
+            impl::interop::InteropInputStream stream = impl::interop::InteropInputStream(data.Get(), length);
+            stream.Position(position);
+
+            return stream;
+        }
+
+        DataBuffer DataBuffer::Clone() const
+        {
+            if (IsEmpty())
+                return DataBuffer();
+
+            impl::interop::SP_InteropMemory mem(new impl::interop::InteropUnpooledMemory(length));
+            mem.Get()->Length(length);
+            memcpy(mem.Get()->Data(), data.Get()->Data() + position, length);
+
+            return DataBuffer(mem, 0, length);
         }
     }
 }

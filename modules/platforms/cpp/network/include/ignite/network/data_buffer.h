@@ -19,12 +19,16 @@
 #define _IGNITE_NETWORK_DATA_BUFFER
 
 #include <ignite/impl/interop/interop_memory.h>
+#include <ignite/impl/interop/interop_input_stream.h>
 
 namespace ignite
 {
     namespace network
     {
-        class DataBuffer
+        /**
+         * Data buffer.
+         */
+        class IGNITE_IMPORT_EXPORT DataBuffer
         {
         public:
             /**
@@ -34,8 +38,12 @@ namespace ignite
 
             /**
              * Constructor.
+             *
+             * @param data Data.
+             * @param pos Start of data.
+             * @param len Length.
              */
-            DataBuffer(const impl::interop::SP_ConstInteropMemory& data, int32_t pos);
+            DataBuffer(const impl::interop::SP_ConstInteropMemory& data, int32_t pos, int32_t len);
 
             /**
              * Destructor.
@@ -72,7 +80,7 @@ namespace ignite
              *
              * @return @c true if consumed and @c false otherwise.
              */
-            bool IsConsumed() const;
+            bool IsEmpty() const;
 
             /**
              * Consume the whole buffer.
@@ -80,6 +88,19 @@ namespace ignite
              * @return Buffer containing consumed data.
              */
             DataBuffer ConsumeEntirely();
+
+            /**
+             * Get input stream for a data buffer.
+             * @return Stream set up to read data from buffer.
+             */
+            impl::interop::InteropInputStream GetInputStream() const;
+
+            /**
+             * Clone underlying buffer into a new one.
+             *
+             * @return New data buffer.
+             */
+            DataBuffer Clone() const;
 
         private:
             /**
@@ -92,8 +113,11 @@ namespace ignite
             /** Position in current data. */
             int32_t position;
 
+            /** Data length. */
+            int32_t length;
+
             /** Data */
-            const impl::interop::SP_ConstInteropMemory data;
+            impl::interop::SP_ConstInteropMemory data;
         };
     }
 }

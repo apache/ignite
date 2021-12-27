@@ -131,7 +131,7 @@ namespace ignite
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
             }
 
-            void DataRouter::OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg)
+            void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
             {
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnMessageReceived: " << id << ", " << msg.Get()->Length() << " bytes" << std::endl;
                 SP_DataChannel channel;

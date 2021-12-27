@@ -46,10 +46,10 @@ namespace
             // No-op.
         }
 
-        virtual bool OnNotification(interop::SP_InteropMemory msg)
+        virtual bool OnNotification(const network::DataBuffer& msg)
         {
             ComputeTaskFinishedNotification notification(res);
-            channel.Get()->DeserializeMessage(msg.Get(), notification);
+            channel.Get()->DeserializeMessage(msg, notification);
 
             if (notification.IsFailure())
             {

@@ -25,6 +25,7 @@
 #include <ignite/future.h>
 #include <ignite/ignite_error.h>
 #include <ignite/network/end_point.h>
+#include <ignite/network/data_buffer.h>
 
 namespace ignite
 {
@@ -71,7 +72,7 @@ namespace ignite
              * @param id Async client ID.
              * @param msg Received message.
              */
-            virtual void OnMessageReceived(uint64_t id, impl::interop::SP_InteropMemory msg) = 0;
+            virtual void OnMessageReceived(uint64_t id, const DataBuffer& msg) = 0;
         };
     }
 }

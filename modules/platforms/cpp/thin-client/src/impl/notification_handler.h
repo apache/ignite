@@ -49,7 +49,7 @@ namespace ignite
                  * @param msg Message.
                  * @return @c true if processing complete.
                  */
-                virtual bool OnNotification(interop::SP_InteropMemory msg) = 0;
+                virtual bool OnNotification(const network::DataBuffer& msg) = 0;
             };
 
             /** Shared pointer to notification handler. */
@@ -59,7 +59,7 @@ namespace ignite
             class NotificationHandlerHolder
             {
                 /** Message queue. */
-                typedef std::vector<interop::SP_InteropMemory> MessageQueue;
+                typedef std::vector<network::DataBuffer> MessageQueue;
 
             public:
                 /**
@@ -75,12 +75,12 @@ namespace ignite
                  *
                  * @param msg Notification message to process.
                  */
-                void ProcessNotification(interop::SP_InteropMemory msg)
+                void ProcessNotification(const network::DataBuffer& msg)
                 {
                     if (handler.IsValid())
                         handler.Get()->OnNotification(msg);
                     else
-                        queue.push_back(msg);
+                        queue.push_back(msg.Clone());
                 }
 
                 /**

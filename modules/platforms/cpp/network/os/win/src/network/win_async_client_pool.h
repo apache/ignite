@@ -40,6 +40,9 @@ namespace ignite
          */
         class WinAsyncClientPool : public AsyncClientPool
         {
+            /** Send and receive buffers size. */
+            enum { BUFFER_SIZE = 0x10000 };
+
         public:
             /**
              * Constructor

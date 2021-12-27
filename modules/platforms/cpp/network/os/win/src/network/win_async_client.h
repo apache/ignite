@@ -26,6 +26,7 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/interop/interop_memory.h>
 
+#include <ignite/network/async_handler.h>
 #include <ignite/network/codec.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/tcp_range.h>
@@ -101,9 +102,10 @@ namespace ignite
              * @param socket Socket.
              * @param addr Address.
              * @param range Range.
+             * @param bufLen Buffer length.
              * @param codecs Codecs.
              */
-            WinAsyncClient(SOCKET socket, const EndPoint& addr, const TcpRange& range,
+            WinAsyncClient(SOCKET socket, const EndPoint& addr, const TcpRange& range, int32_t bufLen,
                 const std::vector<SP_Codec>& codecs);
 
             /**
@@ -154,28 +156,11 @@ namespace ignite
             bool Send(const impl::interop::SP_InteropMemory& packet);
 
             /**
-             * Initiate receiving of packet of the specified length. Received data is written to the receive buffer.
+             * Initiate next receive of data.
              *
-             * @param bytes Packet size in bytes.
              * @return @c true on success.
              */
-            bool Receive(size_t bytes);
-
-            /**
-             * Initiate receiving of packet of the specified length. Received data is written to the receive buffer.
-             *
-             * @param bytes Packet size in bytes.
-             * @return @c true on success.
-             */
-            bool ReceiveAll(size_t bytes);
-
-            /**
-             * Gets received data as a single buffer.
-             * Clears client's receive buffer.
-             *
-             * @return Data received so far.
-             */
-            impl::interop::SP_InteropMemory DetachReceiveBuffer();
+            bool Receive();
 
             /**
              * Get client ID.
@@ -241,11 +226,27 @@ namespace ignite
              * Process received bytes.
              *
              * @param bytes Number of received bytes.
-             * @return New packet if received completely or null.
+             * @param handler Handler to use when new packet is received.
              */
-            impl::interop::SP_InteropMemory ProcessReceived(size_t bytes);
+            void ProcessReceived(size_t bytes, AsyncHandler& handler);
 
         private:
+            /**
+             * Dispatch buffer down to all codecs.
+             *
+             * @param buffer Buffer to dispatch.
+             * @param codecIdx Current codec ID.
+             * @param handler Async handler.
+             */
+            void Dispatch(DataBuffer& buffer, size_t codecIdx, AsyncHandler& handler);
+
+            /**
+             * Clears client's receive buffer.
+             *
+             * @return Data received so far.
+             */
+            void ClearReceiveBuffer();
+
             /**
              * Send next packet in queue.
              *
@@ -256,6 +257,9 @@ namespace ignite
 
             /** Codecs. */
             std::vector<SP_Codec> codecs;
+
+            /** Buffer length. */
+            int32_t bufLen;
 
             /** Client state. */
             State::Type state;

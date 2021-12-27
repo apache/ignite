@@ -32,9 +32,11 @@ namespace ignite
             SOCKET socket,
             const EndPoint &addr,
             const TcpRange& range,
+            int32_t bufLen,
             const std::vector<SP_Codec>& codecs
         ) :
             codecs(codecs),
+            bufLen(bufLen),
             state(State::CONNECTED),
             socket(socket),
             id(0),
@@ -149,24 +151,21 @@ namespace ignite
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
         }
 
-        bool WinAsyncClient::Receive(size_t bytes)
+        bool WinAsyncClient::Receive()
         {
             // We do not need locking on receive as we're always reading in a single thread at most.
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
 
             if (!recvPacket.IsValid())
-                DetachReceiveBuffer();
+                ClearReceiveBuffer();
 
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
-            if (packet0.Capacity() < packet0.Length() + bytes)
-                packet0.Reallocate(static_cast<int32_t>(packet0.Length() + bytes));
-
             DWORD flags = 0;
             WSABUF buffer;
-            buffer.buf = (CHAR*)(packet0.Data() + currentRecv.transferredSoFar);
-            buffer.len = (ULONG)bytes;
+            buffer.buf = (CHAR*)packet0.Data();
+            buffer.len = (ULONG)packet0.Length();
 
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " Recv from " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
@@ -174,76 +173,44 @@ namespace ignite
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
         }
 
-        bool WinAsyncClient::ReceiveAll(size_t bytes)
-        {
-            if (!recvPacket.IsValid())
-                DetachReceiveBuffer();
-
-            if (currentRecv.toTransfer != currentRecv.transferredSoFar)
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Internal error while receiving data from server: inconsistent buffer state");
-
-            currentRecv.toTransfer += bytes;
-
-            return Receive(bytes);
-        }
-
-        impl::interop::SP_InteropMemory WinAsyncClient::DetachReceiveBuffer()
+        void WinAsyncClient::ClearReceiveBuffer()
         {
             using namespace impl::interop;
 
-            // Allocating 4 KB for new packets
-            SP_InteropMemory packet = SP_InteropMemory(new InteropUnpooledMemory(4 * 1024));
-
-            packet.Swap(recvPacket);
+            if (!recvPacket.IsValid())
+                recvPacket = SP_InteropMemory(new InteropUnpooledMemory(bufLen));
 
             currentRecv.toTransfer = 0;
             currentRecv.transferredSoFar = 0;
-
-            return packet;
         }
 
-        impl::interop::SP_InteropMemory WinAsyncClient::ProcessReceived(size_t bytes)
+        void WinAsyncClient::ProcessReceived(size_t bytes, AsyncHandler& handler)
         {
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: currentRecv.transferredSoFar=" << currentRecv.transferredSoFar << std::endl;
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: currentRecv.toTransfer=" << currentRecv.toTransfer << std::endl;
 
-            currentRecv.transferredSoFar += bytes;
-
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
-            packet0.Length(static_cast<int32_t>(currentRecv.transferredSoFar));
+            DataBuffer in(recvPacket, 0, static_cast<int32_t>(bytes));
+            Dispatch(in, 0, handler);
 
-            if (currentRecv.transferredSoFar > currentRecv.toTransfer)
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Internal error while receiving data from server: received more data than expected");
+            Receive();
+        }
 
-            if (currentRecv.transferredSoFar < currentRecv.toTransfer)
+        void WinAsyncClient::Dispatch(DataBuffer& buffer, size_t codecIdx, AsyncHandler& handler)
+        {
+            if (buffer.IsEmpty())
+                return;
+
+            if (codecIdx >= codecs.size())
+                handler.OnMessageReceived(id, buffer);
+
+            SP_Codec& currentCodec = codecs[codecIdx];
+            while (!buffer.IsEmpty())
             {
-                size_t left = currentRecv.toTransfer - currentRecv.transferredSoFar;
-                Receive(left);
-
-                return impl::interop::SP_InteropMemory();
+                DataBuffer out = currentCodec.Get()->Decode(buffer);
+                Dispatch(out, codecIdx + 1, handler);
             }
-
-            if (packet0.Length() == IoOperation::PACKET_HEADER_SIZE)
-            {
-                int32_t msgLen = impl::binary::BinaryUtils::ReadInt32(packet0, 0);
-
-                if (msgLen < 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Error while processing packet from server: received packet size is negative");
-
-                ReceiveAll(static_cast<size_t>(msgLen));
-
-                return impl::interop::SP_InteropMemory();
-            }
-
-            impl::interop::SP_InteropMemory packet = DetachReceiveBuffer();
-
-            ReceiveAll(static_cast<size_t>(IoOperation::PACKET_HEADER_SIZE));
-
-            return packet;
         }
 
         bool WinAsyncClient::ProcessSent(size_t bytes)

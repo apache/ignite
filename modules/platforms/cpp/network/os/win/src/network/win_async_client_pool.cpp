@@ -134,7 +134,7 @@ namespace ignite
                     std::vector<SP_Codec> codecs;
                     clientPool.BuildCodecs(codecs);
 
-                    return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, codecs));
+                    return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, BUFFER_SIZE, codecs));
                 }
                 catch (const IgniteError& err)
                 {
@@ -180,7 +180,6 @@ namespace ignite
                 if (socket == INVALID_SOCKET)
                     utils::ThrowNetworkError("Socket creation failed: " + sockets::GetLastSocketErrorMessage());
 
-                enum { BUFFER_SIZE = 0x10000 };
                 sockets::TrySetSocketOptions(socket, BUFFER_SIZE, TRUE, TRUE, TRUE);
 
                 // Connect to server.
@@ -256,7 +255,7 @@ namespace ignite
                         clientPool.asyncHandler->OnConnectionSuccess(client->GetAddress(), client->GetId());
 
                     // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
-                    bool success = client->ReceiveAll(IoOperation::PACKET_HEADER_SIZE);
+                    bool success = client->Receive();
                     if (!success)
                     {
                         IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");
@@ -283,10 +282,7 @@ namespace ignite
                         case IoOperationKind::RECEIVE:
                         {
                             // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: processing recv " << bytesTransferred << std::endl;
-                            impl::interop::SP_InteropMemory packet = client->ProcessReceived(bytesTransferred);
-
-                            if (packet.IsValid() && clientPool.asyncHandler)
-                                clientPool.asyncHandler->OnMessageReceived(client->GetId(), packet);
+                            client->ProcessReceived(bytesTransferred, *clientPool.asyncHandler);
 
                             break;
                         }

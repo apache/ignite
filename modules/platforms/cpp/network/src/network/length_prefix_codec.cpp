@@ -58,7 +58,7 @@ namespace ignite
             Consume(data, PACKET_HEADER_SIZE + packetSize);
 
             if (packet.Get()->Length() == (PACKET_HEADER_SIZE + packetSize))
-                return DataBuffer(packet, 0);
+                return DataBuffer(packet, 0, packetSize);
 
             return DataBuffer();
         }

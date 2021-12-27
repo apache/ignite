@@ -69,7 +69,7 @@ namespace ignite
                 typedef std::set<ProtocolVersion> VersionSet;
 
                 /** Response map. */
-                typedef std::map< int64_t, common::Promise<interop::SP_InteropMemory> > ResponseMap;
+                typedef std::map< int64_t, common::Promise<network::DataBuffer> > ResponseMap;
 
                 /** Notification handler map. */
                 typedef std::map< int64_t, NotificationHandlerHolder > NotificationHandlerMap;
@@ -141,7 +141,7 @@ namespace ignite
                  *
                  * @param msg Message.
                  */
-                void ProcessMessage(interop::SP_InteropMemory msg);
+                void ProcessMessage(const network::DataBuffer& msg);
 
                 /**
                  * Register handler for the notification.
@@ -175,12 +175,12 @@ namespace ignite
                  * @param msg Message.
                  */
                 template<typename T>
-                void DeserializeMessage(interop::InteropMemory* data, T& msg)
+                void DeserializeMessage(const network::DataBuffer& data, T& msg)
                 {
-                    interop::InteropInputStream inStream(data);
+                    interop::InteropInputStream inStream(data.GetInputStream());
 
                     // Skipping size (4 bytes) and reqId (8 bytes)
-                    inStream.Position(12);
+                    inStream.Ignore(12);
 
                     binary::BinaryReaderImpl reader(&inStream);
 
@@ -224,7 +224,7 @@ namespace ignite
                  * @param req Request message.
                  * @throw IgniteError on error.
                  */
-                Future<interop::SP_InteropMemory> AsyncMessage(Request &req);
+                Future<network::DataBuffer> AsyncMessage(Request &req);
 
                 /**
                  * Perform handshake request.
@@ -249,7 +249,7 @@ namespace ignite
                  *
                  * @param msg Message.
                  */
-                void OnHandshakeResponse(interop::SP_InteropMemory msg);
+                void OnHandshakeResponse(const network::DataBuffer& msg);
 
                 /**
                  * Set channel error. To be used in async callbacks to invalidate channel.

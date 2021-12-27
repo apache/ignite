@@ -67,7 +67,8 @@ namespace ignite
                             startPos = stream->Position();
 
                             interop::InteropUnpooledMemory* streamMem =
-                                static_cast<interop::InteropUnpooledMemory*>(stream->GetMemory());
+                                const_cast<interop::InteropUnpooledMemory*>(
+                                    static_cast<const interop::InteropUnpooledMemory*>(stream->GetMemory()));
 
                             bool gotOwnership = streamMem->TryGetOwnership(mem);
 

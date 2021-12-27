@@ -86,7 +86,7 @@ namespace ignite
 
             void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
             {
-                Future<interop::SP_InteropMemory> rspFut = AsyncMessage(req);
+                Future<network::DataBuffer> rspFut = AsyncMessage(req);
 
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Waiting for response ReqID=" << req.GetId() << std::endl;
 
@@ -111,13 +111,11 @@ namespace ignite
                 }
 
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Getting value... " << std::endl;
-                interop::SP_InteropMemory mem = rspFut.GetValue();
+                interop::InteropInputStream inStream(rspFut.GetValue().GetInputStream());
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Got value" << std::endl;
 
-                interop::InteropInputStream inStream(mem.Get());
-
                 // Skipping size (4 bytes) and reqId (8 bytes)
-                inStream.Position(12);
+                inStream.Ignore(12);
 
                 binary::BinaryReaderImpl reader(&inStream);
 
@@ -148,7 +146,7 @@ namespace ignite
                 return reqId;
             }
 
-            Future<interop::SP_InteropMemory> DataChannel::AsyncMessage(Request &req)
+            Future<network::DataBuffer> DataChannel::AsyncMessage(Request &req)
             {
                 // Allocating 64 KB to decrease number of re-allocations.
                 enum { BUFFER_SIZE = 1024 * 64 };
@@ -160,7 +158,7 @@ namespace ignite
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " AsyncMessage: ReqId = " << reqId << std::endl;
 
                 common::concurrent::CsLockGuard lock1(responseMutex);
-                Future<interop::SP_InteropMemory> future = responseMap[reqId].GetFuture();
+                Future<network::DataBuffer> future = responseMap[reqId].GetFuture();
                 lock1.Reset();
 
                 bool success = asyncPool.Get()->Send(id, mem);
@@ -179,7 +177,7 @@ namespace ignite
                 return future;
             }
 
-            void DataChannel::ProcessMessage(interop::SP_InteropMemory msg)
+            void DataChannel::ProcessMessage(const network::DataBuffer& msg)
             {
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " ProcessMessage: " << id << std::endl;
                 if (!handshakePerformed)
@@ -190,9 +188,9 @@ namespace ignite
                     return;
                 }
 
-                interop::InteropInputStream inStream(msg.Get());
+                interop::InteropInputStream inStream(msg.GetInputStream());
 
-                inStream.Position(4);
+                inStream.Ignore(4);
 
                 int64_t rspId = inStream.ReadInt64();
                 int16_t flags = inStream.ReadInt16();
@@ -220,9 +218,9 @@ namespace ignite
 
                     if (it != responseMap.end())
                     {
-                        common::Promise<interop::SP_InteropMemory>& rsp = it->second;
+                        common::Promise<network::DataBuffer>& rsp = it->second;
 
-                        rsp.SetValue(msg);
+                        rsp.SetValue(std::auto_ptr<network::DataBuffer>(new network::DataBuffer(msg.Clone())));
 
                         responseMap.erase(rspId);
                     }
@@ -298,12 +296,12 @@ namespace ignite
                 return asyncPool.Get()->Send(id, mem);
             }
 
-            void DataChannel::OnHandshakeResponse(impl::interop::SP_InteropMemory msg)
+            void DataChannel::OnHandshakeResponse(const network::DataBuffer& msg)
             {
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnHandshakeResponse: " << id << std::endl;
-                interop::InteropInputStream inStream(msg.Get());
+                interop::InteropInputStream inStream(msg.GetInputStream());
 
-                inStream.Position(4);
+                inStream.Ignore(4);
 
                 binary::BinaryReaderImpl reader(&inStream);
 
