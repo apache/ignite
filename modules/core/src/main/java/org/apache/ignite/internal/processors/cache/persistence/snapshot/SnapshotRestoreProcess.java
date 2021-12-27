@@ -131,10 +131,7 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
-    /**
-     * Future to be completed when the cache restore process is complete. By default, this is a stub.
-     * When the process is started the future is recreated on the initiator node and passed to the user.
-     */
+    /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
     /** Current snapshot restore operation context (will be {@code null} when the operation is not running). */
