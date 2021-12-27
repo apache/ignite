@@ -27,41 +27,39 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static java.util.Collections.singletonList;
 
 /**
  * Sort aggregate integration test.
  */
-public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
+public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     public static final int ROWS = 103;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
+    /** */
+    @Override protected int nodeCount() {
+        return 2;
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        grid(0).cache("TEST").clear();
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(nodeCount());
 
-        super.afterTest();
+        client = startClientGrid("client");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        for (String cacheName : client.cacheNames())
+            client.cache(cacheName).clear();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         LinkedHashMap<String, Boolean> fields1 = new LinkedHashMap<>();
         fields1.put("COL0", false);
-        fields1.put("COL3", true);
 
         QueryEntity tbl1 = new QueryEntity()
             .setTableName("TBL1")
@@ -70,10 +68,6 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
             .setKeyFieldName("PK")
             .addQueryField("PK", Integer.class.getName(), null)
             .addQueryField("COL0", Integer.class.getName(), null)
-            .addQueryField("COL1", Integer.class.getName(), null)
-            .addQueryField("COL2", Integer.class.getName(), null)
-            .addQueryField("COL3", Integer.class.getName(), null)
-            .addQueryField("COL4", Integer.class.getName(), null)
             .setIndexes(Collections.singletonList(new QueryIndex(fields1, QueryIndexType.SORTED)));
 
         QueryEntity part = new QueryEntity()
@@ -103,23 +97,16 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
     public void mapReduceAggregate() throws InterruptedException {
         fillCacheTest(grid(0).cache("TEST"), ROWS);
 
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+        List<List<?>> cursors = executeSql("SELECT /*+ DISABLE_RULE('HashAggregateConverterRule') */" +
+            "SUM(val0), SUM(val1), grp0 FROM TEST " +
+            "GROUP BY grp0 " +
+            "HAVING SUM(val1) > 10");
 
-        List<FieldsQueryCursor<List<?>>> cursors = engine.query(
-            null,
-            "PUBLIC",
-            "SELECT /*+ DISABLE_RULE('HashAggregateConverterRule') */" +
-                "SUM(val0), SUM(val1), grp0 FROM TEST " +
-                "GROUP BY grp0 " +
-                "HAVING SUM(val1) > 10",
-            X.EMPTY_OBJECT_ARRAY
-        );
+        int res = cursors.size();
 
-        List<List<?>> res = cursors.get(0).getAll();
+        assertEquals(ROWS / 10, res);
 
-        assertEquals(ROWS / 10, res.size());
-
-        res.forEach(r -> {
+        cursors.forEach(r -> {
             long s0 = (Long)r.get(0);
             long s1 = (Long)r.get(1);
 
@@ -132,22 +119,9 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
     public void correctCollationsOnMapReduceSortAgg() throws InterruptedException {
         fillCacheTbl1(grid(0).cache("TEST"), ROWS);
 
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+        List<List<?>> cursors = executeSql("SELECT PK FROM TBL1 WHERE col0 IN (SELECT col0 FROM TBL1)");
 
-        List<FieldsQueryCursor<List<?>>> cursors = engine.query(
-            null,
-            "PUBLIC",
-            "SELECT /*+ DISABLE_RULE('HashAggregateConverterRule' ,'HashSingleAggregateConverterRule', " +
-                "'HashMapReduceAggregateConverterRule', 'LogicalTableScanConverterRule') */" +
-                "PK FROM TBL1 WHERE (col3 < 54) AND col3 IN (SELECT col0 FROM TBL1 WHERE col3 >= 55) AND col4 " +
-                "IN (SELECT col1 FROM TBL1 WHERE (((col0 IS NULL AND (col4 > 56 AND col0 = 45))) OR col3 BETWEEN 20 AND 60)) " +
-                "ORDER BY 1 DESC",
-            X.EMPTY_OBJECT_ARRAY
-        );
-
-        List<List<?>> res = cursors.get(0).getAll();
-
-        assertEquals(0, res.size());
+        assertEquals(ROWS, cursors.size());
     }
 
     /**
@@ -155,8 +129,6 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
      * @param rows Rows count.
      */
     private void fillCacheTbl1(IgniteCache c, int rows) throws InterruptedException {
-        c.clear();
-
         for (int i = 0; i < rows; ++i)
             c.put(i, new TestValTbl1(i));
 
@@ -168,8 +140,6 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
      * @param rows Rows count.
      */
     private void fillCacheTest(IgniteCache c, int rows) throws InterruptedException {
-        c.clear();
-
         for (int i = 0; i < rows; ++i)
             c.put(i, new TestValTest(i));
 
@@ -185,17 +155,8 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         int col1;
 
         /** */
-        int col2;
-
-        /** */
-        int col3;
-
-        /** */
-        int col4;
-
-        /** */
         TestValTbl1(int k) {
-            col0 = col1 = col2 = col3 = col4 = k;
+            col0 = col1 = k;
         }
     }
 

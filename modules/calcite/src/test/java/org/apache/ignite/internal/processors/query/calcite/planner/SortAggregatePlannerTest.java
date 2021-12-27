@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -63,6 +64,32 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
             ),
             RelOptPlanner.CannotPlanException.class,
             "There are not enough rules to produce a node with desired properties"
+        );
+    }
+
+    /** Checks if already sorted input exist and involved [Map|Reduce]SortAggregate */
+    @Test
+    public void testNoSortAppendingWithCorrectCollation() throws Exception {
+        RelFieldCollation coll = new RelFieldCollation(1, RelFieldCollation.Direction.DESCENDING);
+
+        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(coll), "val0Idx");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", tbl);
+
+        String sql = "SELECT ID FROM test WHERE VAL0 IN (SELECT VAL0 FROM test)";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule",
+            "LogicalTableScanConverterRule"
+        );
+
+        assertNull(
+            "Invalid plan\n" + RelOptUtil.toString(phys),
+            findFirstNode(phys, byClass(IgniteSort.class))
         );
     }
 

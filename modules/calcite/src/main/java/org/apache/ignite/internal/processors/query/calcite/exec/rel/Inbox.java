@@ -230,10 +230,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
             new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
 
         for (Buffer buf : buffers) {
-            if (buf.check() == State.READY)
+            State state = buf.check();
+
+            if (state == State.READY)
                 heap.offer(Pair.of(buf.peek(), buf));
             else
-                throw new AssertionError("Unexpected buffer state: " + buf.check());
+                throw new AssertionError("Unexpected buffer state: " + state);
         }
 
         inLoop = true;
