@@ -6,7 +6,7 @@ Apache Ignite In-Memory Distributed Database 2.12.0
 
 (!) WARNINGS:
 * The community accepted deprecate for removal in future releases: CacheMode#LOCAL, CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT, CacheConfiguration#rebalanceDelay.
-* GCE, AWS, Azure modules, and CacheSpringStoreSessionListener migrated to the Ignite extensions.
+* GCE, AWS, Azure modules, CacheSpringStoreSessionListener, and TcpDiscoveryZookeeperIpFinder migrated to the Ignite extensions.
 * The deprecated legacy service grid implementation will be removed in the next release.
 
 Ignite:
@@ -47,6 +47,7 @@ Ignite:
 * Fixed CacheObjectAdapter#put incorrect offset handling.
 * Fixed NPE on remote listener registration with null remote filter and security enabled.
 * Fixed PagesWriteSpeedBasedThrottle time to throttle calculation.
+* Fixed REST and Zookeeper module logging: use the slf4j facade to log third-party libraries.
 * Fixed REST request failure when cache node filter is used.
 * Fixed SSL read error.
 * Fixed StackOverflowError in case if exception suppressed with itself.
@@ -75,6 +76,8 @@ Ignite:
 * Fixed preconfigured service deployment authorization.
 * Fixed security context propagation for cache event.
 * Fixed security context propagation for compute tasks.
+* Fixed snapshot restore fails if metadata is missing on any baseline node.
+* Fixed snapshot restore on not all affinity partitions are physically present.
 * Fixed spontaneous SocketTimeoutException in server socket accept (JDK-8247750).
 * Fixed storage of physical pageIds in a DurableBackgroundCleanupIndexTreeTask.
 * Fixed the AssertionError when the JmxMetricExporterSpi unregister a filtered metric registry.
@@ -93,6 +96,7 @@ Ignite:
 * Improved logging of the peer class loading error message.
 * Improved the snapshot procedure logging.
 * Migrated CacheSpringStoreSessionListener to the Ignite extensions.
+* Migrated TcpDiscoveryZookeeperIpFinder to the Ignite extensions.
 * Migrated gce, aws, azure modules to the Ignite extensions.
 * Updated Bouncycastle version (fixes CVE-2020-15522, CVE-2020-0187, CVE-2020-26939).
 * Updated log4j version to 2.17 (fixes CVE-2021-44228, CVE-2021-45046, CVE-2021-45105).
