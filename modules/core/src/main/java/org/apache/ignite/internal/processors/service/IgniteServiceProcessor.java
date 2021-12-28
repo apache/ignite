@@ -136,7 +136,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** Base name domain for invocation metrics. */
-    static final String SERVICE_METRIC_REGISTRY = "Services";
+    private static final String SERVICE_METRIC_REGISTRY = "Services";
 
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration in milliseconds of ";
