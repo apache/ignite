@@ -305,7 +305,7 @@ namespace ignite
         }
 
         WinAsyncClientPool::WinAsyncClientPool() :
-            stopping(false),
+            stopping(true),
             asyncHandler(0),
             connectingThread(*this),
             workerThread(*this),

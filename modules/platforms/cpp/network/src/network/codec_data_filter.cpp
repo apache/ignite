@@ -36,6 +36,7 @@ namespace ignite
 
         bool CodecDataFilter::Send(uint64_t id, const DataBuffer &data)
         {
+            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " CodecDataFilter::Send " << id << std::endl;
             SP_Codec codec = FindCodec(id);
             if (!codec.IsValid())
                 return false;
@@ -48,18 +49,19 @@ namespace ignite
                 if (out.IsEmpty())
                     break;
 
-                DataFilterAdapter::OnMessageReceived(id, out);
+                DataFilterAdapter::Send(id, out);
             }
 
-            return false;
+            return true;
         }
 
         void CodecDataFilter::OnConnectionSuccess(const EndPoint &addr, uint64_t id)
         {
+            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " CodecDataFilter::OnConnectionSuccess " << id << std::endl;
             {
                 common::concurrent::CsLockGuard lock(codecsCs);
 
-                codecs->at(id) = codecFactory.Get()->Build();
+                codecs->insert(std::make_pair(id, codecFactory.Get()->Build()));
             }
 
             DataFilterAdapter::OnConnectionSuccess(addr, id);
@@ -67,6 +69,7 @@ namespace ignite
 
         void CodecDataFilter::OnConnectionClosed(uint64_t id, const IgniteError *err)
         {
+            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " CodecDataFilter::OnConnectionClosed " << id << std::endl;
             {
                 common::concurrent::CsLockGuard lock(codecsCs);
 
@@ -78,6 +81,8 @@ namespace ignite
 
         void CodecDataFilter::OnMessageReceived(uint64_t id, const DataBuffer &msg)
         {
+            // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " CodecDataFilter::OnMessageReceived " << id << std::endl;
+
             SP_Codec codec = FindCodec(id);
             if (!codec.IsValid())
                 return;
