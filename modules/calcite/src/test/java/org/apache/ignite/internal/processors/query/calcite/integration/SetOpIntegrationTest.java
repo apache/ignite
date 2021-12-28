@@ -417,4 +417,18 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(2, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
     }
+
+    /**
+     * Test that set op node can be rewinded.
+     */
+    @Test
+    public void testSetOpRewindability() {
+        executeSql("CREATE TABLE test(i INTEGER)");
+        executeSql("INSERT INTO test VALUES (1), (2)");
+
+        assertQuery("SELECT (SELECT test.i EXCEPT SELECT 0) FROM test")
+            .returns(1)
+            .returns(2)
+            .check();
+    }
 }
