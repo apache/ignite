@@ -55,7 +55,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     }
 
     /**
-     * Creates a TableScan.
+     * Creates a IndexScan.
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
@@ -70,7 +70,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     }
 
     /**
-     * Creates a TableScan.
+     * Creates a IndexScan.
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
@@ -93,7 +93,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     }
 
     /**
-     * Creates a TableScan.
+     * Creates a IndexScan.
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
