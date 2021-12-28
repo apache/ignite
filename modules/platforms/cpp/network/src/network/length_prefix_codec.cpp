@@ -45,6 +45,8 @@ namespace ignite
 
         DataBuffer LengthPrefixCodec::Decode(DataBuffer& data)
         {
+            // std::cout << "=============== " << "LengthPrefixCodec::Decode data: " << common::HexDump(data.GetData(), data.GetSize()) << std::endl;
+
             if (packet.IsValid() && packet.Get()->Length() == (PACKET_HEADER_SIZE + packetSize))
             {
                 packetSize = -1;
@@ -59,6 +61,7 @@ namespace ignite
                     return DataBuffer();
 
                 packetSize = impl::binary::BinaryUtils::ReadInt32(*packet.Get(), 0);
+                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " LengthPrefixCodec::Decode packetSize=" << packetSize << std::endl;
             }
 
             Consume(data, PACKET_HEADER_SIZE + packetSize);

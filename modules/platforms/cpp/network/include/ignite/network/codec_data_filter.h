@@ -30,13 +30,15 @@ namespace ignite
     namespace network
     {
         /**
-         * Data buffer.
+         * Data filter that uses codecs inside to encode/decode data.
          */
         class IGNITE_IMPORT_EXPORT CodecDataFilter : public DataFilterAdapter
         {
         public:
             /**
              * Constructor.
+             *
+             * @param factory Codec factory.
              */
             explicit CodecDataFilter(const SP_CodecFactory& factory);
 

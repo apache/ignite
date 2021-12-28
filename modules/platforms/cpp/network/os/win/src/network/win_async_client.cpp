@@ -133,7 +133,6 @@ namespace ignite
             buffer.buf = (CHAR*)packet0.GetData();
             buffer.len = packet0.GetSize();
 
-            // std::cout << "=============== " << "Packet: " << std::endl << common::HexDump(packet0.GetData(), packet0.GetSize());
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 

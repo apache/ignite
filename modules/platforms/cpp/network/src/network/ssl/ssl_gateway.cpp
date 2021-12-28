@@ -172,14 +172,21 @@ namespace ignite
 
                 functions.fpSSL_set_connect_state = LoadSslMethod("SSL_set_connect_state");
                 functions.fpSSL_connect = LoadSslMethod("SSL_connect");
+                functions.fpSSL_set_bio = LoadSslMethod("SSL_set_bio");
                 functions.fpSSL_get_error = LoadSslMethod("SSL_get_error");
                 functions.fpSSL_want = LoadSslMethod("SSL_want");
                 functions.fpSSL_write = LoadSslMethod("SSL_write");
                 functions.fpSSL_read = LoadSslMethod("SSL_read");
                 functions.fpSSL_pending = LoadSslMethod("SSL_pending");
+                functions.fpSSL_is_init_finished = LoadSslMethod("SSL_is_init_finished");
                 functions.fpSSL_get_fd = LoadSslMethod("SSL_get_fd");
+                functions.fpSSL_new = LoadSslMethod("SSL_new");
                 functions.fpSSL_free = LoadSslMethod("SSL_free");
+                functions.fpBIO_new = LoadSslMethod("BIO_new");
                 functions.fpBIO_new_ssl_connect = LoadSslMethod("BIO_new_ssl_connect");
+                functions.fpBIO_s_mem = LoadSslMethod("BIO_s_mem");
+                functions.fpBIO_read = LoadSslMethod("BIO_read");
+                functions.fpBIO_write = LoadSslMethod("BIO_write");
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
                 functions.fpX509_free = LoadSslMethod("X509_free");
@@ -495,6 +502,17 @@ namespace ignite
                 return fp(s);
             }
 
+            void SslGateway::SSL_set_bio_(SSL* s, BIO* rbio, BIO* wbio)
+            {
+                assert(functions.fpSSL_set_bio != 0);
+
+                typedef void (FuncType)(SSL*, BIO*, BIO*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_set_bio);
+
+                fp(s, rbio, wbio);
+            }
+
             int SslGateway::SSL_get_error_(const SSL* s, int ret)
             {
                 assert(functions.fpSSL_get_error != 0);
@@ -550,6 +568,17 @@ namespace ignite
                 return fp(ssl);
             }
 
+            int SslGateway::SSL_is_init_finished_(const SSL* ssl)
+            {
+                assert(functions.fpSSL_is_init_finished != 0);
+
+                typedef int (FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_is_init_finished);
+
+                return fp(ssl);
+            }
+
             int SslGateway::SSL_get_fd_(const SSL* ssl)
             {
                 assert(functions.fpSSL_get_fd != 0);
@@ -559,6 +588,17 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_get_fd);
 
                 return fp(ssl);
+            }
+
+            SSL* SslGateway::SSL_new_(SSL_CTX* ctx)
+            {
+                assert(functions.fpSSL_new != 0);
+
+                typedef SSL* (FuncType)(SSL_CTX*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_new);
+
+                return fp(ctx);
             }
 
             void SslGateway::SSL_free_(SSL* ssl)
@@ -619,6 +659,17 @@ namespace ignite
                 fp(a);
             }
 
+            BIO* SslGateway::BIO_new_(const BIO_METHOD* method)
+            {
+                assert(functions.fpBIO_new != 0);
+
+                typedef BIO*(FuncType)(const BIO_METHOD*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_new);
+
+                return fp(method);
+            }
+
             BIO* SslGateway::BIO_new_ssl_connect_(SSL_CTX* ctx)
             {
                 assert(functions.fpBIO_new_ssl_connect != 0);
@@ -639,6 +690,44 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_free_all);
 
                 fp(a);
+            }
+
+            const BIO_METHOD* SslGateway::BIO_s_mem_()
+            {
+                assert(functions.fpBIO_s_mem != 0);
+
+                typedef const BIO_METHOD* (FuncType)();
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_s_mem);
+
+                return fp();
+            }
+
+            int SslGateway::BIO_read_(BIO* b, void* data, int len)
+            {
+                assert(functions.fpBIO_read != 0);
+
+                typedef int (FuncType)(BIO*, void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_read);
+
+                return fp(b, data, len);
+            }
+
+            int SslGateway::BIO_write_(BIO* b, const void *data, int len)
+            {
+                assert(functions.fpBIO_write != 0);
+
+                typedef int (FuncType)(BIO*, const void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_write);
+
+                return fp(b, data, len);
+            }
+
+            int SslGateway::BIO_pending_(BIO* b)
+            {
+                return BIO_ctrl_(b, BIO_CTRL_PENDING, 0, NULL);
             }
 
             long SslGateway::BIO_ctrl_(BIO* bp, int cmd, long larg, void* parg)

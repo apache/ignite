@@ -26,6 +26,7 @@
 #include <ignite/network/length_prefix_codec.h>
 #include <ignite/network/network.h>
 #include <ignite/network/utils.h>
+#include <ignite/network/ssl/secure_data_filter.h>
 
 #include "impl/utility.h"
 #include "impl/data_router.h"
@@ -66,6 +67,19 @@ namespace ignite
                 if (!asyncPool.IsValid())
                 {
                     std::vector<network::SP_DataFilter> filters;
+
+                    if (config.GetSslMode() == SslMode::REQUIRE)
+                    {
+                        network::ssl::EnsureSslLoaded();
+
+                        network::ssl::SecureConfiguration sslCfg;
+                        sslCfg.caPath = config.GetSslCaFile();
+                        sslCfg.keyPath = config.GetSslKeyFile();
+                        sslCfg.certPath = config.GetSslCertFile();
+
+                        network::ssl::SP_SecureDataFilter secureFilter(new network::ssl::SecureDataFilter(sslCfg));
+                        filters.push_back(secureFilter);
+                    }
 
                     network::SP_CodecFactory codecFactory(new network::LengthPrefixCodecFactory());
                     network::SP_CodecDataFilter codecFilter(new network::CodecDataFilter(codecFactory));

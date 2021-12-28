@@ -29,6 +29,7 @@ set(SOURCES
         src/network/data_buffer.cpp
         src/network/length_prefix_codec.cpp
         src/network/network.cpp
+        src/network/ssl/secure_data_filter.cpp
         src/network/ssl/secure_socket_client.cpp
         src/network/ssl/ssl_gateway.cpp)
 
