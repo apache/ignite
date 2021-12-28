@@ -54,23 +54,11 @@ namespace ignite
          */
         struct IoOperation
         {
-            enum
-            {
-                /** Packet length header size. */
-                PACKET_HEADER_SIZE = 4
-            };
-
             /** Overlapped structure that should be passed to every IO operation. */
             WSAOVERLAPPED overlapped;
 
             /** Operation type. */
             IoOperationKind::Type kind;
-
-            /** Bytes to be transferred. */
-            size_t toTransfer;
-
-            /** Already transferred data in bytes. */
-            size_t transferredSoFar;
         };
 
         /**
@@ -103,10 +91,8 @@ namespace ignite
              * @param addr Address.
              * @param range Range.
              * @param bufLen Buffer length.
-             * @param codecs Codecs.
              */
-            WinAsyncClient(SOCKET socket, const EndPoint& addr, const TcpRange& range, int32_t bufLen,
-                const std::vector<SP_Codec>& codecs);
+            WinAsyncClient(SOCKET socket, const EndPoint& addr, const TcpRange& range, int32_t bufLen);
 
             /**
              * Destructor.
@@ -150,10 +136,10 @@ namespace ignite
             /**
              * Send packet using client.
              *
-             * @param packet Packet to send.
+             * @param data Data to send.
              * @return @c true on success.
              */
-            bool Send(const impl::interop::SP_InteropMemory& packet);
+            bool Send(const DataBuffer& data);
 
             /**
              * Initiate next receive of data.
@@ -179,7 +165,7 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-//                // std::cout << "=============== " << GetCurrentThreadId() << " WinAsyncClient: SetId " << id << ", " << socket << std::endl;
+                // std::cout << "=============== " << GetCurrentThreadId() << " WinAsyncClient: SetId " << id << ", " << socket << std::endl;
 
                 this->id = id;
             }
@@ -231,14 +217,6 @@ namespace ignite
             void ProcessReceived(size_t bytes, AsyncHandler& handler);
 
         private:
-            /**
-             * Dispatch buffer down to all codecs.
-             *
-             * @param buffer Buffer to dispatch.
-             * @param codecIdx Current codec ID.
-             * @param handler Async handler.
-             */
-            void Dispatch(DataBuffer& buffer, size_t codecIdx, AsyncHandler& handler);
 
             /**
              * Clears client's receive buffer.
@@ -254,9 +232,6 @@ namespace ignite
              * @return @c true on success.
              */
             bool SendNextPacketLocked();
-
-            /** Codecs. */
-            std::vector<SP_Codec> codecs;
 
             /** Buffer length. */
             int32_t bufLen;
@@ -280,7 +255,7 @@ namespace ignite
             IoOperation currentSend;
 
             /** Packets that should be sent. */
-            std::deque<impl::interop::SP_InteropMemory> sendPackets;
+            std::deque<DataBuffer> sendPackets;
 
             /** Send critical section. */
             common::concurrent::CriticalSection sendCs;

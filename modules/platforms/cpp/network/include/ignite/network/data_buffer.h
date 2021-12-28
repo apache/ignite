@@ -40,6 +40,13 @@ namespace ignite
              * Constructor.
              *
              * @param data Data.
+             */
+            explicit DataBuffer(const impl::interop::SP_ConstInteropMemory& data);
+
+            /**
+             * Constructor.
+             *
+             * @param data Data.
              * @param pos Start of data.
              * @param len Length.
              */
@@ -67,6 +74,13 @@ namespace ignite
              * @param size Number of bytes to copy.
              */
             void GetData(int8_t* dst, int32_t size);
+
+            /**
+             * Get data pointer.
+             *
+             * @return Data.
+             */
+            const int8_t* GetData() const;
 
             /**
              * Get packet size.
@@ -101,6 +115,13 @@ namespace ignite
              * @return New data buffer.
              */
             DataBuffer Clone() const;
+
+            /**
+             * Skip specified number of bytes.
+             *
+             * @param bytes Bytes to skip.
+             */
+            void Skip(int32_t bytes);
 
         private:
             /**

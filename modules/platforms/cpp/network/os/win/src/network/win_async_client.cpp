@@ -28,14 +28,7 @@ namespace ignite
 {
     namespace network
     {
-        WinAsyncClient::WinAsyncClient(
-            SOCKET socket,
-            const EndPoint &addr,
-            const TcpRange& range,
-            int32_t bufLen,
-            const std::vector<SP_Codec>& codecs
-        ) :
-            codecs(codecs),
+        WinAsyncClient::WinAsyncClient(SOCKET socket, const EndPoint &addr, const TcpRange& range, int32_t bufLen) :
             bufLen(bufLen),
             state(State::CONNECTED),
             socket(socket),
@@ -113,14 +106,14 @@ namespace ignite
             return res;
         }
 
-        bool WinAsyncClient::Send(const impl::interop::SP_InteropMemory& packet)
+        bool WinAsyncClient::Send(const DataBuffer& data)
         {
             common::concurrent::CsLockGuard lock(sendCs);
 
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
 
-            sendPackets.push_back(packet);
+            sendPackets.push_back(data);
 
             if (sendPackets.size() > 1)
                 return true;
@@ -133,18 +126,14 @@ namespace ignite
             if (sendPackets.empty())
                 return true;
 
-            const impl::interop::InteropMemory& packet0 = *sendPackets.front().Get();
+            const DataBuffer& packet0 = sendPackets.front();
             DWORD flags = 0;
 
             WSABUF buffer;
-            buffer.buf = (CHAR*)packet0.Data();
-            buffer.len = packet0.Length();
-
-            currentSend.toTransfer = packet0.Length();
-            currentSend.transferredSoFar = 0;
+            buffer.buf = (CHAR*)packet0.GetData();
+            buffer.len = packet0.GetSize();
 
             // std::cout << "=============== " << "Packet: " << std::endl << common::HexDump(packet0.Data(), packet0.Length());
-
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 
@@ -154,6 +143,7 @@ namespace ignite
         bool WinAsyncClient::Receive()
         {
             // We do not need locking on receive as we're always reading in a single thread at most.
+            // If this ever changes we'd need to add mutex locking here.
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
 
@@ -182,56 +172,30 @@ namespace ignite
                 recvPacket = SP_InteropMemory(new InteropUnpooledMemory(bufLen));
                 recvPacket.Get()->Length(bufLen);
             }
-
-            currentRecv.toTransfer = 0;
-            currentRecv.transferredSoFar = 0;
         }
 
         void WinAsyncClient::ProcessReceived(size_t bytes, AsyncHandler& handler)
         {
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: bytes=" << bytes << std::endl;
-
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
             DataBuffer in(recvPacket, 0, static_cast<int32_t>(bytes));
-            Dispatch(in, 0, handler);
+
+            handler.OnMessageReceived(id, in);
 
             Receive();
-        }
-
-        void WinAsyncClient::Dispatch(DataBuffer& buffer, size_t codecIdx, AsyncHandler& handler)
-        {
-            if (buffer.IsEmpty())
-                return;
-
-            if (codecIdx >= codecs.size())
-            {
-                handler.OnMessageReceived(id, buffer);
-                return;
-            }
-
-            SP_Codec& currentCodec = codecs[codecIdx];
-            while (!buffer.IsEmpty())
-            {
-                DataBuffer out = currentCodec.Get()->Decode(buffer);
-                Dispatch(out, codecIdx + 1, handler);
-            }
         }
 
         bool WinAsyncClient::ProcessSent(size_t bytes)
         {
             common::concurrent::CsLockGuard lock(sendCs);
 
-            currentSend.transferredSoFar += bytes;
+            DataBuffer& front = sendPackets.front();
 
-            if (currentSend.transferredSoFar > currentSend.toTransfer)
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Internal error while sending data to server: sent more data than expected");
+            front.Skip(static_cast<int32_t>(bytes));
 
-            if (currentSend.transferredSoFar < currentSend.toTransfer)
-                return true;
-
-            sendPackets.pop_front();
+            if (front.IsEmpty())
+                sendPackets.pop_front();
 
             return SendNextPacketLocked();
         }

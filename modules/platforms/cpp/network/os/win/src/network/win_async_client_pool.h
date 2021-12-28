@@ -46,6 +46,8 @@ namespace ignite
         public:
             /**
              * Constructor
+             *
+             * @param handler Upper level event handler.
              */
             WinAsyncClientPool();
 
@@ -55,30 +57,16 @@ namespace ignite
             virtual ~WinAsyncClientPool();
 
             /**
-             * Add codec factories.
-             * Should be called before client pool is started.
-             *
-             * Order of codecs matter.
-             * Data flow:
-             * On recv: socket => codecs[0] => ... => codecs.back() => application.
-             * On send: application => codecs.back() => ... => codecs[0] => socket.
-             *
-             * @param codecs Codec factories.
-             */
-            virtual void AddCodecs(const std::vector<SP_CodecFactory>& codecs);
-
-            /**
              * Start internal thread that establishes connections to provided addresses and asynchronously sends and
-             * receives messages from them. Function returns either when when thread is started and first connection is
-             * established or failure happens.
+             * receives messages from them. Function returns either when thread is started and first connection is
+             * established or failure happened.
              *
              * @param addrs Addresses to connect to.
-             * @param handler Async event handler.
              * @param connLimit Connection upper limit. Zero means limit is disabled.
              *
              * @throw IgniteError on error.
              */
-            virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit);
+            virtual void Start(const std::vector<TcpRange>& addrs, uint32_t connLimit);
 
             /**
              * Close all established connections and stops handling thread.
@@ -86,15 +74,22 @@ namespace ignite
             virtual void Stop();
 
             /**
+             * Set handler.
+             *
+             * @param handler Handler to set.
+             */
+            virtual void SetHandler(AsyncHandler *handler);
+
+            /**
              * Send data to specific established connection.
              *
              * @param id Client ID.
-             * @param mem Data to be sent.
+             * @param data Data to be sent.
              * @return @c true if connection is present and @c false otherwise.
              *
              * @throw IgniteError on error.
              */
-            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem);
+            virtual bool Send(uint64_t id, const DataBuffer& data);
 
             /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
@@ -291,11 +286,6 @@ namespace ignite
 
             /** Client mapping EndPoint -> client */
             std::map<EndPoint, SP_WinAsyncClient> clientAddrMap;
-
-            /** Codec factories. */
-            std::vector<SP_CodecFactory> factories;
-
-            void BuildCodecs(std::vector<SP_Codec> &codecs);
         };
 
         // Type alias

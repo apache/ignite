@@ -131,10 +131,7 @@ namespace ignite
                 {
                     SOCKET socket = TryConnect(addr);
 
-                    std::vector<SP_Codec> codecs;
-                    clientPool.BuildCodecs(codecs);
-
-                    return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, BUFFER_SIZE, codecs));
+                    return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, BUFFER_SIZE));
                 }
                 catch (const IgniteError& err)
                 {
@@ -328,20 +325,14 @@ namespace ignite
             InternalStop();
         }
 
-        void WinAsyncClientPool::AddCodecs(const std::vector<SP_CodecFactory>& codecs)
+        void WinAsyncClientPool::Start(
+            const std::vector<TcpRange>& addrs,
+            uint32_t connLimit)
         {
-            if (asyncHandler)
+            if (!stopping)
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Client pool is already started");
 
-            factories = codecs;
-        }
-
-        void WinAsyncClientPool::Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit)
-        {
             stopping = false;
-
-            if (asyncHandler)
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Client pool is already started");
 
             sockets::InitWsa();
 
@@ -350,7 +341,6 @@ namespace ignite
                 ThrowSystemError("Failed to create IOCP instance");
 
             nonConnected = addrs;
-            asyncHandler = &handler;
             connectionLimit = connLimit;
 
             try
@@ -374,7 +364,7 @@ namespace ignite
         void WinAsyncClientPool::InternalStop()
         {
             stopping = true;
-            asyncHandler = 0;
+            asyncHandler = 0; // TODO: Remove this or make secure.
             connectingThread.Stop();
 
             {
@@ -434,7 +424,7 @@ namespace ignite
             return id;
         }
 
-        bool WinAsyncClientPool::Send(uint64_t id, impl::interop::SP_InteropMemory mem)
+        bool WinAsyncClientPool::Send(uint64_t id, const DataBuffer& data)
         {
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " Send: " << id << std::endl;
             SP_WinAsyncClient client;
@@ -450,7 +440,7 @@ namespace ignite
             }
 
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " Send: Client found" << std::endl;
-            return client.Get()->Send(mem);
+            return client.Get()->Send(data);
         }
 
         bool WinAsyncClientPool::CloseAndRelease(uint64_t id)
@@ -552,13 +542,9 @@ namespace ignite
             return it->second;
         }
 
-        void WinAsyncClientPool::BuildCodecs(std::vector<SP_Codec>& codecs)
+        void WinAsyncClientPool::SetHandler(AsyncHandler *handler)
         {
-            codecs.clear();
-            codecs.reserve(factories.size());
-
-            for (std::vector<SP_CodecFactory>::iterator it = factories.begin(); it != factories.end(); ++it)
-                codecs.push_back(it->Get()->Build());
+            asyncHandler = handler;
         }
     }
 }

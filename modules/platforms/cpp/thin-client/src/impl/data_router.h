@@ -126,6 +126,13 @@ namespace ignite
                 virtual void OnMessageReceived(uint64_t id, const network::DataBuffer& msg);
 
                 /**
+                 * Callback that called when message is sent.
+                 *
+                 * @param id Async client ID.
+                 */
+                virtual void OnMessageSent(uint64_t id);
+
+                /**
                  * Channel handshake completion callback.
                  *
                  * @param id Channel ID.

@@ -64,17 +64,17 @@ namespace ignite
 
                 if (!asyncPool.IsValid())
                 {
-                    asyncPool = network::MakeAsyncClientPool();
+                    std::vector<network::SP_DataFilter> filters;
+
+                    asyncPool = network::MakeAsyncClientPool(*this, filters);
 
                     if (!asyncPool.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create async connection pool");
+
+                    asyncPool.Get()->SetHandler(this);
                 }
 
-                std::vector<network::SP_CodecFactory> codecs;
-                codecs.push_back(network::SP_CodecFactory(new network::LengthPrefixCodecFactory()));
-
-                asyncPool.Get()->AddCodecs(codecs);
-                asyncPool.Get()->Start(ranges, *this, config.GetConnectionsLimit());
+                asyncPool.Get()->Start(ranges, config.GetConnectionsLimit());
 
                 bool connected = EnsureConnected(config.GetConnectionTimeout());
 
@@ -131,23 +131,6 @@ namespace ignite
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
             }
 
-            void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
-            {
-                // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnMessageReceived: " << id << ", " << msg.GetSize() << " bytes" << std::endl;
-                SP_DataChannel channel;
-
-                {
-                    common::concurrent::CsLockGuard lock(channelsMutex);
-
-                    ChannelsIdMap::iterator it = channels.find(id);
-                    if (it != channels.end())
-                        channel = it->second;
-                }
-
-                if (channel.IsValid())
-                    channel.Get()->ProcessMessage(msg);
-            }
-
             void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnConnectionClosed: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
@@ -165,6 +148,28 @@ namespace ignite
                 channel = it->second;
                 InvalidateChannel(channel);
                 channel.Get()->FailPendingRequests(err);
+            }
+
+            void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
+            {
+                // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnMessageReceived: " << id << ", " << msg.GetSize() << " bytes" << std::endl;
+                SP_DataChannel channel;
+
+                {
+                    common::concurrent::CsLockGuard lock(channelsMutex);
+
+                    ChannelsIdMap::iterator it = channels.find(id);
+                    if (it != channels.end())
+                        channel = it->second;
+                }
+
+                if (channel.IsValid())
+                    channel.Get()->ProcessMessage(msg);
+            }
+
+            void DataRouter::OnMessageSent(uint64_t id)
+            {
+                // No-op.
             }
 
             void DataRouter::OnHandshakeSuccess(uint64_t id)

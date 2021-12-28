@@ -26,7 +26,8 @@
 #include <ignite/impl/interop/interop_memory.h>
 
 #include <ignite/network/async_handler.h>
-#include <ignite/network/codec.h>
+#include <ignite/network/data_filter.h>
+#include <ignite/network/data_sink.h>
 #include <ignite/network/tcp_range.h>
 
 namespace ignite
@@ -36,7 +37,7 @@ namespace ignite
         /**
          * Asynchronous client pool.
          */
-        class AsyncClientPool
+        class IGNITE_IMPORT_EXPORT AsyncClientPool : public DataSink
         {
         public:
             /**
@@ -48,31 +49,16 @@ namespace ignite
             }
 
             /**
-             * Add codec factories.
-             * Should be called before client pool is started.
-             *
-             * Order of codecs matter.
-             * Data flow:
-             * On recv: socket => codecs[0] => ... => codecs.back() => application.
-             * On send: application => codecs.back() => ... => codecs[0] => socket.
-             *
-             * @param codecs Codec factories.
-             */
-            virtual void AddCodecs(const std::vector<SP_CodecFactory>& codecs) = 0;
-
-            /**
              * Start internal thread that establishes connections to provided addresses and asynchronously sends and
              * receives messages from them. Function returns either when thread is started and first connection is
              * established or failure happened.
              *
              * @param addrs Addresses to connect to.
-             * @param handler Async event handler.
-             * @param timeout Connection establishment timeout.
              * @param connLimit Connection upper limit. Zero means limit is disabled.
              *
              * @throw IgniteError on error.
              */
-            virtual void Start(const std::vector<TcpRange>& addrs, AsyncHandler& handler, uint32_t connLimit) = 0;
+            virtual void Start(const std::vector<TcpRange>& addrs, uint32_t connLimit) = 0;
 
             /**
              * Close all established connections and stops handling threads.
@@ -80,23 +66,11 @@ namespace ignite
             virtual void Stop() = 0;
 
             /**
-             * Send data to specific established connection.
+             * Set handler.
              *
-             * @param id Client ID.
-             * @param mem Data to be sent.
-             * @return @c true if connection is present and @c false otherwise.
-             *
-             * @throw IgniteError on error.
+             * @param handler Handler to set.
              */
-            virtual bool Send(uint64_t id, impl::interop::SP_InteropMemory mem) = 0;
-
-            /**
-             * Closes specified connection if it's established. Connection to the specified address is planned for
-             * re-connect. Error is reported to handler.
-             *
-             * @param id Client ID.
-             */
-            virtual void Close(uint64_t id, const IgniteError* err) = 0;
+            virtual void SetHandler(AsyncHandler *handler) = 0;
         };
 
         // Type alias

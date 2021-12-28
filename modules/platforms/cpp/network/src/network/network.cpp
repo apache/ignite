@@ -25,6 +25,7 @@
 
 #include <ignite/network/network.h>
 
+#include "network/async_client_pool_adapter.h"
 #include "network/ssl/ssl_gateway.h"
 #include "network/ssl/secure_socket_client.h"
 #include "network/tcp_socket_client.h"
@@ -54,9 +55,19 @@ namespace ignite
             return new TcpSocketClient;
         }
 
-        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool()
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool(
+            AsyncHandler& handler,
+            const std::vector<SP_DataFilter>& filters)
         {
-            return SP_AsyncClientPool(new WinAsyncClientPool);
+            SP_AsyncClientPool platformPool = SP_AsyncClientPool(
+#ifdef WIN32
+                new WinAsyncClientPool()
+#else // Other. Assume Linux
+                // TODO: Implement for Linux
+#endif
+            );
+
+            return SP_AsyncClientPool(new AsyncClientPoolAdapter(filters, platformPool));
         }
     }
 }

@@ -20,9 +20,6 @@
 
 #include <stdint.h>
 
-#include <vector>
-
-#include <ignite/future.h>
 #include <ignite/ignite_error.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/data_buffer.h>
@@ -31,7 +28,10 @@ namespace ignite
 {
     namespace network
     {
-        class AsyncHandler
+        /**
+         * Asynchronous events handler.
+         */
+        class IGNITE_IMPORT_EXPORT AsyncHandler
         {
         public:
             /**
@@ -73,6 +73,13 @@ namespace ignite
              * @param msg Received message.
              */
             virtual void OnMessageReceived(uint64_t id, const DataBuffer& msg) = 0;
+
+            /**
+             * Callback that called when message is sent.
+             *
+             * @param id Async client ID.
+             */
+            virtual void OnMessageSent(uint64_t id) = 0;
         };
     }
 }

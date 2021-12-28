@@ -60,9 +60,13 @@ namespace ignite
 
         /**
          * Make asynchronous client pool.
+         *
+         * @param handler Event handler.
+         * @param filters Filters.
          * @return Async client pool.
          */
-        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool();
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool(AsyncHandler& handler,
+            const std::vector<SP_DataFilter>& filters);
     }
 }
 

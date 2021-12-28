@@ -24,7 +24,16 @@ namespace ignite
     {
         DataBuffer::DataBuffer() :
             position(0),
+            length(0),
             data()
+        {
+            // No-op.
+        }
+
+        DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0) :
+            position(0),
+            length(data0.Get()->Length()),
+            data(data0)
         {
             // No-op.
         }
@@ -63,6 +72,11 @@ namespace ignite
 
             memcpy(dst, data.Get()->Data() + position, size);
             Advance(size);
+        }
+
+        const int8_t *DataBuffer::GetData() const
+        {
+            return data.Get()->Data() + position;
         }
 
         int32_t DataBuffer::GetSize() const
@@ -109,6 +123,13 @@ namespace ignite
             memcpy(mem.Get()->Data(), data.Get()->Data() + position, length);
 
             return DataBuffer(mem, 0, length);
+        }
+
+        void DataBuffer::Skip(int32_t bytes)
+        {
+            int32_t toSkip = bytes < GetSize() ? bytes : GetSize();
+
+            Advance(toSkip);
         }
     }
 }

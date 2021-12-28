@@ -161,7 +161,8 @@ namespace ignite
                 Future<network::DataBuffer> future = responseMap[reqId].GetFuture();
                 lock1.Reset();
 
-                bool success = asyncPool.Get()->Send(id, mem);
+                network::DataBuffer buffer(mem);
+                bool success = asyncPool.Get()->Send(id, buffer);
 
                 if (!success)
                 {
@@ -293,7 +294,8 @@ namespace ignite
 
                 outStream.Synchronize();
 
-                return asyncPool.Get()->Send(id, mem);
+                network::DataBuffer buffer(mem);
+                return asyncPool.Get()->Send(id, buffer);
             }
 
             void DataChannel::OnHandshakeResponse(const network::DataBuffer& msg)
