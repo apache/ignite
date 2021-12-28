@@ -471,7 +471,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
                 break;
 
-            case MAJORITY:
+            case RELATIVE_MAJORITY:
                 fixed = Integer.MIN_VALUE; // Should never be returned.
 
                 Map<T2<Integer, GridCacheVersion>, Integer> counts = new HashMap<>();

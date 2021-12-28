@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 
 /**
  * Read repair strategies.
@@ -25,16 +26,35 @@ import org.apache.ignite.IgniteCache;
  * @see IgniteCache#withReadRepair(ReadRepairStrategy) for details.
  */
 public enum ReadRepairStrategy {
-    /** Last write wins. */
+    /** Last write (the newest entry) wins.
+     * <p>
+     * May cause {@link IgniteException} when fix is impossible (unable to detect the newest entry):
+     * <ul>
+     * <li>Null(s) found as well as non-null values for the save key.
+     * <p>
+     * Null (missed entry) has no version, so, it can not be compared with the versioned entry.</li>
+     * <li>Entries with the same version have different values.</li>
+     * </ul>
+     */
     LWW("LWW"),
 
     /** Value from the primary node wins. */
     PRIMARY("PRIMARY"),
 
-    /** Majority wins. */
-    MAJORITY("MAJORITY"),
+    /** The relative majority, any value found more times than any other wins.
+     * <p>
+     * Works for an even number of copies (which is typical of Ignite) instead of an absolute majority.
+     * <p>
+     * May cause {@link IgniteException} when unable to detect value found more times than any other.
+     * <p>
+     * For example, when we have 5 copies and value `A` found twice, but `X`,`Y` and `Z` only once, `A` wins.
+     * But, when `A` found twice, as well as `B`, and `X` only once, the strategy unable to define the winner.
+     * <p>
+     * When we have 4 copies any value found two or more times, when others are found only once, is the winner.
+     */
+    RELATIVE_MAJORITY("RELATIVE_MAJORITY"),
 
-    /** Inconsistent entry will be removed. */
+    /** Inconsistent entries will be removed. */
     REMOVE("REMOVE"),
 
     /** Only check will be performed. */

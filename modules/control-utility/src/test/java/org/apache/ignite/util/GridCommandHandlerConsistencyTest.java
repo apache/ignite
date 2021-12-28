@@ -252,7 +252,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             case CHECK_ONLY:
                 return 0;
 
-            case MAJORITY:
+            case RELATIVE_MAJORITY:
             case LWW:
                 return null; // Who knows :)
 

@@ -106,7 +106,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                     fixWithLww(fixedMap, e.keys());
                 else if (strategy == ReadRepairStrategy.PRIMARY)
                     fixWithPrimary(fixedMap, e.keys());
-                else if (strategy == ReadRepairStrategy.MAJORITY)
+                else if (strategy == ReadRepairStrategy.RELATIVE_MAJORITY)
                     fixWithMajority(fixedMap, e.keys());
                 else if (strategy == ReadRepairStrategy.REMOVE)
                     fixWithRemove(fixedMap, e.keys());
