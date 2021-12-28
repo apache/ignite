@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client;
 
+import java.util.Set;
+
 /**
  * Client operation type.
  */
@@ -59,62 +61,63 @@ public enum ClientOperationType {
     CACHE_CONTAINS_KEY,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Determines if the cache contains multiple keys ({@link ClientCache#containsKeys}).
      */
     CACHE_CONTAINS_KEYS,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get cache configuration ({@link ClientCache#getConfiguration()}).
      */
     CACHE_GET_CONFIGURATION,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get cache size ({@link ClientCache#size}).
      */
     CACHE_GET_SIZE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Put values to cache ({@link ClientCache#putAll}).
      */
     CACHE_PUT_ALL,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get values from cache ({@link ClientCache#getAll}).
      */
     CACHE_GET_ALL,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Replace cache value ({@link ClientCache#replace(Object, Object)},
+     * {@link ClientCache#replace(Object, Object, Object)}).
      */
     CACHE_REPLACE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Remove entry from cache ({@link ClientCache#remove(Object)}, {@link ClientCache#remove(Object, Object)}).
      */
     CACHE_REMOVE_ONE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Remove entries from cache ({@link ClientCache#removeAll(Set)}).
      */
     CACHE_REMOVE_MULTIPLE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Remove everyting from cache ({@link ClientCache#removeAll()}).
      */
     CACHE_REMOVE_EVERYTHING,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Clear cache entry ({@link ClientCache#clear(Object)} ).
      */
     CACHE_CLEAR_ONE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Clear multiple cache entries ({@link ClientCache#clearAll(Set)}).
      */
     CACHE_CLEAR_MULTIPLE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Clear entire cache ({@link ClientCache#clear()}).
      */
     CACHE_CLEAR_EVERYTHING,
 
