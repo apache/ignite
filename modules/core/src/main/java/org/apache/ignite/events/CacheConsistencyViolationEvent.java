@@ -68,16 +68,16 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    final Map<?, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<?, Map<ClusterNode, EntryInfo>> entries;
 
     /** Fixed entries. */
-    final Map<?, ?> fixed;
+    private final Map<?, ?> fixed;
 
     /** Cache name. */
-    final String cacheName;
+    private final String cacheName;
 
     /** Strategy. */
-    final ReadRepairStrategy strategy;
+    private final ReadRepairStrategy strategy;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
@@ -86,7 +86,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      * @param msg Event message.
      * @param entries Collection of original entries.
      * @param fixed Collection of fixed entries.
-     * @param strategy
+     * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
         String cacheName,
