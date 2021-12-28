@@ -21,6 +21,9 @@ package org.apache.ignite.client;
  * Retry policy that always returns {@code false}.
  */
 public class ClientRetryNonePolicy implements ClientRetryPolicy {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
         return false;

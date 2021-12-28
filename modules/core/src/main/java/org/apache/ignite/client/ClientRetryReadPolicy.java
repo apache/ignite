@@ -21,6 +21,9 @@ package org.apache.ignite.client;
  * Retry policy that returns true for all read-only operations that do not modify data.
  */
 public class ClientRetryReadPolicy implements ClientRetryPolicy {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
         switch (context.operation()) {
