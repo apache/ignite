@@ -18,12 +18,34 @@
 package org.apache.ignite.client;
 
 /**
- * Retry policy that returns true for all read operations.
+ * Retry policy that returns true for all read-only operations that do not modify data.
  */
 public class ClientRetryReadPolicy implements ClientRetryPolicy {
     /** {@inheritDoc} */
     @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
-        // TODO: Full list of read operations.
-        return context.operation() == ClientOperationType.CACHE_GET;
+        switch (context.operation()) {
+            case CACHE_GET_NAMES:
+            case CACHE_GET:
+            case CACHE_CONTAINS_KEY:
+            case CACHE_CONTAINS_KEYS:
+            case CACHE_GET_CONFIGURATION:
+            case CACHE_GET_SIZE:
+            case CACHE_GET_ALL:
+            case CACHE_PARTITIONS:
+            case QUERY_SCAN:
+            case QUERY_CONTINUOUS:
+            case GET_BINARY_TYPE:
+            case GET_BINARY_TYPE_NAME:
+            case CLUSTER_GET_STATE:
+            case CLUSTER_GET_WAL_STATE:
+            case CLUSTER_GROUP_GET_NODE_IDS:
+            case CLUSTER_GROUP_GET_NODE_INFO:
+            case SERVICE_GET_DESCRIPTORS:
+            case SERVICE_GET_DESCRIPTOR:
+                return true;
+
+            default:
+                return false;
+        }
     }
 }
