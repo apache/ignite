@@ -803,7 +803,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 retryLimit -= 1;
 
-                if (retryLimit == 0)
+                if (retryLimit == 0 || !shouldRetry(op, 0, e))
                     throw e;
             }
         }
