@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCache;
 /**
  * Read repair strategies.
  *
- * @see IgniteCache#withReadRepair(ReadRepairStrategy) for defails.
+ * @see IgniteCache#withReadRepair(ReadRepairStrategy) for details.
  */
 public enum ReadRepairStrategy {
     /** Last write wins. */

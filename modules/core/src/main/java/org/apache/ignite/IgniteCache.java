@@ -201,7 +201,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt with default
      * conflict resolve strategy.
      *
-     * @see IgniteCache#withReadRepair(ReadRepairStrategy) for defails.
+     * @see IgniteCache#withReadRepair(ReadRepairStrategy) for details.
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
     @IgniteExperimental
