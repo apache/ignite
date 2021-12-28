@@ -93,7 +93,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         ClusterNode node,
         String msg,
         Map<Object, Map<ClusterNode, EntryInfo>> entries,
-        Map<Object, Object> fixed, ReadRepairStrategy strategy) {
+        Map<Object, Object> fixed,
+        ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
