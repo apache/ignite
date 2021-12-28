@@ -44,13 +44,6 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(nodeCount());
-
-        client = startClientGrid("client");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() {
         for (String cacheName : client.cacheNames())
             client.cache(cacheName).clear();
@@ -152,11 +145,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
         int col0;
 
         /** */
-        int col1;
-
-        /** */
         TestValTbl1(int k) {
-            col0 = col1 = k;
+            col0 = k;
         }
     }
 
