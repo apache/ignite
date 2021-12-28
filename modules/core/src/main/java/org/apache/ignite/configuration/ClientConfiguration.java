@@ -27,7 +27,6 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
-import org.apache.ignite.client.ClientRetryPolicyContext;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;

@@ -823,6 +823,7 @@ final class ReliableChannel implements AutoCloseable {
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
 
+    /** Determines whether specified operation should be retried. */
     private boolean shouldRetry(ClientOperation op, int iteration, ClientConnectionException exception) {
         ClientOperationType opType = op.toPublicOperationType();
 
