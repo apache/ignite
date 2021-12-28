@@ -68,10 +68,10 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    private final Map<?, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<Object, Map<ClusterNode, EntryInfo>> entries;
 
     /** Fixed entries. */
-    private final Map<?, ?> fixed;
+    private final Map<Object, Object> fixed;
 
     /** Cache name. */
     private final String cacheName;
@@ -92,8 +92,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         String cacheName,
         ClusterNode node,
         String msg,
-        Map<?, Map<ClusterNode, EntryInfo>> entries,
-        Map<?, ?> fixed, ReadRepairStrategy strategy) {
+        Map<Object, Map<ClusterNode, EntryInfo>> entries,
+        Map<Object, Object> fixed, ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
@@ -107,7 +107,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Collection of original entries.
      */
-    public Map<?, Map<ClusterNode, EntryInfo>> getEntries() {
+    public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
         return entries;
     }
 
@@ -116,7 +116,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Collection of fixed entries.
      */
-    public Map<?, ?> getFixedEntries() {
+    public Map<Object, Object> getFixedEntries() {
         return fixed;
     }
 
