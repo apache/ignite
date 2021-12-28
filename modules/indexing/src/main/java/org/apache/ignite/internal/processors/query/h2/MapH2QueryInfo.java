@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Map query info.
  */
 public class MapH2QueryInfo extends H2QueryInfo {
-    /** Node. */
-    private final ClusterNode node;
-
     /** Request id. */
     private final long reqId;
 
@@ -36,23 +35,22 @@ public class MapH2QueryInfo extends H2QueryInfo {
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
-     * @param node Originator node ID
+     * @param node Originator node.
+     * @param qryId Query id assigned by {@link RunningQueryManager}.
      * @param reqId Request ID.
      * @param segment Segment.
      */
-    public MapH2QueryInfo(PreparedStatement stmt, String sql,
-        ClusterNode node, long reqId, int segment) {
-        super(QueryType.MAP, stmt, sql);
+    public MapH2QueryInfo(PreparedStatement stmt, String sql, ClusterNode node, @Nullable Long qryId, long reqId,
+        int segment) {
+        super(QueryType.MAP, stmt, sql, node, qryId);
 
-        this.node = node;
         this.reqId = reqId;
         this.segment = segment;
     }
 
     /** {@inheritDoc} */
     @Override protected void printInfo(StringBuilder msg) {
-        msg.append(", node=").append(node)
-            .append(", reqId=").append(reqId)
+        msg.append(", reqId=").append(reqId)
             .append(", segment=").append(segment);
     }
 }

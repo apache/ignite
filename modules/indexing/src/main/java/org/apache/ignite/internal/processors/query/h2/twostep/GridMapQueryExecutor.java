@@ -246,6 +246,7 @@ public class GridMapQueryExecutor {
                     (GridPlainCallable<Void>)() -> {
                         try (TraceSurroundings ignored = MTC.supportContinual(span)) {
                             onQueryRequest0(node,
+                                req.queryId(),
                                 req.requestId(),
                                 segment,
                                 req.schemaName(),
@@ -273,6 +274,7 @@ public class GridMapQueryExecutor {
             }
 
             onQueryRequest0(node,
+                req.queryId(),
                 req.requestId(),
                 singleSegment,
                 req.schemaName(),
@@ -300,6 +302,7 @@ public class GridMapQueryExecutor {
 
     /**
      * @param node Node authored request.
+     * @param qryId Query ID.
      * @param reqId Request ID.
      * @param segmentId index segment ID.
      * @param schemaName Schema name.
@@ -320,6 +323,7 @@ public class GridMapQueryExecutor {
      */
     private void onQueryRequest0(
         final ClusterNode node,
+        @Nullable Long qryId,
         final long reqId,
         final int segmentId,
         final String schemaName,
@@ -454,7 +458,7 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
+                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, qryId, reqId, segmentId);
 
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,

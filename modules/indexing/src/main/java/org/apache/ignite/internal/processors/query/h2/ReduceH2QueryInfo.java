@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 
 /**
  * Reduce query info.
@@ -29,10 +31,12 @@ public class ReduceH2QueryInfo extends H2QueryInfo {
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
+     * @param node Originator node.
+     * @param qryId Query id assigned by {@link RunningQueryManager}.
      * @param reqId Request ID.
      */
-    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, long reqId) {
-        super(QueryType.REDUCE, stmt, sql);
+    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, ClusterNode node, Long qryId, long reqId) {
+        super(QueryType.REDUCE, stmt, sql, node, qryId);
 
         this.reqId = reqId;
     }
