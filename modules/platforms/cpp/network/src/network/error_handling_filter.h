@@ -15,29 +15,25 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_NETWORK_ASYNC_HANDLER
-#define _IGNITE_NETWORK_ASYNC_HANDLER
+#ifndef _IGNITE_NETWORK_ERROR_HANDLING_FILTER
+#define _IGNITE_NETWORK_ERROR_HANDLING_FILTER
 
-#include <stdint.h>
-
-#include <ignite/ignite_error.h>
-#include <ignite/network/end_point.h>
-#include <ignite/network/data_buffer.h>
+#include <ignite/network/data_filter_adapter.h>
 
 namespace ignite
 {
     namespace network
     {
         /**
-         * Asynchronous events handler.
+         * Filter that handles exceptions thrown by upper level handlers.
          */
-        class IGNITE_IMPORT_EXPORT AsyncHandler
+        class IGNITE_IMPORT_EXPORT ErrorHandlingFilter : public DataFilterAdapter
         {
         public:
             /**
              * Destructor.
              */
-            virtual ~AsyncHandler()
+            virtual ~ErrorHandlingFilter()
             {
                 // No-op.
             }
@@ -48,7 +44,7 @@ namespace ignite
              * @param addr Address of the new connection.
              * @param id Connection ID.
              */
-            virtual void OnConnectionSuccess(const EndPoint& addr, uint64_t id) = 0;
+            virtual void OnConnectionSuccess(const EndPoint& addr, uint64_t id);
 
             /**
              * Callback that called on error during connection establishment.
@@ -56,7 +52,7 @@ namespace ignite
              * @param addr Connection address.
              * @param err Error.
              */
-            virtual void OnConnectionError(const EndPoint& addr, const IgniteError& err) = 0;
+            virtual void OnConnectionError(const EndPoint& addr, const IgniteError& err);
 
             /**
              * Callback that called on error during connection establishment.
@@ -64,7 +60,7 @@ namespace ignite
              * @param id Async client ID.
              * @param err Error. Can be null if connection closed without error.
              */
-            virtual void OnConnectionClosed(uint64_t id, const IgniteError* err) = 0;
+            virtual void OnConnectionClosed(uint64_t id, const IgniteError* err);
 
             /**
              * Callback that called when new message is received.
@@ -72,16 +68,16 @@ namespace ignite
              * @param id Async client ID.
              * @param msg Received message.
              */
-            virtual void OnMessageReceived(uint64_t id, const DataBuffer& msg) = 0;
+            virtual void OnMessageReceived(uint64_t id, const DataBuffer &msg);
 
             /**
              * Callback that called when message is sent.
              *
              * @param id Async client ID.
              */
-            virtual void OnMessageSent(uint64_t id) = 0;
+            virtual void OnMessageSent(uint64_t id);
         };
     }
 }
 
-#endif //_IGNITE_NETWORK_ASYNC_HANDLER
+#endif //_IGNITE_NETWORK_ERROR_HANDLING_FILTER

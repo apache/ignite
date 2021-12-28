@@ -57,7 +57,10 @@ namespace ignite
              */
             virtual bool Send(uint64_t id, const DataBuffer& data)
             {
-                return sink->Send(id, data);
+                if (sink)
+                    return sink->Send(id, data);
+
+                return false;
             }
 
             /**
@@ -68,7 +71,8 @@ namespace ignite
              */
             virtual void Close(uint64_t id, const IgniteError* err)
             {
-                sink->Close(id, err);
+                if (sink)
+                    sink->Close(id, err);
             }
 
             /**

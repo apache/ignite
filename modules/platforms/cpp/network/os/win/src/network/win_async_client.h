@@ -212,9 +212,8 @@ namespace ignite
              * Process received bytes.
              *
              * @param bytes Number of received bytes.
-             * @param handler Handler to use when new packet is received.
              */
-            void ProcessReceived(size_t bytes, AsyncHandler& handler);
+            DataBuffer ProcessReceived(size_t bytes);
 
         private:
 

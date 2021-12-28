@@ -228,6 +228,17 @@ namespace ignite
                  */
                 SP_SecureConnectionContext FindContext(uint64_t id);
 
+                /**
+                 * Send data to specific established connection.
+                 *
+                 * @param id Client ID.
+                 * @param data Data to be sent.
+                 * @return @c true if connection is present and @c false otherwise.
+                 *
+                 * @throw IgniteError on error.
+                 */
+                bool SendInternal(uint64_t id, const DataBuffer& data);
+
                 /** Secure configuration. */
                 const SecureConfiguration cfg;
 

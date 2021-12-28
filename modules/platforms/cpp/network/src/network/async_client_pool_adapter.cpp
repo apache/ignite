@@ -16,6 +16,7 @@
  */
 
 #include "network/async_client_pool_adapter.h"
+#include "network/error_handling_filter.h"
 
 namespace ignite
 {
@@ -30,6 +31,8 @@ namespace ignite
             sink(pool.Get()),
             handler(0)
         {
+            filters.insert(filters.begin(), SP_DataFilter(new ErrorHandlingFilter()));
+
             for (std::vector<SP_DataFilter>::iterator it = filters.begin(); it != filters.end(); ++it)
             {
                 it->Get()->SetSink(sink);

@@ -47,11 +47,11 @@ namespace
         switch (err)
         {
             case SSL_ERROR_NONE:
-            case SSL_ERROR_WANT_WRITE:
             case SSL_ERROR_WANT_READ:
+            case SSL_ERROR_WANT_WRITE:
+            case SSL_ERROR_WANT_X509_LOOKUP:
             case SSL_ERROR_WANT_CONNECT:
             case SSL_ERROR_WANT_ACCEPT:
-            case SSL_ERROR_WANT_X509_LOOKUP:
                 return false;
 
             default:
@@ -200,10 +200,7 @@ namespace ignite
                     IgniteError err0(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
                         "Connection closed during SSL/TLS handshake");
 
-                    if (!err)
-                        err = &err0;
-
-                    DataFilterAdapter::OnConnectionError(context.Get()->GetAddress(), *err);
+                    DataFilterAdapter::OnConnectionError(context.Get()->GetAddress(), err0);
                 }
 
                 {
@@ -247,6 +244,11 @@ namespace ignite
                 return it->second;
             }
 
+            bool SecureDataFilter::SendInternal(uint64_t id, const DataBuffer& data)
+            {
+                return DataFilterAdapter::Send(id, data);
+            }
+
             SecureDataFilter::SecureConnectionContext::SecureConnectionContext(
                 uint64_t id,
                 const EndPoint &addr,
@@ -265,7 +267,7 @@ namespace ignite
                 ssl = sslGateway.SSL_new_(static_cast<SSL_CTX*>(filter.sslContext));
                 if (!ssl)
                     throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                                      "Can not create secure connection");
+                        "Can not create secure connection");
 
                 bioIn = sslGateway.BIO_new_(sslGateway.BIO_s_mem_());
                 if (!bioIn)
@@ -285,24 +287,30 @@ namespace ignite
 
                 if (ssl)
                     sslGateway.SSL_free_(static_cast<SSL*>(ssl));
+                else
+                {
+                    if (bioIn)
+                        sslGateway.BIO_free_all_(static_cast<BIO*>(bioIn));
 
-                if (bioIn)
-                    sslGateway.BIO_free_all_(static_cast<BIO*>(bioIn));
-
-                if (bioOut)
-                    sslGateway.BIO_free_all_(static_cast<BIO*>(bioOut));
+                    if (bioOut)
+                        sslGateway.BIO_free_all_(static_cast<BIO*>(bioOut));
+                }
             }
 
             void SecureDataFilter::SecureConnectionContext::DoConnect()
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
+                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect " << id << std::endl;
+
                 SSL* ssl0 = static_cast<SSL*>(ssl);
                 int res = sslGateway.SSL_connect_(ssl0);
+                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect res=" << res << std::endl;
 
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     int sslError = sslGateway.SSL_get_error_(ssl0, res);
+                    // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect sslError=" << sslError << std::endl;
 
                     if (IsActualError(sslError))
                     {
@@ -322,7 +330,7 @@ namespace ignite
                 if (data.IsEmpty())
                     return false;
 
-                return filter.sink->Send(id, data);
+                return filter.SendInternal(id, data);
             }
 
             bool SecureDataFilter::SecureConnectionContext::Send(const DataBuffer& data)

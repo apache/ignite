@@ -173,16 +173,12 @@ namespace ignite
             }
         }
 
-        void WinAsyncClient::ProcessReceived(size_t bytes, AsyncHandler& handler)
+        DataBuffer WinAsyncClient::ProcessReceived(size_t bytes)
         {
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient: bytes=" << bytes << std::endl;
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
-            DataBuffer in(recvPacket, 0, static_cast<int32_t>(bytes));
-
-            handler.OnMessageReceived(id, in);
-
-            Receive();
+            return DataBuffer(recvPacket, 0, static_cast<int32_t>(bytes));
         }
 
         bool WinAsyncClient::ProcessSent(size_t bytes)
