@@ -565,6 +565,7 @@ public final class DataRegionConfiguration implements Serializable {
      * Sets flag indicating whether CDC enabled.
      *
      * @param cdcEnabled CDC enabled flag.
+     * @return {@code this} for chaining.
      */
     @IgniteExperimental
     public DataRegionConfiguration setCdcEnabled(boolean cdcEnabled) {

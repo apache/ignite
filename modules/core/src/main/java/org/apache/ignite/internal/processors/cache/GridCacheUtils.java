@@ -1899,7 +1899,7 @@ public class GridCacheUtils {
      * @param ccfg Cache configuration.
      * @param dsCfg Data storage config.
      */
-    public static boolean isPersistentCache(CacheConfiguration<?, ?> ccfg, DataStorageConfiguration dsCfg) {
+    public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
         if (dsCfg == null)
             return false;
 
