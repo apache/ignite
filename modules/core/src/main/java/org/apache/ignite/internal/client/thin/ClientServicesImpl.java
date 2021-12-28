@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.platform.PlatformServiceMethod;
+import org.apache.ignite.platform.PlatformType;
 
 /**
  * Implementation of {@link ClientServices}.
@@ -72,6 +78,64 @@ class ClientServicesImpl implements ClientServices {
 
         return (T)Proxy.newProxyInstance(svcItf.getClassLoader(), new Class[] {svcItf},
             new ServiceInvocationHandler<>(name, timeout, grp));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<ClientServiceDescriptor> serviceDescriptors() {
+        return ch.service(ClientOperation.SERVICE_GET_DESCRIPTORS,
+            req -> checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx()),
+            res -> {
+                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                    int sz = res.in().readInt();
+
+                    Collection<ClientServiceDescriptor> svcs = new ArrayList<>(sz);
+
+                    for (int i = 0; i < sz; i++)
+                        svcs.add(readServiceDescriptor(reader));
+
+                    return svcs;
+                }
+                catch (IOException e) {
+                    throw new ClientError(e);
+                }
+            }
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientServiceDescriptor serviceDescriptor(String name) {
+        A.notNullOrEmpty(name, "name");
+
+        return ch.service(ClientOperation.SERVICE_GET_DESCRIPTOR,
+            req -> {
+                checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx());
+
+                try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
+                    writer.writeString(name);
+                }
+            },
+            res -> {
+                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                    return readServiceDescriptor(reader);
+                }
+                catch (IOException e) {
+                    throw new ClientError(e);
+                }
+            }
+        );
+    }
+
+    /** */
+    private ClientServiceDescriptorImpl readServiceDescriptor(BinaryReaderExImpl reader) {
+        return new ClientServiceDescriptorImpl(
+            reader.readString(),
+            reader.readString(),
+            reader.readInt(),
+            reader.readInt(),
+            reader.readString(),
+            reader.readUuid(),
+            reader.readByte() == 0 ? PlatformType.JAVA : PlatformType.DOTNET
+        );
     }
 
     /**
@@ -176,5 +240,16 @@ class ClientServicesImpl implements ClientServices {
                 }
             }
         }
+    }
+
+    /**
+     * Check that Get Service Descriptors API is supported by server.
+     *
+     * @param protocolCtx Protocol context.
+     */
+    private void checkGetServiceDescriptorsSupported(ProtocolContext protocolCtx)
+        throws ClientFeatureNotSupportedByServerException {
+        if (!protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS);
     }
 }

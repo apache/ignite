@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client;
 
+import java.util.Collection;
+
 /**
  * Thin client services facade.
  */
@@ -55,4 +57,19 @@ public interface ClientServices {
      * @return Proxy over remote service.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, long timeout);
+
+    /**
+     * Gets metadata about all deployed services in the grid.
+     *
+     * @return Metadata about all deployed services in the grid.
+     */
+    public Collection<ClientServiceDescriptor> serviceDescriptors();
+
+    /**
+     * Gets metadata about deployed services in the grid.
+     *
+     * @param name Service name.
+     * @return Metadata about all deployed services in the grid.
+     */
+    public ClientServiceDescriptor serviceDescriptor(String name);
 }
