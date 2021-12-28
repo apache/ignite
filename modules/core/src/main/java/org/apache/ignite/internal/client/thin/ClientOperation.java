@@ -314,18 +314,6 @@ public enum ClientOperation {
             case QUERY_CONTINUOUS:
                 return ClientOperationType.QUERY_CONTINUOUS;
 
-            case GET_BINARY_TYPE:
-                return ClientOperationType.GET_BINARY_TYPE;
-
-            case REGISTER_BINARY_TYPE_NAME:
-                return ClientOperationType.REGISTER_BINARY_TYPE_NAME;
-
-            case PUT_BINARY_TYPE:
-                return ClientOperationType.PUT_BINARY_TYPE;
-
-            case GET_BINARY_TYPE_NAME:
-                return ClientOperationType.GET_BINARY_TYPE_NAME;
-
             case TX_START:
                 return ClientOperationType.TRANSACTION_START;
 

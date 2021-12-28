@@ -167,26 +167,6 @@ public enum ClientOperationType {
     /**
      * Get value from cache ({@link ClientCache#get(Object)}).
      */
-    GET_BINARY_TYPE,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
-    REGISTER_BINARY_TYPE_NAME,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
-    PUT_BINARY_TYPE,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
-    GET_BINARY_TYPE_NAME,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
     TRANSACTION_START,
 
     /**
