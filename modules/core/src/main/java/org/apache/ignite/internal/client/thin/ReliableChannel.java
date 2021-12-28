@@ -379,7 +379,7 @@ final class ReliableChannel implements AutoCloseable {
 
                                 int attemptsLimit = getRetryLimit() - 1;
 
-                                if (attemptsLimit == 0) {
+                                if (attemptsLimit == 0 || !shouldRetry(op, 0, failure)) {
                                     fut.completeExceptionally(err);
                                     return null;
                                 }
