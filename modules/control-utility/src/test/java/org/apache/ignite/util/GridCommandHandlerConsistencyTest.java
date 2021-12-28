@@ -256,7 +256,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                 return null; // Who knows :)
 
             default:
-                throw new UnsupportedOperationException("Unsupported trategy");
+                throw new UnsupportedOperationException("Unsupported strategy");
         }
     }
 
