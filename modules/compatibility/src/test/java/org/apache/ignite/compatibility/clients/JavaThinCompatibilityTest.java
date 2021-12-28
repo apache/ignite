@@ -39,7 +39,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
@@ -66,6 +66,7 @@ import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -378,8 +379,8 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         if (clientVer.compareTo(VER_2_11_0) >= 0 && serverVer.compareTo(VER_2_10_0) >= 0)
             testContinuousQueries();
 
-        if (clientVer.compareTo(VER_2_12_0) > 0) {
-            if (serverVer.compareTo(VER_2_12_0) > 0)
+        if (clientVer.compareTo(VER_2_13_0) >= 0) {
+            if (serverVer.compareTo(VER_2_13_0) >= 0)
                 testServiceDescriptors();
             else
                 testServiceDescriptorsThrows();
@@ -412,9 +413,21 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         X.println(">>>> Testing services descriptors queries throws");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
-            assertThrowsWithCause(() -> client.services().serviceDescriptors(), ClientException.class);
+            String errMsg = "Feature " + GET_SERVICE_DESCRIPTORS.name() + " is not supported by the server";
 
-            assertThrowsWithCause(() -> client.services().serviceDescriptor("test_service"), ClientException.class);
+            Throwable err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptors(),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+
+            err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptor("test_service"),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
         }
     }
 
