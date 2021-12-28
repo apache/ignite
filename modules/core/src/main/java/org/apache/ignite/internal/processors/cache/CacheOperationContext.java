@@ -50,7 +50,7 @@ public class CacheOperationContext implements Serializable {
     /** */
     private final boolean recovery;
 
-    /** Read-repair flag. */
+    /** Read-repair strategy. */
     private final ReadRepairStrategy readRepairStrategy;
 
     /** Keep binary flag. */
