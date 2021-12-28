@@ -21,6 +21,7 @@ import java.util.Set;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 
 /**
  * Client operation type.
@@ -165,57 +166,52 @@ public enum ClientOperationType {
     QUERY_CONTINUOUS,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Start transaction ({@link ClientTransactions#txStart}).
      */
     TRANSACTION_START,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get cluster state ({@link ClientCluster#state()}).
      */
     CLUSTER_GET_STATE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Change cluster state ({@link ClientCluster#state(ClusterState)}).
      */
     CLUSTER_CHANGE_STATE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get cluster WAL state ({@link ClientCluster#isWalEnabled(String)}).
      */
     CLUSTER_GET_WAL_STATE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Change cluster WAL state ({@link ClientCluster#enableWal(String)}, {@link ClientCluster#disableWal(String)}).
      */
     CLUSTER_CHANGE_WAL_STATE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get cluster nodes ({@link ClientCluster#nodes()}).
      */
-    CLUSTER_GROUP_GET_NODE_IDS,
+    CLUSTER_GROUP_GET_NODES,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
-    CLUSTER_GROUP_GET_NODE_INFO,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Execute compute task ({@link ClientCompute#execute(String, Object)}).
      */
     COMPUTE_TASK_EXECUTE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Invoke service.
      */
     SERVICE_INVOKE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get service descriptors ({@link ClientServices#serviceDescriptors()}).
      */
     SERVICE_GET_DESCRIPTORS,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get service descriptor ({@link ClientServices#serviceDescriptor(String)}).
      */
     SERVICE_GET_DESCRIPTOR
 }

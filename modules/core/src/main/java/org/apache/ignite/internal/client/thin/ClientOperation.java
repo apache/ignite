@@ -330,10 +330,8 @@ public enum ClientOperation {
                 return ClientOperationType.CLUSTER_CHANGE_WAL_STATE;
 
             case CLUSTER_GROUP_GET_NODE_IDS:
-                return ClientOperationType.CLUSTER_GROUP_GET_NODE_IDS;
-
             case CLUSTER_GROUP_GET_NODE_INFO:
-                return ClientOperationType.CLUSTER_GROUP_GET_NODE_INFO;
+                return ClientOperationType.CLUSTER_GROUP_GET_NODES;
 
             case COMPUTE_TASK_EXECUTE:
                 return ClientOperationType.COMPUTE_TASK_EXECUTE;

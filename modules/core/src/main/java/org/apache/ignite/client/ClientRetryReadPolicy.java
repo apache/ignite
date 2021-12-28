@@ -33,12 +33,9 @@ public class ClientRetryReadPolicy implements ClientRetryPolicy {
             case CACHE_GET_ALL:
             case QUERY_SCAN:
             case QUERY_CONTINUOUS:
-            case GET_BINARY_TYPE:
-            case GET_BINARY_TYPE_NAME:
             case CLUSTER_GET_STATE:
             case CLUSTER_GET_WAL_STATE:
-            case CLUSTER_GROUP_GET_NODE_IDS:
-            case CLUSTER_GROUP_GET_NODE_INFO:
+            case CLUSTER_GROUP_GET_NODES:
             case SERVICE_GET_DESCRIPTORS:
             case SERVICE_GET_DESCRIPTOR:
                 return true;
