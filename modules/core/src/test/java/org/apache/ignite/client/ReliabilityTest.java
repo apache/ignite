@@ -253,6 +253,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testNullRetryPolicyDisablesFailover() {
+        if (isPartitionAware())
+            return;
+
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(null)
@@ -280,6 +283,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testRetryNonePolicyDisablesFailover() {
+        if (isPartitionAware())
+            return;
+
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ClientRetryNonePolicy())
