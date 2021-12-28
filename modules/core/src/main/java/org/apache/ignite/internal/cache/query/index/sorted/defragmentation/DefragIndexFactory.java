@@ -242,6 +242,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
+            assertPageType(pageAddr);
+
             DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 
@@ -306,6 +308,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
+            assertPageType(pageAddr);
+
             DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 

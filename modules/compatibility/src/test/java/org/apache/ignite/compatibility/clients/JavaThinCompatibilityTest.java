@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.clients;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
@@ -53,6 +56,7 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -61,6 +65,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
@@ -371,6 +378,57 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         if (clientVer.compareTo(VER_2_11_0) >= 0 && serverVer.compareTo(VER_2_10_0) >= 0)
             testContinuousQueries();
+
+        if (clientVer.compareTo(VER_2_13_0) >= 0) {
+            if (serverVer.compareTo(VER_2_13_0) >= 0)
+                testServiceDescriptors();
+            else
+                testServiceDescriptorsThrows();
+        }
+    }
+
+    /** */
+    private void testServiceDescriptors() {
+        X.println(">>>> Testing services descriptors");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            Collection<ClientServiceDescriptor> svcs = client.services().serviceDescriptors();
+
+            assertEquals(1, svcs.size());
+
+            ClientServiceDescriptor svc = svcs.iterator().next();
+
+            assertEquals("test_service", svc.name());
+            assertEquals(EchoService.class.getName(), svc.serviceClass());
+            assertEquals(0, svc.totalCount());
+            assertEquals(1, svc.maxPerNodeCount());
+            assertNull(svc.cacheName());
+            assertEquals(grid(0).localNode().id(), svc.originNodeId());
+            assertEquals(PlatformType.JAVA, svc.platformType());
+        }
+    }
+
+    /** */
+    private void testServiceDescriptorsThrows() {
+        X.println(">>>> Testing services descriptors queries throws");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            String errMsg = "Feature " + GET_SERVICE_DESCRIPTORS.name() + " is not supported by the server";
+
+            Throwable err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptors(),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+
+            err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptor("test_service"),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+        }
     }
 
     /** */

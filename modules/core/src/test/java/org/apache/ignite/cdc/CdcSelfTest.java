@@ -83,21 +83,24 @@ public class CdcSelfTest extends AbstractCdcTest {
     public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, metricExporter={2}, persistenceEnabled={3}")
+    @Parameterized.Parameter(4)
+    public int pageSz;
+
+    /** */
+    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, persistenceEnabled={2}, metricExporter={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
-            for (boolean specificConsistentId : new boolean[] {false, true}) {
+            for (boolean specificConsistentId : new boolean[] {false, true})
                 for (boolean persistenceEnabled : new boolean[] {true, false}) {
                     Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
 
-                    params.add(new Object[] {specificConsistentId, mode, null, persistenceEnabled});
-                    params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled});
+                    params.add(new Object[] {specificConsistentId, mode, null, persistenceEnabled, 0});
+                    params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled, 8192});
                 }
-            }
 
-        //params.removeIf(p -> (boolean)p[2]);
+        params.removeIf(p -> (boolean)p[2]);
 
         return params;
     }
@@ -119,6 +122,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
+
+        if (pageSz != 0)
+            cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

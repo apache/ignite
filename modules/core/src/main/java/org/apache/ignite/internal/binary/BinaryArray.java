@@ -34,7 +34,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
@@ -43,7 +45,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * Binary object representing array.
  */
-public class BinaryArray implements BinaryObjectEx, Externalizable {
+public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
     /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
     public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
 
@@ -152,7 +154,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @return Component type ID.
      */
     public int componentTypeId() {
-        return compTypeId;
+        // This can happen when binary type was not registered in time of binary array creation.
+        // In this case same type will be written differently:
+        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
+        // arr2 = [comTypeId=1234,compClsName=null]
+        // Overcome by calculation compTypeId based on compClsName.
+        return compTypeId == UNREGISTERED_TYPE_ID ? ctx.typeId(compClsName) : compTypeId;
     }
 
     /**
@@ -225,7 +232,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 31 * Objects.hash(compTypeId);
+        int result = 31 * Objects.hash(componentTypeId());
 
         result = 31 * result + IgniteUtils.hashCode(arr);
 
@@ -242,22 +249,19 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         BinaryArray arr = (BinaryArray)o;
 
-        int compTypeId1 = this.compTypeId;
-        int compTypeId2 = arr.compTypeId;
+        return componentTypeId() == arr.componentTypeId()
+            && Arrays.deepEquals(this.arr, arr.arr);
+    }
 
-        // This can happen when binary type was not registered in time of binary array creation.
-        // In this case same type will be written differently:
-        // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
-        // arr2 = [comTypeId=1234,compClsName=null]
-        // Overcome by calculation compTypeId based on compClsName.
-        if (compTypeId1 == UNREGISTERED_TYPE_ID && compTypeId2 != UNREGISTERED_TYPE_ID)
-            compTypeId1 = ctx.typeId(compClsName);
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull BinaryArray o) {
+        if (componentTypeId() != o.componentTypeId()) {
+            throw new IllegalArgumentException(
+                "Can't compare arrays of different types[this=" + componentTypeId() + ",that=" + o.componentTypeId() + ']'
+            );
+        }
 
-        if (compTypeId2 == UNREGISTERED_TYPE_ID && compTypeId1 != UNREGISTERED_TYPE_ID)
-            compTypeId2 = ctx.typeId(arr.compClsName);
-
-        return compTypeId1 == compTypeId2
-            && Arrays.equals(this.arr, arr.arr);
+        return F.compareArrays(arr, o.arr);
     }
 
     /** {@inheritDoc} */
