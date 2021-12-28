@@ -19,19 +19,18 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.Collections;
 import java.util.Set;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -44,28 +43,20 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
  * logical operators if decorrelation is enabled, but in some cases query can't be decorrelated (when table function is used for example),
  * this rule is required to support such cases.
  */
-public class CorrelateToNestedLoopRule extends ConverterRule {
-    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
+public class CorrelateToNestedLoopRule extends AbstractIgniteConverterRule<LogicalCorrelate> {
+    public static final RelOptRule INSTANCE = new CorrelateToNestedLoopRule();
 
     /**
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public CorrelateToNestedLoopRule(Config cfg) {
-        super(cfg);
+    public CorrelateToNestedLoopRule() {
+        super(LogicalCorrelate.class, "CorrelateToNestedLoopRule");
     }
 
     /** {@inheritDoc} */
     @Override
-    public RelNode convert(RelNode rel) {
-        throw new IllegalStateException("Should not be called");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void onMatch(RelOptRuleCall call) {
-        LogicalCorrelate rel = call.rel(0);
-
+    public PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalCorrelate rel) {
         final RelOptCluster cluster = rel.getCluster();
 
         final Set<CorrelationId> correlationIds = Collections.singleton(rel.getCorrelationId());
@@ -80,16 +71,14 @@ public class CorrelateToNestedLoopRule extends ConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        call.transformTo(
-                new IgniteCorrelatedNestedLoopJoin(
-                        cluster,
-                        outTraits,
-                        left,
-                        right,
-                        cluster.getRexBuilder().makeLiteral(true),
-                        correlationIds,
-                        rel.getJoinType()
-                )
+        return new IgniteCorrelatedNestedLoopJoin(
+                cluster,
+                outTraits,
+                left,
+                right,
+                cluster.getRexBuilder().makeLiteral(true),
+                correlationIds,
+                rel.getJoinType()
         );
     }
 
@@ -97,30 +86,11 @@ public class CorrelateToNestedLoopRule extends ConverterRule {
      * Config interface.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    @SuppressWarnings("ClassNameSameAsAncestorName")
-    public interface Config extends ConverterRule.Config {
-        Config DEFAULT = ConverterRule.Config.INSTANCE
-                .withDescription("CorrelateToNestedLoopRule")
-                .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-                .as(Config.class)
-                .withConversion(LogicalCorrelate.class, Convention.NONE, IgniteConvention.INSTANCE);
+    @Override public void onMatch(RelOptRuleCall call) {
+        Correlate join = call.rel(0);
 
-        /**
-         * WithConversion.
-         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-         */
-        default Config withConversion(Class<? extends Correlate> clazz, RelTrait in, RelTrait out) {
-            return withInTrait(in)
-                    .withOutTrait(out)
-                    .withOperandSupplier(b ->
-                            b.operand(clazz).predicate(CorrelateToNestedLoopRule::preMatch).convert(in))
-                    .as(Config.class);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        default CorrelateToNestedLoopRule toRule() {
-            return new CorrelateToNestedLoopRule(this);
+        if (preMatch(join)) {
+            super.onMatch(call);
         }
     }
 

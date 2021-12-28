@@ -111,11 +111,11 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
                 + "SELECT * FROM random_tbl2 ";
 
         assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce).and(IgniteSetOp::all)
-                .and(hasChildThat(isInstanceOf(setOp.map)
-                        .and(input(0, isTableScan("random_tbl1")))
-                        .and(input(1, isTableScan("random_tbl2")))
-                ))
-        );
+                        .and(hasChildThat(isInstanceOf(setOp.map)
+                                .and(input(0, isTableScan("random_tbl1")))
+                                .and(input(1, isTableScan("random_tbl2")))
+                        )),
+                "SingleIntersectConverterRule");
     }
 
     /**

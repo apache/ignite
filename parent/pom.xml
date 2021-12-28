@@ -70,9 +70,10 @@
         <hamcrest.version>2.2</hamcrest.version>
         <hamcrest.optional.version>2.0.0</hamcrest.optional.version>
         <scalecube.version>2.6.12</scalecube.version>
-        <calcite.version>1.27.0</calcite.version>
-        <janino.version>3.1.4</janino.version>
-        <avatica.version>1.18.0</avatica.version>
+        <calcite.version>1.28.0</calcite.version>
+        <immutables.version>2.8.8</immutables.version>
+        <janino.version>3.1.6</janino.version>
+        <avatica.version>1.19.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -153,6 +154,12 @@
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-calcite</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.immutables</groupId>
+                <artifactId>value-annotations</artifactId>
+                <version>${immutables.version}</version>
             </dependency>
 
             <dependency>

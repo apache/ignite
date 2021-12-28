@@ -21,27 +21,24 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBeans;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -51,10 +48,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
  * CorrelatedNestedLoopJoinRule.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public class CorrelatedNestedLoopJoinRule extends ConverterRule {
-    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
+public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<LogicalJoin> {
+    public static final RelOptRule INSTANCE = new CorrelatedNestedLoopJoinRule(1);
 
-    public static final RelOptRule INSTANCE_BATCHED = Config.DEFAULT.withBatchSize(100).toRule();
+    /** TODO: https://issues.apache.org/jira/browse/IGNITE-14757 */
+    public static final RelOptRule INSTANCE_BATCHED = new CorrelatedNestedLoopJoinRule(100);
 
     private final int batchSize;
 
@@ -62,25 +60,13 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public CorrelatedNestedLoopJoinRule(Config cfg) {
-        super(cfg);
-
-        int batchSize = cfg.batchSize();
-        assert batchSize >= 0;
+    public CorrelatedNestedLoopJoinRule(int batchSize) {
+        super(LogicalJoin.class, "CorrelatedNestedLoopJoin");
 
         this.batchSize = batchSize;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public RelNode convert(RelNode rel) {
-        throw new IllegalStateException("Should not be called");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void onMatch(RelOptRuleCall call) {
-        Join rel = call.rel(0);
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         final int leftFieldCount = rel.getLeft().getRowType().getFieldCount();
         final RelOptCluster cluster = rel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -89,21 +75,10 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         final Set<CorrelationId> correlationIds = new HashSet<>();
         final ArrayList<RexNode> corrVar = new ArrayList<>();
 
-        final Set<CorrelationId> corrIds = RelOptUtil.getVariablesUsed(rel.getRight());
-
-        // TODO: remove all near 'if' scope after https://issues.apache.org/jira/browse/CALCITE-4673 will be merged.
-        if (corrIds.size() > 1) {
-            CorrelationId corr0 = corrIds.iterator().next();
-            corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), corr0));
-            correlationIds.add(corr0);
-        }
-
-        if (corrVar.isEmpty()) {
-            for (int i = 0; i < batchSize; i++) {
-                CorrelationId correlationId = cluster.createCorrel();
-                correlationIds.add(correlationId);
-                corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), correlationId));
-            }
+        for (int i = 0; i < batchSize; i++) {
+            CorrelationId correlationId = cluster.createCorrel();
+            correlationIds.add(correlationId);
+            corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), correlationId));
         }
 
         // Generate first condition
@@ -157,16 +132,14 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         right = convert(right, rightInTraits);
 
-        call.transformTo(
-                new IgniteCorrelatedNestedLoopJoin(
-                        cluster,
-                        outTraits,
-                        left,
-                        right,
-                        rel.getCondition(),
-                        correlationIds,
-                        joinType
-                )
+        return new IgniteCorrelatedNestedLoopJoin(
+                cluster,
+                outTraits,
+                left,
+                right,
+                rel.getCondition(),
+                correlationIds,
+                joinType
         );
     }
 
@@ -174,38 +147,11 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
      * Config interface.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    @SuppressWarnings("ClassNameSameAsAncestorName")
-    public interface Config extends ConverterRule.Config {
-        Config DEFAULT = ConverterRule.Config.INSTANCE
-                .withDescription("CorrelatedNestedLoopJoin")
-                .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-                .as(Config.class)
-                .withConversion(LogicalJoin.class, Convention.NONE, IgniteConvention.INSTANCE)
-                .withBatchSize(1);
+    @Override public void onMatch(RelOptRuleCall call) {
+        LogicalJoin join = call.rel(0);
 
-        /** Description of the rule instance. */
-        @ImmutableBeans.Property
-        int batchSize();
-
-        /** Sets {@link #description()}. */
-        Config withBatchSize(int batchSize);
-
-        /**
-         * WithConversion.
-         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-         */
-        default Config withConversion(Class<? extends Join> clazz, RelTrait in, RelTrait out) {
-            return withInTrait(in)
-                    .withOutTrait(out)
-                    .withOperandSupplier(b ->
-                            b.operand(clazz).predicate(CorrelatedNestedLoopJoinRule::preMatch).convert(in))
-                    .as(Config.class);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        default CorrelatedNestedLoopJoinRule toRule() {
-            return new CorrelatedNestedLoopJoinRule(this);
+        if (preMatch(join)) {
+            super.onMatch(call);
         }
     }
 
