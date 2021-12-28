@@ -567,10 +567,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type
      * @return Deployed service with specified name.
-     * @deprecated Use {@link #serviceProxy(String, Class, boolean)} or
-     * {@link #serviceProxy(String, Class, boolean, long)} instead.
      */
-    @Deprecated
     public <T> T service(String name);
 
     /**
@@ -579,10 +576,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type.
      * @return all deployed services with specified name.
-     * @deprecated Use single service proxy through {@link #serviceProxy(String, Class, boolean)} or
-     * {@link #serviceProxy(String, Class, boolean, long)} instead.
      */
-    @Deprecated
     public <T> Collection<T> services(String name);
 
     /**

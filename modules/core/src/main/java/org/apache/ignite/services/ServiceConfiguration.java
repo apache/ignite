@@ -19,6 +19,7 @@ package org.apache.ignite.services;
 
 import java.io.Externalizable;
 import java.io.Serializable;
+import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -265,6 +266,10 @@ public class ServiceConfiguration implements Serializable {
      * Enables or disables statistics for the service. If enabled, durations of the service's methods invocations are
      * measured (in milliseconds) and stored in histograms of metric registry
      * {@link IgniteServiceProcessor#SERVICE_METRIC_REGISTRY} by service name.
+     * <p>
+     * <b>NOTE:</b> Statistics are collected only with service proxies obtaining by methods like
+     * {@link IgniteServices#serviceProxy(String, Class, boolean)} and won't work for direct referense of local
+     * services which you can get by, for example, {@link IgniteServices#service(String)}.
      * <p>
      * <b>NOTE:</b> Statistics are collected only for all service's interfaces except {@link Service} and
      * {@link Externalizable} if implemented. Statistics are not collected for methods not declared in any interface.

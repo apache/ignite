@@ -38,7 +38,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.serviceMetricRegistryName;
 
 /**
  * Tests metrics of service invocations.

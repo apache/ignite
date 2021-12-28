@@ -110,7 +110,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
@@ -136,7 +136,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** Base name domain for invocation metrics. */
-    public static final String SERVICE_METRIC_REGISTRY = "Services";
+    static final String SERVICE_METRIC_REGISTRY = "Services";
 
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration in milliseconds of ";
@@ -2036,5 +2036,15 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private static boolean metricIgnored(Class<?> cls) {
         return Service.class.equals(cls) || Externalizable.class.equals(cls) || PlatformService.class.equals(cls);
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    static String serviceMetricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }
