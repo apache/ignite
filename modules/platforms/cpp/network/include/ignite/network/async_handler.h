@@ -72,7 +72,7 @@ namespace ignite
              * @param id Async client ID.
              * @param msg Received message.
              */
-            virtual void OnMessageReceived(uint64_t id, const DataBuffer& msg) = 0;
+            virtual void OnMessageReceived(uint64_t id, const DataBuffer &msg) = 0;
 
             /**
              * Callback that called when message is sent.

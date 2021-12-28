@@ -25,6 +25,7 @@ include_directories(include src ${OPENSSL_INCLUDE_DIR})
 
 set(SOURCES
         src/network/async_client_pool_adapter.cpp
+        src/network/codec_data_filter.cpp
         src/network/data_buffer.cpp
         src/network/length_prefix_codec.cpp
         src/network/network.cpp

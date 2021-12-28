@@ -22,6 +22,7 @@
 #include <iterator>
 #include <algorithm>
 
+#include <ignite/network/codec_data_filter.h>
 #include <ignite/network/length_prefix_codec.h>
 #include <ignite/network/network.h>
 #include <ignite/network/utils.h>
@@ -65,6 +66,10 @@ namespace ignite
                 if (!asyncPool.IsValid())
                 {
                     std::vector<network::SP_DataFilter> filters;
+
+                    network::SP_CodecFactory codecFactory(new network::LengthPrefixCodecFactory());
+                    network::SP_CodecDataFilter codecFilter(new network::CodecDataFilter(codecFactory));
+                    filters.push_back(codecFilter);
 
                     asyncPool = network::MakeAsyncClientPool(*this, filters);
 

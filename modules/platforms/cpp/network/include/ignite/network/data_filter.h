@@ -44,7 +44,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            ~DataFilter()
+            virtual ~DataFilter()
             {
                 // No-op.
             }
@@ -89,7 +89,7 @@ namespace ignite
                 return handler;
             }
 
-        private:
+        protected:
             /** Sink. */
             DataSink* sink;
 
