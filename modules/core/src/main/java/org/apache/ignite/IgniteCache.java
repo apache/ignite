@@ -196,18 +196,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy);
 
     /**
-     * <b>This is an experimental API.</b>
-     * <p>
-     * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt with default
-     * conflict resolve strategy.
-     *
-     * @see IgniteCache#withReadRepair(ReadRepairStrategy) for details.
-     * @return Cache with explicit consistency check on each read and repair if necessary.
-     */
-    @IgniteExperimental
-    public IgniteCache<K, V> withReadRepair();
-
-    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,

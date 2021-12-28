@@ -64,11 +64,4 @@ public enum ReadRepairStrategy {
 
         throw new IllegalArgumentException("Unknown strategy: " + name);
     }
-
-    /**
-     * @return Read Repair strategy.
-     */
-    public static ReadRepairStrategy defaultStrategy() {
-        return LWW;
-    }
 }

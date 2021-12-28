@@ -207,7 +207,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         injectTestSystemOut();
 
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", "non-existent", String.valueOf(i)));
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+                execute("--consistency", "repair", "non-existent", String.valueOf(i), strategy.toString()));
             assertContains(log, testOut.toString(), "Cache not found");
         }
     }

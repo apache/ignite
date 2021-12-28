@@ -135,9 +135,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             String cacheName = argIter.nextArg("Expected cache name.");
             int part = argIter.nextNonNegativeIntArg("Expected partition.");
 
-            ReadRepairStrategy strategy = argIter.hasNextSubArg() ?
-                ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy.")) :
-                ReadRepairStrategy.defaultStrategy();
+            ReadRepairStrategy strategy = ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy."));
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
         }
