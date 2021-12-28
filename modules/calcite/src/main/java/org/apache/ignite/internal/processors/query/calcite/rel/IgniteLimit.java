@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -110,7 +111,12 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         if (TraitUtils.distribution(required) != IgniteDistributions.single())
             return null;
 
-        if (!TraitUtils.collation(required).satisfies(TraitUtils.collation(traitSet)))
+        RelCollation requiredCollation = TraitUtils.collation(required);
+        RelCollation relCollation = TraitUtils.collation(traitSet);
+
+        if (relCollation.satisfies(requiredCollation))
+            required = required.replace(relCollation);
+        else if (!requiredCollation.satisfies(relCollation))
             return null;
 
         return Pair.of(required, ImmutableList.of(required));

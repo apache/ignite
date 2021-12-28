@@ -25,6 +25,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
@@ -161,6 +163,19 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNull(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             findFirstNode(phys, byClass(IgniteSort.class))
+        );
+    }
+
+    /** */
+    @Test
+    public void testEmptyCollationPasshThroughLimit() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("TEST", IgniteDistributions.single(), "A", Integer.class));
+
+        assertPlan("SELECT (SELECT test.a FROM test t ORDER BY 1 LIMIT 1) FROM test", publicSchema,
+            hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(input(1, hasChildThat(isInstanceOf(IgniteLimit.class)
+                    .and(input(isInstanceOf(IgniteSort.class)))))))
         );
     }
 }
