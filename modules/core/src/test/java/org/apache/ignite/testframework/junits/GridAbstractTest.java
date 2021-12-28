@@ -3040,7 +3040,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return MX bean.
      * @throws Exception If failed.
      */
-    public static DynamicMBean metricRegistry(
+    public DynamicMBean metricRegistry(
         String igniteInstanceName,
         String grp,
         String metrics) {

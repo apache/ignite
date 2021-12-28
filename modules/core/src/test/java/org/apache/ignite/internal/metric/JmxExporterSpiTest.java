@@ -494,7 +494,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public static TabularDataSupport systemView(IgniteEx g, String name) {
+    public TabularDataSupport systemView(IgniteEx g, String name) {
         try {
             DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
 
