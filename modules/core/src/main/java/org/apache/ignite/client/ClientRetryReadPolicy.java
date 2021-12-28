@@ -31,7 +31,6 @@ public class ClientRetryReadPolicy implements ClientRetryPolicy {
             case CACHE_GET_CONFIGURATION:
             case CACHE_GET_SIZE:
             case CACHE_GET_ALL:
-            case CACHE_PARTITIONS:
             case QUERY_SCAN:
             case QUERY_CONTINUOUS:
             case GET_BINARY_TYPE:

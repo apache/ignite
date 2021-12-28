@@ -18,6 +18,9 @@
 package org.apache.ignite.client;
 
 import java.util.Set;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 
 /**
  * Client operation type.
@@ -122,47 +125,42 @@ public enum ClientOperationType {
     CACHE_CLEAR_EVERYTHING,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get and put ({@link ClientCache#getAndPut(Object, Object)}).
      */
     CACHE_GET_AND_PUT,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get and remove ({@link ClientCache#getAndRemove(Object)}).
      */
     CACHE_GET_AND_REMOVE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get and replace ({@link ClientCache#getAndReplace(Object, Object)}).
      */
     CACHE_GET_AND_REPLACE,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Put if absent ({@link ClientCache#putIfAbsent(Object, Object)}).
      */
     CACHE_PUT_IF_ABSENT,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Get and put if absent ({@link ClientCache#getAndPutIfAbsent(Object, Object)}).
      */
     CACHE_GET_AND_PUT_IF_ABSENT,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
-     */
-    CACHE_PARTITIONS,
-
-    /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Scan query ({@link ClientCache#query(Query)}).
      */
     QUERY_SCAN,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * SQL query ({@link ClientCache#query(SqlFieldsQuery)}).
      */
     QUERY_SQL,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Continuous query ({@link ClientCache#query(ContinuousQuery, ClientDisconnectListener)}).
      */
     QUERY_CONTINUOUS,
 

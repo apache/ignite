@@ -304,9 +304,6 @@ public enum ClientOperation {
             case CACHE_CLEAR_KEYS:
                 return ClientOperationType.CACHE_CLEAR_MULTIPLE;
 
-            case CACHE_PARTITIONS:
-                return ClientOperationType.CACHE_PARTITIONS;
-
             case QUERY_SCAN:
                 return ClientOperationType.QUERY_SCAN;
 
