@@ -23,11 +23,31 @@ import org.apache.ignite.configuration.ClientConfiguration;
  * Retry policy context. See {@link ClientRetryPolicy#shouldRetry}.
  */
 public interface ClientRetryPolicyContext {
+    /**
+     * Gets the client configuration.
+     *
+     * @return Client configuration.
+     */
     public ClientConfiguration configuration();
 
+    /**
+     * Gets the operation type.
+     *
+     * @return Operation type.
+     */
     public ClientOperationType operation();
 
+    /**
+     * Gets the current iteration number (zero-based).
+     *
+     * @return Zero-based iteration counter.
+     */
     public int iteration();
 
+    /**
+     * Gets the connection exception that caused current retry iteration.
+     *
+     * @return Exception.
+     */
     public ClientConnectionException exception();
 }

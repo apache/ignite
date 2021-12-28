@@ -439,6 +439,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test reconnection throttling.
      */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testReconnectionThrottling() throws Exception {
         int throttlingRetries = 5;
         long throttlingPeriod = 3_000L;
