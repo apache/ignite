@@ -81,7 +81,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
-     *  @param cacheName Cache name.
+     * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
