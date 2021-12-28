@@ -91,6 +91,8 @@ public class TrackingPageIO extends PageIO {
      * @return <code>-1</code> if everything is ok, otherwise last saved tag.
      */
     public long markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        assertPageType(buf);
+
         long tag = validateSnapshotTag(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);
@@ -266,6 +268,8 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      */
     public void resetCorruptFlag(ByteBuffer buf) {
+        assertPageType(buf);
+
         setLastSnasphotTag0(buf, getLastSnapshotTag(buf));
     }
 
@@ -275,6 +279,8 @@ public class TrackingPageIO extends PageIO {
      * @param addr Buffer.
      */
     public void resetCorruptFlag(long addr) {
+        assertPageType(addr);
+
         setLastSnasphotTag0(addr, getLastSnapshotTag(addr));
     }
 
@@ -291,6 +297,8 @@ public class TrackingPageIO extends PageIO {
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize)
         throws TrackingPageIsCorruptedException {
+        assertPageType(buf);
+
         if (isCorrupted(buf))
             throw TrackingPageIsCorruptedException.INSTANCE;
 
@@ -340,10 +348,10 @@ public class TrackingPageIO extends PageIO {
     /**
      * @param snapshotTag Snapshot id.
      *
-     * @return true if snapshotTag is odd, otherwise - false.
+     * @return true if snapshotTag is even, otherwise - false.
      */
     private boolean useLeftHalf(long snapshotTag) {
-        return (snapshotTag & 0b1) == 0;
+        return (snapshotTag & 1) == 0;
     }
 
     /**
@@ -388,6 +396,8 @@ public class TrackingPageIO extends PageIO {
      */
     @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
         long lastSuccessfulSnapshotTag, int pageSize) throws TrackingPageIsCorruptedException {
+        assertPageType(buf);
+
         if (isCorrupted(buf))
             throw TrackingPageIsCorruptedException.INSTANCE;
 

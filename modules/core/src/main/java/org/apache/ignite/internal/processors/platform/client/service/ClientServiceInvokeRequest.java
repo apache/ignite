@@ -211,7 +211,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      * @param ctx Connection context.
      * @param name Service name.
      */
-    private static ServiceDescriptor findServiceDescriptor(ClientConnectionContext ctx, String name) {
+    public static ServiceDescriptor findServiceDescriptor(ClientConnectionContext ctx, String name) {
         for (ServiceDescriptor desc : ctx.kernalContext().service().serviceDescriptors()) {
             if (name.equals(desc.name()))
                 return desc;

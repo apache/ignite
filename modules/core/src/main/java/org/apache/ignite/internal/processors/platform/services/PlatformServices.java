@@ -108,10 +108,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
 
     /** */
-    private static final byte PLATFORM_JAVA = 0;
+    public static final byte PLATFORM_JAVA = 0;
 
     /** */
-    private static final byte PLATFORM_DOTNET = 1;
+    public static final byte PLATFORM_DOTNET = 1;
 
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
