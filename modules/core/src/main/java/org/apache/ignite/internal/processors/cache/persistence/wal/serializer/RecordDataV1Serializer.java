@@ -681,12 +681,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
 
-                List<DataEntry> entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readPlainDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readPlainDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
@@ -695,12 +699,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
 
-                entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readEncryptedDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
