@@ -329,7 +329,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testServicesWithCallerContext() throws Exception {
+    private void testServicesWithCallerContext() {
         X.println(">>>> Testing services with caller context");
 
         ServiceCallContext callCtx = ServiceCallContext.builder().put("key", "value").build();
@@ -403,9 +403,6 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             else
                 testServiceDescriptorsThrows();
         }
-
-        if (clientVer.compareTo(VER_2_13_0) >= 0 && serverVer.compareTo(VER_2_13_0) >= 0)
-            testServicesWithCallerContext();
     }
 
     /** */
