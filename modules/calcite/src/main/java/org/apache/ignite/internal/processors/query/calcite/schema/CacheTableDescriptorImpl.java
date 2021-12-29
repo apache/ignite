@@ -726,7 +726,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             storageType = desc.type();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean field() {
             return true;
         }

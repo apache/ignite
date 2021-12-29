@@ -25,16 +25,28 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * Column descriptor for cache tables.
  */
 public interface CacheColumnDescriptor extends ColumnDescriptor {
-    /** */
+    /**
+     * Is column a field of composite object.
+     *
+     * @return {@code True} if column is a field of composite object, {@code false} if column is an entire object.
+     */
     public boolean field();
 
-    /** */
+    /**
+     * Is column relate to key.
+     *
+     * @return {@code True} if column relate to key, {@code false} if column relate to value.
+     */
     public boolean key();
 
-    /** */
+    /**
+     * Gets column value from CacheDataRow.
+     */
     public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
         throws IgniteCheckedException;
 
-    /** */
+    /**
+     * Sets field of composite object value.
+     */
     public void set(Object dst, Object val) throws IgniteCheckedException;
 }
