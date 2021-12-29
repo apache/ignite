@@ -2259,7 +2259,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
-        int entryCnt = 0;
+        int entryCnt = dataRec.entryCount();
 
         for (int i = 0; i < entryCnt; i++) {
             DataEntry entry = dataRec.get(i);
