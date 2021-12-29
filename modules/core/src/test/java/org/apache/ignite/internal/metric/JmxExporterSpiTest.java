@@ -944,7 +944,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.get("topology"));
             assertNull(view.get("transformer"));
             assertTrue((Boolean)view.get("keepBinary"));
-            assertEquals("null", view.get("subjectId"));
+            assertNull(view.get("subjectId"));
             assertNull(view.get("taskName"));
             assertEquals(20, view.get("pageSize"));
         };
