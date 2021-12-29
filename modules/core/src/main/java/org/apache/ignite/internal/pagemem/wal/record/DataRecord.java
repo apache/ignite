@@ -89,14 +89,11 @@ public class DataRecord extends TimeStampRecord {
         return writeEntries == null ? Collections.emptyList() : (List<DataEntry>)writeEntries;
     }
 
-    /**
-     * @return Count of {@link DataEntry} stored inside this record.
-     */
+    /** @return Count of {@link DataEntry} stored inside this record. */
     public int entryCount() {
-        if (writeEntries instanceof DataEntry)
-            return 1;
-
-        return ((List<DataEntry>)writeEntries).size();
+        return (writeEntries instanceof DataEntry)
+            ? 1
+            : ((List<DataEntry>)writeEntries).size();
     }
 
     /**

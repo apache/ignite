@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -172,11 +174,13 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
                 DataRecord rec = (DataRecord)walEntry.get2();
 
-                createOpCnt += rec.writeEntries()
-                    .stream()
-                    .filter(e ->
-                        e.cacheId() == cacheId && GridCacheOperation.CREATE == e.op() && e.nearXidVersion() == null)
-                    .count();
+                Predicate<DataEntry> filter =
+                    e -> e.cacheId() == cacheId && GridCacheOperation.CREATE == e.op() && e.nearXidVersion() == null;
+
+                for (int i = 0; i < rec.entryCount(); i++) {
+                    if (filter.test(rec.get(i)))
+                        createOpCnt++;
+                }
             }
         }
 

@@ -406,8 +406,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
             kernalCtx, null, null, false, false, false, false, false);
 
-        int entryCnt = dataRec.entryCount();
-
+        final int entryCnt = dataRec.entryCount();
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entryCnt);
 
         for (int i = 0; i < entryCnt; i++) {
