@@ -695,7 +695,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
             this.name = name;
 
-            desc = new TestCacheTableDescriptor(this::distribution, type);
+            desc = new TestTableDescriptor(this::distribution, type);
         }
 
         /**
@@ -844,7 +844,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static class TestCacheTableDescriptor implements CacheTableDescriptor {
+    static class TestTableDescriptor implements CacheTableDescriptor {
         /** */
         private final Supplier<IgniteDistribution> distributionSupp;
 
@@ -852,7 +852,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final RelDataType rowType;
 
         /** */
-        public TestCacheTableDescriptor(Supplier<IgniteDistribution> distribution, RelDataType rowType) {
+        public TestTableDescriptor(Supplier<IgniteDistribution> distribution, RelDataType rowType) {
             this.distributionSupp = distribution;
             this.rowType = rowType;
         }
