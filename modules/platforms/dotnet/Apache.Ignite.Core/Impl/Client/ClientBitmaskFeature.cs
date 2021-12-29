@@ -32,6 +32,6 @@ namespace Apache.Ignite.Core.Impl.Client
         // DefaultQueryTimeout = 6, // IGNITE-13692
         QueryPartitionsBatchSize = 7,
         BinaryConfiguration = 8,
-        ServiceInvokeCtx = 9
+        ServiceInvokeCtx = 10
     }
 }

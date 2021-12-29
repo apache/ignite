@@ -149,7 +149,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /// <summary>
         /// Invokes the proxy method.
         /// </summary>
-        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args, PlatformType platformType, IDictionary callAttrs)
+        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args,
+            PlatformType platformType, IDictionary callAttrs)
         {
             return _ignite.Socket.DoOutInOp(ClientOp.ServiceInvoke,
                 ctx =>
