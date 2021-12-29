@@ -121,6 +121,7 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
     @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
+        curSrcIdx = 0;
         grouping.groups.clear();
     }
 
