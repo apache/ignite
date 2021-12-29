@@ -65,6 +65,8 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
                 synchronized (this) {
                     Collection<?> keys = ((IgniteConsistencyViolationException)e).keys();
 
+                    assert keys.size() <= 1 : keys.size();
+
                     if (this.keys == null)
                         this.keys = new GridConcurrentHashSet<>();
 
@@ -72,6 +74,9 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
 
                     if (e instanceof IgniteIrreparableConsistencyViolationException) {
                         Collection<?> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
+
+                        assert irreparableKeys.size() <= 1 : irreparableKeys.size();
+                        assert (keys.size() + irreparableKeys.size()) <= 1 : keys.size() + irreparableKeys.size(); // Single key fix.
 
                         if (this.irreparableKeys == null)
                             this.irreparableKeys = new GridConcurrentHashSet<>();
