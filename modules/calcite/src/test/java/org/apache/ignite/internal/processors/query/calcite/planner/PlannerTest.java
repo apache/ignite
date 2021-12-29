@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -1228,7 +1227,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        emp.addIndex(new CacheIndexImpl(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
+        emp.addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx");
 
         TestTable dept = new TestTable(
             new RelDataTypeFactory.Builder(f)
@@ -1241,7 +1240,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        dept.addIndex(new CacheIndexImpl(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
+        dept.addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx");
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

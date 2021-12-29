@@ -25,7 +25,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -88,7 +87,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     public void testProjectFilterMergeIndex() throws Exception {
         // Test project and filter merge into index scan.
         TestTable tbl = ((TestTable)publicSchema.getTable("TBL"));
-        tbl.addIndex(new CacheIndexImpl(RelCollations.of(2), "IDX_C", null, tbl));
+        tbl.addIndex(RelCollations.of(2), "IDX_C");
 
         // Without index condition shift.
         assertPlan("SELECT a, b FROM tbl WHERE c = 0", publicSchema, isInstanceOf(IgniteIndexScan.class)
@@ -118,7 +117,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     public void testIdentityFilterMergeIndex() throws Exception {
         // Test project and filter merge into index scan.
         TestTable tbl = ((TestTable)publicSchema.getTable("TBL"));
-        tbl.addIndex(new CacheIndexImpl(RelCollations.of(2), "IDX_C", null, tbl));
+        tbl.addIndex(RelCollations.of(2), "IDX_C");
 
         // Without index condition shift.
         assertPlan("SELECT a, b, c FROM tbl WHERE c = 0", publicSchema, isInstanceOf(IgniteIndexScan.class)
