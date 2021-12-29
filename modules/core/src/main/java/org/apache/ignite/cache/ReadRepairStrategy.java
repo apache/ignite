@@ -30,7 +30,7 @@ public enum ReadRepairStrategy {
      * <p>
      * May cause {@link IgniteException} when fix is impossible (unable to detect the newest entry):
      * <ul>
-     * <li>Null(s) found as well as non-null values for the save key.
+     * <li>Null(s) found as well as non-null values for the same key.
      * <p>
      * Null (missed entry) has no version, so, it can not be compared with the versioned entry.</li>
      * <li>Entries with the same version have different values.</li>
