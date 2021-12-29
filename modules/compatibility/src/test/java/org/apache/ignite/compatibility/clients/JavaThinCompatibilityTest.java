@@ -68,6 +68,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -341,6 +342,22 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
+    private void testServicesWithCallerContextThrows() {
+        X.println(">>>> Testing services with caller context throws");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            ServiceCallContext callCtx = ServiceCallContext.builder().put("key", "value").build();
+
+            EchoServiceInterface svc =
+                client.services().serviceProxy("test_service", EchoServiceInterface.class, callCtx);
+
+            Throwable err = assertThrowsWithCause(() -> svc.echo(1), ClientFeatureNotSupportedByServerException.class);
+
+            assertEquals("Feature " + SERVICE_INVOKE_CALLCTX.name() + " is not supported by the server", err.getMessage());
+        }
+    }
+
+    /** */
     private void testContinuousQueries() throws Exception {
         X.println(">>>> Testing continuous queries");
 
@@ -400,8 +417,10 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
                 testServiceDescriptors();
                 testServicesWithCallerContext();
             }
-            else
+            else {
                 testServiceDescriptorsThrows();
+                testServicesWithCallerContextThrows();
+            }
         }
     }
 
