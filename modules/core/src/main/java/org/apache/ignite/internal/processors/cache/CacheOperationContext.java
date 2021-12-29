@@ -93,7 +93,7 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
-        ReadRepairStrategy readRepairStrategy,
+        @Nullable ReadRepairStrategy readRepairStrategy,
         boolean allowAtomicOpsInTx
     ) {
         this.skipStore = skipStore;
