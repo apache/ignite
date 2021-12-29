@@ -22,6 +22,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import com.google.common.collect.Lists;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -891,6 +893,53 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         String resSql = String.format(outerSqlTemplate, subSql);
 
         check(resSql, 2);
+    }
+
+    /**
+     * Case when select subquery is under EXISTS operator.
+     */
+    @Test
+    public void testExistsOperatorWithSubqueryUnderSelect() {
+        String outerSqlTemplate = "SELECT (EXISTS (%s));";
+        String subSql1 = "SELECT id FROM dep WHERE id = 1";
+        String subSql2 = "SELECT 1 FROM dep WHERE id = 1";
+
+        check(String.format(outerSqlTemplate, subSql1), 2);
+
+        check(String.format(outerSqlTemplate, subSql2), 2);
+    }
+
+    /**
+     * Case when select subquery is under different possible operators.
+     */
+    @Test
+    public void testDifferentOperatorsWithSubqueryUnderSelect() {
+        String outerSqlTemplate = "SELECT (%s);";
+
+        List<String> subSelects = new ArrayList<>();
+
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IN (1,-1)");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IS NOT NULL");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IS 1");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) < 0");
+        subSelects.add("-(SELECT %s FROM dep WHERE id = 1)");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) = 2");
+
+        for (String param : Lists.newArrayList("1", "2")) {
+            for (String subSelect : subSelects) {
+                String formattedSubSelect = String.format(subSelect, param);
+
+                check(String.format(outerSqlTemplate, formattedSubSelect), 2);
+            }
+        }
+
+        for (String param : Lists.newArrayList("id")) {
+            for (String subSelect : subSelects) {
+                String formattedSubSelect = String.format(subSelect, param);
+
+                check(String.format(outerSqlTemplate, formattedSubSelect), 1);
+            }
+        }
     }
 
     /**
