@@ -266,12 +266,16 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
-                buf.putInt(dataRec.writeEntries().size());
+                int entryCnt = dataRec.entryCount();
+
+                buf.putInt(entryCnt);
                 buf.putLong(dataRec.timestamp());
 
                 boolean encrypted = isDataRecordEncrypted(dataRec);
 
-                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                for (int i = 0; i < entryCnt; i++) {
+                    DataEntry dataEntry = dataRec.get(i);
+
                     if (encrypted)
                         putEncryptedDataEntry(buf, dataEntry);
                     else

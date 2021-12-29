@@ -1381,15 +1381,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
-                buf.putInt(dataRec.writeEntries().size());
+                int entryCnt = dataRec.entryCount();
+
+                buf.putInt(entryCnt);
 
                 boolean encrypted = isDataRecordEncrypted(dataRec);
 
-                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                for (int i = 0; i < entryCnt; i++) {
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataEntry);
+                        putEncryptedDataEntry(buf, dataRec.get(i));
                     else
-                        putPlainDataEntry(buf, dataEntry);
+                        putPlainDataEntry(buf, dataRec.get(i));
                 }
 
                 break;
@@ -2180,7 +2182,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encryptionDisabled)
             return false;
 
-        for (DataEntry e : rec.writeEntries()) {
+        int entryCnt = rec.entryCount();
+
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry e = rec.get(i);
+
             if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
@@ -2253,8 +2259,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
+        int entryCnt = 0;
 
-        for (DataEntry entry : dataRec.writeEntries()) {
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry entry = dataRec.get(i);
+
             int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))

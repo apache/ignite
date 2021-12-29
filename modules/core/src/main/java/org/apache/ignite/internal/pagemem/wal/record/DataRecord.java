@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class DataRecord extends TimeStampRecord {
     /** */
     @GridToStringInclude
-    private List<DataEntry> writeEntries;
+    private Object writeEntries;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -60,17 +60,10 @@ public class DataRecord extends TimeStampRecord {
     }
 
     /**
-     * @param writeEntry Write entry.
-     */
-    public DataRecord(DataEntry writeEntry, long timestamp) {
-        this(Collections.singletonList(writeEntry), timestamp);
-    }
-
-    /**
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
      */
-    public DataRecord(List<DataEntry> writeEntries, long timestamp) {
+    public DataRecord(Object writeEntries, long timestamp) {
         super(timestamp);
 
         this.writeEntries = writeEntries;
@@ -90,7 +83,34 @@ public class DataRecord extends TimeStampRecord {
      * @return Collection of write entries.
      */
     public List<DataEntry> writeEntries() {
-        return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
+        if (writeEntries instanceof DataEntry)
+            return Collections.singletonList((DataEntry)writeEntries);
+
+        return writeEntries == null ? Collections.emptyList() : (List<DataEntry>)writeEntries;
+    }
+
+    /**
+     * @return Count of {@link DataEntry} stored inside this record.
+     */
+    public int entryCount() {
+        if (writeEntries instanceof DataEntry)
+            return 1;
+
+        return ((List<DataEntry>)writeEntries).size();
+    }
+
+    /**
+     * @param idx Index of element.
+     * @return {@link DataEntry} at the specified position.
+     */
+    public DataEntry get(int idx) {
+        if (writeEntries instanceof DataEntry) {
+            assert idx == 0;
+
+            return (DataEntry)writeEntries;
+        }
+
+        return ((List<DataEntry>)writeEntries).get(idx);
     }
 
     /** {@inheritDoc} */
