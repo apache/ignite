@@ -426,7 +426,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE TABLE test(i INTEGER)");
         executeSql("INSERT INTO test VALUES (1), (2)");
 
-        assertQuery("SELECT (SELECT test.i EXCEPT SELECT 0) FROM test")
+        assertQuery("SELECT (SELECT i FROM test EXCEPT SELECT test.i) FROM test")
             .returns(1)
             .returns(2)
             .check();
