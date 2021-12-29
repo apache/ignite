@@ -28,19 +28,12 @@ import org.apache.ignite.lang.IgniteInClosure;
  * Compound future that represents the result of the external fixes for some keys.
  */
 public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implements IgniteInClosure<IgniteInternalFuture<Void>> {
-    /** Initialization flag. */
-    private static final int INIT_FLAG = 0x1;
-
-    /** Flags updater. */
-    private static final AtomicIntegerFieldUpdater<GridCompoundReadRepairFuture> FLAGS_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(GridCompoundReadRepairFuture.class, "initFlag");
-
     /** Listener calls updater. */
     private static final AtomicIntegerFieldUpdater<GridCompoundReadRepairFuture> LSNR_CALLS_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundReadRepairFuture.class, "lsnrCalls");
 
-    /** Initialization flag. Updated via {@link #FLAGS_UPD}. */
-    private volatile int initFlag;
+    /** Initialized. */
+    private volatile boolean inited;
 
     /** Listener calls. */
     private volatile int lsnrCalls;
@@ -100,16 +93,9 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
      * Mark this future as initialized.
      */
     public final void markInitialized() {
-        if (FLAGS_UPD.compareAndSet(this, 0, INIT_FLAG))
-            checkComplete();
-    }
+        inited = true;
 
-    /**
-     * @return {@code True} if this future was initialized. Initialization happens when {@link #markInitialized()}
-     * method is called on future.
-     */
-    public final boolean initialized() {
-        return initFlag == INIT_FLAG;
+        checkComplete();
     }
 
     /**
@@ -118,7 +104,7 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
     private void checkComplete() {
         assert lsnrCalls <= size;
 
-        if (initialized() && !isDone() && lsnrCalls == size) {
+        if (inited && !isDone() && lsnrCalls == size) {
             if (keys == null && irreparableKeys == null)
                 onDone();
             else if (irreparableKeys == null)
