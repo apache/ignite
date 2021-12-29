@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  *
@@ -136,6 +137,11 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
         // No-op.
     }
 }

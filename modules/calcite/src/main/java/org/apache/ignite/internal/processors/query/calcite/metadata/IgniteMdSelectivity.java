@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSp
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
@@ -366,8 +367,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         assert tbl != null;
 
-        if (QueryUtils.KEY_FIELD_NAME.equals(colName))
-            colName = tbl.descriptor().typeDescription().keyFieldName();
+        if (tbl instanceof IgniteCacheTable && QueryUtils.KEY_FIELD_NAME.equals(colName))
+            colName = ((IgniteCacheTable)tbl).descriptor().typeDescription().keyFieldName();
 
         Statistic stat = tbl.getStatistic();
 

@@ -67,8 +67,8 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         RexNode condition = scan.condition();
         ImmutableBitSet requiredCols = scan.requiredColumns();
 
-        List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().keySet().stream()
-            .map(idxName -> igniteTable.toRel(cluster, optTable, idxName, proj, condition, requiredCols))
+        List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().values().stream()
+            .map(idx -> idx.toRel(cluster, optTable, proj, condition, requiredCols))
             .collect(Collectors.toList());
 
         assert !indexes.isEmpty();

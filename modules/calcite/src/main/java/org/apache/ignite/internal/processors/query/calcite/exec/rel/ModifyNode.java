@@ -32,8 +32,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
  */
 public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    protected final TableDescriptor desc;
+    protected final CacheTableDescriptor desc;
 
     /** */
     private final TableModify.Operation op;
@@ -79,7 +79,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     public ModifyNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        TableDescriptor desc,
+        CacheTableDescriptor desc,
         TableModify.Operation op,
         List<String> cols
     ) {

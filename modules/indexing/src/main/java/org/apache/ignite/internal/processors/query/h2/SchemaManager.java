@@ -75,6 +75,7 @@ import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.h2.index.Index;
 import org.h2.table.Column;
 import org.jetbrains.annotations.NotNull;
@@ -253,6 +254,9 @@ public class SchemaManager implements GridQuerySchemaManager {
 
                 systemViews.add(view);
             }
+
+            if (view.getSystemView() != null) // Skip pure H2-indexing views.
+                lsnr.onSystemViewCreated(schema, view.getSystemView());
         }
         catch (IgniteCheckedException | SQLException e) {
             throw new IgniteException("Failed to register system view.", e);
@@ -943,6 +947,9 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onFunctionCreated(String schemaName, String name, Method method) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {}
     }
 
     /** */
@@ -1020,6 +1027,11 @@ public class SchemaManager implements GridQuerySchemaManager {
         /** {@inheritDoc} */
         @Override public void onFunctionCreated(String schemaName, String name, Method method) {
             lsnrs.forEach(lsnr -> lsnr.onFunctionCreated(schemaName, name, method));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
+            lsnrs.forEach(lsnr -> lsnr.onSystemViewCreated(schemaName, sysView));
         }
     }
 

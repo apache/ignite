@@ -80,10 +80,10 @@ import static java.util.Collections.singletonList;
 /**
  *
  */
-public class TableDescriptorImpl extends NullInitializerExpressionFactory
-    implements TableDescriptor {
+public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
+    implements CacheTableDescriptor {
     /** */
-    private static final ColumnDescriptor[] DUMMY = new ColumnDescriptor[0];
+    private static final CacheColumnDescriptor[] DUMMY = new CacheColumnDescriptor[0];
 
     /** */
     private final GridCacheContextInfo<?, ?> cacheInfo;
@@ -95,10 +95,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final Object affinityIdentity;
 
     /** */
-    private final ColumnDescriptor[] descriptors;
+    private final CacheColumnDescriptor[] descriptors;
 
     /** */
-    private final Map<String, ColumnDescriptor> descriptorsMap;
+    private final Map<String, CacheColumnDescriptor> descriptorsMap;
 
     /** */
     private final int keyField;
@@ -113,7 +113,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final ImmutableBitSet insertFields;
 
     /** */
-    public TableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
+    public CacheTableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
         Object affinityIdentity) {
         this.cacheInfo = cacheInfo;
         this.typeDesc = typeDesc;
@@ -121,7 +121,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         Set<String> fields = this.typeDesc.fields().keySet();
 
-        List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
+        List<CacheColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
         // A _key/_val field is virtual in case there is an alias or a property(es) mapped to the _key/_val field.
         BitSet virtualFields = new BitSet();
@@ -175,8 +175,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             }
         }
 
-        Map<String, ColumnDescriptor> descriptorsMap = U.newHashMap(descriptors.size());
-        for (ColumnDescriptor descriptor : descriptors)
+        Map<String, CacheColumnDescriptor> descriptorsMap = U.newHashMap(descriptors.size());
+        for (CacheColumnDescriptor descriptor : descriptors)
             descriptorsMap.put(descriptor.name(), descriptor);
 
         List<Integer> affFields = new ArrayList<>();
@@ -262,7 +262,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         if (requiredColumns == null) {
             for (int i = 0; i < descriptors.length; i++) {
-                ColumnDescriptor desc = descriptors[i];
+                CacheColumnDescriptor desc = descriptors[i];
 
                 handler.set(i, res, TypeUtils.toInternal(ectx,
                     desc.value(ectx, cacheContext(), row), desc.storageType()));
@@ -270,7 +270,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         }
         else {
             for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
-                ColumnDescriptor desc = descriptors[j];
+                CacheColumnDescriptor desc = descriptors[j];
 
                 handler.set(i, res, TypeUtils.toInternal(ectx,
                     desc.value(ectx, cacheContext(), row), desc.storageType()));
@@ -282,7 +282,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
-        final ColumnDescriptor desc = descriptors[colIdx];
+        final CacheColumnDescriptor desc = descriptors[colIdx];
 
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
     }
@@ -361,7 +361,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         // skip _key and _val
         for (int i = 2; i < descriptors.length; i++) {
-            final ColumnDescriptor desc = descriptors[i];
+            final CacheColumnDescriptor desc = descriptors[i];
 
             if (!desc.field() || !desc.key())
                 continue;
@@ -393,7 +393,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
-                final ColumnDescriptor desc = descriptors[i];
+                final CacheColumnDescriptor desc = descriptors[i];
 
                 Object fieldVal = replaceDefault(handler.get(i, row), desc);
 
@@ -467,7 +467,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         offset += descriptorsMap.size();
 
         for (int i = 0; i < updateColList.size(); i++) {
-            final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
+            final CacheColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
 
             assert !desc.key();
 
@@ -630,7 +630,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private static class KeyValDescriptor implements ColumnDescriptor {
+    private static class KeyValDescriptor implements CacheColumnDescriptor {
         /** */
         private final String name;
 
@@ -704,7 +704,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private static class FieldDescriptor implements ColumnDescriptor {
+    private static class FieldDescriptor implements CacheColumnDescriptor {
         /** */
         private final GridQueryProperty desc;
 
@@ -726,7 +726,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             storageType = desc.type();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean field() {
             return true;
         }

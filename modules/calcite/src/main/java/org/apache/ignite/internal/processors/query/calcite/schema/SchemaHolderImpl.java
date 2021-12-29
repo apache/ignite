@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -176,10 +176,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         String tblName = typeDesc.tableName();
 
-        TableDescriptorImpl desc =
-            new TableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
+        CacheTableDescriptorImpl desc =
+            new CacheTableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
 
-        schema.addTable(tblName, new IgniteTableImpl(ctx, desc));
+        schema.addTable(tblName, new CacheTableImpl(ctx, desc));
 
         rebuild();
     }
@@ -218,12 +218,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteCacheTable tbl = (IgniteCacheTable)schema.getTable(tblName);
         assert tbl != null;
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx, tbl);
+        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl);
         tbl.addIndex(idx);
     }
 
@@ -232,9 +232,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
      */
     @NotNull private static RelCollation deriveSecondaryIndexCollation(
         GridQueryIndexDescriptor idxDesc,
-        IgniteTable tbl
+        IgniteCacheTable tbl
     ) {
-        TableDescriptor tblDesc = tbl.descriptor();
+        CacheTableDescriptor tblDesc = tbl.descriptor();
         List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
 
         for (String idxField : idxDesc.fields()) {
@@ -271,6 +271,17 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
+
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        SystemViewTableDescriptorImpl<?> desc = new SystemViewTableDescriptorImpl<>(sysView);
+
+        schema.addTable(desc.name(), new SystemViewTableImpl(desc));
 
         rebuild();
     }

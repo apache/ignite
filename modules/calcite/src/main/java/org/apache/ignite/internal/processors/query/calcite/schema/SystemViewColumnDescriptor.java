@@ -16,26 +16,13 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+/**
+ * Column descriptor for system views.
+ */
+public interface SystemViewColumnDescriptor extends ColumnDescriptor {
+    /** System view original field name. */
+    public String originalName();
 
-/** */
-public interface ColumnDescriptor {
-    /** */
-    String name();
-
-    /** */
-    int fieldIndex();
-
-    /** */
-    RelDataType logicalType(IgniteTypeFactory f);
-
-    /** */
-    Class<?> storageType();
-
-    /** */
-    boolean hasDefaultValue();
-
-    /** */
-    Object defaultValue();
+    /** Is system view filtrable by this column. */
+    public boolean isFiltrable();
 }

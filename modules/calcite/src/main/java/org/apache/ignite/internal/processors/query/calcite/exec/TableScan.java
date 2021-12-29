@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,7 +57,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final ExecutionContext<Row> ectx;
 
     /** */
-    private final TableDescriptor desc;
+    private final CacheTableDescriptor desc;
 
     /** */
     private final RowFactory<Row> factory;
@@ -83,7 +83,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     public TableScan(
         ExecutionContext<Row> ectx,
-        TableDescriptor desc,
+        CacheTableDescriptor desc,
         int[] parts,
         Predicate<Row> filters,
         Function<Row, Row> rowTransformer,

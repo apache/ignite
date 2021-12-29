@@ -23,61 +23,62 @@ import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Ignite scannable index.
+ * Ignite scannable system view index.
  */
-public interface IgniteIndex {
+public class SystemViewIndexImpl implements IgniteIndex {
     /** */
-    public RelCollation collation();
+    private final String idxName;
 
     /** */
-    public String name();
+    private final SystemViewTableImpl tbl;
 
     /** */
-    public IgniteTable table();
+    public SystemViewIndexImpl(SystemViewTableImpl tbl) {
+        this.tbl = tbl;
+        idxName = tbl.descriptor().name() + "_IDX";
+    }
 
-    /**
-     * Converts index into relational expression.
-     *
-     * @param cluster         Custer.
-     * @param relOptTbl       Table.
-     * @param proj            List of required projections.
-     * @param cond            Conditions to filter rows.
-     * @param requiredColumns Set of columns to extract from original row.
-     * @return Table relational expression.
-     */
-    public IgniteLogicalIndexScan toRel(
+    /** */
+    @Override public RelCollation collation() {
+        return RelCollations.EMPTY;
+    }
+
+    /** */
+    @Override public String name() {
+        return idxName;
+    }
+
+    /** */
+    @Override public IgniteTable table() {
+        return tbl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogicalIndexScan toRel(
         RelOptCluster cluster,
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
-    );
-
-    /**
-     * Converts condition to index find predicate.
-     *
-     * @param cluster         Custer.
-     * @param cond            Conditions to filter rows.
-     * @param requiredColumns Set of columns to extract from original row.
-     * @return Index condition.
-     */
-    public IndexConditions toIndexCondition(
-        RelOptCluster cluster,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    );
+    ) {
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
+    }
 
     /** */
-    public <Row> Iterable<Row> scan(
+    @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
@@ -85,5 +86,30 @@ public interface IgniteIndex {
         Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
-    );
+    ) {
+        return new SystemViewScan<>(
+            execCtx,
+            tbl.descriptor(),
+            lowerIdxConditions, // Should have the same values as upperIdxConditions.
+            filters,
+            rowTransformer,
+            requiredColumns
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexConditions toIndexCondition(
+        RelOptCluster cluster,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        if (cond == null)
+            return new IndexConditions();
+
+        RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
+
+        List<RexNode> searchRow = RexUtils.buildHashSearchRow(cluster, cond, rowType, requiredColumns, true);
+
+        return new IndexConditions(searchRow, searchRow, searchRow, searchRow);
+    }
 }

@@ -87,15 +87,15 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
@@ -660,7 +660,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static class TestTable implements IgniteTable {
+    protected static class TestTable implements IgniteCacheTable {
         /** */
         private final String name;
 
@@ -677,7 +677,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private IgniteStatisticsImpl statistics;
 
         /** */
-        private final TableDescriptor desc;
+        private final CacheTableDescriptor desc;
 
         /** */
         TestTable(RelDataType type) {
@@ -731,18 +731,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             @Nullable ImmutableBitSet requiredColumns
         ) {
             return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(
-            RelOptCluster cluster,
-            RelOptTable relOptTbl,
-            String idxName,
-            @Nullable List<RexNode> proj,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */
@@ -808,7 +796,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public TableDescriptor descriptor() {
+        @Override public CacheTableDescriptor descriptor() {
             return desc;
         }
 
@@ -824,7 +812,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** */
         public TestTable addIndex(RelCollation collation, String name) {
-            indexes.put(name, new IgniteIndex(collation, name, null, this));
+            indexes.put(name, new CacheIndexImpl(collation, name, null, this));
 
             return this;
         }
@@ -839,6 +827,16 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
+        @Override public void ensureCacheStarted() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isModifiable() {
+            return true;
+        }
+
         /** */
         public String name() {
             return name;
@@ -846,7 +844,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static class TestTableDescriptor implements TableDescriptor {
+    static class TestTableDescriptor implements CacheTableDescriptor {
         /** */
         private final Supplier<IgniteDistribution> distributionSupp;
 
@@ -896,7 +894,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
-            @Nullable ImmutableBitSet requiredColunms) throws IgniteCheckedException {
+            @Nullable ImmutableBitSet requiredColumns) throws IgniteCheckedException {
             throw new AssertionError();
         }
 
@@ -959,16 +957,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean field() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean key() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean hasDefaultValue() {
             return false;
         }
@@ -994,18 +982,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx,
-            CacheDataRow src) throws IgniteCheckedException {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
         @Override public Object defaultValue() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) throws IgniteCheckedException {
             throw new AssertionError();
         }
     }

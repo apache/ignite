@@ -51,6 +51,7 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
@@ -236,5 +237,10 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable SystemView<?> getSystemView() {
+        return sysView;
     }
 }
