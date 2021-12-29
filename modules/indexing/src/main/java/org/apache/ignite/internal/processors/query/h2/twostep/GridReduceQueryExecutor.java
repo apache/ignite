@@ -320,8 +320,7 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     *
-     * @param qryId
+     * @param qryId Query ID.
      * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary.
@@ -338,7 +337,8 @@ public class GridReduceQueryExecutor {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Iterator<List<?>> query(
-        @Nullable Long qryId, String schemaName,
+        @Nullable Long qryId,
+        String schemaName,
         final GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
@@ -436,6 +436,7 @@ public class GridReduceQueryExecutor {
                     cancel.add(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
 
                     GridH2QueryRequest req = new GridH2QueryRequest()
+                        .queryId(qryId == null ? 0L : qryId)
                         .requestId(qryReqId)
                         .topologyVersion(topVer)
                         .pageSize(pageSize)
@@ -526,7 +527,8 @@ public class GridReduceQueryExecutor {
 
                             H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
-                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(), ctx.discovery().localNode(), qryId, qryReqId);
+                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
+                                ctx.discovery().localNode(), qryId, qryReqId);
 
                             ResultSet res = h2.executeSqlQueryWithTimer(stmt,
                                 conn,

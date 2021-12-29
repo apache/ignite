@@ -162,7 +162,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private GridH2SelectForUpdateTxDetails txReq;
 
     /** Id of the query assigned by {@link RunningQueryManager}. */
-    private Long qryId;
+    private long qryId;
 
     /** */
     private boolean explicitTimeout;
@@ -514,18 +514,18 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      *
      * @return Query id.
      */
-    public Long queryId() {
+    public long queryId() {
         return qryId;
     }
 
     /**
      * Sets id of the query assigned by {@link RunningQueryManager}.
      *
-     * @param runningQryId Running query id.
+     * @param queryId Query id.
      * @return {@code this} for chaining.
      */
-    public GridH2QueryRequest queryId(Long runningQryId) {
-        this.qryId = runningQryId;
+    public GridH2QueryRequest queryId(long queryId) {
+        this.qryId = queryId;
 
         return this;
     }

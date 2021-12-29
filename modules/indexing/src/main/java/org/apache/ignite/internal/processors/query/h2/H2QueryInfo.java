@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
@@ -74,7 +73,7 @@ public class H2QueryInfo {
      * @param node Originator node.
      * @param queryId Query id assigned by {@link RunningQueryManager}.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, ClusterNode node, @Nullable Long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, ClusterNode node, Long queryId) {
         try {
             assert stmt != null;
 
@@ -121,10 +120,12 @@ public class H2QueryInfo {
      * @param additionalInfo Additional query info.
      */
     public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
-        String globalQueryId = queryId == null ? "(unknown)" : QueryUtils.globalQueryId(nodeId, queryId);
+        StringBuilder msgSb = new StringBuilder(msg);
 
-        StringBuilder msgSb = new StringBuilder(msg)
-                                      .append(" [globalQueryId=").append(globalQueryId);
+        if (queryId != null && queryId > 0)
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
+        else
+            msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
 
         if (additionalInfo != null) {
             msgSb.append(additionalInfo).append(", ");
