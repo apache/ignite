@@ -20,6 +20,14 @@ WARNING: Experimental API.
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is data processing pattern used to asynchronously receive entries that has changed on local node
 so that action can be taken using the changed entry.
 
+Some use-cases for CDC:
+
+ * Stream changes in Warehouse.
+ * Update search index.
+ * Calculate statistics (streaming queries).
+ * Audit logs.
+ * Async interaction with extenal system - moderation, business process invocation, etc.
+
 Ignite implements CDC with an application `ignite-cdc.sh` and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
 
 CDC application and Ignite node integrated via WAL archive segments:
@@ -80,8 +88,41 @@ Let's get a closer look to the information provided:
 
 === `org.apache.ignite.cdc.CdcConsumer`
 
-Consumer of stream consists of `CdcEvent`. Should be implemented by the user.
+Consumer of change events. Should be implemented by the user.
+[cols="20%,80%",opts="header"]
+|===
+|Name |Description
+| `void start(MetricRegistry)` | Invoked one time on the start of CDC application. `MetricRegistry` should be used to export consumer specific metrics.
+| `boolean onEvents(Iterator<CdcEvent> events)` | Main method that processes changes. When this method returns `true` state will be saved on the disk. State points to the event next to the last read. In case of any failure consumption will continue from the last saved state.
+| `void stop()` | Invoked one time on the stop of CDC application.
+|===
 
 == Metrics
 
+`ignite-cdc.sh` uses the same SPI to export metrics as Ignite.
+The following metrics provided by the application itself (additional metrics may be provided by the consumer):
+|===
+|Name |Description
+| CurrentSegmentIndex | Index of currently processed WAL segment.
+| CommittedSegmentIndex | Index of WAL segment contains last commited state.
+| CommittedSegmentOffset | Commited offset in bytes inside WAL segment.
+| LastSegmentConsumptionTime | Time in milliseconds when last segment processing was started.
+| BinaryMetaDir | Binary meta directory this application reads from.
+| MarshallerDir | Marshaller directory this application reads from.
+| CdcDir | CDC directory this application reads from.
+|===
+
+== Logging
+
+`ignite-cdc.sh` use the same logging configuration as Ignite node. The only difference is log written in file "ignite-cdc.log"
+
 == Lifecycle
+
+IMPORTANT: `ignite-cdc.sh` implements fail-fast approach. It will just fail in case of any error. Restart should be configured with the OS tools.
+
+ 1. Finds required shared directories. Values from provided `IgniteConfiguration` taken.
+ 2. Locks CDC directory.
+ 3. Loads saved state.
+ 4. Starts the consumer.
+ 5. Infinitely waits for new available segment and processes it.
+ 6. Stop the consumer in case of failure or receive stop signal.

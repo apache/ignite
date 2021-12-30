@@ -33,7 +33,7 @@ The Native Persistence functionality is based on the following features:
 * Storing data partitions on disk
 * Write-ahead logging
 * Checkpointing
-* link:capture-data-change.adoc[Capture Data Change]
+* link:change-data-capture.adoc[Capture Data Change]
 * Usage of OS swap
 ////
 *TODO: diagram: update operation + wal + checkpointing*
