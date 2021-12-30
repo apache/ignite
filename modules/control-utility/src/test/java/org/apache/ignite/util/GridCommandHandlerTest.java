@@ -3216,10 +3216,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteSnapshotManager snpMgr = ig.context().cache().context().snapshotMgr();
 
         // Replace the IO factory in the snapshot manager so we have enough time to test the status command.
-        FileIOFactory currFactory = (FileIOFactory)U.getNonPublicMethod(snpMgr.getClass(), "ioFactory").invoke(snpMgr);
-
-        U.getNonPublicMethod(snpMgr.getClass(), "ioFactory", FileIOFactory.class)
-            .invoke(snpMgr, new SlowDownFileIoFactory(currFactory, getTestTimeout() / locPartsCnt, ioStartLatch));
+        snpMgr.ioFactory(new SlowDownFileIoFactory(snpMgr.ioFactory(), getTestTimeout() / locPartsCnt, ioStartLatch));
 
         // Restore single cache group.
         IgniteFuture<Void> restoreFut = snpMgr.restoreSnapshot(snpName, Collections.singleton(DEFAULT_CACHE_NAME));
