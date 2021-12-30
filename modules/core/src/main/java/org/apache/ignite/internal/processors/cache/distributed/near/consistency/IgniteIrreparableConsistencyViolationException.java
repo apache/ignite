@@ -27,13 +27,13 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteConsis
     private static final long serialVersionUID = 0L;
 
     /** Irreparable keys. */
-    private final Collection<?> irreparableKeys;
+    private final Collection<Object> irreparableKeys;
 
     /**
      * @param keys            Keys.
      * @param irreparableKeys Irreparable keys.
      */
-    public IgniteIrreparableConsistencyViolationException(Collection<?> keys, Collection<?> irreparableKeys) {
+    public IgniteIrreparableConsistencyViolationException(Collection<Object> keys, Collection<Object> irreparableKeys) {
         super(keys);
 
         assert irreparableKeys != null && !irreparableKeys.isEmpty() : irreparableKeys;
@@ -44,7 +44,7 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteConsis
     /**
      * Inconsistent keys found but can not be fixed using the specified strategy.
      */
-    public Collection<?> irreparableKeys() {
+    public Collection<Object> irreparableKeys() {
         return irreparableKeys;
     }
 }
