@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -41,9 +42,6 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
     /** Count of compounds in the future. */
     private volatile int size;
 
-    /** Keys. */
-    private volatile Collection<Object> keys;
-
     /** Irreparable Keys. */
     private volatile Collection<Object> irreparableKeys;
 
@@ -61,29 +59,19 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
         Throwable e = fut.error();
 
         if (e != null) {
-            if (e instanceof IgniteConsistencyViolationException) {
+            if (e instanceof IgniteIrreparableConsistencyViolationException) {
+                Collection<?> keys = ((IgniteConsistencyViolationException)e).keys();
+                Collection<?> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
+
+                assert keys.isEmpty() : keys.size();
+                assert irreparableKeys.size() == 1 : irreparableKeys.size(); // Single key fix.
+
                 synchronized (this) {
-                    Collection<?> keys = ((IgniteConsistencyViolationException)e).keys();
-
-                    assert keys.size() <= 1 : keys.size();
-
-                    if (this.keys == null)
-                        this.keys = new GridConcurrentHashSet<>();
-
-                    this.keys.addAll(keys);
-
-                    if (e instanceof IgniteIrreparableConsistencyViolationException) {
-                        Collection<?> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
-
-                        assert irreparableKeys.size() <= 1 : irreparableKeys.size();
-                        assert (keys.size() + irreparableKeys.size()) <= 1 : keys.size() + irreparableKeys.size(); // Single key fix.
-
-                        if (this.irreparableKeys == null)
-                            this.irreparableKeys = new GridConcurrentHashSet<>();
-
-                        this.irreparableKeys.addAll(irreparableKeys);
-                    }
+                    if (this.irreparableKeys == null)
+                        this.irreparableKeys = new GridConcurrentHashSet<>();
                 }
+
+                this.irreparableKeys.addAll(irreparableKeys);
             }
             else
                 onDone(e);
@@ -110,12 +98,10 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
         assert lsnrCalls <= size;
 
         if (inited && !isDone() && lsnrCalls == size) {
-            if (keys == null && irreparableKeys == null)
+            if (irreparableKeys == null)
                 onDone();
-            else if (irreparableKeys == null)
-                onDone(new IgniteConsistencyViolationException(keys));
             else
-                onDone(new IgniteIrreparableConsistencyViolationException(keys, irreparableKeys));
+                onDone(new IgniteIrreparableConsistencyViolationException(Collections.emptySet(), irreparableKeys));
         }
     }
 }
