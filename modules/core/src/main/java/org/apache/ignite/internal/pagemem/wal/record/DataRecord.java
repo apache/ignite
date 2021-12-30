@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -66,6 +67,8 @@ public class DataRecord extends TimeStampRecord {
     public DataRecord(Object writeEntries, long timestamp) {
         super(timestamp);
 
+        A.notNull(writeEntries, "writeEntries");
+
         this.writeEntries = writeEntries;
     }
 
@@ -86,7 +89,7 @@ public class DataRecord extends TimeStampRecord {
         if (writeEntries instanceof DataEntry)
             return Collections.singletonList((DataEntry)writeEntries);
 
-        return writeEntries == null ? Collections.emptyList() : (List<DataEntry>)writeEntries;
+        return (List<DataEntry>)writeEntries;
     }
 
     /** @return Count of {@link DataEntry} stored inside this record. */
