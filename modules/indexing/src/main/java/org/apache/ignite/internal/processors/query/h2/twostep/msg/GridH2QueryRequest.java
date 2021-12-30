@@ -161,7 +161,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
     private GridH2SelectForUpdateTxDetails txReq;
 
-    /** Id of the query assigned by {@link RunningQueryManager}. */
+    /** Id of the query assigned by {@link RunningQueryManager} on originator node. */
     private long qryId;
 
     /** */
@@ -510,7 +510,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     * Id of the query assigned by {@link RunningQueryManager}.
+     * Id of the query assigned by {@link RunningQueryManager} on originator node.
      *
      * @return Query id.
      */

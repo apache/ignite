@@ -64,7 +64,7 @@ public class H2QueryInfo {
     private final UUID nodeId;
 
     /** Query id assigned by {@link RunningQueryManager}. */
-    private final Long queryId;
+    private final long queryId;
 
     /**
      * @param type Query type.
@@ -73,7 +73,7 @@ public class H2QueryInfo {
      * @param node Originator node.
      * @param queryId Query id assigned by {@link RunningQueryManager}.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, ClusterNode node, Long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, ClusterNode node, long queryId) {
         try {
             assert stmt != null;
 
@@ -122,10 +122,10 @@ public class H2QueryInfo {
     public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
         StringBuilder msgSb = new StringBuilder(msg);
 
-        if (queryId != null && queryId > 0)
-            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
-        else
+        if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
+        else
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
 
         if (additionalInfo != null) {
             msgSb.append(additionalInfo).append(", ");

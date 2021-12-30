@@ -323,7 +323,7 @@ public class GridMapQueryExecutor {
      */
     private void onQueryRequest0(
         final ClusterNode node,
-        @Nullable Long qryId,
+        final long qryId,
         final long reqId,
         final int segmentId,
         final String schemaName,

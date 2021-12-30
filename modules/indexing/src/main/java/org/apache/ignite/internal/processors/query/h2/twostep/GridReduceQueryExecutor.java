@@ -337,7 +337,7 @@ public class GridReduceQueryExecutor {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Iterator<List<?>> query(
-        @Nullable Long qryId,
+        long qryId,
         String schemaName,
         final GridCacheTwoStepQuery qry,
         boolean keepBinary,
@@ -436,7 +436,7 @@ public class GridReduceQueryExecutor {
                     cancel.add(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
 
                     GridH2QueryRequest req = new GridH2QueryRequest()
-                        .queryId(qryId == null ? 0L : qryId)
+                        .queryId(qryId)
                         .requestId(qryReqId)
                         .topologyVersion(topVer)
                         .pageSize(pageSize)
