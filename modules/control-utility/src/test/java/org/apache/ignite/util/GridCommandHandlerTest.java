@@ -159,6 +159,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -168,6 +169,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
+import static org.apache.maven.shared.utils.StringUtils.countMatches;
 
 /**
  * Command line handler test.
@@ -3022,6 +3024,79 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         snpIg.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testClusterSnapshotStatus() throws Exception {
+        int nodesCnt = 2;
+        int keysCnt = 100;
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrids(nodesCnt);
+
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, keysCnt);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+
+        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
+
+        spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == END_SNAPSHOT.ordinal());
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "Creating the snapshot with name: " + snpName));
+        assertTrue(h.getLastOperationResult().toString().contains(ig.context().discovery().localNode().consistentId().toString()));
+
+        spi0.stopBlock();
+
+        assertTrue("Waiting for snapshot operation end failed.",
+                waitForCondition(() ->
+                                ig.context().metric().registry(SNAPSHOT_METRICS)
+                                        .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0,
+                        getTestTimeout()));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+
+        ig.cache(DEFAULT_CACHE_NAME).destroy();
+
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
+
+        IgniteBiPredicate<ClusterNode, Message> blockP = (node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal();
+
+        spi0.blockMessages(blockP);
+        spi1.blockMessages(blockP);
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
+
+        assertContains(log, h.getLastOperationResult().toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName);
+
+       assertTrue(waitForCondition(() -> {
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+            return nodesCnt == countMatches(h.getLastOperationResult().toString(),
+                "Restoring to snapshot with name: " + snpName );
+        }, getTestTimeout()));
+
+        spi0.stopBlock();
+        spi1.stopBlock();
+
+        assertTrue(waitForCondition(() -> ig.cache(DEFAULT_CACHE_NAME) != null, getTestTimeout()));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
     }
 
     /** @throws Exception If failed. */

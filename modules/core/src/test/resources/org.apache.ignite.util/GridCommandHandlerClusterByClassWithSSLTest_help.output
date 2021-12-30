@@ -157,6 +157,9 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Status snapshot:
+    control.(sh|bat) --snapshot status
+
   Restore snapshot:
     control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
 
@@ -164,7 +167,7 @@ This utility can do the following commands:
       snapshot_name     - Snapshot name.
       group1,...groupN  - Cache group names.
 
-  Snapshot restore operation status:
+  Snapshot restore operation status (deprecated. Use --snapshot status instead):
     control.(sh|bat) --snapshot restore snapshot_name --status
 
     Parameters:

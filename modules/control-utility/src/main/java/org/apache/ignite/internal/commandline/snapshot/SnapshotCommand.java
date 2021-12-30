@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CHECK;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.RESTORE;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.STATUS;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
 /**
@@ -71,6 +72,9 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 ((IdleVerifyResultV2)res).print(log::info, true);
 
             if (cmd == RESTORE)
+                log.info(String.valueOf(res));
+
+            if (cmd == STATUS)
                 log.info(String.valueOf(res));
 
             return res;
@@ -123,6 +127,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
         usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
+        usage(log, "Status snapshot:", SNAPSHOT, STATUS.toString());
 
         Map<String, String> startParams = new LinkedHashMap<>(commonParams);
 
@@ -131,8 +136,8 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
 
-        usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
+        usage(log, "Snapshot restore operation status (deprecated. Use " + SNAPSHOT + " " + STATUS + " instead):",
+            SNAPSHOT, commonParams, RESTORE.toString(), "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
 
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.CANCEL.cmdName());

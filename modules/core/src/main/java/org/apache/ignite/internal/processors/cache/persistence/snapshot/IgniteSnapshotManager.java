@@ -927,6 +927,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return Status of the current snapshot operation, if it is in progress, or {@code null}.
+     */
+    protected @Nullable Serializable localSnapshotStatus() {
+        String name = null;
+
+        SnapshotOperationRequest req = clusterSnpReq;
+
+        if (req != null)
+            name = req.snapshotName();
+
+        ClusterSnapshotFuture fut = clusterSnpFut;
+
+        if (name == null && fut != null)
+            name = fut.name;
+
+        if (name != null)
+            return "Creating the snapshot with name: " + name;
+
+        name = restoreCacheGrpProc.restoringSnapshotName();
+
+        if (name != null)
+            return "Restoring to snapshot with name: " + name;
+
+        return null;
+    }
+
+    /**
      * Check if snapshot restore process is currently running.
      *
      * @return {@code True} if the snapshot restore operation is in progress.
@@ -964,7 +991,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * not running on all nodes.
      */
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
-        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+        return executeSnapshotManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
 
     /**
@@ -1055,7 +1082,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
-        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+        return executeSnapshotManagementTask(SnapshotRestoreCancelTask.class, name);
     }
 
     /**
@@ -1066,6 +1093,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
         return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
+    }
+
+    /**
+     * Status snapshot operation.
+     * Checks if running snapshot operations exist on nodes.
+     *
+     * @return Future which Map contains Consistent ID's and description snapshot operation.
+     */
+   public IgniteFuture<Map<Object, String>> snapshotStatus() {
+        return executeSnapshotManagementTask(SnapshotStatusTask.class, null);
     }
 
     /**
@@ -1864,12 +1901,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param taskCls Snapshot restore operation management task class.
-     * @param snpName Snapshot name.
+     * @param taskCls Snapshot operation management task class.
+     * @param arg Task argument.
      */
-    private IgniteFuture<Boolean> executeRestoreManagementTask(
-        Class<? extends ComputeTask<String, Boolean>> taskCls,
-        String snpName
+    private <T, S> IgniteFuture<S> executeSnapshotManagementTask(
+        Class<? extends ComputeTask<T, S>> taskCls,
+        T arg
     ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -1879,7 +1916,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, arg));
     }
 
     /** @return Snapshot handlers. */

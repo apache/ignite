@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.Map;
 import org.apache.ignite.IgniteSnapshot;
 
 /**
@@ -40,4 +41,13 @@ public interface SnapshotMXBean {
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Status snapshot.
+     * Check the snapshot operation on server nodes.
+     *
+     * @return Map from Consistent ID's to status of the snapshot operation.
+     */
+    @MXBeanDescription("Map from Consistent ID's to status of the snapshot operation.")
+    public Map<Object, String> statusSnapshot();
 }
