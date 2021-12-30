@@ -269,7 +269,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> check() throws IgniteCheckedException {
+    protected Map<KeyCacheObject, EntryGetResult> check() throws IgniteCheckedException {
         Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
