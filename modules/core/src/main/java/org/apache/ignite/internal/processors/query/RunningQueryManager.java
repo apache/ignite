@@ -189,10 +189,8 @@ public class RunningQueryManager {
      * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
     public void unregister(long qryId, @Nullable Throwable failReason) {
-        if (qryId == RunningQueryManager.UNDEFINED_QUERY_ID)
+        if (qryId <= 0)
             return;
-
-        assert qryId > 0;
 
         boolean failed = failReason != null;
 
