@@ -55,6 +55,8 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -588,11 +590,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         H2Utils.setupConnection(conn, qctx,
                             qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
 
-                        List<Object> args = F.asList(qryParams.arguments());
-
                         PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
-                        H2Utils.bindParameters(stmt, args);
+                        // Convert parameters into BinaryObjects.
+                        Marshaller m = ctx.config().getMarshaller();
+                        byte[] paramsBytes = U.marshal(m, qryParams.arguments());
+                        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+
+                        Object[] params;
+
+                        if (m instanceof BinaryMarshaller) {
+                            params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
+                                .unmarshal(paramsBytes, ldr));
+                        }
+                        else
+                            params = U.unmarshal(m, paramsBytes, ldr);
+
+                        H2Utils.bindParameters(stmt, F.asList(params));
 
                         H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry);
 
