@@ -39,6 +39,8 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteChecke
      */
     public IgniteIrreparableConsistencyViolationException(Collection<Object> repairableKeys,
         Collection<Object> irreparableKeys) {
+        super("Irreparable distributed cache consistency violation detected.");
+
         assert irreparableKeys != null && !irreparableKeys.isEmpty() : irreparableKeys;
 
         this.repairableKeys = repairableKeys;
