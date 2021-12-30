@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
  * Possible consistency violation exception.
@@ -28,12 +29,12 @@ public class IgniteConsistencyViolationException extends IgniteCheckedException 
     private static final long serialVersionUID = 0L;
 
     /** Inconsistent entries keys. */
-    private final Collection<?> keys;
+    private final Collection<KeyCacheObject> keys;
 
     /**
      * @param keys Keys.
      */
-    public IgniteConsistencyViolationException(Collection<?> keys) {
+    public IgniteConsistencyViolationException(Collection<KeyCacheObject> keys) {
         super("Distributed cache consistency violation detected.");
 
         assert keys != null && !keys.isEmpty();
@@ -44,7 +45,7 @@ public class IgniteConsistencyViolationException extends IgniteCheckedException 
     /**
      * Inconsistent keys found and has to be fixed.
      */
-    public Collection<?> keys() {
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 }
