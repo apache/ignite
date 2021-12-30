@@ -103,7 +103,7 @@ namespace ignite
              * @param client Client.
              * @return Client ID.
              */
-            void AddClient(SP_WinAsyncClient& client);
+            bool AddClient(SP_WinAsyncClient& client);
 
             /**
              * Handle error during connection establishment.

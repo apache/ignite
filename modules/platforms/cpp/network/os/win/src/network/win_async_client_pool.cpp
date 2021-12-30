@@ -84,7 +84,7 @@ namespace ignite
                     {
                         IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");
 
-                        clientPool.Close(client->GetId(), &err);
+                        clientPool.CloseAndRelease(client->GetId(), &err);
                     }
 
                     continue;
@@ -98,7 +98,14 @@ namespace ignite
                         case IoOperationKind::SEND:
                         {
                             // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: processing send " << bytesTransferred << std::endl;
-                            client->ProcessSent(bytesTransferred);
+                            bool success = client->ProcessSent(bytesTransferred);
+
+                            if (!success)
+                            {
+                                IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not send next packet");
+
+                                clientPool.CloseAndRelease(client->GetId(), &err);
+                            }
 
                             if (clientPool.asyncHandler)
                                 clientPool.asyncHandler->OnMessageSent(client->GetId());
@@ -125,7 +132,7 @@ namespace ignite
                 }
                 catch (const IgniteError& err)
                 {
-                    clientPool.Close(client->GetId(), &err);
+                    clientPool.CloseAndRelease(client->GetId(), &err);
                 }
             }
         }
@@ -219,13 +226,20 @@ namespace ignite
             iocp = NULL;
         }
 
-        void WinAsyncClientPool::AddClient(SP_WinAsyncClient& client)
+        bool WinAsyncClientPool::AddClient(SP_WinAsyncClient& client)
         {
             uint64_t id;
             {
                 WinAsyncClient& clientRef = *client.Get();
 
                 common::concurrent::CsLockGuard lock(clientsCs);
+
+                if (stopping)
+                {
+                    // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: AddClient: stopping" << std::endl;
+
+                    return false;
+                }
 
                 id = ++idGen;
                 clientRef.SetId(id);
@@ -240,6 +254,8 @@ namespace ignite
             }
 
             PostQueuedCompletionStatus(iocp, 0, reinterpret_cast<ULONG_PTR>(client.Get()), 0);
+
+            return true;
         }
 
         void WinAsyncClientPool::HandleConnectionError(const EndPoint &addr, const IgniteError &err)
@@ -285,11 +301,13 @@ namespace ignite
                 }
             }
 
-            client.Get()->WaitForPendingIo();
             bool closed = client.Get()->Close();
-
             if (closed)
+            {
                 connectingThread.NotifyFreeAddress(client.Get()->GetRange());
+
+                client.Get()->WaitForPendingIo();
+            }
 
             return closed;
         }
@@ -298,7 +316,7 @@ namespace ignite
         {
             bool closed = CloseAndRelease(id);
 
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, found=" << closed << std::endl;
+            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
             if (closed && asyncHandler)
@@ -308,8 +326,6 @@ namespace ignite
         bool WinAsyncClientPool::Close(uint64_t id)
         {
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close=" << id << std::endl;
-            if (stopping)
-                return false;
 
             SP_WinAsyncClient client = FindClient(id);
             if (!client.IsValid() || client.Get()->IsClosed())
@@ -327,7 +343,7 @@ namespace ignite
         {
             bool closed = Close(id);
 
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, found=" << closed << std::endl;
+            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, closed=" << closed << std::endl;
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
             if (closed && asyncHandler)

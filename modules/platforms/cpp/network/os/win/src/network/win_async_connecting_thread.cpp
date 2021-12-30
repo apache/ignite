@@ -76,10 +76,16 @@ namespace ignite
 
                 try
                 {
-                    clientPool.AddClient(client);
+                    bool added = clientPool.AddClient(client);
+
+                    if (!added)
+                    {
+                        client.Get()->Close();
+
+                        continue;
+                    }
 
                     common::concurrent::CsLockGuard lock(addrsCs);
-
                     nonConnected.erase(std::find(nonConnected.begin(), nonConnected.end(), range));
                 }
                 catch (const IgniteError& err)
