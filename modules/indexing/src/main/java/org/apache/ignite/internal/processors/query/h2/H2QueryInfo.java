@@ -21,7 +21,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -63,23 +62,23 @@ public class H2QueryInfo {
     /** Originator node uid. */
     private final UUID nodeId;
 
-    /** Query id assigned by {@link RunningQueryManager}. */
+    /** Query id. */
     private final long queryId;
 
     /**
      * @param type Query type.
      * @param stmt Query statement.
      * @param sql Query statement.
-     * @param node Originator node.
-     * @param queryId Query id assigned by {@link RunningQueryManager}.
+     * @param nodeId Originator node id.
+     * @param queryId Query id.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, ClusterNode node, long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
         try {
             assert stmt != null;
 
             this.type = type;
             this.sql = sql;
-            this.nodeId = node.id();
+            this.nodeId = nodeId;
             this.queryId = queryId;
 
             beginTs = U.currentTimeMillis();
@@ -127,9 +126,8 @@ public class H2QueryInfo {
         else
             msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
 
-        if (additionalInfo != null) {
-            msgSb.append(additionalInfo).append(", ");
-        }
+        if (additionalInfo != null)
+            msgSb.append(", ").append(additionalInfo);
 
         msgSb.append(", duration=").append(time()).append("ms")
                 .append(", type=").append(type)

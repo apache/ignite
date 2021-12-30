@@ -528,7 +528,7 @@ public class GridReduceQueryExecutor {
                             H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
                             ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
-                                ctx.discovery().localNode(), qryId, qryReqId);
+                                ctx.localNodeId(), qryId, qryReqId);
 
                             ResultSet res = h2.executeSqlQueryWithTimer(stmt,
                                 conn,
