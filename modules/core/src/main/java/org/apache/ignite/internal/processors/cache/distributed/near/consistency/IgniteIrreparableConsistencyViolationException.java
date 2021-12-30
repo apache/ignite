@@ -18,26 +18,30 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Irreparable consistency violation exception.
  */
-public class IgniteIrreparableConsistencyViolationException extends IgniteConsistencyViolationException {
+public class IgniteIrreparableConsistencyViolationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Repairable keys. */
+    private final Collection<Object> repairableKeys;
 
     /** Irreparable keys. */
     private final Collection<Object> irreparableKeys;
 
     /**
-     * @param keys            Keys.
+     * @param repairableKeys  Repairable keys.
      * @param irreparableKeys Irreparable keys.
      */
-    public IgniteIrreparableConsistencyViolationException(Collection<Object> keys, Collection<Object> irreparableKeys) {
-        super(keys);
-
+    public IgniteIrreparableConsistencyViolationException(Collection<Object> repairableKeys,
+        Collection<Object> irreparableKeys) {
         assert irreparableKeys != null && !irreparableKeys.isEmpty() : irreparableKeys;
 
+        this.repairableKeys = repairableKeys;
         this.irreparableKeys = irreparableKeys;
     }
 
@@ -46,5 +50,12 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteConsis
      */
     public Collection<Object> irreparableKeys() {
         return irreparableKeys;
+    }
+
+    /**
+     * Inconsistent keys found but can be fixed using the specified strategy.
+     */
+    public Collection<Object> repairableKeys() {
+        return repairableKeys;
     }
 }

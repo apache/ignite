@@ -227,7 +227,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 Integer key = entry.getKey();
 
                 // Checking only fixed entries, while entries listed at exception were not fixed.
-                if (e != null && (e.irreparableKeys().contains(key) || e.keys().contains(key)))
+                if (e != null && (e.irreparableKeys().contains(key) ||
+                    (e.repairableKeys() != null && e.repairableKeys().contains(key))))
                     continue;
 
                 Integer fixed = entry.getValue().fixed;
@@ -272,7 +273,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Collection<?> irreparableKeys = e != null ? e.irreparableKeys() : null;
 
         if (e != null) {
-            Collection<?> keys = e.keys();
+            Collection<?> keys = e.repairableKeys();
 
             if (keys != null)
                 assertTrue(Collections.disjoint(keys, irreparableKeys));

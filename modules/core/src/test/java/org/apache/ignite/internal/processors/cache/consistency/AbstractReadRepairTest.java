@@ -207,18 +207,19 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 }
 
             // keys() contain repairable but not repaired (because of irreparable entry at the same tx) entries.
-            if (e == null || !e.keys().contains(key)) {
+            if (e == null || (e.repairableKeys() != null && !e.repairableKeys().contains(key))) {
                 assertEquals(reparable, evtFixed.containsKey(key));
 
                 if (reparable)
                     assertEquals(fixed, evtFixed.get(key));
             }
 
-            if (e != null && e.keys().contains(key))
+            if (e != null && e.repairableKeys() != null && e.repairableKeys().contains(key))
                 assertFalse(evtFixed.containsKey(key));
         }
 
-        int expectedFixedCnt = inconsistent.size() - (e != null ? e.keys().size() + e.irreparableKeys().size() : 0);
+        int expectedFixedCnt = inconsistent.size() -
+            (e != null ? (e.repairableKeys() != null ? e.repairableKeys().size() : 0) + e.irreparableKeys().size() : 0);
 
         assertEquals(expectedFixedCnt, evtFixed.size());
 

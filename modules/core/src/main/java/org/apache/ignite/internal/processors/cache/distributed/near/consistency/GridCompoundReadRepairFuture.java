@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -60,7 +59,7 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
 
         if (e != null) {
             if (e instanceof IgniteIrreparableConsistencyViolationException) {
-                Collection<?> keys = ((IgniteConsistencyViolationException)e).keys();
+                Collection<?> keys = ((IgniteIrreparableConsistencyViolationException)e).repairableKeys();
                 Collection<?> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
 
                 assert keys.isEmpty() : keys.size();
@@ -101,7 +100,7 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
             if (irreparableKeys == null)
                 onDone();
             else
-                onDone(new IgniteIrreparableConsistencyViolationException(Collections.emptySet(), irreparableKeys));
+                onDone(new IgniteIrreparableConsistencyViolationException(null, irreparableKeys));
         }
     }
 }

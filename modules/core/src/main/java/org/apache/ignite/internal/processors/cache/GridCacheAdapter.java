@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridCompoundReadRepairFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -4835,9 +4834,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 deserializeBinary,
                 needVer);
         }
-        catch (IgniteIrreparableConsistencyViolationException e) {
-            throw e;
-        }
         catch (IgniteConsistencyViolationException e) {
             repairAsync(key, ctx.operationContextPerCall(), false).get();
 
@@ -4928,9 +4924,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         ReadRepairStrategy readRepairStrategy) throws IgniteCheckedException {
         try {
             return getAll(keys, deserializeBinary, needVer, recovery, readRepairStrategy);
-        }
-        catch (IgniteIrreparableConsistencyViolationException e) {
-            throw e;
         }
         catch (IgniteConsistencyViolationException e) {
             repairAsync(keys, ctx.operationContextPerCall(), false).get();
@@ -5040,9 +5033,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         orig.listen((f) -> {
             try {
                 fut.onDone(f.get());
-            }
-            catch (IgniteIrreparableConsistencyViolationException e1) {
-                fut.onDone(e1);
             }
             catch (IgniteConsistencyViolationException e1) {
                 repair.get().listen((repFut) -> {

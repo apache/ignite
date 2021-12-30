@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -102,7 +101,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                 if (!ctx.transactional()) { // Will not be fixed, should be recorded as is.
                     recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
 
-                    onDone(new IgniteIrreparableConsistencyViolationException(Collections.emptySet(),
+                    onDone(new IgniteIrreparableConsistencyViolationException(null,
                         ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
                 }
                 else // Should be fixed by concurrent tx(s).

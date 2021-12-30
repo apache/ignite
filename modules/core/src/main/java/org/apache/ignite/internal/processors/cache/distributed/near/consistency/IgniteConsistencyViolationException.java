@@ -36,7 +36,7 @@ public class IgniteConsistencyViolationException extends IgniteCheckedException 
     public IgniteConsistencyViolationException(Collection<?> keys) {
         super("Distributed cache consistency violation detected.");
 
-        assert keys != null;
+        assert keys != null && !keys.isEmpty();
 
         this.keys = keys;
     }

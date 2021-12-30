@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -156,7 +156,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                             cache.getAll(keys); // Repair.
                         }
                         catch (CacheException e) {
-                            if (!(e.getCause() instanceof IgniteConsistencyViolationException) // Found but not fixed.
+                            if (!(e.getCause() instanceof IgniteIrreparableConsistencyViolationException) // Found but not fixed.
                                 && !isCancelled())
                                 throw new IgniteException("Read repair attempt failed.", e);
                         }
