@@ -53,7 +53,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     BINARY_CONFIGURATION(8),
 
     /** Handle of {@link ClientServices#serviceDescriptors()}. */
-    GET_SERVICE_DESCRIPTORS(9);
+    GET_SERVICE_DESCRIPTORS(9),
+
+    /** Invoke service methods with caller context. */
+    SERVICE_INVOKE_CALLCTX(10);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

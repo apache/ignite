@@ -34,13 +34,17 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallContextBuilder;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Checks service invocation for thin client.
@@ -222,6 +226,39 @@ public class ServicesTest extends AbstractThinClientTest {
         }
     }
 
+    /** Test custom caller context. */
+    @Test
+    public void testServiceCallContext() {
+        String attrName = "testAttr";
+        String attrVal = "test";
+        String binAttrName = "binTestAttr";
+        byte[] binAttrVal = attrVal.getBytes();
+
+        try (IgniteClient client = startClient(0)) {
+            // Check proxy creation with an invalid implementation.
+            ServiceCallContext customCls = new ServiceCallContext() {
+                @Override public String attribute(String name) { return null; }
+
+                @Override public byte[] binaryAttribute(String name) { return null; }
+            };
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
+                TestServiceInterface.class, customCls), IllegalArgumentException.class, "\"callCtx\" has an invalid type.");
+
+            // Check proxy creation with a valid caller context.
+            ServiceCallContext callCtx = new ServiceCallContextBuilder()
+                .put(attrName, attrVal)
+                .put(binAttrName, binAttrVal)
+                .build();
+
+            TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
+                TestServiceInterface.class, callCtx);
+
+            assertEquals(attrVal, svc.testContextAttribute(attrName));
+            assertArrayEquals(binAttrVal, svc.testContextBinaryAttribute(binAttrName));
+        }
+    }
+
     /**
      * Test that services executed on cluster group.
      */
@@ -383,6 +420,12 @@ public class ServicesTest extends AbstractThinClientTest {
         public Object testException();
 
         /** */
+        public String testContextAttribute(String name);
+
+        /** */
+        public byte[] testContextBinaryAttribute(String name);
+
+        /** */
         public boolean waitLatch() throws Exception;
     }
 
@@ -393,20 +436,9 @@ public class ServicesTest extends AbstractThinClientTest {
         /** Latch. */
         public static CountDownLatch latch;
 
-        /** {@inheritDoc} */
-        @Override public void cancel(ServiceContext ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
-            // No-op.
-        }
+        /** Service context. */
+        @ServiceContextResource
+        private ServiceContext svcCtx;
 
         /** {@inheritDoc} */
         @Override public String testMethod() {
@@ -459,6 +491,20 @@ public class ServicesTest extends AbstractThinClientTest {
         }
 
         /** {@inheritDoc} */
+        @Override public String testContextAttribute(String name) {
+            ServiceCallContext callCtx = svcCtx.currentCallContext();
+
+            return callCtx == null ? null : callCtx.attribute(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] testContextBinaryAttribute(String name) {
+            ServiceCallContext callCtx = svcCtx.currentCallContext();
+
+            return callCtx == null ? null : callCtx.binaryAttribute(name);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean waitLatch() throws Exception {
             latch.await(10L, TimeUnit.SECONDS);
 
@@ -481,21 +527,6 @@ public class ServicesTest extends AbstractThinClientTest {
         /** Ignite. */
         @IgniteInstanceResource
         Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public void cancel(ServiceContext ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
-            // No-op.
-        }
 
         /** {@inheritDoc} */
         @Override public UUID nodeId() {
