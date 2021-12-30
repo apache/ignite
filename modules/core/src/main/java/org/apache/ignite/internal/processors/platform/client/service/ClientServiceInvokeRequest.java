@@ -35,6 +35,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
@@ -44,6 +45,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 
 /**
  * Request to invoke service method.
@@ -89,9 +92,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      * Constructor.
      *
      * @param reader Reader.
-     * @param withCallCtx Flag indicating that the caller context has been transferred.
+     * @param protocolCtx Protocol context.
      */
-    public ClientServiceInvokeRequest(BinaryReaderExImpl reader, boolean withCallCtx) {
+    public ClientServiceInvokeRequest(BinaryReaderExImpl reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
         name = reader.readString();
@@ -132,7 +135,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             args[i] = reader.readObjectDetached();
         }
 
-        callAttrs = withCallCtx ? reader.readMap() : null;
+        callAttrs = protocolCtx.isFeatureSupported(SERVICE_INVOKE_CALLCTX) ? reader.readMap() : null;
 
         reader.in().position(argsStartPos);
     }

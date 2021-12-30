@@ -277,6 +277,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_SERVICE_GET_DESCRIPTOR = 7002;
 
     /** Data streamers. */
+    /** */
     private static final short OP_DATA_STREAMER_START = 8000;
 
     /** */
@@ -490,8 +491,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientExecuteTaskRequest(reader);
 
             case OP_SERVICE_INVOKE:
-                return new ClientServiceInvokeRequest(reader,
-                    protocolCtx.isFeatureSupported(ClientBitmaskFeature.SERVICE_INVOKE_CALLCTX));
+                return new ClientServiceInvokeRequest(reader, protocolCtx);
 
             case OP_SERVICE_GET_DESCRIPTORS:
                 return new ClientServiceGetDescriptorsRequest(reader);
