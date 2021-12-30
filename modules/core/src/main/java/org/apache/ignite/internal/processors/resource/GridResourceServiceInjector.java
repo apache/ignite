@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteServicesEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.service.ServiceCallContextHolder;
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,11 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
             ann.serviceName(),
             (Class<? super T>)ann.proxyInterface(),
             ann.proxySticky(),
-            ann.forwardCallerContext() ? ServiceCallContextHolder::current : null,
+            ann.forwardCallerContext() ? () -> {
+                ServiceCallContextImpl callCtx = ServiceCallContextHolder.current();
+
+                return callCtx == null ? null : callCtx.values();
+            } : null,
             0
         );
     }

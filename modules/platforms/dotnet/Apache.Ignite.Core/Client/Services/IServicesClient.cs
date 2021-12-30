@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Client.Services
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Ignite distributed services client.
@@ -39,6 +41,19 @@ namespace Apache.Ignite.Core.Client.Services
         /// <param name="serviceName">Service name.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
         T GetServiceProxy<T>(string serviceName) where T : class;
+
+        /// <summary>
+        /// Gets a proxy for the service with the specified name and caller context.
+        /// <para />
+        /// Note: service proxies are not "sticky" - there is no guarantee that all calls will be made to the same
+        /// remote service instance.
+        /// </summary>
+        /// <typeparam name="T">Service type.</typeparam>
+        /// <param name="serviceName">Service name.</param>
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
+        [IgniteExperimental]
+        T GetServiceProxy<T>(string serviceName, IServiceCallContext callCtx) where T : class;
 
         /// <summary>
         /// Gets metadata about all deployed services in the grid.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.services.ServiceCallContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,19 +24,19 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ServiceCallContextHolder {
     /** Service call context of the current thread. */
-    private static final ThreadLocal<ServiceCallContext> locCallCtx = new ThreadLocal<>();
+    private static final ThreadLocal<ServiceCallContextImpl> locCallCtx = new ThreadLocal<>();
 
     /**
      * @return Service call context of the current thread.
      */
-    @Nullable public static ServiceCallContext current() {
+    @Nullable public static ServiceCallContextImpl current() {
         return locCallCtx.get();
     }
 
     /**
      * @param callCtx Service call context of the current thread.
      */
-    static void current(@Nullable ServiceCallContext callCtx) {
+    static void current(@Nullable ServiceCallContextImpl callCtx) {
         if (callCtx != null)
             locCallCtx.set(callCtx);
         else
