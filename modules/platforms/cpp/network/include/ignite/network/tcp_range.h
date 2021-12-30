@@ -81,6 +81,16 @@ namespace ignite
             }
 
             /**
+             * Check whether empty.
+             *
+             * @return @c true if empty.
+             */
+            bool IsEmpty() const
+            {
+                return host.empty();
+            }
+
+            /**
              * Comparison operator.
              *
              * @param val1 First value.

@@ -58,17 +58,19 @@ namespace ignite
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " ~WinAsyncClient " << id << std::endl;
         }
 
-        void WinAsyncClient::Shutdown()
+        bool WinAsyncClient::Shutdown()
         {
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient::Shutdown " << id << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
 
             if (State::CONNECTED != state && State::IN_POOL != state)
-                return;
+                return false;
 
             shutdown(socket, SD_BOTH);
 
             state = State::SHUTDOWN;
+
+            return true;
         }
 
         void WinAsyncClient::WaitForPendingIo()
@@ -81,15 +83,20 @@ namespace ignite
                 GetOverlappedResult((HANDLE)socket, &currentRecv.overlapped, NULL, TRUE);
         }
 
-        void WinAsyncClient::Close()
+        bool WinAsyncClient::Close()
         {
             // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " WinAsyncClient::Close " << id << std::endl;
+            if (State::CLOSED == state)
+                return false;
+
             closesocket(socket);
 
             sendPackets.clear();
             recvPacket = impl::interop::SP_InteropMemory();
 
             state = State::CLOSED;
+
+            return true;
         }
 
         HANDLE WinAsyncClient::AddToIocp(HANDLE iocp)

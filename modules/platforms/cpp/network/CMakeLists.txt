@@ -42,7 +42,8 @@ if (WIN32)
             os/win/src/network/sockets.cpp
             os/win/src/network/utils.cpp
             os/win/src/network/win_async_client.cpp
-            os/win/src/network/win_async_client_pool.cpp)
+            os/win/src/network/win_async_client_pool.cpp
+            os/win/src/network/win_async_connecting_thread.cpp)
 else()
     include_directories(os/linux/src)
 

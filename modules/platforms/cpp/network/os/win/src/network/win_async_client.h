@@ -107,8 +107,10 @@ namespace ignite
              *
              * Can be called from external threads.
              * Can be called from WorkerThread.
+             *
+             * @return @c true if shutdown performed successfully.
              */
-            void Shutdown();
+            bool Shutdown();
 
             /**
              * Wait for pending IO calls and wait till all IO are complete and reported.
@@ -123,8 +125,10 @@ namespace ignite
              *
              * Should not be called from external threads.
              * Can be called from WorkerThread.
+             *
+             * @return @c true if shutdown performed successfully.
              */
-            void Close();
+            bool Close();
 
             /**
              * Add client to IOCP.

@@ -30,6 +30,7 @@
 #include <ignite/network/tcp_range.h>
 
 #include "network/win_async_client.h"
+#include "network/win_async_connecting_thread.h"
 
 namespace ignite
 {
@@ -40,9 +41,6 @@ namespace ignite
          */
         class WinAsyncClientPool : public AsyncClientPool
         {
-            /** Send and receive buffers size. */
-            enum { BUFFER_SIZE = 0x10000 };
-
         public:
             /**
              * Constructor
@@ -99,63 +97,23 @@ namespace ignite
              */
             virtual void Close(uint64_t id, const IgniteError* err);
 
-        private:
             /**
-             * Async pool connecting thread.
+             * Add client to connection map. Notify user.
+             *
+             * @param client Client.
+             * @return Client ID.
              */
-            class ConnectingThread : public common::concurrent::Thread
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param clientPool Client pool.
-                 */
-                explicit ConnectingThread(WinAsyncClientPool& clientPool);
+            void AddClient(SP_WinAsyncClient& client);
 
-                /**
-                 * Run thread.
-                 */
-                virtual void Run();
+            /**
+             * Handle error during connection establishment.
+             *
+             * @param addr Connection address.
+             * @param err Error.
+             */
+            void HandleConnectionError(const EndPoint& addr, const IgniteError& err);
 
-                /**
-                 * Stop thread.
-                 */
-                void Stop();
-
-                /**
-                 * Wake up thread if it's sleeping.
-                 */
-                void WakeUp();
-
-            private:
-                /**
-                 * Try establish connection to address in the range.
-                 * @param range TCP range.
-                 * @return New client.
-                 */
-                SP_WinAsyncClient TryConnect(const TcpRange& range);
-
-                /**
-                 * Try establish connection to address.
-                 * @param addr Address.
-                 * @return Socket.
-                 */
-                static SOCKET TryConnect(const EndPoint& addr);
-
-                /** Client pool. */
-                WinAsyncClientPool& clientPool;
-
-                /** Flag to signal that thread is stopping. */
-                volatile bool stopping;
-
-                /** Condition variable, which signalled when new connect is needed. */
-                common::concurrent::ConditionVariable connectNeeded;
-
-                /** Failed connection attempts. */
-                size_t failedAttempts;
-            };
-
+        private:
             /**
              * Async pool worker thread.
              */
@@ -193,22 +151,6 @@ namespace ignite
             void InternalStop();
 
             /**
-             * Check whether a new connection should be established.
-             *
-             * @warning May only be called in clientsCs critical section.
-             * @return @c true if a new connection should be established.
-             */
-            bool isConnectionNeededLocked() const;
-
-            /**
-             * Add client to connection map. Notify user.
-             *
-             * @param client Client.
-             * @return Client ID.
-             */
-            uint64_t AddClient(SP_WinAsyncClient& client);
-
-            /**
              * Closes and releases memory allocated for client with specified ID.
              *
              * @param id Client ID.
@@ -238,6 +180,14 @@ namespace ignite
             /**
              * Find client by ID.
              *
+             * @param id Client ID.
+             * @return Client. Null pointer if is not found.
+             */
+            SP_WinAsyncClient FindClient(uint64_t id) const;
+
+            /**
+             * Find client by ID.
+             *
              * @warning Should only be called with clientsCs lock held.
              * @param id Client ID.
              * @return Client. Null pointer if is not found.
@@ -258,13 +208,10 @@ namespace ignite
             AsyncHandler* asyncHandler;
 
             /** Connecting thread. */
-            ConnectingThread connectingThread;
+            WinAsyncConnectingThread connectingThread;
 
             /** Internal thread. */
             WorkerThread workerThread;
-
-            /** Upper limit of number of connections. */
-            uint32_t connectionLimit;
 
             /** ID counter. */
             uint64_t idGen;
@@ -273,19 +220,13 @@ namespace ignite
             HANDLE iocp;
 
             /** Clients critical section. */
-            common::concurrent::CriticalSection clientsCs;
+            mutable common::concurrent::CriticalSection clientsCs;
 
             /** Clients condition variable. Notified when no clients are left. */
-            common::concurrent::ConditionVariable clientsCv;
-
-            /** Addresses to use for connection establishment. */
-            std::vector<TcpRange> nonConnected;
+            mutable common::concurrent::ConditionVariable clientsCv;
 
             /** Client mapping ID -> client */
             std::map<uint64_t, SP_WinAsyncClient> clientIdMap;
-
-            /** Client mapping EndPoint -> client */
-            std::map<EndPoint, SP_WinAsyncClient> clientAddrMap;
         };
 
         // Type alias

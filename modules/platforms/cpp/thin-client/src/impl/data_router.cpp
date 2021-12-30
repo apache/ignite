@@ -146,8 +146,15 @@ namespace ignite
 
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
-                // No-op. Log a message here once logging is ready.
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
+
+                if (!connectedChannels.empty())
+                    return;
+
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                lastHandshakeError.reset(new IgniteError(err));
+                channelsWaitPoint.NotifyAll();
             }
 
             void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)

@@ -379,12 +379,17 @@ namespace ignite
                 if (!err)
                     err = &defaultErr;
 
-                common::concurrent::CsLockGuard lock(responseMutex);
+                {
+                    common::concurrent::CsLockGuard lock(responseMutex);
 
-                for (ResponseMap::iterator it = responseMap.begin(); it != responseMap.end(); ++it)
-                    it->second.SetError(*err);
+                    for (ResponseMap::iterator it = responseMap.begin(); it != responseMap.end(); ++it)
+                        it->second.SetError(*err);
 
-                responseMap.clear();
+                    responseMap.clear();
+                }
+
+                if (!handshakePerformed)
+                    stateHandler.OnHandshakeError(id, *err);
             }
         }
     }

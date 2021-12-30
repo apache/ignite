@@ -625,12 +625,12 @@ namespace ignite
                 /**
                  * Start thread.
                  */
-                void Start();
+                virtual void Start();
 
                 /**
                  * Join thread.
                  */
-                void Join();
+                virtual void Join();
 
             private:
                 /**
