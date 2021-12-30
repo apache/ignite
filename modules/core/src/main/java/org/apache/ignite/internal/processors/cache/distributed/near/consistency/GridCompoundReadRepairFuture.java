@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteInClosure;
 
@@ -67,7 +67,7 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
 
                 synchronized (this) {
                     if (this.irreparableKeys == null)
-                        this.irreparableKeys = new GridConcurrentHashSet<>();
+                        this.irreparableKeys = ConcurrentHashMap.newKeySet();
                 }
 
                 this.irreparableKeys.addAll(irreparableKeys);
