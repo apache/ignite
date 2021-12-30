@@ -33,16 +33,24 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.lang.IgniteUuid;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Ignite table.
+ * Table representation as object in SQL schema.
  */
 public interface IgniteTable extends TranslatableTable, Wrapper {
     /**
-     * Get table descriptor.
+     * Returns an id of the table.
      *
-     * @return Table descriptor.
+     * @return And id of the table.
+     */
+    IgniteUuid id();
+
+    /**
+     * Returns a descriptor of the table.
+     *
+     * @return A descriptor of the table.
      */
     TableDescriptor descriptor();
 

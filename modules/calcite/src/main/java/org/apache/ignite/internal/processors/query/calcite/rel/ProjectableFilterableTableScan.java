@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import static org.apache.calcite.sql.SqlExplainLevel.EXPPLAN_ATTRIBUTES;
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.replaceLocalRefs;
 
@@ -43,6 +44,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -86,7 +88,13 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     protected ProjectableFilterableTableScan(RelInput input) {
-        super(input);
+        super(
+                input.getCluster(),
+                input.getTraitSet(),
+                List.of(),
+                ((RelInputEx) input).getTableById("tableId")
+        );
+
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
         requiredColumns = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
@@ -124,7 +132,11 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** {@inheritDoc} */
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        return explainTerms0(super.explainTerms(pw));
+        return explainTerms0(pw
+                .itemIf("table", table.getQualifiedName(), pw.getDetailLevel() == EXPPLAN_ATTRIBUTES)
+                .itemIf("tableId", table.unwrap(IgniteTable.class).id().toString(),
+                        pw.getDetailLevel() != EXPPLAN_ATTRIBUTES)
+        );
     }
 
     protected RelWriter explainTerms0(RelWriter pw) {

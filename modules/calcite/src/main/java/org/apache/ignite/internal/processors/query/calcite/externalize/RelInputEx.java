@@ -17,20 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 
 /**
- * RelInputEx interface.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * Extension to the {@link RelInput} interface.
+ *
+ * <p>Provides necessary methods to restore relational nodes.
  */
 public interface RelInputEx extends RelInput {
     /**
-     * GetCollation.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Returns collation serialized under given tag.
      *
-     * @param tag Tag.
+     * @param tag Tag under which collation is serialised.
      * @return A collation value.
      */
     RelCollation getCollation(String tag);
+
+    /**
+     * Returns table by its id.
+     *
+     * @param tag Tag under which id is serialised.
+     * @return A table with given id.
+     */
+    RelOptTable getTableById(String tag);
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.calcite.extension;
 
 import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -32,12 +33,15 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.lang.IgniteUuid;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A test table implementation.
  */
 class TestTableImpl extends AbstractTable implements IgniteTable {
+    private final IgniteUuid id = new IgniteUuid(UUID.randomUUID(), 0L);
+
     private final TableDescriptor desc;
 
     /**
@@ -47,6 +51,12 @@ class TestTableImpl extends AbstractTable implements IgniteTable {
      */
     public TestTableImpl(TableDescriptor desc) {
         this.desc = desc;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public IgniteUuid id() {
+        return id;
     }
 
     /** {@inheritDoc} */

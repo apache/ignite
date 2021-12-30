@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import static org.apache.calcite.sql.SqlExplainLevel.ALL_ATTRIBUTES;
+
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -72,7 +77,7 @@ public class IgniteTableModify extends TableModify implements InternalIgniteRel 
         this(
                 input.getCluster(),
                 input.getTraitSet().replace(IgniteConvention.INSTANCE),
-                input.getTable("table"),
+                ((RelInputEx) input).getTableById("tableId"),
                 input.getInput(),
                 input.getEnum("operation", Operation.class),
                 input.getStringList("updateColumnList"),
@@ -106,5 +111,12 @@ public class IgniteTableModify extends TableModify implements InternalIgniteRel 
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteTableModify(cluster, getTraitSet(), getTable(), sole(inputs),
                 getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened());
+    }
+
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+                .itemIf("tableId", getTable().unwrap(InternalIgniteTable.class).id().toString(),
+                        pw.getDetailLevel() == ALL_ATTRIBUTES);
     }
 }

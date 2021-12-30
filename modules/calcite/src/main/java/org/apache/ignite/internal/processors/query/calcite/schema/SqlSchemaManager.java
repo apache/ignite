@@ -18,15 +18,24 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * SchemaHolder interface.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public interface SchemaHolder {
+public interface SqlSchemaManager {
     /**
-     * Return specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
+     * Returns a required schema if specified, or default schema otherwise.
      */
     SchemaPlus schema(@Nullable String schema);
+
+    /**
+     * Returns a table by given id.
+     *
+     * @param id An id of required table.
+     * @return The table.
+     */
+    IgniteTable tableById(IgniteUuid id);
 }

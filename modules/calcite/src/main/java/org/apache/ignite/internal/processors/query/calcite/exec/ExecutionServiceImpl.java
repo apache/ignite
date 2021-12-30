@@ -89,7 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.schema.SqlSchemaManager;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -125,7 +125,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
 
     private final QueryPlanCache qryPlanCache;
 
-    private final SchemaHolder schemaHolder;
+    private final SqlSchemaManager sqlSchemaManager;
 
     private final QueryTaskExecutor taskExecutor;
 
@@ -159,7 +159,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             TopologyService topSrvc,
             MessageService msgSrvc,
             QueryPlanCache planCache,
-            SchemaHolder schemaHolder,
+            SqlSchemaManager sqlSchemaManager,
             TableManager tblManager,
             QueryTaskExecutor taskExecutor,
             RowHandler<RowT> handler,
@@ -168,7 +168,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         this.topSrvc = topSrvc;
         this.handler = handler;
         this.msgSrvc = msgSrvc;
-        this.schemaHolder = schemaHolder;
+        this.sqlSchemaManager = sqlSchemaManager;
         this.taskExecutor = taskExecutor;
         this.extensions = extensions;
         tableManager = tblManager;
@@ -208,7 +208,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             String qry,
             Object[] params
     ) {
-        QueryPlan plan = qryPlanCache.queryPlan(new CacheKey(schemaHolder.schema(schema).getName(), qry));
+        QueryPlan plan = qryPlanCache.queryPlan(new CacheKey(sqlSchemaManager.schema(schema).getName(), qry));
         if (plan != null) {
             PlanningContext pctx = createContext(Contexts.empty(), schema, qry, params);
 
@@ -376,7 +376,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
                 .parentContext(parent)
                 .frameworkConfig(
                         Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                                .defaultSchema(schemaHolder.schema(schema))
+                                .defaultSchema(sqlSchemaManager.schema(schema))
                                 .build()
                 )
                 .logger(LOG)
@@ -410,8 +410,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         return new MultiStepQueryPlan(template, resultSetMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
-    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
-        return new FragmentPlan(fromJson(ctx, jsonFragment));
+    private QueryPlan prepareFragment(String jsonFragment) {
+        return new FragmentPlan(fromJson(sqlSchemaManager, jsonFragment));
     }
 
     private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
@@ -592,14 +592,14 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         assert nodeId != null && msg != null;
 
         try {
-            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
-
             QueryPlan qryPlan = qryPlanCache.queryPlan(
                     new CacheKey(msg.schema(), msg.root()),
-                    () -> prepareFragment(qctx, msg.root())
+                    () -> prepareFragment(msg.root())
             );
 
             FragmentPlan plan = (FragmentPlan) qryPlan;
+
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
             ExecutionContext<RowT> ectx = new ExecutionContext<>(
                     qctx,

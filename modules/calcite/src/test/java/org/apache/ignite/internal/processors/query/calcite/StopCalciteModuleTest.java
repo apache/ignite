@@ -171,6 +171,8 @@ public class StopCalciteModuleTest {
     public void testStopQueryOnNodeStop() throws Exception {
         SqlQueryProcessor qryProc = new SqlQueryProcessor(clusterSrvc, tableManager);
 
+        when(tbl.tableId()).thenReturn(new IgniteUuid(UUID.randomUUID(), 0L));
+
         qryProc.start();
 
         List<SqlCursor<List<?>>> cursors = qryProc.query(

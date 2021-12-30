@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,13 +67,20 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
     /**
      * Constructor.
      *
-     * @param desc Table descriptor.
+     * @param desc  Table descriptor.
+     * @param table Physical table this schema object created for.
      */
     public IgniteTableImpl(TableDescriptor desc, TableImpl table) {
         this.desc = desc;
         this.table = table;
 
         statistic = new StatisticsImpl();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public IgniteUuid id() {
+        return table.tableId();
     }
 
     /** {@inheritDoc} */

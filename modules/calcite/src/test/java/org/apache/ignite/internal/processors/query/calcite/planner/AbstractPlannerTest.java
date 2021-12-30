@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -87,7 +88,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.SqlSchemaManager;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -98,6 +101,7 @@ import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ArrayUtils;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -468,9 +472,6 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         rel = Cloner.clone(rel);
 
-        final SchemaPlus schema = createRootSchema(false)
-                .add("PUBLIC", publicSchema);
-
         List<Fragment> fragments = new Splitter().go(rel);
         List<String> serialized = new ArrayList<>(fragments.size());
 
@@ -486,20 +487,15 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
             nodes.add(UUID.randomUUID().toString());
         }
 
-        BaseQueryContext ctx = BaseQueryContext.builder()
-                .frameworkConfig(
-                        newConfigBuilder(FRAMEWORK_CONFIG)
-                                .defaultSchema(schema)
-                                .build()
-                )
-                .logger(log)
-                .build();
-
-
         List<RelNode> deserializedNodes = new ArrayList<>();
 
+        Map<IgniteUuid, IgniteTable> tableMap = publicSchema.getTableNames().stream()
+                .map(publicSchema::getTable)
+                .map(IgniteTable.class::cast)
+                .collect(Collectors.toMap(IgniteTable::id, Function.identity()));
+
         for (String s : serialized) {
-            RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
+            RelJsonReader reader = new RelJsonReader(new SqlSchemaManagerImpl(tableMap));
             deserializedNodes.add(reader.read(s));
         }
 
@@ -543,6 +539,8 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         private final TableDescriptor desc;
 
+        private final IgniteUuid id = new IgniteUuid(UUID.randomUUID(), 0L);
+
         TestTable(RelDataType type) {
             this(type, 100.0);
         }
@@ -557,6 +555,12 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
             this.name = name;
 
             desc = new TestTableDescriptor(this::distribution, type);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public IgniteUuid id() {
+            return id;
         }
 
         /** {@inheritDoc} */
@@ -883,6 +887,24 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         @Override
         public Object defaultValue() {
             throw new AssertionError();
+        }
+    }
+
+    static class SqlSchemaManagerImpl implements SqlSchemaManager {
+        private final Map<IgniteUuid, IgniteTable> tablesById;
+
+        public SqlSchemaManagerImpl(Map<IgniteUuid, IgniteTable> tablesById) {
+            this.tablesById = tablesById;
+        }
+
+        @Override
+        public SchemaPlus schema(@Nullable String schema) {
+            throw new AssertionError();
+        }
+
+        @Override
+        public IgniteTable tableById(IgniteUuid id) {
+            return tablesById.get(id);
         }
     }
 }

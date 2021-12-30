@@ -27,9 +27,9 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
-import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,29 +39,23 @@ import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.util.ControlFlowException;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -325,123 +319,13 @@ public class TraitUtils {
 
         RelTraitSet traitSet0 = traitSet;
 
-        return new RelInput() {
-            @Override
-            public RelOptCluster getCluster() {
-                return input.getCluster();
-            }
-
-            @Override
-            public RelTraitSet getTraitSet() {
+        return (RelInput) Proxy.newProxyInstance(TraitUtils.class.getClassLoader(), input.getClass().getInterfaces(), (p, m, a) -> {
+            if ("getTraitSet".equals(m.getName())) {
                 return traitSet0;
             }
 
-            @Override
-            public RelOptTable getTable(String table) {
-                return input.getTable(table);
-            }
-
-            @Override
-            public RelNode getInput() {
-                return input.getInput();
-            }
-
-            @Override
-            public List<RelNode> getInputs() {
-                return input.getInputs();
-            }
-
-            @Override
-            public RexNode getExpression(String tag) {
-                return input.getExpression(tag);
-            }
-
-            @Override
-            public ImmutableBitSet getBitSet(String tag) {
-                return input.getBitSet(tag);
-            }
-
-            @Override
-            public List<ImmutableBitSet> getBitSetList(String tag) {
-                return input.getBitSetList(tag);
-            }
-
-            @Override
-            public List<AggregateCall> getAggregateCalls(String tag) {
-                return input.getAggregateCalls(tag);
-            }
-
-            @Override
-            public Object get(String tag) {
-                return input.get(tag);
-            }
-
-            @Override
-            public String getString(String tag) {
-                return input.getString(tag);
-            }
-
-            @Override
-            public float getFloat(String tag) {
-                return input.getFloat(tag);
-            }
-
-            @Override
-            public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
-                return input.getEnum(tag, enumClass);
-            }
-
-            @Override
-            public List<RexNode> getExpressionList(String tag) {
-                return input.getExpressionList(tag);
-            }
-
-            @Override
-            public List<String> getStringList(String tag) {
-                return input.getStringList(tag);
-            }
-
-            @Override
-            public List<Integer> getIntegerList(String tag) {
-                return input.getIntegerList(tag);
-            }
-
-            @Override
-            public List<List<Integer>> getIntegerListList(String tag) {
-                return input.getIntegerListList(tag);
-            }
-
-            @Override
-            public RelDataType getRowType(String tag) {
-                return input.getRowType(tag);
-            }
-
-            @Override
-            public RelDataType getRowType(String expressionsTag, String fieldsTag) {
-                return input.getRowType(expressionsTag, fieldsTag);
-            }
-
-            @Override
-            public RelCollation getCollation() {
-                return input.getCollation();
-            }
-
-            @Override
-            public RelDistribution getDistribution() {
-                return input.getDistribution();
-            }
-
-            @Override
-            public ImmutableList<ImmutableList<RexLiteral>> getTuples(
-                    String tag) {
-                return input.getTuples(tag);
-            }
-
-            @Override
-            public boolean getBoolean(String tag, boolean def) {
-                return input.getBoolean(tag, def);
-            }
-        };
+            return m.invoke(input, a);
+        });
     }
 
     /**

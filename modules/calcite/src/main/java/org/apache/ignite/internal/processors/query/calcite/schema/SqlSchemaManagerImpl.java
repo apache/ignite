@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
@@ -32,17 +33,27 @@ import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtensio
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteStringFormatter;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.NodeStoppingException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class SchemaHolderImpl implements SchemaHolder {
+public class SqlSchemaManagerImpl implements SqlSchemaManager {
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
+
+    private final Map<IgniteUuid, InternalIgniteTable> tablesById = new ConcurrentHashMap<>();
 
     private final Map<String, Schema> externalCatalogs = new HashMap<>();
 
     private final Runnable onSchemaUpdatedCallback;
+
+    private final TableManager tableManager;
 
     private volatile SchemaPlus calciteSchema;
 
@@ -50,8 +61,9 @@ public class SchemaHolderImpl implements SchemaHolder {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public SchemaHolderImpl(Runnable onSchemaUpdatedCallback) {
+    public SqlSchemaManagerImpl(TableManager tableManager, Runnable onSchemaUpdatedCallback) {
         this.onSchemaUpdatedCallback = onSchemaUpdatedCallback;
+        this.tableManager = tableManager;
 
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
@@ -62,6 +74,39 @@ public class SchemaHolderImpl implements SchemaHolder {
     @Override
     public SchemaPlus schema(@Nullable String schema) {
         return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @NotNull
+    public InternalIgniteTable tableById(IgniteUuid id) {
+        InternalIgniteTable table = tablesById.get(id);
+
+        // there is a chance that someone tries to resolve table before
+        // the distributed event of that table creation has been processed
+        // by TableManager, so we need to get in sync with the TableManager
+        if (table == null) {
+            ensureTableStructuresCreated(id);
+
+            // at this point the table is either null means no such table
+            // really exists or the table itself
+            table = tablesById.get(id);
+        }
+
+        if (table == null) {
+            throw new IgniteInternalException(
+                    IgniteStringFormatter.format("Table not found [tableId={}]", id));
+        }
+
+        return table;
+    }
+
+    private void ensureTableStructuresCreated(IgniteUuid id) {
+        try {
+            tableManager.table(id);
+        } catch (NodeStoppingException e) {
+            // Discard the exception
+        }
     }
 
     /**
@@ -100,7 +145,7 @@ public class SchemaHolderImpl implements SchemaHolder {
      * OnSqlTypeCreated.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public synchronized void onSqlTypeCreated(
+    public synchronized void onTableCreated(
             String schemaName,
             TableImpl table
     ) {
@@ -122,7 +167,10 @@ public class SchemaHolderImpl implements SchemaHolder {
 
         TableDescriptorImpl desc = new TableDescriptorImpl(colDescriptors);
 
-        schema.addTable(removeSchema(schemaName, table.name()), new IgniteTableImpl(desc, table));
+        IgniteTableImpl table0 = new IgniteTableImpl(desc, table);
+
+        schema.addTable(removeSchema(schemaName, table.name()), table0);
+        tablesById.put(table0.id(), table0);
 
         rebuild();
     }
@@ -131,24 +179,28 @@ public class SchemaHolderImpl implements SchemaHolder {
      * OnSqlTypeUpdated.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public void onSqlTypeUpdated(
+    public void onTableUpdated(
             String schemaName,
             TableImpl table
     ) {
-        onSqlTypeCreated(schemaName, table);
+        onTableCreated(schemaName, table);
     }
 
     /**
      * OnSqlTypeDropped.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public synchronized void onSqlTypeDropped(
+    public synchronized void onTableDropped(
             String schemaName,
             String tableName
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        schema.removeTable(tableName);
+        InternalIgniteTable table = (InternalIgniteTable) schema.getTable(tableName);
+        if (table != null) {
+            tablesById.remove(table.id());
+            schema.removeTable(tableName);
+        }
 
         rebuild();
     }

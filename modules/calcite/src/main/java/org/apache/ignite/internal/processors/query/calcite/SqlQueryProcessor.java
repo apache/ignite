@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
-import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.SqlSchemaManagerImpl;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
@@ -106,7 +106,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
         extensions = extensionList.stream().collect(Collectors.toMap(SqlExtension::name, Function.identity()));
 
-        SchemaHolderImpl schemaHolder = new SchemaHolderImpl(planCache::clear);
+        SqlSchemaManagerImpl schemaHolder = new SqlSchemaManagerImpl(tableManager, planCache::clear);
 
         executionSrvc = new ExecutionServiceImpl<>(
                 clusterSrvc.topologyService(),
@@ -185,10 +185,10 @@ public class SqlQueryProcessor implements QueryProcessor {
     }
 
     private abstract static class AbstractTableEventListener implements EventListener<TableEventParameters> {
-        protected final SchemaHolderImpl schemaHolder;
+        protected final SqlSchemaManagerImpl schemaHolder;
 
         private AbstractTableEventListener(
-                SchemaHolderImpl schemaHolder
+                SqlSchemaManagerImpl schemaHolder
         ) {
             this.schemaHolder = schemaHolder;
         }
@@ -202,7 +202,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
     private static class TableCreatedListener extends AbstractTableEventListener {
         private TableCreatedListener(
-                SchemaHolderImpl schemaHolder
+                SqlSchemaManagerImpl schemaHolder
         ) {
             super(schemaHolder);
         }
@@ -210,7 +210,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         /** {@inheritDoc} */
         @Override
         public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
-            schemaHolder.onSqlTypeCreated(
+            schemaHolder.onTableCreated(
                     "PUBLIC",
                     parameters.table()
             );
@@ -221,7 +221,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
     private static class TableUpdatedListener extends AbstractTableEventListener {
         private TableUpdatedListener(
-                SchemaHolderImpl schemaHolder
+                SqlSchemaManagerImpl schemaHolder
         ) {
             super(schemaHolder);
         }
@@ -229,7 +229,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         /** {@inheritDoc} */
         @Override
         public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
-            schemaHolder.onSqlTypeUpdated(
+            schemaHolder.onTableUpdated(
                     "PUBLIC",
                     parameters.table()
             );
@@ -240,7 +240,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
     private static class TableDroppedListener extends AbstractTableEventListener {
         private TableDroppedListener(
-                SchemaHolderImpl schemaHolder
+                SqlSchemaManagerImpl schemaHolder
         ) {
             super(schemaHolder);
         }
@@ -248,7 +248,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         /** {@inheritDoc} */
         @Override
         public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
-            schemaHolder.onSqlTypeDropped(
+            schemaHolder.onTableDropped(
                     "PUBLIC",
                     parameters.tableName()
             );
