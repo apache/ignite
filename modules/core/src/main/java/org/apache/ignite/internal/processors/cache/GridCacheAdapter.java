@@ -5083,7 +5083,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipVals Skip values flag.
      * @return Compound future that represents a result of repair action.
      */
-    protected IgniteInternalFuture<Void> repairAsync(
+    private IgniteInternalFuture<Void> repairAsync(
         Collection<? extends K> keys,
         final CacheOperationContext opCtx,
         boolean skipVals) {
@@ -5105,7 +5105,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipVals Skip values flag.
      * @return Recover future.
      */
-    protected IgniteInternalFuture<Void> repairAsync(
+    private IgniteInternalFuture<Void> repairAsync(
         final K key,
         final CacheOperationContext opCtx,
         boolean skipVals) {
