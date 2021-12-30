@@ -98,7 +98,8 @@ namespace ignite
                 bool connected = EnsureConnected(config.GetConnectionTimeout());
 
                 if (!connected)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                        "Failed to establish connection with any host.");
             }
 
             void DataRouter::Close()
@@ -294,7 +295,13 @@ namespace ignite
                     channel = GetRandomChannel();
 
                 if (!channel.IsValid())
-                    EnsureConnected(config.GetConnectionTimeout());
+                {
+                    bool connected = EnsureConnected(config.GetConnectionTimeout());
+
+                    if (!connected)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Failed to establish connection with any host.");
+                }
 
                 try
                 {

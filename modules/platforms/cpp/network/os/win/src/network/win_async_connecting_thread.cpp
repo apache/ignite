@@ -150,9 +150,9 @@ namespace ignite
 
                     return SP_WinAsyncClient(new WinAsyncClient(socket, addr, range, BUFFER_SIZE));
                 }
-                catch (const IgniteError& err)
+                catch (const IgniteError&)
                 {
-                    clientPool.HandleConnectionError(addr, err);
+                    // No-op.
                 }
             }
 

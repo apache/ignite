@@ -193,6 +193,8 @@ BOOST_AUTO_TEST_CASE(IgniteClientReconnect)
 
     BOOST_CHECK(WaitForConnections(0));
     BOOST_CHECK_EQUAL(GetActiveConnections(), 0);
+
+    BOOST_REQUIRE_THROW((client.GetOrCreateCache<int, int>("test")), ignite::IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
