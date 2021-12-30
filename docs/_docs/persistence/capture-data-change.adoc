@@ -1,0 +1,87 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Change Data Capture
+
+WARNING: Experimental API.
+
+== Overview
+Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is data processing pattern used to asynchronously receive entries that has changed on local node
+so that action can be taken using the changed entry.
+
+Ignite implements CDC with an application `ignite-cdc.sh` and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
+
+CDC application and Ignite node integrated via WAL archive segments:
+
+image:../../assets/images/integrations/CDC-design.svg[]
+
+When CDC enabled Ignite server node creates a hard link to each WAL archive segment in special `db/cdc/\{consistency_id\}` directory.
+`ignite-cdc.sh` run in different JVM and process newly archived link:native-persistence.adoc#_write-ahead_log[WAL segments].
+When segment fully processed by `ignite-cdc.sh` it removed. The actual disk space free when both links - archive and CDC removed.
+tate of consumption can be saved to disk to continue from it in the case of any failure.
+
+== Configuration
+
+=== Ignite node:
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Name |Description | Default value
+| `DataStorageConfiguration#cdcEnabled` | Flag to enable CDC on server node. | `false`
+| `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
+| `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive WAL segment even it not full. | `-1` (disabled)
+|===
+
+=== CDC application:
+
+CDC configured in the same manner as Ignite node via spring XML file.
+`ignite-cdc.sh` require both Ignite and CDC configuration to start.
+`IgniteConfiguration` used to determine common options like path to CDC directory, node consistent id and others.
+And `CdcConfiguration` contains options specifically for `ignite-cdc.sh`.
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Name |Description | Default value
+| `lockTimeout` | Timeout to wait lock acquire. CDC locks directory on startup to ensure there is no concurrent CDC processing same directory.
+| 1000 milliseconds.
+| `checkFrequency` | Amount of time application sleeps between subsequent checks when no new files available. | 1000 milliseconds.
+| `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:../key-value-api/binary-objects.adoc[binary format]. | `true`
+| `consumer` | Implementation of `org.apache.ignite.cdc.CdcConsumer` that consumes entries changes | null
+| `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:../monitoring-metrics/new-metrics-system.adoc#_metric_exporters[metrics] documentation, also. | null
+|===
+
+== API
+
+=== `org.apache.ignite.cdc.CdcEvent`
+Single change of data reflected by `CdcEvent`.
+Let's get a closer look to the information provided:
+
+[cols="20%,80%",opts="header"]
+|===
+|Name |Description
+| `key()` | Key for the changed entry.
+| `value()` | Value for the changed entry. This method will return `null` if event reflects removal.
+| `cacheId()` | ID of the cache where change happens. Value equal to the `CACHE_ID` from `SYS.CACHES` link:../monitoring-metrics/system-views.adoc#_CACHES[system view]
+| `partition()` | Partition of the changed entry.
+| `primary()` | Flag to distinguish if operation happen on primary or backup node.
+| `version()` | `Comparable` version of the changed entry. Internally Ignite maintain ordered versions of each entry so any changes of the same entry can be sorted.
+|===
+
+=== `org.apache.ignite.cdc.CdcConsumer`
+
+Consumer of stream consists of `CdcEvent`. Should be implemented by the user.
+
+== Metrics
+
+== Lifecycle
