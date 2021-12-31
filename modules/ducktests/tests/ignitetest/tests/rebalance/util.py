@@ -53,6 +53,7 @@ class RebalanceParams(NamedTuple):
     cache_count: int = 1
     entry_count: int = 15_000
     entry_size: int = 50_000
+    partitions_count: int = 1024
     preloaders: int = 1
     thread_pool_size: int = None
     batch_size: int = None
@@ -155,7 +156,8 @@ def preload_data(context, config, rebalance_params: RebalanceParams, timeout=360
                 "cacheCount": rebalance_params.cache_count,
                 "entrySize": rebalance_params.entry_size,
                 "from": _from,
-                "to": _to
+                "to": _to,
+                "partitionsCount": rebalance_params.partitions_count
             },
             shutdown_timeout_sec=timeout)
         app.start_async()

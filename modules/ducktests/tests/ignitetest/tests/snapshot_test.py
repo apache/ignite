@@ -40,9 +40,10 @@ class SnapshotTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[1_024], preloaders=[1])
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
+              preloaders=[1])
     def snapshot_test(self, ignite_version,
-                      backups, cache_count, entry_count, entry_size, preloaders):
+                      backups, cache_count, entry_count, entry_size, partitions_count, preloaders):
         """
         Basic snapshot test.
         """
@@ -61,15 +62,18 @@ class SnapshotTest(IgniteTest):
         control_utility.activate()
 
         reb_params = RebalanceParams(backups=backups, cache_count=cache_count,
-                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+                                     entry_count=entry_count, entry_size=entry_size, partitions_count=partitions_count,
+                                     preloaders=preloaders)
 
-        self.logger.info("Start loading data[entry_count={0},entry_size={1},preloaders={2}]"
-                         .format(reb_params.entry_count, reb_params.entry_size, reb_params.preloaders))
+        self.logger.info("Start loading data[entry_count={0},entry_size={1},partition_count={2},preloaders={3}]"
+                         .format(reb_params.entry_count, reb_params.entry_size, reb_params.partitions_count,
+                                 reb_params.preloaders))
 
         preload_time = preload_data(
             self.test_context,
             ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
-            rebalance_params=reb_params)
+            rebalance_params=reb_params,
+            timeout=7200)
 
         self.logger.info("Data preload finished[{0}]".format(preload_time))
 

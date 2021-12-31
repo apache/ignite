@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -40,13 +41,15 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int entrySize = jsonNode.get("entrySize").asInt();
         int from = jsonNode.get("from").asInt();
         int to = jsonNode.get("to").asInt();
+        int partitionsCnt = jsonNode.get("partitionsCount").asInt();
 
         markInitialized();
 
         for (int i = 1; i <= cacheCnt; i++) {
             IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
-                    .setBackups(backups));
+                    .setBackups(backups)
+                    .setAffinity(new RendezvousAffinityFunction(false, partitionsCnt)));
 
             generateCacheData(cache.getName(), entrySize, from, to);
         }
