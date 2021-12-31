@@ -20,11 +20,11 @@ Module contains snapshot test.
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.tests.rebalance.util import preload_data, RebalanceParams
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
@@ -58,16 +58,18 @@ class SnapshotTest(IgniteTest):
         control_utility = ControlUtility(nodes)
         control_utility.activate()
 
-        loader_config = IgniteConfiguration(client_mode=True, version=version, discovery_spi=from_ignite_cluster(nodes))
+        reb_params = RebalanceParams(backups=1, cache_count=1,
+                                     entry_count=500_000, entry_size=1024, preloaders=1)
 
-        loader = IgniteApplicationService(
+        self.logger.info("Start loading data[entry_count={0},entry_size={1},preloaders={2}]"
+            .format(reb_params.entry_count, reb_params.entry_size, reb_params.preloaders))
+
+        preload_time = preload_data(
             self.test_context,
-            loader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            params={"start": 0, "cacheName": self.CACHE_NAME, "interval": 500_000, "valueSizeKb": 1}
-        )
+            ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
+            rebalance_params=reb_params)
 
-        loader.run()
+        self.logger.info("Data preload finished[{0}]".format(preload_time))
 
         control_utility.validate_indexes()
         control_utility.idle_verify()
@@ -77,14 +79,6 @@ class SnapshotTest(IgniteTest):
         dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
-
-        loader.params = {"start": 500_000, "cacheName": self.CACHE_NAME, "interval": 100_000, "valueSizeKb": 1}
-        loader.run()
-
-        dump_2 = control_utility.idle_verify_dump(node)
-
-        diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert diff
 
         nodes.stop()
         nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
