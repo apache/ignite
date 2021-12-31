@@ -40,7 +40,7 @@ class SnapshotTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
+    @defaults(backups=[0], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
               preloaders=[1])
     def snapshot_test(self, ignite_version,
                       backups, cache_count, entry_count, entry_size, partitions_count, preloaders):
@@ -80,9 +80,9 @@ class SnapshotTest(IgniteTest):
         control_utility.validate_indexes()
         control_utility.idle_verify()
 
-        node = nodes.nodes[0]
+        # node = nodes.nodes[0]
 
-        dump_1 = control_utility.idle_verify_dump(node)
+        # dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
