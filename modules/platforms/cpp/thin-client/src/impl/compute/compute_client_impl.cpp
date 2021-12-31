@@ -53,7 +53,7 @@ namespace
 
             if (notification.IsFailure())
             {
-                promise.SetError(IgniteError(IgniteError::IGNITE_ERR_COMPUTE_TASK_CANCELLED,
+                promise.SetError(IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED,
                     notification.GetErrorMessage().c_str()));
             }
             else

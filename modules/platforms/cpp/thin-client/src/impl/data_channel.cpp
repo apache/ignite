@@ -111,17 +111,8 @@ namespace ignite
                 }
 
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Getting value... " << std::endl;
-                interop::InteropInputStream inStream(rspFut.GetValue().GetInputStream());
+                DeserializeMessage(rspFut.GetValue(), rsp);
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Got value" << std::endl;
-
-                // Skipping size (4 bytes) and reqId (8 bytes)
-                inStream.Ignore(12);
-
-                binary::BinaryReaderImpl reader(&inStream);
-
-                rsp.Read(reader, currentVersion);
-
-                // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " SyncMessage: Read value" << std::endl;
             }
 
             int64_t DataChannel::GenerateRequestMessage(Request &req, interop::InteropMemory &mem)
