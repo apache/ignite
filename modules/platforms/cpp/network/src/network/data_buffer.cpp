@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cstring>
+
 #include <ignite/ignite_error.h>
 #include <ignite/network/data_buffer.h>
 
@@ -70,7 +72,7 @@ namespace ignite
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                     "Codec error: Not enough data to read data from buffer");
 
-            memcpy(dst, data.Get()->Data() + position, size);
+            std::memcpy(dst, data.Get()->Data() + position, size);
             Advance(size);
         }
 
@@ -120,7 +122,7 @@ namespace ignite
 
             impl::interop::SP_InteropMemory mem(new impl::interop::InteropUnpooledMemory(length));
             mem.Get()->Length(length);
-            memcpy(mem.Get()->Data(), data.Get()->Data() + position, length);
+            std::memcpy(mem.Get()->Data(), data.Get()->Data() + position, length);
 
             return DataBuffer(mem, 0, length);
         }
