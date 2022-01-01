@@ -81,13 +81,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 stmr.addData(i, builder.build());
 
                 if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
-                    log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
+                    log.info("Streamed " + (i - from + 1) + " entries into " + cacheName);
 
                 if (i % flushEach == 0)
                     stmr.flush();
             }
         }
 
-        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
+        log.info(cacheName + " data generated [entryCnt=" + (to - from) + ", from=" + from + ", to=" + to + "]");
     }
 }
