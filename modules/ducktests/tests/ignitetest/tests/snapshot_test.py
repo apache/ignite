@@ -38,10 +38,10 @@ class SnapshotTest(IgniteTest):
 
     CACHE_NAME = "TEST_CACHE"
 
-    @cluster(num_nodes=5)
+    @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[0], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
-              preloaders=[1])
+    @defaults(backups=[0], cache_count=[1], entry_count=[5_242_880], entry_size=[2_048], partitions_count=[16384],
+              preloaders=[4])
     def snapshot_test(self, ignite_version,
                       backups, cache_count, entry_count, entry_size, partitions_count, preloaders):
         """
