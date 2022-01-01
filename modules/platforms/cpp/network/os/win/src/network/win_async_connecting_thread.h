@@ -51,7 +51,7 @@ namespace ignite
              *
              * @param clientPool Client pool.
              */
-            WinAsyncConnectingThread(WinAsyncClientPool& clientPool);
+            explicit WinAsyncConnectingThread(WinAsyncClientPool& clientPool);
 
             /**
              * Start thread.

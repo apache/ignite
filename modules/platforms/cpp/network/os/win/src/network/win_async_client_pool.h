@@ -31,6 +31,7 @@
 
 #include "network/win_async_client.h"
 #include "network/win_async_connecting_thread.h"
+#include "network/win_async_worker_thread.h"
 
 namespace ignite
 {
@@ -98,6 +99,16 @@ namespace ignite
             virtual void Close(uint64_t id, const IgniteError* err);
 
             /**
+             * Closes and releases memory allocated for client with specified ID.
+             * Error is reported to handler.
+             *
+             * @param id Client ID.
+             * @param err Error to report. May be null.
+             * @return @c true if connection with specified ID was found.
+             */
+            void CloseAndRelease(uint64_t id, const IgniteError* err);
+
+            /**
              * Add client to connection map. Notify user.
              *
              * @param client Client.
@@ -113,39 +124,39 @@ namespace ignite
              */
             void HandleConnectionError(const EndPoint& addr, const IgniteError& err);
 
-        private:
             /**
-             * Async pool worker thread.
+             * Handle successful connection establishment.
+             *
+             * @param addr Address of the new connection.
+             * @param id Connection ID.
              */
-            class WorkerThread : public common::concurrent::Thread
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param clientPool Client pool.
-                 */
-                explicit WorkerThread(WinAsyncClientPool& clientPool);
-
-                /**
-                 * Run thread.
-                 */
-                virtual void Run();
-
-                /**
-                 * Stop thread.
-                 */
-                void Stop();
-
-            private:
-                /** Client pool. */
-                WinAsyncClientPool& clientPool;
-
-                /** Flag to signal that thread should stop. */
-                volatile bool stopping;
-            };
+            void HandleConnectionSuccess(const EndPoint& addr, uint64_t id);
 
             /**
+             * Handle error during connection establishment.
+             *
+             * @param id Async client ID.
+             * @param err Error. Can be null if connection closed without error.
+             */
+            void HandleConnectionClosed(uint64_t id, const IgniteError* err);
+
+            /**
+             * Handle new message.
+             *
+             * @param id Async client ID.
+             * @param msg Received message.
+             */
+            void HandleMessageReceived(uint64_t id, const DataBuffer& msg);
+
+            /**
+             * Handle sent message event.
+             *
+             * @param id Async client ID.
+             */
+            void HandleMessageSent(uint64_t id);
+
+        private:
+             /**
              * Close all established connections and stops handling threads.
              */
             void InternalStop();
@@ -157,16 +168,6 @@ namespace ignite
              * @return @c true if connection with specified ID was found.
              */
             bool CloseAndRelease(uint64_t id);
-
-            /**
-             * Closes and releases memory allocated for client with specified ID.
-             * Error is reported to handler.
-             *
-             * @param id Client ID.
-             * @param err Error to report. May be null.
-             * @return @c true if connection with specified ID was found.
-             */
-            void CloseAndRelease(uint64_t id, const IgniteError* err);
 
             /**
              * Closes specified connection if it's established. Connection to the specified address is planned for
@@ -211,7 +212,7 @@ namespace ignite
             WinAsyncConnectingThread connectingThread;
 
             /** Internal thread. */
-            WorkerThread workerThread;
+            WinAsyncWorkerThread workerThread;
 
             /** ID counter. */
             uint64_t idGen;

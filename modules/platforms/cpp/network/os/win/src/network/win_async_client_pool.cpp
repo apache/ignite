@@ -32,120 +32,6 @@ namespace ignite
 {
     namespace network
     {
-        WinAsyncClientPool::WorkerThread::WorkerThread(WinAsyncClientPool& clientPool) :
-            clientPool(clientPool),
-            stopping(false)
-        {
-            // No-op.
-        }
-
-        void WinAsyncClientPool::WorkerThread::Run()
-        {
-            while (!stopping)
-            {
-                DWORD bytesTransferred = 0;
-                ULONG_PTR key = NULL;
-                LPOVERLAPPED overlapped = NULL;
-
-                BOOL ok = GetQueuedCompletionStatus(clientPool.iocp, &bytesTransferred, &key, &overlapped, INFINITE);
-
-                // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: Got event" << std::endl;
-
-                if (stopping)
-                    break;
-
-                if (!key)
-                    continue;
-
-                WinAsyncClient* client = reinterpret_cast<WinAsyncClient*>(key);
-
-                if (!ok || (0 != overlapped && 0 == bytesTransferred))
-                {
-                    IoOperation* operation = reinterpret_cast<IoOperation*>(overlapped);
-                    // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: closing " << client->GetId() << std::endl;
-                    // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
-                    // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: operation=" << operation->kind << std::endl;
-
-                    IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
-                    clientPool.CloseAndRelease(client->GetId(), &err);
-
-                    continue;
-                }
-
-                if (!overlapped)
-                {
-                    // This mean new client is connected.
-                    if (clientPool.asyncHandler)
-                        clientPool.asyncHandler->OnConnectionSuccess(client->GetAddress(), client->GetId());
-
-                    // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
-                    bool success = client->Receive();
-                    if (!success)
-                    {
-                        IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");
-
-                        clientPool.CloseAndRelease(client->GetId(), &err);
-                    }
-
-                    continue;
-                }
-
-                try
-                {
-                    IoOperation* operation = reinterpret_cast<IoOperation*>(overlapped);
-                    switch (operation->kind)
-                    {
-                        case IoOperationKind::SEND:
-                        {
-                            // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: processing send " << bytesTransferred << std::endl;
-                            bool success = client->ProcessSent(bytesTransferred);
-
-                            if (!success)
-                            {
-                                IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not send next packet");
-
-                                clientPool.CloseAndRelease(client->GetId(), &err);
-                            }
-
-                            if (clientPool.asyncHandler)
-                                clientPool.asyncHandler->OnMessageSent(client->GetId());
-
-                            break;
-                        }
-
-                        case IoOperationKind::RECEIVE:
-                        {
-                            // std::cout << "=============== " << &clientPool << " " << GetCurrentThreadId() << " WorkerThread: processing recv " << bytesTransferred << std::endl;
-                            DataBuffer data = client->ProcessReceived(bytesTransferred);
-
-                            if (clientPool.asyncHandler && !data.IsEmpty())
-                                clientPool.asyncHandler->OnMessageReceived(client->GetId(), data);
-
-                            client->Receive();
-
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-                }
-                catch (const IgniteError& err)
-                {
-                    clientPool.CloseAndRelease(client->GetId(), &err);
-                }
-            }
-        }
-
-        void WinAsyncClientPool::WorkerThread::Stop()
-        {
-            stopping = true;
-
-            PostQueuedCompletionStatus(clientPool.iocp, 0, 0, 0);
-
-            Join();
-        }
-
         WinAsyncClientPool::WinAsyncClientPool() :
             stopping(true),
             asyncHandler(0),
@@ -180,7 +66,7 @@ namespace ignite
             try
             {
                 connectingThread.Start(connLimit, addrs);
-                workerThread.Start();
+                workerThread.Start(iocp);
             }
             catch (...)
             {
@@ -264,6 +150,30 @@ namespace ignite
                 asyncHandler->OnConnectionError(addr, err);
         }
 
+        void WinAsyncClientPool::HandleConnectionSuccess(const EndPoint &addr, uint64_t id)
+        {
+            if (asyncHandler)
+                asyncHandler->OnConnectionSuccess(addr, id);
+        }
+
+        void WinAsyncClientPool::HandleConnectionClosed(uint64_t id, const IgniteError *err)
+        {
+            if (asyncHandler)
+                asyncHandler->OnConnectionClosed(id, err);
+        }
+
+        void WinAsyncClientPool::HandleMessageReceived(uint64_t id, const DataBuffer &msg)
+        {
+            if (asyncHandler)
+                asyncHandler->OnMessageReceived(id, msg);
+        }
+
+        void WinAsyncClientPool::HandleMessageSent(uint64_t id)
+        {
+            if (asyncHandler)
+                asyncHandler->OnMessageSent(id);
+        }
+
         bool WinAsyncClientPool::Send(uint64_t id, const DataBuffer& data)
         {
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " Send: " << id << std::endl;
@@ -319,8 +229,8 @@ namespace ignite
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
-            if (closed && asyncHandler)
-                asyncHandler->OnConnectionClosed(id, err);
+            if (closed)
+                HandleConnectionClosed(id, err);
         }
 
         bool WinAsyncClientPool::Close(uint64_t id)
@@ -346,8 +256,8 @@ namespace ignite
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, closed=" << closed << std::endl;
             // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
-            if (closed && asyncHandler)
-                asyncHandler->OnConnectionClosed(id, err);
+            if (closed)
+                HandleConnectionClosed(id, err);
         }
 
         void WinAsyncClientPool::ThrowSystemError(const std::string& msg)
