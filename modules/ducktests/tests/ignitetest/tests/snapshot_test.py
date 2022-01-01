@@ -16,6 +16,8 @@
 """
 Module contains snapshot test.
 """
+import os
+
 from ducktape.mark import defaults
 from ducktape.mark.resource import cluster
 
@@ -85,6 +87,10 @@ class SnapshotTest(IgniteTest):
         # dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
+
+        for node in nodes:
+            node.account.ssh(f"ls -R {node.snapshots_dir} >> {os.path.join(node.config_dir, 'snapshot_stat.txt')}")
+            node.account.ssh(f"du {node.snapshots_dir} >> {os.path.join(node.config_dir, 'snapshot_du.txt')}")
 
         nodes.stop()
         # nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
