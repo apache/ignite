@@ -86,7 +86,7 @@ class SnapshotTest(IgniteTest):
 
         # dump_1 = control_utility.idle_verify_dump(node)
 
-        control_utility.snapshot_create(self.SNAPSHOT_NAME)
+        control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600)
 
         for i in range(0, len(self.test_context.cluster) - preloaders):
             ignite.nodes[i].account.ssh(
