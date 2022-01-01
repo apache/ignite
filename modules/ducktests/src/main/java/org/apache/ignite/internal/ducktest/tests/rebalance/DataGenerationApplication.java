@@ -20,8 +20,8 @@ package org.apache.ignite.internal.ducktest.tests.rebalance;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -51,8 +51,10 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         ExecutorService exec = Executors.newFixedThreadPool(threadCnt);
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
-                new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
+            final String cacheName = "test-cache-" + i;
+
+            ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, BinaryObject>(cacheName)
                     .setBackups(backups)
                     .setAffinity(new RendezvousAffinityFunction(false, partitionsCnt)));
 
@@ -62,11 +64,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 long from0 = from + j * eachThreadPart;
                 long to0 = (j + 1 == threadCnt) ? to : (from + (j + 1) * eachThreadPart);
 
-                exec.submit(() -> generateCacheData(cache.getName(), entrySize, from0, to0));
+                exec.submit(() -> generateCacheData(cacheName, entrySize, from0, to0));
             }
         }
 
         exec.shutdown();
+
+        exec.awaitTermination(24 * 60, TimeUnit.MINUTES);
 
         markFinished();
     }
