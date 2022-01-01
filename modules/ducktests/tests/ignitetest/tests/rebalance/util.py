@@ -55,7 +55,7 @@ class RebalanceParams(NamedTuple):
     entry_size: int = 50_000
     partitions_count: int = 1024
     preloaders: int = 1
-    preloader_thread_count: int = 4
+    preloader_thread_count: int = 16
     thread_pool_size: int = None
     batch_size: int = None
     batches_prefetch_count: int = None
