@@ -42,7 +42,7 @@ class SnapshotTest(IgniteTest):
 
     @cluster(num_nodes=24)
     @ignite_versions(str(LATEST_2_10))
-    @defaults(backups=[0], cache_count=[1], entry_count=[26_214_400], entry_size=[2_048], partitions_count=[16384],
+    @defaults(backups=[0], cache_count=[1], entry_count=[52_428_800], entry_size=[2_048], partitions_count=[16384],
               preloaders=[8])
     def snapshot_test(self, ignite_version,
                       backups, cache_count, entry_count, entry_size, partitions_count, preloaders):
