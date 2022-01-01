@@ -90,9 +90,9 @@ class SnapshotTest(IgniteTest):
 
         for i in range(0, len(self.test_context.cluster) - preloaders):
             ignite.nodes[i].account.ssh(
-                f"ls -alFHhR {ignite.snapshots_dir} >> {os.path.join(ignite.config_dir, 'snapshot_stat.txt')}")
+                f"ls -alFHhR {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
             ignite.nodes[i].account.ssh(
-                f"du -h {ignite.snapshots_dir} >> {os.path.join(ignite.config_dir, 'snapshot_stat.txt')}")
+                f"du -h {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
 
         ignite.stop()
         # nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
