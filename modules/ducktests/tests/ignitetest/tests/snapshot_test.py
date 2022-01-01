@@ -40,10 +40,10 @@ class SnapshotTest(IgniteTest):
 
     CACHE_NAME = "TEST_CACHE"
 
-    @cluster(num_nodes=24)
+    @cluster(num_nodes=44)
     @ignite_versions(str(LATEST_2_10))
-    @defaults(backups=[0], cache_count=[1], entry_count=[52_428_800], entry_size=[2_048], partitions_count=[16384],
-              preloaders=[8])
+    @defaults(backups=[0], cache_count=[1], entry_count=[262_144_000], entry_size=[2_020], partitions_count=[16384],
+              preloaders=[12])
     def snapshot_test(self, ignite_version,
                       backups, cache_count, entry_count, entry_size, partitions_count, preloaders):
         """
@@ -92,7 +92,7 @@ class SnapshotTest(IgniteTest):
             ignite.nodes[i].account.ssh(
                 f"ls -alFHhR {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
             ignite.nodes[i].account.ssh(
-                f"du -h {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
+                f"du {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
 
         ignite.stop()
         # nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
