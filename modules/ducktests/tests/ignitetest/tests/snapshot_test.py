@@ -38,7 +38,7 @@ class SnapshotTest(IgniteTest):
 
     CACHE_NAME = "TEST_CACHE"
 
-    @cluster(num_nodes=10)
+    @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[0], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
               preloaders=[1])
@@ -55,7 +55,7 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
+        nodes = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - preloaders)
         nodes.start()
 
         control_utility = ControlUtility(nodes)
