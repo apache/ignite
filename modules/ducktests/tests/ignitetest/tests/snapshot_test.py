@@ -38,7 +38,6 @@ class SnapshotTest(IgniteTest):
 
     CACHE_NAME = "TEST_CACHE"
 
-    @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[0], cache_count=[1], entry_count=[15_000], entry_size=[1_024], partitions_count=[1_024],
               preloaders=[1])
