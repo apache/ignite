@@ -57,10 +57,10 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - preloaders)
-        nodes.start()
+        ignite = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - preloaders)
+        ignite.start()
 
-        control_utility = ControlUtility(nodes)
+        control_utility = ControlUtility(ignite)
         control_utility.activate()
 
         reb_params = RebalanceParams(backups=backups, cache_count=cache_count,
@@ -73,7 +73,7 @@ class SnapshotTest(IgniteTest):
 
         preload_time = preload_data(
             self.test_context,
-            ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
+            ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
             rebalance_params=reb_params,
             timeout=7200)
 
@@ -88,11 +88,13 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        for node in nodes:
-            node.account.ssh(f"ls -R {node.snapshots_dir} >> {os.path.join(node.config_dir, 'snapshot_stat.txt')}")
-            node.account.ssh(f"du {node.snapshots_dir} >> {os.path.join(node.config_dir, 'snapshot_du.txt')}")
+        for i in range(0, len(self.test_context.cluster) - preloaders):
+            ignite.nodes[i].account.ssh(
+                f"ls -alFHhR {ignite.snapshots_dir} >> {os.path.join(ignite.config_dir, 'snapshot_stat.txt')}")
+            ignite.nodes[i].account.ssh(
+                f"du -h {ignite.snapshots_dir} >> {os.path.join(ignite.config_dir, 'snapshot_stat.txt')}")
 
-        nodes.stop()
+        ignite.stop()
         # nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
         # nodes.start()
 
