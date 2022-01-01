@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -42,8 +44,11 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         long from = jsonNode.get("from").asLong();
         long to = jsonNode.get("to").asLong();
         int partitionsCnt = jsonNode.get("partitionsCount").asInt();
+        int threadCnt = jsonNode.get("threadCount").asInt();
 
         markInitialized();
+
+        ExecutorService exec = Executors.newFixedThreadPool(threadCnt);
 
         for (int i = 1; i <= cacheCnt; i++) {
             IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
@@ -51,8 +56,17 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                     .setBackups(backups)
                     .setAffinity(new RendezvousAffinityFunction(false, partitionsCnt)));
 
-            generateCacheData(cache.getName(), entrySize, from, to);
+            long eachThreadPart = (to - from) / threadCnt;
+
+            for (int j = 0; j < threadCnt; j++) {
+                long from0 = from + j * eachThreadPart;
+                long to0 = (j + 1 == threadCnt) ? to : (from + (j + 1) * eachThreadPart);
+
+                exec.submit(() -> generateCacheData(cache.getName(), entrySize, from0, to0));
+            }
         }
+
+        exec.shutdown();
 
         markFinished();
     }
@@ -64,6 +78,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param to To key.
      */
     private void generateCacheData(String cacheName, int entrySize, long from, long to) {
+        log.info("Starting data generation[cacheName=" + cacheName + ", entryCnt=" + (to - from) + ", from=" + from +
+            ", to=" + to + "]");
+
         long flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
         long logEach = (to - from) / 10;
 
@@ -88,6 +105,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             }
         }
 
-        log.info(cacheName + " data generated [entryCnt=" + (to - from) + ", from=" + from + ", to=" + to + "]");
+        log.info("Finish data generation[cacheName=" + cacheName + ", entryCnt=" + (to - from) + ", from=" + from +
+            ", to=" + to + "]");
     }
 }
