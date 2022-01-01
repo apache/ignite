@@ -39,8 +39,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int backups = jsonNode.get("backups").asInt();
         int cacheCnt = jsonNode.get("cacheCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
-        int from = jsonNode.get("from").asInt();
-        int to = jsonNode.get("to").asInt();
+        long from = jsonNode.get("from").asLong();
+        long to = jsonNode.get("to").asLong();
         int partitionsCnt = jsonNode.get("partitionsCount").asInt();
 
         markInitialized();
@@ -63,9 +63,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param from From key.
      * @param to To key.
      */
-    private void generateCacheData(String cacheName, int entrySize, int from, int to) {
-        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
-        int logEach = (to - from) / 10;
+    private void generateCacheData(String cacheName, int entrySize, long from, long to) {
+        long flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+        long logEach = (to - from) / 10;
 
         BinaryObjectBuilder builder = ignite.binary().builder("org.apache.ignite.ducktest.DataBinary");
 
@@ -73,8 +73,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
         ThreadLocalRandom.current().nextBytes(data);
 
-        try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = from; i < to; i++) {
+        try (IgniteDataStreamer<Long, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
+            for (long i = from; i < to; i++) {
                 builder.setField("key", i);
                 builder.setField("data", data);
 
