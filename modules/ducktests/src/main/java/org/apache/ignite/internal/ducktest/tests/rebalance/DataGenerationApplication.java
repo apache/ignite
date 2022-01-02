@@ -95,6 +95,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         ThreadLocalRandom.current().nextBytes(data);
 
         try (IgniteDataStreamer<Long, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
+            stmr.allowOverwrite(true);
+
             for (long i = from; i < to; i++) {
                 builder.setField("key", i);
                 builder.setField("data", data);
