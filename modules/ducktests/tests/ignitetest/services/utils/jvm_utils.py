@@ -16,7 +16,7 @@
 """
 This module contains JVM utilities.
 """
-DEFAULT_HEAP = "768M"
+DEFAULT_HEAP = "24G"
 
 JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 " \
                    "-XX:ConcGCThreads=$(((`nproc`/3)>1?(`nproc`/3):1)) " \
