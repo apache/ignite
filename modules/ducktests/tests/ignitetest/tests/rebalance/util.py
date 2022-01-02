@@ -152,6 +152,7 @@ def preload_data(context, config, rebalance_params: RebalanceParams, timeout=360
             context,
             config=config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            jvm_opts="-Xmx24G",
             params={
                 "backups": rebalance_params.backups,
                 "cacheCount": rebalance_params.cache_count,
