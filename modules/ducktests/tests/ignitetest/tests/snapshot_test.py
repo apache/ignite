@@ -75,7 +75,7 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
             rebalance_params=reb_params,
-            timeout=7200)
+            timeout=3600*12)
 
         self.logger.info("Data preload finished[{0}]".format(preload_time))
 
@@ -86,7 +86,7 @@ class SnapshotTest(IgniteTest):
 
         # dump_1 = control_utility.idle_verify_dump(node)
 
-        control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=7200)
+        control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600*12)
 
         for i in range(0, len(self.test_context.cluster) - preloaders):
             ignite.nodes[i].account.ssh(
