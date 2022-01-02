@@ -115,7 +115,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         super().start_node(node, **kwargs)
 
-        wait_until(lambda: self.alive(node), timeout_sec=10)
+        wait_until(lambda: self.alive(node), timeout_sec=120)
 
         ignite_jmx_mixin(node, self)
 
