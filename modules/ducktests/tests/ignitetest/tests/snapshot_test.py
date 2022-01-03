@@ -91,11 +91,16 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600*12)
 
-        for i in range(0, len(self.test_context.cluster) - preloaders):
-            ignite.nodes[i].account.ssh(
-                f"ls -alFHhR {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
-            ignite.nodes[i].account.ssh(
-                f"du {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
+        for node in ignite.nodes:
+            ignite.exec_command(
+                node,
+                f"ls -alFHhR {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}",
+                False)
+
+            ignite.exec_command(
+                node,
+                f"du {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}",
+                False)
 
         ignite.stop()
         ignite.restore_from_snapshot(self.SNAPSHOT_NAME)
