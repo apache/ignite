@@ -40,9 +40,9 @@ from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
-from ignitetest.tests.snapshot_test import SNAPSHOT_SAS_DIR
 from ignitetest.utils.enum import constructible
 
+SNAPSHOT_SAS_DIR = "/gridgain/sas/ducktape/snapshot"
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
