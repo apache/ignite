@@ -220,6 +220,9 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         :return: path to snapshots directory
         """
+        if self.config and self.config.snapshot_path:
+            return self.config.snapshot_path
+
         return os.path.join(self.work_dir, "snapshots")
 
     @property

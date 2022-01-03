@@ -77,6 +77,10 @@
             <property name="localHost" value="{{ config.local_host }}"/>
         {% endif %}
 
+        {% if config.snapshot_path %}
+            <property name="snapshotPath" value="{{ config.snapshot_path }}"/>
+        {% endif %}
+
         {% if config.properties %}
             {{ config.properties }}
         {% endif %}

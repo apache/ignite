@@ -31,6 +31,8 @@ from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST_2_10
 
+SNAPSHOT_SAS_DIR = "/gridgain/sas/ducktape/snapshot"
+
 
 class SnapshotTest(IgniteTest):
     """
@@ -54,7 +56,8 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=version,
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
-            metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
+            metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi',
+            snapshot_path=SNAPSHOT_SAS_DIR
         )
 
         ignite = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - preloaders)
@@ -82,27 +85,30 @@ class SnapshotTest(IgniteTest):
         control_utility.validate_indexes()
         control_utility.idle_verify()
 
-        # node = nodes.nodes[0]
+        node = ignite.nodes[0]
 
-        # dump_1 = control_utility.idle_verify_dump(node)
+        dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600*12)
 
         for i in range(0, len(self.test_context.cluster) - preloaders):
             ignite.nodes[i].account.ssh(
-                f"ls -alFHhR {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
+                f"ls -alFHhR {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
             ignite.nodes[i].account.ssh(
-                f"du {ignite.snapshots_dir} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
+                f"du {ignite_config.snapshot_path} >> {os.path.join(ignite.log_dir, 'snapshot_stat.txt')}")
 
         ignite.stop()
-        # nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
-        # nodes.start()
+        ignite.restore_from_snapshot(self.SNAPSHOT_NAME)
+        ignite.start()
 
-        # control_utility.activate()
-        # control_utility.validate_indexes()
-        # control_utility.idle_verify()
+        control_utility.activate()
+        control_utility.validate_indexes()
+        control_utility.idle_verify()
 
-        # dump_3 = control_utility.idle_verify_dump(node)
+        dump_3 = control_utility.idle_verify_dump(node)
 
-        # diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
-        # assert not diff, diff
+        diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
+        assert not diff, diff
+
+        for node in ignite.nodes:
+            ignite.exec_command(node, f"rm -rf {SNAPSHOT_SAS_DIR}", False)

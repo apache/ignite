@@ -40,6 +40,7 @@ from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
+from ignitetest.tests.snapshot_test import SNAPSHOT_SAS_DIR
 from ignitetest.utils.enum import constructible
 
 
@@ -185,7 +186,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
             return
 
-        node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
+        node.account.mkdirs(f"{self.persistent_root} {self.shared_root} {SNAPSHOT_SAS_DIR}")
 
         for file in os.listdir(local_shared_dir):
             self.logger.debug("Copying shared file to node. " + str(file))
