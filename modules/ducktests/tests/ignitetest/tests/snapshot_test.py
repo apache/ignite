@@ -61,6 +61,10 @@ class SnapshotTest(IgniteTest):
         )
 
         ignite = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - preloaders)
+
+        for node in ignite.nodes:
+            ignite.exec_command(node, f"rm -rf {SNAPSHOT_SAS_DIR}/*", False)
+
         ignite.start()
 
         control_utility = ControlUtility(ignite)
