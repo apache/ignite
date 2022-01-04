@@ -23,6 +23,8 @@
 #include <vector>
 
 #include <ignite/ignite_error.h>
+#include <ignite/network/data_buffer.h>
+
 #include <ignite/impl/interop/interop_memory.h>
 
 namespace ignite
@@ -99,7 +101,6 @@ namespace ignite
                         complete = complete || this->handler.Get()->OnNotification(*it);
 
                     queue.clear();
-                    queue.shrink_to_fit();
                 }
 
                 /**

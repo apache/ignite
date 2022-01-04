@@ -23,11 +23,6 @@
 #include "network/sockets.h"
 #include "network/win_async_client_pool.h"
 
-namespace
-{
-    ignite::common::FibonacciSequence<10> fibonacci10;
-}
-
 namespace ignite
 {
     namespace network

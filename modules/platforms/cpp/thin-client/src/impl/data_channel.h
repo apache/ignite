@@ -68,8 +68,11 @@ namespace ignite
                 /** Version set type. */
                 typedef std::set<ProtocolVersion> VersionSet;
 
+                /** Shared pointer to DataBuffer Promise. */
+                typedef common::concurrent::SharedPointer<common::Promise<network::DataBuffer> > SP_PromiseDataBuffer;
+
                 /** Response map. */
-                typedef std::map< int64_t, common::Promise<network::DataBuffer> > ResponseMap;
+                typedef std::map< int64_t, SP_PromiseDataBuffer> ResponseMap;
 
                 /** Notification handler map. */
                 typedef std::map< int64_t, NotificationHandlerHolder > NotificationHandlerMap;

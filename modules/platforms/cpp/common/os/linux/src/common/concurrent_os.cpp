@@ -203,6 +203,38 @@ namespace ignite
 
                 pthread_setspecific(tlsKey, ptr);
             }
+
+            Thread::Thread() :
+                thread()
+            {
+                // No-op.
+            }
+
+            Thread::~Thread()
+            {
+                // No-op.
+            }
+
+            void* Thread::ThreadRoutine(void* arg)
+            {
+                Thread* self = static_cast<Thread*>(arg);
+
+                self->Run();
+
+                return 0;
+            }
+
+            void Thread::Start()
+            {
+                int res = pthread_create(&thread, 0, Thread::ThreadRoutine, this);
+
+                assert(res == 0);
+            }
+
+            void Thread::Join()
+            {
+                pthread_join(thread, 0);
+            }
         }
     }
 }

@@ -149,7 +149,11 @@ namespace ignite
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " AsyncMessage: ReqId = " << reqId << std::endl;
 
                 common::concurrent::CsLockGuard lock1(responseMutex);
-                Future<network::DataBuffer> future = responseMap[reqId].GetFuture();
+                SP_PromiseDataBuffer& sp = responseMap[reqId];
+                if (!sp.IsValid())
+                    sp = SP_PromiseDataBuffer(new common::Promise<network::DataBuffer>());
+
+                Future<network::DataBuffer> future = sp.Get()->GetFuture();
                 lock1.Reset();
 
                 network::DataBuffer buffer(mem);
@@ -210,7 +214,7 @@ namespace ignite
 
                     if (it != responseMap.end())
                     {
-                        common::Promise<network::DataBuffer>& rsp = it->second;
+                        common::Promise<network::DataBuffer>& rsp = *it->second.Get();
 
                         rsp.SetValue(std::auto_ptr<network::DataBuffer>(new network::DataBuffer(msg.Clone())));
 
@@ -374,7 +378,7 @@ namespace ignite
                     common::concurrent::CsLockGuard lock(responseMutex);
 
                     for (ResponseMap::iterator it = responseMap.begin(); it != responseMap.end(); ++it)
-                        it->second.SetError(*err);
+                        it->second.Get()->SetError(*err);
 
                     responseMap.clear();
                 }

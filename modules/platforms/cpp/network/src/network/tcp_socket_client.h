@@ -99,11 +99,6 @@ namespace ignite
             void InternalClose();
 
             /**
-             * Tries set socket options.
-             */
-            void TrySetOptions();
-
-            /**
              * Wait on the socket for any event for specified time.
              * This function uses poll to achive timeout functionality
              * for every separate socket operation.

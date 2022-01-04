@@ -85,7 +85,7 @@ namespace ignite
                     network::SP_CodecDataFilter codecFilter(new network::CodecDataFilter(codecFactory));
                     filters.push_back(codecFilter);
 
-                    asyncPool = network::MakeAsyncClientPool(*this, filters);
+                    asyncPool = network::MakeAsyncClientPool(filters);
 
                     if (!asyncPool.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create async connection pool");
@@ -147,6 +147,7 @@ namespace ignite
 
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
+                (void) addr;
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
 
                 if (!connectedChannels.empty())
@@ -196,6 +197,7 @@ namespace ignite
 
             void DataRouter::OnMessageSent(uint64_t id)
             {
+                (void) id;
                 // No-op.
             }
 
@@ -224,6 +226,7 @@ namespace ignite
 
             void DataRouter::OnHandshakeError(uint64_t id, const IgniteError& err)
             {
+                (void) id;
                 // std::cout << "=============== " << asyncPool.Get() << " " << GetCurrentThreadId() << " OnHandshakeError: " << id << ", " << err.GetText() << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);

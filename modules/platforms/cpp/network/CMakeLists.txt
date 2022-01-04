@@ -49,6 +49,10 @@ else()
     include_directories(os/linux/src)
 
     list(APPEND SOURCES
+            os/linux/src/network/connecting_context.cpp
+            os/linux/src/network/linux_async_client.cpp
+            os/linux/src/network/linux_async_client_pool.cpp
+            os/linux/src/network/linux_async_worker_thread.cpp
             os/linux/src/network/tcp_socket_client.cpp
             os/linux/src/network/sockets.cpp
             os/linux/src/network/utils.cpp)
