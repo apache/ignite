@@ -15,39 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.service;
+package org.apache.ignite.client;
 
-import java.util.Map;
-import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 /**
- * Service call context implementation.
+ * Retry policy context. See {@link ClientRetryPolicy#shouldRetry}.
  */
-public class ServiceCallContextImpl implements ServiceCallContext {
-    /** Service call context attributes. */
-    private Map<String, Object> attrs;
+public interface ClientRetryPolicyContext {
+    /**
+     * Gets the client configuration.
+     *
+     * @return Client configuration.
+     */
+    public ClientConfiguration configuration();
 
     /**
-     * @param attrs Service call context attributes.
+     * Gets the operation type.
+     *
+     * @return Operation type.
      */
-    public ServiceCallContextImpl(Map<String, Object> attrs) {
-        this.attrs = attrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String attribute(String name) {
-        return (String)attrs.get(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] binaryAttribute(String name) {
-        return (byte[])attrs.get(name);
-    }
+    public ClientOperationType operation();
 
     /**
-     * @return Service call context attributes.
+     * Gets the current iteration number (zero-based).
+     *
+     * @return Zero-based iteration counter.
      */
-    public Map<String, Object> values() {
-        return attrs;
-    }
+    public int iteration();
+
+    /**
+     * Gets the connection exception that caused current retry iteration.
+     *
+     * @return Exception.
+     */
+    public ClientConnectionException exception();
 }

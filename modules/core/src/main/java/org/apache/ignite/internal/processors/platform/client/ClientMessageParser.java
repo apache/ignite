@@ -491,7 +491,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientExecuteTaskRequest(reader);
 
             case OP_SERVICE_INVOKE:
-                return new ClientServiceInvokeRequest(reader);
+                return new ClientServiceInvokeRequest(reader, protocolCtx);
 
             case OP_SERVICE_GET_DESCRIPTORS:
                 return new ClientServiceGetDescriptorsRequest(reader);

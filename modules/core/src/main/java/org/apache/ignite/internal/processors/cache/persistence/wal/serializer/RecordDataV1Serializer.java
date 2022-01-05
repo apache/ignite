@@ -681,12 +681,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
 
-                List<DataEntry> entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readPlainDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readPlainDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
@@ -695,12 +699,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
 
-                entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readEncryptedDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
@@ -1381,15 +1389,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
-                buf.putInt(dataRec.writeEntries().size());
+                int entryCnt = dataRec.entryCount();
+
+                buf.putInt(entryCnt);
 
                 boolean encrypted = isDataRecordEncrypted(dataRec);
 
-                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                for (int i = 0; i < entryCnt; i++) {
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataEntry);
+                        putEncryptedDataEntry(buf, dataRec.get(i));
                     else
-                        putPlainDataEntry(buf, dataEntry);
+                        putPlainDataEntry(buf, dataRec.get(i));
                 }
 
                 break;
@@ -2180,7 +2190,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encryptionDisabled)
             return false;
 
-        for (DataEntry e : rec.writeEntries()) {
+        int entryCnt = rec.entryCount();
+
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry e = rec.get(i);
+
             if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
@@ -2253,8 +2267,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
+        int entryCnt = dataRec.entryCount();
 
-        for (DataEntry entry : dataRec.writeEntries()) {
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry entry = dataRec.get(i);
+
             int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
