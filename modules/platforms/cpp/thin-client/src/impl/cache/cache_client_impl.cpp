@@ -51,7 +51,9 @@ namespace ignite
 
                 CacheClientImpl::~CacheClientImpl()
                 {
-                    // No-op.
+                    DataRouter* router0 = router.Get();
+                    if (router0)
+                        router0->Close();
                 }
 
                 template<typename ReqT, typename RspT>

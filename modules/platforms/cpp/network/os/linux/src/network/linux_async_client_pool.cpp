@@ -122,49 +122,54 @@ namespace ignite
             if (stopping)
                 return false;
 
-            uint64_t id;
+            LinuxAsyncClient& clientRef = *client.Get();
             {
-                LinuxAsyncClient& clientRef = *client.Get();
-
                 common::concurrent::CsLockGuard lock(clientsCs);
 
-                id = ++idGen;
+                uint64_t id = ++idGen;
                 clientRef.SetId(id);
 
                 clientIdMap[id] = client;
             }
+
+            HandleConnectionSuccess(clientRef.GetAddress(), clientRef.GetId());
 
             return true;
         }
 
         void LinuxAsyncClientPool::HandleConnectionError(const EndPoint &addr, const IgniteError &err)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionError(addr, err);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionError(addr, err);
         }
 
         void LinuxAsyncClientPool::HandleConnectionSuccess(const EndPoint &addr, uint64_t id)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionSuccess(addr, id);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionSuccess(addr, id);
         }
 
         void LinuxAsyncClientPool::HandleConnectionClosed(uint64_t id, const IgniteError *err)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionClosed(id, err);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionClosed(id, err);
         }
 
         void LinuxAsyncClientPool::HandleMessageReceived(uint64_t id, const DataBuffer &msg)
         {
-            if (asyncHandler)
-                asyncHandler->OnMessageReceived(id, msg);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnMessageReceived(id, msg);
         }
 
         void LinuxAsyncClientPool::HandleMessageSent(uint64_t id)
         {
-            if (asyncHandler)
-                asyncHandler->OnMessageSent(id);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnMessageSent(id);
         }
 
         void LinuxAsyncClientPool::InternalStop()

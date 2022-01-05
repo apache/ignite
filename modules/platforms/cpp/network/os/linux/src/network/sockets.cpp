@@ -159,23 +159,18 @@ namespace ignite
             bool SetNonBlockingMode(int socketFd, bool nonBlocking)
             {
                 int flags = fcntl(socketFd, F_GETFL, 0);
-
-                if (flags < 0)
+                if (flags == -1)
                     return false;
 
                 bool currentNonBlocking = flags & O_NONBLOCK;
-
                 if (nonBlocking == currentNonBlocking)
                     return true;
 
                 flags ^= O_NONBLOCK;
-
                 int res = fcntl(socketFd, F_SETFL, flags);
 
-                return res < 0;
+                return res != -1;
             }
-
-
         }
     }
 }

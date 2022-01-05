@@ -133,15 +133,19 @@ namespace ignite
 
         bool LinuxAsyncClient::StartMonitoring(int epoll0)
         {
+            // std::cout << "=============== " << this << " " << " StartMonitoring epoll0=" << epoll0 << std::endl;
             if (epoll0 < 0)
                 return false;
 
             epoll_event event;
             std::memset(&event, 0, sizeof(event));
             event.data.ptr = this;
-            event.events = EPOLLIN | EPOLLRDHUP;
+            event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 
-            int res = epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &event);
+            int res = epoll_ctl(epoll0, EPOLL_CTL_ADD, fd, &event);
+
+            // std::cout << "=============== " << this << " " << " StartMonitoring res=" << res << std::endl;
+
             if (res < 0)
                 return false;
 
@@ -160,6 +164,7 @@ namespace ignite
 
         void LinuxAsyncClient::EnableSendNotifications()
         {
+            // std::cout << "=============== " << this << " " << " EnableSendNotifications" << std::endl;
             epoll_event event;
             std::memset(&event, 0, sizeof(event));
             event.data.ptr = this;
@@ -170,6 +175,7 @@ namespace ignite
 
         void LinuxAsyncClient::DisableSendNotifications()
         {
+            // std::cout << "=============== " << this << " " << " DisableSendNotifications" << std::endl;
             epoll_event event;
             std::memset(&event, 0, sizeof(event));
             event.data.ptr = this;

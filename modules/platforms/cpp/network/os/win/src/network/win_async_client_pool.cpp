@@ -79,7 +79,6 @@ namespace ignite
         void WinAsyncClientPool::InternalStop()
         {
             stopping = true;
-            asyncHandler = 0; // TODO: Remove this or make secure.
             connectingThread.Stop();
 
             {
@@ -95,7 +94,7 @@ namespace ignite
 
                 if (!clientIdMap.empty())
                 {
-                    // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Waiting for empty" << std::endl;
+                    // std::cout << "=============== " << this << " " << " WinAsyncClientPool: Waiting for empty" << std::endl;
 
                     clientsCv.Wait(clientsCs);
                 }
@@ -117,7 +116,7 @@ namespace ignite
 
                 if (stopping)
                 {
-                    // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: AddClient: stopping" << std::endl;
+                    // std::cout << "=============== " << this << " " << " WinAsyncClientPool: AddClient: stopping" << std::endl;
 
                     return false;
                 }
@@ -141,37 +140,42 @@ namespace ignite
 
         void WinAsyncClientPool::HandleConnectionError(const EndPoint &addr, const IgniteError &err)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionError(addr, err);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionError(addr, err);
         }
 
         void WinAsyncClientPool::HandleConnectionSuccess(const EndPoint &addr, uint64_t id)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionSuccess(addr, id);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionSuccess(addr, id);
         }
 
         void WinAsyncClientPool::HandleConnectionClosed(uint64_t id, const IgniteError *err)
         {
-            if (asyncHandler)
-                asyncHandler->OnConnectionClosed(id, err);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnConnectionClosed(id, err);
         }
 
         void WinAsyncClientPool::HandleMessageReceived(uint64_t id, const DataBuffer &msg)
         {
-            if (asyncHandler)
-                asyncHandler->OnMessageReceived(id, msg);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnMessageReceived(id, msg);
         }
 
         void WinAsyncClientPool::HandleMessageSent(uint64_t id)
         {
-            if (asyncHandler)
-                asyncHandler->OnMessageSent(id);
+            AsyncHandler* asyncHandler0 = asyncHandler;
+            if (asyncHandler0)
+                asyncHandler0->OnMessageSent(id);
         }
 
         bool WinAsyncClientPool::Send(uint64_t id, const DataBuffer& data)
         {
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " Send: " << id << std::endl;
+            // std::cout << "=============== " << this << " " << " Send: " << id << std::endl;
             if (stopping)
                 return false;
 
@@ -179,13 +183,13 @@ namespace ignite
             if (!client.IsValid())
                 return false;
 
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " Send: Client found" << std::endl;
+            // std::cout << "=============== " << this << " " << " Send: Client found" << std::endl;
             return client.Get()->Send(data);
         }
 
         bool WinAsyncClientPool::CloseAndRelease(uint64_t id)
         {
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease=" << id << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease=" << id << std::endl;
             SP_WinAsyncClient client;
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
@@ -198,10 +202,10 @@ namespace ignite
 
                 clientIdMap.erase(it);
 
-                // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
+                // std::cout << "=============== " << this << " " << " WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
                 if (clientIdMap.empty())
                 {
-                    // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WorkerThread: Notifying about empty" << std::endl;
+                    // std::cout << "=============== " << this << " " << " WorkerThread: Notifying about empty" << std::endl;
                     clientsCv.NotifyAll();
                 }
             }
@@ -221,8 +225,8 @@ namespace ignite
         {
             bool closed = CloseAndRelease(id);
 
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
             if (closed)
                 HandleConnectionClosed(id, err);
@@ -230,7 +234,7 @@ namespace ignite
 
         bool WinAsyncClientPool::Close(uint64_t id)
         {
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close=" << id << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close=" << id << std::endl;
 
             SP_WinAsyncClient client = FindClient(id);
             if (!client.IsValid() || client.Get()->IsClosed())
@@ -248,8 +252,8 @@ namespace ignite
         {
             bool closed = Close(id);
 
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, closed=" << closed << std::endl;
-            // std::cout << "=============== " << this << " " << GetCurrentThreadId() << " WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close, closed=" << closed << std::endl;
+            // std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
             if (closed)
                 HandleConnectionClosed(id, err);

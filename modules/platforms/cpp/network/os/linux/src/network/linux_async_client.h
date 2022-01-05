@@ -142,7 +142,7 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-                // std::cout << "=============== " << GetCurrentThreadId() << " LinuxAsyncClient: SetId " << id << ", " << socket << std::endl;
+                // std::cout << "=============== " << " LinuxAsyncClient: SetId " << id << ", " << fd << std::endl;
 
                 this->id = id;
             }

@@ -57,8 +57,9 @@ namespace ignite
              */
             virtual bool Send(uint64_t id, const DataBuffer& data)
             {
-                if (sink)
-                    return sink->Send(id, data);
+                DataSink* sink0 = sink;
+                if (sink0)
+                    return sink0->Send(id, data);
 
                 return false;
             }
@@ -71,8 +72,9 @@ namespace ignite
              */
             virtual void Close(uint64_t id, const IgniteError* err)
             {
-                if (sink)
-                    sink->Close(id, err);
+                DataSink* sink0 = sink;
+                if (sink0)
+                    sink0->Close(id, err);
             }
 
             /**
@@ -83,8 +85,9 @@ namespace ignite
               */
             virtual void OnConnectionSuccess(const EndPoint& addr, uint64_t id)
             {
-                if (handler)
-                    handler->OnConnectionSuccess(addr, id);
+                AsyncHandler* handler0 = handler;
+                if (handler0)
+                    handler0->OnConnectionSuccess(addr, id);
             }
 
             /**
@@ -95,8 +98,9 @@ namespace ignite
              */
             virtual void OnConnectionError(const EndPoint& addr, const IgniteError& err)
             {
-                if (handler)
-                    handler->OnConnectionError(addr, err);
+                AsyncHandler* handler0 = handler;
+                if (handler0)
+                    handler0->OnConnectionError(addr, err);
             }
 
             /**
@@ -107,8 +111,9 @@ namespace ignite
              */
             virtual void OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
-                if (handler)
-                    handler->OnConnectionClosed(id, err);
+                AsyncHandler* handler0 = handler;
+                if (handler0)
+                    handler0->OnConnectionClosed(id, err);
             }
 
             /**
@@ -119,8 +124,9 @@ namespace ignite
              */
             virtual void OnMessageReceived(uint64_t id, const DataBuffer& msg)
             {
-                if (handler)
-                    handler->OnMessageReceived(id, msg);
+                AsyncHandler* handler0 = handler;
+                if (handler0)
+                    handler0->OnMessageReceived(id, msg);
             }
 
             /**
@@ -130,8 +136,9 @@ namespace ignite
              */
             virtual void OnMessageSent(uint64_t id)
             {
-                if (handler)
-                    handler->OnMessageSent(id);
+                AsyncHandler* handler0 = handler;
+                if (handler0)
+                    handler0->OnMessageSent(id);
             }
         };
     }

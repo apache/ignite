@@ -164,7 +164,7 @@ namespace ignite
 
             bool SecureDataFilter::Send(uint64_t id, const DataBuffer &data)
             {
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureDataFilter::Send " << id << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureDataFilter::Send " << id << std::endl;
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
                     return false;
@@ -174,7 +174,7 @@ namespace ignite
 
             void SecureDataFilter::OnConnectionSuccess(const EndPoint &addr, uint64_t id)
             {
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureDataFilter::OnConnectionSuccess " << id << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureDataFilter::OnConnectionSuccess " << id << std::endl;
                 SP_SecureConnectionContext context(new SecureConnectionContext(id, addr, *this));
 
                 {
@@ -188,7 +188,7 @@ namespace ignite
 
             void SecureDataFilter::OnConnectionClosed(uint64_t id, const IgniteError *err)
             {
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureDataFilter::OnConnectionClosed " << id << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureDataFilter::OnConnectionClosed " << id << std::endl;
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
                     return;
@@ -212,7 +212,7 @@ namespace ignite
 
             void SecureDataFilter::OnMessageReceived(uint64_t id, const DataBuffer &msg)
             {
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureDataFilter::OnMessageReceived " << id << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureDataFilter::OnMessageReceived " << id << std::endl;
 
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
@@ -301,16 +301,16 @@ namespace ignite
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect " << id << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureConnectionContext::DoConnect " << id << std::endl;
 
                 SSL* ssl0 = static_cast<SSL*>(ssl);
                 int res = sslGateway.SSL_connect_(ssl0);
-                // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect res=" << res << std::endl;
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureConnectionContext::DoConnect res=" << res << std::endl;
 
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     int sslError = sslGateway.SSL_get_error_(ssl0, res);
-                    // std::cout << "=============== " << "0000000000000000" << " " << GetCurrentThreadId() << " SecureConnectionContext::DoConnect sslError=" << sslError << std::endl;
+                    // std::cout << "=============== " << "0000000000000000" << " " << " SecureConnectionContext::DoConnect sslError=" << sslError << std::endl;
 
                     if (IsActualError(sslError))
                     {

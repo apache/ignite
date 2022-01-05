@@ -187,15 +187,20 @@ namespace ignite
                 ThrowSystemError("Can not add file descriptor to epoll");
 
             // Connect to server.
-            int res = connect(socketFd, addr->ai_addr, static_cast<int>(addr->ai_addrlen));
+            int res = connect(socketFd, addr->ai_addr, addr->ai_addrlen);
             if (SOCKET_ERROR == res)
             {
-                currentClient.Get()->StopMonitoring();
-                close(socketFd);
+                // std::cout << "=============== " << this << " " << " HandleNewConnections::Next connect res=" << res << std::endl;
                 int lastError = errno;
 
+                clock_gettime(CLOCK_MONOTONIC, &lastConnectionTime);
+
+                // std::cout << "=============== " << this << " " << " HandleNewConnections::Next lastError=" << lastError << std::endl;
                 if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
                 {
+                    currentClient.Get()->StopMonitoring();
+                    close(socketFd);
+
                     std::string msg = "Failed to establish connection with the host: " +
                             sockets::GetSocketErrorMessage(lastError);
                     IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
@@ -214,7 +219,9 @@ namespace ignite
 
             int timeout = CalculateConnectionTimeout();
 
+            // std::cout << "=============== " << this << " " << " HandleConnectionEvents timeout=" << timeout << std::endl;
             int res = epoll_wait(epoll, events, MAX_EVENTS, timeout);
+            // std::cout << "=============== " << this << " " << " HandleConnectionEvents res=" << res << std::endl;
 
             if (res <= 0)
                 return;
@@ -224,11 +231,15 @@ namespace ignite
                 epoll_event& currentEvent = events[i];
                 LinuxAsyncClient* client = static_cast<LinuxAsyncClient*>(currentEvent.data.ptr);
 
+                // std::cout << "=============== " << this << " " << " HandleConnectionEvents client=" << client << std::endl;
+                // std::cout << "=============== " << this << " " << " HandleConnectionEvents currentEvent.events=" << currentEvent.events << std::endl;
+
                 if (!client)
                     continue;
 
                 if (client == currentClient.Get())
                 {
+                    // std::cout << "=============== " << this << " " << " HandleConnectionEvents Handling new client" << std::endl;
                     if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
                     {
                         HandleConnectionError(client);
@@ -243,8 +254,6 @@ namespace ignite
                     currentConnection.reset();
 
                     clock_gettime(CLOCK_MONOTONIC, &lastConnectionTime);
-
-                    continue;
                 }
 
                 if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
