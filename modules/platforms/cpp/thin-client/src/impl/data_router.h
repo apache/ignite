@@ -240,6 +240,14 @@ namespace ignite
                 void InvalidateChannel(SP_DataChannel& channel);
 
                 /**
+                 * Invalidate provided data channel.
+                 *
+                 * @warning Should be only called with locked channelsMutex.
+                 * @param channel Data channel.
+                 */
+                void InvalidateChannelLocked(SP_DataChannel& channel);
+
+                /**
                  * Process meta if needed.
                  *
                  * @param metaVer Version of meta.

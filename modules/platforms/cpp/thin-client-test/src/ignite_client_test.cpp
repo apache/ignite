@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(IgniteClientReconnect)
 
     serverNode1 = StartNodeWithLog("1");
 
-    BOOST_CHECK(WaitForConnections(3));
+    BOOST_CHECK(WaitForConnections(3), 20000);
     BOOST_CHECK_EQUAL(GetActiveConnections(), 3);
 
     ignite::Ignition::StopAll(true);

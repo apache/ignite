@@ -138,33 +138,37 @@ namespace ignite
             if (!ShouldInitiateNewConnection())
                 return;
 
-            size_t idx = rand() % nonConnected.size();
-            const TcpRange& range = nonConnected.at(idx);
+            if (CalculateConnectionTimeout() > 0)
+                return;
 
-            currentConnection.reset(new ConnectingContext(range));
+            addrinfo* addr = 0;
+            if (currentConnection.get())
+                addr = currentConnection->Next();
 
-            addrinfo* addr = currentConnection->Next();
             if (!addr)
             {
-                std::string msg = "Can not resolve a single address from range: " + range.ToString();
-                IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+                size_t idx = rand() % nonConnected.size();
+                const TcpRange& range = nonConnected.at(idx);
 
-                clientPool.HandleConnectionError(EndPoint(), err);
-                currentConnection.reset();
-                ++failedAttempts;
+                currentConnection.reset(new ConnectingContext(range));
+                addr = currentConnection->Next();
+                if (!addr)
+                {
+                    currentConnection.reset();
+                    ReportConnectionError(EndPoint(), "Can not resolve a single address from range: " + range.ToString());
+                    ++failedAttempts;
 
-                return;
+                    return;
+                }
             }
 
             // Create a SOCKET for connecting to server
             int socketFd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
             if (SOCKET_ERROR == socketFd)
             {
-                std::string msg = "Socket creation failed: " + sockets::GetLastSocketErrorMessage();
-                IgniteError err(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
-                EndPoint ep(currentConnection->GetAddress());
+                ReportConnectionError(currentConnection->GetAddress(),
+                    "Socket creation failed: " + sockets::GetLastSocketErrorMessage());
 
-                clientPool.HandleConnectionError(ep, err);
                 return;
             }
 
@@ -172,12 +176,9 @@ namespace ignite
             bool success = sockets::SetNonBlockingMode(socketFd, true);
             if (!success)
             {
-                std::string msg = "Can not make non-blocking socket: " + sockets::GetLastSocketErrorMessage();
-                IgniteError err(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
-                EndPoint ep(currentConnection->GetAddress());
+                ReportConnectionError(currentConnection->GetAddress(),
+                    "Can not make non-blocking socket: " + sockets::GetLastSocketErrorMessage());
 
-                clientPool.HandleConnectionError(ep, err);
-                ++failedAttempts;
                 return;
             }
 
@@ -198,15 +199,9 @@ namespace ignite
                 // std::cout << "=============== " << this << " " << " HandleNewConnections::Next lastError=" << lastError << std::endl;
                 if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
                 {
-                    currentClient.Get()->StopMonitoring();
-                    close(socketFd);
+                    HandleConnectionFailed("Failed to establish connection with the host: " +
+                        sockets::GetSocketErrorMessage(lastError));
 
-                    std::string msg = "Failed to establish connection with the host: " +
-                            sockets::GetSocketErrorMessage(lastError);
-                    IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
-
-                    clientPool.HandleConnectionError(currentClient.Get()->GetAddress(), err);
-                    ++failedAttempts;
                     return;
                 }
             }
@@ -242,18 +237,12 @@ namespace ignite
                     // std::cout << "=============== " << this << " " << " HandleConnectionEvents Handling new client" << std::endl;
                     if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
                     {
-                        HandleConnectionError(client);
+                        HandleConnectionFailed("Can not establsih connection");
+
                         continue;
                     }
 
-                    nonConnected.erase(std::find(nonConnected.begin(), nonConnected.end(), client->GetRange()));
-
-                    clientPool.AddClient(currentClient);
-
-                    currentClient = SP_LinuxAsyncClient();
-                    currentConnection.reset();
-
-                    clock_gettime(CLOCK_MONOTONIC, &lastConnectionTime);
+                    HandleConnectionSuccess(client);
                 }
 
                 if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
@@ -289,14 +278,24 @@ namespace ignite
             }
         }
 
-        void LinuxAsyncWorkerThread::HandleConnectionError(LinuxAsyncClient* client)
+        void LinuxAsyncWorkerThread::ReportConnectionError(const EndPoint& addr, const std::string& msg)
         {
+            IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+            clientPool.HandleConnectionError(addr, err);
+        }
+
+        void LinuxAsyncWorkerThread::HandleConnectionFailed(const std::string& msg)
+        {
+            LinuxAsyncClient* client = currentClient.Get();
+            assert(client != 0);
+
             client->StopMonitoring();
-
-            IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Can not establsih connection");
-            clientPool.HandleConnectionError(client->GetAddress(), err);
-
             client->Close();
+
+            ReportConnectionError(client->GetAddress(), msg);
+
+            currentClient = SP_LinuxAsyncClient();
+            ++failedAttempts;
         }
 
         void LinuxAsyncWorkerThread::HandleConnectionClosed(LinuxAsyncClient *client)
@@ -307,7 +306,20 @@ namespace ignite
 
             IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
             clientPool.CloseAndRelease(client->GetId(), &err);
+        }
 
+        void LinuxAsyncWorkerThread::HandleConnectionSuccess(LinuxAsyncClient* client)
+        {
+            nonConnected.erase(std::find(nonConnected.begin(), nonConnected.end(), client->GetRange()));
+
+            clientPool.AddClient(currentClient);
+
+            currentClient = SP_LinuxAsyncClient();
+            currentConnection.reset();
+
+            failedAttempts = 0;
+
+            clock_gettime(CLOCK_MONOTONIC, &lastConnectionTime);
         }
 
         int LinuxAsyncWorkerThread::CalculateConnectionTimeout() const
@@ -335,7 +347,9 @@ namespace ignite
 
         bool LinuxAsyncWorkerThread::ShouldInitiateNewConnection() const
         {
-            return currentConnection.get() == 0 && nonConnected.size() > minAddrs;
+            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection currentConnection=" << currentClient.Get() << std::endl;
+            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection nonConnected.size()=" << nonConnected.size() << std::endl;
+            return !currentClient.Get() && nonConnected.size() > minAddrs;
         }
 
         void LinuxAsyncWorkerThread::ThrowSystemError(const std::string &msg)

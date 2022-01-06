@@ -154,6 +154,9 @@ namespace ignite
                 if (!connectedChannels.empty())
                     return;
 
+                if (err.GetCode() != IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE)
+                    return;
+
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
                 lastHandshakeError.reset(new IgniteError(err));
@@ -175,7 +178,7 @@ namespace ignite
                     return;
 
                 channel = it->second;
-                InvalidateChannel(channel);
+                InvalidateChannelLocked(channel);
                 channel.Get()->FailPendingRequests(err);
             }
 
@@ -357,6 +360,14 @@ namespace ignite
                     return;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
+
+                InvalidateChannelLocked(channel);
+            }
+
+            void DataRouter::InvalidateChannelLocked(SP_DataChannel &channel)
+            {
+                if (!channel.IsValid())
+                    return;
 
                 DataChannel& channel0 = *channel.Get();
                 channels.erase(channel0.GetId());

@@ -95,18 +95,31 @@ namespace ignite
             /**
              * Handle network error during connection establishment.
              *
-             * @param client Client instance.
+             * @param addr End point.
              * @param msg Error message.
              */
-            void HandleConnectionError(LinuxAsyncClient* client);
+            void ReportConnectionError(const EndPoint& addr, const std::string& msg);
+
+            /**
+             * Handle failed connection.
+             *
+             * @param msg Error message.
+             */
+            void HandleConnectionFailed(const std::string& msg);
 
             /**
              * Handle network error on established connection.
              *
              * @param client Client instance.
-             * @param msg Error message.
              */
             void HandleConnectionClosed(LinuxAsyncClient* client);
+
+            /**
+             * Handle successfully established connection.
+             *
+             * @param client Client instance.
+             */
+            void HandleConnectionSuccess(LinuxAsyncClient* client);
 
             /**
              * Calculate connection timeout.
