@@ -140,8 +140,6 @@ BOOST_AUTO_TEST_CASE(IgniteClientConnectionFailover)
 
 BOOST_AUTO_TEST_CASE(IgniteClientConnectionLimit)
 {
-    ignite::common::DeletePath("logs");
-
     ignite::Ignite serverNode0 = StartNodeWithLog("0");
     ignite::Ignite serverNode1 = StartNodeWithLog("1");
     ignite::Ignite serverNode2 = StartNodeWithLog("2");
@@ -160,8 +158,6 @@ BOOST_AUTO_TEST_CASE(IgniteClientConnectionLimit)
 
 BOOST_AUTO_TEST_CASE(IgniteClientReconnect)
 {
-    ignite::common::DeletePath("logs");
-
     ignite::Ignite serverNode0 = StartNodeWithLog("0");
     ignite::Ignite serverNode1 = StartNodeWithLog("1");
 
@@ -186,7 +182,7 @@ BOOST_AUTO_TEST_CASE(IgniteClientReconnect)
 
     serverNode1 = StartNodeWithLog("1");
 
-    BOOST_CHECK(WaitForConnections(3), 20000);
+    BOOST_CHECK(WaitForConnections(3, 20000));
     BOOST_CHECK_EQUAL(GetActiveConnections(), 3);
 
     ignite::Ignition::StopAll(true);
