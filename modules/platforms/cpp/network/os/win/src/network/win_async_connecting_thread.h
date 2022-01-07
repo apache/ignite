@@ -48,18 +48,17 @@ namespace ignite
         public:
             /**
              * Constructor.
-             *
-             * @param clientPool Client pool.
              */
-            explicit WinAsyncConnectingThread(WinAsyncClientPool& clientPool);
+            explicit WinAsyncConnectingThread();
 
             /**
              * Start thread.
              *
+             * @param clientPool Client pool.
              * @param limit Connection limit.
              * @param addrs Addresses.
              */
-            void Start(size_t limit, const std::vector<TcpRange>& addrs);
+            void Start(WinAsyncClientPool& clientPool, size_t limit, const std::vector<TcpRange>& addrs);
 
             /**
              * Stop thread.
@@ -102,7 +101,7 @@ namespace ignite
             TcpRange GetRandomAddress() const;
 
             /** Client pool. */
-            WinAsyncClientPool& clientPool;
+            WinAsyncClientPool* clientPool;
 
             /** Flag to signal that thread is stopping. */
             volatile bool stopping;

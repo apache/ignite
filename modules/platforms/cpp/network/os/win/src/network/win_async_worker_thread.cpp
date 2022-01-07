@@ -34,24 +34,27 @@ namespace ignite
 {
     namespace network
     {
-        WinAsyncWorkerThread::WinAsyncWorkerThread(WinAsyncClientPool& clientPool) :
+        WinAsyncWorkerThread::WinAsyncWorkerThread() :
             stopping(false),
-            clientPool(clientPool),
+            clientPool(0),
             iocp(NULL)
         {
             // No-op.
         }
 
-        void WinAsyncWorkerThread::Start(HANDLE iocp0)
+        void WinAsyncWorkerThread::Start(WinAsyncClientPool& clientPool0, HANDLE iocp0)
         {
             assert(iocp0 != NULL);
             iocp = iocp0;
+            clientPool = &clientPool0;
 
             Thread::Start();
         }
 
         void WinAsyncWorkerThread::Run()
         {
+            assert(clientPool != 0);
+
             while (!stopping)
             {
                 DWORD bytesTransferred = 0;
@@ -60,7 +63,7 @@ namespace ignite
 
                 BOOL ok = GetQueuedCompletionStatus(iocp, &bytesTransferred, &key, &overlapped, INFINITE);
 
-                // std::cout << "=============== " << &clientPool << " " << " WorkerThread: Got event" << std::endl;
+                // std::cout << "=============== " << clientPool << " " << " WorkerThread: Got event" << std::endl;
 
                 if (stopping)
                     break;
@@ -73,12 +76,12 @@ namespace ignite
                 if (!ok || (0 != overlapped && 0 == bytesTransferred))
                 {
                     IoOperation* operation = reinterpret_cast<IoOperation*>(overlapped);
-                    // std::cout << "=============== " << &clientPool << " " << " WorkerThread: closing " << client->GetId() << std::endl;
-                    // std::cout << "=============== " << &clientPool << " " << " WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
-                    // std::cout << "=============== " << &clientPool << " " << " WorkerThread: operation=" << operation->kind << std::endl;
+                    // std::cout << "=============== " << clientPool << " " << " WorkerThread: closing " << client->GetId() << std::endl;
+                    // std::cout << "=============== " << clientPool << " " << " WorkerThread: bytesTransferred " << bytesTransferred << std::endl;
+                    // std::cout << "=============== " << clientPool << " " << " WorkerThread: operation=" << operation->kind << std::endl;
 
                     IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
-                    clientPool.CloseAndRelease(client->GetId(), &err);
+                    clientPool->CloseAndRelease(client->GetId(), &err);
 
                     continue;
                 }
@@ -86,15 +89,15 @@ namespace ignite
                 if (!overlapped)
                 {
                     // This mean new client is connected.
-                    clientPool.HandleConnectionSuccess(client->GetAddress(), client->GetId());
+                    clientPool->HandleConnectionSuccess(client->GetAddress(), client->GetId());
 
-                    // std::cout << "=============== " << &clientPool << " " << " WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
+                    // std::cout << "=============== " << clientPool << " " << " WorkerThread: New connection. Initiating recv " << client->GetId() << std::endl;
                     bool success = client->Receive();
                     if (!success)
                     {
                         IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not initiate receiving of a first packet");
 
-                        clientPool.CloseAndRelease(client->GetId(), &err);
+                        clientPool->CloseAndRelease(client->GetId(), &err);
                     }
 
                     continue;
@@ -107,28 +110,28 @@ namespace ignite
                     {
                         case IoOperationKind::SEND:
                         {
-                            // std::cout << "=============== " << &clientPool << " " << " WorkerThread: processing send " << bytesTransferred << std::endl;
+                            // std::cout << "=============== " << clientPool << " " << " WorkerThread: processing send " << bytesTransferred << std::endl;
                             bool success = client->ProcessSent(bytesTransferred);
 
                             if (!success)
                             {
                                 IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Can not send next packet");
 
-                                clientPool.CloseAndRelease(client->GetId(), &err);
+                                clientPool->CloseAndRelease(client->GetId(), &err);
                             }
 
-                            clientPool.HandleMessageSent(client->GetId());
+                            clientPool->HandleMessageSent(client->GetId());
 
                             break;
                         }
 
                         case IoOperationKind::RECEIVE:
                         {
-                            // std::cout << "=============== " << &clientPool << " " << " WorkerThread: processing recv " << bytesTransferred << std::endl;
+                            // std::cout << "=============== " << clientPool << " " << " WorkerThread: processing recv " << bytesTransferred << std::endl;
                             DataBuffer data = client->ProcessReceived(bytesTransferred);
 
                             if (!data.IsEmpty())
-                                clientPool.HandleMessageReceived(client->GetId(), data);
+                                clientPool->HandleMessageReceived(client->GetId(), data);
 
                             client->Receive();
 
@@ -141,7 +144,7 @@ namespace ignite
                 }
                 catch (const IgniteError& err)
                 {
-                    clientPool.CloseAndRelease(client->GetId(), &err);
+                    clientPool->CloseAndRelease(client->GetId(), &err);
                 }
             }
         }

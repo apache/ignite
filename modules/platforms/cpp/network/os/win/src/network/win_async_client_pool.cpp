@@ -30,8 +30,8 @@ namespace ignite
         WinAsyncClientPool::WinAsyncClientPool() :
             stopping(true),
             asyncHandler(0),
-            connectingThread(*this),
-            workerThread(*this),
+            connectingThread(),
+            workerThread(),
             idGen(0),
             iocp(NULL),
             clientsCs(),
@@ -60,8 +60,8 @@ namespace ignite
 
             try
             {
-                connectingThread.Start(connLimit, addrs);
-                workerThread.Start(iocp);
+                connectingThread.Start(*this, connLimit, addrs);
+                workerThread.Start(*this, iocp);
             }
             catch (...)
             {

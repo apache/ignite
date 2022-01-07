@@ -39,17 +39,16 @@ namespace ignite
         public:
             /**
              * Constructor.
-             *
-             * @param clientPool Client pool.
              */
-            explicit WinAsyncWorkerThread(WinAsyncClientPool& clientPool);
+            explicit WinAsyncWorkerThread();
 
             /**
              * Start thread.
              *
+             * @param clientPool Client pool.
              * @param iocp Valid IOCP instance handle.
              */
-            void Start(HANDLE iocp);
+            void Start(WinAsyncClientPool& clientPool, HANDLE iocp);
 
             /**
              * Stop thread.
@@ -66,7 +65,7 @@ namespace ignite
             volatile bool stopping;
 
             /** Client pool. */
-            WinAsyncClientPool& clientPool;
+            WinAsyncClientPool* clientPool;
 
             /** IO Completion Port. Windows-specific primitive for asynchronous IO. */
             HANDLE iocp;

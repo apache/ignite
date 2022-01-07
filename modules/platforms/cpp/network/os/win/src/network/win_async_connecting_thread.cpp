@@ -31,8 +31,8 @@ namespace ignite
 {
     namespace network
     {
-        WinAsyncConnectingThread::WinAsyncConnectingThread(WinAsyncClientPool& clientPool) :
-            clientPool(clientPool),
+        WinAsyncConnectingThread::WinAsyncConnectingThread() :
+            clientPool(0),
             stopping(false),
             failedAttempts(0),
             minAddrs(0),
@@ -45,6 +45,8 @@ namespace ignite
 
         void WinAsyncConnectingThread::Run()
         {
+            assert(clientPool != 0);
+
             while (!stopping)
             {
                 TcpRange range = GetRandomAddress();
@@ -76,7 +78,7 @@ namespace ignite
 
                 try
                 {
-                    bool added = clientPool.AddClient(client);
+                    bool added = clientPool->AddClient(client);
 
                     if (!added)
                     {
@@ -92,7 +94,7 @@ namespace ignite
                 {
                     client.Get()->Close();
 
-                    clientPool.HandleConnectionError(client.Get()->GetAddress(), err);
+                    clientPool->HandleConnectionError(client.Get()->GetAddress(), err);
 
                     continue;
                 }
@@ -108,9 +110,13 @@ namespace ignite
             connectNeeded.NotifyOne();
         }
 
-        void WinAsyncConnectingThread::Start(size_t limit, const std::vector<TcpRange>& addrs)
+        void WinAsyncConnectingThread::Start(
+            WinAsyncClientPool& clientPool0,
+            size_t limit,
+            const std::vector<TcpRange>& addrs)
         {
             stopping = false;
+            clientPool = &clientPool0;
             failedAttempts = 0;
             nonConnected = addrs;
 
@@ -139,9 +145,9 @@ namespace ignite
         {
             for (uint16_t port = range.port; port <= (range.port + range.range); ++port)
             {
-                // std::cout << "=============== " << &clientPool << " " << " ConnectingThread: port=" << port << std::endl;
-                // std::cout << "=============== " << &clientPool << " " << " ConnectingThread: range.port=" << range.port << std::endl;
-                // std::cout << "=============== " << &clientPool << " " << " ConnectingThread: range.range=" << range.range << std::endl;
+                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: port=" << port << std::endl;
+                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.port=" << range.port << std::endl;
+                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.range=" << range.range << std::endl;
 
                 EndPoint addr(range.host, port);
                 try
