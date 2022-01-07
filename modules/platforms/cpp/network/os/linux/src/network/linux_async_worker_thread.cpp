@@ -60,7 +60,7 @@ namespace ignite
             Stop();
         }
 
-        void LinuxAsyncWorkerThread::Start(size_t limit, const std::vector<TcpRange> &addrs)
+        void LinuxAsyncWorkerThread::Start0(size_t limit, const std::vector<TcpRange> &addrs)
         {
             epoll = epoll_create(1);
             if (epoll < 0)
@@ -109,7 +109,10 @@ namespace ignite
             stopping = true;
 
             int64_t value = 1;
-            write(stopEvent, &value, sizeof(value));
+            ssize_t res = write(stopEvent, &value, sizeof(value));
+
+            IGNITE_UNUSED(res);
+            assert(res == sizeof(value));
 
             Thread::Join();
 

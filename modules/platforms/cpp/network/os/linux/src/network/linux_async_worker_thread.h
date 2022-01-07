@@ -61,7 +61,7 @@ namespace ignite
              * @param limit Connection limit.
              * @param addrs Addresses to connect to.
              */
-            void Start(size_t limit, const std::vector<TcpRange>& addrs);
+            void Start0(size_t limit, const std::vector<TcpRange>& addrs);
 
             /**
              * Stop thread.

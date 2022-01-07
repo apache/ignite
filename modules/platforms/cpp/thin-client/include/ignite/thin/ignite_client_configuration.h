@@ -39,7 +39,7 @@ namespace ignite
         class IgniteClientConfiguration
         {
         public:
-            /** Connection operation timeout in milliseconds (20 seconds). */
+            /** Connection operation timeout in milliseconds. */
             enum { DEFAULT_CONNECTION_TIMEOUT = 20000 };
 
             /**

@@ -53,7 +53,7 @@ namespace ignite
 
             try
             {
-                workerThread.Start(connLimit, addrs);
+                workerThread.Start0(connLimit, addrs);
             }
             catch (...)
             {

@@ -228,6 +228,7 @@ namespace ignite
             {
                 int res = pthread_create(&thread, 0, Thread::ThreadRoutine, this);
 
+                IGNITE_UNUSED(res);
                 assert(res == 0);
             }
 

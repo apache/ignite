@@ -158,7 +158,7 @@ namespace ignite
 
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
-                (void) addr;
+                IGNITE_UNUSED(addr);
                 // std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
 
                 if (!connectedChannels.empty())
@@ -214,7 +214,7 @@ namespace ignite
 
             void DataRouter::OnMessageSent(uint64_t id)
             {
-                (void) id;
+                IGNITE_UNUSED(id);
                 // No-op.
             }
 
@@ -243,7 +243,7 @@ namespace ignite
 
             void DataRouter::OnHandshakeError(uint64_t id, const IgniteError& err)
             {
-                (void) id;
+                IGNITE_UNUSED(id);
                 // std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeError: " << id << ", " << err.GetText() << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);

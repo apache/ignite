@@ -72,7 +72,7 @@ namespace ignite
 
                             bool gotOwnership = streamMem->TryGetOwnership(mem);
 
-                            (void) gotOwnership;
+                            IGNITE_UNUSED(gotOwnership);
                             assert(gotOwnership);
                         }
 
