@@ -679,8 +679,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            FibonacciSequence() :
-                sequence()
+            FibonacciSequence()
             {
                 sequence[0] = 0;
                 sequence[1] = 1;
