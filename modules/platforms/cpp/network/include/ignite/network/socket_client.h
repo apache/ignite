@@ -18,6 +18,7 @@
 #ifndef _IGNITE_NETWORK_SOCKET_CLIENT
 #define _IGNITE_NETWORK_SOCKET_CLIENT
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace ignite

@@ -115,6 +115,16 @@ namespace ignite
                 if (!connectedChannels.empty())
                     return true;
 
+                if (lastHandshakeError.get())
+                {
+                    // TODO: Re-factor.
+                    // std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << "ERROR" << std::endl;
+                    IgniteError err = *lastHandshakeError;
+                    lastHandshakeError.reset();
+
+                    throw err;
+                }
+
                 channelsWaitPoint.WaitFor(channelsMutex, timeout);
 
                 if (lastHandshakeError.get())
@@ -167,18 +177,21 @@ namespace ignite
             {
                 // std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionClosed: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
 
-                common::concurrent::CsLockGuard lock(channelsMutex);
-
-                connectedChannels.erase(id);
 
                 SP_DataChannel channel;
+                {
+                    common::concurrent::CsLockGuard lock(channelsMutex);
 
-                ChannelsIdMap::iterator it = channels.find(id);
-                if (it == channels.end())
-                    return;
+                    connectedChannels.erase(id);
 
-                channel = it->second;
-                InvalidateChannelLocked(channel);
+                    ChannelsIdMap::iterator it = channels.find(id);
+                    if (it == channels.end())
+                        return;
+
+                    channel = it->second;
+                    InvalidateChannelLocked(channel);
+                }
+
                 channel.Get()->FailPendingRequests(err);
             }
 

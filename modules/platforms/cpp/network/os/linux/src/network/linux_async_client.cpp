@@ -102,7 +102,11 @@ namespace ignite
 
             DataBuffer& packet = sendPackets.front();
 
+            // std::cout << "=============== " << "0x000000000000" << " " << " LinuxAsyncClient::Send packet.size=" << packet.GetSize() << std::endl;
+
             ssize_t ret = send(fd, packet.GetData(), packet.GetSize(), 0);
+
+            // std::cout << "=============== " << "0x000000000000" << " " << " LinuxAsyncClient::Send ret=" << ret << std::endl;
 
             if (ret < 0)
                 return false;
@@ -125,6 +129,8 @@ namespace ignite
             }
 
             ssize_t res = recv(fd, recvPacket.Get()->Data(), recvPacket.Get()->Length(), 0);
+
+            // std::cout << "=============== " << "0x000000000000" << " " << " LinuxAsyncClient::Receive res=" << res << std::endl;
             if (res < 0)
                 return DataBuffer();
 

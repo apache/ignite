@@ -61,13 +61,6 @@ namespace ignite
             }
 
             /**
-             * Read next byte from the beginning of the buffer.
-             *
-             * @return Value.
-             */
-            int8_t GetByte();
-
-            /**
              * Copy data from buffer to specified place in memory.
              *
              * @param dst Destination in memory.

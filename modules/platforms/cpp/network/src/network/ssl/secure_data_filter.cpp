@@ -362,7 +362,8 @@ namespace ignite
 
                         DoConnect();
 
-                        return DataBuffer();
+                        if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
+                            return DataBuffer();
                     }
 
                     connected = true;
@@ -382,6 +383,7 @@ namespace ignite
 
                 BIO *bio0 = static_cast<BIO*>(bio);
                 int available = sslGateway.BIO_pending_(bio0);
+                // std::cout << "=============== " << "0000000000000000" << " " << " SecureConnectionContext::GetPendingData available=" << available << std::endl;
 
                 impl::interop::SP_InteropMemory buf(new impl::interop::InteropUnpooledMemory(available));
                 buf.Get()->Length(available);

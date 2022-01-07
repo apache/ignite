@@ -48,17 +48,6 @@ namespace ignite
             // No-op.
         }
 
-        int8_t DataBuffer::GetByte()
-        {
-            if (IsEmpty())
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Codec error: Not enough data to read next byte");
-
-            int8_t val = data.Get()->Data()[position];
-            Advance(1);
-
-            return val;
-        }
-
         void DataBuffer::GetData(int8_t *dst, int32_t size)
         {
             if (!size)

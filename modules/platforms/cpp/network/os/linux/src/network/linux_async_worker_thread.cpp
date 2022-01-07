@@ -347,8 +347,8 @@ namespace ignite
 
         bool LinuxAsyncWorkerThread::ShouldInitiateNewConnection() const
         {
-            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection currentConnection=" << currentClient.Get() << std::endl;
-            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection nonConnected.size()=" << nonConnected.size() << std::endl;
+//            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection currentConnection=" << currentClient.Get() << std::endl;
+//            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection nonConnected.size()=" << nonConnected.size() << std::endl;
             return !currentClient.Get() && nonConnected.size() > minAddrs;
         }
 
