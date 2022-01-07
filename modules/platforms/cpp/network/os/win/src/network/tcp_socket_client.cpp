@@ -80,7 +80,9 @@ namespace ignite
                 if (socketHandle == INVALID_SOCKET)
                     utils::ThrowNetworkError("Socket creation failed: " + sockets::GetLastSocketErrorMessage());
 
-                TrySetOptions();
+                sockets::TrySetSocketOptions(socketHandle, BUFFER_SIZE, TRUE, TRUE, TRUE);
+
+                blocking = !sockets::SetNonBlockingMode(socketHandle, true);
 
                 // Connect to server.
                 res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
@@ -169,13 +171,6 @@ namespace ignite
         bool TcpSocketClient::IsBlocking() const
         {
             return blocking;
-        }
-
-        void TcpSocketClient::TrySetOptions()
-        {
-            sockets::TrySetSocketOptions(socketHandle, BUFFER_SIZE, TRUE, TRUE, TRUE);
-
-            blocking = !sockets::SetNonBlockingMode(socketHandle, true);
         }
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
