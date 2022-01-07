@@ -30,7 +30,7 @@ public:
       : m_out(out)
     {
         // endl for http://jetbrains.net/tracker/issue/TW-4412
-        m_out << "##teamcity[" << name;
+        m_out << std::endl << "##teamcity[" << name;
     }
     ~RaiiMessage()
     {
@@ -111,7 +111,7 @@ bool underTeamcity()
 
     return result;
 #else
-    return true;//getenv("TEAMCITY_PROJECT_NAME") != 0;
+    return getenv("TEAMCITY_PROJECT_NAME") != 0;
 #endif
 }
 //END Public helper functions
@@ -187,13 +187,10 @@ void TeamcityMessages::testIgnored(const std::string& name, const std::string& m
 
 void TeamcityMessages::testOutput(const std::string& name, const std::string& output, const std::string& flowId, const bool isStdError)
 {
-    if (isStdError)
-    {
-        RaiiMessage msg(isStdError ? "testStdErr" : "testStdOut", *m_out);
-        msg.writeProperty("name", name);
-        msg.writeProperty("out", output);
-        msg.writePropertyIfNonEmpty("flowId", flowId);
-    }
+    RaiiMessage msg(isStdError ? "testStdErr" : "testStdOut", *m_out);
+    msg.writeProperty("name", name);
+    msg.writeProperty("out", output);
+    msg.writePropertyIfNonEmpty("flowId", flowId);
 }
 
 //END TeamcityMessages members
