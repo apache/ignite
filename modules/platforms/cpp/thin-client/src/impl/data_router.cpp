@@ -104,8 +104,11 @@ namespace ignite
 
             void DataRouter::Close()
             {
-                asyncPool.Get()->SetHandler(0);
-                asyncPool.Get()->Stop();
+                if (asyncPool.IsValid())
+                {
+                    asyncPool.Get()->SetHandler(0);
+                    asyncPool.Get()->Stop();
+                }
             }
 
             bool DataRouter::EnsureConnected(int32_t timeout)
