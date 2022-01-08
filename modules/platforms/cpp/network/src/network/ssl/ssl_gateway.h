@@ -61,7 +61,7 @@ namespace ignite
                 void *fpSSL_write;
                 void *fpSSL_read;
                 void *fpSSL_pending;
-                void *fpSSL_is_init_finished;
+                void *fpSSL_state;
                 void *fpSSL_get_fd;
                 void *fpSSL_new;
                 void *fpSSL_free;

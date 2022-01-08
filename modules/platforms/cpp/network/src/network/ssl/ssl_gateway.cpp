@@ -178,7 +178,7 @@ namespace ignite
                 functions.fpSSL_write = LoadSslMethod("SSL_write");
                 functions.fpSSL_read = LoadSslMethod("SSL_read");
                 functions.fpSSL_pending = LoadSslMethod("SSL_pending");
-                functions.fpSSL_is_init_finished = LoadSslMethod("SSL_is_init_finished");
+                functions.fpSSL_state = LoadSslMethod("SSL_state");
                 functions.fpSSL_get_fd = LoadSslMethod("SSL_get_fd");
                 functions.fpSSL_new = LoadSslMethod("SSL_new");
                 functions.fpSSL_free = LoadSslMethod("SSL_free");
@@ -187,6 +187,7 @@ namespace ignite
                 functions.fpBIO_s_mem = LoadSslMethod("BIO_s_mem");
                 functions.fpBIO_read = LoadSslMethod("BIO_read");
                 functions.fpBIO_write = LoadSslMethod("BIO_write");
+
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
                 functions.fpX509_free = LoadSslMethod("X509_free");
@@ -570,13 +571,13 @@ namespace ignite
 
             int SslGateway::SSL_is_init_finished_(const SSL* ssl)
             {
-                assert(functions.fpSSL_is_init_finished != 0);
+                assert(functions.fpSSL_state != 0);
 
                 typedef int (FuncType)(const SSL*);
 
-                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_is_init_finished);
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_state);
 
-                return fp(ssl);
+                return fp(ssl) == SSL_ST_OK ? 1 : 0;
             }
 
             int SslGateway::SSL_get_fd_(const SSL* ssl)
