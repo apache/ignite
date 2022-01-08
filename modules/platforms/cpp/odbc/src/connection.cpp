@@ -160,11 +160,7 @@ namespace ignite
             {
                 LOG_MSG("Can not load OpenSSL library: " << err.GetText());
 
-                std::stringstream ss;
-                ss << "Can not load OpenSSL library: " << err.GetText();
-
-                std::string msg = ss.str();
-                AddStatusRecord(msg);
+                AddStatusRecord("Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?)");
 
                 return SqlResult::AI_ERROR;
             }

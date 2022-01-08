@@ -194,12 +194,12 @@ namespace ignite
             int res = connect(socketFd, addr->ai_addr, addr->ai_addrlen);
             if (SOCKET_ERROR == res)
             {
-                std::cout << "=============== " << this << " " << " HandleNewConnections::Next connect res=" << res << std::endl;
+                // std::cout << "=============== " << this << " " << " HandleNewConnections::Next connect res=" << res << std::endl;
                 int lastError = errno;
 
                 clock_gettime(CLOCK_MONOTONIC, &lastConnectionTime);
 
-                std::cout << "=============== " << this << " " << " HandleNewConnections::Next lastError=" << lastError << std::endl;
+                // std::cout << "=============== " << this << " " << " HandleNewConnections::Next lastError=" << lastError << std::endl;
                 if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
                 {
                     HandleConnectionFailed("Failed to establish connection with the host: " +
@@ -217,9 +217,9 @@ namespace ignite
 
             int timeout = CalculateConnectionTimeout();
 
-            std::cout << "=============== " << this << " " << " HandleConnectionEvents timeout=" << timeout << std::endl;
+            // std::cout << "=============== " << this << " " << " HandleConnectionEvents timeout=" << timeout << std::endl;
             int res = epoll_wait(epoll, events, MAX_EVENTS, timeout);
-            std::cout << "=============== " << this << " " << " HandleConnectionEvents res=" << res << std::endl;
+            // std::cout << "=============== " << this << " " << " HandleConnectionEvents res=" << res << std::endl;
 
             if (res <= 0)
                 return;
@@ -229,15 +229,15 @@ namespace ignite
                 epoll_event& currentEvent = events[i];
                 LinuxAsyncClient* client = static_cast<LinuxAsyncClient*>(currentEvent.data.ptr);
 
-                std::cout << "=============== " << this << " " << " HandleConnectionEvents client=" << client << std::endl;
-                std::cout << "=============== " << this << " " << " HandleConnectionEvents currentEvent.events=" << currentEvent.events << std::endl;
+                // std::cout << "=============== " << this << " " << " HandleConnectionEvents client=" << client << std::endl;
+                // std::cout << "=============== " << this << " " << " HandleConnectionEvents currentEvent.events=" << currentEvent.events << std::endl;
 
                 if (!client)
                     continue;
 
                 if (client == currentClient.Get())
                 {
-                    std::cout << "=============== " << this << " " << " HandleConnectionEvents Handling new client" << std::endl;
+                    // std::cout << "=============== " << this << " " << " HandleConnectionEvents Handling new client" << std::endl;
                     if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
                     {
                         HandleConnectionFailed("Can not establsih connection");
@@ -350,8 +350,8 @@ namespace ignite
 
         bool LinuxAsyncWorkerThread::ShouldInitiateNewConnection() const
         {
-//            std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection currentConnection=" << currentClient.Get() << std::endl;
-//            std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection nonConnected.size()=" << nonConnected.size() << std::endl;
+//            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection currentConnection=" << currentClient.Get() << std::endl;
+//            // std::cout << "=============== " << this << " " << " ShouldInitiateNewConnection nonConnected.size()=" << nonConnected.size() << std::endl;
             return !currentClient.Get() && nonConnected.size() > minAddrs;
         }
 
