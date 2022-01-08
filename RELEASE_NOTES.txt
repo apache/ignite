@@ -99,7 +99,7 @@ Ignite:
 * Migrated TcpDiscoveryZookeeperIpFinder to the Ignite extensions.
 * Migrated gce, aws, azure modules to the Ignite extensions.
 * Updated Bouncycastle version (fixes CVE-2020-15522, CVE-2020-0187, CVE-2020-26939).
-* Updated log4j version to 2.17 (fixes CVE-2021-44228, CVE-2021-45046, CVE-2021-45105).
+* Updated log4j version to 2.17.1 (fixes CVE-2021-44228, CVE-2021-44832, CVE-2021-45046, CVE-2021-45105).
 * Updated PostgreSQL JDBC Driver version (fixes CVE-2020-13692).
 * Updated httpclient, httpcore versions (fixes CVE-2020-13956).
 * Updated the Jackson dependency version (fixes CVE-2019-16942, CVE-2019-16943, CVE-2019-17531).
