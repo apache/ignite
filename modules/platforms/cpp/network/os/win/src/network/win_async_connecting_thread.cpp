@@ -147,9 +147,9 @@ namespace ignite
         {
             for (uint16_t port = range.port; port <= (range.port + range.range); ++port)
             {
-                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: port=" << port << std::endl;
-                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.port=" << range.port << std::endl;
-                // std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.range=" << range.range << std::endl;
+                std::cout << "=============== " << clientPool << " " << " ConnectingThread: port=" << port << std::endl;
+                std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.port=" << range.port << std::endl;
+                std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.range=" << range.range << std::endl;
 
                 EndPoint addr(range.host, port);
                 try

@@ -118,7 +118,7 @@ namespace ignite
                 if (lastHandshakeError.get())
                 {
                     // TODO: Re-factor.
-                    // std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << "ERROR" << std::endl;
+                    std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << "ERROR" << std::endl;
                     IgniteError err = *lastHandshakeError;
                     lastHandshakeError.reset();
 
@@ -129,21 +129,21 @@ namespace ignite
 
                 if (lastHandshakeError.get())
                 {
-                    // std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << "ERROR" << std::endl;
+                    std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << "ERROR" << std::endl;
                     IgniteError err = *lastHandshakeError;
                     lastHandshakeError.reset();
 
                     throw err;
                 }
 
-                // std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "COMPLETE") << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "COMPLETE") << std::endl;
 
                 return !connectedChannels.empty();
             }
 
             void DataRouter::OnConnectionSuccess(const network::EndPoint& addr, uint64_t id)
             {
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionSuccess: " << addr.host << ":" << addr.port << ", " << id << std::endl;
 
                 SP_DataChannel channel(new DataChannel(id, addr, asyncPool, config, typeMgr, *this));
 
@@ -159,7 +159,7 @@ namespace ignite
             void DataRouter::OnConnectionError(const network::EndPoint& addr, const IgniteError& err)
             {
                 IGNITE_UNUSED(addr);
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionError: " << addr.host << ":" << addr.port << ", " << err.GetText() << std::endl;
 
                 if (!connectedChannels.empty())
                     return;
@@ -175,7 +175,7 @@ namespace ignite
 
             void DataRouter::OnConnectionClosed(uint64_t id, const IgniteError* err)
             {
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionClosed: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionClosed: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
 
 
                 SP_DataChannel channel;
@@ -197,7 +197,7 @@ namespace ignite
 
             void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
             {
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnMessageReceived: " << id << ", " << msg.GetSize() << " bytes" << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnMessageReceived: " << id << ", " << msg.GetSize() << " bytes" << std::endl;
                 SP_DataChannel channel;
 
                 {
@@ -220,7 +220,7 @@ namespace ignite
 
             void DataRouter::OnHandshakeSuccess(uint64_t id)
             {
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeSuccess: " << id << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeSuccess: " << id << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
@@ -244,7 +244,7 @@ namespace ignite
             void DataRouter::OnHandshakeError(uint64_t id, const IgniteError& err)
             {
                 IGNITE_UNUSED(id);
-                // std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeError: " << id << ", " << err.GetText() << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeError: " << id << ", " << err.GetText() << std::endl;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
