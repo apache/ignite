@@ -88,7 +88,9 @@ namespace ignite
                     }
 
                     common::concurrent::CsLockGuard lock(addrsCs);
-                    nonConnected.erase(std::find(nonConnected.begin(), nonConnected.end(), range));
+                    std::vector<TcpRange>::iterator it = std::find(nonConnected.begin(), nonConnected.end(), range);
+                    if (it != nonConnected.end())
+                        nonConnected.erase(it);
                 }
                 catch (const IgniteError& err)
                 {
@@ -134,11 +136,11 @@ namespace ignite
 
             {
                 common::concurrent::CsLockGuard lock(addrsCs);
-                nonConnected.clear();
                 connectNeeded.NotifyOne();
             }
 
             Join();
+            nonConnected.clear();
         }
 
         SP_WinAsyncClient WinAsyncConnectingThread::TryConnect(const TcpRange& range)
@@ -232,6 +234,9 @@ namespace ignite
         TcpRange WinAsyncConnectingThread::GetRandomAddress() const
         {
             common::concurrent::CsLockGuard lock(addrsCs);
+
+            if (stopping)
+                return TcpRange();
 
             while (nonConnected.size() <= minAddrs)
             {
