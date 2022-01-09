@@ -82,7 +82,7 @@ namespace ignite
 
                 /** Version 1.3.0. */
                 static const ProtocolVersion VERSION_1_3_0;
-                
+
                 /** Version 1.4.0. Added: Partition awareness support, IEP-23. */
                 static const ProtocolVersion VERSION_1_4_0;
 
@@ -108,8 +108,11 @@ namespace ignite
                  * @param typeMgr Type manager.
                  * @param stateHandler State handler.
                  */
-                DataChannel(uint64_t id, const network::EndPoint& addr, ignite::network::SP_AsyncClientPool asyncPool,
-                    const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr,
+                DataChannel(uint64_t id,
+                    const network::EndPoint& addr,
+                    const ignite::network::SP_AsyncClientPool& asyncPool,
+                    const ignite::thin::IgniteClientConfiguration& cfg,
+                    binary::BinaryTypeManager& typeMgr,
                     ChannelStateHandler& stateHandler);
 
                 /**
@@ -197,6 +200,12 @@ namespace ignite
                  */
                 void FailPendingRequests(const IgniteError* err);
 
+                // TODO
+                bool IsHandshakeComplete() const
+                {
+                    return handshakePerformed;
+                }
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 
@@ -253,14 +262,6 @@ namespace ignite
                  * @param msg Message.
                  */
                 void OnHandshakeResponse(const network::DataBuffer& msg);
-
-                /**
-                 * Set channel error. To be used in async callbacks to invalidate channel.
-                 *
-                 * @param code Error code.
-                 * @param msg Error message.
-                 */
-                void SetHandshakeError(int32_t code, const std::string& msg);
 
                 /**
                  * Check if the version is supported.

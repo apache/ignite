@@ -180,7 +180,6 @@ namespace ignite
             {
                 std::cout << "=============== " << asyncPool.Get() << " " << " OnConnectionClosed: " << id << ", " << (err ? err->GetText() : "NULL") << std::endl;
 
-
                 SP_DataChannel channel;
                 {
                     common::concurrent::CsLockGuard lock(channelsMutex);

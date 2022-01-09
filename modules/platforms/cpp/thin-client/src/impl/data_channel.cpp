@@ -51,9 +51,14 @@ namespace ignite
             const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
                 supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-            DataChannel::DataChannel(uint64_t id, const network::EndPoint& addr,
-                ignite::network::SP_AsyncClientPool asyncPool, const ignite::thin::IgniteClientConfiguration& cfg,
-                binary::BinaryTypeManager& typeMgr, ChannelStateHandler& stateHandler) :
+            DataChannel::DataChannel(
+                uint64_t id,
+                const network::EndPoint& addr,
+                const ignite::network::SP_AsyncClientPool& asyncPool,
+                const ignite::thin::IgniteClientConfiguration& cfg,
+                binary::BinaryTypeManager& typeMgr,
+                ChannelStateHandler& stateHandler
+            ) :
                 stateHandler(stateHandler),
                 handshakePerformed(false),
                 id(id),
@@ -238,20 +243,7 @@ namespace ignite
             {
                 currentVersion = propVer;
 
-                bool accepted;
-
-                try
-                {
-                    // Workaround for some Linux systems that report connection on non-blocking
-                    // sockets as successful but fail to establish real connection.
-                    accepted = Handshake(propVer);
-                }
-                catch (const IgniteError&)
-                {
-                    return false;
-                }
-
-                return accepted;
+                return Handshake(propVer);
             }
 
             bool DataChannel::Handshake(const ProtocolVersion& propVer)
@@ -322,7 +314,16 @@ namespace ignite
                         shouldRetry = DoHandshake(resVer);
 
                     if (!shouldRetry)
-                        SetHandshakeError(errorCode, error);
+                    {
+                        std::stringstream ss;
+                        ss << errorCode << ": " << error;
+                        std::string newMsg = ss.str();
+
+                        IgniteError err(IgniteError::IGNITE_ERR_GENERIC, newMsg.c_str());
+
+                        if (!handshakePerformed)
+                            stateHandler.OnHandshakeError(id, err);
+                    }
 
                     return;
                 }
@@ -355,17 +356,6 @@ namespace ignite
             bool DataChannel::IsVersionSupported(const ProtocolVersion& ver)
             {
                 return supportedVersions.find(ver) != supportedVersions.end();
-            }
-
-            void DataChannel::SetHandshakeError(int32_t code, const std::string& msg)
-            {
-                std::stringstream ss;
-                ss << code << ": " << msg;
-                std::string newMsg = ss.str();
-
-                IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, newMsg.c_str());
-
-                stateHandler.OnHandshakeError(id, err);
             }
 
             void DataChannel::FailPendingRequests(const IgniteError* err)
