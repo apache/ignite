@@ -85,7 +85,7 @@ namespace ignite
 
             void DataChannel::Close()
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " DataChannel::Close: " << id << std::endl;
+                std::cout << "=============== DataChannel::Close: " << id << std::endl;
                 asyncPool.Get()->Close(id, 0);
                 handlerMap.clear();
             }
@@ -94,7 +94,7 @@ namespace ignite
             {
                 Future<network::DataBuffer> rspFut = AsyncMessage(req);
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " SyncMessage: Waiting for response ReqID=" << req.GetId() << std::endl;
+                std::cout << "=============== SyncMessage: Waiting for response ReqID=" << req.GetId() << std::endl;
 
                 bool success = true;
                 if (timeout)
@@ -102,7 +102,7 @@ namespace ignite
                 else
                     rspFut.Wait();
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " SyncMessage: Wait result: " << success << std::endl;
+                std::cout << "=============== SyncMessage: Wait result: " << success << std::endl;
 
                 if (!success)
                 {
@@ -116,9 +116,9 @@ namespace ignite
                     throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
                 }
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " SyncMessage: Getting value... " << std::endl;
+                std::cout << "=============== SyncMessage: Getting value... " << std::endl;
                 DeserializeMessage(rspFut.GetValue(), rsp);
-                std::cout << "=============== " << asyncPool.Get() << " " << " SyncMessage: Got value" << std::endl;
+                std::cout << "=============== SyncMessage: Got value" << std::endl;
             }
 
             int64_t DataChannel::GenerateRequestMessage(Request &req, interop::InteropMemory &mem)
@@ -152,7 +152,7 @@ namespace ignite
 
                 int64_t reqId = GenerateRequestMessage(req, *mem.Get());
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " AsyncMessage: ReqId = " << reqId << std::endl;
+                std::cout << "=============== AsyncMessage: ReqId = " << reqId << std::endl;
 
                 common::concurrent::CsLockGuard lock1(responseMutex);
                 SP_PromiseDataBuffer& sp = responseMap[reqId];
@@ -181,10 +181,10 @@ namespace ignite
 
             void DataChannel::ProcessMessage(const network::DataBuffer& msg)
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: " << id << std::endl;
+                std::cout << "=============== ProcessMessage: " << id << std::endl;
                 if (!handshakePerformed)
                 {
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: !handshakePerformed" << std::endl;
+                    std::cout << "=============== ProcessMessage: !handshakePerformed" << std::endl;
                     OnHandshakeResponse(msg);
 
                     return;
@@ -197,26 +197,26 @@ namespace ignite
                 int64_t rspId = inStream.ReadInt64();
                 int16_t flags = inStream.ReadInt16();
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: RspId = " << rspId << std::endl;
+                std::cout << "=============== ProcessMessage: RspId = " << rspId << std::endl;
 
                 if (flags & Flag::NOTIFICATION)
                 {
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: NOTIFICATION" << std::endl;
+                    std::cout << "=============== ProcessMessage: NOTIFICATION" << std::endl;
                     common::concurrent::CsLockGuard lock(handlerMutex);
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: locked" << std::endl;
+                    std::cout << "=============== ProcessMessage: locked" << std::endl;
 
                     NotificationHandlerHolder& holder = handlerMap[rspId];
                     holder.ProcessNotification(msg);
 
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: holder.IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
+                    std::cout << "=============== ProcessMessage: holder.IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
                     if (holder.IsProcessingComplete())
                         handlerMap.erase(rspId);
 
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: unlocked" << std::endl;
+                    std::cout << "=============== ProcessMessage: unlocked" << std::endl;
                 }
                 else
                 {
-                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: RESPONSE" << std::endl;
+                    std::cout << "=============== ProcessMessage: RESPONSE" << std::endl;
 
                     common::concurrent::CsLockGuard lock(responseMutex);
 
@@ -235,19 +235,19 @@ namespace ignite
 
             void DataChannel::RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler)
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler notId=" << notId << std::endl;
+                std::cout << "=============== RegisterNotificationHandler notId=" << notId << std::endl;
                 common::concurrent::CsLockGuard lock(handlerMutex);
-                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler locked" << std::endl;
+                std::cout << "=============== RegisterNotificationHandler locked" << std::endl;
 
                 NotificationHandlerHolder& holder = handlerMap[notId];
                 holder.SetHandler(handler);
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
+                std::cout << "=============== RegisterNotificationHandler IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
 
                 if (holder.IsProcessingComplete())
                     handlerMap.erase(notId);
 
-                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler unlocked" << std::endl;
+                std::cout << "=============== RegisterNotificationHandler unlocked" << std::endl;
             }
 
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)
@@ -259,7 +259,7 @@ namespace ignite
 
             bool DataChannel::Handshake(const ProtocolVersion& propVer)
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " Handshake: " << id  << ", " << propVer.ToString() << std::endl;
+                std::cout << "=============== Handshake: " << id  << ", " << propVer.ToString() << std::endl;
                 // Allocating 4 KB just in case.
                 enum {
                     BUFFER_SIZE = 1024 * 4
@@ -298,7 +298,7 @@ namespace ignite
 
             void DataChannel::OnHandshakeResponse(const network::DataBuffer& msg)
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeResponse: " << id << std::endl;
+                std::cout << "=============== OnHandshakeResponse: " << id << std::endl;
                 interop::InteropInputStream inStream(msg.GetInputStream());
 
                 inStream.Ignore(4);
@@ -359,7 +359,7 @@ namespace ignite
                 }
 
                 handshakePerformed = true;
-                std::cout << "=============== " << asyncPool.Get() << " " << " OnHandshakeResponse: handshakePerformed" << std::endl;
+                std::cout << "=============== OnHandshakeResponse: handshakePerformed" << std::endl;
 
                 stateHandler.OnHandshakeSuccess(id);
             }

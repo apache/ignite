@@ -162,23 +162,6 @@ namespace ignite
             void InternalStop();
 
             /**
-             * Closes and releases memory allocated for client with specified ID.
-             *
-             * @param id Client ID.
-             * @return @c true if connection with specified ID was found.
-             */
-            bool CloseAndRelease(uint64_t id);
-
-            /**
-             * Closes specified connection if it's established. Connection to the specified address is planned for
-             * re-connect. Error is not reported to handler.
-             *
-             * @param id Client ID.
-             * @return @c true if connection with specified ID is found.
-             */
-            bool Close(uint64_t id);
-
-            /**
              * Find client by ID.
              *
              * @param id Client ID.

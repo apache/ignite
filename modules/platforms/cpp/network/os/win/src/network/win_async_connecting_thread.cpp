@@ -101,10 +101,13 @@ namespace ignite
                     continue;
                 }
             }
+
+            std::cout << "=============== ConnectingThread: Exiting" << std::endl;
         }
 
         void WinAsyncConnectingThread::NotifyFreeAddress(const TcpRange &range)
         {
+            std::cout << "=============== NotifyFreeAddress: range=" << range.host << ':' << range.port << std::endl;
             common::concurrent::CsLockGuard lock(addrsCs);
 
             nonConnected.push_back(range);
@@ -147,9 +150,7 @@ namespace ignite
         {
             for (uint16_t port = range.port; port <= (range.port + range.range); ++port)
             {
-                std::cout << "=============== " << clientPool << " " << " ConnectingThread: port=" << port << std::endl;
-                std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.port=" << range.port << std::endl;
-                std::cout << "=============== " << clientPool << " " << " ConnectingThread: range.range=" << range.range << std::endl;
+                std::cout << "=============== ConnectingThread: port=" << port << std::endl;
 
                 EndPoint addr(range.host, port);
                 try

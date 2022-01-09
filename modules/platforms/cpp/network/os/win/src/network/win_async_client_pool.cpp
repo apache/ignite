@@ -80,6 +80,7 @@ namespace ignite
         {
             stopping = true;
             connectingThread.Stop();
+            std::cout << "=============== WinAsyncClientPool: connectingThread.Stopped" << std::endl;
 
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
@@ -89,12 +90,12 @@ namespace ignite
                 {
                     WinAsyncClient& client = *it->second.Get();
 
-                    client.Shutdown();
+                    client.Shutdown(0);
                 }
 
                 if (!clientIdMap.empty())
                 {
-                    std::cout << "=============== " << this << " " << " WinAsyncClientPool: Waiting for empty" << std::endl;
+                    std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
 
                     clientsCv.Wait(clientsCs);
                 }
@@ -116,7 +117,7 @@ namespace ignite
 
                 if (stopping)
                 {
-                    std::cout << "=============== " << this << " " << " WinAsyncClientPool: AddClient: stopping" << std::endl;
+                    std::cout << "=============== WinAsyncClientPool: AddClient: stopping" << std::endl;
 
                     return false;
                 }
@@ -175,7 +176,7 @@ namespace ignite
 
         bool WinAsyncClientPool::Send(uint64_t id, const DataBuffer& data)
         {
-            std::cout << "=============== " << this << " " << " Send: " << id << std::endl;
+            std::cout << "=============== Send: " << id << std::endl;
             if (stopping)
                 return false;
 
@@ -183,84 +184,68 @@ namespace ignite
             if (!client.IsValid())
                 return false;
 
-            std::cout << "=============== " << this << " " << " Send: Client found" << std::endl;
+            std::cout << "=============== Send: Client found" << std::endl;
             return client.Get()->Send(data);
         }
 
-        bool WinAsyncClientPool::CloseAndRelease(uint64_t id)
+        void WinAsyncClientPool::CloseAndRelease(uint64_t id, const IgniteError* err)
         {
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease=" << id << std::endl;
+            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, id=" << id << std::endl;
+            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
+
             SP_WinAsyncClient client;
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
 
                 std::map<uint64_t, SP_WinAsyncClient>::iterator it = clientIdMap.find(id);
                 if (it == clientIdMap.end())
-                    return false;
+                    return;
 
                 client = it->second;
 
                 clientIdMap.erase(it);
 
-                std::cout << "=============== " << this << " " << " WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
+                std::cout << "=============== WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
                 if (clientIdMap.empty())
                 {
-                    std::cout << "=============== " << this << " " << " WorkerThread: Notifying about empty" << std::endl;
+                    std::cout << "=============== WorkerThread: Notifying about empty" << std::endl;
                     clientsCv.NotifyAll();
                 }
             }
 
             bool closed = client.Get()->Close();
+
+            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
+
             if (closed)
             {
-                connectingThread.NotifyFreeAddress(client.Get()->GetRange());
-
                 client.Get()->WaitForPendingIo();
-            }
 
-            return closed;
-        }
-
-        void WinAsyncClientPool::CloseAndRelease(uint64_t id, const IgniteError* err)
-        {
-            bool closed = CloseAndRelease(id);
-
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
-
-            if (closed)
-                HandleConnectionClosed(id, err);
-        }
-
-        bool WinAsyncClientPool::Close(uint64_t id)
-        {
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close=" << id << std::endl;
-
-            SP_WinAsyncClient client = FindClient(id);
-            if (!client.IsValid() || client.Get()->IsClosed())
-                return false;
-
-            bool closed = client.Get()->Shutdown();
-
-            if (closed)
                 connectingThread.NotifyFreeAddress(client.Get()->GetRange());
 
-            return closed;
+                IgniteError err0(client.Get()->GetCloseError());
+                if (err0.GetCode() == IgniteError::IGNITE_SUCCESS)
+                    err0 = IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed by server");
+
+                if (!err)
+                    err = &err0;
+
+                HandleConnectionClosed(id, err);
+            }
         }
 
         void WinAsyncClientPool::Close(uint64_t id, const IgniteError* err)
         {
-            bool closed = Close(id);
+            std::cout << "=============== WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
 
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close, closed=" << closed << std::endl;
-            std::cout << "=============== " << this << " " << " WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
-
-            if (closed)
-                HandleConnectionClosed(id, err);
+            SP_WinAsyncClient client = FindClient(id);
+            if (client.IsValid() && client.Get()->IsClosed())
+                client.Get()->Shutdown(err);
         }
 
         void WinAsyncClientPool::ThrowSystemError(const std::string& msg)
         {
+            // TODO: re-factor
             std::stringstream buf;
 
             buf << "Windows system error: " << msg << ", system error code: " << GetLastError();

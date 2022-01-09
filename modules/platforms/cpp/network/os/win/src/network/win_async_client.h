@@ -96,9 +96,6 @@ namespace ignite
 
             /**
              * Destructor.
-             *
-             * Should not be destructed from external threads.
-             * Can be destructed from WorkerThread.
              */
             ~WinAsyncClient();
 
@@ -108,15 +105,13 @@ namespace ignite
              * Can be called from external threads.
              * Can be called from WorkerThread.
              *
+             * @param err Error message. Can be null.
              * @return @c true if shutdown performed successfully.
              */
-            bool Shutdown();
+            bool Shutdown(const IgniteError* err);
 
             /**
              * Wait for pending IO calls and wait till all IO are complete and reported.
-             *
-             * Can be called from external threads.
-             * Can be called from WorkerThread.
              */
             void WaitForPendingIo();
 
@@ -169,7 +164,7 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-                std::cout << "=============== " << " WinAsyncClient: SetId " << id << ", " << socket << std::endl;
+                std::cout << "=============== WinAsyncClient: SetId " << id << ", " << socket << std::endl;
 
                 this->id = id;
             }
@@ -218,6 +213,16 @@ namespace ignite
              * @param bytes Number of received bytes.
              */
             DataBuffer ProcessReceived(size_t bytes);
+
+            /**
+             * Get closing error for the connection. Can be IGNITE_SUCCESS.
+             *
+             * @return Connection error.
+             */
+            const IgniteError& GetCloseError() const
+            {
+                return closeErr;
+            }
 
         private:
 
@@ -268,6 +273,9 @@ namespace ignite
 
             /** Packet that is currently received. */
             impl::interop::SP_InteropMemory recvPacket;
+
+            /** Closing error. */
+            IgniteError closeErr;
         };
 
         /** Shared pointer to async client. */

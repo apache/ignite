@@ -34,7 +34,8 @@ namespace ignite
             socket(socket),
             id(0),
             addr(addr),
-            range(range)
+            range(range),
+            closeErr(IgniteError::IGNITE_SUCCESS)
         {
             memset(&currentSend, 0, sizeof(currentSend));
             currentSend.kind = IoOperationKind::SEND;
@@ -47,7 +48,7 @@ namespace ignite
         {
             if (State::IN_POOL == state)
             {
-                Shutdown();
+                Shutdown(0);
 
                 WaitForPendingIo();
             }
@@ -55,13 +56,16 @@ namespace ignite
             if (State::CLOSED != state)
                 Close();
 
-            std::cout << "=============== " << "0000000000000000" << " " << " ~WinAsyncClient " << id << std::endl;
+            std::cout << "=============== ~WinAsyncClient " << id << std::endl;
         }
 
-        bool WinAsyncClient::Shutdown()
+        bool WinAsyncClient::Shutdown(const IgniteError* err)
         {
-            std::cout << "=============== " << "0000000000000000" << " " << " WinAsyncClient::Shutdown " << id << std::endl;
+            std::cout << "=============== WinAsyncClient::Shutdown id=" << id << std::endl;
+            std::cout << "=============== WinAsyncClient::Shutdown state=" << state << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
+
+            closeErr = err ? *err : IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection closed by application");
 
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
@@ -75,7 +79,7 @@ namespace ignite
 
         void WinAsyncClient::WaitForPendingIo()
         {
-            std::cout << "=============== " << "0000000000000000" << " " << " WinAsyncClient::WaitForPendingIo " << id << std::endl;
+            std::cout << "=============== WinAsyncClient::WaitForPendingIo " << id << std::endl;
             while (!HasOverlappedIoCompleted(&currentSend.overlapped))
                 GetOverlappedResult((HANDLE)socket, &currentSend.overlapped, NULL, TRUE);
 
@@ -85,7 +89,7 @@ namespace ignite
 
         bool WinAsyncClient::Close()
         {
-            std::cout << "=============== " << "0000000000000000" << " " << " WinAsyncClient::Close " << id << std::endl;
+            std::cout << "=============== WinAsyncClient::Close " << id << std::endl;
             if (State::CLOSED == state)
                 return false;
 
@@ -140,7 +144,7 @@ namespace ignite
             buffer.buf = (CHAR*)packet0.GetData();
             buffer.len = packet0.GetSize();
 
-            std::cout << "=============== " << "0000000000000000" << " " << " Send to " << id << " " << buffer.len << " bytes" << std::endl;
+            std::cout << "=============== Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -163,7 +167,7 @@ namespace ignite
             buffer.buf = (CHAR*)packet0.Data();
             buffer.len = (ULONG)packet0.Length();
 
-            std::cout << "=============== " << "0000000000000000" << " " << " Recv from " << id << " " << buffer.len << " bytes" << std::endl;
+            std::cout << "=============== Recv from " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -182,7 +186,7 @@ namespace ignite
 
         DataBuffer WinAsyncClient::ProcessReceived(size_t bytes)
         {
-            std::cout << "=============== " << "0000000000000000" << " " << " WinAsyncClient: bytes=" << bytes << std::endl;
+            std::cout << "=============== WinAsyncClient: bytes=" << bytes << std::endl;
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
             return DataBuffer(recvPacket, 0, static_cast<int32_t>(bytes));
