@@ -203,12 +203,16 @@ namespace ignite
                 {
                     std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: NOTIFICATION" << std::endl;
                     common::concurrent::CsLockGuard lock(handlerMutex);
+                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: locked" << std::endl;
 
                     NotificationHandlerHolder& holder = handlerMap[rspId];
                     holder.ProcessNotification(msg);
 
+                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: holder.IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
                     if (holder.IsProcessingComplete())
                         handlerMap.erase(rspId);
+
+                    std::cout << "=============== " << asyncPool.Get() << " " << " ProcessMessage: unlocked" << std::endl;
                 }
                 else
                 {
@@ -231,14 +235,19 @@ namespace ignite
 
             void DataChannel::RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler)
             {
-                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler" << std::endl;
+                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler notId=" << notId << std::endl;
                 common::concurrent::CsLockGuard lock(handlerMutex);
+                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler locked" << std::endl;
 
                 NotificationHandlerHolder& holder = handlerMap[notId];
                 holder.SetHandler(handler);
 
+                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler IsProcessingComplete=" << holder.IsProcessingComplete() << std::endl;
+
                 if (holder.IsProcessingComplete())
                     handlerMap.erase(notId);
+
+                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler unlocked" << std::endl;
             }
 
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)

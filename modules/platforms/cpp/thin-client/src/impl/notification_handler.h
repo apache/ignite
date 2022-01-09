@@ -65,6 +65,17 @@ namespace ignite
 
             public:
                 /**
+                 * Default constructor.
+                 */
+                NotificationHandlerHolder() :
+                    queue(),
+                    handler(),
+                    complete(false)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 ~NotificationHandlerHolder()
@@ -79,13 +90,27 @@ namespace ignite
                  */
                 void ProcessNotification(const network::DataBuffer& msg)
                 {
+                    std::cout << "=============== 0000000000000000  ProcessNotification: this=" << this << std::endl;
+                    std::cout << "=============== 0000000000000000  ProcessNotification: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
                     if (complete)
                         return;
 
                     if (handler.IsValid())
+                    {
+                        std::cout << "=============== 0000000000000000  ProcessNotification: handler.IsValid()" << std::endl;
+                        std::cout << "=============== 0000000000000000  ProcessNotification: handler=" << handler.Get() << std::endl;
+
                         complete = handler.Get()->OnNotification(msg);
+                        std::cout << "=============== 0000000000000000  ProcessNotification: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
+                    }
                     else
+                    {
+                        std::cout << "=============== 0000000000000000  ProcessNotification: !handler.IsValid()" << std::endl;
+
                         queue.push_back(msg.Clone());
+
+                        std::cout << "=============== 0000000000000000  ProcessNotification: queue.size=" << queue.size() << std::endl;
+                    }
                 }
 
                 /**
@@ -95,13 +120,19 @@ namespace ignite
                  */
                 void SetHandler(const SP_NotificationHandler& handler)
                 {
+                    std::cout << "=============== 0000000000000000  SetHandler: handler=" << &handler << std::endl;
                     if (this->handler.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Internal error: handler is already set for the notification");
 
                     this->handler = handler;
+                    std::cout << "=============== 0000000000000000  SetHandler: this->handler=" << this->handler.Get() << std::endl;
+
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
+                    {
+                        std::cout << "=============== 0000000000000000  SetHandler: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
                         complete = complete || this->handler.Get()->OnNotification(*it);
+                    }
 
                     queue.clear();
                 }
