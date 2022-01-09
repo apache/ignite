@@ -268,8 +268,10 @@ namespace ignite
                  * @param rsp Response message.
                  * @param preferred Preferred channel to use.
                  * @throw IgniteError on error.
+                 *
+                 * @return Data channel that was used.
                  */
-                void SyncMessagePreferredChannelNoMetaUpdate(Request& req, Response& rsp,
+                SP_DataChannel SyncMessagePreferredChannelNoMetaUpdate(Request& req, Response& rsp,
                     const SP_DataChannel& preferred);
 
                 /**

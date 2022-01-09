@@ -260,7 +260,7 @@ namespace ignite
 
                 int32_t metaVer = typeMgr.GetVersion();
 
-                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+                channel = SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                 ProcessMeta(metaVer);
 
@@ -273,7 +273,7 @@ namespace ignite
 
                 int32_t metaVer = typeMgr.GetVersion();
 
-                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+                channel = SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                 ProcessMeta(metaVer);
 
@@ -284,7 +284,7 @@ namespace ignite
             {
                 SP_DataChannel channel = GetRandomChannel();
 
-                SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
+                channel = SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                 return channel;
             }
@@ -308,7 +308,7 @@ namespace ignite
                     affinityManager.UpdateAffinity(*ver);
             }
 
-            void DataRouter::SyncMessagePreferredChannelNoMetaUpdate(Request &req, Response &rsp,
+            SP_DataChannel DataRouter::SyncMessagePreferredChannelNoMetaUpdate(Request &req, Response &rsp,
                 const SP_DataChannel &preferred)
             {
                 SP_DataChannel channel(preferred);
@@ -321,6 +321,11 @@ namespace ignite
                     bool connected = EnsureConnected(config.GetConnectionTimeout());
 
                     if (!connected)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Failed to establish connection with any host.");
+
+                    channel = GetRandomChannel();
+                    if (!channel.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                             "Failed to establish connection with any host.");
                 }
@@ -340,6 +345,8 @@ namespace ignite
                 }
 
                 CheckAffinity(rsp);
+
+                return channel;
             }
 
             void DataRouter::RefreshAffinityMapping(int32_t cacheId)

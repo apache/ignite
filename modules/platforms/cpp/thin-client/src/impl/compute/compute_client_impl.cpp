@@ -39,17 +39,22 @@ namespace
          * @param channel Channel.
          * @param res Result.
          */
-        JavaTaskNotificationHandler(const SP_DataChannel& channel, Readable& res) :
+        JavaTaskNotificationHandler(DataChannel& channel, Readable& res) :
             channel(channel),
             res(res)
         {
-            // No-op.
+            std::cout << "=============== JavaTaskNotificationHandler()" << std::endl;
+        }
+
+        virtual ~JavaTaskNotificationHandler()
+        {
+            std::cout << "=============== ~JavaTaskNotificationHandler()" << std::endl;
         }
 
         virtual bool OnNotification(const network::DataBuffer& msg)
         {
             ComputeTaskFinishedNotification notification(res);
-            channel.Get()->DeserializeMessage(msg, notification);
+            channel.DeserializeMessage(msg, notification);
 
             if (notification.IsFailure())
             {
@@ -76,7 +81,7 @@ namespace
 
     private:
         /** Channel. */
-        SP_DataChannel channel;
+        DataChannel& channel;
 
         /** Result. */
         Readable& res;
@@ -103,7 +108,7 @@ namespace ignite
                     SP_DataChannel channel = router.Get()->SyncMessage(req, rsp);
 
                     common::concurrent::SharedPointer<JavaTaskNotificationHandler> handler(
-                        new JavaTaskNotificationHandler(channel, res));
+                        new JavaTaskNotificationHandler(*channel.Get(), res));
 
                     channel.Get()->RegisterNotificationHandler(rsp.GetNotificationId(), handler);
 

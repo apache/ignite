@@ -87,6 +87,7 @@ namespace ignite
             {
                 std::cout << "=============== " << asyncPool.Get() << " " << " DataChannel::Close: " << id << std::endl;
                 asyncPool.Get()->Close(id, 0);
+                handlerMap.clear();
             }
 
             void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
@@ -230,6 +231,7 @@ namespace ignite
 
             void DataChannel::RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler)
             {
+                std::cout << "=============== " << asyncPool.Get() << " " << " RegisterNotificationHandler" << std::endl;
                 common::concurrent::CsLockGuard lock(handlerMutex);
 
                 NotificationHandlerHolder& holder = handlerMap[notId];

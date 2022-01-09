@@ -79,8 +79,11 @@ namespace ignite
                  */
                 void ProcessNotification(const network::DataBuffer& msg)
                 {
+                    if (complete)
+                        return;
+
                     if (handler.IsValid())
-                        handler.Get()->OnNotification(msg);
+                        complete = handler.Get()->OnNotification(msg);
                     else
                         queue.push_back(msg.Clone());
                 }
@@ -90,13 +93,13 @@ namespace ignite
                  *
                  * @param handler Notification handler.
                  */
-                void SetHandler(SP_NotificationHandler handler)
+                void SetHandler(const SP_NotificationHandler& handler)
                 {
                     if (this->handler.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Internal error: handler is already set for the notification");
 
-                    this->handler.Swap(handler);
+                    this->handler = handler;
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
                         complete = complete || this->handler.Get()->OnNotification(*it);
 
