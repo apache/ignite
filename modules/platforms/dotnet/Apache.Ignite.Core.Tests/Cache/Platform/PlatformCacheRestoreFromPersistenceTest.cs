@@ -88,7 +88,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 var cache = ignite.CreateCache<int, int>(new CacheConfiguration
                 {
                     Name = cacheName,
-                    PlatformCacheConfiguration = new PlatformCacheConfiguration()
+                    PlatformCacheConfiguration = new PlatformCacheConfiguration(),
+                    OnheapCacheEnabled = true // TODO: Remove this and fix GridCacheContext.readNoEntry to return false when Platform cache is enabled
                 });
 
                 cache[1] = 1;
@@ -104,6 +105,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
                 // Persistent cache already exists and contains data.
                 var cache = ignite.GetCache<int, int>(cacheName);
+                Assert.AreEqual(1, cache[1]); // TODO: Remove
                 Assert.AreEqual(1, cache.GetSize());
                 Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
             }
