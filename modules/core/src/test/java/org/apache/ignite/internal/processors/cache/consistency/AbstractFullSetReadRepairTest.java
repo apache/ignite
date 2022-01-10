@@ -301,47 +301,23 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     @Test
     public void test() throws Exception {
-        for (Ignite node : G.allGrids()) {
-            testGetVariations(node);
-            testGetNullVariations(node);
-            testContainsVariations(node);
+        for (Ignite initiator : G.allGrids()) {
+            test(initiator, 1, false); // just get
+            test(initiator, 1, true); // 1 (all keys available at primary)
+            test(initiator, 2, true); // less than backups
+            test(initiator, 3, true); // equals to backups
+            test(initiator, 4, true); // equals to backups + primary
+            test(initiator, 10, true); // more than backups + primary
         }
     }
 
     /**
      *
      */
-    private void testGetVariations(Ignite initiator) throws Exception {
-        testGet(initiator, 1, false); // just get
-        testGet(initiator, 1, true); // 1 (all keys available at primary)
-        testGet(initiator, 2, true); // less than backups
-        testGet(initiator, 3, true); // equals to backups
-        testGet(initiator, 4, true); // equals to backups + primary
-        testGet(initiator, 10, true); // more than backups + primary
-    }
-
-    /**
-     *
-     */
-    private void testGetNullVariations(Ignite initiator) throws Exception {
-        testGetNull(initiator, 1, false); // just get
-        testGetNull(initiator, 1, true); // 1 (all keys available at primary)
-        testGetNull(initiator, 2, true); // less than backups
-        testGetNull(initiator, 3, true); // equals to backups
-        testGetNull(initiator, 4, true); // equals to backups + primary
-        testGetNull(initiator, 10, true); // more than backups + primary
-    }
-
-    /**
-     *
-     */
-    private void testContainsVariations(Ignite initiator) throws Exception {
-        testContains(initiator, 1, false); // just contains
-        testContains(initiator, 1, true); // 1 (all keys available at primary)
-        testContains(initiator, 2, true); // less than backups
-        testContains(initiator, 3, true); // equals to backups
-        testContains(initiator, 4, true); // equals to backups + primary
-        testContains(initiator, 10, true); // more than backups + primary
+    private void test(Ignite initiator, Integer cnt, boolean all) throws Exception {
+        testGet(initiator, cnt, all);
+        testGetNull(initiator, cnt, all);
+        testContains(initiator, cnt, all);
     }
 
     /**
