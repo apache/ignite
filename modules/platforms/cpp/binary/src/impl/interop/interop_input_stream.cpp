@@ -26,7 +26,7 @@
  */
 #define IGNITE_INTEROP_IN_READ(type, len) { \
     EnsureEnoughData(len); \
-    type res = *reinterpret_cast<type*>(data + pos); \
+    type res = *reinterpret_cast<const type*>(data + pos); \
     Shift(len); \
     return res; \
 }
@@ -44,13 +44,25 @@ namespace ignite
     {
         namespace interop 
         {
-            InteropInputStream::InteropInputStream(InteropMemory* mem)
+            InteropInputStream::InteropInputStream(const InteropMemory* mem) :
+                mem(mem),
+                data(mem->Data()),
+                len(mem->Length()),
+                pos(0)
             {
-                this->mem = mem;
+                // No-op.
+            }
 
-                data = mem->Data();
-                len = mem->Length();
-                pos = 0;
+            InteropInputStream::InteropInputStream(const InteropMemory *mem, int32_t len) :
+                mem(mem),
+                data(mem->Data()),
+                len(len),
+                pos(0)
+            {
+                if (len > mem->Length())
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_MEMORY,
+                        "Requested input stream len is greater than memories length",
+                             "memPtr", mem->PointerLong(), "len", len, "memLen", mem->Length());
             }
 
             int8_t InteropInputStream::ReadInt8()
@@ -65,7 +77,7 @@ namespace ignite
                 if (delta > 0)
                     EnsureEnoughData(delta);
 
-                return *reinterpret_cast<int8_t*>(data + pos);
+                return *reinterpret_cast<const int8_t*>(data + pos);
             }
 
             void InteropInputStream::ReadInt8Array(int8_t* const res, const int32_t len)
@@ -96,7 +108,7 @@ namespace ignite
                 if (delta > 0)
                     EnsureEnoughData(delta);
 
-                return *reinterpret_cast<int16_t*>(data + pos);
+                return *reinterpret_cast<const int16_t*>(data + pos);
             }
 
             void InteropInputStream::ReadInt16Array(int16_t* const res, const int32_t len)
@@ -126,7 +138,7 @@ namespace ignite
                 if (delta > 0)
                     EnsureEnoughData(delta);
 
-                return *reinterpret_cast<int32_t*>(data + pos);
+                return *reinterpret_cast<const int32_t*>(data + pos);
             }
 
             void InteropInputStream::ReadInt32Array(int32_t* const res, const int32_t len)

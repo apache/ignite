@@ -101,14 +101,6 @@ namespace ignite
          * @return Standard string containing the same data.
          */
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen);
-
-        /**
-         * Convert binary data to hex dump form
-         * @param data  pointer to data
-         * @param count data length
-         * @return standard string containing the formated hex dump
-         */
-        std::string HexDump(const void* data, size_t count);
     }
 }
 
