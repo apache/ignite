@@ -111,7 +111,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class CdcMain implements Runnable {
     /** */
-    public static final String ERR_MSG = "Persistence and CDC for Ignite node disabled. Capture Data Change can't run!";
+    public static final String ERR_MSG = "Persistence and CDC disabled. Capture Data Change can't run!";
 
     /** State dir. */
     public static final String STATE_DIR = "state";

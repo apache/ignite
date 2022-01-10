@@ -244,10 +244,6 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Change Data Capture enabled flag. */
-    @IgniteExperimental
-    private boolean cdcEnabled;
-
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
