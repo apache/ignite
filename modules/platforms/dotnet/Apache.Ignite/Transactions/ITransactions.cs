@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite
+namespace Apache.Ignite.Transactions
 {
-    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
-    /// Ignite client.
-    /// <para />
-    /// Extends <see cref="IIgnite"/> with client-specific functionality.
+    /// Ignite transactions API.
     /// </summary>
-    public interface IIgniteClient : IIgnite, IDisposable
+    public interface ITransactions
     {
         /// <summary>
-        /// Gets the configuration.
+        /// Starts a new transaction.
         /// </summary>
-        IgniteClientConfiguration Configuration { get; }
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task<ITransaction> BeginAsync();
     }
 }

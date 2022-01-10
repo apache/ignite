@@ -15,45 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Internal.Table
+namespace Apache.Ignite.Transactions
 {
-    using Ignite.Table;
-    using Proto;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
-    /// Table API.
+    /// Ignite transaction.
+    /// <para />
+    /// Use <see cref="ITransactions.BeginAsync"/> to start a new transaction.
     /// </summary>
-    internal class Table : ITable
+    public interface ITransaction : IAsyncDisposable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Table"/> class.
+        /// Commits the transaction.
         /// </summary>
-        /// <param name="name">Table name.</param>
-        /// <param name="id">Table id.</param>
-        /// <param name="socket">Socket.</param>
-        public Table(string name, IgniteUuid id, ClientFailoverSocket socket)
-        {
-            Socket = socket;
-            Name = name;
-            Id = id;
-
-            RecordView = new RecordBinaryView(this);
-        }
-
-        /// <inheritdoc/>
-        public string Name { get; }
-
-        /// <inheritdoc/>
-        public IRecordView<IIgniteTuple> RecordView { get; }
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task CommitAsync();
 
         /// <summary>
-        /// Gets the id.
+        /// Rolls back the transaction.
         /// </summary>
-        internal IgniteUuid Id { get; }
-
-        /// <summary>
-        /// Gets the socket.
-        /// </summary>
-        internal ClientFailoverSocket Socket { get; }
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task RollbackAsync();
     }
 }

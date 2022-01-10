@@ -106,11 +106,13 @@ public class ClientTransaction implements Transaction {
     }
 
     private void setState(int state) {
-        if (this.state.compareAndSet(STATE_OPEN, state)) {
+        int oldState = this.state.compareAndExchange(STATE_OPEN, state);
+
+        if (oldState == STATE_OPEN) {
             return;
         }
 
-        String message = this.state.get() == STATE_COMMITTED
+        String message = oldState == STATE_COMMITTED
                 ? "Transaction is already committed."
                 : "Transaction is already rolled back.";
 

@@ -32,7 +32,7 @@ namespace Apache.Ignite.Benchmarks.Table
     {
         private JavaServer? _javaServer;
         private IIgniteClient? _client;
-        private ITable _table = null!;
+        private IRecordView<IIgniteTuple> _table = null!;
         private IgniteTuple _keyTuple = null!;
 
         [GlobalSetup]
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Benchmarks.Table
         {
             _javaServer = await JavaServer.StartAsync();
             _client = await IgniteClient.StartAsync(new IgniteClientConfiguration("127.0.0.1:" + _javaServer.Port));
-            _table = (await _client.Tables.GetTableAsync("PUB.tbl1"))!;
+            _table = (await _client.Tables.GetTableAsync("PUB.tbl1"))!.RecordView;
 
             var tuple = new IgniteTuple
             {
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Benchmarks.Table
                 ["val"] = "foo"
             };
 
-            await _table.UpsertAsync(tuple);
+            await _table.UpsertAsync(null, tuple);
 
             _keyTuple = new IgniteTuple
             {
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Benchmarks.Table
         [Benchmark]
         public async Task Get()
         {
-            await _table.GetAsync(_keyTuple);
+            await _table.GetAsync(null, _keyTuple);
         }
     }
 }

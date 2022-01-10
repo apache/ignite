@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite
 {
-    using System;
     using Table;
+    using Transactions;
 
     /// <summary>
     /// Ignite API entry point.
@@ -26,11 +26,16 @@ namespace Apache.Ignite
     /// Implementation can be a thin client (see <see cref="IIgniteClient"/> and <see cref="IgniteClient.StartAsync"/>),
     /// or a direct IPC connection for server-side functionality like compute.
     /// </summary>
-    public interface IIgnite : IDisposable
+    public interface IIgnite
     {
         /// <summary>
         /// Gets the tables API.
         /// </summary>
         ITables Tables { get; }
+
+        /// <summary>
+        /// Gets the transactions API.
+        /// </summary>
+        ITransactions Transactions { get; }
     }
 }

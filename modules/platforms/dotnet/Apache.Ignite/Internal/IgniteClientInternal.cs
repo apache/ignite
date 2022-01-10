@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Internal
 {
     using Ignite.Table;
+    using Ignite.Transactions;
     using Table;
 
     /// <summary>
@@ -36,6 +37,7 @@ namespace Apache.Ignite.Internal
         {
             _socket = socket;
             Tables = new Tables(socket);
+            Transactions = new Transactions.Transactions(socket);
         }
 
         /// <inheritdoc/>
@@ -44,6 +46,9 @@ namespace Apache.Ignite.Internal
 
         /// <inheritdoc/>
         public ITables Tables { get; }
+
+        /// <inheritdoc/>
+        public ITransactions Transactions { get; }
 
         /// <inheritdoc/>
         public void Dispose()

@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Table
 {
+    using System;
+    using Internal.Common;
+
     /// <summary>
     /// Ignite Tuple.
     /// <para />
@@ -55,5 +58,75 @@ namespace Apache.Ignite.Table
         /// <param name="name">Column name.</param>
         /// <returns>Column ordinal, or -1 when the column with the given name does not exist.</returns>
         int GetOrdinal(string name);
+
+        /// <summary>
+        /// Gets a hash code for the current tuple according to column names and values.
+        /// </summary>
+        /// <param name="tuple">Tuple.</param>
+        /// <returns>A hash code for the specified tuple.</returns>
+        public static int GetHashCode(IIgniteTuple tuple)
+        {
+            IgniteArgumentCheck.NotNull(tuple, nameof(tuple));
+
+            var hash = default(HashCode);
+
+            for (int i = 0; i < tuple.FieldCount; i++)
+            {
+                var name = tuple.GetName(i);
+                var val = tuple[i];
+
+                hash.Add(name);
+                hash.Add(val);
+            }
+
+            return hash.ToHashCode();
+        }
+
+        /// <summary>
+        /// Determines whether the specified object instances are considered equal.
+        /// </summary>
+        /// <param name="tuple1">The first tuple to compare.</param>
+        /// <param name="tuple2">The second tuple to compare.</param>
+        /// <returns>
+        /// <see langword="true" /> if the tuples are considered equal; otherwise, <see langword="false" />.
+        /// If both <paramref name="tuple1" /> and <paramref name="tuple1" /> are null, the method returns <see langword="true" />.
+        /// </returns>
+        public static bool Equals(IIgniteTuple? tuple1, IIgniteTuple? tuple2)
+        {
+            if (tuple1 == null)
+            {
+                return tuple2 == null;
+            }
+
+            if (tuple2 == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(tuple1, tuple2))
+            {
+                return true;
+            }
+
+            if (tuple1.FieldCount != tuple2.FieldCount)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < tuple1.FieldCount; i++)
+            {
+                if (tuple1.GetName(i) != tuple2.GetName(i))
+                {
+                    return false;
+                }
+
+                if (!Equals(tuple1[i], tuple2[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Tests
 {
+    using System.Linq;
     using System.Threading.Tasks;
     using Ignite.Table;
     using NUnit.Framework;
@@ -34,18 +35,22 @@ namespace Apache.Ignite.Tests
 
         private JavaServer? _serverNode;
 
+        private TestEventListener _eventListener = null!;
+
         protected int ServerPort => _serverNode?.Port ?? 0;
 
         protected IIgniteClient Client { get; private set; } = null!;
 
-        protected ITable Table { get; private set; } = null!;
+        protected IRecordView<IIgniteTuple> Table { get; private set; } = null!;
 
         [OneTimeSetUp]
         public async Task OneTimeSetUp()
         {
+            _eventListener = new TestEventListener();
+
             _serverNode = await JavaServer.StartAsync();
             Client = await IgniteClient.StartAsync(GetConfig());
-            Table = (await Client.Tables.GetTableAsync(TableName))!;
+            Table = (await Client.Tables.GetTableAsync(TableName))!.RecordView;
         }
 
         [OneTimeTearDown]
@@ -54,7 +59,22 @@ namespace Apache.Ignite.Tests
             // ReSharper disable once ConstantConditionalAccessQualifier
             Client?.Dispose();
             _serverNode?.Dispose();
+
+            Assert.Greater(_eventListener.BuffersRented, 0);
+            Assert.AreEqual(_eventListener.BuffersReturned, _eventListener.BuffersRented);
+            _eventListener.Dispose();
         }
+
+        [TearDown]
+        public async Task TearDown()
+        {
+            await Table.DeleteAllAsync(null, Enumerable.Range(1, 10).Select(x => GetTuple(x)));
+
+            Assert.AreEqual(_eventListener.BuffersReturned, _eventListener.BuffersRented);
+        }
+
+        protected static IIgniteTuple GetTuple(long id, string? val = null) =>
+            new IgniteTuple { [KeyCol] = id, [ValCol] = val };
 
         protected IgniteClientConfiguration GetConfig() => new()
         {

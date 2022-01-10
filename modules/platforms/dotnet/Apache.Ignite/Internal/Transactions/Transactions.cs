@@ -15,45 +15,41 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Internal.Table
+namespace Apache.Ignite.Internal.Transactions
 {
-    using Ignite.Table;
+    using System.Threading.Tasks;
+    using Ignite.Transactions;
     using Proto;
 
     /// <summary>
-    /// Table API.
+    /// Transactions API.
     /// </summary>
-    internal class Table : ITable
+    internal class Transactions : ITransactions
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Table"/> class.
-        /// </summary>
-        /// <param name="name">Table name.</param>
-        /// <param name="id">Table id.</param>
-        /// <param name="socket">Socket.</param>
-        public Table(string name, IgniteUuid id, ClientFailoverSocket socket)
-        {
-            Socket = socket;
-            Name = name;
-            Id = id;
+        /** Underlying connection. */
+        private readonly ClientFailoverSocket _socket;
 
-            RecordView = new RecordBinaryView(this);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Transactions"/> class.
+        /// </summary>
+        /// <param name="socket">Socket.</param>
+        public Transactions(ClientFailoverSocket socket)
+        {
+            _socket = socket;
         }
 
         /// <inheritdoc/>
-        public string Name { get; }
+        public async Task<ITransaction> BeginAsync()
+        {
+            // Get a specific connection.
+            // Transaction and all corresponding operations must be performed using the same connection.
+            var socket = await _socket.GetSocketAsync().ConfigureAwait(false);
 
-        /// <inheritdoc/>
-        public IRecordView<IIgniteTuple> RecordView { get; }
+            using var resBuf = await socket.DoOutInOpAsync(ClientOp.TxBegin).ConfigureAwait(false);
 
-        /// <summary>
-        /// Gets the id.
-        /// </summary>
-        internal IgniteUuid Id { get; }
+            var txId = resBuf.GetReader().ReadInt64();
 
-        /// <summary>
-        /// Gets the socket.
-        /// </summary>
-        internal ClientFailoverSocket Socket { get; }
+            return new Transaction(txId, socket, _socket);
+        }
     }
 }

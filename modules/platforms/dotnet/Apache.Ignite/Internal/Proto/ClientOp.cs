@@ -81,5 +81,14 @@ namespace Apache.Ignite.Internal.Proto
 
         /** Get and delete tuple. */
         TupleGetAndDelete = 32,
+
+        /** Begin transaction. */
+        TxBegin = 43,
+
+        /** Commit transaction. */
+        TxCommit = 44,
+
+        /** Rollback transaction. */
+        TxRollback = 45
     }
 }

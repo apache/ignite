@@ -20,11 +20,16 @@ namespace Apache.Ignite.Table
     /// <summary>
     /// Table view.
     /// </summary>
-    public interface ITable : ITableView<IIgniteTuple>
+    public interface ITable
     {
         /// <summary>
         /// Gets the table name.
         /// </summary>
         public string Name { get; }
+
+        /// <summary>
+        /// Gets the record view.
+        /// </summary>
+        public IRecordView<IIgniteTuple> RecordView { get; }
     }
 }

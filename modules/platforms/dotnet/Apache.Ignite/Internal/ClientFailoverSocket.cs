@@ -129,7 +129,7 @@ namespace Apache.Ignite.Internal
         /// Gets the primary socket. Reconnects if necessary.
         /// </summary>
         /// <returns>Client socket.</returns>
-        private async ValueTask<ClientSocket> GetSocketAsync()
+        public async ValueTask<ClientSocket> GetSocketAsync()
         {
             await _socketLock.WaitAsync().ConfigureAwait(false);
 

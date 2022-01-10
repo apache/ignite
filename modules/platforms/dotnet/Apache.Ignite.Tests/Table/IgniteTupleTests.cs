@@ -84,5 +84,33 @@ namespace Apache.Ignite.Tests.Table
 
             Assert.AreEqual("IgniteTuple [foo=1, b=abcd]", tuple.ToString());
         }
+
+        [Test]
+        public void TestEquality()
+        {
+            var t1 = new IgniteTuple(2) { ["k"] = 1, ["v"] = "2" };
+            var t2 = new IgniteTuple(3) { ["k"] = 1, ["v"] = "2" };
+            var t3 = new IgniteTuple(4) { ["k"] = 1, ["v"] = null };
+
+            Assert.AreEqual(t1, t2);
+            Assert.AreEqual(t2, t1);
+            Assert.AreEqual(t1.GetHashCode(), t2.GetHashCode());
+
+            Assert.AreNotEqual(t1, t3);
+            Assert.AreNotEqual(t1.GetHashCode(), t3.GetHashCode());
+
+            Assert.AreNotEqual(t2, t3);
+            Assert.AreNotEqual(t2.GetHashCode(), t3.GetHashCode());
+        }
+
+        [Test]
+        public void TestCustomTupleEquality()
+        {
+            var tuple = new IgniteTuple { ["key"] = 42, ["val"] = "Val1" };
+            var customTuple = new CustomTestIgniteTuple();
+
+            Assert.IsTrue(IIgniteTuple.Equals(tuple, customTuple));
+            Assert.AreEqual(IIgniteTuple.GetHashCode(tuple), IIgniteTuple.GetHashCode(customTuple));
+        }
     }
 }
