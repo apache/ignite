@@ -33,7 +33,8 @@ public class MapH2QueryInfo extends H2QueryInfo {
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
-     * @param node Originator node id.
+     * @param nodeId Originator node id.
+     * @param qryId Query id.
      * @param reqId Request ID.
      * @param segment Segment.
      */
