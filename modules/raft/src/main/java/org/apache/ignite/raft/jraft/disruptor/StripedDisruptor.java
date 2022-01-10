@@ -93,18 +93,23 @@ public class StripedDisruptor<T extends GroupAware> {
             queues[i] = disruptor.start();
             disruptors[i] = disruptor;
         }
-
-        LOG.info("Striped disruptor was started [name={}]", name);
     }
 
     /**
      * Shutdowns all nested disruptors.
      */
     public void shutdown() {
-        for (int i = 0; i < stripes; i++)
-            disruptors[i].shutdown();
+        for (int i = 0; i < stripes; i++) {
+            if (disruptors[i] != null)
+                disruptors[i].shutdown();
 
-        LOG.info("Striped disruptor stopped [name={}]", name);
+            // Help GC to collect unused resources.
+            queues[i] = null;
+            disruptors[i] = null;
+        }
+
+        eventHandlers.clear();
+        exceptionHandlers.clear();
     }
 
     /**
@@ -134,8 +139,6 @@ public class StripedDisruptor<T extends GroupAware> {
         if (exceptionHandler != null)
             exceptionHandlers.get(getStripe(group)).subscribe(group, exceptionHandler);
 
-        LOG.info("Consumer subscribed [poolName={}, group={}]", name, group);
-
         return queues[getStripe(group)];
     }
 
@@ -147,8 +150,6 @@ public class StripedDisruptor<T extends GroupAware> {
     public void unsubscribe(String group) {
         eventHandlers.get(getStripe(group)).unsubscribe(group);
         exceptionHandlers.get(getStripe(group)).unsubscribe(group);
-
-        LOG.info("Consumer unsubscribe [poolName={}, group={}]", name, group);
     }
 
     /**
