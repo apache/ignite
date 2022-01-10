@@ -73,18 +73,18 @@ Change Data Capture is configured in the same way as the Ignite node - via the s
 == API
 
 === `org.apache.ignite.cdc.CdcEvent`
-Single change of data reflected by `CdcEvent`.
-Let's get a closer look to the information provided:
+
+Below is a single change of the data reflected by `CdcEvent`. 
 
 [cols="20%,80%",opts="header"]
 |===
 |Name |Description
 | `key()` | Key for the changed entry.
-| `value()` | Value for the changed entry. This method will return `null` if event reflects removal.
-| `cacheId()` | ID of the cache where change happens. Value equal to the `CACHE_ID` from `SYS.CACHES` link:../monitoring-metrics/system-views.adoc#_CACHES[system view]
+| `value()` | Value for the changed entry. This method will return `null` if the event reflects removal.
+| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from `SYS.CACHES` link:../monitoring-metrics/system-views.adoc#_CACHES[system view]
 | `partition()` | Partition of the changed entry.
-| `primary()` | Flag to distinguish if operation happen on primary or backup node.
-| `version()` | `Comparable` version of the changed entry. Internally Ignite maintain ordered versions of each entry so any changes of the same entry can be sorted.
+| `primary()` | Flag to distinguish if operation happens on the primary or a backup node.
+| `version()` | `Comparable` version of the changed entry. Internally, Ignite maintains ordered versions of each entry so any changes of the same entry can be sorted.
 |===
 
 === `org.apache.ignite.cdc.CdcConsumer`
