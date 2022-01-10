@@ -30,7 +30,7 @@ Below are some of the Change Data Capture use cases:
 
 Ignite implements Change Data Capture with the `ignite-cdc.sh` application and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
 
-CDC application and Ignite node integrated via WAL archive segments:
+Below are the Change Data Capture application and the Ignite node integrated via WAL archive segments:
 
 image:../../assets/images/integrations/CDC-design.svg[]
 
