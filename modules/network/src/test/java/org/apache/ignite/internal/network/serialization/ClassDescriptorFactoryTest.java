@@ -20,6 +20,8 @@ package org.apache.ignite.internal.network.serialization;
 import static org.apache.ignite.internal.network.serialization.SerializationType.ARBITRARY;
 import static org.apache.ignite.internal.network.serialization.SerializationType.EXTERNALIZABLE;
 import static org.apache.ignite.internal.network.serialization.SerializationType.SERIALIZABLE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -440,5 +442,34 @@ public class ClassDescriptorFactoryTest {
         assertEquals(override, serialization.hasSerializationOverride());
         assertEquals(writeReplace, serialization.hasWriteReplace());
         assertEquals(readResolve, serialization.hasReadResolve());
+    }
+
+    @Test
+    void shouldSortArbitraryObjectFieldsByClassHierarchyAndLexicographicallyByFieldName() {
+        ClassDescriptor descriptor = factory.create(ArbitraryWithFieldNameClashAndOrderPermutation.class);
+
+        assertThat(descriptor.fields().get(0).clazz(), is(String.class));
+        assertThat(descriptor.fields().get(0).name(), is("value"));
+
+        assertThat(descriptor.fields().get(1).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(1).name(), is("apple"));
+
+        assertThat(descriptor.fields().get(2).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(2).name(), is("banana"));
+
+        assertThat(descriptor.fields().get(3).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(3).name(), is("value"));
+    }
+
+    @SuppressWarnings("unused")
+    private static class Parent {
+        private String value;
+    }
+
+    @SuppressWarnings("unused")
+    private static class ArbitraryWithFieldNameClashAndOrderPermutation extends Parent {
+        private int value;
+        private int banana;
+        private int apple;
     }
 }

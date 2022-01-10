@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.jetbrains.annotations.Nullable;
@@ -25,9 +28,13 @@ import org.jetbrains.annotations.Nullable;
  * Context of unmarshalling act. Created once per unmarshalling a root object.
  */
 class UnmarshallingContext implements IdIndexedDescriptors {
+    private final ByteArrayInputStream source;
     private final IdIndexedDescriptors descriptors;
 
-    public UnmarshallingContext(IdIndexedDescriptors descriptors) {
+    private final Map<Integer, Object> refsToObjects = new HashMap<>();
+
+    public UnmarshallingContext(ByteArrayInputStream source, IdIndexedDescriptors descriptors) {
+        this.source = source;
         this.descriptors = descriptors;
     }
 
@@ -35,5 +42,28 @@ class UnmarshallingContext implements IdIndexedDescriptors {
     @Override
     public @Nullable ClassDescriptor getDescriptor(int descriptorId) {
         return descriptors.getDescriptor(descriptorId);
+    }
+
+    public void registerReference(int referenceId, Object object) {
+        refsToObjects.put(referenceId, object);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T dereference(int referenceId) {
+        Object result = refsToObjects.get(referenceId);
+
+        if (result == null) {
+            throw new IllegalStateException("Unknown reference: " + referenceId);
+        }
+
+        return (T) result;
+    }
+
+    public void markSource() {
+        source.mark(4);
+    }
+
+    public void resetSourceToMark() {
+        source.reset();
     }
 }

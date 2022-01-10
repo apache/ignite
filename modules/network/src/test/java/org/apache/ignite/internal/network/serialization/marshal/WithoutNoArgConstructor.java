@@ -17,23 +17,10 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.Set;
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+class WithoutNoArgConstructor {
+    int value;
 
-/**
- * Marshals objects to a {@link DataOutput} and also tracks what {@link ClassDescriptor}s were used when marshalling.
- */
-interface TrackingMarshaller {
-    /**
-     * Marshals the given object to the {@link DataOutput}.
-     *
-     * @param object    object to marshal
-     * @param output    where to marshal to
-     * @return {@link ClassDescriptor}s that were used when marshalling
-     * @throws IOException      if an I/O problem occurs
-     * @throws MarshalException if another problem occurs
-     */
-    Set<ClassDescriptor> marshal(Object object, DataOutput output) throws IOException, MarshalException;
+    public WithoutNoArgConstructor(int value) {
+        this.value = value;
+    }
 }

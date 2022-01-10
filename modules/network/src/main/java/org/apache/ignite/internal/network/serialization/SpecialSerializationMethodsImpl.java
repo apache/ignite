@@ -49,53 +49,41 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     private static MethodHandle writeReplaceHandle(ClassDescriptor descriptor) {
         Method writeReplaceMethod = findWriteReplaceMethod(descriptor);
 
+        return unreflect(writeReplaceMethod, MethodType.methodType(Object.class, Object.class), descriptor);
+    }
+
+    private static MethodHandle unreflect(Method method, MethodType methodType, ClassDescriptor descriptor) {
         try {
-            return MethodHandles.lookup()
-                        .unreflect(writeReplaceMethod)
-                        .asType(MethodType.methodType(Object.class, Object.class));
+            return MethodHandles.privateLookupIn(descriptor.clazz(), MethodHandles.lookup())
+                        .unreflect(method)
+                        .asType(methodType);
         } catch (IllegalAccessException e) {
-            throw new ReflectionException("writeReplace() cannot be unreflected", e);
+            throw new ReflectionException("Cannot unreflect", e);
         }
     }
 
     private static Method findWriteReplaceMethod(ClassDescriptor descriptor) {
-        Method writeReplaceMethod;
         try {
-            writeReplaceMethod = descriptor.clazz().getDeclaredMethod("writeReplace");
+            return descriptor.clazz().getDeclaredMethod("writeReplace");
         } catch (NoSuchMethodException e) {
             throw new ReflectionException("writeReplace() was not found on " + descriptor.clazz()
                     + " even though the descriptor says the class has the method", e);
         }
-
-        writeReplaceMethod.setAccessible(true);
-
-        return writeReplaceMethod;
     }
 
     private static MethodHandle readResolveHandle(ClassDescriptor descriptor) {
         Method readResolveMethod = findReadResolveMethod(descriptor);
 
-        try {
-            return MethodHandles.lookup()
-                    .unreflect(readResolveMethod)
-                    .asType(MethodType.methodType(Object.class, Object.class));
-        } catch (IllegalAccessException e) {
-            throw new ReflectionException("readResolve() cannot be unreflected", e);
-        }
+        return unreflect(readResolveMethod, MethodType.methodType(Object.class, Object.class), descriptor);
     }
 
     private static Method findReadResolveMethod(ClassDescriptor descriptor) {
-        Method readResolveMethod;
         try {
-            readResolveMethod = descriptor.clazz().getDeclaredMethod("readResolve");
+            return descriptor.clazz().getDeclaredMethod("readResolve");
         } catch (NoSuchMethodException e) {
             throw new ReflectionException("readResolve() was not found on " + descriptor.clazz()
                     + " even though the descriptor says the class has the method", e);
         }
-
-        readResolveMethod.setAccessible(true);
-
-        return readResolveMethod;
     }
 
     /** {@inheritDoc} */

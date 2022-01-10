@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
+
 import java.io.Externalizable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
@@ -207,26 +212,55 @@ public class ClassDescriptorFactory {
     }
 
     /**
-     * Gets field descriptors of the class. If a field's type doesn't have an id yet, generates it.
+     * Gets field descriptors of the class in the correct order (see {@link #classFields(Class)}. If a field's type
+     * doesn't have an id yet, generates it.
      *
      * @param clazz Class.
      * @return List of field descriptor.
      */
     private List<FieldDescriptor> fields(Class<?> clazz) {
-        if (clazz.getSuperclass() != Object.class) {
-            // TODO: IGNITE-15945 add support for the inheritance
-            throw new UnsupportedOperationException("IGNITE-15945");
+        List<Class<?>> lineage = lineage(clazz);
+
+        return lineage.stream()
+                .flatMap(this::classFields)
+                .collect(toList());
+    }
+
+    /**
+     * Returns the lineage (all the ancestors, from Object down the line, including the given class).
+     *
+     * @param clazz class from which to obtain lineage
+     * @return ancestors from Object down the line, plus the given class itself
+     */
+    private List<Class<?>> lineage(Class<?> clazz) {
+        List<Class<?>> classes = new ArrayList<>();
+
+        Class<?> currentClass = clazz;
+        while (currentClass != null) {
+            classes.add(currentClass);
+            currentClass = currentClass.getSuperclass();
         }
 
-        return Arrays.stream(clazz.getDeclaredFields())
-            .filter(field -> {
-                int modifiers = field.getModifiers();
+        Collections.reverse(classes);
+        return classes;
+    }
 
-                // Ignore static and transient field.
-                return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers);
-            })
-            .map(field -> new FieldDescriptor(field, context.getId(field.getType())))
-            .collect(Collectors.toList());
+    /**
+     * Returns 'serializable' (i.e. non-static non-transient) declared fields of the given class sorted lexicographically by their names.
+     *
+     * @param clazz class
+     * @return properly sorted fields
+     */
+    private Stream<FieldDescriptor> classFields(Class<?> clazz) {
+        return Arrays.stream(clazz.getDeclaredFields())
+                .sorted(comparing(Field::getName))
+                .filter(field -> {
+                    int modifiers = field.getModifiers();
+
+                    // Ignore static and transient fields.
+                    return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers);
+                })
+                .map(field -> new FieldDescriptor(field, context.getId(field.getType())));
     }
 
     /**

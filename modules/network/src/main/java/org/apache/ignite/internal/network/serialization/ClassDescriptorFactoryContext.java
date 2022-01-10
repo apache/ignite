@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class descriptor factory context.
  */
-public class ClassDescriptorFactoryContext implements IdIndexedDescriptors {
+public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, ClassIndexedDescriptors {
     /** Quantity of descriptor ids reserved for the default descriptors. */
     private static final int DEFAULT_DESCRIPTORS_OFFSET_COUNT = 1000;
 
@@ -93,6 +93,7 @@ public class ClassDescriptorFactoryContext implements IdIndexedDescriptors {
      * @param clazz Class.
      * @return Descriptor.
      */
+    @Override
     @Nullable
     public ClassDescriptor getDescriptor(Class<?> clazz) {
         Integer descriptorId = idMap.get(clazz);
@@ -102,20 +103,6 @@ public class ClassDescriptorFactoryContext implements IdIndexedDescriptors {
         }
 
         return descriptorMap.get(descriptorId);
-    }
-
-    /**
-     * Gets a descriptor by the class or throws an exception if no such class is known.
-     *
-     * @param clazz Class.
-     * @return Descriptor.
-     */
-    public ClassDescriptor getRequiredDescriptor(Class<?> clazz) {
-        ClassDescriptor descriptor = getDescriptor(clazz);
-        if (descriptor == null) {
-            throw new IllegalStateException("No descriptor exists for " + clazz);
-        }
-        return descriptor;
     }
 
     /**

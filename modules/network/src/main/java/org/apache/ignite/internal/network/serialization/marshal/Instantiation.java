@@ -17,21 +17,26 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.DataOutput;
-import java.io.IOException;
-
 /**
- * Knows how to write a value to a {@link DataOutput}.
+ * Strategy for creating an empty (not yet filled with values) instance of a class.
+ * Only used to instantiate proper classes, never gets interfaces, primitive classes and so on,
+ * so implementations should not bother checking for them in {@link #supports(Class)}.
  */
-interface ValueWriter<T> {
+interface Instantiation {
     /**
-     * Writes the given value to a {@link DataOutput}.
+     * Returns {@code true} iff supports the provided class for means of instantiation.
      *
-     * @param value     value to write
-     * @param output    where to write to
-     * @param context   marshalling context
-     * @throws IOException      if an I/O problem occurs
-     * @throws MarshalException if another problem occurs
+     * @param objectClass   class to check for support
+     * @return {@code true} iff supports the provided class for means of instantiation
      */
-    void write(T value, DataOutput output, MarshallingContext context) throws IOException, MarshalException;
+    boolean supports(Class<?> objectClass);
+
+    /**
+     * Creates a new instance of the provided class.
+     *
+     * @param objectClass   class to instantiate
+     * @return new instance of the given class
+     * @throws InstantiationException   if something goes wrong during instantiation
+     */
+    Object newInstance(Class<?> objectClass) throws InstantiationException;
 }

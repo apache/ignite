@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import static java.util.Collections.singletonList;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.BitSet;
 import java.util.Collection;
@@ -35,16 +38,27 @@ import org.jetbrains.annotations.NotNull;
  * Built-in types marshalling.
  */
 class BuiltInMarshalling {
-    private static final ValueWriter<String> stringWriter = BuiltInMarshalling::writeString;
+    private static final ValueWriter<String> stringWriter = (obj, out, ctx) -> writeString(obj, out);
     private static final IntFunction<String[]> stringArrayFactory = String[]::new;
     private static final ValueReader<String> stringReader = (in, ctx) -> readString(in);
 
-    private static final ValueWriter<BigDecimal> bigDecimalWriter = BuiltInMarshalling::writeBigDecimal;
+    private static final ValueWriter<BigDecimal> bigDecimalWriter = (obj, out, ctx) -> writeBigDecimal(obj, out);
     private static final IntFunction<BigDecimal[]> bigDecimalArrayFactory = BigDecimal[]::new;
     private static final ValueReader<BigDecimal> bigDecimalReader = (in, ctx) -> readBigDecimal(in);
 
-    private static final ValueWriter<Enum<?>> enumWriter = BuiltInMarshalling::writeEnum;
+    private static final ValueWriter<Enum<?>> enumWriter = (obj, out, ctx) -> writeEnum(obj, out);
     private static final ValueReader<Enum<?>> enumReader = (in, ctx) -> readEnum(in);
+
+    private static final Field singletonListElementField;
+
+    static {
+        try {
+            singletonListElementField = singletonList(null).getClass().getDeclaredField("element");
+            singletonListElementField.setAccessible(true);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     static void writeString(String string, DataOutput output) throws IOException {
         output.writeUTF(string);
@@ -54,7 +68,7 @@ class BuiltInMarshalling {
         return input.readUTF();
     }
 
-    static Object readBareObject(DataInput input) {
+    static Object readBareObject(@SuppressWarnings("unused") DataInput input) {
         return new Object();
     }
 
@@ -256,52 +270,69 @@ class BuiltInMarshalling {
         }
     }
 
-    static <T> void writeRefArray(T[] array, DataOutput output, ValueWriter<T> valueWriter) throws IOException, MarshalException {
+    static <T> void writeRefArray(T[] array, DataOutput output, ValueWriter<T> valueWriter, MarshallingContext context)
+            throws IOException, MarshalException {
         output.writeInt(array.length);
         for (T object : array) {
-            valueWriter.write(object, output);
+            valueWriter.write(object, output, context);
         }
     }
 
     static <T> T[] readRefArray(DataInput input, IntFunction<T[]> arrayFactory, ValueReader<T> valueReader, UnmarshallingContext context)
             throws IOException, UnmarshalException {
         int length = input.readInt();
+
         T[] array = arrayFactory.apply(length);
-        for (int i = 0; i < length; i++) {
-            array[i] = valueReader.read(input, context);
-        }
+        fillRefArrayFrom(input, array, valueReader, context);
+
         return array;
     }
 
-    static <T> T[] readGenericRefArray(DataInput input, ValueReader<T> elementReader, UnmarshallingContext context)
+    private static <T> void fillRefArrayFrom(DataInput input, T[] array, ValueReader<T> valueReader, UnmarshallingContext context)
             throws IOException, UnmarshalException {
-        String componentClassName = input.readUTF();
-        Class<T> componentType = classByName(componentClassName, "component");
-        @SuppressWarnings("unchecked")
-        IntFunction<T[]> arrayFactory = len -> (T[]) Array.newInstance(componentType, len);
-        return readRefArray(input, arrayFactory, elementReader, context);
+        for (int i = 0; i < array.length; i++) {
+            array[i] = valueReader.read(input, context);
+        }
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> IntFunction<T[]> readTypeAndCreateArrayFactory(DataInput input) throws IOException {
+        String componentClassName = input.readUTF();
+        Class<T> componentType = classByName(componentClassName, "component");
+        return len -> (T[]) Array.newInstance(componentType, len);
+    }
 
-    static void writeStringArray(String[] array, DataOutput output) throws IOException, MarshalException {
-        writeRefArray(array, output, stringWriter);
+    static <T> T[] preInstantiateGenericRefArray(DataInput input) throws IOException {
+        IntFunction<T[]> arrayFactory = readTypeAndCreateArrayFactory(input);
+        int length = input.readInt();
+        return arrayFactory.apply(length);
+    }
+
+    static <T> void fillGenericRefArray(DataInput input, T[] array, ValueReader<T> elementReader, UnmarshallingContext context)
+            throws IOException, UnmarshalException {
+        fillRefArrayFrom(input, array, elementReader, context);
+    }
+
+    static void writeStringArray(String[] array, DataOutput output, MarshallingContext context) throws IOException, MarshalException {
+        writeRefArray(array, output, stringWriter, context);
     }
 
     static String[] readStringArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
         return readRefArray(input, stringArrayFactory, stringReader, context);
     }
 
-    static void writeBigDecimalArray(BigDecimal[] array, DataOutput output) throws IOException, MarshalException {
-        writeRefArray(array, output, bigDecimalWriter);
+    static void writeBigDecimalArray(BigDecimal[] array, DataOutput output, MarshallingContext context)
+            throws IOException, MarshalException {
+        writeRefArray(array, output, bigDecimalWriter, context);
     }
 
     static BigDecimal[] readBigDecimalArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
         return readRefArray(input, bigDecimalArrayFactory, bigDecimalReader, context);
     }
 
-    static void writeEnumArray(Enum<?>[] array, DataOutput output) throws IOException, MarshalException {
+    static void writeEnumArray(Enum<?>[] array, DataOutput output, MarshallingContext context) throws IOException, MarshalException {
         output.writeUTF(array.getClass().getComponentType().getName());
-        writeRefArray(array, output, enumWriter);
+        writeRefArray(array, output, enumWriter, context);
     }
 
     static Enum<?>[] readEnumArray(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
@@ -310,50 +341,79 @@ class BuiltInMarshalling {
         return readRefArray(input, len -> (Enum<?>[]) Array.newInstance(enumClass, len), enumReader, context);
     }
 
-    static <T> void writeCollection(Collection<T> collection, DataOutput output, ValueWriter<T> valueWriter)
+    static <T> void writeCollection(Collection<T> collection, DataOutput output, ValueWriter<T> valueWriter, MarshallingContext context)
             throws IOException, MarshalException {
         output.writeInt(collection.size());
+
         for (T object : collection) {
-            valueWriter.write(object, output);
+            valueWriter.write(object, output, context);
         }
     }
 
-    static <T, C extends Collection<T>> C readCollection(
+    static <T, C extends Collection<T>> void fillCollectionFrom(
             DataInput input,
-            IntFunction<C> collectionFactory,
+            C collection,
             ValueReader<T> valueReader,
             UnmarshallingContext context
     ) throws IOException, UnmarshalException {
         int length = input.readInt();
-        C collection = collectionFactory.apply(length);
+
         for (int i = 0; i < length; i++) {
             collection.add(valueReader.read(input, context));
         }
-        return collection;
     }
 
-    static <K, V> void writeMap(Map<K, V> map, DataOutput output, ValueWriter<K> keyWriter, ValueWriter<V> valueWriter)
-            throws IOException, MarshalException {
-        output.writeInt(map.size());
-        for (Map.Entry<K, V> entry : map.entrySet()) {
-            keyWriter.write(entry.getKey(), output);
-            valueWriter.write(entry.getValue(), output);
+    static <T, C extends Collection<T>> C preInstantiateCollection(DataInput input, IntFunction<C> collectionFactory) throws IOException {
+        int length = input.readInt();
+        return collectionFactory.apply(length);
+    }
+
+    static <T, C extends Collection<T>> void fillSingletonCollectionFrom(
+            DataInput input,
+            C collection,
+            ValueReader<T> elementReader,
+            UnmarshallingContext context
+    ) throws IOException, UnmarshalException {
+        T element = elementReader.read(input, context);
+
+        try {
+            singletonListElementField.set(collection, element);
+        } catch (ReflectiveOperationException e) {
+            throw new UnmarshalException("Cannot set field value", e);
         }
     }
 
-    static <K, V, M extends Map<K, V>> M readMap(
+    static <K, V> void writeMap(
+            Map<K, V> map,
+            DataOutput output,
+            ValueWriter<K> keyWriter,
+            ValueWriter<V> valueWriter,
+            MarshallingContext context
+    ) throws IOException, MarshalException {
+        output.writeInt(map.size());
+
+        for (Map.Entry<K, V> entry : map.entrySet()) {
+            keyWriter.write(entry.getKey(), output, context);
+            valueWriter.write(entry.getValue(), output, context);
+        }
+    }
+
+    static <K, V, M extends Map<K, V>> void fillMapFrom(
             DataInput input,
-            IntFunction<M> mapFactory,
+            M map,
             ValueReader<K> keyReader,
             ValueReader<V> valueReader,
             UnmarshallingContext context
     ) throws IOException, UnmarshalException {
         int length = input.readInt();
-        M map = mapFactory.apply(length);
         for (int i = 0; i < length; i++) {
             map.put(keyReader.read(input, context), valueReader.read(input, context));
         }
-        return map;
+    }
+
+    static <K, V, M extends Map<K, V>> M preInstantiateMap(DataInput input, IntFunction<M> mapFactory) throws IOException {
+        int length = input.readInt();
+        return mapFactory.apply(length);
     }
 
     static void writeBitSet(BitSet object, DataOutput output) throws IOException {

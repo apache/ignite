@@ -27,13 +27,11 @@ public class FieldDescriptor {
     /**
      * Name of the field.
      */
-    @NotNull
     private final String name;
 
     /**
      * Type of the field.
      */
-    @NotNull
     private final Class<?> clazz;
 
     /**
@@ -42,23 +40,37 @@ public class FieldDescriptor {
     private final int typeDescriptorId;
 
     /**
+     * The class in which the field is declared.
+     */
+    private final Class<?> declaringClass;
+
+    /**
+     * Accessor for accessing this field.
+     */
+    private final FieldAccessor accessor;
+
+    /**
      * Constructor.
      */
-    public FieldDescriptor(@NotNull Field field, int typeDescriptorId) {
-        this(field.getName(), field.getType(), typeDescriptorId);
+    public FieldDescriptor(Field field, int typeDescriptorId) {
+        this(field.getName(), field.getType(), typeDescriptorId, field.getDeclaringClass());
     }
 
     /**
      * Constructor.
      *
-     * @param fieldName .
-     * @param fieldClazz .
-     * @param typeDescriptorId .
+     * @param fieldName         field name
+     * @param fieldClazz        type of the field
+     * @param typeDescriptorId  ID of the descriptor corresponding to field type
+     * @param declaringClass    the class in which the field if declared
      */
-    public FieldDescriptor(@NotNull String fieldName, @NotNull Class<?> fieldClazz, int typeDescriptorId) {
+    public FieldDescriptor(String fieldName, Class<?> fieldClazz, int typeDescriptorId, Class<?> declaringClass) {
         this.name = fieldName;
         this.clazz = fieldClazz;
         this.typeDescriptorId = typeDescriptorId;
+        this.declaringClass = declaringClass;
+
+        accessor = new FieldAccessorImpl(this);
     }
 
     /**
@@ -88,5 +100,23 @@ public class FieldDescriptor {
      */
     public int typeDescriptorId() {
         return typeDescriptorId;
+    }
+
+    /**
+     * Returns the class in which the field is declared.
+     *
+     * @return the class in which the field is declared
+     */
+    public Class<?> declaringClass() {
+        return declaringClass;
+    }
+
+    /**
+     * Returns {@link FieldAccessor} for this field.
+     *
+     * @return {@link FieldAccessor} for this field
+     */
+    public FieldAccessor accessor() {
+        return accessor;
     }
 }

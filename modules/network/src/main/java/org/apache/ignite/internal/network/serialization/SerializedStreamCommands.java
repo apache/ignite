@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.message;
+package org.apache.ignite.internal.network.serialization;
 
-import org.apache.ignite.internal.network.NetworkMessageTypes;
-import org.apache.ignite.internal.network.serialization.FieldDescriptor;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
-
-/** Message for the {@link FieldDescriptor}. */
-@Transferable(NetworkMessageTypes.FIELD_DESCRIPTOR_MESSAGE)
-public interface FieldDescriptorMessage extends NetworkMessage {
+/**
+ * Lists commands used in the serialized stream.
+ * Command IDs share space with IDs of {@link ClassDescriptor}s (most importantly, those that are defined in {@link BuiltinType}.
+ */
+public class SerializedStreamCommands {
     /**
-     * Name of the field.
+     * Reference: an object that was already seen in the graph, so we relate to it by its ID instead of serializing it again.
      */
-    String name();
+    public static final int REFERENCE = 45;
 
-    /**
-     * Field type's descriptor id.
-     */
-    int typeDescriptorId();
-
-    /**
-     * Field's class name.
-     */
-    String className();
-
-    /**
-     * The name of The class in which this field is declared.
-     */
-    String declaringClassName();
+    private SerializedStreamCommands() {
+    }
 }

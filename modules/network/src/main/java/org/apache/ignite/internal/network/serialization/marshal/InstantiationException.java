@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.message;
+package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.internal.network.NetworkMessageTypes;
-import org.apache.ignite.internal.network.serialization.FieldDescriptor;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.jetbrains.annotations.Nullable;
 
-/** Message for the {@link FieldDescriptor}. */
-@Transferable(NetworkMessageTypes.FIELD_DESCRIPTOR_MESSAGE)
-public interface FieldDescriptorMessage extends NetworkMessage {
-    /**
-     * Name of the field.
-     */
-    String name();
+/**
+ * Thrown if class instantiation fails.
+ */
+public class InstantiationException extends IgniteInternalCheckedException {
+    public InstantiationException(String msg) {
+        super(msg);
+    }
 
-    /**
-     * Field type's descriptor id.
-     */
-    int typeDescriptorId();
-
-    /**
-     * Field's class name.
-     */
-    String className();
-
-    /**
-     * The name of The class in which this field is declared.
-     */
-    String declaringClassName();
+    public InstantiationException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 }

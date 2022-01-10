@@ -114,6 +114,7 @@ public class PerSessionSerializationService {
                                 .name(d.name())
                                 .typeDescriptorId(d.typeDescriptorId())
                                 .className(d.clazz().getName())
+                                .declaringClassName(d.declaringClass().getName())
                                 .build();
                     })
                     .collect(toList());
@@ -162,11 +163,9 @@ public class PerSessionSerializationService {
     private ClassDescriptor messageToMergedClassDescriptor(ClassDescriptorMessage clsMsg) {
         ClassDescriptor localDescriptor = serializationService.getClassDescriptor(clsMsg.className());
 
-        List<FieldDescriptor> remoteFields = clsMsg.fields().stream().map(fieldMsg -> {
-            int typeDescriptorId = fieldMsg.typeDescriptorId();
-
-            return new FieldDescriptor(fieldMsg.name(), getClass(typeDescriptorId, fieldMsg.className()), typeDescriptorId);
-        }).collect(toList());
+        List<FieldDescriptor> remoteFields = clsMsg.fields().stream()
+                .map(this::fieldDescriptorFromMessage)
+                .collect(toList());
 
         SerializationType serializationType = SerializationType.getByValue(clsMsg.serializationType());
 
@@ -185,6 +184,12 @@ public class PerSessionSerializationService {
         );
 
         return mergeDescriptor(localDescriptor, remoteDescriptor);
+    }
+
+    private FieldDescriptor fieldDescriptorFromMessage(FieldDescriptorMessage fieldMsg) {
+        int typeDescriptorId = fieldMsg.typeDescriptorId();
+        Class<?> declaringClass = serializationService.getClassDescriptor(fieldMsg.declaringClassName()).clazz();
+        return new FieldDescriptor(fieldMsg.name(), getClass(typeDescriptorId, fieldMsg.className()), typeDescriptorId, declaringClass);
     }
 
     private ClassDescriptor mergeDescriptor(ClassDescriptor localDescriptor, ClassDescriptor remoteDescriptor) {

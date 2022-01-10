@@ -15,33 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.message;
+package org.apache.ignite.internal.network.serialization;
 
-import org.apache.ignite.internal.network.NetworkMessageTypes;
-import org.apache.ignite.internal.network.serialization.FieldDescriptor;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
-
-/** Message for the {@link FieldDescriptor}. */
-@Transferable(NetworkMessageTypes.FIELD_DESCRIPTOR_MESSAGE)
-public interface FieldDescriptorMessage extends NetworkMessage {
+/**
+ * Accessor for a specific field.
+ */
+public interface FieldAccessor {
     /**
-     * Name of the field.
+     * Returns the bound field value of the given object.
+     *
+     * @param target target object
+     * @return the bound field value of the given object
      */
-    String name();
-
-    /**
-     * Field type's descriptor id.
-     */
-    int typeDescriptorId();
+    Object get(Object target);
 
     /**
-     * Field's class name.
+     * Sets the bound field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
      */
-    String className();
-
-    /**
-     * The name of The class in which this field is declared.
-     */
-    String declaringClassName();
+    void set(Object target, Object fieldValue);
 }

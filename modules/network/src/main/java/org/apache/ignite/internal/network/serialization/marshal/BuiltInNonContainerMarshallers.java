@@ -25,9 +25,9 @@ import java.util.BitSet;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+import org.apache.ignite.internal.network.serialization.Null;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -66,6 +66,7 @@ class BuiltInNonContainerMarshallers {
         addSingle(map, Enum.class, BuiltInMarshalling::writeEnum, BuiltInMarshalling::readEnum);
         addSingle(map, Enum[].class, BuiltInMarshalling::writeEnumArray, BuiltInMarshalling::readEnumArray);
         addSingle(map, BitSet.class, BuiltInMarshalling::writeBitSet, BuiltInMarshalling::readBitSet);
+        addSingle(map, Null.class, (obj, output) -> {}, input -> null);
         addSingle(map, Void.class, (obj, output) -> {}, input -> null);
 
         return Map.copyOf(map);
@@ -85,23 +86,27 @@ class BuiltInNonContainerMarshallers {
     private static <T> void addSingle(
             Map<Class<?>, BuiltInMarshaller<?>> map,
             Class<T> objectClass,
-            ValueWriter<T> writer,
+            ContextlessValueWriter<T> writer,
             ContextlessValueReader<T> reader
     ) {
-        addSingle(map, objectClass, writer, contextless(reader));
+        addSingle(map, objectClass, contextless(writer), contextless(reader));
     }
 
     private static <T> void addPrimitiveAndWrapper(
             Map<Class<?>, BuiltInMarshaller<?>> map,
             Class<?> primitiveClass,
             Class<T> wrapperClass,
-            ValueWriter<T> writer,
+            ContextlessValueWriter<T> writer,
             ContextlessValueReader<T> reader
     ) {
-        BuiltInMarshaller<T> builtInMarshaller = builtInMarshaller(wrapperClass, writer, contextless(reader));
+        BuiltInMarshaller<T> builtInMarshaller = builtInMarshaller(wrapperClass, contextless(writer), contextless(reader));
 
         map.put(primitiveClass, builtInMarshaller);
         map.put(wrapperClass, builtInMarshaller);
+    }
+
+    private static <T> ValueWriter<T> contextless(ContextlessValueWriter<T> writer) {
+        return (obj, out, ctx) -> writer.write(obj, out);
     }
 
     private static <T> ValueReader<T> contextless(ContextlessValueReader<T> reader) {
@@ -122,12 +127,13 @@ class BuiltInNonContainerMarshallers {
         return builtInMarshallers.containsKey(classToCheck);
     }
 
-    Set<ClassDescriptor> writeBuiltIn(Object object, ClassDescriptor descriptor, DataOutput output) throws IOException, MarshalException {
+    void writeBuiltIn(Object object, ClassDescriptor descriptor, DataOutput output, MarshallingContext context)
+            throws IOException, MarshalException {
         BuiltInMarshaller<?> builtInMarshaller = findBuiltInMarshaller(descriptor);
 
-        builtInMarshaller.marshal(object, output);
+        builtInMarshaller.marshal(object, output, context);
 
-        return Set.of(descriptor);
+        context.addUsedDescriptor(descriptor);
     }
 
     Object readBuiltIn(ClassDescriptor descriptor, DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
@@ -154,14 +160,27 @@ class BuiltInNonContainerMarshallers {
             this.reader = reader;
         }
 
-        private void marshal(Object object, DataOutput output) throws IOException, MarshalException {
-            writer.write(valueRefClass.cast(object), output);
+        private void marshal(Object object, DataOutput output, MarshallingContext context) throws IOException, MarshalException {
+            writer.write(valueRefClass.cast(object), output, context);
         }
 
         private Object unmarshal(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
             return reader.read(input, context);
         }
     }
+
+    interface ContextlessValueWriter<T> {
+        /**
+         * Writes the given value to a {@link DataOutput}.
+         *
+         * @param value     value to write
+         * @param output    where to write to
+         * @throws IOException      if an I/O problem occurs
+         * @throws MarshalException if another problem occurs
+         */
+        void write(T value, DataOutput output) throws IOException, MarshalException;
+    }
+
 
     private interface ContextlessValueReader<T> {
         /**

@@ -15,33 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.message;
+package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.internal.network.NetworkMessageTypes;
-import org.apache.ignite.internal.network.serialization.FieldDescriptor;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.internal.util.GridUnsafe;
 
-/** Message for the {@link FieldDescriptor}. */
-@Transferable(NetworkMessageTypes.FIELD_DESCRIPTOR_MESSAGE)
-public interface FieldDescriptorMessage extends NetworkMessage {
-    /**
-     * Name of the field.
-     */
-    String name();
+/**
+ * Instantiation strategy that uses {@link sun.misc.Unsafe#allocateInstance(Class)} to create an empty instance.
+ * It supports any class.
+ */
+class UnsafeInstantiation implements Instantiation {
+    /** {@inheritDoc} */
+    @Override
+    public boolean supports(Class<?> objectClass) {
+        return true;
+    }
 
-    /**
-     * Field type's descriptor id.
-     */
-    int typeDescriptorId();
-
-    /**
-     * Field's class name.
-     */
-    String className();
-
-    /**
-     * The name of The class in which this field is declared.
-     */
-    String declaringClassName();
+    /** {@inheritDoc} */
+    @Override
+    public Object newInstance(Class<?> objectClass) throws InstantiationException {
+        try {
+            return GridUnsafe.allocateInstance(objectClass);
+        } catch (java.lang.InstantiationException e) {
+            throw new InstantiationException("Cannot instantiate " + objectClass, e);
+        }
+    }
 }

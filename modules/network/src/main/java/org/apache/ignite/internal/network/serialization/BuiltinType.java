@@ -31,6 +31,8 @@ import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Built-in types.
+ *
+ * <p>They share ID space with commands defined in {@link SerializedStreamCommands}.
  */
 public enum BuiltinType {
     BYTE(0, byte.class),
@@ -79,7 +81,9 @@ public enum BuiltinType {
     LINKED_HASH_MAP(41, LinkedHashMap.class),
     BIT_SET(42, BitSet.class),
     NULL(43, Null.class),
-    VOID(44, Void.class);
+    VOID(44, Void.class)
+    // 45 is REFERENCE command, see SerializedStreamCommands#REFERENCE
+    ;
 
     /**
      * Pre-defined descriptor id.

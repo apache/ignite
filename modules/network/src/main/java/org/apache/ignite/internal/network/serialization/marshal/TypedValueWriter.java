@@ -21,17 +21,19 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * Knows how to write a value to a {@link DataOutput}.
+ * Writes objects to a {@link DataOutput} taking their original (for example, declared) types into consideration.
  */
-interface ValueWriter<T> {
+interface TypedValueWriter {
     /**
-     * Writes the given value to a {@link DataOutput}.
+     * Writes the given object to the {@link DataOutput}.
      *
-     * @param value     value to write
-     * @param output    where to write to
-     * @param context   marshalling context
+     * @param object        object to write
+     * @param declaredClass the original class of the object (i.e. {@code byte.class} for {@code byte})
+     * @param output        where to write to
+     * @param context       marshalling context
      * @throws IOException      if an I/O problem occurs
      * @throws MarshalException if another problem occurs
      */
-    void write(T value, DataOutput output, MarshallingContext context) throws IOException, MarshalException;
+    void write(Object object, Class<?> declaredClass, DataOutput output, MarshallingContext context)
+            throws IOException, MarshalException;
 }

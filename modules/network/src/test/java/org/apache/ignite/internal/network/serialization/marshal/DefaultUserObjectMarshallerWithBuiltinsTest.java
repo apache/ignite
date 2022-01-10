@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assumptions.assumingThat;
 
 import java.io.ByteArrayInputStream;
@@ -42,13 +42,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.network.serialization.BuiltinType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.Null;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -62,35 +65,6 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
 
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
-
-    @Test
-    void marshalsAndUnmarshalsNull() throws Exception {
-        MarshalledObject marshalled = marshaller.marshal(null);
-
-        Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
-
-        assertThat(unmarshalled, is(nullValue()));
-    }
-
-    @Test
-    void marshalsNullUsingOnlyNullDescriptor() throws Exception {
-        MarshalledObject marshalled = marshaller.marshal(null);
-
-        assertThat(marshalled.usedDescriptors(), equalTo(Set.of(descriptorRegistry.getNullDescriptor())));
-    }
-
-    @Test
-    void marshalsNullWithCorrectDescriptorIdInMarshalledRepresentation() throws Exception {
-        MarshalledObject marshalled = marshaller.marshal(null);
-
-        assertThat(readType(marshalled), is(BuiltinType.NULL.descriptorId()));
-    }
-
-    private int readType(MarshalledObject marshalled) throws IOException {
-        try (var dis = new DataInputStream(new ByteArrayInputStream(marshalled.bytes()))) {
-            return dis.readInt();
-        }
-    }
 
     @Test
     void marshalsAndUnmarshalsBareObject() throws Exception {
@@ -123,6 +97,12 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
         assertThat(readType(marshalled), is(BuiltinType.BARE_OBJECT.descriptorId()));
     }
 
+    private int readType(MarshalledObject marshalled) throws IOException {
+        try (var dis = new DataInputStream(new ByteArrayInputStream(marshalled.bytes()))) {
+            return dis.readInt();
+        }
+    }
+
     @Test
     void marshalsObjectArrayUsingExactlyDescriptorsOfObjectArrayAndComponents() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new Object[]{42, "abc"});
@@ -149,7 +129,8 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
         Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(equalTo(typeValue.value)));
-        if (typeValue.builtinType != BuiltinType.VOID && typeValue.value.getClass().isArray()) {
+        if (typeValue.builtinType != BuiltinType.VOID && typeValue.builtinType != BuiltinType.NULL
+                && typeValue.value.getClass().isArray()) {
             assertThat(unmarshalled, is(notNullValue()));
             assertThat(unmarshalled.getClass().getComponentType(), is(typeValue.value.getClass().getComponentType()));
         }
@@ -170,57 +151,58 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
 
     static Stream<Arguments> builtInNonCollectionTypes() {
         return Stream.of(
-                builtInTypeValueArg((byte) 42, byte.class, BuiltinType.BYTE),
-                builtInTypeValueArg((byte) 42, Byte.class, BuiltinType.BYTE_BOXED),
-                builtInTypeValueArg((short) 42, short.class, BuiltinType.SHORT),
-                builtInTypeValueArg((short) 42, Short.class, BuiltinType.SHORT_BOXED),
-                builtInTypeValueArg(42, int.class, BuiltinType.INT),
-                builtInTypeValueArg(42, Integer.class, BuiltinType.INT_BOXED),
-                builtInTypeValueArg(42.0f, float.class, BuiltinType.FLOAT),
-                builtInTypeValueArg(42.0f, Float.class, BuiltinType.FLOAT_BOXED),
-                builtInTypeValueArg((long) 42, long.class, BuiltinType.LONG),
-                builtInTypeValueArg((long) 42, Long.class, BuiltinType.LONG_BOXED),
-                builtInTypeValueArg(42.0, double.class, BuiltinType.DOUBLE),
-                builtInTypeValueArg(42.0, Double.class, BuiltinType.DOUBLE_BOXED),
-                builtInTypeValueArg(true, boolean.class, BuiltinType.BOOLEAN),
-                builtInTypeValueArg(true, Boolean.class, BuiltinType.BOOLEAN_BOXED),
-                builtInTypeValueArg('a', char.class, BuiltinType.CHAR),
-                builtInTypeValueArg('a', Character.class, BuiltinType.CHAR_BOXED),
+                builtInTypeValue((byte) 42, byte.class, BuiltinType.BYTE),
+                builtInTypeValue((byte) 42, Byte.class, BuiltinType.BYTE_BOXED),
+                builtInTypeValue((short) 42, short.class, BuiltinType.SHORT),
+                builtInTypeValue((short) 42, Short.class, BuiltinType.SHORT_BOXED),
+                builtInTypeValue(42, int.class, BuiltinType.INT),
+                builtInTypeValue(42, Integer.class, BuiltinType.INT_BOXED),
+                builtInTypeValue(42.0f, float.class, BuiltinType.FLOAT),
+                builtInTypeValue(42.0f, Float.class, BuiltinType.FLOAT_BOXED),
+                builtInTypeValue((long) 42, long.class, BuiltinType.LONG),
+                builtInTypeValue((long) 42, Long.class, BuiltinType.LONG_BOXED),
+                builtInTypeValue(42.0, double.class, BuiltinType.DOUBLE),
+                builtInTypeValue(42.0, Double.class, BuiltinType.DOUBLE_BOXED),
+                builtInTypeValue(true, boolean.class, BuiltinType.BOOLEAN),
+                builtInTypeValue(true, Boolean.class, BuiltinType.BOOLEAN_BOXED),
+                builtInTypeValue('a', char.class, BuiltinType.CHAR),
+                builtInTypeValue('a', Character.class, BuiltinType.CHAR_BOXED),
                 // BARE_OBJECT is handled separately
-                builtInTypeValueArg("abc", String.class, BuiltinType.STRING),
-                builtInTypeValueArg(UUID.fromString("c6f57d4a-619f-11ec-add6-73bc97c3c49e"), UUID.class, BuiltinType.UUID),
-                builtInTypeValueArg(IgniteUuid.fromString("1234-c6f57d4a-619f-11ec-add6-73bc97c3c49e"), IgniteUuid.class,
+                builtInTypeValue("abc", String.class, BuiltinType.STRING),
+                builtInTypeValue(UUID.fromString("c6f57d4a-619f-11ec-add6-73bc97c3c49e"), UUID.class, BuiltinType.UUID),
+                builtInTypeValue(IgniteUuid.fromString("1234-c6f57d4a-619f-11ec-add6-73bc97c3c49e"), IgniteUuid.class,
                         BuiltinType.IGNITE_UUID),
-                builtInTypeValueArg(new Date(42), Date.class, BuiltinType.DATE),
-                builtInTypeValueArg(new byte[]{1, 2, 3}, byte[].class, BuiltinType.BYTE_ARRAY),
-                builtInTypeValueArg(new short[]{1, 2, 3}, short[].class, BuiltinType.SHORT_ARRAY),
-                builtInTypeValueArg(new int[]{1, 2, 3}, int[].class, BuiltinType.INT_ARRAY),
-                builtInTypeValueArg(new float[]{1.0f, 2.0f, 3.0f}, float[].class, BuiltinType.FLOAT_ARRAY),
-                builtInTypeValueArg(new long[]{1, 2, 3}, long[].class, BuiltinType.LONG_ARRAY),
-                builtInTypeValueArg(new double[]{1.0, 2.0, 3.0}, double[].class, BuiltinType.DOUBLE_ARRAY),
-                builtInTypeValueArg(new boolean[]{true, false}, boolean[].class, BuiltinType.BOOLEAN_ARRAY),
-                builtInTypeValueArg(new char[]{'a', 'b'}, char[].class, BuiltinType.CHAR_ARRAY),
-                builtInTypeValueArg(new Object[]{42, "123", null}, Object[].class, BuiltinType.OBJECT_ARRAY),
-                builtInTypeValueArg(new BitSet[]{BitSet.valueOf(new long[]{42, 43}), BitSet.valueOf(new long[]{1, 2}), null},
+                builtInTypeValue(new Date(42), Date.class, BuiltinType.DATE),
+                builtInTypeValue(new byte[]{1, 2, 3}, byte[].class, BuiltinType.BYTE_ARRAY),
+                builtInTypeValue(new short[]{1, 2, 3}, short[].class, BuiltinType.SHORT_ARRAY),
+                builtInTypeValue(new int[]{1, 2, 3}, int[].class, BuiltinType.INT_ARRAY),
+                builtInTypeValue(new float[]{1.0f, 2.0f, 3.0f}, float[].class, BuiltinType.FLOAT_ARRAY),
+                builtInTypeValue(new long[]{1, 2, 3}, long[].class, BuiltinType.LONG_ARRAY),
+                builtInTypeValue(new double[]{1.0, 2.0, 3.0}, double[].class, BuiltinType.DOUBLE_ARRAY),
+                builtInTypeValue(new boolean[]{true, false}, boolean[].class, BuiltinType.BOOLEAN_ARRAY),
+                builtInTypeValue(new char[]{'a', 'b'}, char[].class, BuiltinType.CHAR_ARRAY),
+                builtInTypeValue(new Object[]{42, "123", null}, Object[].class, BuiltinType.OBJECT_ARRAY),
+                builtInTypeValue(new BitSet[]{BitSet.valueOf(new long[]{42, 43}), BitSet.valueOf(new long[]{1, 2}), null},
                         BitSet[].class, BuiltinType.OBJECT_ARRAY),
-                builtInTypeValueArg(new String[]{"Ignite", "rulez"}, String[].class, BuiltinType.STRING_ARRAY),
-                builtInTypeValueArg(new BigDecimal(42), BigDecimal.class, BuiltinType.DECIMAL),
-                builtInTypeValueArg(new BigDecimal[]{new BigDecimal(42), new BigDecimal(43)}, BigDecimal[].class,
+                builtInTypeValue(new String[]{"Ignite", "rulez"}, String[].class, BuiltinType.STRING_ARRAY),
+                builtInTypeValue(new BigDecimal(42), BigDecimal.class, BuiltinType.DECIMAL),
+                builtInTypeValue(new BigDecimal[]{new BigDecimal(42), new BigDecimal(43)}, BigDecimal[].class,
                         BuiltinType.DECIMAL_ARRAY),
-                builtInTypeValueArg(SimpleEnum.FIRST, SimpleEnum.class, BuiltinType.ENUM),
-                builtInTypeValueArg(new Enum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, Enum[].class, BuiltinType.ENUM_ARRAY),
-                builtInTypeValueArg(new SimpleEnum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, SimpleEnum[].class, BuiltinType.ENUM_ARRAY),
-                builtInTypeValueArg(EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.class, BuiltinType.ENUM),
-                builtInTypeValueArg(new Enum[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND}, Enum[].class,
+                builtInTypeValue(SimpleEnum.FIRST, SimpleEnum.class, BuiltinType.ENUM),
+                builtInTypeValue(new Enum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, Enum[].class, BuiltinType.ENUM_ARRAY),
+                builtInTypeValue(new SimpleEnum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, SimpleEnum[].class, BuiltinType.ENUM_ARRAY),
+                builtInTypeValue(EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.class, BuiltinType.ENUM),
+                builtInTypeValue(new Enum[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND}, Enum[].class,
                         BuiltinType.ENUM_ARRAY),
-                builtInTypeValueArg(
+                builtInTypeValue(
                         new EnumWithAnonClassesForMembers[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND},
                         EnumWithAnonClassesForMembers[].class,
                         BuiltinType.ENUM_ARRAY
                 ),
-                builtInTypeValueArg(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltinType.BIT_SET),
-                builtInTypeValueArg(null, Void.class, BuiltinType.VOID)
-        );
+                builtInTypeValue(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltinType.BIT_SET),
+                builtInTypeValue(null, Null.class, BuiltinType.NULL),
+                builtInTypeValue(null, Void.class, BuiltinType.VOID)
+        ).map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -256,14 +238,14 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
 
     static Stream<Arguments> builtInCollectionTypes() {
         return Stream.of(
-                builtInTypeValueArg(new ArrayList<>(List.of(42, 43)), ArrayList.class, BuiltinType.ARRAY_LIST),
-                builtInTypeValueArg(new LinkedList<>(List.of(42, 43)), LinkedList.class, BuiltinType.LINKED_LIST),
-                builtInTypeValueArg(new HashSet<>(Set.of(42, 43)), HashSet.class, BuiltinType.HASH_SET),
-                builtInTypeValueArg(new LinkedHashSet<>(Set.of(42, 43)), LinkedHashSet.class, BuiltinType.LINKED_HASH_SET),
-                builtInTypeValueArg(singletonList(42), BuiltinType.SINGLETON_LIST.clazz(), BuiltinType.SINGLETON_LIST),
-                builtInTypeValueArg(new HashMap<>(Map.of(42, 43)), HashMap.class, BuiltinType.HASH_MAP),
-                builtInTypeValueArg(new LinkedHashMap<>(Map.of(42, 43)), LinkedHashMap.class, BuiltinType.LINKED_HASH_MAP)
-        );
+                builtInTypeValue(new ArrayList<>(List.of(42, 43)), ArrayList.class, BuiltinType.ARRAY_LIST),
+                builtInTypeValue(new LinkedList<>(List.of(42, 43)), LinkedList.class, BuiltinType.LINKED_LIST),
+                builtInTypeValue(new HashSet<>(Set.of(42, 43)), HashSet.class, BuiltinType.HASH_SET),
+                builtInTypeValue(new LinkedHashSet<>(Set.of(42, 43)), LinkedHashSet.class, BuiltinType.LINKED_HASH_SET),
+                builtInTypeValue(singletonList(42), BuiltinType.SINGLETON_LIST.clazz(), BuiltinType.SINGLETON_LIST),
+                builtInTypeValue(new HashMap<>(Map.of(42, 43)), HashMap.class, BuiltinType.HASH_MAP),
+                builtInTypeValue(new LinkedHashMap<>(Map.of(42, 43)), LinkedHashMap.class, BuiltinType.LINKED_HASH_MAP)
+        ).map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -278,9 +260,64 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
         return Stream.concat(builtInNonCollectionTypes(), builtInCollectionTypes());
     }
 
-    @NotNull
-    private static Arguments builtInTypeValueArg(Object value, Class<?> valueClass, BuiltinType type) {
-        return Arguments.of(new BuiltInTypeValue(value, valueClass, type));
+    private static BuiltInTypeValue builtInTypeValue(Object value, Class<?> valueClass, BuiltinType type) {
+        return new BuiltInTypeValue(value, valueClass, type);
+    }
+
+    @Test
+    void unmarshalsObjectGraphWithCycleStartingWithSingletonList() throws Exception {
+        List<List<?>> mutableList = new ArrayList<>();
+        List<List<?>> singletonList = singletonList(mutableList);
+        mutableList.add(singletonList);
+
+        List<List<?>> unmarshalled = marshalAndUnmarshal(singletonList);
+
+        assertThat(unmarshalled.get(0).get(0), is(sameInstance(unmarshalled)));
+    }
+
+    private <T> T marshalAndUnmarshal(T object) throws MarshalException, UnmarshalException {
+        MarshalledObject marshalled = marshaller.marshal(object);
+        return unmarshalNonNull(marshalled);
+    }
+
+    @Test
+    void unmarshalsObjectGraphWithCycleContainingWithSingletonList() throws Exception {
+        List<List<?>> mutableList = new ArrayList<>();
+        List<List<?>> singletonList = singletonList(mutableList);
+        mutableList.add(singletonList);
+
+        List<List<?>> unmarshalled = marshalAndUnmarshal(mutableList);
+
+        assertThat(unmarshalled.get(0).get(0), is(sameInstance(unmarshalled)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutableContainerSelfAssignments")
+    <T> void unmarshalsObjectGraphWithSelfCycleViaMutableContainers(MutableContainerSelfAssignment<T> item) throws Exception {
+        T container = item.factory.get();
+        item.assignment.accept(container, container);
+
+        T unmarshalled = marshalAndUnmarshal(container);
+        T element = item.elementAccess.apply(unmarshalled);
+
+        assertThat(element, is(sameInstance(unmarshalled)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Stream<Arguments> mutableContainerSelfAssignments() {
+        return Stream.of(
+                new MutableContainerSelfAssignment<>(Object[].class, () -> new Object[1], (a, b) -> a[0] = b, array -> (Object[]) array[0]),
+                new MutableContainerSelfAssignment<>(ArrayList.class, ArrayList::new, ArrayList::add, list -> (ArrayList<?>) list.get(0)),
+                new MutableContainerSelfAssignment<>(LinkedList.class, LinkedList::new, LinkedList::add,
+                        list -> (LinkedList<?>) list.get(0)),
+                new MutableContainerSelfAssignment<>(HashSet.class, HashSet::new, HashSet::add, set -> (HashSet<?>) set.iterator().next()),
+                new MutableContainerSelfAssignment<>(LinkedHashSet.class, LinkedHashSet::new, LinkedHashSet::add,
+                        set -> (LinkedHashSet<?>) set.iterator().next()),
+                new MutableContainerSelfAssignment<>(HashMap.class, HashMap::new, (map, el) -> map.put(el, el),
+                        map -> (HashMap<?, ?>) map.values().iterator().next()),
+                new MutableContainerSelfAssignment<>(LinkedHashMap.class, LinkedHashMap::new, (map, el) -> map.put(el, el),
+                        map -> (LinkedHashMap<?, ?>) map.values().iterator().next())
+        ).map(Arguments::of);
     }
 
     private enum SimpleEnum {
@@ -312,6 +349,32 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
                     + "value=" + value
                     + ", valueClass=" + valueClass
                     + ", builtinType=" + builtinType
+                    + '}';
+        }
+    }
+
+    private static class MutableContainerSelfAssignment<T> {
+        private final Class<T> clazz;
+        private final Supplier<T> factory;
+        private final BiConsumer<T, T> assignment;
+        private final Function<T, T> elementAccess;
+
+        private MutableContainerSelfAssignment(
+                Class<T> clazz,
+                Supplier<T> factory,
+                BiConsumer<T, T> assignment,
+                Function<T, T> elementAccess
+        ) {
+            this.clazz = clazz;
+            this.factory = factory;
+            this.assignment = assignment;
+            this.elementAccess = elementAccess;
+        }
+
+        @Override
+        public String toString() {
+            return "ContainerSelfCycle{"
+                    + "clazz=" + clazz
                     + '}';
         }
     }
