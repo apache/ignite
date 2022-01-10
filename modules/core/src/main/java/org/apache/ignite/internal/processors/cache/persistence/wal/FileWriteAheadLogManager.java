@@ -494,7 +494,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else {
                 DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
 
-                // TODO: create only WAL metrics and exclude Checkpoint one.
                 if (dsCfg != null) {
                     metrics = new DataStorageMetricsImpl(
                         cctx.kernalContext().metric(),
