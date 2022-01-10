@@ -566,6 +566,7 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @param cdcEnabled CDC enabled flag.
      * @return {@code this} for chaining.
+     * @see DataStorageConfiguration#isCdcEnabled()
      */
     @IgniteExperimental
     public DataRegionConfiguration setCdcEnabled(boolean cdcEnabled) {
@@ -578,7 +579,8 @@ public final class DataRegionConfiguration implements Serializable {
      * Gets flag indicating whether CDC is enabled.
      * Default value is {@code false}.
      *
-     * @return Metrics enabled flag.
+     * @return CDC enabled flag.
+     * @see DataStorageConfiguration#isCdcEnabled()
      */
     @IgniteExperimental
     public boolean isCdcEnabled() {
