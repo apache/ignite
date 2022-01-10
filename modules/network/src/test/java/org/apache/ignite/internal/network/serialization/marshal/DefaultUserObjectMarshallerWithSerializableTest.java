@@ -38,7 +38,7 @@ import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
-import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
  * Tests for how {@link DefaultUserObjectMarshaller} handles {@link java.io.Serializable}s (but not {@link Externalizable}s).
  */
 class DefaultUserObjectMarshallerWithSerializableTest {
-    private final ClassDescriptorFactoryContext descriptorRegistry = new ClassDescriptorFactoryContext();
+    private final ClassDescriptorRegistry descriptorRegistry = new ClassDescriptorRegistry();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
     private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 

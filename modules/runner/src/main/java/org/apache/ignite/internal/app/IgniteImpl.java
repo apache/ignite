@@ -46,11 +46,13 @@ import org.apache.ignite.internal.metastorage.server.persistence.RocksDbKeyValue
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.sql.engine.QueryProcessor;
 import org.apache.ignite.internal.sql.engine.SqlQueryProcessor;
+import org.apache.ignite.internal.sql.engine.message.SqlQueryMessagesSerializationRegistryInitializer;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.distributed.TableTxManagerImpl;
 import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.internal.tx.impl.HeapLockManager;
 import org.apache.ignite.internal.tx.impl.IgniteTransactionsImpl;
+import org.apache.ignite.internal.tx.message.TxMessagesSerializationRegistryInitializer;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.VaultService;
 import org.apache.ignite.internal.vault.persistence.PersistentVaultService;
@@ -63,6 +65,7 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
+import org.apache.ignite.raft.jraft.RaftMessagesSerializationRegistryInitializer;
 import org.apache.ignite.rest.RestModule;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;
@@ -166,7 +169,12 @@ public class IgniteImpl implements Ignite {
 
         NetworkConfiguration networkConfiguration = nodeCfgMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY);
 
-        var clusterLocalConfiguration = new ClusterLocalConfiguration(name, new MessageSerializationRegistryImpl());
+        MessageSerializationRegistryImpl serializationRegistry = new MessageSerializationRegistryImpl();
+        RaftMessagesSerializationRegistryInitializer.registerFactories(serializationRegistry);
+        SqlQueryMessagesSerializationRegistryInitializer.registerFactories(serializationRegistry);
+        TxMessagesSerializationRegistryInitializer.registerFactories(serializationRegistry);
+
+        var clusterLocalConfiguration = new ClusterLocalConfiguration(name, serializationRegistry);
 
         nettyBootstrapFactory = new NettyBootstrapFactory(networkConfiguration, clusterLocalConfiguration.getName());
 

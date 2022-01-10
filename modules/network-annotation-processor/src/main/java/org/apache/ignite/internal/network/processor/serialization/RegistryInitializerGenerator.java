@@ -29,6 +29,7 @@ import org.apache.ignite.internal.network.processor.MessageClass;
 import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
 import org.apache.ignite.network.serialization.MessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.network.serialization.MessageSerializationRegistryInitializer;
 
 /**
  * Class for generating classes for registering all generated {@link MessageSerializationFactory} implementations in a {@link
@@ -66,6 +67,8 @@ public class RegistryInitializerGenerator {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating " + initializerName);
 
         TypeSpec.Builder registryInitializer = TypeSpec.classBuilder(initializerName);
+
+        registryInitializer.addSuperinterface(MessageSerializationRegistryInitializer.class);
 
         MethodSpec.Builder initializeMethod = MethodSpec.methodBuilder("registerFactories")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)

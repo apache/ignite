@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.transport.api.Transport;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -43,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
+import org.apache.ignite.internal.network.NetworkMessagesFactory;
+import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -54,7 +55,6 @@ import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.TopologyEventHandler;
-import org.apache.ignite.network.annotations.MessageGroup;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -264,29 +264,6 @@ class ItScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Serializable message that belongs to the {@link NetworkMessageTypes} message group.
-     */
-    private static class MockNetworkMessage implements NetworkMessage, Serializable {
-        /** {@inheritDoc} */
-        @Override
-        public short messageType() {
-            return 666;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public short groupType() {
-            return NetworkMessageTypes.class.getAnnotation(MessageGroup.class).groupType();
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object obj) {
-            return getClass() == obj.getClass();
-        }
-    }
-
-    /**
      * Tests that messages from different message groups can be delivered to different sets of handlers.
      *
      * @throws Exception in case of errors.
@@ -322,7 +299,7 @@ class ItScaleCubeNetworkMessagingTest {
 
         var testMessage = messageFactory.testMessage().msg("foo").build();
 
-        var networkMessage = new MockNetworkMessage();
+        ScaleCubeMessage networkMessage = new NetworkMessagesFactory().scaleCubeMessage().build();
 
         // test that a message gets delivered to both handlers
         node2.messagingService()

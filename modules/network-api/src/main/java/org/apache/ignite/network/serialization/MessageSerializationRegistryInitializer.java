@@ -15,33 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql.engine.message;
+package org.apache.ignite.network.serialization;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Marshallable;
-import org.apache.ignite.network.annotations.Transferable;
+/** Marker interface for message serialization registry initializers. */
+// TODO: IGNITE-16302 register services to use with ServiceLoader
+public interface MessageSerializationRegistryInitializer {
 
-/**
- * ErrorMessage interface.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
- */
-@Transferable(value = SqlQueryMessageGroup.ERROR_MESSAGE)
-public interface ErrorMessage extends NetworkMessage, Serializable {
-    /**
-     * Get query ID.
-     */
-    UUID queryId();
-
-    /**
-     * Get fragment ID.
-     */
-    long fragmentId();
-
-    /**
-     * Get error.
-     */
-    @Marshallable
-    Throwable error();
 }

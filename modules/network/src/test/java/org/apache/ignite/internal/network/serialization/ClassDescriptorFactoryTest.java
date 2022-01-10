@@ -50,14 +50,14 @@ import org.junit.jupiter.api.Test;
  */
 public class ClassDescriptorFactoryTest {
     /**
-     * Descriptor parser context.
+     * Descriptor registry.
      */
-    private final ClassDescriptorFactoryContext context = new ClassDescriptorFactoryContext();
+    private final ClassDescriptorRegistry registry = new ClassDescriptorRegistry();
 
     /**
      * Descriptor factory.
      */
-    private final ClassDescriptorFactory factory = new ClassDescriptorFactory(context);
+    private final ClassDescriptorFactory factory = new ClassDescriptorFactory(registry);
 
     private static class SerializableClass implements Serializable {
         private static final long serialVersionUID = 0L;
@@ -322,16 +322,16 @@ public class ClassDescriptorFactoryTest {
     public void testHolderClass() {
         ClassDescriptor holderDescriptor = factory.create(Holder.class);
 
-        ClassDescriptor serializableDescriptor = context.getDescriptor(SerializableClass.class);
+        ClassDescriptor serializableDescriptor = registry.getDescriptor(SerializableClass.class);
         assertNotNull(serializableDescriptor);
 
-        ClassDescriptor externalizableDescriptor = context.getDescriptor(ExternalizableClass.class);
+        ClassDescriptor externalizableDescriptor = registry.getDescriptor(ExternalizableClass.class);
         assertNotNull(externalizableDescriptor);
 
-        ClassDescriptor arbitraryDescriptor = context.getDescriptor(ArbitraryClass.class);
+        ClassDescriptor arbitraryDescriptor = registry.getDescriptor(ArbitraryClass.class);
         assertNotNull(arbitraryDescriptor);
 
-        ClassDescriptor intDescriptor = context.getDescriptor(BuiltInType.INT.descriptorId());
+        ClassDescriptor intDescriptor = registry.getDescriptor(BuiltInType.INT.descriptorId());
         assertNotNull(intDescriptor);
 
         List<FieldDescriptor> fields = holderDescriptor.fields();
@@ -358,7 +358,7 @@ public class ClassDescriptorFactoryTest {
 
     @Test
     public void testDefaultType() {
-        ClassDescriptor descriptor = context.getDescriptor(int.class);
+        ClassDescriptor descriptor = registry.getDescriptor(int.class);
 
         assertNotNull(descriptor);
         checkBuiltInType(descriptor.serializationType());
@@ -521,7 +521,7 @@ public class ClassDescriptorFactoryTest {
     void registersSuperClassDescriptorOnParsingSubClass() {
         factory.create(Child.class);
 
-        assertDoesNotThrow(() -> context.getRequiredDescriptor(Parent.class));
+        assertDoesNotThrow(() -> registry.getRequiredDescriptor(Parent.class));
     }
 
     private static class Parent {

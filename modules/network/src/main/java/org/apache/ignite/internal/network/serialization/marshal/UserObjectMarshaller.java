@@ -39,6 +39,15 @@ public interface UserObjectMarshaller {
     MarshalledObject marshal(@Nullable Object object, Class<?> declaredClass) throws MarshalException;
 
     /**
+     * Marshals an object detecting its type from the value.
+     *
+     * @param object        object to marshal
+     * @return marshalled representation
+     * @throws MarshalException if marshalling fails
+     */
+    MarshalledObject marshal(@Nullable Object object) throws MarshalException;
+
+    /**
      * Unmarshals an object.
      *
      * @param bytes             bytes representing the marshalled object

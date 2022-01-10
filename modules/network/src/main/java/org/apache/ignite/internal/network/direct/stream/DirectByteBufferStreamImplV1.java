@@ -46,7 +46,7 @@ import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.internal.network.message.ClassDescriptorMessage;
 import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
-import org.apache.ignite.internal.network.serialization.SerializationResult;
+import org.apache.ignite.internal.network.serialization.marshal.MarshalledObject;
 import org.apache.ignite.internal.util.ArrayFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1365,13 +1365,22 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     public <T> void writeMarshallable(T object, MessageWriter writer) {
         switch (marshallableState) {
             case 0:
+                writeBoolean(object == null);
+
+                if (!lastFinished || object == null) {
+                    return;
+                }
+
+                marshallableState++;
+
+                //noinspection fallthrough
+            case 1:
                 if (marshallable == null) {
                     // If object was not serialized to a byte array, serialize it
-                    SerializationResult res = serializationService.writeMarshallable(object);
-                    List<Integer> descriptorIds = res.ids();
-                    marshallable = res.array();
+                    MarshalledObject res = serializationService.writeMarshallable(object);
+                    marshallable = res.bytes();
                     // Get descriptors that were not previously sent to the remote node
-                    descriptors = serializationService.createClassDescriptorsMessages(descriptorIds);
+                    descriptors = serializationService.createClassDescriptorsMessages(res.usedDescriptors());
                 }
 
                 writeCollection(descriptors, MessageCollectionItemType.MSG, writer);
@@ -1383,7 +1392,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 marshallableState++;
 
                 //noinspection fallthrough
-            case 1:
+            case 2:
                 writeByteArray(marshallable);
 
                 if (!lastFinished) {
@@ -1405,6 +1414,16 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     public <T> T readMarshallable(MessageReader reader) {
         switch (marshallableState) {
             case 0:
+                boolean isNull = readBoolean();
+
+                if (!lastFinished || isNull) {
+                    return null;
+                }
+
+                marshallableState++;
+
+                //noinspection fallthrough
+            case 1:
                 descriptors = readCollection(MessageCollectionItemType.MSG, reader);
 
                 if (!lastFinished) {
@@ -1414,7 +1433,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 marshallableState++;
 
                 //noinspection fallthrough
-            case 1:
+            case 2:
                 marshallable = readByteArray();
 
                 if (!lastFinished) {

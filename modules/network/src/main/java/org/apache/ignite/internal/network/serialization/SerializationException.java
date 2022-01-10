@@ -17,32 +17,9 @@
 
 package org.apache.ignite.internal.network.serialization;
 
-import java.util.Map;
-
-/** User object serializer. */
-public interface UserObjectSerializer {
-    /**
-     * Reads a marshallable object from a byte array using a map of descriptors.
-     *
-     * @param descriptors Descriptor map.
-     * @param array       Byte array.
-     * @param <T>         Object type.
-     * @return Unmarshalled object.
-     */
-    <T> T read(Map<Integer, ClassDescriptor> descriptors, byte[] array);
-
-    /**
-     * Marshalls object.
-     *
-     * @param object Object.
-     * @param <T> Object's type.
-     * @return {@link SerializationResult}.
-     */
-    <T> SerializationResult write(T object);
-
-    ClassDescriptor getClassDescriptor(int typeDescriptorId);
-
-    ClassDescriptor getClassDescriptor(String typeName);
-
-    boolean shouldBeBuiltIn(int typeDescriptorId);
+/** Exception that occurs during (de-)serialization. */
+public class SerializationException extends RuntimeException {
+    public SerializationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -664,7 +664,7 @@ public class CliServiceImpl implements CliService {
             if (result instanceof GetPeersResponse) {
                 final GetPeersResponse resp = (GetPeersResponse) result;
                 final List<PeerId> peerIdList = new ArrayList<>();
-                final List<String> responsePeers = returnLearners ? resp.learnersList() : resp.peersList();
+                final Collection<String> responsePeers = returnLearners ? resp.learnersList() : resp.peersList();
                 for (final String peerIdStr : responsePeers) {
                     final PeerId newPeer = new PeerId();
                     newPeer.parse(peerIdStr);

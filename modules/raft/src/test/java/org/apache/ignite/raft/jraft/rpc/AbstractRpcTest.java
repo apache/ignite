@@ -248,28 +248,28 @@ public abstract class AbstractRpcTest {
     }
 
     /** */
-    @Transferable(value = 0, autoSerializable = false)
+    @Transferable(value = 0)
     public static interface Request1 extends Message {
         /** */
         int val();
     }
 
     /** */
-    @Transferable(value = 1, autoSerializable = false)
+    @Transferable(value = 1)
     public static interface Request2 extends Message {
         /** */
         int val();
     }
 
     /** */
-    @Transferable(value = 2, autoSerializable = false)
+    @Transferable(value = 2)
     public static interface Response1 extends Message {
         /** */
         int val();
     }
 
     /** */
-    @Transferable(value = 3, autoSerializable = false)
+    @Transferable(value = 3)
     public static interface Response2 extends Message {
         /** */
         int val();

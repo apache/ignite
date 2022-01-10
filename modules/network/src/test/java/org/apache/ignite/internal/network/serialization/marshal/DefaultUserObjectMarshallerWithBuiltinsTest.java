@@ -50,7 +50,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
-import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.apache.ignite.internal.network.serialization.Null;
 import org.apache.ignite.lang.IgniteUuid;
@@ -63,7 +63,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Tests for how {@link DefaultUserObjectMarshaller} handles primitives.
  */
 class DefaultUserObjectMarshallerWithBuiltinsTest {
-    private final ClassDescriptorFactoryContext descriptorRegistry = new ClassDescriptorFactoryContext();
+    private final ClassDescriptorRegistry descriptorRegistry = new ClassDescriptorRegistry();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
     private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 

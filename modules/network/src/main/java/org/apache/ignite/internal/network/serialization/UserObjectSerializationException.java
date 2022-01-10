@@ -15,33 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql.engine.message;
+package org.apache.ignite.internal.network.serialization;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.annotations.Marshallable;
-import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.internal.network.serialization.marshal.UserObjectMarshaller;
 
 /**
- * ErrorMessage interface.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * User object serialization exception that can be thrown when {@link UserObjectMarshaller} is unable to
+ * marshall or unmarshall an object.
  */
-@Transferable(value = SqlQueryMessageGroup.ERROR_MESSAGE)
-public interface ErrorMessage extends NetworkMessage, Serializable {
+public class UserObjectSerializationException extends RuntimeException {
     /**
-     * Get query ID.
+     * Constructor.
+     *
+     * @param message Exception message.
+     * @param cause Cause throwable.
      */
-    UUID queryId();
-
-    /**
-     * Get fragment ID.
-     */
-    long fragmentId();
-
-    /**
-     * Get error.
-     */
-    @Marshallable
-    Throwable error();
+    public UserObjectSerializationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

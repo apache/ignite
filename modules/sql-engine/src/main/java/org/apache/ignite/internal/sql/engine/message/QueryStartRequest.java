@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.sql.engine.message;
 
 import org.apache.ignite.internal.sql.engine.metadata.FragmentDescription;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * QueryStartRequest interface.
  */
-@Transferable(value = SqlQueryMessageGroup.QUERY_START_REQUEST, autoSerializable = false)
+@Transferable(value = SqlQueryMessageGroup.QUERY_START_REQUEST)
 public interface QueryStartRequest extends ExecutionContextAwareMessage {
     /**
      * Get schema name.
@@ -33,6 +34,7 @@ public interface QueryStartRequest extends ExecutionContextAwareMessage {
     /**
      * Get fragment description.
      */
+    @Marshallable
     FragmentDescription fragmentDescription();
 
     /**
@@ -48,5 +50,6 @@ public interface QueryStartRequest extends ExecutionContextAwareMessage {
     /**
      * Get query parameters.
      */
+    @Marshallable
     Object[] parameters();
 }

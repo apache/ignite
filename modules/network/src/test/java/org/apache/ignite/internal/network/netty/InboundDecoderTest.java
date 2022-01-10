@@ -20,6 +20,7 @@ package org.apache.ignite.internal.network.netty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.network.NestedMessageMessage;
 import org.apache.ignite.internal.network.direct.DirectMessageWriter;
 import org.apache.ignite.internal.network.serialization.PerSessionSerializationService;
 import org.apache.ignite.internal.network.serialization.SerializationService;
+import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -93,7 +95,7 @@ public class InboundDecoderTest {
      * Serializes and then deserializes the given message.
      */
     private <T extends NetworkMessage> T sendAndReceive(T msg) {
-        var serializationService = new SerializationService(registry, null);
+        var serializationService = new SerializationService(registry, mock(UserObjectSerializationContext.class));
         var perSessionSerializationService = new PerSessionSerializationService(serializationService);
         var channel = new EmbeddedChannel(new InboundDecoder(perSessionSerializationService));
 
@@ -131,7 +133,7 @@ public class InboundDecoderTest {
      */
     @Test
     public void testPartialHeader() throws Exception {
-        var serializationService = new SerializationService(registry, null);
+        var serializationService = new SerializationService(registry, mock(UserObjectSerializationContext.class));
         var perSessionSerializationService = new PerSessionSerializationService(serializationService);
         var channel = new EmbeddedChannel(new InboundDecoder(perSessionSerializationService));
 
@@ -164,7 +166,7 @@ public class InboundDecoderTest {
 
         Mockito.doReturn(channel).when(ctx).channel();
 
-        var serializationService = new SerializationService(registry, null);
+        var serializationService = new SerializationService(registry, mock(UserObjectSerializationContext.class));
         var perSessionSerializationService = new PerSessionSerializationService(serializationService);
         final var decoder = new InboundDecoder(perSessionSerializationService);
 

@@ -41,11 +41,16 @@ import java.util.Map;
 import org.apache.ignite.internal.network.direct.DirectMessageWriter;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.netty.InboundDecoder;
+import org.apache.ignite.internal.network.serialization.marshal.MarshalException;
+import org.apache.ignite.internal.network.serialization.marshal.MarshalledObject;
+import org.apache.ignite.internal.network.serialization.marshal.UnmarshalException;
+import org.apache.ignite.internal.network.serialization.marshal.UserObjectMarshaller;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -151,79 +156,61 @@ public class MarshallableTest {
 
     /** Helper class that holds classes needed for serialization. */
     private class Serialization {
-        private final ClassDescriptorFactoryContext descriptorContext;
-        private final ClassDescriptorFactory factory;
-        private final ClassDescriptor descriptor;
-        private final StubSerializer userObjectSerializer;
-        private final SerializationService serializationService;
         private final PerSessionSerializationService perSessionSerializationService;
 
+        private final ClassDescriptor descriptor;
+
         Serialization() {
-            this.descriptorContext = new ClassDescriptorFactoryContext();
-            this.factory = new ClassDescriptorFactory(descriptorContext);
+            var descriptorRegistry = new ClassDescriptorRegistry();
+            var factory = new ClassDescriptorFactory(descriptorRegistry);
 
             // Create descriptor for SimpleSerializableObject
             this.descriptor = factory.create(SimpleSerializableObject.class);
 
-            this.userObjectSerializer = new StubSerializer(descriptorContext, descriptor);
+            var userObjectSerializer = new StubMarshaller(descriptor);
 
-            this.serializationService = new SerializationService(registry, userObjectSerializer);
+            var ser = new UserObjectSerializationContext(descriptorRegistry, factory, userObjectSerializer);
+
+            var serializationService = new SerializationService(registry, ser);
             this.perSessionSerializationService = new PerSessionSerializationService(serializationService);
         }
     }
 
-    /** Stub implementation of the serializer, uses standard JDK serializable serialization to actually marshall an object. */
-    private static class StubSerializer implements UserObjectSerializer {
-
-        private final ClassDescriptorFactoryContext descriptorContext;
+    /**
+     *  Stub implementation of the {@link UserObjectMarshaller}, which uses the JDK's serializable
+     *  serialization to actually marshall an object.
+     */
+    private static class StubMarshaller implements UserObjectMarshaller {
 
         private final ClassDescriptor descriptor;
 
-        StubSerializer(ClassDescriptorFactoryContext descriptorContext, ClassDescriptor descriptor) {
-            this.descriptorContext = descriptorContext;
+        StubMarshaller(ClassDescriptor descriptor) {
             this.descriptor = descriptor;
         }
 
-        /** {@inheritDoc} */
         @Override
-        public <T> T read(Map<Integer, ClassDescriptor> descriptor, byte[] array) {
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(array); ObjectInputStream ois = new ObjectInputStream(bais)) {
+        public MarshalledObject marshal(@Nullable Object object, Class<?> declaredClass) throws MarshalException {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                oos.writeObject(object);
+                oos.close();
+                return new MarshalledObject(baos.toByteArray(), Collections.singleton(descriptor));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public MarshalledObject marshal(@Nullable Object object) throws MarshalException {
+            return marshal(object, object != null ? object.getClass() : null);
+        }
+
+        @Override
+        public <T> @Nullable T unmarshal(byte[] bytes, IdIndexedDescriptors mergedDescriptors) throws UnmarshalException {
+            try (var bais = new ByteArrayInputStream(bytes); var ois = new ObjectInputStream(bais)) {
                 return (T) ois.readObject();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public <T> SerializationResult write(T object) {
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-                oos.writeObject(object);
-                oos.close();
-                return new SerializationResult(baos.toByteArray(), Collections.singletonList(descriptor.descriptorId()));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public ClassDescriptor getClassDescriptor(int typeDescriptorId) {
-            return descriptorContext.getDescriptor(typeDescriptorId);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public ClassDescriptor getClassDescriptor(String typeName) {
-            assertEquals(descriptor.className(), typeName);
-
-            return descriptor;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean shouldBeBuiltIn(int typeDescriptorId) {
-            return ClassDescriptorFactoryContext.shouldBeBuiltIn(typeDescriptorId);
         }
     }
 }

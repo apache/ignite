@@ -20,13 +20,14 @@ package org.apache.ignite.internal.sql.engine.message;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * QueryStartResponse interface.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-@Transferable(value = SqlQueryMessageGroup.QUERY_START_RESPONSE, autoSerializable = false)
+@Transferable(value = SqlQueryMessageGroup.QUERY_START_RESPONSE)
 public interface QueryStartResponse extends NetworkMessage, Serializable {
     /**
      * Get query ID.
@@ -41,5 +42,6 @@ public interface QueryStartResponse extends NetworkMessage, Serializable {
     /**
      * Get error.
      */
+    @Marshallable
     Throwable error();
 }

@@ -114,6 +114,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Logging in tests -->
         <dependency>
             <groupId>org.slf4j</groupId>

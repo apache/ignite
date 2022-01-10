@@ -38,7 +38,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
-import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * when working with writeObject()/readObject() of {@link Serializable}s.
  */
 class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
-    private final ClassDescriptorFactoryContext descriptorRegistry = new ClassDescriptorFactoryContext();
+    private final ClassDescriptorRegistry descriptorRegistry = new ClassDescriptorRegistry();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
     private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 
@@ -63,7 +63,7 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
     /** Static access to the marshaller (for using in parameterized tests). */
     private static UserObjectMarshaller staticMarshaller;
     /** Static access to the registry (for using in parameterized tests). */
-    private static ClassDescriptorFactoryContext staticDescriptorRegistry;
+    private static ClassDescriptorRegistry staticDescriptorRegistry;
 
     @BeforeEach
     void initStatics() {

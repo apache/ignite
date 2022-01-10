@@ -20,28 +20,32 @@
 package org.apache.ignite.raft.jraft.entity;
 
 import java.util.List;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
 import org.apache.ignite.raft.jraft.rpc.Message;
 
 public final class LocalStorageOutter {
-    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.STABLE_PB_META, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.STABLE_PB_META)
     public interface StablePBMeta extends Message {
         long term();
 
         String votedFor();
     }
 
-    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_PB_META, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_PB_META)
     public interface LocalSnapshotPbMeta extends Message {
+        @Marshallable
         RaftOutter.SnapshotMeta meta();
 
+        @Marshallable
         List<LocalStorageOutter.LocalSnapshotPbMeta.File> filesList();
 
-        @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_META_FILE, autoSerializable = false)
+        @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.LOCAL_SNAPSHOT_META_FILE)
         interface File extends Message {
             String name();
 
+            @Marshallable
             LocalFileMetaOutter.LocalFileMeta meta();
         }
     }

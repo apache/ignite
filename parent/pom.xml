@@ -75,7 +75,7 @@
         <janino.version>3.1.6</janino.version>
         <avatica.version>1.19.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
-        <reflections.version>0.9.10</reflections.version>
+        <classgraph.version>4.8.110</classgraph.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <esri.geometry.version>2.2.0</esri.geometry.version>
         <checker.version>3.10.0</checker.version>
@@ -374,9 +374,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.reflections</groupId>
-                <artifactId>reflections</artifactId>
-                <version>${reflections.version}</version>
+                <groupId>io.github.classgraph</groupId>
+                <artifactId>classgraph</artifactId>
+                <version>${classgraph.version}</version>
             </dependency>
 
             <dependency>

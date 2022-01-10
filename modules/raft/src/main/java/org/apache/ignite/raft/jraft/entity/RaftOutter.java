@@ -19,29 +19,31 @@
 
 package org.apache.ignite.raft.jraft.entity;
 
-import java.util.List;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import java.util.Collection;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
 import org.apache.ignite.raft.jraft.rpc.Message;
 
 public final class RaftOutter {
-    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.ENTRY_META, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.ENTRY_META)
     public interface EntryMeta extends Message {
         long term();
 
+        @Marshallable
         EnumOutter.EntryType type();
 
-        List<String> peersList();
+        Collection<String> peersList();
 
         long dataLen();
 
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
         long checksum();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
 
-        List<String> oldLearnersList();
+        Collection<String> oldLearnersList();
 
         /**
          * @return True when the entry has a checksum, false otherwise.
@@ -49,18 +51,18 @@ public final class RaftOutter {
         boolean hasChecksum();
     }
 
-    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.SNAPSHOT_META, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RaftOutterMessageGroup.SNAPSHOT_META)
     public interface SnapshotMeta extends Message {
         long lastIncludedIndex();
 
         long lastIncludedTerm();
 
-        List<String> peersList();
+        Collection<String> peersList();
 
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
 
-        List<String> oldLearnersList();
+        Collection<String> oldLearnersList();
     }
 }

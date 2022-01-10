@@ -17,38 +17,36 @@
 
 package org.apache.ignite.internal.sql.engine.metadata;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.util.IgniteUtils.igniteClassLoader;
 
-import java.lang.reflect.Modifier;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.sql.engine.prepare.MappingQueryContext;
 import org.apache.ignite.internal.sql.engine.rel.IgniteRel;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ConfigurationBuilder;
 
 /**
  * See {@link RelMetadataQuery}.
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
     static {
-        ConfigurationBuilder cfg = new ConfigurationBuilder()
-                .forPackages("org.apache.ignite.internal.sql.engine.rel")
-                .addClassLoaders(igniteClassLoader())
-                .addScanners(new SubTypesScanner());
+        try (ScanResult scanResult = new ClassGraph().acceptPackages("org.apache.ignite.internal.sql.engine.rel")
+                .addClassLoader(igniteClassLoader())
+                .enableClassInfo().scan()
+        ) {
+            //noinspection unchecked
+            List<Class<? extends RelNode>> types = scanResult.getClassesImplementing(IgniteRel.class.getName())
+                    .filter(classInfo -> !classInfo.isInterface())
+                    .filter(classInfo -> !classInfo.isAbstract())
+                    .stream().map(classInfo -> (Class<? extends RelNode>) classInfo.loadClass()).collect(toList());
 
-        List<Class<? extends RelNode>> types = new Reflections(cfg)
-                .getSubTypesOf(IgniteRel.class).stream()
-                .filter(type -> !type.isInterface())
-                .filter(type -> !Modifier.isAbstract(type.getModifiers()))
-                .collect(Collectors.toList());
-
-        JaninoRelMetadataProvider.DEFAULT.register(types);
+            JaninoRelMetadataProvider.DEFAULT.register(types);
+        }
     }
 
     private static final IgniteMetadata.FragmentMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =

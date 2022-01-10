@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Class descriptor factory context.
+ * Class descriptor registry.
  */
-public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, ClassIndexedDescriptors {
+public class ClassDescriptorRegistry implements IdIndexedDescriptors, ClassIndexedDescriptors {
     /** Quantity of descriptor ids reserved for the default descriptors. */
     private static final int DEFAULT_DESCRIPTORS_OFFSET_COUNT = 1000;
 
@@ -41,7 +41,7 @@ public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, Clas
     /**
      * Constructor.
      */
-    public ClassDescriptorFactoryContext() {
+    public ClassDescriptorRegistry() {
         for (BuiltInType value : BuiltInType.values()) {
             addPredefinedDescriptor(value.clazz(), value.asClassDescriptor());
         }

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.RaftMessageGroup;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
+import org.apache.ignite.raft.jraft.entity.RaftOutter.EntryMeta;
 import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.impl.SMThrowable;
 import org.apache.ignite.raft.jraft.util.ByteString;
@@ -30,7 +33,7 @@ public final class RpcRequests {
     private RpcRequests() {
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.PING_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.PING_REQUEST)
     public interface PingRequest extends Message {
         /**
          * <code>required int64 send_timestamp = 1;</code>
@@ -38,7 +41,7 @@ public final class RpcRequests {
         long sendTimestamp();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.ERROR_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.ERROR_RESPONSE)
     public interface ErrorResponse extends Message {
         /**
          * Error code.
@@ -65,15 +68,16 @@ public final class RpcRequests {
         @Nullable String leaderId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.SM_ERROR_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.SM_ERROR_RESPONSE)
     public interface SMErrorResponse extends Message {
         /**
          * @return Throwable from client's state machine logic.
          */
+        @Marshallable
         SMThrowable error();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_REQUEST)
     public interface InstallSnapshotRequest extends Message {
         String groupId();
 
@@ -83,19 +87,20 @@ public final class RpcRequests {
 
         long term();
 
+        @Marshallable
         RaftOutter.SnapshotMeta meta();
 
         String uri();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_RESPONSE)
     public interface InstallSnapshotResponse extends Message {
         long term();
 
         boolean success();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_REQUEST)
     public interface TimeoutNowRequest extends Message {
         String groupId();
 
@@ -106,7 +111,7 @@ public final class RpcRequests {
         long term();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.TIMEOUT_NOW_RESPONSE)
     public interface TimeoutNowResponse extends Message {
         /**
          * <code>required int64 term = 1;</code>
@@ -119,7 +124,7 @@ public final class RpcRequests {
         boolean success();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_REQUEST)
     public interface RequestVoteRequest extends Message {
         String groupId();
 
@@ -136,7 +141,7 @@ public final class RpcRequests {
         boolean preVote();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.REQUEST_VOTE_RESPONSE)
     public interface RequestVoteResponse extends Message {
         /**
          * <code>required int64 term = 1;</code>
@@ -149,7 +154,7 @@ public final class RpcRequests {
         boolean granted();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_REQUEST)
     public interface AppendEntriesRequest extends Message {
         String groupId();
 
@@ -163,14 +168,15 @@ public final class RpcRequests {
 
         long prevLogIndex();
 
-        List<RaftOutter.EntryMeta> entriesList();
+        Collection<EntryMeta> entriesList();
 
         long committedIndex();
 
+        @Marshallable
         ByteString data();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.APPEND_ENTRIES_RESPONSE)
     public interface AppendEntriesResponse extends Message {
         long term();
 
@@ -179,7 +185,7 @@ public final class RpcRequests {
         long lastLogIndex();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_REQUEST)
     public interface GetFileRequest extends Message {
         long readerId();
 
@@ -192,27 +198,29 @@ public final class RpcRequests {
         boolean readPartly();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.GET_FILE_RESPONSE)
     public interface GetFileResponse extends Message {
         boolean eof();
 
         long readSize();
 
+        @Marshallable
         ByteString data();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_REQUEST)
     public interface ReadIndexRequest extends Message {
         String groupId();
 
         String serverId();
 
+        @Marshallable
         List<ByteString> entriesList();
 
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.READ_INDEX_RESPONSE)
     public interface ReadIndexResponse extends Message {
         long index();
 

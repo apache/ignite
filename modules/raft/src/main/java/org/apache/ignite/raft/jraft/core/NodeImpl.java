@@ -2053,10 +2053,9 @@ public class NodeImpl implements Node, RaftServerService {
             final List<LogEntry> entries = new ArrayList<>(entriesCount);
             ByteBuffer allData = request.data() != null ? request.data().asReadOnlyByteBuffer() : ByteString.EMPTY.asReadOnlyByteBuffer();
 
-            final List<RaftOutter.EntryMeta> entriesList = request.entriesList();
-            for (int i = 0; i < entriesCount; i++) {
+            final Collection<RaftOutter.EntryMeta> entriesList = request.entriesList();
+            for (RaftOutter.EntryMeta entry : entriesList) {
                 index++;
-                final RaftOutter.EntryMeta entry = entriesList.get(i);
 
                 final LogEntry logEntry = logEntryFromMeta(index, allData, entry);
 

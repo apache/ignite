@@ -59,13 +59,13 @@ class MessageReaderMethodResolver {
 
         String parameterName = getter.getSimpleName().toString();
 
-        String methodName = methodNameResolver.resolveBaseMethodName(parameterType);
-
         if (getter.getAnnotation(Marshallable.class) != null) {
             return CodeBlock.builder()
                     .add("readMarshallable($S)", parameterName)
                     .build();
         }
+
+        String methodName = methodNameResolver.resolveBaseMethodName(parameterType);
 
         switch (methodName) {
             case "ObjectArray":

@@ -19,12 +19,12 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
-import java.util.List;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import java.util.Collection;
 import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
 
 public final class CliRequests {
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_REQUEST)
     public interface AddPeerRequest extends Message {
         String groupId();
 
@@ -33,14 +33,14 @@ public final class CliRequests {
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_PEER_RESPONSE)
     public interface AddPeerResponse extends Message {
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
-        List<String> newPeersList();
+        Collection<String> newPeersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_REQUEST)
     public interface RemovePeerRequest extends Message {
         String groupId();
 
@@ -49,48 +49,48 @@ public final class CliRequests {
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_PEER_RESPONSE)
     public interface RemovePeerResponse extends Message {
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
-        List<String> newPeersList();
+        Collection<String> newPeersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_REQUEST)
     public interface ChangePeersRequest extends Message {
         String groupId();
 
         String leaderId();
 
-        List<String> newPeersList();
+        Collection<String> newPeersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.CHANGE_PEERS_RESPONSE)
     public interface ChangePeersResponse extends Message {
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
-        List<String> newPeersList();
+        Collection<String> newPeersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.SNAPSHOT_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.SNAPSHOT_REQUEST)
     public interface SnapshotRequest extends Message {
         String groupId();
 
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_PEER_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_PEER_REQUEST)
     public interface ResetPeerRequest extends Message {
         String groupId();
 
         String peerId();
 
-        List<String> oldPeersList();
+        Collection<String> oldPeersList();
 
-        List<String> newPeersList();
+        Collection<String> newPeersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.TRANSFER_LEADER_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.TRANSFER_LEADER_REQUEST)
     public interface TransferLeaderRequest extends Message {
         String groupId();
 
@@ -99,21 +99,21 @@ public final class CliRequests {
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_REQUEST)
     public interface GetLeaderRequest extends Message {
         String groupId();
 
         String peerId();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_LEADER_RESPONSE)
     public interface GetLeaderResponse extends Message {
         String leaderId();
 
         long currentTerm();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_REQUEST)
     public interface GetPeersRequest extends Message {
         String groupId();
 
@@ -122,44 +122,44 @@ public final class CliRequests {
         boolean onlyAlive();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.GET_PEERS_RESPONSE)
     public interface GetPeersResponse extends Message {
-        List<String> peersList();
+        Collection<String> peersList();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_LEARNERS_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.ADD_LEARNERS_REQUEST)
     public interface AddLearnersRequest extends Message {
         String groupId();
 
         String leaderId();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_LEARNERS_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.REMOVE_LEARNERS_REQUEST)
     public interface RemoveLearnersRequest extends Message {
         String groupId();
 
         String leaderId();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_LEARNERS_REQUEST, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.RESET_LEARNERS_REQUEST)
     public interface ResetLearnersRequest extends Message {
         String groupId();
 
         String leaderId();
 
-        List<String> learnersList();
+        Collection<String> learnersList();
     }
 
-    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.LEARNERS_OP_RESPONSE, autoSerializable = false)
+    @Transferable(value = RaftMessageGroup.RpcClientMessageGroup.LEARNERS_OP_RESPONSE)
     public interface LearnersOpResponse extends Message {
-        List<String> oldLearnersList();
+        Collection<String> oldLearnersList();
 
-        List<String> newLearnersList();
+        Collection<String> newLearnersList();
     }
 }

@@ -20,11 +20,6 @@ package org.apache.ignite.network.scalecube;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.cluster.transport.api.Transport;
 import io.scalecube.net.Address;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.message.ScaleCubeMessage;
+import org.apache.ignite.internal.network.message.ScaleCubeMessageBuilder;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
@@ -206,16 +202,18 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
      */
     private NetworkMessage fromMessage(Message message) throws IgniteInternalException {
         Object dataObj = message.data();
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        try (ObjectOutputStream oos = new ObjectOutputStream(stream)) {
-            oos.writeObject(dataObj);
-        } catch (IOException e) {
-            throw new IgniteInternalException(e);
+        ScaleCubeMessageBuilder scaleCubeMessageBuilder = messageFactory.scaleCubeMessage();
+
+        if (dataObj instanceof NetworkMessage) {
+            // If data object is a network message, we can use direct marshaller to serialize it
+            scaleCubeMessageBuilder.message((NetworkMessage) dataObj);
+        } else {
+            // If data object is not a network message user object marshaller will be used
+            scaleCubeMessageBuilder.data(dataObj);
         }
 
-        return messageFactory.scaleCubeMessage()
-                .array(stream.toByteArray())
+        return scaleCubeMessageBuilder
                 .headers(message.headers())
                 .build();
     }
@@ -234,15 +232,13 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
 
             Map<String, String> headers = msg.headers();
 
-            Object obj;
+            Object obj = msg.data();
 
-            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg.array()))) {
-                obj = ois.readObject();
-            } catch (Exception e) {
-                throw new IgniteInternalException(e);
-            }
+            NetworkMessage message = msg.message();
 
-            return Message.withHeaders(headers).data(obj).build();
+            Object data = obj != null ? obj : message;
+
+            return Message.withHeaders(headers).data(data).build();
         }
         return null;
     }

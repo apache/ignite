@@ -44,6 +44,7 @@ import org.apache.ignite.internal.configuration.testframework.InjectConfiguratio
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.internal.network.serialization.SerializationService;
+import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
@@ -183,7 +184,7 @@ public class NettyServerTest {
                 },
                 (socketAddress, message) -> {
                 },
-                new SerializationService(registry, null),
+                new SerializationService(registry, mock(UserObjectSerializationContext.class)),
                 bootstrapFactory
         );
 

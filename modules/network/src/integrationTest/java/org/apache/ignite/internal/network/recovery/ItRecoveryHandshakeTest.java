@@ -31,6 +31,7 @@ import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCo
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import io.netty.channel.Channel;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.netty.NettySender;
 import org.apache.ignite.internal.network.serialization.SerializationService;
+import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -400,7 +402,7 @@ public class ItRecoveryHandshakeTest {
             ClientStageFail clientHandshakeFailAt
     ) {
         var registry = new TestMessageSerializationRegistryImpl();
-        var serializationService = new SerializationService(registry, null);
+        var serializationService = new SerializationService(registry, mock(UserObjectSerializationContext.class));
 
         var messageFactory = new NetworkMessagesFactory();
 
@@ -439,7 +441,7 @@ public class ItRecoveryHandshakeTest {
      */
     private ConnectionManager startManager(int port) {
         var registry = new TestMessageSerializationRegistryImpl();
-        var serializationService = new SerializationService(registry, null);
+        var serializationService = new SerializationService(registry, mock(UserObjectSerializationContext.class));
 
         var messageFactory = new NetworkMessagesFactory();
 

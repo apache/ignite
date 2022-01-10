@@ -34,7 +34,7 @@ import java.util.Map;
 import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
-import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.apache.ignite.internal.network.serialization.SpecialMethodInvocationException;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * Default implementation of {@link UserObjectMarshaller}.
  */
 public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
-    private final ClassDescriptorFactoryContext localDescriptors;
+    private final ClassDescriptorRegistry localDescriptors;
     private final ClassDescriptorFactory descriptorFactory;
 
     private final BuiltInNonContainerMarshallers builtInNonContainerMarshallers = new BuiltInNonContainerMarshallers();
@@ -59,7 +59,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
      * @param localDescriptors registry of local descriptors to consult with (and to write to if an unseen class is encountered)
      * @param descriptorFactory  descriptor factory to create new descriptors from classes
      */
-    public DefaultUserObjectMarshaller(ClassDescriptorFactoryContext localDescriptors, ClassDescriptorFactory descriptorFactory) {
+    public DefaultUserObjectMarshaller(ClassDescriptorRegistry localDescriptors, ClassDescriptorFactory descriptorFactory) {
         this.localDescriptors = localDescriptors;
         this.descriptorFactory = descriptorFactory;
 
@@ -72,13 +72,8 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         );
     }
 
-    /**
-     * Marshals an object detecting its type from the value.
-     *
-     * @param object object to marshal
-     * @return marshalled representation
-     * @throws MarshalException if marshalling fails
-     */
+    /** {@inheritDoc} */
+    @Override
     public MarshalledObject marshal(@Nullable Object object) throws MarshalException {
         return marshal(object, objectClass(object));
     }

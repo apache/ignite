@@ -15,26 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
-import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
-import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link IdIndexedDescriptors} implementation that is backed by a {@link ClassDescriptorRegistry}.
+ * Descriptor provider that uses {@link ClassDescriptorRegistry} for built-in descriptor ids and
+ * delegates to another {@link IdIndexedDescriptors} for other ids.
  */
-class ContextBasedIdIndexedDescriptors implements IdIndexedDescriptors {
-    private final ClassDescriptorRegistry registry;
+public class CompositeIdIndexedDescriptors implements IdIndexedDescriptors {
+    private final IdIndexedDescriptors descriptors;
+    private final ClassDescriptorRegistry ctx;
 
-    ContextBasedIdIndexedDescriptors(ClassDescriptorRegistry registry) {
-        this.registry = registry;
+    public CompositeIdIndexedDescriptors(IdIndexedDescriptors descriptors,
+            ClassDescriptorRegistry ctx) {
+        this.descriptors = descriptors;
+        this.ctx = ctx;
     }
 
+    /** {@inheritDoc} */
     @Override
-    @Nullable
-    public ClassDescriptor getDescriptor(int descriptorId) {
-        return registry.getDescriptor(descriptorId);
+    public @Nullable ClassDescriptor getDescriptor(int descriptorId) {
+        if (ClassDescriptorRegistry.shouldBeBuiltIn(descriptorId)) {
+            return ctx.getDescriptor(descriptorId);
+        }
+
+        return descriptors.getDescriptor(descriptorId);
     }
 }

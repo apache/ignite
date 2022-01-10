@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.sql.engine.message;
 
 import java.util.List;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * QueryBatchMessage interface.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-@Transferable(value = SqlQueryMessageGroup.QUERY_BATCH_MESSAGE, autoSerializable = false)
+@Transferable(value = SqlQueryMessageGroup.QUERY_BATCH_MESSAGE)
 public interface QueryBatchMessage extends ExecutionContextAwareMessage {
     /**
      * Get exchange ID.
@@ -44,5 +45,6 @@ public interface QueryBatchMessage extends ExecutionContextAwareMessage {
     /**
      * Get rows.
      */
+    @Marshallable
     List<Object> rows();
 }

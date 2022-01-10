@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.network.serialization;
 
-import java.util.Map;
+import org.apache.ignite.internal.network.serialization.marshal.MarshalException;
+import org.apache.ignite.internal.network.serialization.marshal.MarshalledObject;
+import org.apache.ignite.internal.network.serialization.marshal.UnmarshalException;
+import org.apache.ignite.internal.network.serialization.marshal.UserObjectMarshaller;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Serialization service implementation.
@@ -30,12 +34,29 @@ public class SerializationService {
     /** Message serialization registry. */
     private final MessageSerializationRegistry messageRegistry;
 
-    /** User object serializer. */
-    private final UserObjectSerializer userObjectSerializer;
+    /** Descriptor registry. */
+    private final ClassDescriptorRegistry descriptorRegistry;
 
-    public SerializationService(MessageSerializationRegistry messageRegistry, UserObjectSerializer userObjectSerializer) {
+    /** Descriptor factory. */
+    private final ClassDescriptorFactory descriptorFactory;
+
+    /** User object marshaller. */
+    private final UserObjectMarshaller marshaller;
+
+    /**
+     * Constructor.
+     *
+     * @param messageRegistry Message registry.
+     * @param userObjectSerializationContext User object serialization context.
+     */
+    public SerializationService(
+            MessageSerializationRegistry messageRegistry,
+            UserObjectSerializationContext userObjectSerializationContext
+    ) {
         this.messageRegistry = messageRegistry;
-        this.userObjectSerializer = userObjectSerializer;
+        this.descriptorRegistry = userObjectSerializationContext.descriptorRegistry();
+        this.descriptorFactory = userObjectSerializationContext.descriptorFactory();
+        this.marshaller = userObjectSerializationContext.marshaller();
     }
 
     /**
@@ -59,39 +80,36 @@ public class SerializationService {
     /**
      * Serializes a marshallable object to a byte array.
      *
-     * @see UserObjectSerializer#write(Object)
+     * @param object Object to serialize.
+     * @param <T> Object's type.
+     * @throws UserObjectSerializationException If failed to serialize an object.
+     * @see UserObjectMarshaller#marshal(Object, Class)
      */
-    public <T> SerializationResult writeMarshallable(T object) {
-        return userObjectSerializer.write(object);
+    public <T> MarshalledObject writeMarshallable(T object) throws UserObjectSerializationException {
+        try {
+            return marshaller.marshal(object);
+        } catch (MarshalException e) {
+            throw new UserObjectSerializationException("Failed to serialize object of type " + object.getClass().getName(), e);
+        }
     }
 
     /**
      * Deserializes a marshallable object from a byte array.
      *
-     * @see UserObjectSerializer#read(Map, byte[])
+     * @param descriptors Descriptors provider.
+     * @param array Byte array that contains a serialized object.
+     * @param <T> Object's type.
+     * @throws UserObjectSerializationException If failed to deserialize an object.
+     * @see UserObjectMarshaller#unmarshal(byte[], IdIndexedDescriptors)
      */
-    public <T> T readMarshallable(Map<Integer, ClassDescriptor> descriptor, byte[] array) {
-        return userObjectSerializer.read(descriptor, array);
-    }
-
-    /**
-     * Returns {@code true} if type descriptor id belongs to the range reserved for built-in types, {@code false} otherwise.
-     *
-     * @param typeDescriptorId Type descriptor id.
-     * @return {@code true} if descriptor belongs to the range reserved for built-in types, {@code false} otherwise.
-     */
-    public boolean shouldBeBuiltIn(int typeDescriptorId) {
-        return userObjectSerializer.shouldBeBuiltIn(typeDescriptorId);
-    }
-
-    /**
-     * Gets a class descriptor by the descriptor id.
-     *
-     * @param typeDescriptorId Type descriptor id.
-     * @return Class descriptor.
-     */
-    public ClassDescriptor getClassDescriptor(int typeDescriptorId) {
-        return userObjectSerializer.getClassDescriptor(typeDescriptorId);
+    @Nullable
+    public <T> T readMarshallable(IdIndexedDescriptors descriptors, byte[] array)
+            throws UserObjectSerializationException {
+        try {
+            return marshaller.unmarshal(array, descriptors);
+        } catch (UnmarshalException e) {
+            throw new UserObjectSerializationException("Failed to deserialize object: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -100,7 +118,27 @@ public class SerializationService {
      * @param typeName Class' name.
      * @return Class descriptor.
      */
-    public ClassDescriptor getClassDescriptor(String typeName) {
-        return userObjectSerializer.getClassDescriptor(typeName);
+    public ClassDescriptor getOrCreateDescriptor(String typeName) {
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(typeName);
+        } catch (ClassNotFoundException e) {
+            throw new SerializationException("Class " + typeName + " is not found", e);
+        }
+
+        ClassDescriptor descriptor = descriptorRegistry.getDescriptor(clazz);
+        if (descriptor != null) {
+            return descriptor;
+        } else {
+            return descriptorFactory.create(clazz);
+        }
+    }
+
+    public ClassDescriptor getDescriptor(int descriptorId) {
+        return descriptorRegistry.getDescriptor(descriptorId);
+    }
+
+    public ClassDescriptorRegistry getDescriptorRegistry() {
+        return descriptorRegistry;
     }
 }

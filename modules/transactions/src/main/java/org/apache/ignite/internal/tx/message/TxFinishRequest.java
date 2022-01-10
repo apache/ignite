@@ -21,18 +21,20 @@ import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.internal.tx.Timestamp;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * Submit an action to a replication group.
  */
-@Transferable(value = TxMessageGroup.TX_FINISH_REQUEST, autoSerializable = false)
+@Transferable(value = TxMessageGroup.TX_FINISH_REQUEST)
 public interface TxFinishRequest extends NetworkMessage, Serializable {
     /**
      * Returns the timestamp.
      *
      * @return The timestamp.
      */
+    @Marshallable
     Timestamp timestamp();
 
     /**
@@ -47,5 +49,6 @@ public interface TxFinishRequest extends NetworkMessage, Serializable {
      *
      * @return Enlisted partition groups.
      */
+    @Marshallable
     Set<String> groups();
 }

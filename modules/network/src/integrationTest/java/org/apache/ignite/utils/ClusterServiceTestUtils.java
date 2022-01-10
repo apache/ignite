@@ -20,6 +20,11 @@ package org.apache.ignite.utils;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +34,7 @@ import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.configuration.schemas.network.NodeFinderType;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
+import org.apache.ignite.internal.network.NetworkMessagesSerializationRegistryInitializer;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
@@ -39,12 +45,40 @@ import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TopologyService;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.network.serialization.MessageSerializationRegistryInitializer;
 import org.junit.jupiter.api.TestInfo;
 
 /**
  * Test utils that provide sort of cluster service mock that manages required node configuration internally.
  */
 public class ClusterServiceTestUtils {
+    /** Registry initializers collected via reflection. */
+    private static final List<Method> REGISTRY_INITIALIZERS = new ArrayList<>();
+
+    static {
+        // Automatically find all registry initializers to avoid configuring serialization registry manually in every test.
+        String className = MessageSerializationRegistryInitializer.class.getName();
+
+        // ClassGraph library should be in classpath along with ignite-network test-jar
+        try (ScanResult scanResult = new ClassGraph().acceptPackages("org.apache.ignite").enableClassInfo().scan()) {
+            for (ClassInfo ci : scanResult.getClassesImplementing(className)) {
+                Class<?> clazz = ci.loadClass();
+                if (clazz == NetworkMessagesSerializationRegistryInitializer.class) {
+                    // This class is registered automatically in the MessageSerializationRegistryImpl
+                    continue;
+                }
+
+                try {
+                    Method method = clazz.getMethod("registerFactories", MessageSerializationRegistry.class);
+                    REGISTRY_INITIALIZERS.add(method);
+                } catch (Throwable e) {
+                    throw new RuntimeException("Failed to collect MessageSerializationRegistryInitializers", e);
+                }
+            }
+        }
+    }
+
     /**
      * Creates a cluster service and required node configuration manager beneath it. Populates node configuration with specified port.
      * Manages configuration manager lifecycle: on cluster service start starts node configuration manager, on cluster service stop - stops
@@ -61,8 +95,17 @@ public class ClusterServiceTestUtils {
             NodeFinder nodeFinder,
             TestScaleCubeClusterServiceFactory clusterSvcFactory
     ) {
-        var messageSerializationRegistry = new MessageSerializationRegistryImpl();
-        var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), messageSerializationRegistry);
+        var registry = new MessageSerializationRegistryImpl();
+
+        REGISTRY_INITIALIZERS.forEach(c -> {
+            try {
+                c.invoke(c.getDeclaringClass(), registry);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to invoke registry initializer", e);
+            }
+        });
+
+        var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), registry);
 
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
                 Collections.singleton(NetworkConfiguration.KEY),

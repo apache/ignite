@@ -34,7 +34,11 @@ import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.SerializationService;
+import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
+import org.apache.ignite.internal.network.serialization.marshal.DefaultUserObjectMarshaller;
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -42,6 +46,7 @@ import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.NodeFinderFactory;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Cluster service factory that uses ScaleCube for messaging and topology services.
@@ -74,7 +79,9 @@ public class ScaleCubeClusterServiceFactory {
             public void start() {
                 String consistentId = context.getName();
 
-                var serializationService = new SerializationService(context.getSerializationRegistry(), null);
+                UserObjectSerializationContext userObjectSerialization = createUserObjectSerializationContext();
+
+                var serializationService = new SerializationService(context.getSerializationRegistry(), userObjectSerialization);
 
                 UUID launchId = UUID.randomUUID();
 
@@ -125,6 +132,22 @@ public class ScaleCubeClusterServiceFactory {
                 var localMembershipEvent = MembershipEvent.createAdded(cluster.member(), null, System.currentTimeMillis());
 
                 topologyService.onMembershipEvent(localMembershipEvent);
+            }
+
+            /**
+             * Creates everything that is needed for the user object serialization.
+             *
+             * @return User object serialization context.
+             */
+            @NotNull
+            private UserObjectSerializationContext createUserObjectSerializationContext() {
+                var userObjectDescriptorRegistry = new ClassDescriptorRegistry();
+                var userObjectDescriptorFactory = new ClassDescriptorFactory(userObjectDescriptorRegistry);
+
+                var userObjectMarshaller = new DefaultUserObjectMarshaller(userObjectDescriptorRegistry, userObjectDescriptorFactory);
+
+                return new UserObjectSerializationContext(userObjectDescriptorRegistry, userObjectDescriptorFactory,
+                        userObjectMarshaller);
             }
 
             /** {@inheritDoc} */

@@ -17,17 +17,18 @@
 
 package org.apache.ignite.raft.jraft.rpc;
 
+import org.apache.ignite.network.annotations.Marshallable;
 import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.RaftMessageGroup;
-import org.apache.ignite.raft.jraft.rpc.Message;
 
 /**
  * The result of an action.
  */
-@Transferable(value = RaftMessageGroup.RpcActionMessageGroup.ACTION_RESPONSE, autoSerializable = false)
+@Transferable(value = RaftMessageGroup.RpcActionMessageGroup.ACTION_RESPONSE)
 public interface ActionResponse extends Message {
     /**
      * @return A result for this request, can be of any type.
      */
+    @Marshallable
     Object result();
 }

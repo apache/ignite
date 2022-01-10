@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The result of an action.
  */
-@Transferable(value = TxMessageGroup.TX_FINISH_RESPONSE, autoSerializable = false)
+@Transferable(value = TxMessageGroup.TX_FINISH_RESPONSE)
 public interface TxFinishResponse extends NetworkMessage, Serializable {
     /**
      * Returns the error message.
