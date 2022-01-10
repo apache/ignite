@@ -89,9 +89,7 @@ namespace ignite
             if (!client.IsValid() || client.Get()->IsClosed())
                 return;
 
-            bool closed = client.Get()->Shutdown();
-            if (closed)
-                HandleConnectionClosed(id, err);
+            client.Get()->Shutdown(err);
         }
 
         void LinuxAsyncClientPool::CloseAndRelease(uint64_t id, const IgniteError *err)

@@ -43,29 +43,30 @@ namespace ignite
             range(range),
             sendPackets(),
             sendCs(),
-            recvPacket()
+            recvPacket(),
+            closeErr(IgniteError::IGNITE_SUCCESS)
         {
             // No-op.
         }
 
         LinuxAsyncClient::~LinuxAsyncClient()
         {
-            Shutdown();
+            Shutdown(0);
 
             Close();
         }
 
-        bool LinuxAsyncClient::Shutdown()
+        bool LinuxAsyncClient::Shutdown(const IgniteError* err)
         {
-            State::Type stateBefore = state;
+            common::concurrent::CsLockGuard lock(sendCs);
+            if (state != State::CONNECTED)
+                return false;
 
-            if (state == State::CONNECTED)
-            {
-                shutdown(fd, SHUT_RDWR);
-                state = State::SHUTDOWN;
-            }
+            closeErr = err ? *err : IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection closed by application");
+            shutdown(fd, SHUT_RDWR);
+            state = State::SHUTDOWN;
 
-            return stateBefore == State::CONNECTED;
+            return true;
         }
 
         bool LinuxAsyncClient::Close()

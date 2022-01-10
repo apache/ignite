@@ -262,7 +262,6 @@ void startAnotherClientAndTx(SharedPointer<SingleLatch>& l)
 
     transactions::ClientTransaction tx = transactions.TxStart();
 
-    std::cout << "Setting latch" << std::endl;
     l.Get()->CountDown();
 
     cache.Put(2, 20);
@@ -317,7 +316,6 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
     // Check multi threads.
 
-    std::cout << "Making latch" << std::endl;
     SharedPointer<SingleLatch> latch = SharedPointer<SingleLatch>(new SingleLatch());
 
     tx = transactions.TxStart();
@@ -326,7 +324,6 @@ BOOST_AUTO_TEST_CASE(TestTxOps)
 
     boost::thread t2(startAnotherClientAndTx, latch);
 
-    std::cout << "Waiting for latch" << std::endl;
     latch.Get()->Await();
 
     tx.Rollback();

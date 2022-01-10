@@ -40,6 +40,21 @@ namespace ignite
          */
         class LinuxAsyncClient
         {
+            /**
+             * State.
+             */
+            struct State
+            {
+                enum Type
+                {
+                    CONNECTED,
+
+                    SHUTDOWN,
+
+                    CLOSED,
+                };
+            };
+
         public:
             enum { BUFFER_SIZE = 0x10000 };
 
@@ -66,9 +81,10 @@ namespace ignite
              * Can be called from external threads.
              * Can be called from WorkerThread.
              *
+             * @param err Error message. Can be null.
              * @return @c true if shutdown performed successfully.
              */
-            bool Shutdown();
+            bool Shutdown(const IgniteError* err);
 
             /**
              * Close client.
@@ -174,25 +190,20 @@ namespace ignite
              */
             bool IsClosed() const
             {
-                return fd < 0;
+                return state == State::CLOSED;
+            }
+
+            /**
+             * Get closing error for the connection. Can be IGNITE_SUCCESS.
+             *
+             * @return Connection error.
+             */
+            const IgniteError& GetCloseError() const
+            {
+                return closeErr;
             }
 
         private:
-            /**
-             * State.
-             */
-            struct State
-            {
-                enum Type
-                {
-                    CONNECTED,
-
-                    SHUTDOWN,
-
-                    CLOSED,
-                };
-            };
-
             /**
              * Send next packet in queue.
              *
@@ -227,6 +238,9 @@ namespace ignite
 
             /** Packet that is currently received. */
             impl::interop::SP_InteropMemory recvPacket;
+
+            /** Closing error. */
+            IgniteError closeErr;
         };
 
         /** Shared pointer to async client. */

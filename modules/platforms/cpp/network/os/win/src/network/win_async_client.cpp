@@ -61,10 +61,10 @@ namespace ignite
             std::cout << "=============== WinAsyncClient::Shutdown state=" << state << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
 
-            closeErr = err ? *err : IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection closed by application");
-
             if (State::CONNECTED != state && State::IN_POOL != state)
                 return false;
+
+            closeErr = err ? *err : IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection closed by application");
 
             shutdown(socket, SD_BOTH);
 
