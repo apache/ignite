@@ -104,13 +104,13 @@ The consumer of change events.  It should be implemented by the user.
 The following metrics are provided by the application (additional metrics can be provided by the consumer):
 |===
 |Name |Description
-| CurrentSegmentIndex | Index of currently processed WAL segment.
-| CommittedSegmentIndex | Index of WAL segment contains last commited state.
-| CommittedSegmentOffset | Commited offset in bytes inside WAL segment.
-| LastSegmentConsumptionTime | Time in milliseconds when last segment processing was started.
-| BinaryMetaDir | Binary meta directory this application reads from.
-| MarshallerDir | Marshaller directory this application reads from.
-| CdcDir | CDC directory this application reads from.
+| CurrentSegmentIndex | Index of the currently processing WAL segment.
+| CommittedSegmentIndex | Index of the WAL segment that contains the last committed state.
+| CommittedSegmentOffset | Committed offset in bytes inside the WAL segment.
+| LastSegmentConsumptionTime | Timestamp (in milliseconds) indicating the last segment processing start.
+| BinaryMetaDir | Binary meta-directory the application reads data from.
+| MarshallerDir | Marshaller directory the application reads data from.
+| CdcDir | The Change Data Capture directory the application reads data from.
 |===
 
 == Logging
