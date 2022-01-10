@@ -23,6 +23,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
+    /// <summary>
+    /// Tests platform cache with native persistence.
+    /// </summary>
     public class PlatformCacheRestoreFromPersistenceTest
     {
         /** Temp dir for WAL. */
@@ -89,6 +92,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 });
 
                 cache[1] = 1;
+
+                Assert.AreEqual(1, cache.GetSize());
+                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
             }
 
             // Start Ignite, verify data survival.
