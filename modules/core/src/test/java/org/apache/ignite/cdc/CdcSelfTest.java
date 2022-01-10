@@ -116,12 +116,11 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg.setConsistentId(consistentId);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(persistenceEnabled)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
-                .setCdcEnabled(!persistenceEnabled)));
+                .setCdcEnabled(true)));
 
         if (pageSz != 0)
             cfg.getDataStorageConfiguration().setPageSize(pageSz);

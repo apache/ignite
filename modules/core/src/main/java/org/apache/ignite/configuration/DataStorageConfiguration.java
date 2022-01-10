@@ -801,30 +801,6 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets flag indicating whether CDC enabled.
-     *
-     * @param cdcEnabled CDC enabled flag.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
-        this.cdcEnabled = cdcEnabled;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether CDC is enabled.
-     * Default value is {@code false}.
-     *
-     * @return Metrics enabled flag.
-     */
-    @IgniteExperimental
-    public boolean isCdcEnabled() {
-        return cdcEnabled;
-    }
-
-    /**
      * Gets flag indicating whether persistence metrics collection is enabled.
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *

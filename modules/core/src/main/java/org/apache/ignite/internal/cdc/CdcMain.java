@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
@@ -74,7 +75,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  *
  * Ignite node should be explicitly configured for using {@link CdcMain}.
  * <ol>
- *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
+ *     <li>Set {@link DataRegionConfiguration#setCdcEnabled(boolean)} to true.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setCdcWalPath(String)} to path to the directory
  *     to store WAL segments for CDC.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for
@@ -101,7 +102,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  *     <li>Infinitely waits for new available segment and processes it.</li>
  * </ol>
  *
- * @see DataStorageConfiguration#setCdcEnabled(boolean)
+ * @see DataRegionConfiguration#setCdcEnabled(boolean)
  * @see DataStorageConfiguration#setCdcWalPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
  * @see CdcCommandLineStartup

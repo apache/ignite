@@ -2016,15 +2016,9 @@ public class GridCacheUtils {
         if (cfg == null)
             return false;
 
-        if (isPersistenceEnabled(cfg))
-            return cfg.isCdcEnabled();
-
         DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
 
-        if (dfltReg == null)
-            return false;
-
-        if (dfltReg.isCdcEnabled())
+        if (dfltReg != null && dfltReg.isCdcEnabled())
             return true;
 
         DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
