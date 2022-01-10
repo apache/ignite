@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.client;
 
 /**
- * Zookeeper IP Finder tests.
+ * Retry policy that always returns {@code false}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    ZookeeperIpFinderTest.class
-})
-public class ZookeeperIpFinderTestSuite {
+public class ClientRetryNonePolicy implements ClientRetryPolicy {
+    /** */
+    private static final long serialVersionUID = 0L;
 
+    /** {@inheritDoc} */
+    @Override public boolean shouldRetry(ClientRetryPolicyContext context) {
+        return false;
+    }
 }

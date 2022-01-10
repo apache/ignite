@@ -98,7 +98,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                 List<Serializable> attrVals = new ArrayList<>();
 
                 ((SystemView<Object>)sysView).walker().visitAll(row, new AttributeWithValueVisitor() {
-                    @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
+                    @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
                         if (clazz.isEnum())
                             attrVals.add(val == null ? null : ((Enum<?>)val).name());
                         else if (Class.class.isAssignableFrom(clazz))

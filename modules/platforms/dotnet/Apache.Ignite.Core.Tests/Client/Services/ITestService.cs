@@ -62,5 +62,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
         /** */
         Guid GetNodeId();
+        
+        /** */
+        string ContextAttribute(string name);
+        
+        /** */
+        byte[] ContextBinaryAttribute(string name);
     }
 }

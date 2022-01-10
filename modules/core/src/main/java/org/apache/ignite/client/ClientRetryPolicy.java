@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client feature ids. Values represent the index in the bit array.
-    /// Unsupported flags must be commented out.
-    /// </summary>
-    internal enum ClientBitmaskFeature
-    {
-        // UserAttributes = 0,
-        ExecuteTaskByName = 1,
-        // ClusterStates = 2,
-        ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4,
-        ServiceInvoke = 5, // The flag is not necessary and exists for legacy reasons
-        // DefaultQueryTimeout = 6, // IGNITE-13692
-        QueryPartitionsBatchSize = 7,
-        BinaryConfiguration = 8,
-        ServiceInvokeCtx = 10
-    }
+package org.apache.ignite.client;
+
+import java.io.Serializable;
+
+/**
+ * Client retry policy determines whether client operations that have failed due to a connection issue should be retried.
+ */
+public interface ClientRetryPolicy extends Serializable {
+    /**
+     * Gets a value indicating whether a client operation that has failed due to a connection issue should be retried.
+     *
+     * @param context Context.
+     * @return {@code true} if the operation should be retried on another connection, {@code false} otherwise.
+     */
+    public boolean shouldRetry(ClientRetryPolicyContext context);
 }

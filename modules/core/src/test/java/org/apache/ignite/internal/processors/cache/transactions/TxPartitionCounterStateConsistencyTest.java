@@ -1381,9 +1381,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
                 DataRecord rec = (DataRecord)tup.get2();
 
-                assertEquals(1, rec.writeEntries().size());
+                assertEquals(1, rec.entryCount());
 
-                DataEntry entry = rec.writeEntries().get(0);
+                DataEntry entry = rec.get(0);
 
                 assertEquals(op.get1(),
                     entry.key().value(internalCache(ig, DEFAULT_CACHE_NAME).context().cacheObjectContext(), false));
