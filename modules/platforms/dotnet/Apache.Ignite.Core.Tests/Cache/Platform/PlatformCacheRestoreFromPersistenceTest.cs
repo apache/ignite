@@ -17,8 +17,90 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Platform
 {
+    using System.IO;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Configuration;
+    using NUnit.Framework;
+
     public class PlatformCacheRestoreFromPersistenceTest
     {
+        /** Temp dir for WAL. */
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            TestUtils.ClearWorkDir();
+        }
+
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            if (Directory.Exists(_tempDir))
+            {
+                Directory.Delete(_tempDir, true);
+            }
+
+            TestUtils.ClearWorkDir();
+        }
+
+        /// <summary>
+        /// Tests that platform cache data survives node restart.
+        /// </summary>
+        [Test]
+        public void TestPlatformCacheDataRestoresOnNodeRestart()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    StoragePath = Path.Combine(_tempDir, "Store"),
+                    WalPath = Path.Combine(_tempDir, "WalStore"),
+                    WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                        PersistenceEnabled = true
+                    }
+                }
+            };
+
+            const string cacheName = "persistentCache";
+
+            // Start Ignite, put data, stop.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.GetCluster().SetActive(true);
+
+                // Create cache with default region (persistence enabled), add data.
+                var cache = ignite.CreateCache<int, int>(new CacheConfiguration
+                {
+                    Name = cacheName,
+                    PlatformCacheConfiguration = new PlatformCacheConfiguration()
+                });
+
+                cache[1] = 1;
+            }
+
+            // Start Ignite, verify data survival.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.GetCluster().SetActive(true);
+
+                // Persistent cache already exists and contains data.
+                var cache = ignite.GetCache<int, int>(cacheName);
+                Assert.AreEqual(1, cache.GetSize());
+                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
+            }
+        }
     }
 }
