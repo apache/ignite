@@ -57,6 +57,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1096,8 +1097,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config().getDataStorageConfiguration()))
             return;
 
-        //TODO: iterate till the end and then resume logging.
-        cctx.wal().resumeLogging(null);
+        // TODO: ensure that with "false" it will works correctly. No need to deserialize all record during restore.
+        WALIterator iter = cctx.wal().replay(null, (type, ptr) -> true);
+
+        while (iter.hasNext())
+            iter.next();
+
+        cctx.wal().resumeLogging(iter.lastRead().orElse(null));
     }
 
     /**

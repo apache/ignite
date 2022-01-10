@@ -21,12 +21,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,10 +39,10 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,6 +91,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
+/*
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
                 for (boolean persistenceEnabled : new boolean[] {true, false}) {
@@ -101,6 +102,10 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
 
         params.removeIf(p -> (boolean)p[3]);
+*/
+
+        params.add(new Object[] {false, WALMode.FSYNC, null, false, 0});
+        params.add(new Object[] {false, WALMode.FSYNC, null, true, 0});
 
         return params;
     }
@@ -196,6 +201,70 @@ public class CdcSelfTest extends AbstractCdcTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** Test check that state restored correctly and next event read by CDC on each restart. */
+    @Test
+    public void testReadFromNextEntry() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        IgniteEx ign = startGrid(0);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, KEYS_CNT / 2);
+        Thread.sleep(WAL_ARCHIVE_TIMEOUT * 2); // TODO: refactor to wait for next segment index from WAL.
+        addData(cache, KEYS_CNT / 2, KEYS_CNT);
+
+        AtomicInteger expKey = new AtomicInteger();
+        int lastKey = 0;
+
+        while (expKey.get() != KEYS_CNT) {
+            String errMsg = "Expected fail";
+
+            CdcConsumer consumeOnce = new CdcConsumer() {
+                boolean oneConsumed;
+
+                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    // Fail application after one event read AND state committed.
+                    if (oneConsumed)
+                        throw new RuntimeException(errMsg);
+
+                    CdcEvent evt = evts.next();
+
+                    assertEquals(expKey.get(), evt.key());
+
+                    expKey.incrementAndGet();
+
+                    // Fail application if all expected data read e.g. next event doesn't exist.
+                    if (expKey.get() == KEYS_CNT)
+                        throw new RuntimeException(errMsg);
+
+                    oneConsumed = true;
+
+                    return true;
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
+                @Override public void start(MetricRegistry mreg) {
+                    // No-op.
+                }
+            };
+
+            IgniteInternalFuture<?> fut = runAsync(createCdc(consumeOnce, cfg));
+
+            assertTrue(waitForCondition(fut::isDone, getTestTimeout()));
+
+            assertEquals(1, expKey.get() - lastKey);
+            assertEquals(errMsg, fut.error().getMessage());
+
+            lastKey = expKey.get();
+        }
     }
 
     /** */
