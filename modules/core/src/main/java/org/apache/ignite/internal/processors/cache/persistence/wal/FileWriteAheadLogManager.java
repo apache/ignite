@@ -117,6 +117,7 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -475,7 +476,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            if (dsCfg.isCdcEnabled()) {
+            if (CU.isCdcEnabled(dsCfg)) {
                 walCdcDir = initDirectory(
                     dsCfg.getCdcWalPath(),
                     DataStorageConfiguration.DFLT_WAL_CDC_PATH,
@@ -2080,7 +2081,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (dsCfg.isCdcEnabled())
+                if (CU.isCdcEnabled(dsCfg))
                     Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
 
                 if (mode != WALMode.NONE) {

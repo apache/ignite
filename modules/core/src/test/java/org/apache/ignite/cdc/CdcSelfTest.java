@@ -87,7 +87,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     public int pageSz;
 
     /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, persistenceEnabled={2}, metricExporter={3}")
+    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, metrics={2}, persistence={3}, page={4}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
