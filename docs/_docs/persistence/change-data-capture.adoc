@@ -41,7 +41,7 @@ The state of consumption can be saved to continue from it in case of any failure
 
 == Configuration
 
-=== Ignite node:
+=== Ignite Node
 
 [cols="20%,45%,35%",opts="header"]
 |===
