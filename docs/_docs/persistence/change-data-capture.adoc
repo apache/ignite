@@ -53,10 +53,11 @@ The state of consumption can be saved to continue from it in case of any failure
 
 === Change Data Capture Application
 
-CDC configured in the same manner as Ignite node via spring XML file.
-`ignite-cdc.sh` require both Ignite and CDC configuration to start.
-`IgniteConfiguration` used to determine common options like path to CDC directory, node consistent id and others.
-And `CdcConfiguration` contains options specifically for `ignite-cdc.sh`.
+Change Data Capture is configured in the same way as the Ignite node - via the spring XML file:
+
+* `ignite-cdc.sh` requires both Ignite and Change Data Capture configurations to start;
+* `IgniteConfiguration` is used to determine common options like a path to the Change Data Capture directory, node consistent id, and other parameters;
+* `CdcConfiguration` contains `ignite-cdc.sh`-specific options.
 
 [cols="20%,45%,35%",opts="header"]
 |===
