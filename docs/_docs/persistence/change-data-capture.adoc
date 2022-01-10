@@ -22,11 +22,11 @@ WARNING: Change Data Capture is an experimental feature whose API or design arch
 
 Below are some of the Change Data Capture use cases:
 
- * Stream changes in Warehouse.
- * Update search index.
- * Calculate statistics (streaming queries).
- * Audit logs.
- * Async interaction with extenal system - moderation, business process invocation, etc.
+ * Streaming changes in Warehouse;
+ * Updating search index;
+ * Calculating statistics (streaming queries);
+ * Auditing logs;
+ * Async interaction with extenal system: Moderation, business process invocation, etc.
 
 Ignite implements CDC with an application `ignite-cdc.sh` and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
 
