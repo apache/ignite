@@ -119,7 +119,7 @@ The following metrics are provided by the application (additional metrics can be
 
 == Lifecycle
 
-IMPORTANT: `ignite-cdc.sh` implements fail-fast approach. It will just fail in case of any error. Restart should be configured with the OS tools.
+IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in case of any error. The restart procedure should be configured with the OS tools.
 
  1. Finds required shared directories. Values from provided `IgniteConfiguration` taken.
  2. Locks CDC directory.
