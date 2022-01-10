@@ -765,6 +765,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (val == null) {
                     if (isStartVersion()) {
+                        // TODO: Update platform cache somewhere here.
                         unswap(null, false);
 
                         val = this.val;
