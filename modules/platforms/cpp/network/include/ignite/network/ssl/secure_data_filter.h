@@ -158,9 +158,16 @@ namespace ignite
                      * Process new data.
                      *
                      * @param data Data received.
-                     * @return Decrypted data.
+                     * @return @c true if connection was established.
                      */
-                    DataBuffer ProcessData(const DataBuffer& data);
+                    bool ProcessData(DataBuffer& data);
+
+                    /**
+                     * Get pending decrypted data.
+                     *
+                     * @return Data buffer.
+                     */
+                    DataBuffer GetPendingDecryptedData();
 
                 private:
                     enum
@@ -181,13 +188,6 @@ namespace ignite
                      * @return Data buffer.
                      */
                     static DataBuffer GetPendingData(void* bio);
-
-                    /**
-                     * Get pending decrypted data.
-                     *
-                     * @return Data buffer.
-                     */
-                    DataBuffer GetPendingDecryptedData();
 
                     /** Flag indicating that secure connection is established. */
                     bool connected;

@@ -129,10 +129,10 @@ BOOST_AUTO_TEST_CASE(SslConnectionTimeout)
 BOOST_AUTO_TEST_CASE(SslCacheClientPutAllGetAll)
 {
     StartSslNode("node1");
-//    StartSslNode("node2");
+    StartSslNode("node2");
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11110");
 
     cfg.SetSslMode(SslMode::REQUIRE);
     cfg.SetSslCertFile(GetConfigFile("client_full.pem"));
@@ -144,29 +144,56 @@ BOOST_AUTO_TEST_CASE(SslCacheClientPutAllGetAll)
     cache::CacheClient<int32_t, std::string> cache =
             client.CreateCache<int32_t, std::string>("test");
 
-    enum { REQ_NUM = 1200 };
-    enum { BATCH_SIZE = 1200 };
+    enum { BATCH_SIZE = 20000 };
 
-//    for (int32_t i = 0; i < REQ_NUM; ++i)
-//    {
-        std::map<int32_t, std::string> values;
-        std::set<int32_t> keys;
+    std::map<int32_t, std::string> values;
+    std::set<int32_t> keys;
 
-        for (int32_t j = 0; j < BATCH_SIZE; ++j)
-        {
-            int32_t key = 0 * BATCH_SIZE + j;
+    for (int32_t j = 0; j < BATCH_SIZE; ++j)
+    {
+        int32_t key = BATCH_SIZE + j;
 
-            values[key] = "value_" + ignite::common::LexicalCast<std::string>(key);
-            keys.insert(key);
-        }
+        values[key] = "value_" + ignite::common::LexicalCast<std::string>(key);
+        keys.insert(key);
+    }
 
-        cache.PutAll(values);
+    cache.PutAll(values);
 
-        std::map<int32_t, std::string> retrieved;
-        cache.GetAll(keys, retrieved);
+    std::map<int32_t, std::string> retrieved;
+    cache.GetAll(keys, retrieved);
 
-        BOOST_REQUIRE(values == retrieved);
-//    }
+    BOOST_REQUIRE(values == retrieved);
+}
+
+BOOST_AUTO_TEST_CASE(SslCacheClientPutGet)
+{
+    StartSslNode("node1");
+    StartSslNode("node2");
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCertFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslKeyFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslCaFile(GetConfigFile("ca.pem"));
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache =
+            client.CreateCache<int32_t, std::string>("test");
+
+    enum { OPS_NUM = 100 };
+    for (int32_t j = 0; j < OPS_NUM; ++j)
+    {
+        int32_t key = OPS_NUM + j;
+        std::string value = "value_" + ignite::common::LexicalCast<std::string>(key);
+
+        cache.Put(key, value);
+        std::string retrieved = cache.Get(key);
+
+        BOOST_REQUIRE_EQUAL(value, retrieved);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

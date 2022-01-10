@@ -220,17 +220,25 @@ namespace ignite
 
                 SecureConnectionContext& context0 = *context.Get();
 
-                bool wasConnected = context0.IsConnected();
+                DataBuffer in(msg);
 
-                DataBuffer data = context.Get()->ProcessData(msg);
+                while (!in.IsEmpty())
+                {
+                    bool connectionHappened = context0.ProcessData(in);
 
-                bool nowConected = context0.IsConnected();
+                    if (connectionHappened)
+                        DataFilterAdapter::OnConnectionSuccess(context0.GetAddress(), id);
 
-                if (!wasConnected && nowConected)
-                    DataFilterAdapter::OnConnectionSuccess(context0.GetAddress(), id);
-
-                if (!data.IsEmpty())
-                    DataFilterAdapter::OnMessageReceived(id, data);
+                    if (context0.IsConnected())
+                    {
+                        DataBuffer data = context0.GetPendingDecryptedData();
+                        while (!data.IsEmpty())
+                        {
+                            DataFilterAdapter::OnMessageReceived(id, data);
+                            data = context0.GetPendingDecryptedData();
+                        }
+                    }
+                }
             }
 
             SecureDataFilter::SP_SecureConnectionContext SecureDataFilter::FindContext(uint64_t id)
@@ -347,34 +355,41 @@ namespace ignite
                 return SendPendingData();
             }
 
-            DataBuffer SecureDataFilter::SecureConnectionContext::ProcessData(const DataBuffer& data)
+            bool SecureDataFilter::SecureConnectionContext::ProcessData(DataBuffer& data)
             {
+                std::cout << "=============== SecureConnectionContext::ProcessData " << data.GetSize() << std::endl;
+
                 SslGateway &sslGateway = SslGateway::GetInstance();
                 int res = sslGateway.BIO_write_(static_cast<BIO*>(bioIn), data.GetData(), data.GetSize());
+
+                std::cout << "=============== SecureConnectionContext::ProcessData res=" << res << std::endl;
+
                 if (res <= 0)
                     throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Failed to process SSL data");
 
-                if (!connected)
+                data.Skip(res);
+
+                SendPendingData();
+
+                if (connected)
+                    return false;
+
+                if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
                 {
-                    if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
-                    {
-                        SendPendingData();
-
-                        DoConnect();
-
-                        if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
-                            return DataBuffer();
-                    }
-
-                    connected = true;
-
-                    recvBuffer = impl::interop::SP_InteropMemory(
-                        new impl::interop::InteropUnpooledMemory(RECEIVE_BUFFER_SIZE));
+                    DoConnect();
 
                     SendPendingData();
+
+                    if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
+                        return false;
                 }
 
-                return GetPendingDecryptedData();
+                connected = true;
+
+                recvBuffer = impl::interop::SP_InteropMemory(
+                    new impl::interop::InteropUnpooledMemory(RECEIVE_BUFFER_SIZE));
+
+                return true;
             }
 
             DataBuffer SecureDataFilter::SecureConnectionContext::GetPendingData(void* bio)
@@ -400,8 +415,12 @@ namespace ignite
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
                 SSL *ssl0 = static_cast<SSL*>(ssl);
+                std::cout << "=============== SecureConnectionContext::GetPendingDecryptedData recvBuffer.cap=" << recvBuffer.Get()->Capacity() << std::endl;
 
                 int res = sslGateway.SSL_read_(ssl0, recvBuffer.Get()->Data(), recvBuffer.Get()->Capacity());
+
+                std::cout << "=============== SecureConnectionContext::GetPendingDecryptedData res=" << res << std::endl;
+
                 if (res <= 0)
                     return DataBuffer();
 

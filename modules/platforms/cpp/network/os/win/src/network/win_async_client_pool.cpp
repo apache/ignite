@@ -95,6 +95,7 @@ namespace ignite
 
                 if (!clientIdMap.empty())
                 {
+                    // TODO: Re-factor this
                     std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
 
                     clientsCv.Wait(clientsCs);
