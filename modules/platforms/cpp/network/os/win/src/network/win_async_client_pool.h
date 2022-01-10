@@ -206,9 +206,6 @@ namespace ignite
             /** Clients critical section. */
             mutable common::concurrent::CriticalSection clientsCs;
 
-            /** Clients condition variable. Notified when no clients are left. */
-            mutable common::concurrent::ConditionVariable clientsCv;
-
             /** Client mapping ID -> client */
             std::map<uint64_t, SP_WinAsyncClient> clientIdMap;
         };

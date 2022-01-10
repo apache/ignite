@@ -91,14 +91,7 @@ namespace ignite
                     WinAsyncClient& client = *it->second.Get();
 
                     client.Shutdown(0);
-                }
-
-                if (!clientIdMap.empty())
-                {
-                    // TODO: Re-factor this
-                    std::cout << "=============== WinAsyncClientPool: Waiting for empty" << std::endl;
-
-                    clientsCv.Wait(clientsCs);
+                    client.Close();
                 }
             }
 
@@ -106,6 +99,8 @@ namespace ignite
 
             CloseHandle(iocp);
             iocp = NULL;
+
+            clientIdMap.clear();
         }
 
         bool WinAsyncClientPool::AddClient(SP_WinAsyncClient& client)
@@ -205,13 +200,6 @@ namespace ignite
                 client = it->second;
 
                 clientIdMap.erase(it);
-
-                std::cout << "=============== WorkerThread: clientIdMap.size=" << clientIdMap.size() << std::endl;
-                if (clientIdMap.empty())
-                {
-                    std::cout << "=============== WorkerThread: Notifying about empty" << std::endl;
-                    clientsCv.NotifyAll();
-                }
             }
 
             bool closed = client.Get()->Close();
@@ -220,8 +208,6 @@ namespace ignite
 
             if (closed)
             {
-                client.Get()->WaitForPendingIo();
-
                 connectingThread.NotifyFreeAddress(client.Get()->GetRange());
 
                 IgniteError err0(client.Get()->GetCloseError());

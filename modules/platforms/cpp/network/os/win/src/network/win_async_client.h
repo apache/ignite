@@ -111,11 +111,6 @@ namespace ignite
             bool Shutdown(const IgniteError* err);
 
             /**
-             * Wait for pending IO calls and wait till all IO are complete and reported.
-             */
-            void WaitForPendingIo();
-
-            /**
              * Close client.
              *
              * Should not be called from external threads.

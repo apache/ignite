@@ -47,11 +47,7 @@ namespace ignite
         WinAsyncClient::~WinAsyncClient()
         {
             if (State::IN_POOL == state)
-            {
                 Shutdown(0);
-
-                WaitForPendingIo();
-            }
 
             if (State::CLOSED != state)
                 Close();
@@ -75,16 +71,6 @@ namespace ignite
             state = State::SHUTDOWN;
 
             return true;
-        }
-
-        void WinAsyncClient::WaitForPendingIo()
-        {
-            std::cout << "=============== WinAsyncClient::WaitForPendingIo " << id << std::endl;
-            while (!HasOverlappedIoCompleted(&currentSend.overlapped))
-                GetOverlappedResult((HANDLE)socket, &currentSend.overlapped, NULL, TRUE);
-
-            while (!HasOverlappedIoCompleted(&currentRecv.overlapped))
-                GetOverlappedResult((HANDLE)socket, &currentRecv.overlapped, NULL, TRUE);
         }
 
         bool WinAsyncClient::Close()
