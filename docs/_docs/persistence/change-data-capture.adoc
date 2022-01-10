@@ -115,7 +115,7 @@ The following metrics are provided by the application (additional metrics can be
 
 == Logging
 
-`ignite-cdc.sh` use the same logging configuration as Ignite node. The only difference is log written in file "ignite-cdc.log"
+`ignite-cdc.sh` uses the same logging configuration as the Ignite node does. The only difference is that the log is written in the"ignite-cdc.log" file.
 
 == Lifecycle
 
