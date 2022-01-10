@@ -231,7 +231,7 @@ namespace ignite
                 {
                     if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
                     {
-                        HandleConnectionFailed("Can not establsih connection");
+                        HandleConnectionFailed("Can not establish connection");
 
                         continue;
                     }
