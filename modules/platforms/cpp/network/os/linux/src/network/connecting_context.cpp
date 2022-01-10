@@ -67,15 +67,11 @@ namespace ignite
 
             while (!currentInfo)
             {
-                std::cout << "=============== ConnectingContext::Next currentInfo=" << currentInfo << std::endl;
                 if (info)
                 {
                     freeaddrinfo(info);
                     info = 0;
                 }
-
-                std::cout << "=============== ConnectingContext::Next nextPort=" << nextPort << std::endl;
-                std::cout << "=============== ConnectingContext::Next range.range=" << range.range << std::endl;
 
                 if (nextPort > range.port + range.range)
                     return 0;
@@ -91,9 +87,6 @@ namespace ignite
 
                 // Resolve the server address and port
                 int res = getaddrinfo(range.host.c_str(), strPort.c_str(), &hints, &info);
-                std::cout << "=============== ConnectingContext::Next res=" << res << std::endl;
-                std::cout << "=============== ConnectingContext::Next info=" << info << std::endl;
-
                 if (res != 0)
                     return 0;
 

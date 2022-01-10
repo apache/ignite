@@ -80,7 +80,6 @@ namespace ignite
         {
             stopping = true;
             connectingThread.Stop();
-            std::cout << "=============== WinAsyncClientPool: connectingThread.Stopped" << std::endl;
 
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
@@ -112,11 +111,7 @@ namespace ignite
                 common::concurrent::CsLockGuard lock(clientsCs);
 
                 if (stopping)
-                {
-                    std::cout << "=============== WinAsyncClientPool: AddClient: stopping" << std::endl;
-
                     return false;
-                }
 
                 id = ++idGen;
                 clientRef.SetId(id);
@@ -172,7 +167,6 @@ namespace ignite
 
         bool WinAsyncClientPool::Send(uint64_t id, const DataBuffer& data)
         {
-            std::cout << "=============== Send: " << id << std::endl;
             if (stopping)
                 return false;
 
@@ -180,15 +174,11 @@ namespace ignite
             if (!client.IsValid())
                 return false;
 
-            std::cout << "=============== Send: Client found" << std::endl;
             return client.Get()->Send(data);
         }
 
         void WinAsyncClientPool::CloseAndRelease(uint64_t id, const IgniteError* err)
         {
-            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, id=" << id << std::endl;
-            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, err=" << (err ? err->GetText() : "NULL") << std::endl;
-
             SP_WinAsyncClient client;
             {
                 common::concurrent::CsLockGuard lock(clientsCs);
@@ -203,9 +193,6 @@ namespace ignite
             }
 
             bool closed = client.Get()->Close();
-
-            std::cout << "=============== WinAsyncClientPool: CloseAndRelease, closed=" << closed << std::endl;
-
             if (closed)
             {
                 connectingThread.NotifyFreeAddress(client.Get()->GetRange());
@@ -223,8 +210,6 @@ namespace ignite
 
         void WinAsyncClientPool::Close(uint64_t id, const IgniteError* err)
         {
-            std::cout << "=============== WinAsyncClientPool: Close, err=" << (err ? err->GetText() : "NULL") << std::endl;
-
             SP_WinAsyncClient client = FindClient(id);
             if (client.IsValid() && client.Get()->IsClosed())
                 client.Get()->Shutdown(err);

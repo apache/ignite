@@ -90,27 +90,13 @@ namespace ignite
                  */
                 void ProcessNotification(const network::DataBuffer& msg)
                 {
-                    std::cout << "=============== ProcessNotification: this=" << this << std::endl;
-                    std::cout << "=============== ProcessNotification: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
                     if (complete)
                         return;
 
                     if (handler.IsValid())
-                    {
-                        std::cout << "=============== ProcessNotification: handler.IsValid()" << std::endl;
-                        std::cout << "=============== ProcessNotification: handler=" << handler.Get() << std::endl;
-
                         complete = handler.Get()->OnNotification(msg);
-                        std::cout << "=============== ProcessNotification: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
-                    }
                     else
-                    {
-                        std::cout << "=============== ProcessNotification: !handler.IsValid()" << std::endl;
-
                         queue.push_back(msg.Clone());
-
-                        std::cout << "=============== ProcessNotification: queue.size=" << queue.size() << std::endl;
-                    }
                 }
 
                 /**
@@ -120,19 +106,13 @@ namespace ignite
                  */
                 void SetHandler(const SP_NotificationHandler& handler)
                 {
-                    std::cout << "=============== SetHandler: handler=" << &handler << std::endl;
                     if (this->handler.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Internal error: handler is already set for the notification");
 
                     this->handler = handler;
-                    std::cout << "=============== SetHandler: this->handler=" << this->handler.Get() << std::endl;
-
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
-                    {
-                        std::cout << "=============== SetHandler: complete=" << (complete ? "TRUE" : "FALSE") << std::endl;
                         complete = complete || this->handler.Get()->OnNotification(*it);
-                    }
 
                     queue.clear();
                 }

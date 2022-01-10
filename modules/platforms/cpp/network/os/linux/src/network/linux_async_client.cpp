@@ -103,12 +103,7 @@ namespace ignite
 
             DataBuffer& packet = sendPackets.front();
 
-            std::cout << "=============== LinuxAsyncClient::Send packet.size=" << packet.GetSize() << std::endl;
-
             ssize_t ret = send(fd, packet.GetData(), packet.GetSize(), 0);
-
-            std::cout << "=============== LinuxAsyncClient::Send ret=" << ret << std::endl;
-
             if (ret < 0)
                 return false;
 
@@ -130,8 +125,6 @@ namespace ignite
             }
 
             ssize_t res = recv(fd, recvPacket.Get()->Data(), recvPacket.Get()->Length(), 0);
-
-            std::cout << "=============== LinuxAsyncClient::Receive res=" << res << std::endl;
             if (res < 0)
                 return DataBuffer();
 
@@ -140,7 +133,6 @@ namespace ignite
 
         bool LinuxAsyncClient::StartMonitoring(int epoll0)
         {
-            std::cout << "=============== StartMonitoring epoll0=" << epoll0 << std::endl;
             if (epoll0 < 0)
                 return false;
 
@@ -150,9 +142,6 @@ namespace ignite
             event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 
             int res = epoll_ctl(epoll0, EPOLL_CTL_ADD, fd, &event);
-
-            std::cout << "=============== StartMonitoring res=" << res << std::endl;
-
             if (res < 0)
                 return false;
 
@@ -171,7 +160,6 @@ namespace ignite
 
         void LinuxAsyncClient::EnableSendNotifications()
         {
-            std::cout << "=============== EnableSendNotifications" << std::endl;
             epoll_event event;
             std::memset(&event, 0, sizeof(event));
             event.data.ptr = this;
@@ -182,7 +170,6 @@ namespace ignite
 
         void LinuxAsyncClient::DisableSendNotifications()
         {
-            std::cout << "=============== DisableSendNotifications" << std::endl;
             epoll_event event;
             std::memset(&event, 0, sizeof(event));
             event.data.ptr = this;

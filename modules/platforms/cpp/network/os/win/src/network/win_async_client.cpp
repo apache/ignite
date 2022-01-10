@@ -51,14 +51,10 @@ namespace ignite
 
             if (State::CLOSED != state)
                 Close();
-
-            std::cout << "=============== ~WinAsyncClient " << id << std::endl;
         }
 
         bool WinAsyncClient::Shutdown(const IgniteError* err)
         {
-            std::cout << "=============== WinAsyncClient::Shutdown id=" << id << std::endl;
-            std::cout << "=============== WinAsyncClient::Shutdown state=" << state << std::endl;
             common::concurrent::CsLockGuard lock(sendCs);
 
             if (State::CONNECTED != state && State::IN_POOL != state)
@@ -75,7 +71,6 @@ namespace ignite
 
         bool WinAsyncClient::Close()
         {
-            std::cout << "=============== WinAsyncClient::Close " << id << std::endl;
             if (State::CLOSED == state)
                 return false;
 
@@ -130,7 +125,6 @@ namespace ignite
             buffer.buf = (CHAR*)packet0.GetData();
             buffer.len = packet0.GetSize();
 
-            std::cout << "=============== Send to " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSASend(socket, &buffer, 1, NULL, flags, &currentSend.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -153,7 +147,6 @@ namespace ignite
             buffer.buf = (CHAR*)packet0.Data();
             buffer.len = (ULONG)packet0.Length();
 
-            std::cout << "=============== Recv from " << id << " " << buffer.len << " bytes" << std::endl;
             int ret = WSARecv(socket, &buffer, 1, NULL, &flags, &currentRecv.overlapped, NULL);
 
             return ret != SOCKET_ERROR || WSAGetLastError() == ERROR_IO_PENDING;
@@ -172,7 +165,6 @@ namespace ignite
 
         DataBuffer WinAsyncClient::ProcessReceived(size_t bytes)
         {
-            std::cout << "=============== WinAsyncClient: bytes=" << bytes << std::endl;
             impl::interop::InteropMemory& packet0 = *recvPacket.Get();
 
             return DataBuffer(recvPacket, 0, static_cast<int32_t>(bytes));

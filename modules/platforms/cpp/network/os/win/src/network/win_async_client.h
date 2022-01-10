@@ -159,8 +159,6 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-                std::cout << "=============== WinAsyncClient: SetId " << id << ", " << socket << std::endl;
-
                 this->id = id;
             }
 

@@ -158,8 +158,6 @@ namespace ignite
              */
             void SetId(uint64_t id)
             {
-                std::cout << "=============== LinuxAsyncClient: SetId " << id << ", " << fd << std::endl;
-
                 this->id = id;
             }
 

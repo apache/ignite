@@ -164,7 +164,6 @@ namespace ignite
 
             bool SecureDataFilter::Send(uint64_t id, const DataBuffer &data)
             {
-                std::cout << "=============== SecureDataFilter::Send " << id << std::endl;
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
                     return false;
@@ -174,7 +173,6 @@ namespace ignite
 
             void SecureDataFilter::OnConnectionSuccess(const EndPoint &addr, uint64_t id)
             {
-                std::cout << "=============== SecureDataFilter::OnConnectionSuccess " << id << std::endl;
                 SP_SecureConnectionContext context(new SecureConnectionContext(id, addr, *this));
 
                 {
@@ -188,7 +186,6 @@ namespace ignite
 
             void SecureDataFilter::OnConnectionClosed(uint64_t id, const IgniteError *err)
             {
-                std::cout << "=============== SecureDataFilter::OnConnectionClosed " << id << std::endl;
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
                     return;
@@ -212,8 +209,6 @@ namespace ignite
 
             void SecureDataFilter::OnMessageReceived(uint64_t id, const DataBuffer &msg)
             {
-                std::cout << "=============== SecureDataFilter::OnMessageReceived " << id << std::endl;
-
                 SP_SecureConnectionContext context = FindContext(id);
                 if (!context.IsValid())
                     return;
@@ -309,17 +304,12 @@ namespace ignite
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
-                std::cout << "=============== SecureConnectionContext::DoConnect " << id << std::endl;
-
                 SSL* ssl0 = static_cast<SSL*>(ssl);
                 int res = sslGateway.SSL_connect_(ssl0);
-                std::cout << "=============== SecureConnectionContext::DoConnect res=" << res << std::endl;
 
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     int sslError = sslGateway.SSL_get_error_(ssl0, res);
-                    std::cout << "=============== SecureConnectionContext::DoConnect sslError=" << sslError << std::endl;
-
                     if (IsActualError(sslError))
                     {
                         std::string msg = "Can not establish secure connection: " + GetSslError(ssl0, res);
@@ -357,13 +347,8 @@ namespace ignite
 
             bool SecureDataFilter::SecureConnectionContext::ProcessData(DataBuffer& data)
             {
-                std::cout << "=============== SecureConnectionContext::ProcessData " << data.GetSize() << std::endl;
-
                 SslGateway &sslGateway = SslGateway::GetInstance();
                 int res = sslGateway.BIO_write_(static_cast<BIO*>(bioIn), data.GetData(), data.GetSize());
-
-                std::cout << "=============== SecureConnectionContext::ProcessData res=" << res << std::endl;
-
                 if (res <= 0)
                     throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Failed to process SSL data");
 
@@ -398,7 +383,6 @@ namespace ignite
 
                 BIO *bio0 = static_cast<BIO*>(bio);
                 int available = sslGateway.BIO_pending_(bio0);
-                std::cout << "=============== SecureConnectionContext::GetPendingData available=" << available << std::endl;
 
                 impl::interop::SP_InteropMemory buf(new impl::interop::InteropUnpooledMemory(available));
                 buf.Get()->Length(available);
@@ -415,12 +399,7 @@ namespace ignite
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
                 SSL *ssl0 = static_cast<SSL*>(ssl);
-                std::cout << "=============== SecureConnectionContext::GetPendingDecryptedData recvBuffer.cap=" << recvBuffer.Get()->Capacity() << std::endl;
-
                 int res = sslGateway.SSL_read_(ssl0, recvBuffer.Get()->Data(), recvBuffer.Get()->Capacity());
-
-                std::cout << "=============== SecureConnectionContext::GetPendingDecryptedData res=" << res << std::endl;
-
                 if (res <= 0)
                     return DataBuffer();
 

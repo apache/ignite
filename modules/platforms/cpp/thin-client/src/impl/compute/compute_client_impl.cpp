@@ -43,31 +43,26 @@ namespace
             channel(channel),
             res(res)
         {
-            std::cout << "=============== JavaTaskNotificationHandler()" << std::endl;
+            // No-op.
         }
 
         virtual ~JavaTaskNotificationHandler()
         {
-            std::cout << "=============== ~JavaTaskNotificationHandler()" << std::endl;
+            // No-op.
         }
 
         virtual bool OnNotification(const network::DataBuffer& msg)
         {
-            std::cout << "=============== JavaTaskNotificationHandler::OnNotification" << std::endl;
             ComputeTaskFinishedNotification notification(res);
             channel.DeserializeMessage(msg, notification);
 
             if (notification.IsFailure())
             {
-                std::cout << "=============== JavaTaskNotificationHandler::OnNotification Failure" << std::endl;
                 promise.SetError(IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED,
                     notification.GetErrorMessage().c_str()));
             }
             else
-            {
-                std::cout << "=============== JavaTaskNotificationHandler::OnNotification Value" << std::endl;
                 promise.SetValue();
-            }
 
             return true;
         }

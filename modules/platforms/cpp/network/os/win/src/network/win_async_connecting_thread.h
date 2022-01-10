@@ -83,7 +83,7 @@ namespace ignite
              * @param range TCP range.
              * @return New client.
              */
-            SP_WinAsyncClient TryConnect(const TcpRange& range);
+            static SP_WinAsyncClient TryConnect(const TcpRange& range);
 
             /**
              * Try establish connection to address.
