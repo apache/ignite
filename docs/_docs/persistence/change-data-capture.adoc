@@ -100,7 +100,7 @@ The consumer of change events.  It should be implemented by the user.
 
 == Metrics
 
-`ignite-cdc.sh` uses the same SPI to export metrics as Ignite.
+`ignite-cdc.sh` uses the same SPI to export metrics as Ignite does.
 The following metrics are provided by the application (additional metrics can be provided by the consumer):
 |===
 |Name |Description
