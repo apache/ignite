@@ -101,7 +101,7 @@ The consumer of change events.  It should be implemented by the user.
 == Metrics
 
 `ignite-cdc.sh` uses the same SPI to export metrics as Ignite.
-The following metrics provided by the application itself (additional metrics may be provided by the consumer):
+The following metrics are provided by the application (additional metrics can be provided by the consumer):
 |===
 |Name |Description
 | CurrentSegmentIndex | Index of currently processed WAL segment.
