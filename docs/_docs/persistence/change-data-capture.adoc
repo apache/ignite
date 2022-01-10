@@ -18,9 +18,9 @@
 == Overview
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is a data processing pattern used to asynchronously receive entries that have been changed on the local node so that action can be taken using the changed entry.
 
-WARNING: Change Data Capture is an experimental feature whose API or design architecture might be changed.
+WARNING: CDC is an experimental feature whose API or design architecture might be changed.
 
-Below are some of the Change Data Capture use cases:
+Below are some of the CDC use cases:
 
  * Streaming changes in Warehouse;
  * Updating search index;
@@ -28,16 +28,19 @@ Below are some of the Change Data Capture use cases:
  * Auditing logs;
  * Async interaction with extenal system: Moderation, business process invocation, etc.
 
-Ignite implements Change Data Capture with the `ignite-cdc.sh` application and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
+Ignite implements CDC with the `ignite-cdc.sh` application and link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/cdc/CdcConsumer.java#L56[Java API].
 
-Below are the Change Data Capture application and the Ignite node integrated via WAL archive segments:
+Below are the CDC application and the Ignite node integrated via WAL archive segments:
 
 image:../../assets/images/integrations/CDC-design.svg[]
 
-When Change Data Capture is enabled, the Ignite server node creates a hard link to each WAL archive segment in the special `db/cdc/\{consistency_id\}` directory.
+When CDC is enabled, the Ignite server node creates a hard link to each WAL archive segment in the special `db/cdc/\{consistency_id\}` directory.
 The `ignite-cdc.sh` application runs on a different JVM and processes newly archived link:native-persistence.adoc#_write-ahead_log[WAL segments].
-When the segment is fully processed by `ignite-cdc.sh`, it is removed. The actual disk space is free when both links (archive and Change Data Capture) are removed.
-The state of consumption can be saved to continue from it in case of any failure.
+When the segment is fully processed by `ignite-cdc.sh`, it is removed. The actual disk space is free when both links (archive and CDC) are removed.
+
+State of consumption is a pointer to the last processed event.
+Consumer can tell to `ignite-cdc.sh` to save the consumption state.
+On startup event processing will be continued from the last saved state.
 
 == Configuration
 
@@ -46,27 +49,27 @@ The state of consumption can be saved to continue from it in case of any failure
 [cols="20%,45%,35%",opts="header"]
 |===
 |Name |Description | Default value
-| `DataStorageConfiguration#cdcEnabled` | Flag to enable Change Data Capture on the server node. | `false`
-| `DataStorageConfiguration#cdcWalPath` | Path to the Change Data Capture directory | `"db/wal/cdc"`
+| `DataStorageConfiguration#cdcEnabled` | Flag to enable CDC on the server node. | `false`
+| `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
 | `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
 
-=== Change Data Capture Application
+=== CDC Application
 
-Change Data Capture is configured in the same way as the Ignite node - via the spring XML file:
+CDC is configured in the same way as the Ignite node - via the spring XML file:
 
-* `ignite-cdc.sh` requires both Ignite and Change Data Capture configurations to start;
-* `IgniteConfiguration` is used to determine common options like a path to the Change Data Capture directory, node consistent id, and other parameters;
+* `ignite-cdc.sh` requires both Ignite and CDC configurations to start;
+* `IgniteConfiguration` is used to determine common options like a path to the CDC directory, node consistent id, and other parameters;
 * `CdcConfiguration` contains `ignite-cdc.sh`-specific options.
 
 [cols="20%,45%,35%",opts="header"]
 |===
 |Name |Description | Default value
-| `lockTimeout` | Timeout to wait for lock acquiring. Change Data Capture locks directory on a startup to ensure there is no concurrent Change Data Capture processing in the same directory.
+| `lockTimeout` | Timeout to wait for lock acquiring. CDC locks directory on a startup to ensure there is no concurrent `ignite-cdc.sh` processing the same directory.
 | 1000 milliseconds.
 | `checkFrequency` | Amount of time application sleeps between subsequent checks when no new files available. | 1000 milliseconds.
 | `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:../key-value-api/binary-objects.adoc[binary format]. | `true`
-| `consumer` | Implementation of `org.apache.ignite.cdc.CdcConsumer` that consumes entries changes | null
+| `consumer` | Implementation of `org.apache.ignite.cdc.CdcConsumer` that consumes entries changes. | null
 | `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:../monitoring-metrics/new-metrics-system.adoc#_metric_exporters[metrics] documentation, also. | null
 |===
 
@@ -81,7 +84,7 @@ Below is a single change of the data reflected by `CdcEvent`.
 |Name |Description
 | `key()` | Key for the changed entry.
 | `value()` | Value for the changed entry. This method will return `null` if the event reflects removal.
-| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from `SYS.CACHES` link:../monitoring-metrics/system-views.adoc#_CACHES[system view]
+| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from link:../monitoring-metrics/system-views.adoc#_CACHES[`SYS.CACHES`].
 | `partition()` | Partition of the changed entry.
 | `primary()` | Flag to distinguish if operation happens on the primary or a backup node.
 | `version()` | `Comparable` version of the changed entry. Internally, Ignite maintains ordered versions of each entry so any changes of the same entry can be sorted.
@@ -93,9 +96,9 @@ The consumer of change events.  It should be implemented by the user.
 [cols="20%,80%",opts="header"]
 |===
 |Name |Description
-| `void start(MetricRegistry)` | Invoked one-time at the start of the Change Data Capture application. `MetricRegistry` should be used to export the consumer-specific metrics.
+| `void start(MetricRegistry)` | Invoked one-time at the start of the CDC application. `MetricRegistry` should be used to export the consumer-specific metrics.
 | `boolean onEvents(Iterator<CdcEvent> events)` | The main method that processes changes. When this method returns `true`, the state is saved on the disk. State points to the event next to the last read event. In case of any failure, consumption will continue from the last saved state.
-| `void stop()` | Invokes one-time at the stop of the Change Data Capture application.
+| `void stop()` | Invokes one-time at the stop of the CDC application.
 |===
 
 == Metrics
@@ -110,7 +113,7 @@ The following metrics are provided by the application (additional metrics can be
 | LastSegmentConsumptionTime | Timestamp (in milliseconds) indicating the last segment processing start.
 | BinaryMetaDir | Binary meta-directory the application reads data from.
 | MarshallerDir | Marshaller directory the application reads data from.
-| CdcDir | The Change Data Capture directory the application reads data from.
+| CdcDir | The CDC directory the application reads data from.
 |===
 
 == Logging
@@ -122,7 +125,7 @@ The following metrics are provided by the application (additional metrics can be
 IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in case of any error. The restart procedure should be configured with the OS tools.
 
  1. Find the required shared directories. Take the values from the provided `IgniteConfiguration`.
- 2. Lock the Change Data Capture directory.
+ 2. Lock the CDC directory.
  3. Load the saved state.
  4. Start the consumer.
  5. Infinitely wait for the newly available segment and process it.
