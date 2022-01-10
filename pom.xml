@@ -39,7 +39,6 @@
         <module>modules/api</module>
         <module>modules/baseline</module>
         <module>modules/bytecode</module>
-        <module>modules/calcite</module>
         <module>modules/cli</module>
         <module>modules/cli-common</module>
         <module>modules/client</module>
@@ -63,6 +62,7 @@
         <module>modules/rocksdb-common</module>
         <module>modules/runner</module>
         <module>modules/schema</module>
+        <module>modules/sql-engine</module>
         <module>modules/storage-api</module>
         <module>modules/storage-rocksdb</module>
         <module>modules/table</module>

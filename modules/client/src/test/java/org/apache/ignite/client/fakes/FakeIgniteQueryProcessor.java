@@ -19,8 +19,8 @@ package org.apache.ignite.client.fakes;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.sql.engine.QueryProcessor;
+import org.apache.ignite.internal.sql.engine.SqlCursor;
 
 /**
  * Fake {@link QueryProcessor}.

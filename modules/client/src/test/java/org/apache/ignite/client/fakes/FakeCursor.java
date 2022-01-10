@@ -22,9 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
-import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
+import org.apache.ignite.internal.sql.engine.ResultSetMetadata;
+import org.apache.ignite.internal.sql.engine.SqlCursor;
+import org.apache.ignite.internal.sql.engine.SqlQueryType;
 
 /**
  * Fake {@link SqlCursor}.

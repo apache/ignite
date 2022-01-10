@@ -51,11 +51,11 @@ import org.apache.ignite.client.proto.query.event.QueryFetchRequest;
 import org.apache.ignite.client.proto.query.event.QueryFetchResult;
 import org.apache.ignite.client.proto.query.event.QuerySingleResult;
 import org.apache.ignite.client.proto.query.event.Response;
-import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.ResultFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.sql.engine.QueryProcessor;
+import org.apache.ignite.internal.sql.engine.ResultFieldMetadata;
+import org.apache.ignite.internal.sql.engine.ResultSetMetadata;
+import org.apache.ignite.internal.sql.engine.SqlCursor;
+import org.apache.ignite.internal.sql.engine.util.Commons;
 import org.apache.ignite.internal.util.Cursor;
 
 /**

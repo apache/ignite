@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorCo
 import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.manager.IgniteComponent;
-import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
+import org.apache.ignite.internal.sql.engine.QueryProcessor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NettyBootstrapFactory;

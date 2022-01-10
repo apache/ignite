@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorCo
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
-import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
+import org.apache.ignite.internal.sql.engine.QueryProcessor;
 import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.tx.IgniteTransactions;

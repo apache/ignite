@@ -55,7 +55,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-calcite</artifactId>
+            <artifactId>ignite-sql-engine</artifactId>
         </dependency>
 
         <dependency>

@@ -65,7 +65,7 @@ import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.client.proto.ClientOp;
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.client.proto.ServerMessageType;
-import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
+import org.apache.ignite.internal.sql.engine.QueryProcessor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.table.manager.IgniteTables;
