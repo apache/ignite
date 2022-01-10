@@ -67,6 +67,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -2006,6 +2007,51 @@ public class GridCacheUtils {
      */
     public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
         return isPersistenceEnabled(cfg.getDataStorageConfiguration());
+    }
+
+    /**
+     * @return {@code true} if CDC enabled.
+     */
+    public static boolean isCdcEnabled(DataStorageConfiguration cfg) {
+        if (cfg == null)
+            return false;
+
+        if (isPersistenceEnabled(cfg))
+            return cfg.isCdcEnabled();
+
+        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
+
+        if (dfltReg == null)
+            return false;
+
+        if (dfltReg.isCdcEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isCdcEnabled())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param ctx Group context.
+     * @return {@code True} if {@link DataRecord} should be logged into WAL.
+     */
+    public static boolean isDataRecordsEnabled(CacheGroupContext ctx) {
+        if (ctx.persistenceEnabled())
+            return ctx.walEnabled();
+
+        if (ctx.systemCache())
+            return false;
+
+        return ctx.dataRegion().config().isCdcEnabled() && ctx.walEnabled();
     }
 
     /**

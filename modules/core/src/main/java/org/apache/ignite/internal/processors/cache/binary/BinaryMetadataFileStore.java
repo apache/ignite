@@ -89,8 +89,8 @@ class BinaryMetadataFileStore {
     ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
-        this.isPersistenceMetadataEnabled = CU.isPersistenceEnabled(ctx.config()) ||
-            ctx.config().getDataStorageConfiguration().isCdcEnabled();
+        this.isPersistenceMetadataEnabled = CU.isPersistenceEnabled(ctx.config())
+            || CU.isCdcEnabled(ctx.config().getDataStorageConfiguration());
         this.log = log;
 
         if (!isPersistenceMetadataEnabled)

@@ -90,7 +90,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
-import static org.apache.ignite.internal.util.IgniteUtils.isDataRecordsEnabled;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -616,7 +615,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                    if (!near() && isDataRecordsEnabled(cacheCtx.group()) &&
+                                    if (!near() && CU.isDataRecordsEnabled(cacheCtx.group()) &&
                                         op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());

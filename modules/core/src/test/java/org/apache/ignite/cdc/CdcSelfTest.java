@@ -100,7 +100,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled, 8192});
                 }
 
-        params.removeIf(p -> (boolean)p[2]);
+        params.removeIf(p -> (boolean)p[3]);
 
         return params;
     }
@@ -116,12 +116,12 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg.setConsistentId(consistentId);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(true)
+            .setCdcEnabled(persistenceEnabled)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
-                .setCdcEnabled(true)));
+                .setCdcEnabled(!persistenceEnabled)));
 
         if (pageSz != 0)
             cfg.getDataStorageConfiguration().setPageSize(pageSz);

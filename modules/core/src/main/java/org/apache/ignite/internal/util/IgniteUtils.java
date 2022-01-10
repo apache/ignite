@@ -218,9 +218,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -11032,20 +11030,6 @@ public abstract class IgniteUtils {
         }
 
         return dsCfg.getMaxWalArchiveSize();
-    }
-
-    /**
-     * @param ctx Group context.
-     * @return {@code True} if {@link DataRecord} should be logged into WAL.
-     */
-    public static boolean isDataRecordsEnabled(CacheGroupContext ctx) {
-        if (ctx.persistenceEnabled())
-            return ctx.walEnabled();
-
-        if (ctx.systemCache())
-            return false;
-
-        return ctx.dataRegion().config().isCdcEnabled() && ctx.walEnabled();
     }
 
     /**
