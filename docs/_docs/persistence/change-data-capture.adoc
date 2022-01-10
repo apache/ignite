@@ -89,13 +89,13 @@ Below is a single change of the data reflected by `CdcEvent`.
 
 === `org.apache.ignite.cdc.CdcConsumer`
 
-Consumer of change events. Should be implemented by the user.
+The consumer of change events.  It should be implemented by the user.
 [cols="20%,80%",opts="header"]
 |===
 |Name |Description
-| `void start(MetricRegistry)` | Invoked one time on the start of CDC application. `MetricRegistry` should be used to export consumer specific metrics.
-| `boolean onEvents(Iterator<CdcEvent> events)` | Main method that processes changes. When this method returns `true` state will be saved on the disk. State points to the event next to the last read. In case of any failure consumption will continue from the last saved state.
-| `void stop()` | Invoked one time on the stop of CDC application.
+| `void start(MetricRegistry)` | Invoked one-time at the start of the Change Data Capture application. `MetricRegistry` should be used to export the consumer-specific metrics.
+| `boolean onEvents(Iterator<CdcEvent> events)` | The main method that processes changes. When this method returns `true`, the state is saved on the disk. State points to the event next to the last read event. In case of any failure, consumption will continue from the last saved state.
+| `void stop()` | Invokes one-time at the stop of the Change Data Capture application.
 |===
 
 == Metrics
