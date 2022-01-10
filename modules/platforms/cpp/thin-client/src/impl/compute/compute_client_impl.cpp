@@ -15,10 +15,79 @@
  * limitations under the License.
  */
 
+#include <ignite/common/promise.h>
+
 #include "impl/compute/compute_client_impl.h"
 #include "impl/message.h"
 
 using namespace ignite::common::concurrent;
+
+namespace
+{
+    using namespace ignite;
+    using namespace impl;
+    using namespace impl::thin;
+
+    /**
+     * Handler for java task notification.
+     */
+    class JavaTaskNotificationHandler : public NotificationHandler
+    {
+    public:
+        /**
+         * Constructor.
+         * @param channel Channel.
+         * @param res Result.
+         */
+        JavaTaskNotificationHandler(DataChannel& channel, Readable& res) :
+            channel(channel),
+            res(res)
+        {
+            // No-op.
+        }
+
+        virtual ~JavaTaskNotificationHandler()
+        {
+            // No-op.
+        }
+
+        virtual bool OnNotification(const network::DataBuffer& msg)
+        {
+            ComputeTaskFinishedNotification notification(res);
+            channel.DeserializeMessage(msg, notification);
+
+            if (notification.IsFailure())
+            {
+                promise.SetError(IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED,
+                    notification.GetErrorMessage().c_str()));
+            }
+            else
+                promise.SetValue();
+
+            return true;
+        }
+
+        /**
+         * Get future result.
+         *
+         * @return Future.
+         */
+        ignite::Future<void> GetFuture() const
+        {
+            return promise.GetFuture();
+        }
+
+    private:
+        /** Channel. */
+        DataChannel& channel;
+
+        /** Result. */
+        Readable& res;
+
+        /** Completion promise. */
+        ignite::common::Promise<void> promise;
+    };
+}
 
 namespace ignite
 {
@@ -32,14 +101,16 @@ namespace ignite
                     Writable& wrArg, Readable& res)
                 {
                     ComputeTaskExecuteRequest req(flags, timeout, taskName, wrArg);
-                    ComputeTaskFinishedNotification notification(res);
+                    ComputeTaskExecuteResponse rsp;
 
-                    router.Get()->SyncMessageWithNotification(req, notification);
+                    SP_DataChannel channel = router.Get()->SyncMessage(req, rsp);
 
-                    if (notification.IsFailure())
-                        throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_TASK_CANCELLED,
-                            notification.GetErrorMessage().c_str());
+                    common::concurrent::SharedPointer<JavaTaskNotificationHandler> handler(
+                        new JavaTaskNotificationHandler(*channel.Get(), res));
 
+                    channel.Get()->RegisterNotificationHandler(rsp.GetNotificationId(), handler);
+
+                    handler.Get()->GetFuture().GetValue();
                 }
             }
         }
