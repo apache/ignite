@@ -200,12 +200,6 @@ namespace ignite
                  */
                 void FailPendingRequests(const IgniteError* err);
 
-                // TODO
-                bool IsHandshakeComplete() const
-                {
-                    return handshakePerformed;
-                }
-
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 

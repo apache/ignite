@@ -201,15 +201,6 @@ namespace ignite
 
             return it->second;
         }
-
-        void LinuxAsyncClientPool::ThrowSystemError(const std::string &msg)
-        {
-            std::stringstream buf;
-
-            buf << "Linux system error: " << msg << ", system error code: " << errno;
-
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
-        }
     }
 }
 

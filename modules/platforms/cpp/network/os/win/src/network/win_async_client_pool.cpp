@@ -232,7 +232,6 @@ namespace ignite
 
         void WinAsyncClientPool::ThrowSystemError(const std::string& msg)
         {
-            // TODO: re-factor
             std::stringstream buf;
 
             buf << "Windows system error: " << msg << ", system error code: " << GetLastError();

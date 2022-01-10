@@ -118,30 +118,27 @@ namespace ignite
                 if (!connectedChannels.empty())
                     return true;
 
-                if (lastHandshakeError.get())
-                {
-                    // TODO: Re-factor.
-                    std::cout << "=============== EnsureConnected: " << "ERROR" << std::endl;
-                    IgniteError err = *lastHandshakeError;
-                    lastHandshakeError.reset();
-
-                    throw err;
-                }
+                CheckHandshakeErrorLocked();
 
                 channelsWaitPoint.WaitFor(channelsMutex, timeout);
 
-                if (lastHandshakeError.get())
-                {
-                    std::cout << "=============== EnsureConnected: " << "ERROR" << std::endl;
-                    IgniteError err = *lastHandshakeError;
-                    lastHandshakeError.reset();
-
-                    throw err;
-                }
+                CheckHandshakeErrorLocked();
 
                 std::cout << "=============== EnsureConnected: " << (connectedChannels.empty() ? "TIMEOUT" : "COMPLETE") << std::endl;
 
                 return !connectedChannels.empty();
+            }
+
+            void DataRouter::CheckHandshakeErrorLocked()
+            {
+                if (!lastHandshakeError.get())
+                    return;
+
+                std::cout << "=============== EnsureConnected: " << "ERROR" << std::endl;
+                IgniteError err = *lastHandshakeError;
+                lastHandshakeError.reset();
+
+                throw IgniteError(err);
             }
 
             void DataRouter::OnConnectionSuccess(const network::EndPoint& addr, uint64_t id)
@@ -400,10 +397,10 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                return GetRandomChannelUnsafe();
+                return GetRandomChannelLocked();
             }
 
-            SP_DataChannel DataRouter::GetRandomChannelUnsafe()
+            SP_DataChannel DataRouter::GetRandomChannelLocked()
             {
                 if (connectedChannels.empty())
                     return SP_DataChannel();
@@ -428,7 +425,7 @@ namespace ignite
                 if (itChannel != partChannels.end())
                     return itChannel->second;
 
-                return GetRandomChannelUnsafe();
+                return GetRandomChannelLocked();
             }
 
             void DataRouter::CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges)

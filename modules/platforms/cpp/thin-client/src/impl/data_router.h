@@ -287,7 +287,7 @@ namespace ignite
                  *
                  * @return Random data channel or null, if not connected.
                  */
-                SP_DataChannel GetRandomChannelUnsafe();
+                SP_DataChannel GetRandomChannelLocked();
 
                 /**
                  * Get the best data channel.
@@ -304,6 +304,14 @@ namespace ignite
                  * @param ranges Address ranges.
                  */
                 static void CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges);
+
+                /**
+                 * Check whether there were any critical errors during handshake.
+                 * @warning May only be called when lock is held!
+                 *
+                 * @throw IgniteError if there is error.
+                 */
+                void CheckHandshakeErrorLocked();
 
                 /** Configuration. */
                 ignite::thin::IgniteClientConfiguration config;

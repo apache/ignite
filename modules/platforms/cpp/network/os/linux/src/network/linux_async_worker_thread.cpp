@@ -357,7 +357,6 @@ namespace ignite
 
         void LinuxAsyncWorkerThread::ThrowSystemError(const std::string &msg)
         {
-            // TODO: refactor
             std::stringstream buf;
 
             buf << "Linux system error: " << msg << ", system error code: " << errno;
