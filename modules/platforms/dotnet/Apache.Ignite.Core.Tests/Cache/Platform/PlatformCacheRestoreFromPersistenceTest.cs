@@ -108,6 +108,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
 
                 // Read an entry and it gets into platform cache.
+                // TODO: Test all cache operations - put, get, getAll, etc.
                 Assert.AreEqual(1, cache[1]);
                 Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
                 Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform));
