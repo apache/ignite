@@ -34,10 +34,10 @@ Below are the Change Data Capture application and the Ignite node integrated via
 
 image:../../assets/images/integrations/CDC-design.svg[]
 
-When CDC enabled Ignite server node creates a hard link to each WAL archive segment in special `db/cdc/\{consistency_id\}` directory.
-`ignite-cdc.sh` run in different JVM and process newly archived link:native-persistence.adoc#_write-ahead_log[WAL segments].
-When segment fully processed by `ignite-cdc.sh` it removed. The actual disk space free when both links - archive and CDC removed.
-tate of consumption can be saved to disk to continue from it in the case of any failure.
+When Change Data Capture is enabled, the Ignite server node creates a hard link to each WAL archive segment in the special `db/cdc/\{consistency_id\}` directory.
+The `ignite-cdc.sh` application runs on a different JVM and processes newly archived link:native-persistence.adoc#_write-ahead_log[WAL segments].
+When the segment is fully processed by `ignite-cdc.sh`, it is removed. The actual disk space is free when both links (archive and Change Data Capture) are removed.
+The state of consumption can be saved to continue from it in case of any failure.
 
 == Configuration
 
