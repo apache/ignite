@@ -50,6 +50,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      *
      * @param ctx Cache context.
      * @param keys Keys.
+     * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -63,6 +64,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     public GridNearReadRepairCheckOnlyFuture(
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
         boolean deserializeBinary,
@@ -75,6 +77,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         super(null,
             ctx,
             keys,
+            strategy,
             readThrough,
             taskName,
             deserializeBinary,
@@ -98,7 +101,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             Collection<KeyCacheObject> inconsistentKeys = (Collection<KeyCacheObject>)e.keys();
 
             if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                if (!ctx.transactional()) { // Will not be fixed, should be recorded as is.
+                if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
                     recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
 
                     onDone(new IgniteIrreparableConsistencyViolationException(null,

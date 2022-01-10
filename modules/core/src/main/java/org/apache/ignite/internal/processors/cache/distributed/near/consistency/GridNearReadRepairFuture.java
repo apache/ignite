@@ -44,9 +44,6 @@ import org.apache.ignite.transactions.TransactionState;
  * consistency violation event.
  */
 public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
-    /** Strategy. */
-    private final ReadRepairStrategy strategy;
-
     /**
      * Creates a new instance of GridNearReadRepairFuture.
      *
@@ -75,16 +72,13 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         super(topVer,
             ctx,
             keys,
+            strategy,
             readThrough,
             taskName,
             deserializeBinary,
             recovery,
             expiryPlc,
             tx);
-
-        assert strategy != null;
-
-        this.strategy = strategy;
 
         assert ctx.transactional() : "Atomic cache should not be recovered using this future";
 

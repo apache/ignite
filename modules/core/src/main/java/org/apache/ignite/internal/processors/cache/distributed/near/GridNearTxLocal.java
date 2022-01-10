@@ -3189,6 +3189,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return new GridNearReadRepairCheckOnlyFuture(
                     cacheCtx,
                     keys,
+                    readRepairStrategy,
                     readThrough,
                     taskName,
                     false,

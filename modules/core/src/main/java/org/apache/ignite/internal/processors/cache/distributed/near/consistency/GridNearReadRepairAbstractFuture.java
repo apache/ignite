@@ -95,6 +95,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Primaries per key. */
     protected volatile Map<KeyCacheObject, ClusterNode> primaries;
 
+    /** Strategy. */
+    protected final ReadRepairStrategy strategy;
+
     /** Remap flag. */
     private final boolean canRemap;
 
@@ -107,6 +110,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param topVer Topology version.
      * @param ctx Cache context.
      * @param keys Keys.
+     * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -118,6 +122,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         AffinityTopologyVersion topVer,
         GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
         boolean deserializeBinary,
@@ -132,6 +137,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         this.recovery = recovery;
         this.expiryPlc = expiryPlc;
         this.tx = tx;
+
+        assert strategy != null;
+
+        this.strategy = strategy;
 
         canRemap = topVer == null;
 
