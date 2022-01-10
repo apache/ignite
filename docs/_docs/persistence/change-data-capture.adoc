@@ -14,7 +14,6 @@
 // limitations under the License.
 = Change Data Capture
 
-WARNING: Experimental API.
 
 == Overview
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is a data processing pattern used to asynchronously receive entries that have been changed on the local node so that action can be taken using the changed entry.
