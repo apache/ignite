@@ -46,9 +46,9 @@ The state of consumption can be saved to continue from it in case of any failure
 [cols="20%,45%,35%",opts="header"]
 |===
 |Name |Description | Default value
-| `DataStorageConfiguration#cdcEnabled` | Flag to enable CDC on server node. | `false`
-| `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
-| `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive WAL segment even it not full. | `-1` (disabled)
+| `DataStorageConfiguration#cdcEnabled` | Flag to enable Change Data Capture on the server node. | `false`
+| `DataStorageConfiguration#cdcWalPath` | Path to the Change Data Capture directory | `"db/wal/cdc"`
+| `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
 
 === CDC application:
