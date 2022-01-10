@@ -121,9 +121,9 @@ The following metrics are provided by the application (additional metrics can be
 
 IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in case of any error. The restart procedure should be configured with the OS tools.
 
- 1. Finds required shared directories. Values from provided `IgniteConfiguration` taken.
- 2. Locks CDC directory.
- 3. Loads saved state.
- 4. Starts the consumer.
- 5. Infinitely waits for new available segment and processes it.
- 6. Stop the consumer in case of failure or receive stop signal.
+ 1. Find the required shared directories. Take the values from the provided `IgniteConfiguration`.
+ 2. Lock the Change Data Capture directory.
+ 3. Load the saved state.
+ 4. Start the consumer.
+ 5. Infinitely wait for the newly available segment and process it.
+ 6. Stop the consumer in case of a failure or a received stop signal.
