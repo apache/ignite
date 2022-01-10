@@ -62,7 +62,7 @@ Change Data Capture is configured in the same way as the Ignite node - via the s
 [cols="20%,45%,35%",opts="header"]
 |===
 |Name |Description | Default value
-| `lockTimeout` | Timeout to wait lock acquire. CDC locks directory on startup to ensure there is no concurrent CDC processing same directory.
+| `lockTimeout` | Timeout to wait for lock acquiring. Change Data Capture locks directory on a startup to ensure there is no concurrent Change Data Capture processing in the same directory.
 | 1000 milliseconds.
 | `checkFrequency` | Amount of time application sleeps between subsequent checks when no new files available. | 1000 milliseconds.
 | `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:../key-value-api/binary-objects.adoc[binary format]. | `true`
