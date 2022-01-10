@@ -122,7 +122,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             onDone(fixedMap);
         }
         catch (IgniteConsistencyViolationException e) {
-            Collection<KeyCacheObject> irreparableSet = (Collection<KeyCacheObject>)e.keys();
+            Collection<KeyCacheObject> irreparableSet = e.keys();
 
             recordConsistencyViolation(irreparableSet, /*nothing fixed*/ null, strategy);
 
