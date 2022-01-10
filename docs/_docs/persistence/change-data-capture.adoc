@@ -51,7 +51,7 @@ The state of consumption can be saved to continue from it in case of any failure
 | `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
 
-=== CDC application:
+=== Change Data Capture Application
 
 CDC configured in the same manner as Ignite node via spring XML file.
 `ignite-cdc.sh` require both Ignite and CDC configuration to start.
