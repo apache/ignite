@@ -314,7 +314,8 @@ namespace ignite
          */
         Future& operator=(const Future<SP_ValueType>& other)
         {
-            state = other.state;
+            if (this != &other)
+                state = other.state;
 
             return *this;
         }

@@ -88,7 +88,7 @@ namespace ignite
 
             int8_t* dst = packet0.Data() + packet0.Length();
             packet0.Length(packet0.Length() + toCopy);
-            data.GetData(dst, toCopy);
+            data.Consume(dst, toCopy);
         }
     }
 }

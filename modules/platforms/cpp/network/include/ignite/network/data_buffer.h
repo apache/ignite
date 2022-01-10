@@ -61,12 +61,12 @@ namespace ignite
             }
 
             /**
-             * Copy data from buffer to specified place in memory.
+             * Consume data from buffer to specified place in memory.
              *
              * @param dst Destination in memory.
              * @param size Number of bytes to copy.
              */
-            void GetData(int8_t* dst, int32_t size);
+            void Consume(int8_t* dst, int32_t size);
 
             /**
              * Get data pointer.

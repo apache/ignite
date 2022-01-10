@@ -20,7 +20,6 @@
 
 #include <cassert>
 #include <utility>
-#include <iostream>
 
 #include "ignite/common/concurrent_os.h"
 

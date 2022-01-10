@@ -48,7 +48,7 @@ namespace ignite
             // No-op.
         }
 
-        void DataBuffer::GetData(int8_t *dst, int32_t size)
+        void DataBuffer::Consume(int8_t *dst, int32_t size)
         {
             if (!size)
                 return;

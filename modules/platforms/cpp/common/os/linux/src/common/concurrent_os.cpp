@@ -226,7 +226,7 @@ namespace ignite
 
             void Thread::Start()
             {
-                int res = pthread_create(&thread, 0, Thread::ThreadRoutine, this);
+                int res = pthread_create(&thread, NULL, Thread::ThreadRoutine, this);
 
                 IGNITE_UNUSED(res);
                 assert(res == 0);
