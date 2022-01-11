@@ -208,6 +208,13 @@ namespace ignite
                  */
                 void FailPendingRequests(const IgniteError* err);
 
+                /**
+                 * Close remote resource.
+                 *
+                 * @param resourceId Resource ID.
+                 */
+                void CloseResource(int64_t resourceId);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 

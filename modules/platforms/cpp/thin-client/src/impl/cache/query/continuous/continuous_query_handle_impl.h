@@ -22,6 +22,7 @@
 #include <ignite/common/concurrent.h>
 
 #include "impl/data_channel.h"
+#include "impl/message.h"
 
 namespace ignite
 {
@@ -61,8 +62,12 @@ namespace ignite
                              */
                             virtual ~ContinuousQueryHandleClientImpl()
                             {
-                                // TODO: implement me.
-                                channel.Get()->DeregisterNotificationHandler(queryId);
+                                assert(channel.IsValid());
+
+                                DataChannel& channel0 = *channel.Get();
+
+                                channel0.CloseResource(queryId);
+                                channel0.DeregisterNotificationHandler(queryId);
                             }
 
                         private:

@@ -37,6 +37,11 @@ namespace ignite
                 // No-op.
             }
 
+            void ResourceCloseRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt64(id);
+            }
+
             void CachePartitionsRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(static_cast<int32_t>(cacheIds.size()));
@@ -114,30 +119,6 @@ namespace ignite
             bool Response::IsFailure() const
             {
                 return (flags & Flag::FAILURE) != 0;
-            }
-
-            ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
-                std::vector<NodePartitions>& nodeParts):
-                nodeParts(nodeParts)
-            {
-                // No-op.
-            }
-
-            ClientCacheNodePartitionsResponse::~ClientCacheNodePartitionsResponse()
-            {
-                // No-op.
-            }
-
-            void ClientCacheNodePartitionsResponse::ReadOnSuccess(
-                binary::BinaryReaderImpl& reader, const ProtocolVersion&)
-            {
-                int32_t num = reader.ReadInt32();
-
-                nodeParts.clear();
-                nodeParts.resize(static_cast<size_t>(num));
-
-                for (int32_t i = 0; i < num; ++i)
-                    nodeParts[i].Read(reader);
             }
 
             CachePartitionsResponse::CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups) :

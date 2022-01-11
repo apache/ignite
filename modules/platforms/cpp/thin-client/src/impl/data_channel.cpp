@@ -362,6 +362,14 @@ namespace ignite
                 if (!handshakePerformed)
                     stateHandler.OnHandshakeError(id, *err);
             }
+
+            void DataChannel::CloseResource(int64_t resourceId)
+            {
+                ResourceCloseRequest req(resourceId);
+                Response rsp;
+
+                SyncMessage(req, rsp, config.GetConnectionTimeout());
+            }
         }
     }
 }

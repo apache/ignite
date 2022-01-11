@@ -295,6 +295,43 @@ namespace ignite
             /**
              * Cache partitions request.
              */
+            class ResourceCloseRequest : public RequestAdapter<RequestType::RESOURCE_CLOSE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param id Resource ID.
+                 */
+                ResourceCloseRequest(int64_t id) :
+                    id(id)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ResourceCloseRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 *
+                 * @param writer Writer.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+            private:
+                /** Resource ID. */
+                const int64_t id;
+            };
+
+            /**
+             * Cache partitions request.
+             */
             class CachePartitionsRequest : public RequestAdapter<RequestType::CACHE_PARTITIONS>
             {
             public:
@@ -1136,36 +1173,6 @@ namespace ignite
 
                 /** Error message. */
                 std::string error;
-            };
-
-            /**
-             * Cache node list request.
-             */
-            class ClientCacheNodePartitionsResponse : public Response
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param nodeParts Node partitions.
-                 */
-                ClientCacheNodePartitionsResponse(std::vector<NodePartitions>& nodeParts);
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~ClientCacheNodePartitionsResponse();
-
-                /**
-                 * Read data if response status is ResponseStatus::SUCCESS.
-                 *
-                 * @param reader Reader.
-                 */
-                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
-
-            private:
-                /** Node partitions. */
-                std::vector<NodePartitions>& nodeParts;
             };
 
             /**
