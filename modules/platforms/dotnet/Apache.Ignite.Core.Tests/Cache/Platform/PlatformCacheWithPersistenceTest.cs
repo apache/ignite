@@ -33,16 +33,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /** Cache name. */
         private const string CacheName = "persistentCache";
 
+        /** Entry count. */
+        private const int Count = 100;
+
         /** Temp dir for WAL. */
         private readonly string _tempDir = PathUtils.GetTempDirectoryName();
+
+        /** Cache. */
+        private ICache<int,int> _cache;
 
         /// <summary>
         /// Sets up the test.
         /// </summary>
-        [SetUp]
-        public void SetUp()
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             TestUtils.ClearWorkDir();
+
+            // Start Ignite, put data, stop.
+            using (var ignite = StartServer())
+            {
+                var cache = ignite.GetCache<int, int>(CacheName);
+
+                cache.PutAll(Enumerable.Range(1, Count).ToDictionary(x => x, x => x));
+
+                Assert.AreEqual(Count, cache.GetSize());
+                Assert.AreEqual(Count, cache.GetLocalSize(CachePeekMode.Platform));
+            }
+
+            // Start again to test persistent data restore.
+            var ignite2 = StartServer();
+            _cache = ignite2.GetCache<int, int>(CacheName);
         }
 
         /// <summary>
@@ -67,54 +88,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [Test]
         public void TestPlatformCacheDataRestoresFromPersistentStorageOnNodeRestart()
         {
-            int count = 100;
+            // Platform cache is empty initially, because all entries are only on disk.
+            Assert.AreEqual(Count, _cache.GetSize());
+            Assert.AreEqual(0, _cache.GetLocalSize(CachePeekMode.Platform));
 
-            // Start Ignite, put data, stop.
-            using (var ignite = StartServer())
-            {
-                var cache = ignite.GetCache<int, int>(CacheName);
+            // Read an entry and it gets into platform cache.
+            Assert.AreEqual(1, _cache.Get(1));
+            Assert.AreEqual(1, _cache.LocalPeek(1, CachePeekMode.Platform));
 
-                cache.PutAll(Enumerable.Range(1, count).ToDictionary(x => x, x => x));
+            // Check that all operations cause the platform cache to update.
+            _cache.Put(2, -2);
+            Assert.AreEqual(-2, _cache.LocalPeek(2, CachePeekMode.Platform));
 
-                Assert.AreEqual(count, cache.GetSize());
-                Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
-            }
+            Assert.AreEqual(new[] { 3, 4 },
+                _cache.GetAll(new[] { 3, 4 }).Select(x => x.Value).OrderBy(x => x).ToArray());
+            Assert.AreEqual(3, _cache.LocalPeek(3, CachePeekMode.Platform));
+            Assert.AreEqual(4, _cache.LocalPeek(4, CachePeekMode.Platform));
 
-            // Start Ignite, verify data survival.
-            using (var ignite = StartServer())
-            {
-                // Platform cache is empty initially, because all entries are only on disk.
-                var cache = ignite.GetCache<int, int>(CacheName);
-                Assert.AreEqual(count, cache.GetSize());
-                Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
+            // Scan query.
+            var scanQueryRes = _cache.Query(new ScanQuery<int, int> { Partition = 99 }).GetAll();
+            Assert.AreEqual(1, scanQueryRes.Count);
 
-                // Read an entry and it gets into platform cache.
-                Assert.AreEqual(1, cache.Get(1));
-                Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform));
+            var scanQueryResLocal = _cache.Query(new ScanQuery<int, int> { Local = true, Partition = 99 }).GetAll();
+            Assert.AreEqual(1, scanQueryResLocal.Count);
 
-                // Check that all operations cause the platform cache to update.
-                cache.Put(2, -2);
-                Assert.AreEqual(-2, cache.LocalPeek(2, CachePeekMode.Platform));
+            // TODO: ???
+            // cache.Query(new ScanQuery<int, int>()).GetAll();
+            // Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
 
-                Assert.AreEqual(new[] { 3, 4 },
-                    cache.GetAll(new[] { 3, 4 }).Select(x => x.Value).OrderBy(x => x).ToArray());
-                Assert.AreEqual(3, cache.LocalPeek(3, CachePeekMode.Platform));
-                Assert.AreEqual(4, cache.LocalPeek(4, CachePeekMode.Platform));
-
-                // Scan query.
-                var scanQueryRes = cache.Query(new ScanQuery<int, int> { Partition = 99 }).GetAll();
-                Assert.AreEqual(1, scanQueryRes.Count);
-
-                var scanQueryResLocal = cache.Query(new ScanQuery<int, int> { Local = true, Partition = 99 }).GetAll();
-                Assert.AreEqual(1, scanQueryResLocal.Count);
-
-                // TODO: ???
-                // cache.Query(new ScanQuery<int, int>()).GetAll();
-                // Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
-
-                // TODO: Test for cacheIdAndPartition bug. File a ticket?
-                // TODO: Add tests with eviction policy?
-            }
+            // TODO: Test for cacheIdAndPartition bug. File a ticket?
+            // TODO: Add tests with eviction policy?
         }
 
         /// <summary>
