@@ -1632,6 +1632,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var scan = qry as ScanQuery<TK, TV>;
 
                 // Local scan with Partition can be satisfied directly from platform cache on server nodes.
+                // Does not work with persistence - some entries can be present only on disk.
                 if (scan != null && scan.Local && scan.Partition != null && !_persistenceEnabled)
                 {
                     return ScanPlatformCache(scan);
