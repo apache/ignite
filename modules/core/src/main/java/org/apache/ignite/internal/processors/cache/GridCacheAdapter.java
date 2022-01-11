@@ -4571,7 +4571,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             if (ctx.kernalContext().isStopping())
                                 fut0 = new GridFinishedFuture<>(
-                                    new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+                                    new IgniteCheckedException("Operation has been cancelled (node or cache is stopping)."));
+                            else if (ctx.gate().isStopped())
+                                fut0 = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
                             else {
                                 try {
                                     fut0 = op.op(tx0, opCtx).chain(clo);

@@ -272,7 +272,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             public string contextAttribute(string name)
             {
-                return _ctx.CurrentCallContext.GetAttribute(name);
+                IServiceCallContext callCtx = _ctx.CurrentCallContext;
+
+                return callCtx == null ? null : callCtx.GetAttribute(name);
             }
 
             /** <inheritdoc /> */
