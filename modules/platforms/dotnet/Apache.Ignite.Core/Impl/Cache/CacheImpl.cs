@@ -74,6 +74,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Platform cache. */
         private readonly IPlatformCache _platformCache;
 
+        /** Whether persistence is enabled for this cache. */
+        private readonly bool _persistenceEnabled;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -98,6 +101,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
+
+            _persistenceEnabled = DoOutOp((int)CacheOp.PersistenceEnabled, 0) == True;
 
             if (configuration.PlatformCacheConfiguration != null)
             {
@@ -1627,8 +1632,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var scan = qry as ScanQuery<TK, TV>;
 
                 // Local scan with Partition can be satisfied directly from platform cache on server nodes.
-                // TODO: Disable this when persistence is enabled.
-                if (scan != null && scan.Local && scan.Partition != null)
+                if (scan != null && scan.Local && scan.Partition != null && !_persistenceEnabled)
                 {
                     return ScanPlatformCache(scan);
                 }
