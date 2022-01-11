@@ -143,6 +143,8 @@
       url: persistence/custom-cache-store
     - title: Configuring Snapshot Directory
       url: persistence/snapshot-directory
+    - title: Cluster Snapshots
+      url: persistence/snapshots
     - title: Disk Compression
       url: persistence/disk-compression
     - title: Tuning Persistence
