@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -41,6 +42,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
         /** Cache. */
         private ICache<int,int> _cache;
+
+        /** Current key. Every test needs a key that was not used before. */
+        private int _key = 0;
 
         /// <summary>
         /// Sets up the test.
@@ -64,6 +68,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             // Start again to test persistent data restore.
             var ignite2 = StartServer();
             _cache = ignite2.GetCache<int, int>(CacheName);
+
+            // Platform cache is empty initially, because all entries are only on disk.
+            Assert.AreEqual(Count, _cache.GetSize());
+            Assert.AreEqual(0, _cache.GetLocalSize(CachePeekMode.Platform));
         }
 
         /// <summary>
@@ -82,42 +90,41 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             TestUtils.ClearWorkDir();
         }
 
+        [Test]
+        public void TestCacheReadOperationsRestorePlatformCacheDataFromPersistence()
+        {
+            var key = _key++;
+            var key2 = _key++;
+            var key3 = _key++;
+
+            Assert.AreEqual(key, _cache.Get(key));
+            Assert.AreEqual(key, _cache.LocalPeek(key, CachePeekMode.Platform));
+
+            Assert.AreEqual(new[] { key2, key3 },
+                _cache.GetAll(new[] { key2, key3 }).Select(x => x.Value).OrderBy(x => x).ToArray());
+
+            Assert.AreEqual(key2, _cache.LocalPeek(key2, CachePeekMode.Platform));
+            Assert.AreEqual(key3, _cache.LocalPeek(key3, CachePeekMode.Platform));
+        }
+
         /// <summary>
-        /// Tests that platform cache data survives node restart.
+        /// Tests that local partition scan optimization is disabled when persistence is enabled.
+        /// See <see cref="CacheImpl{TK,TV}.ScanPlatformCache"/>.
         /// </summary>
         [Test]
-        public void TestPlatformCacheDataRestoresFromPersistentStorageOnNodeRestart()
+        public void TestScanQueryLocalPartitionScanOptimizationDisabledWithPersistence()
         {
-            // Platform cache is empty initially, because all entries are only on disk.
-            Assert.AreEqual(Count, _cache.GetSize());
-            Assert.AreEqual(0, _cache.GetLocalSize(CachePeekMode.Platform));
+            var res = _cache.Query(new ScanQuery<int, int>()).GetAll();
+            Assert.AreEqual(Count, res.Count);
 
-            // Read an entry and it gets into platform cache.
-            Assert.AreEqual(1, _cache.Get(1));
-            Assert.AreEqual(1, _cache.LocalPeek(1, CachePeekMode.Platform));
+            var resLocal = _cache.Query(new ScanQuery<int, int> { Local = true }).GetAll();
+            Assert.AreEqual(Count, resLocal.Count);
 
-            // Check that all operations cause the platform cache to update.
-            _cache.Put(2, -2);
-            Assert.AreEqual(-2, _cache.LocalPeek(2, CachePeekMode.Platform));
+            var resPartition = _cache.Query(new ScanQuery<int, int> { Partition = 99 }).GetAll();
+            Assert.AreEqual(1, resPartition.Count);
 
-            Assert.AreEqual(new[] { 3, 4 },
-                _cache.GetAll(new[] { 3, 4 }).Select(x => x.Value).OrderBy(x => x).ToArray());
-            Assert.AreEqual(3, _cache.LocalPeek(3, CachePeekMode.Platform));
-            Assert.AreEqual(4, _cache.LocalPeek(4, CachePeekMode.Platform));
-
-            // Scan query.
-            var scanQueryRes = _cache.Query(new ScanQuery<int, int> { Partition = 99 }).GetAll();
-            Assert.AreEqual(1, scanQueryRes.Count);
-
-            var scanQueryResLocal = _cache.Query(new ScanQuery<int, int> { Local = true, Partition = 99 }).GetAll();
-            Assert.AreEqual(1, scanQueryResLocal.Count);
-
-            // TODO: ???
-            // cache.Query(new ScanQuery<int, int>()).GetAll();
-            // Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
-
-            // TODO: Test for cacheIdAndPartition bug. File a ticket?
-            // TODO: Add tests with eviction policy?
+            var resLocalPartition = _cache.Query(new ScanQuery<int, int> { Local = true, Partition = 99 }).GetAll();
+            Assert.AreEqual(1, resLocalPartition.Count);
         }
 
         /// <summary>
