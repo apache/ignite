@@ -53,6 +53,18 @@ namespace ignite
             /* Forward declaration. */
             class Writable;
 
+            namespace cache
+            {
+                namespace query
+                {
+                    namespace continuous
+                    {
+                        /* Forward declaration. */
+                        class ContinuousQueryClientHolderBase;
+                    }
+                }
+            }
+
             struct ClientType
             {
                 enum Type
@@ -61,7 +73,7 @@ namespace ignite
                 };
             };
 
-            struct RequestType
+            struct MessageType
             {
                 enum Type
                 {
@@ -160,6 +172,9 @@ namespace ignite
 
                     /** Continuous query. */
                     QUERY_CONTINUOUS = 2006,
+
+                    /** Continuous query notification event. */
+                    QUERY_CONTINUOUS_EVENT_NOTIFICATION = 2007,
 
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
@@ -295,7 +310,7 @@ namespace ignite
             /**
              * Cache partitions request.
              */
-            class ResourceCloseRequest : public RequestAdapter<RequestType::RESOURCE_CLOSE>
+            class ResourceCloseRequest : public RequestAdapter<MessageType::RESOURCE_CLOSE>
             {
             public:
                 /**
@@ -332,7 +347,7 @@ namespace ignite
             /**
              * Cache partitions request.
              */
-            class CachePartitionsRequest : public RequestAdapter<RequestType::CACHE_PARTITIONS>
+            class CachePartitionsRequest : public RequestAdapter<MessageType::CACHE_PARTITIONS>
             {
             public:
                 /**
@@ -364,7 +379,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class GetOrCreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
+            class GetOrCreateCacheWithNameRequest : public RequestAdapter<MessageType::CACHE_GET_OR_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -397,7 +412,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class CreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_CREATE_WITH_NAME>
+            class CreateCacheWithNameRequest : public RequestAdapter<MessageType::CACHE_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -430,7 +445,7 @@ namespace ignite
             /**
              * Destroy cache request.
              */
-            class DestroyCacheRequest : public RequestAdapter<RequestType::CACHE_DESTROY>
+            class DestroyCacheRequest : public RequestAdapter<MessageType::CACHE_DESTROY>
             {
             public:
                 /**
@@ -544,7 +559,7 @@ namespace ignite
             /**
              * Cache get size request.
              */
-            class CacheGetSizeRequest : public CacheRequest<RequestType::CACHE_GET_SIZE>
+            class CacheGetSizeRequest : public CacheRequest<MessageType::CACHE_GET_SIZE>
             {
             public:
                 /**
@@ -738,7 +753,7 @@ namespace ignite
             /**
              * Tx start request.
              */
-            class TxStartRequest : public RequestAdapter<RequestType::OP_TX_START>
+            class TxStartRequest : public RequestAdapter<MessageType::OP_TX_START>
             {
             public:
                 /**
@@ -795,7 +810,7 @@ namespace ignite
             /**
              * Tx end request.
              */
-            class TxEndRequest : public RequestAdapter<RequestType::OP_TX_END>
+            class TxEndRequest : public RequestAdapter<MessageType::OP_TX_END>
             {
             public:
                 /**
@@ -840,7 +855,7 @@ namespace ignite
             /**
              * Cache get binary type request.
              */
-            class BinaryTypeGetRequest : public RequestAdapter<RequestType::GET_BINARY_TYPE>
+            class BinaryTypeGetRequest : public RequestAdapter<MessageType::GET_BINARY_TYPE>
             {
             public:
                 /**
@@ -877,7 +892,7 @@ namespace ignite
             /**
              * Cache put binary type request.
              */
-            class BinaryTypePutRequest : public RequestAdapter<RequestType::PUT_BINARY_TYPE>
+            class BinaryTypePutRequest : public RequestAdapter<MessageType::PUT_BINARY_TYPE>
             {
             public:
                 /**
@@ -914,7 +929,7 @@ namespace ignite
             /**
              * Cache SQL fields query request.
              */
-            class SqlFieldsQueryRequest : public CacheRequest<RequestType::QUERY_SQL_FIELDS>
+            class SqlFieldsQueryRequest : public CacheRequest<MessageType::QUERY_SQL_FIELDS>
             {
             public:
                 /**
@@ -948,7 +963,7 @@ namespace ignite
             /**
              * Cache SQL fields cursor get page request.
              */
-            class SqlFieldsCursorGetPageRequest : public RequestAdapter<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            class SqlFieldsCursorGetPageRequest : public RequestAdapter<MessageType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
             {
             public:
                 /**
@@ -985,7 +1000,7 @@ namespace ignite
             /**
              * Continuous query request.
              */
-            class ContinuousQueryRequest : public CacheRequest<RequestType::QUERY_CONTINUOUS>
+            class ContinuousQueryRequest : public CacheRequest<MessageType::QUERY_CONTINUOUS>
             {
             public:
                 /**
@@ -1034,7 +1049,7 @@ namespace ignite
             /**
              * Compute task execute request.
              */
-            class ComputeTaskExecuteRequest : public RequestAdapter<RequestType::COMPUTE_TASK_EXECUTE>
+            class ComputeTaskExecuteRequest : public RequestAdapter<MessageType::COMPUTE_TASK_EXECUTE>
             {
             public:
                 /**
@@ -1105,7 +1120,7 @@ namespace ignite
                  * @param reader Reader.
                  * @param ver Protocol version.
                  */
-                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+                virtual void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 
                 /**
                  * Get request processing status.
@@ -1161,7 +1176,6 @@ namespace ignite
                     // No-op.
                 }
 
-            private:
                 /** Flags. */
                 int16_t flags;
 
@@ -1673,17 +1687,107 @@ namespace ignite
             /**
              * Compute task finished notification.
              */
-            class ComputeTaskFinishedNotification
+            class Notification : public Response
             {
             public:
-                typedef ComputeTaskExecuteResponse ResponseType;
-
                 /**
                  * Constructor.
                  */
-                ComputeTaskFinishedNotification(Readable& result) :
-                    status(0),
-                    errorMessage(),
+                Notification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Notification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read notification data.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
+                {
+                    flags = reader.ReadInt16();
+
+                    int16_t readOpCode = reader.ReadInt16();
+                    if (readOpCode != GetOperationCode())
+                    {
+                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification type",
+                             "expected", GetOperationCode(), "actual", readOpCode)
+                    }
+
+                    if (IsFailure())
+                    {
+                        status = reader.ReadInt32();
+                        reader.ReadString(error);
+
+                        return;
+                    }
+
+                    ReadOnSuccess(reader, ver);
+                }
+
+                /**
+                 * Get operation code.
+                 *
+                 * @return Operation code.
+                 */
+                virtual int16_t GetOperationCode() const = 0;
+
+            protected:
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 * @param ver Version.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver) = 0;
+            };
+
+            /**
+             * Request adapter.
+             *
+             * @tparam OpCode Operation code.
+             */
+            template<int16_t OpCode>
+            class NotificationAdapter : public Notification
+            {
+            public:
+                /**
+                 * Destructor.
+                 */
+                virtual ~NotificationAdapter()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get operation code.
+                 *
+                 * @return Operation code.
+                 */
+                virtual int16_t GetOperationCode() const
+                {
+                    return OpCode;
+                }
+            };
+
+            /**
+             * Compute task finished notification.
+             */
+            class ComputeTaskFinishedNotification : public NotificationAdapter<MessageType::COMPUTE_TASK_FINISHED>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                explicit ComputeTaskFinishedNotification(Readable& result) :
                     result(result)
                 {
                     // No-op.
@@ -1698,39 +1802,52 @@ namespace ignite
                 }
 
                 /**
-                 * Check if the message is failure.
-                 * @return @c true on failure.
-                 */
-                bool IsFailure() const
-                {
-                    return !errorMessage.empty();
-                }
-
-                /**
-                 * Get error message.
-                 * @return Error message.
-                 */
-                const std::string& GetErrorMessage() const
-                {
-                    return errorMessage;
-                }
-
-                /**
-                 * Read response using provided reader.
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
                  * @param reader Reader.
-                 * @param ver Protocol version.
+                 * @param ver Version.
                  */
-                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 
             private:
-                /** Status. */
-                int32_t status;
-
-                /** Error message. */
-                std::string errorMessage;
-
                 /** Result. */
                 Readable& result;
+            };
+
+            /**
+             * Continuous query notification.
+             */
+            class ClientCacheEntryEventNotification : public NotificationAdapter<MessageType::QUERY_CONTINUOUS_EVENT_NOTIFICATION>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                explicit ClientCacheEntryEventNotification(cache::query::continuous::ContinuousQueryClientHolderBase& query) :
+                    query(query)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ClientCacheEntryEventNotification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 * @param ver Version.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            private:
+                /** Result. */
+                cache::query::continuous::ContinuousQueryClientHolderBase& query;
             };
         }
     }

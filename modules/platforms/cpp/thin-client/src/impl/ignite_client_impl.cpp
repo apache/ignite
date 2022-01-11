@@ -109,7 +109,7 @@ namespace ignite
 
             void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)
             {
-                RequestAdapter<RequestType::CACHE_GET_NAMES> req;
+                RequestAdapter<MessageType::CACHE_GET_NAMES> req;
                 GetCacheNamesResponse rsp(cacheNames);
 
                 router.Get()->SyncMessage(req, rsp);

@@ -28,10 +28,48 @@
 
 namespace ignite
 {
+    namespace impl
+    {
+        namespace thin
+        {
+            namespace cache
+            {
+                namespace query
+                {
+                    namespace continuous
+                    {
+                        template<typename K, typename V>
+                        class ContinuousQueryClientHolder;
+                    }
+                }
+            }
+        }
+    }
     namespace thin
     {
         namespace cache
         {
+            /**
+             * Cache event type.
+             */
+            struct CacheEntryEventType
+            {
+                enum Type
+                {
+                    /** An event type indicating that the cache entry was created. */
+                    CREATED = 0,
+
+                    /** An event type indicating that the cache entry was updated. i.e. a previous */
+                    UPDATED = 1,
+
+                    /** An event type indicating that the cache entry was removed. */
+                    REMOVED = 2,
+
+                    /** An event type indicating that the cache entry was removed by expiration policy. */
+                    EXPIRED = 3
+                };
+            };
+
             /**
              * Cache entry event class template.
              *
@@ -41,6 +79,8 @@ namespace ignite
             template<typename K, typename V>
             class CacheEntryEvent : public CacheEntry<K, V>
             {
+                friend class ignite::impl::thin::cache::query::continuous::ContinuousQueryClientHolder<K, V>;
+
             public:
                 /**
                  * Default constructor.
@@ -50,7 +90,8 @@ namespace ignite
                 CacheEntryEvent() :
                     CacheEntry<K, V>(),
                     oldVal(),
-                    hasOldValue(false)
+                    hasOldValue(false),
+                    eventType(CacheEntryEventType::CREATED)
                 {
                     // No-op.
                 }
@@ -63,7 +104,8 @@ namespace ignite
                 CacheEntryEvent(const CacheEntryEvent<K, V>& other) :
                     CacheEntry<K, V>(other),
                     oldVal(other.oldVal),
-                    hasOldValue(other.hasOldValue)
+                    hasOldValue(other.hasOldValue),
+                    eventType(other.eventType)
                 {
                     // No-op.
                 }
@@ -94,6 +136,18 @@ namespace ignite
     
                     return *this;
                 }
+
+                /**
+                 * Get event type.
+                 *
+                 * @see CacheEntryEventType for details on events you can receive.
+                 *
+                 * @return Event type.
+                 */
+                CacheEntryEventType::Type GetEventType() const
+                {
+                    return eventType;
+                };
     
                 /**
                  * Get old value.
@@ -115,6 +169,7 @@ namespace ignite
                     return hasOldValue;
                 }
     
+            private:
                 /**
                  * Reads cache event using provided raw reader.
                  *
@@ -123,20 +178,28 @@ namespace ignite
                 void Read(binary::BinaryRawReader& reader)
                 {
                     this->key = reader.ReadObject<K>();
-    
+
                     this->hasOldValue = reader.TryReadObject(this->oldVal);
                     this->hasValue = reader.TryReadObject(this->val);
-                    
-                    // TODO: Implement and test Event type.
-                    reader.ReadInt8();
+
+                    int8_t intType = reader.ReadInt8();
+                    if (intType < 0 || intType > 3)
+                    {
+                        std::string errMsg = "Event type is not supported: " + common::LexicalCast<std::string>(intType);
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, errMsg.c_str());
+                    }
+
+                    eventType = static_cast<CacheEntryEventType::Type>(intType);
                 }
-    
-            private:
+
                 /** Old value. */
                 V oldVal;
     
                 /** Indicates whether old value exists */
                 bool hasOldValue;
+
+                /** Event type. */
+                CacheEntryEventType::Type eventType;
             };
         }
     }

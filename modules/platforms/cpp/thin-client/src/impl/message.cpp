@@ -20,6 +20,7 @@
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 #include "impl/response_status.h"
 #include "impl/data_channel.h"
@@ -255,7 +256,7 @@ namespace ignite
             }
 
             CacheGetSizeRequest::CacheGetSizeRequest(int32_t cacheId, bool binary, int32_t peekModes) :
-                CacheRequest<RequestType::CACHE_GET_SIZE>(cacheId, binary),
+                CacheRequest<MessageType::CACHE_GET_SIZE>(cacheId, binary),
                 peekModes(peekModes)
             {
                 // No-op.
@@ -263,7 +264,7 @@ namespace ignite
 
             void CacheGetSizeRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                CacheRequest<RequestType::CACHE_GET_SIZE>::Write(writer, ver);
+                CacheRequest<MessageType::CACHE_GET_SIZE>::Write(writer, ver);
 
                 if (peekModes & ignite::thin::cache::CachePeekMode::ALL)
                 {
@@ -316,7 +317,7 @@ namespace ignite
                 int32_t cacheId,
                 const ignite::thin::cache::query::SqlFieldsQuery &qry
                 ) :
-                CacheRequest<RequestType::QUERY_SQL_FIELDS>(cacheId, false),
+                CacheRequest<MessageType::QUERY_SQL_FIELDS>(cacheId, false),
                 qry(qry)
             {
                 // No-op.
@@ -324,7 +325,7 @@ namespace ignite
 
             void SqlFieldsQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                CacheRequest<RequestType::QUERY_SQL_FIELDS>::Write(writer, ver);
+                CacheRequest<MessageType::QUERY_SQL_FIELDS>::Write(writer, ver);
 
                 if (qry.schema.empty())
                     writer.WriteNull();
@@ -383,7 +384,7 @@ namespace ignite
 
             void ContinuousQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                CacheRequest<RequestType::QUERY_CONTINUOUS>::Write(writer, ver);
+                CacheRequest<MessageType::QUERY_CONTINUOUS>::Write(writer, ver);
 
                 writer.WriteInt32(pageSize);
                 writer.WriteInt64(timeInterval);
@@ -415,31 +416,15 @@ namespace ignite
                 taskId = reader.ReadInt64();
             }
 
-            void ComputeTaskFinishedNotification::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            void ComputeTaskFinishedNotification::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
-                int16_t flags = reader.ReadInt16();
-                if (!(flags & Flag::NOTIFICATION))
-                {
-                    IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Was expecting notification but got "
-                        "different kind of message", "flags", flags)
-                }
+                result.Read(reader);
+            }
 
-                int16_t opCode = reader.ReadInt16();
-                if (opCode != RequestType::COMPUTE_TASK_FINISHED)
-                {
-                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification type",
-                        "expected", (int)RequestType::COMPUTE_TASK_FINISHED, "actual", opCode)
-                }
-
-                if (flags & Flag::FAILURE)
-                {
-                    status = reader.ReadInt32();
-                    reader.ReadString(errorMessage);
-                }
-                else
-                {
-                    result.Read(reader);
-                }
+            void ClientCacheEntryEventNotification::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                ignite::binary::BinaryRawReader reader0(&reader);
+                query.ReadAndProcessEvents(reader0);
             }
         }
     }

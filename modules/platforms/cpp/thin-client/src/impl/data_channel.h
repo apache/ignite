@@ -184,22 +184,10 @@ namespace ignite
 
                 /**
                  * Deserialize message received by this channel.
-                 * @tparam T Message type.
                  * @param data Data.
                  * @param msg Message.
                  */
-                template<typename T>
-                void DeserializeMessage(const network::DataBuffer& data, T& msg)
-                {
-                    interop::InteropInputStream inStream(data.GetInputStream());
-
-                    // Skipping size (4 bytes) and reqId (8 bytes)
-                    inStream.Ignore(12);
-
-                    binary::BinaryReaderImpl reader(&inStream);
-
-                    msg.Read(reader, currentVersion);
-                }
+                void DeserializeMessage(const network::DataBuffer& data, Response& msg);
 
                 /**
                  * Fail all pending requests.

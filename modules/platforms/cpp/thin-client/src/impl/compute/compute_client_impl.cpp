@@ -59,7 +59,7 @@ namespace
             if (notification.IsFailure())
             {
                 promise.SetError(IgniteError(IgniteError::IGNITE_ERR_COMPUTE_EXECUTION_REJECTED,
-                    notification.GetErrorMessage().c_str()));
+                    notification.GetError().c_str()));
             }
             else
                 promise.SetValue();

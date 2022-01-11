@@ -248,7 +248,7 @@ namespace ignite
                 binary::BinaryWriterImpl writer(&outStream, 0);
 
                 int32_t lenPos = outStream.Reserve(4);
-                writer.WriteInt8(RequestType::HANDSHAKE);
+                writer.WriteInt8(MessageType::HANDSHAKE);
 
                 writer.WriteInt16(propVer.GetMajor());
                 writer.WriteInt16(propVer.GetMinor());
@@ -342,6 +342,18 @@ namespace ignite
             bool DataChannel::IsVersionSupported(const ProtocolVersion& ver)
             {
                 return supportedVersions.find(ver) != supportedVersions.end();
+            }
+
+            void DataChannel::DeserializeMessage(const network::DataBuffer &data, Response &msg)
+            {
+                interop::InteropInputStream inStream(data.GetInputStream());
+
+                // Skipping size (4 bytes) and reqId (8 bytes)
+                inStream.Ignore(12);
+
+                binary::BinaryReaderImpl reader(&inStream);
+
+                msg.Read(reader, currentVersion);
             }
 
             void DataChannel::FailPendingRequests(const IgniteError* err)

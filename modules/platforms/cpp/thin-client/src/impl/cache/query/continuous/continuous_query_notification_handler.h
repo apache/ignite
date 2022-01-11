@@ -25,6 +25,7 @@
 
 #include <ignite/impl/interop/interop_input_stream.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 #include "impl/notification_handler.h"
 
@@ -46,20 +47,19 @@ namespace ignite
                         class ContinuousQueryNotificationHandler : public NotificationHandler
                         {
                         public:
-                            ContinuousQueryNotificationHandler(
-                                const SP_ContinuousQueryClientHolderBase& continuousQuery) :
-                                continuousQuery(continuousQuery)
-                            {
-                                // No-op.
-                            }
+                            /**
+                             * Constructor.
+                             *
+                             * @param channel Channel.
+                             * @param continuousQuery Continuous Query.
+                             */
+                            ContinuousQueryNotificationHandler(DataChannel& channel,
+                                const SP_ContinuousQueryClientHolderBase& continuousQuery);
 
                             /**
                              * Destructor.
                              */
-                            virtual ~ContinuousQueryNotificationHandler()
-                            {
-                                // No-op.
-                            }
+                            virtual ~ContinuousQueryNotificationHandler();
 
                             /**
                              * Handle notification.
@@ -67,25 +67,14 @@ namespace ignite
                              * @param msg Message.
                              * @return @c true if processing complete.
                              */
-                            virtual bool OnNotification(const network::DataBuffer& msg)
-                            {
-                                interop::InteropInputStream in(msg.GetInputStream());
-
-                                // TODO: Re-factor
-                                // Skipping size (4 bytes) and reqId (8 bytes), flags and opcode
-                                in.Ignore(16);
-
-                                binary::BinaryReaderImpl readerImpl(&in);
-                                ignite::binary::BinaryRawReader reader(&readerImpl);
-
-                                continuousQuery.Get()->ReadAndProcessEvents(reader);
-
-                                return false;
-                            }
+                            virtual bool OnNotification(const network::DataBuffer& msg);
 
                         private:
                             /** Query. */
                             SP_ContinuousQueryClientHolderBase continuousQuery;
+
+                            /** Channel. */
+                            DataChannel& channel;
                         };
 
                         /** Shared pointer to ContinuousQueryHandleClientImpl. */
