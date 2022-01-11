@@ -32,6 +32,7 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
         src/cache_client_test.cpp
         src/compute_client_test.cpp
+        src/continuous_query_test.cpp
         src/test_utils.cpp
         src/ignite_client_test.cpp
         src/interop_test.cpp

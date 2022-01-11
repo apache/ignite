@@ -27,6 +27,8 @@
 
 #include <ignite/thin/cache/query/query_fields_cursor.h>
 #include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/cache/query/continuous/continuous_query_client.h>
+#include <ignite/thin/cache/query/continuous/continuous_query_handle.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/writable_key.h>
@@ -594,6 +596,20 @@ namespace ignite
                 query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry)
                 {
                     return proxy.Query(qry);
+                }
+
+                /**
+                 * Starts the continuous query execution
+                 *
+                 * @param continuousQuery Continuous query.
+                 * @return Query handle. Once all instances are destroyed query execution stopped.
+                 */
+                query::continuous::ContinuousQueryHandleClient<K, V> QueryContinuous(
+                        query::continuous::ContinuousQueryClient<K, V> continuousQuery)
+                {
+                    // TODO: Implement
+                    return query::continuous::ContinuousQueryHandleClient<K, V>();
+//                    return proxy.QueryContinuous(continuousQuery);
                 }
 
                 /**
