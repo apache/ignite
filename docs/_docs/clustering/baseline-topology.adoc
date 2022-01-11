@@ -35,7 +35,7 @@ occasional network failures or scheduled server maintenance.
 Baseline topology changes automatically when <<Baseline Topology Autoadjustment>> is enabled. This is the default
 behavior for pure in-memory clusters. For persistent clusters, the baseline topology autoadjustment feature must be enabled
 manually. By default, it is disabled and you have to change the baseline topology manually. You can change the baseline
-topology using the link:control-script#activation-deactivation-and-topology-management[control script].
+topology using the link:tools/control-script#activation-deactivation-and-topology-management[Control script,window=_blank].
 
 [CAUTION]
 ====
