@@ -28,6 +28,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     /// </summary>
     public class PlatformCacheRestoreFromPersistenceTest
     {
+        /** Cache name. */
+        private const string CacheName = "persistentCache";
+
         /** Temp dir for WAL. */
         private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
@@ -62,7 +65,51 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [Test]
         public void TestPlatformCacheDataRestoresOnNodeRestart()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            // Start Ignite, put data, stop.
+            using (var ignite = StartServer())
+            {
+                var cache = ignite.GetCache<int, int>(CacheName);
+
+                cache[1] = 1;
+
+                Assert.AreEqual(1, cache.GetSize());
+                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
+            }
+
+            // Start Ignite, verify data survival.
+            using (var ignite = StartServer())
+            {
+                // Platform cache is empty initially, because all entries are only on disk.
+                var cache = ignite.GetCache<int, int>(CacheName);
+                Assert.AreEqual(1, cache.GetSize());
+                Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
+
+                // Read an entry and it gets into platform cache.
+                // TODO: Test all cache operations - put, get, getAll, etc.
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
+                Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform));
+            }
+        }
+
+        /// <summary>
+        /// Starts the node.
+        /// </summary>
+        private IIgnite StartServer()
+        {
+            var ignite = Ignition.Start(GetIgniteConfiguration());
+
+            ignite.GetCluster().SetActive(true);
+
+            return ignite;
+        }
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        private IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = new DataStorageConfiguration
                 {
@@ -74,45 +121,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                         Name = DataStorageConfiguration.DefaultDataRegionName,
                         PersistenceEnabled = true
                     }
+                },
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration
+                    {
+                        Name = CacheName,
+                        PlatformCacheConfiguration = new PlatformCacheConfiguration()
+                    }
                 }
             };
-
-            const string cacheName = "persistentCache";
-
-            // Start Ignite, put data, stop.
-            using (var ignite = Ignition.Start(cfg))
-            {
-                ignite.GetCluster().SetActive(true);
-
-                // Create cache with default region (persistence enabled), add data.
-                var cache = ignite.CreateCache<int, int>(new CacheConfiguration
-                {
-                    Name = cacheName,
-                    PlatformCacheConfiguration = new PlatformCacheConfiguration()
-                });
-
-                cache[1] = 1;
-
-                Assert.AreEqual(1, cache.GetSize());
-                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
-            }
-
-            // Start Ignite, verify data survival.
-            using (var ignite = Ignition.Start(cfg))
-            {
-                ignite.GetCluster().SetActive(true);
-
-                // Platform cache is empty initially, because all entries are only on disk.
-                var cache = ignite.GetCache<int, int>(cacheName);
-                Assert.AreEqual(1, cache.GetSize());
-                Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
-
-                // Read an entry and it gets into platform cache.
-                // TODO: Test all cache operations - put, get, getAll, etc.
-                Assert.AreEqual(1, cache[1]);
-                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
-                Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform));
-            }
         }
     }
 }
