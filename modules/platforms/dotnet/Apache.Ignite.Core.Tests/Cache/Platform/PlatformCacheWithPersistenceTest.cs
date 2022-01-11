@@ -64,9 +64,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /// Tests that platform cache data survives node restart.
         /// </summary>
         [Test]
-        public void TestPlatformCacheDataRestoresOnNodeRestart()
+        public void TestPlatformCacheDataRestoresFromPersistentStorageOnNodeRestart()
         {
-            int count = 1;
+            int count = 100;
 
             // Start Ignite, put data, stop.
             using (var ignite = StartServer())
