@@ -51,7 +51,7 @@ Inserts data into a table.
 
 [source,sql]
 ----
-{ INSERT | UPSERT } INTO tablePrimary
+{ INSERT } INTO tablePrimary
 [ '(' column [, column ]* ')' ]
 query
 ----
