@@ -376,7 +376,7 @@ namespace ignite
                 {
                     const query::continuous::ContinuousQueryClientHolderBase& cq = *continuousQuery.Get();
 
-                    ContinuousQueryRequest req(cq.GetBufferSize(), cq.GetTimeInterval(), cq.GetIncludeExpired());
+                    ContinuousQueryRequest req(id, cq.GetBufferSize(), cq.GetTimeInterval(), cq.GetIncludeExpired());
                     ContinuousQueryResponse rsp;
 
                     SP_DataChannel channel = SyncMessage(req, rsp);
@@ -385,10 +385,10 @@ namespace ignite
                     query::continuous::SP_ContinuousQueryNotificationHandler handler(
                             new query::continuous::ContinuousQueryNotificationHandler(continuousQuery));
 
-                    channel.Get()->RegisterNotificationHandler(req.GetId(), handler);
+                    channel.Get()->RegisterNotificationHandler(rsp.GetQueryId(), handler);
 
                     return query::continuous::SP_ContinuousQueryHandleClientImpl(
-                        new query::continuous::ContinuousQueryHandleClientImpl(channel, rsp.GetQueryId(), req.GetId()));
+                        new query::continuous::ContinuousQueryHandleClientImpl(channel, rsp.GetQueryId()));
                 }
             }
         }

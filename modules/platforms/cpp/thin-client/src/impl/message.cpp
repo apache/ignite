@@ -400,8 +400,10 @@ namespace ignite
                 cursorPage.Get()->Read(reader);
             }
 
-            void ContinuousQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            void ContinuousQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
+                CacheRequest<RequestType::QUERY_CONTINUOUS>::Write(writer, ver);
+
                 writer.WriteInt32(pageSize);
                 writer.WriteInt64(timeInterval);
                 writer.WriteBool(includeExpired);

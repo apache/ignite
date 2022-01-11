@@ -71,8 +71,9 @@ namespace ignite
                             {
                                 interop::InteropInputStream in(msg.GetInputStream());
 
-                                // Skipping size (4 bytes) and reqId (8 bytes)
-                                in.Ignore(12);
+                                // TODO: Re-factor
+                                // Skipping size (4 bytes) and reqId (8 bytes), flags and opcode
+                                in.Ignore(16);
 
                                 binary::BinaryReaderImpl readerImpl(&in);
                                 ignite::binary::BinaryRawReader reader(&readerImpl);

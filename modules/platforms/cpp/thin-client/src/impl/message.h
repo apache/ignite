@@ -948,17 +948,19 @@ namespace ignite
             /**
              * Continuous query request.
              */
-            class ContinuousQueryRequest : public RequestAdapter<RequestType::QUERY_CONTINUOUS>
+            class ContinuousQueryRequest : public CacheRequest<RequestType::QUERY_CONTINUOUS>
             {
             public:
                 /**
                  * Constructor.
                  *
+                 * @param cacheId Cache ID.
                  * @param pageSize Page size.
                  * @param timeInterval Time interval.
                  * @param includeExpired Include expired.
                  */
-                explicit ContinuousQueryRequest(int32_t pageSize, int64_t timeInterval, bool includeExpired) :
+                explicit ContinuousQueryRequest(int32_t cacheId, int32_t pageSize, int64_t timeInterval, bool includeExpired) :
+                    CacheRequest(cacheId, false),
                     pageSize(pageSize),
                     timeInterval(timeInterval),
                     includeExpired(includeExpired)

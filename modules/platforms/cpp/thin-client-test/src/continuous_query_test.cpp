@@ -158,19 +158,19 @@ public:
             BOOST_CHECK_EQUAL(event.GetValue().value, val->value);
     }
 
-    /*
-     * Check that there is no event for the specified ammount of time.
-     *
-     * @param timeout Timeout.
-     */
-    template <typename Rep, typename Period>
-    void CheckNoEvent(const boost::chrono::duration<Rep, Period>& timeout)
-    {
-        CacheEntryEvent<K, V> event;
-        bool success = eventQueue.Pull(event, timeout);
-
-        BOOST_REQUIRE(!success);
-    }
+//    /**
+//     * Check that there is no event for the specified amount of time.
+//     *
+//     * @param timeout Timeout.
+//     */
+//    template <typename Rep, typename Period>
+//    void CheckNoEvent(const boost::chrono::duration<Rep, Period>& timeout)
+//    {
+//        CacheEntryEvent<K, V> event;
+//        bool success = eventQueue.Pull(event, timeout);
+//
+//        BOOST_REQUIRE(!success);
+//    }
 
 private:
     // Events queue.
@@ -193,7 +193,7 @@ struct TestEntry
     /*
      * Constructor.
      */
-    TestEntry(int32_t val) : value(val)
+    explicit TestEntry(int32_t val) : value(val)
     {
         // No-op.
     }
@@ -258,10 +258,10 @@ public:
     /**
      * Start new client.
      */
-    IgniteClient StartClient()
+    static IgniteClient StartClient()
     {
         IgniteClientConfiguration cfg;
-        cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+        cfg.SetEndPoints("127.0.0.1:11110");
 
         return IgniteClient::Start(cfg);
     }
@@ -271,7 +271,7 @@ public:
      *
      * @param client Client to use.
      */
-    CacheClient<int32_t, TestEntry> GetTestCache(IgniteClient& client)
+    static CacheClient<int32_t, TestEntry> GetTestCache(IgniteClient& client)
     {
         return client.GetOrCreateCache<int32_t, TestEntry>("ContinuousQueryTestSuite");
     }

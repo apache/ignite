@@ -48,9 +48,8 @@ namespace ignite
                              *
                              * @param channel Channel.
                              * @param queryId Query ID.
-                             * @param handlerId Notification handler ID.
                              */
-                            ContinuousQueryHandleClientImpl(SP_DataChannel channel, int64_t queryId, int64_t handlerId) :
+                            ContinuousQueryHandleClientImpl(SP_DataChannel channel, int64_t queryId) :
                                 channel(channel),
                                 queryId(queryId)
                             {
@@ -63,7 +62,7 @@ namespace ignite
                             virtual ~ContinuousQueryHandleClientImpl()
                             {
                                 // TODO: implement me.
-                                channel.Get()->DeregisterNotificationHandler(handlerId);
+                                channel.Get()->DeregisterNotificationHandler(queryId);
                             }
 
                         private:
@@ -72,9 +71,6 @@ namespace ignite
 
                             /** Query ID. */
                             int64_t queryId;
-
-                            /** Handler ID. */
-                            int64_t handlerId;
                         };
 
                         /** Shared pointer to ContinuousQueryHandleClientImpl. */
