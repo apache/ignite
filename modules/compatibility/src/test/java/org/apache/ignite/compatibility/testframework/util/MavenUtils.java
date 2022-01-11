@@ -17,20 +17,20 @@
 
 package org.apache.ignite.compatibility.testframework.util;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -161,24 +161,15 @@ public class MavenUtils {
         if (!prjPomFile.exists())
             return Collections.emptyList();
 
-        BufferedReader cmdOutputReader = new BufferedReader(new StringReader(
-            exec(buildMvnCommand() + " -f " + workDir + ' ' + MAVEN_DEPENDENCY_PLUGIN + ":list-repositories")
-        ));
-
-        Collection<String> repos = new ArrayList<>();
-
-        String line;
+        String out = exec(buildMvnCommand() + " -f " + workDir + ' ' + MAVEN_DEPENDENCY_PLUGIN + ":list-repositories");
 
         String urlPrefix = "url:";
 
-        while ((line = cmdOutputReader.readLine()) != null) {
-            line = line.trim();
-
-            if (line.startsWith(urlPrefix))
-                repos.add(line.substring(urlPrefix.length()).trim());
-        }
-
-        return repos;
+        return Arrays.stream(out.split(U.nl()))
+            .map(String::trim)
+            .filter(s -> s.startsWith(urlPrefix))
+            .map(s -> s.substring(urlPrefix.length()).trim())
+            .collect(Collectors.toList());
     }
 
     /**
@@ -203,19 +194,15 @@ public class MavenUtils {
         if (Files.exists(localProxyMavenSettings))
             mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
         else {
-            String remoteRepos = null;
+            Collection<String> repos = new ArrayList<>();
 
             if (useGgRepo)
-                remoteRepos = GG_MVN_REPO;
-            else {
-                Collection<String> prjRepos = mavenProjectRepositories();
+                repos.add(GG_MVN_REPO);
 
-                if (!prjRepos.isEmpty())
-                    remoteRepos = String.join(",", prjRepos);
-            }
+            repos.addAll(mavenProjectRepositories());
 
-            if (!isEmpty(remoteRepos))
-                mavenCommandArgs.a(" -DremoteRepositories=").a(remoteRepos);
+            if (!repos.isEmpty())
+                mavenCommandArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
         }
 
         exec(buildMvnCommand() + mavenCommandArgs.toString());
