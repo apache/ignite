@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -99,6 +100,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     cache.GetAll(new[] { 3, 4 }).Select(x => x.Value).OrderBy(x => x).ToArray());
                 Assert.AreEqual(3, cache.LocalPeek(3, CachePeekMode.Platform));
                 Assert.AreEqual(4, cache.LocalPeek(4, CachePeekMode.Platform));
+
+                // Scan query.
+                var scanQueryRes = cache.Query(new ScanQuery<int, int> { Partition = 99 }).GetAll();
+                Assert.AreEqual(1, scanQueryRes.Count);
+
+                var scanQueryResLocal = cache.Query(new ScanQuery<int, int> { Local = true, Partition = 99 }).GetAll();
+                Assert.AreEqual(1, scanQueryResLocal.Count);
+
+                // TODO: ???
+                // cache.Query(new ScanQuery<int, int>()).GetAll();
+                // Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
+
+                // TODO: Test for cacheIdAndPartition bug. File a ticket?
+                // TODO: Add tests with eviction policy?
             }
         }
 
