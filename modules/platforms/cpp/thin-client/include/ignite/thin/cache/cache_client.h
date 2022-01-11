@@ -35,6 +35,7 @@
 
 #include <ignite/impl/thin/readable.h>
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 namespace ignite
 {
@@ -74,7 +75,7 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                CacheClient(common::concurrent::SharedPointer<void> impl) :
+                explicit CacheClient(const common::concurrent::SharedPointer<void>& impl) :
                     proxy(impl)
                 {
                     // No-op.
@@ -604,12 +605,13 @@ namespace ignite
                  * @param continuousQuery Continuous query.
                  * @return Query handle. Once all instances are destroyed query execution stopped.
                  */
-                query::continuous::ContinuousQueryHandleClient<K, V> QueryContinuous(
+                query::continuous::ContinuousQueryHandleClient QueryContinuous(
                         query::continuous::ContinuousQueryClient<K, V> continuousQuery)
                 {
-                    // TODO: Implement
-                    return query::continuous::ContinuousQueryHandleClient<K, V>();
-//                    return proxy.QueryContinuous(continuousQuery);
+                    impl::thin::cache::query::continuous::SP_ContinuousQueryClientHolderBase holder(
+                        new impl::thin::cache::query::continuous::ContinuousQueryClientHolder<K, V>(continuousQuery));
+
+                    return proxy.QueryContinuous(holder);
                 }
 
                 /**

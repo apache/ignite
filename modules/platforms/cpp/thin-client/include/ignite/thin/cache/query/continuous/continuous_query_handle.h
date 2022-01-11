@@ -23,6 +23,8 @@
 #ifndef _IGNITE_THIN_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE_CLIENT
 #define _IGNITE_THIN_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE_CLIENT
 
+#include <ignite/common/concurrent.h>
+
 namespace ignite
 {
     namespace thin
@@ -38,7 +40,6 @@ namespace ignite
                      *
                      * Once destructed, continuous query is stopped and event listener stops getting event.
                      */
-                    template<typename K, typename V>
                     class ContinuousQueryHandleClient
                     {
                     public:

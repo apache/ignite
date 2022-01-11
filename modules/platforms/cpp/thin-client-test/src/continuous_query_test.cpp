@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 
     ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
 
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle = cache.QueryContinuous(qry);
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
     CheckEvents(cache, lsnr);
 }
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 BOOST_AUTO_TEST_CASE(TestExpiredQuery)
 {
     Listener<int32_t, TestEntry> lsnr;
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle;
+    ContinuousQueryHandleClient handle;
 
     {
         // Query scope.
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 
     BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
 
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle = cache.QueryContinuous(qry);
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
     BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
 
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
 
     BOOST_CHECK_EQUAL(qry.GetTimeInterval(), 500);
 
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle = cache.QueryContinuous(qry);
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
     BOOST_CHECK_EQUAL(qry.GetTimeInterval(), 500);
 
@@ -393,7 +393,7 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
     ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
 
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle = cache.QueryContinuous(qry);
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
     cache.Put(1, TestEntry(10));
     cache.Put(1, TestEntry(11));
@@ -433,7 +433,7 @@ BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 
     ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
 
-    ContinuousQueryHandleClient<int32_t, TestEntry> handle = cache.QueryContinuous(qry);
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110");

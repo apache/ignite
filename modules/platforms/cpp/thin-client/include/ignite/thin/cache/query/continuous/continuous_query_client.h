@@ -34,10 +34,6 @@ namespace ignite
     {
         namespace cache
         {
-            // Forward-declaration.
-            template<typename K, typename V>
-            class CacheClient;
-
             namespace query
             {
                 namespace continuous
@@ -57,7 +53,6 @@ namespace ignite
                     template<typename K, typename V>
                     class ContinuousQueryClient
                     {
-                        friend class CacheClient<K, V>;
                     public:
 
                         /**
@@ -204,7 +199,7 @@ namespace ignite
                          */
                         const event::CacheEntryEventListener<K, V>& GetListener() const
                         {
-                            return listener.Get();
+                            return *listener.Get();
                         }
 
                         /**
@@ -214,7 +209,7 @@ namespace ignite
                          */
                         event::CacheEntryEventListener<K, V>& GetListener()
                         {
-                            return listener.Get();
+                            return *listener.Get();
                         }
 
                     private:

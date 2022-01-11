@@ -369,6 +369,13 @@ namespace ignite
 
                     return cursorImpl;
                 }
+
+                query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(
+                        const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery)
+                {
+                    // TODO: Implement me
+                    return query::continuous::SP_ContinuousQueryHandleClientImpl();
+                }
             }
         }
     }
