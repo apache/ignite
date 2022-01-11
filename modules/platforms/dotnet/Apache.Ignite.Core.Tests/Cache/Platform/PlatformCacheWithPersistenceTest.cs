@@ -91,20 +91,34 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         [Test]
-        public void TestCacheReadOperationsRestorePlatformCacheDataFromPersistence()
+        public void TestGetRestoresPlatformCacheDataFromPersistence()
         {
-            var key = _key++;
-            var key2 = _key++;
-            var key3 = _key++;
+            var k = _key++;
 
-            Assert.AreEqual(key, _cache.Get(key));
-            Assert.AreEqual(key, _cache.LocalPeek(key, CachePeekMode.Platform));
+            Assert.AreEqual(k, _cache.Get(k));
+            Assert.AreEqual(k, _cache.LocalPeek(k, CachePeekMode.Platform));
+        }
 
-            Assert.AreEqual(new[] { key2, key3 },
-                _cache.GetAll(new[] { key2, key3 }).Select(x => x.Value).OrderBy(x => x).ToArray());
+        [Test]
+        public void TestGetAllRestoresPlatformCacheDataFromPersistence()
+        {
+            var k1 = _key++;
+            var k2 = _key++;
 
-            Assert.AreEqual(key2, _cache.LocalPeek(key2, CachePeekMode.Platform));
-            Assert.AreEqual(key3, _cache.LocalPeek(key3, CachePeekMode.Platform));
+            Assert.AreEqual(new[] { k1, k2 },
+                _cache.GetAll(new[] { k1, k2 }).Select(x => x.Value).OrderBy(x => x).ToArray());
+
+            Assert.AreEqual(k1, _cache.LocalPeek(k1, CachePeekMode.Platform));
+            Assert.AreEqual(k2, _cache.LocalPeek(k2, CachePeekMode.Platform));
+        }
+
+        [Test]
+        public void TestContainsKeyRestoresPlatformCacheDataFromPersistence()
+        {
+            var k = _key++;
+
+            Assert.IsTrue(_cache.ContainsKey(k));
+            Assert.AreEqual(k, _cache.LocalPeek(k, CachePeekMode.Platform));
         }
 
         /// <summary>
