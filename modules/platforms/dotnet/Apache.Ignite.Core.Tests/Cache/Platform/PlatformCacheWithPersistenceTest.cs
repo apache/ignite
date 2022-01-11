@@ -158,6 +158,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(Count / 2, res.Count);
         }
 
+        [Test]
+        public void TestRemoteNode()
+        {
+            Assert.Fail("TODO");
+        }
+
         /// <summary>
         /// Starts the node.
         /// </summary>
