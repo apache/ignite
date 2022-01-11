@@ -91,34 +91,58 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             TestUtils.ClearWorkDir();
         }
 
+        /// <summary>
+        /// Tests get operation.
+        /// </summary>
         [Test]
         public void TestGetRestoresPlatformCacheDataFromPersistence()
         {
             TestCacheOperation(k => _cache.Get(k));
         }
 
-        [Test]
-        public void TestGetAndPutRestoresPlatformCacheDataFromPersistence()
-        {
-            TestCacheOperation(k => _cache.GetAndPut(k, -k), k => -k);
-        }
-
+        /// <summary>
+        /// Tests getAll operation.
+        /// </summary>
         [Test]
         public void TestGetAllRestoresPlatformCacheDataFromPersistence()
         {
             TestCacheOperation(k => _cache.GetAll(new[] { k }));
         }
 
+        /// <summary>
+        /// Tests containsKey operation.
+        /// </summary>
         [Test]
         public void TestContainsKeyRestoresPlatformCacheDataFromPersistence()
         {
             TestCacheOperation(k => _cache.ContainsKey(k));
         }
 
+        /// <summary>
+        /// Tests containsKeys operation.
+        /// </summary>
         [Test]
         public void TestContainsKeysRestoresPlatformCacheDataFromPersistence()
         {
             TestCacheOperation(k => _cache.ContainsKeys(new[] { k }));
+        }
+
+        /// <summary>
+        /// Tests put operation.
+        /// </summary>
+        [Test]
+        public void TestPutUpdatesPlatformCache()
+        {
+            TestCacheOperation(k => _cache.Put(k, -k), k => -k);
+        }
+
+        /// <summary>
+        /// Tests getAndPut operation.
+        /// </summary>
+        [Test]
+        public void TestGetAndPutUpdatesPlatformCache()
+        {
+            TestCacheOperation(k => _cache.GetAndPut(k, -k), k => -k);
         }
 
         /// <summary>
@@ -141,6 +165,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(1, resLocalPartition.Count);
         }
 
+        /// <summary>
+        /// Tests that scan query with filter does not need platform cache data to return correct results.
+        /// </summary>
         [Test]
         public void TestScanQueryWithFilterUsesPersistentData()
         {
@@ -189,6 +216,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
         }
 
+        /// <summary>
+        /// Tests that cache operation causes platform cache to be populated for the key.
+        /// </summary>
         private void TestCacheOperation(Action<int> operation, Func<int, int> expectedFunc = null)
         {
             var k = _key++;
