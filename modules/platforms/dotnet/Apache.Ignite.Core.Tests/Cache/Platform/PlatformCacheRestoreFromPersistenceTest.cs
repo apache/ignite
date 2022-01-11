@@ -66,15 +66,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [Test]
         public void TestPlatformCacheDataRestoresOnNodeRestart()
         {
+            int count = 1;
+
             // Start Ignite, put data, stop.
             using (var ignite = StartServer())
             {
                 var cache = ignite.GetCache<int, int>(CacheName);
 
-                cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
+                cache.PutAll(Enumerable.Range(1, count).ToDictionary(x => x, x => x));
 
-                Assert.AreEqual(100, cache.GetSize());
-                Assert.AreEqual(100, cache.GetLocalSize(CachePeekMode.Platform));
+                Assert.AreEqual(count, cache.GetSize());
+                Assert.AreEqual(count, cache.GetLocalSize(CachePeekMode.Platform));
             }
 
             // Start Ignite, verify data survival.
@@ -82,15 +84,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 // Platform cache is empty initially, because all entries are only on disk.
                 var cache = ignite.GetCache<int, int>(CacheName);
-                Assert.AreEqual(100, cache.GetSize());
+                Assert.AreEqual(count, cache.GetSize());
                 Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
 
                 // Read an entry and it gets into platform cache.
                 Assert.AreEqual(1, cache[1]);
-
-                // TODO: Why is this flaky?
-                TestUtils.WaitForTrueCondition(() => 1 == cache.GetLocalSize(CachePeekMode.Platform),
-                    () => cache.GetLocalSize(CachePeekMode.Platform).ToString());
+                Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Platform));
 
                 // TODO: Test all cache operations - put, get, getAll, etc.
                 Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform));
