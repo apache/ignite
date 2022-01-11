@@ -93,10 +93,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /**
-     *
-     */
+    /** */
     private String createWalFiles() throws Exception {
+        return createWalFiles(1);
+    }
+
+    /** */
+    private String createWalFiles(int segRecCnt) throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 
         String archiveWalDir = getArchiveWalDirPath(ig);
@@ -112,7 +115,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             sharedMgr.checkpointReadLock();
 
             try {
-                walMgr.log(new SnapshotRecord(i, false), RolloverType.NEXT_SEGMENT);
+                for (int j = 0; j < segRecCnt - 1; j++)
+                    walMgr.log(new SnapshotRecord(i * segRecCnt + j, false));
+
+                walMgr.log(new SnapshotRecord(i * segRecCnt + segRecCnt - 1, false), RolloverType.NEXT_SEGMENT);
             }
             finally {
                 sharedMgr.checkpointReadUnlock();
@@ -142,6 +148,48 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             "All WAL files must be closed at least ones!",
             CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles()
         );
+    }
+
+    /** */
+    @Test
+    public void testNoNextIfLowBoundInTheEnd() throws Exception {
+        String dir = createWalFiles(3);
+
+        WALIterator iter = createWalIterator(dir, null, null, false);
+
+        while (iter.hasNext())
+            iter.next();
+
+        iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+
+        assertFalse(iter.hasNext());
+    }
+
+    /** */
+    @Test
+    public void testNextRecordReturnedForLowBounds() throws Exception {
+        String dir = createWalFiles(3);
+
+        WALIterator iter = createWalIterator(dir, null, null, false);
+
+        IgniteBiTuple<WALPointer, WALRecord> prev = iter.next();
+
+        iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+
+        while (iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> cur = iter.next();
+
+            assertFalse(
+                "Should read next record[prev=" + prev.get1() + ", cur=" + cur.get1() + ']',
+                prev.get1().equals(cur.get1())
+            );
+
+            assertFalse(prev.get1().equals(iter.lastRead().get()));
+
+            prev = cur;
+
+            iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+        }
     }
 
     /**
@@ -273,7 +321,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         if (lowBound != null)
             params.from(lowBound);
 
-        if (lowBound != null)
+        if (highBound != null)
             params.to(highBound);
 
         return new IgniteWalIteratorFactory(log).iterator(params);
