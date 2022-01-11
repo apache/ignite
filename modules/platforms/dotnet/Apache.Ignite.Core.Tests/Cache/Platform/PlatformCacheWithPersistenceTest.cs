@@ -127,6 +127,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(1, resLocalPartition.Count);
         }
 
+        [Test]
+        public void TestScanQueryWithFilterUsesPersistentData()
+        {
+            var res = _cache.Query(new ScanQuery<int, int> { Filter = new EvenValueFilter() }).GetAll();
+            Assert.AreEqual(Count / 2, res.Count);
+        }
+
         /// <summary>
         /// Starts the node.
         /// </summary>
@@ -166,6 +173,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     }
                 }
             };
+        }
+
+        private class EvenValueFilter : ICacheEntryFilter<int, int>
+        {
+            public bool Invoke(ICacheEntry<int, int> entry)
+            {
+                return entry.Value % 2 == 0;
+            }
         }
     }
 }
