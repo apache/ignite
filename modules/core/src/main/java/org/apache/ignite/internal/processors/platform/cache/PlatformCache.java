@@ -1270,7 +1270,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_PERSISTENCE_ENABLED:
-                return cache.context().group().persistenceEnabled() ? TRUE :FALSE;
+                return cache.context().group().persistenceEnabled() ? TRUE : FALSE;
         }
         return super.processInLongOutLong(type, val);
     }
