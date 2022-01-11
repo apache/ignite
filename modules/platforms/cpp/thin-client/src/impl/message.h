@@ -158,6 +158,9 @@ namespace ignite
                     /** SQL fields query get next cursor page request. */
                     QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005,
 
+                    /** Continuous query. */
+                    QUERY_CONTINUOUS = 2006,
+
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
 
@@ -943,6 +946,53 @@ namespace ignite
             };
 
             /**
+             * Continuous query request.
+             */
+            class ContinuousQueryRequest : public RequestAdapter<RequestType::QUERY_CONTINUOUS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param pageSize Page size.
+                 * @param timeInterval Time interval.
+                 * @param includeExpired Include expired.
+                 */
+                explicit ContinuousQueryRequest(int32_t pageSize, int64_t timeInterval, bool includeExpired) :
+                    pageSize(pageSize),
+                    timeInterval(timeInterval),
+                    includeExpired(includeExpired)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ContinuousQueryRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Page size. */
+                const int32_t pageSize;
+
+                /** Time interval. */
+                const int64_t timeInterval;
+
+                /** Include expired. */
+                const bool includeExpired;
+            };
+
+            /**
              * Compute task execute request.
              */
             class ComputeTaskExecuteRequest : public RequestAdapter<RequestType::COMPUTE_TASK_EXECUTE>
@@ -1521,6 +1571,50 @@ namespace ignite
             private:
                 /** Cursor Page. */
                 cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Cache Continuous Query response.
+             */
+            class ContinuousQueryResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ContinuousQueryResponse() :
+                    queryId(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ContinuousQueryResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                int64_t GetQueryId() const
+                {
+                    return queryId;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Query ID. */
+                int64_t queryId;
             };
 
             /**

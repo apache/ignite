@@ -395,9 +395,24 @@ namespace ignite
                 writer.WriteInt64(cursorId);
             }
 
-            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 cursorPage.Get()->Read(reader);
+            }
+
+            void ContinuousQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(pageSize);
+                writer.WriteInt64(timeInterval);
+                writer.WriteBool(includeExpired);
+
+                // TODO: implement remote filters.
+                writer.WriteNull();
+            }
+
+            void ContinuousQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                queryId = reader.ReadInt64();
             }
 
             void ComputeTaskExecuteRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const

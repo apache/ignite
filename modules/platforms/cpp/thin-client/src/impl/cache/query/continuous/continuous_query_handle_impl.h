@@ -21,6 +21,8 @@
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 
+#include "impl/data_channel.h"
+
 namespace ignite
 {
     namespace impl
@@ -43,25 +45,36 @@ namespace ignite
                         public:
                             /**
                              * Default constructor.
+                             *
+                             * @param channel Channel.
+                             * @param queryId Query ID.
+                             * @param handlerId Notification handler ID.
                              */
-                            ContinuousQueryHandleClientImpl()
+                            ContinuousQueryHandleClientImpl(SP_DataChannel channel, int64_t queryId, int64_t handlerId) :
+                                channel(channel),
+                                queryId(queryId)
                             {
                                 // No-op.
                             }
 
                             /**
-                             * Constructor.
-                             *
-                             * Internal method. Should not be used by user.
-                             *
-                             * @param impl Implementation.
+                             * Destructor.
                              */
                             virtual ~ContinuousQueryHandleClientImpl()
                             {
-                                // No-op.
+                                // TODO: implement me.
+                                channel.Get()->DeregisterNotificationHandler(handlerId);
                             }
 
                         private:
+                            /** Data channel. */
+                            SP_DataChannel channel;
+
+                            /** Query ID. */
+                            int64_t queryId;
+
+                            /** Handler ID. */
+                            int64_t handlerId;
                         };
 
                         /** Shared pointer to ContinuousQueryHandleClientImpl. */

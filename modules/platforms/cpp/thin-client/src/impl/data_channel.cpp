@@ -222,6 +222,13 @@ namespace ignite
                     handlerMap.erase(notId);
             }
 
+            void DataChannel::DeregisterNotificationHandler(int64_t notId)
+            {
+                common::concurrent::CsLockGuard lock(handlerMutex);
+
+                handlerMap.erase(notId);
+            }
+
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)
             {
                 currentVersion = propVer;

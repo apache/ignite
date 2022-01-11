@@ -54,7 +54,6 @@ namespace ignite
                     class ContinuousQueryClient
                     {
                     public:
-
                         /**
                          * Default value for the buffer size.
                          */
@@ -175,7 +174,7 @@ namespace ignite
                          *
                          * @return Flag value.
                          */
-                        bool GetIncludeExpired()
+                        bool GetIncludeExpired() const
                         {
                             return includeExpired;
                         }

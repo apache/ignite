@@ -20,6 +20,7 @@
 #include "impl/response_status.h"
 #include "impl/message.h"
 #include "impl/cache/cache_client_impl.h"
+#include "impl/cache/query/continuous/continuous_query_notification_handler.h"
 #include "impl/transactions/transactions_impl.h"
 
 using namespace ignite::impl::thin::transactions;
@@ -373,8 +374,21 @@ namespace ignite
                 query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(
                         const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery)
                 {
-                    // TODO: Implement me
-                    return query::continuous::SP_ContinuousQueryHandleClientImpl();
+                    const query::continuous::ContinuousQueryClientHolderBase& cq = *continuousQuery.Get();
+
+                    ContinuousQueryRequest req(cq.GetBufferSize(), cq.GetTimeInterval(), cq.GetIncludeExpired());
+                    ContinuousQueryResponse rsp;
+
+                    SP_DataChannel channel = SyncMessage(req, rsp);
+
+                    // TODO: Add user thread pool
+                    query::continuous::SP_ContinuousQueryNotificationHandler handler(
+                            new query::continuous::ContinuousQueryNotificationHandler(continuousQuery));
+
+                    channel.Get()->RegisterNotificationHandler(req.GetId(), handler);
+
+                    return query::continuous::SP_ContinuousQueryHandleClientImpl(
+                        new query::continuous::ContinuousQueryHandleClientImpl(channel, rsp.GetQueryId(), req.GetId()));
                 }
             }
         }

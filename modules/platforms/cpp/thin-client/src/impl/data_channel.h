@@ -151,10 +151,18 @@ namespace ignite
 
                 /**
                  * Register handler for the notification.
+                 *
                  * @param notId Notification ID.
                  * @param handler Handler.
                  */
                 void RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler);
+
+                /**
+                 * Deregister handler for the notification.
+                 *
+                 * @param notId Notification ID.
+                 */
+                void DeregisterNotificationHandler(int64_t notId);
 
                 /**
                  * Get remote node.

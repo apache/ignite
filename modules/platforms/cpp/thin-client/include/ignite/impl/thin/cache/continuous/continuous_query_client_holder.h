@@ -54,6 +54,27 @@ namespace ignite
                              * @param reader Reader to use.
                              */
                             virtual void ReadAndProcessEvents(ignite::binary::BinaryRawReader& reader) = 0;
+
+                            /**
+                             * Get buffer size.
+                             *
+                             * @return Buffer size.
+                             */
+                            virtual int32_t GetBufferSize() const = 0;
+
+                            /**
+                             * Get time interval.
+                             *
+                             * @return Time interval.
+                             */
+                            virtual int64_t GetTimeInterval() const = 0;
+
+                            /**
+                             * Gets a value indicating whether to notify about Expired events.
+                             *
+                             * @return Flag value.
+                             */
+                            virtual bool GetIncludeExpired() const = 0;
                         };
 
                         /** Shared pointer to ContinuousQueryClientHolderBase. */
@@ -98,6 +119,36 @@ namespace ignite
                                     events[i].Read(reader);
 
                                 continuousQuery.GetListener().OnEvent(events.data(), cnt);
+                            }
+
+                            /**
+                             * Get buffer size.
+                             *
+                             * @return Buffer size.
+                             */
+                            virtual int32_t GetBufferSize() const
+                            {
+                                return continuousQuery.GetBufferSize();
+                            }
+
+                            /**
+                             * Get time interval.
+                             *
+                             * @return Time interval.
+                             */
+                            virtual int64_t GetTimeInterval() const
+                            {
+                                return continuousQuery.GetTimeInterval();
+                            }
+
+                            /**
+                             * Gets a value indicating whether to notify about Expired events.
+                             *
+                             * @return Flag value.
+                             */
+                            virtual bool GetIncludeExpired() const
+                            {
+                                return continuousQuery.GetIncludeExpired();
                             }
 
                         private:
