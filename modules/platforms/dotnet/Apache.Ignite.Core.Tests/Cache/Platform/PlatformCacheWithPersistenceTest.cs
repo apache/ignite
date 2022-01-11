@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private ICache<int,int> _cache;
 
         /** Current key. Every test needs a key that was not used before. */
-        private int _key = 0;
+        private int _key = 1;
 
         /// <summary>
         /// Sets up the test.
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /// <summary>
         /// Tears down the test.
         /// </summary>
-        [TearDown]
+        [TestFixtureTearDown]
         public void TearDown()
         {
             Ignition.StopAll(true);
