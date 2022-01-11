@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import org.apache.ignite.cache.CacheMode;
 

@@ -37,11 +37,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -58,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -91,13 +93,19 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         return TRANSACTIONAL;
     }
 
+    /** Persistence enabled. */
+    protected boolean persistenceEnabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        Ignite ignite = startGrids(7); // Server nodes.
+        if (persistenceEnabled())
+            cleanPersistenceDir();
 
-        grid(0).getOrCreateCache(cacheConfiguration());
+        Ignite ignite = startGrids(5); // Server nodes.
 
         startClientGrid(G.allGrids().size() + 1); // Client node 1.
         startClientGrid(G.allGrids().size() + 1); // Client node 2.
@@ -114,15 +122,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             },
             EVT_CONSISTENCY_VIOLATION);
 
-        awaitPartitionMapExchange();
-    }
+        if (persistenceEnabled())
+            ignite.cluster().state(ClusterState.ACTIVE);
 
-    /**
-     *
-     */
-    @Before
-    public void before() {
-        evtDeq.clear();
+        ignite.getOrCreateCache(cacheConfiguration());
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -132,6 +137,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         log.info("Checked " + iterableKey + " keys");
 
         stopAllGrids();
+
+        if (persistenceEnabled())
+            cleanPersistenceDir();
     }
 
     /**
@@ -155,6 +163,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        if (persistenceEnabled()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(100 * 1024 * 1024);
+            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        }
 
         return cfg;
     }
@@ -252,30 +266,30 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             Map<Integer, InconsistentMapping> results = new TreeMap<>(); // Sorted to avoid warning.
 
-            for (int j = 0; j < cnt; j++) {
-                InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey, misses, nulls, strategy);
-
-                results.put(iterableKey, res);
-            }
-
-            for (Ignite node : G.allGrids()) { // Check that cache filled properly.
-                Map<Integer, Integer> all =
-                    node.<Integer, Integer>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
-
-                for (Map.Entry<Integer, Integer> entry : all.entrySet()) {
-                    Integer key = entry.getKey();
-                    Integer val = entry.getValue();
-
-                    Integer exp = results.get(key).mapping.get(node); // Should read from itself (backup or primary).
-
-                    if (exp == null)
-                        exp = results.get(key).primary; // Should read from primary (not a partition owner).
-
-                    assertEquals(exp, val);
-                }
-            }
-
             try {
+                for (int j = 0; j < cnt; j++) {
+                    InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey, misses, nulls, strategy);
+
+                    results.put(iterableKey, res);
+                }
+
+                for (Ignite node : G.allGrids()) { // Check that cache filled properly.
+                    Map<Integer, Integer> all =
+                        node.<Integer, Integer>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
+
+                    for (Map.Entry<Integer, Integer> entry : all.entrySet()) {
+                        Integer key = entry.getKey();
+                        Integer val = entry.getValue();
+
+                        Integer exp = results.get(key).mapping.get(node); // Should read from itself (backup or primary).
+
+                        if (exp == null)
+                            exp = results.get(key).primary; // Should read from primary (not a partition owner).
+
+                        assertEquals(exp, val);
+                    }
+                }
+
                 c.accept(new ReadRepairData(cache, results, raw, async, strategy));
             }
             catch (Throwable th) {
@@ -377,80 +391,91 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             vals.add(new T2<>(val, val != null ? ver : null));
 
-            boolean init = entry.initialValue(
-                new CacheObjectImpl(rmv ? -1 : val, null), // Incremental value.
-                ver,
-                0,
-                0,
-                false,
-                AffinityTopologyVersion.NONE,
-                GridDrType.DR_NONE,
-                false,
-                false);
+            GridKernalContext kctx = ((IgniteEx)node).context();
 
-            if (rmv) {
-                if (cache.configuration().getAtomicityMode() == ATOMIC)
-                    entry.innerUpdate(
-                        ver,
-                        ((IgniteEx)node).localNode().id(),
-                        ((IgniteEx)node).localNode().id(),
-                        GridCacheOperation.DELETE,
-                        null,
-                        null,
-                        false,
-                        false,
-                        false,
-                        false,
-                        null,
-                        false,
-                        false,
-                        false,
-                        false,
-                        AffinityTopologyVersion.NONE,
-                        null,
-                        GridDrType.DR_NONE,
-                        0,
-                        0,
-                        null,
-                        false,
-                        false,
-                        null,
-                        null,
-                        null,
-                        null,
-                        false);
+            byte[] bytes = kctx.cacheObjects().marshal(entry.context().cacheObjectContext(), rmv ? -1 : val); // Incremental value.
+
+            try {
+                kctx.cache().context().database().checkpointReadLock();
+
+                boolean init = entry.initialValue(
+                    new CacheObjectImpl(null, bytes),
+                    ver,
+                    0,
+                    0,
+                    false,
+                    AffinityTopologyVersion.NONE,
+                    GridDrType.DR_NONE,
+                    false,
+                    false);
+
+                if (rmv) {
+                    if (cache.configuration().getAtomicityMode() == ATOMIC)
+                        entry.innerUpdate(
+                            ver,
+                            ((IgniteEx)node).localNode().id(),
+                            ((IgniteEx)node).localNode().id(),
+                            GridCacheOperation.DELETE,
+                            null,
+                            null,
+                            false,
+                            false,
+                            false,
+                            false,
+                            null,
+                            false,
+                            false,
+                            false,
+                            false,
+                            AffinityTopologyVersion.NONE,
+                            null,
+                            GridDrType.DR_NONE,
+                            0,
+                            0,
+                            null,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null,
+                            null,
+                            false);
+                    else
+                        entry.innerRemove(
+                            null,
+                            ((IgniteEx)node).localNode().id(),
+                            ((IgniteEx)node).localNode().id(),
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            null,
+                            AffinityTopologyVersion.NONE,
+                            CU.empty0(),
+                            GridDrType.DR_NONE,
+                            null,
+                            null,
+                            null,
+                            1L);
+
+                    rmvd = true;
+
+                    assertFalse(entry.hasValue());
+                }
                 else
-                    entry.innerRemove(
-                        null,
-                        ((IgniteEx)node).localNode().id(),
-                        ((IgniteEx)node).localNode().id(),
-                        false,
-                        false,
-                        false,
-                        false,
-                        false,
-                        null,
-                        AffinityTopologyVersion.NONE,
-                        CU.empty0(),
-                        GridDrType.DR_NONE,
-                        null,
-                        null,
-                        null,
-                        1L);
+                    assertTrue(entry.hasValue());
 
-                rmvd = true;
+                assertTrue("iterableKey " + key + " already inited", init);
 
-                assertFalse(entry.hasValue());
+                mapping.put(node, val);
+
+                if (node.equals(primary))
+                    primVal = val;
             }
-            else
-                assertTrue(entry.hasValue());
-
-            assertTrue("iterableKey " + key + " already inited", init);
-
-            mapping.put(node, val);
-
-            if (node.equals(primary))
-                primVal = val;
+            finally {
+                ((IgniteEx)node).context().cache().context().database().checkpointReadUnlock();
+            }
         }
 
         if (!misses && !nulls)

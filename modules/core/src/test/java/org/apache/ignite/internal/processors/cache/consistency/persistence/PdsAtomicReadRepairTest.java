@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.cache.consistency.persistence;
+
+import org.apache.ignite.internal.processors.cache.consistency.inmem.AtomicReadRepairTest;
 
 /**
  *
  */
-public class SingleBackupImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
+public class PdsAtomicReadRepairTest extends AtomicReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected Integer backupsCount() {
-        return 1; // Single backup possible optimisations check.
+    @Override protected boolean persistenceEnabled() {
+        return true;
     }
 }

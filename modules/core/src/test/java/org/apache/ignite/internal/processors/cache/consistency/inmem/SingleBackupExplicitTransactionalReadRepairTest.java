@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
-
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
-public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
+public class SingleBackupExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
+    @Override protected Integer backupsCount() {
+        return 1; // Single backup possible optimisations check.
     }
 }
