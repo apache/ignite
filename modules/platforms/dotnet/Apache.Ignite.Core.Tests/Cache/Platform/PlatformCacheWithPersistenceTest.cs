@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Platform
 {
+    using System;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
@@ -93,10 +94,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [Test]
         public void TestGetRestoresPlatformCacheDataFromPersistence()
         {
-            var k = _key++;
+            TestCacheOperation(k => _cache.Get(k));
+        }
 
-            Assert.AreEqual(k, _cache.Get(k));
-            Assert.AreEqual(k, _cache.LocalPeek(k, CachePeekMode.Platform));
+        [Test]
+        public void TestGetAndPutRestoresPlatformCacheDataFromPersistence()
+        {
+            TestCacheOperation(k => _cache.GetAndPut(k, -k), k => -k);
+        }
+
+        [Test]
+        public void TestGetAndPutIfAbsentRestoresPlatformCacheDataFromPersistence()
+        {
+            TestCacheOperation(k => _cache.GetAndPutIfAbsent(k, -k), k => -k);
         }
 
         [Test]
@@ -187,6 +197,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     }
                 }
             };
+        }
+
+        private void TestCacheOperation(Action<int> operation, Func<int, int> expectedFunc = null)
+        {
+            var k = _key++;
+            operation(k);
+
+            var expected = expectedFunc == null ? k : expectedFunc(k);
+            Assert.AreEqual(expected, _cache.LocalPeek(k, CachePeekMode.Platform));
         }
 
         private class EvenValueFilter : ICacheEntryFilter<int, int>
