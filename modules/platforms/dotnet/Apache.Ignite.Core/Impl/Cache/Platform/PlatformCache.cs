@@ -238,17 +238,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
             var currentVerBoxed = _affinityTopologyVersionFunc();
             var entryVerBoxed = entry.Version;
 
-            Debug.Assert(currentVerBoxed != null);
+            if (entryVerBoxed == null || currentVerBoxed == null)
+            {
+                return false;
+            }
 
             if (ReferenceEquals(currentVerBoxed, entryVerBoxed))
             {
                 // Happy path: true on stable topology.
                 return true;
-            }
-
-            if (entryVerBoxed == null)
-            {
-                return false;
             }
 
             var entryVer = (AffinityTopologyVersion) entryVerBoxed;
@@ -274,7 +272,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         private object GetBoxedAffinityTopologyVersion(AffinityTopologyVersion ver)
         {
             var currentVerBoxed = _affinityTopologyVersionFunc();
-            return (AffinityTopologyVersion) currentVerBoxed == ver ? currentVerBoxed : ver;
+
+            return currentVerBoxed != null && (AffinityTopologyVersion) currentVerBoxed == ver
+                ? currentVerBoxed
+                : ver;
         }
     }
 }
