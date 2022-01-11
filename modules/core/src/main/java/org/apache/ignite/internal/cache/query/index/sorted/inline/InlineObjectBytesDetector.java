@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.IndexName;
@@ -46,7 +47,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
     private final int inlineSize;
 
     /** Inline helpers. */
-    private final List<IndexKeyDefinition> keyDefs;
+    private final Collection<IndexKeyDefinition> keyDefs;
 
     /** Inline object supported flag. */
     private boolean inlineObjSupported = true;
@@ -63,7 +64,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
      * @param idxName Index name.
      * @param log Ignite logger.
      */
-    public InlineObjectBytesDetector(int inlineSize, List<IndexKeyDefinition> keyDefs, IndexName idxName,
+    public InlineObjectBytesDetector(int inlineSize, Collection<IndexKeyDefinition> keyDefs, IndexName idxName,
         IgniteLogger log) {
         this.inlineSize = inlineSize;
         this.keyDefs = keyDefs;
@@ -85,8 +86,10 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings();
 
+        Iterator<IndexKeyDefinition> it = keyDefs.iterator();
+
         for (int i = 0; i < keyDefs.size(); ++i) {
-            IndexKeyDefinition keyDef = keyDefs.get(i);
+            IndexKeyDefinition keyDef = it.next();
 
             if (fieldOff >= inlineSize)
                 return false;
@@ -115,7 +118,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
                 len &= 0x7FFF;
 
-                byte[] originalObjBytes = ((JavaObjectIndexKey) key).bytesNoCopy();
+                byte[] originalObjBytes = ((JavaObjectIndexKey)key).bytesNoCopy();
 
                 // Read size more then available space or more then origin length.
                 if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {
@@ -172,7 +175,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
      *
      * @return {@code true} If the object may be inlined.
      */
-    public static boolean objectMayBeInlined(int inlineSize, List<IndexKeyDefinition> keyDefs) {
+    public static boolean objectMayBeInlined(int inlineSize, Collection<IndexKeyDefinition> keyDefs) {
         int remainSize = inlineSize;
 
         // The settings does not affect on inline size.

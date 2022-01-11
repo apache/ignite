@@ -160,7 +160,7 @@ public class GridMemcachedMessage implements GridClientMessage {
 
     /** {@inheritDoc} */
     @Override public void requestId(long reqId) {
-        U.intToBytes((int) reqId, opaque, 0);
+        U.intToBytes((int)reqId, opaque, 0);
     }
 
     /** {@inheritDoc} */

@@ -189,7 +189,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
                         assert cctx.pageStore() != null;
 
                         int partTag = ((PageMemoryEx)dataRegion.pageMemory()).invalidate(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION);
-                        cctx.pageStore().onPartitionDestroyed(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION, partTag);
+                        cctx.pageStore().truncate(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION, partTag);
 
                         int idxTag =
                             ((PageMemoryEx)dataRegion.pageMemory()).invalidate(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);

@@ -93,9 +93,13 @@ public class StatisticsColumnOverrides implements Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StatisticsColumnOverrides that = (StatisticsColumnOverrides) o;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        StatisticsColumnOverrides that = (StatisticsColumnOverrides)o;
+
         return Objects.equals(nulls, that.nulls) && Objects.equals(distinct, that.distinct) &&
             Objects.equals(total, that.total) && Objects.equals(size, that.size);
     }

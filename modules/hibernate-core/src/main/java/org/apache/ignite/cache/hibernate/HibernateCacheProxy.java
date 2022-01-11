@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -569,11 +568,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebalance() {
         return delegate.get().rebalance();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalCache forSubjectId(UUID subjId) {
-        return delegate.get().forSubjectId(subjId);
     }
 
     /** {@inheritDoc} */

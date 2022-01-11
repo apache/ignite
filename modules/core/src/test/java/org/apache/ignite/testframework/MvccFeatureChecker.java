@@ -39,14 +39,31 @@ public class MvccFeatureChecker {
 
     /** */
     public enum Feature {
+        /** */
         CACHE_STORE,
+
+        /** */
         NEAR_CACHE,
+
+        /** */
         LOCAL_CACHE,
+
+        /** */
         ENTRY_LOCK,
+
+        /** */
         CACHE_EVENTS,
+
+        /** */
         EVICTION,
+
+        /** */
         EXPIRATION,
+
+        /** */
         METRICS,
+
+        /** */
         INTERCEPTOR
     }
 

@@ -125,7 +125,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private GridCheckpointManager checkpoints(Ignite ignite) {
         assert ignite != null;
 
-        return ((IgniteKernal) ignite).context().checkpoint();
+        return ((IgniteKernal)ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */
@@ -190,7 +190,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CheckpointEvent;
 
-                    CheckpointEvent e = (CheckpointEvent) evt;
+                    CheckpointEvent e = (CheckpointEvent)evt;
 
                     info("Checkpoint event: " + e);
 
@@ -370,7 +370,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
 
-            ((IgniteMXBean) ignite).removeCheckpoint(key1);
+            getMxBean(ignite.name(), "Kernal", "IgniteKernal", IgniteMXBean.class).removeCheckpoint(key1);
 
             // This checkpoint will not be automatically removed for cache SPI.
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 5000);

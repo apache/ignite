@@ -49,7 +49,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends CacheConfigur
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }
@@ -73,7 +73,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends CacheConfigur
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }

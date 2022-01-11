@@ -27,6 +27,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+/** */
 public class PersistenceTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

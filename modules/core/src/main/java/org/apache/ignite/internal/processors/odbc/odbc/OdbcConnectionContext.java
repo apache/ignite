@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
+
 /**
  * ODBC Connection Context.
  */
@@ -71,10 +73,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private final int maxCursors;
 
     /** Message parser. */
-    private OdbcMessageParser parser = null;
+    private OdbcMessageParser parser;
 
     /** Request handler. */
-    private OdbcRequestHandler handler = null;
+    private OdbcRequestHandler handler;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -104,6 +106,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         this.maxCursors = maxCursors;
 
         log = ctx.log(getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte clientType() {
+        return ODBC_CLIENT;
     }
 
     /** {@inheritDoc} */

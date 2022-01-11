@@ -234,6 +234,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexin
      * Key class.
      */
     private static class SqlConnectorKey {
+        /** */
         @QuerySqlField
         public int key;
     }
@@ -242,6 +243,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexin
      * Value class.
      */
     private static class SqlConnectorValue {
+        /** */
         @QuerySqlField
         public int val;
     }

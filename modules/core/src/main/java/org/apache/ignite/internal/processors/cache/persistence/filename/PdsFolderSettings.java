@@ -137,6 +137,15 @@ public class PdsFolderSettings<L extends FileLockHolder> {
         return persistentStoreRootPath;
     }
 
+    /**
+     * @return Storage directory for node.
+     */
+    public File persistentStoreNodePath() {
+        assert persistentStoreRootPath != null;
+
+        return new File(persistentStoreRootPath, folderName);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PdsFolderSettings.class, this);

@@ -23,10 +23,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
@@ -68,11 +68,14 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * BPlusTree where nodes stores inlined index keys.
  */
 public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
+    /**
+     * Default sql index size for types with variable length (such as String or byte[]).
+     * Note that effective length will be lower, because 3 bytes will be taken for the inner representation of variable type.
+     */
+    public static final int IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE = 10;
+
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
-
-    /** Index key type settings for this tree. */
-    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** Recommends change inline size if needed. */
     private final InlineRecommender recommender;
@@ -178,12 +181,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
-            inlineSize = computeInlineSize(rowHnd.inlineIndexKeyTypes(), configuredInlineSize, maxInlineSize);
+            inlineSize = computeInlineSize(
+                rowHnd.inlineIndexKeyTypes(), rowHnd.indexKeyDefinitions(),
+                configuredInlineSize, maxInlineSize);
 
             setIos(inlineSize, mvccEnabled);
         }
-
-        this.keyTypeSettings = keyTypeSettings;
 
         initTree(initNew, inlineSize);
 
@@ -212,10 +215,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return metaInfo.inlineObjectSupported();
         else {
             try {
-                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions())) {
+                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions().values())) {
                     try {
                         InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
-                            metaInfo.inlineSize(), def.indexKeyDefinitions(), def.idxName(), log);
+                            metaInfo.inlineSize(), def.indexKeyDefinitions().values(), def.idxName(), log);
 
                         // Create a settings for case where java objects inilned as byte array.
                         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
@@ -264,7 +267,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int off = io.offset(idx);
 
-        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
+        List<IndexKeyDefinition> keyDefs = rowHnd.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
 
@@ -283,38 +286,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
-                IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
-
-                int cmp = COMPARE_UNSUPPORTED;
-
-                // Value can be set up by user in query with different data type.
-                // By default do not compare different types.
-                if (keyDef.validate(row.key(keyIdx))) {
-                    if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
-                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx));
-
-                        fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
-                    }
-                    // If inlining of POJO is not supported then fallback to previous logic.
-                    else
-                        break;
-                }
-
-                // Can't compare as inlined bytes are not enough for comparation.
-                if (cmp == CANT_BE_COMPARE)
-                    break;
-
-                // Try compare stored values for inlined keys with different approach?
-                if (cmp == COMPARE_UNSUPPORTED)
-                    cmp = def.rowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type());
+                int cmp = def.rowComparator().compareKey(pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType);
 
                 if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;
+                else
+                    fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
 
-                if (cmp != 0)
+                if (cmp != 0) {
+                    IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
+
                     return applySortOrder(cmp, keyDef.order().sortOrder());
-
+                }
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
@@ -332,7 +315,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 return ret;
         }
 
-        return mvccCompare((MvccIO) io, pageAddr, idx, row);
+        return mvccCompare((MvccIO)io, pageAddr, idx, row);
     }
 
     /** */
@@ -346,10 +329,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareKey(currRow, row, i);
+            int c = def.rowComparator().compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), def.indexKeyDefinitions().get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());
         }
 
         return 0;
@@ -428,12 +411,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /**
      * @param keyTypes Index key types.
+     * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
      * @return Inline size.
      */
     public static int computeInlineSize(
         List<InlineIndexKeyType> keyTypes,
+        List<IndexKeyDefinition> keyDefs,
         int cfgInlineSize,
         int maxInlineSize
     ) {
@@ -452,13 +437,27 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int size = 0;
 
-        for (InlineIndexKeyType keyType: keyTypes) {
-            if (keyType.inlineSize() <= 0) {
+        for (int i = 0; i < keyTypes.size(); i++) {
+            InlineIndexKeyType keyType = keyTypes.get(i);
+
+            int sizeInc = keyType.inlineSize();
+
+            if (sizeInc < 0) {
+                int precision = keyDefs.get(i).precision();
+
+                if (precision > 0)
+                    // 3 is required to store (type, length) of value.
+                    sizeInc = 3 + precision;
+                else
+                    sizeInc = IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE;
+            }
+
+            size += sizeInc;
+
+            if (size > propSize) {
                 size = propSize;
                 break;
             }
-
-            size += keyType.inlineSize();
         }
 
         return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
@@ -474,7 +473,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 64;
 
     /**
      * @return Inline size.
@@ -582,8 +581,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return New CorruptedTreeException instance.
      */
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, def.idxName().cacheName(),
-            def.idxName().idxName(), pageIds);
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, def.idxName().cacheName(),
+            def.idxName().idxName(), grpId, pageIds);
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 
@@ -659,5 +658,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return c;
 
         return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String lockRetryErrorMessage(String op) {
+        IndexName idxName = def.idxName();
+
+        return super.lockRetryErrorMessage(op) + " Problem with the index [cacheName=" + idxName.cacheName() +
+            ", schemaName=" + idxName.schemaName() + ", tblName=" + idxName.tableName() + ", idxName=" +
+            idxName.idxName() + ']';
     }
 }

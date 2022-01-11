@@ -433,7 +433,16 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DISTRIBUTED_METASTORAGE",
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
-            "STATISTICS_LOCAL_DATA"
+            "STATISTICS_LOCAL_DATA",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_ATOMICSEQUENCES",
+            "DS_COUNTDOWNLATCHES",
+            "DS_REENTRANTLOCKS",
+            "DS_SETS",
+            "DS_SEMAPHORES",
+            "DS_QUEUES"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -800,7 +809,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getStripedExecutorService(),
             "STRIPED_THREADPOOL_QUEUE",
             "sys");
     }
@@ -808,7 +817,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getDataStreamerExecutorService(),
             "DATASTREAM_THREADPOOL_QUEUE",
             "data-streamer");
     }

@@ -1110,6 +1110,22 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(CacheConfiguration<?, ?> ccfg) {
+        return CU.cacheId(cacheOrGroupName(ccfg));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? ccfg.getName() : ccfg.getGroupName();
+    }
+
+    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.
@@ -1163,21 +1179,6 @@ public class GridCacheUtils {
 
             tx.commit();
         }
-    }
-
-    /**
-     * Gets subject ID by transaction.
-     *
-     * @param tx Transaction.
-     * @return Subject ID.
-     */
-    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
-        if (tx == null)
-            return ctx.localNodeId();
-
-        UUID subjId = tx.subjectId();
-
-        return subjId != null ? subjId : tx.originatingNodeId();
     }
 
     /**

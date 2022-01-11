@@ -32,6 +32,7 @@ public class Config {
     /** Name of the cache created by default in the cluster. */
     public static final String DEFAULT_CACHE_NAME = "default";
 
+    /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder().setShared(true);
 
     /** */

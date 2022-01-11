@@ -28,6 +28,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface ClientListenerConnectionContext {
     /**
+     * @return Client type.
+     */
+    byte clientType();
+
+    /**
      * @return Current connection id.
      */
     long connectionId();

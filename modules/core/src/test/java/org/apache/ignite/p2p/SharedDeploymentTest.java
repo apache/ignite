@@ -43,7 +43,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     private static final String RUN_CLS2 = "org.apache.ignite.tests.p2p.compute.ExternalCallable2";
 
     /** */
-    private static final String RUN_LAMBDA = "org.apache.ignite.tests.p2p.compute.ExternalLambda";
+    public static final String RUN_LAMBDA = "org.apache.ignite.tests.p2p.compute.ExternalLambda";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

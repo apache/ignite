@@ -693,6 +693,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("unused")
     private static class KeyClass2 {
+        /** */
         @QuerySqlField
         private String keyField2;
     }
@@ -702,6 +703,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("unused")
     private static class ValueClass2 {
+        /** */
         @QuerySqlField
         private String valField2;
     }

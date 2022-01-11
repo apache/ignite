@@ -224,6 +224,8 @@ public interface IgniteSpiContext {
      *
      * @param cacheName Cache name.
      * @param key Object key.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Cached object.
      * @throws CacheException Thrown if any exception occurs.
      */
@@ -301,6 +303,7 @@ public interface IgniteSpiContext {
     /**
      * @param node Node.
      * @param discoData Disco data.
+     * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
 

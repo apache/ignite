@@ -152,10 +152,13 @@ namespace ignite
             };
 
             ClusterGroupImpl::ClusterGroupImpl(SP_IgniteEnvironment env, jobject javaRef) :
-                InteropTarget(env, javaRef), nodes(new std::vector<ClusterNode>()), nodesLock(), topVer(0),
-                predHolder(new ClusterNodePredicateHolder)
+                InteropTarget(env, javaRef),
+                predHolder(new ClusterNodePredicateHolder),
+                nodes(),
+                nodesLock(),
+                topVer(0)
             {
-                computeImpl = InternalGetCompute();
+                // No-op.
             }
 
             ClusterGroupImpl::~ClusterGroupImpl()
@@ -480,16 +483,6 @@ namespace ignite
                 return RefreshNodes();
             }
 
-            ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::GetCompute()
-            {
-                return computeImpl;
-            }
-
-            ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::GetCompute(ClusterGroup grp)
-            {
-                return grp.GetImpl().Get()->GetCompute();
-            }
-
             bool ClusterGroupImpl::IsActive()
             {
                 IgniteError err;
@@ -558,6 +551,11 @@ namespace ignite
                 return predHolder.Get();
             }
 
+            const IgnitePredicate<ClusterNode>* ClusterGroupImpl::GetPredicate() const
+            {
+                return predHolder.Get();
+            }
+
             std::vector<ClusterNode> ClusterGroupImpl::GetTopology(int64_t version)
             {
                 SharedPointer<interop::InteropMemory> memIn = GetEnvironment().AllocateMemory();
@@ -618,11 +616,9 @@ namespace ignite
                 return SP_ClusterGroupImpl(new ClusterGroupImpl(GetEnvironmentPointer(), javaRef));
             }
 
-            ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::InternalGetCompute()
+            jobject ClusterGroupImpl::GetComputeProcessor()
             {
-                jobject computeProc = GetEnvironment().GetProcessorCompute(GetTarget());
-
-                return SP_ComputeImpl(new compute::ComputeImpl(GetEnvironmentPointer(), computeProc));
+                return GetEnvironment().GetProcessorCompute(GetTarget());
             }
 
             ClusterGroupImpl::SP_ClusterNodes ClusterGroupImpl::ReadNodes(binary::BinaryReaderImpl& reader)

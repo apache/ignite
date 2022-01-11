@@ -72,6 +72,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Thread Pools", "GridClassLoadingExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridQueryExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridSchemaExecutor", "Terminated", false);
+        checkBean("Thread Pools", "GridThinClientExecutor", "Terminated", false);
         checkBean("Thread Pools", "StripedExecutor", "Terminated", false);
 
         // custom executors
@@ -94,7 +95,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     public void testBeansClasses() throws Exception {
         String[] clsNames = new String[]{"org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl",
             "org.apache.ignite.internal.ClusterMetricsMXBeanImpl",
-            "org.apache.ignite.internal.IgniteKernal",
+            "org.apache.ignite.internal.IgniteMXBeanImpl",
             "org.apache.ignite.internal.IgnitionMXBeanAdapter",
             "org.apache.ignite.internal.StripedExecutorMXBeanAdapter",
             "org.apache.ignite.internal.ThreadPoolMXBeanAdapter",

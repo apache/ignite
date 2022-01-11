@@ -173,29 +173,46 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        GridCacheSharedContext<?, ?> sctx;
-
         if (iteratorParametersBuilder.sharedCtx == null) {
-            sctx = prepareSharedCtx(iteratorParametersBuilder);
+            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
 
             for (GridComponent comp : sctx.kernalContext())
                 comp.start();
-        }
-        else
-            sctx = iteratorParametersBuilder.sharedCtx;
 
-        return new StandaloneWalRecordsIterator(
-            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            sctx,
-            iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(iteratorParametersBuilder),
-            iteratorParametersBuilder.filter,
-            iteratorParametersBuilder.lowBound,
-            iteratorParametersBuilder.highBound,
-            iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize,
-            iteratorParametersBuilder.strictBoundsCheck
-        );
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                sctx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            ) {
+                @Override protected void onClose() throws IgniteCheckedException {
+                    super.onClose();
+
+                    for (GridComponent comp : sctx.kernalContext())
+                        comp.stop(true);
+                }
+            };
+        }
+        else {
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                iteratorParametersBuilder.sharedCtx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            );
+        }
     }
 
     /**

@@ -246,7 +246,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         throws ClientException {
         long id = reqId.getAndIncrement();
 
-        try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
+        PayloadOutputChannel payloadCh = new PayloadOutputChannel(this);
+
+        try {
             if (closed())
                 throw new ClientConnectionException("Channel is closed");
 
@@ -265,13 +267,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             req.writeInt(0, req.position() - 4); // Actual size.
 
-            // arrayCopy is required, because buffer is pooled, and write is async.
-            write(req.arrayCopy(), req.position());
+            write(req.array(), req.position(), payloadCh::close);
 
             return fut;
         }
         catch (Throwable t) {
             pendingReqs.remove(id);
+
+            // Potential double-close is handled in PayloadOutputChannel.
+            payloadCh.close();
 
             throw t;
         }
@@ -580,7 +584,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size
-            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+            writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
             writer.writeShort(proposedVer.major());
             writer.writeShort(proposedVer.minor());
@@ -605,7 +609,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             writer.out().writeInt(0, writer.out().position() - 4); // actual size
 
-            write(writer.out().arrayCopy(), writer.out().position());
+            write(writer.out().arrayCopy(), writer.out().position(), null);
         }
     }
 
@@ -675,11 +679,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** Write bytes to the output stream. */
-    private void write(byte[] bytes, int len) throws ClientConnectionException {
+    private void write(byte[] bytes, int len, @Nullable Runnable onDone) throws ClientConnectionException {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
 
         try {
-            sock.send(buf);
+            sock.send(buf, onDone);
         }
         catch (IgniteCheckedException e) {
             throw new ClientConnectionException(e.getMessage(), e);

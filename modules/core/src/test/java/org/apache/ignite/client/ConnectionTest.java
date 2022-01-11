@@ -17,10 +17,14 @@
 
 package org.apache.ignite.client;
 
+import java.io.OutputStream;
+import java.net.Socket;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -73,6 +77,51 @@ public class ConnectionTest {
     @Test
     public void testIPv6NodeAddresses() throws Exception {
         testConnection(IPv6_HOST, "[::1]:10800");
+    }
+
+    /** */
+    @Test
+    public void testHandshakeTooLargeServerDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+            OutputStream stream = clientSocket.getOutputStream();
+
+            stream.write(new byte[]{1, 1, 1, 1});
+            stream.flush();
+
+            // Read returns -1 when end of stream has been reached, blocks otherwise.
+            assertEquals(-1, clientSocket.getInputStream().read());
+        }
+    }
+
+    /** */
+    @Test
+    public void testNegativeMessageSizeDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+            OutputStream stream = clientSocket.getOutputStream();
+
+            byte b = (byte)255;
+            stream.write(new byte[]{b, b, b, b});
+            stream.flush();
+
+            // Read returns -1 when end of stream has been reached, blocks otherwise.
+            assertEquals(-1, clientSocket.getInputStream().read());
+        }
+    }
+
+    /** */
+    @Test
+    public void testInvalidHandshakeHeaderDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+            OutputStream stream = clientSocket.getOutputStream();
+
+            stream.write(new byte[]{10, 0, 0, 0, 42, 42, 42});
+            stream.flush();
+
+            assertEquals(-1, clientSocket.getInputStream().read());
+        }
     }
 
     /**

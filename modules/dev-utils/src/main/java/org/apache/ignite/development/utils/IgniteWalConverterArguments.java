@@ -299,6 +299,7 @@ public class IgniteWalConverterArguments {
      * Parse command line arguments and return filled IgniteWalConverterArguments
      *
      * @param args Command line arguments.
+     * @param out Out print stream.
      * @return IgniteWalConverterArguments.
      */
     public static IgniteWalConverterArguments parse(final PrintStream out, String... args) {

@@ -229,6 +229,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
         @Override public void close() throws HibernateException {
         }
 
+        /** {@inheritDoc} */
         @Override public Map<String, Object> getProperties() {
             return null;
         }
@@ -243,18 +244,22 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public PersistenceUnitUtil getPersistenceUnitUtil() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public void addNamedQuery(String name, Query query) {
 
         }
 
+        /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> cls) {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
 
         }
@@ -284,34 +289,42 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> List<EntityGraph<? super T>> findEntityGraphsByType(Class<T> aClass) {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public EntityManager createEntityManager() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public EntityManager createEntityManager(Map map) {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public EntityManager createEntityManager(SynchronizationType synchronizationType) {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public CriteriaBuilder getCriteriaBuilder() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public Metamodel getMetamodel() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isOpen() {
             return false;
         }

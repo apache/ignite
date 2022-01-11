@@ -85,13 +85,13 @@ public:
         StartNode("node1");
         StartNode("node2");
 
-        boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
         IgniteClientConfiguration cfg;
         cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
         cfg.SetPartitionAwareness(true);
 
         IgniteClient client = IgniteClient::Start(cfg);
+
+        boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
         cache::CacheClient<KeyType, int64_t> cache =
             client.GetCache<KeyType, int64_t>("partitioned");
@@ -465,13 +465,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<std::string, int64_t> cache =
         client.GetCache<std::string, int64_t>("partitioned");
@@ -495,13 +495,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<ignite::Guid, int64_t> cache =
         client.GetCache<ignite::Guid, int64_t>("partitioned");
@@ -525,13 +525,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<ignite::ComplexType, int64_t> cache =
         client.GetCache<ignite::ComplexType, int64_t>("partitioned");
@@ -571,13 +571,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<ignite::Date, int64_t> cache =
         client.GetCache<ignite::Date, int64_t>("partitioned");
@@ -615,13 +615,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<ignite::Time, int64_t> cache =
         client.GetCache<ignite::Time, int64_t>("partitioned");
@@ -653,13 +653,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<ignite::Timestamp, int64_t> cache =
         client.GetCache<ignite::Timestamp, int64_t>("partitioned");
@@ -845,13 +845,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDefaultDynamicCacheThreeNodes)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<std::string, int64_t> cache =
         client.CreateCache<std::string, int64_t>("defaultdynamic2");
@@ -877,13 +877,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
     StartNode("node2");
     StartNode("node3");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112,127.0.0.1:11113");
     cfg.SetPartitionAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<std::string, int64_t> cache =
         client.CreateCache<std::string, int64_t>("defaultdynamic3");
@@ -920,12 +920,12 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDisabledThreeNodes)
     StartNode("node1");
     StartNode("node2");
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
 
     IgniteClient client = IgniteClient::Start(cfg);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     cache::CacheClient<std::string, int64_t> cache =
         client.CreateCache<std::string, int64_t>("defaultdynamic4");

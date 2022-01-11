@@ -334,10 +334,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         if (e != null) {
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
 
             if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
 
             throw new RuntimeException(e);
         }
@@ -409,10 +409,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         if (e != null) {
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
 
             if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
 
             throw new RuntimeException(e);
         }

@@ -105,6 +105,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      */
     private final class UpdateRowHandler extends PageHandler<T, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -364,6 +365,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             this.maskPartId = maskPartId;
         }
 
+        /** {@inheritDoc} */
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -590,7 +592,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to insert data row", t);
+            throw new CorruptedFreeListException("Failed to insert data row", t, grpId);
         }
     }
 
@@ -644,7 +646,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
         }
         catch (RuntimeException e) {
-            throw new CorruptedFreeListException("Failed to insert data rows", e);
+            throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
         }
     }
 
@@ -784,11 +786,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             return updated;
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to update data row", t);
+            throw new CorruptedFreeListException("Failed to update data row", t, grpId);
         }
     }
 
@@ -807,11 +812,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             return updRes;
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to update data row", t);
+            throw new CorruptedFreeListException("Failed to update data row", t, grpId);
         }
     }
 
@@ -842,11 +850,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             reuseList.addForRecycle(bag);
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to remove data by link", t);
+            throw new CorruptedFreeListException("Failed to remove data by link", t, grpId);
         }
     }
 
@@ -897,11 +908,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to add page for recycle", t);
+            throw new CorruptedFreeListException("Failed to add page for recycle", t, grpId);
         }
     }
 
@@ -912,11 +926,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsHolderNoOp.INSTANCE);
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to take recycled page", t);
+            throw new CorruptedFreeListException("Failed to take recycled page", t, grpId);
         }
     }
 
@@ -932,11 +949,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             return storedPagesCount(REUSE_BUCKET);
         }
+        catch (AssertionError e) {
+            throw corruptedFreeListException(e);
+        }
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to count recycled pages", t);
+            throw new CorruptedFreeListException("Failed to count recycled pages", t, grpId);
         }
     }
 

@@ -209,8 +209,8 @@ public class PageMemoryTracker implements IgnitePlugin {
                     cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
                 }
 
-                @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
-                    super.onPartitionDestroyed(grpId, partId, tag);
+                @Override public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException {
+                    super.truncate(grpId, partId, tag);
 
                     cleanupPages(fullPageId -> fullPageId.groupId() == grpId
                         && PageIdUtils.partId(fullPageId.pageId()) == partId);

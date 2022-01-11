@@ -197,6 +197,12 @@ class GroupKeyChangeProcess {
                 "The previous change was not completed."));
         }
 
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                "Snapshot operation is in progress."));
+        }
+
         this.req = req;
 
         try {

@@ -77,7 +77,7 @@ public class QueueView {
         return queue.bounded();
     }
 
-    /** Collocated flag. */
+    /** @return Collocated flag. */
     public boolean collocated() {
         return queue.collocated();
     }

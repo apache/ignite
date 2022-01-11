@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -89,7 +88,7 @@ import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
@@ -98,7 +97,6 @@ import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -106,7 +104,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -128,6 +125,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
+
+    /** */
+    private GridResourceProcessor rsrcProc;
 
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
@@ -169,6 +169,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
+        this.rsrcProc = new GridResourceProcessor(this);
         this.metricMgr = new GridMetricManager(this);
         this.sysViewMgr = new GridSystemViewManager(this);
 
@@ -178,7 +179,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
+        comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
+        comps.add(metricMgr);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -229,6 +232,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -272,14 +276,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal();
         try {
-            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
-            fieldCfg.setAccessible(true);
-            fieldCfg.set(kernal, cfg);
+            setField(kernal, "cfg", cfg);
+            setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             log.error("", e);
         }
         return kernal;
+    }
+
+    /** */
+    private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
+        Field field = kernal.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(kernal, val);
     }
 
     /** {@inheritDoc} */
@@ -309,7 +319,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridResourceProcessor resource() {
-        return null;
+        return rsrcProc;
     }
 
     /** {@inheritDoc} */
@@ -363,7 +373,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridServiceProcessor service() {
+    @Override public IgniteServiceProcessor service() {
         return null;
     }
 
@@ -409,16 +419,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridMarshallerMappingProcessor mapping() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService utilityCachePool() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
         return null;
     }
 
@@ -567,81 +567,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getServiceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSystemExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getStripedExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getManagementExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getPeerClassLoadingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public StripedExecutor getDataStreamerExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getRestExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getAffinityExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService getIndexingExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getQueryExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<String, ? extends ExecutorService> customExecutors() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getSchemaExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getRebalanceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return null;
     }
@@ -738,11 +663,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public DurableBackgroundTasksProcessor durableBackgroundTask() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService buildIndexExecutorService() {
         return null;
     }
 

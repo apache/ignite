@@ -52,7 +52,7 @@ public class IgniteTestsProvider extends AbstractProvider {
     /** */
     private final ReporterFactory reporterFactory;
 
-    /** */
+    /** @param bootParams Provider parameters. */
     public IgniteTestsProvider(ProviderParameters bootParams) {
         testClsLdr = bootParams.getTestClassLoader();
         scanResult = bootParams.getScanResult();
@@ -114,7 +114,7 @@ public class IgniteTestsProvider extends AbstractProvider {
 
             RunListener reporter = reporterFactory.createReporter();
 
-            startCapture((ConsoleOutputReceiver) reporter);
+            startCapture((ConsoleOutputReceiver)reporter);
 
             reporter.testFailed(report);
             reporter.testSetCompleted(report);

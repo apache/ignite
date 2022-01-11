@@ -29,6 +29,7 @@
 
 #include <ignite/thin/ignite_client_configuration.h>
 #include <ignite/thin/cache/cache_client.h>
+#include <ignite/thin/compute/compute_client.h>
 #include <ignite/thin/transactions/transactions.h>
 
 namespace ignite
@@ -130,6 +131,14 @@ namespace ignite
                 return transactions::ClientTransactions(InternalTransactions());
             }
 
+            /**
+             * Get client compute API.
+             */
+            compute::ComputeClient GetCompute()
+            {
+                return compute::ComputeClient(InternalCompute());
+            }
+
         private:
             /**
              * Get cache.
@@ -158,8 +167,21 @@ namespace ignite
              */
             SP_Void InternalCreateCache(const char* name);
 
-            /** */
+            /**
+             * Get transactions.
+             *
+             * Internal call.
+             * @return Transactions impl.
+             */
             SP_Void InternalTransactions();
+
+            /**
+             * Get compute.
+             *
+             * Internal call.
+             * @return Compute impl.
+             */
+            SP_Void InternalCompute();
 
             /**
              * Constructor.

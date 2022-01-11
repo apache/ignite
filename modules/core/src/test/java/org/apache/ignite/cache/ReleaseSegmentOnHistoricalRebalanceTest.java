@@ -18,13 +18,6 @@
 package org.apache.ignite.cache;
 
 import java.lang.reflect.Method;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -40,8 +33,6 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -58,38 +49,7 @@ import static org.mockito.Mockito.when;
  * Testing the release of WAL segments during historical rebalance.
  */
 @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-public class ReleaseSegmentOnHistoricalRebalanceTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setFailureHandler(new StopNodeFailureHandler())
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setWalSegmentSize((int)(2 * U.MB))
-                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
-            ).setCacheConfiguration(
-                new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                    .setAffinity(new RendezvousAffinityFunction(false, 2))
-                    .setBackups(1)
-            );
-    }
-
+public class ReleaseSegmentOnHistoricalRebalanceTest extends AbstractReleaseSegmentTest {
     /**
      * Checks that if release the segment after {@link CheckpointHistory#searchAndReserveCheckpoints},
      * there will be no errors and the rebalance will be completed.
@@ -273,23 +233,6 @@ public class ReleaseSegmentOnHistoricalRebalanceTest extends GridCommonAbstractT
     }
 
     /**
-     * Populates the given cache and forces a new checkpoint every 100 updates.
-     *
-     * @param cache Cache.
-     * @param cnt Entry count.
-     * @param o Key offset.
-     * @throws Exception If failed.
-     */
-    private void populate(IgniteCache<Integer, ? super Object> cache, int cnt, int o) throws Exception {
-        for (int i = 0; i < cnt; i++) {
-            if (i % 100 == 0)
-                forceCheckpoint();
-
-            cache.put(i + o, new byte[64 * 1024]);
-        }
-    }
-
-    /**
      * Sets the spy to {@code CheckpointMarkersStorage#cpHistory}.
      *
      * @param n Node.
@@ -329,26 +272,6 @@ public class ReleaseSegmentOnHistoricalRebalanceTest extends GridCommonAbstractT
      */
     private void segmentAware(IgniteEx n, SegmentAware spy) {
         setFieldValue(walMgr(n), "segmentAware", spy);
-    }
-
-    /**
-     * Releases WAL segment.
-     *
-     * @param n Node.
-     * @param reserved Reserved segment.
-     */
-    private void release(IgniteEx n, @Nullable WALPointer reserved) {
-        while (reserved != null && walMgr(n).reserved(reserved))
-            walMgr(n).release(reserved);
-    }
-
-    /**
-     * Returns an instance of {@link SegmentAware} for the given ignite node.
-     *
-     * @return Segment aware.
-     */
-    private SegmentAware segmentAware(IgniteEx n) {
-        return getFieldValue(walMgr(n), "segmentAware");
     }
 
     /**

@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * The task for changing transaction timeout on partition map exchange.
  */
-public class TxTimeoutOnPartitionMapExchangeChangeTask implements CachePartitionExchangeWorkerTask {
+public class TxTimeoutOnPartitionMapExchangeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final TxTimeoutOnPartitionMapExchangeChangeMessage msg;
 
     /**
      * Constructor.
      *
+     * @param secCtx Security context in which current task must be executed.
      * @param msg Discovery message.
      */
-    public TxTimeoutOnPartitionMapExchangeChangeTask(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+    public TxTimeoutOnPartitionMapExchangeChangeTask(SecurityContext secCtx, TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+        super(secCtx);
+
         assert msg != null;
         this.msg = msg;
     }

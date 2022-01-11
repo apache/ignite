@@ -119,7 +119,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
-                MiniFuture f = (MiniFuture) fut;
+                MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
@@ -528,7 +528,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.needReturnValue() && tx.implicit(),
                     tx.implicitSingle(),
                     m.explicitLock(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1,
@@ -1025,7 +1024,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             parent.prepareOnTopology(true, new Runnable() {
                 @Override public void run() {
-                    onDone((GridNearTxPrepareResponse) null);
+                    onDone((GridNearTxPrepareResponse)null);
                 }
             });
         }
@@ -1058,7 +1057,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /** {@inheritDoc} */
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override public boolean equals(Object o) {
-            MappingKey that = (MappingKey) o;
+            MappingKey that = (MappingKey)o;
 
             return nearEntries == that.nearEntries && nodeId.equals(that.nodeId);
         }

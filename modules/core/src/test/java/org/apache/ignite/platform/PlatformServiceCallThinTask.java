@@ -22,6 +22,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -47,7 +48,9 @@ public class PlatformServiceCallThinTask extends AbstractPlatformServiceCallTask
 
         /** {@inheritDoc} */
         @Override TestPlatformService serviceProxy() {
-            return client.services().serviceProxy(srvcName, TestPlatformService.class);
+            ServiceCallContext callCtx = ServiceCallContext.builder().put("attr", "value").build();
+
+            return client.services().serviceProxy(srvcName, TestPlatformService.class, callCtx);
         }
 
         /** {@inheritDoc} */
@@ -71,6 +74,5 @@ public class PlatformServiceCallThinTask extends AbstractPlatformServiceCallTask
                 return null;
             }, ClientException.class, "Failed to invoke platform service");
         }
-
     }
 }

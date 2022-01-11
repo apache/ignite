@@ -53,6 +53,12 @@ public class AtomicVolatilePartitionCounterStateConsistencyTest extends AtomicPa
     }
 
     /** {@inheritDoc} */
+    @Ignore
+    @Override public void testClearVersion() throws Exception {
+        // Not applicable for volatile mode.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
         // No-op.
     }

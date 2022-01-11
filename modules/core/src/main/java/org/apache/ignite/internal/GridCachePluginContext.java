@@ -44,6 +44,7 @@ public class GridCachePluginContext<C extends CachePluginConfiguration> implemen
         this.igniteCacheCfg = igniteCacheCfg;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteConfiguration igniteConfiguration() {
         return ctx.config();
     }

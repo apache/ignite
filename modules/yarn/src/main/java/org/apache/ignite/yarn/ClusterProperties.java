@@ -184,6 +184,8 @@ public class ClusterProperties {
 
     /**
      * Sets CPU count limit.
+     *
+     * @param cpu CPU per node count limit.
      */
     public void cpusPerNode(double cpu) {
         this.cpuPerNode = cpu;
@@ -237,6 +239,8 @@ public class ClusterProperties {
 
     /**
      * Sets instance count limit.
+     *
+     * @param nodeCnt Node instance count limit.
      */
     public void instances(int nodeCnt) {
         this.nodeCnt = nodeCnt;

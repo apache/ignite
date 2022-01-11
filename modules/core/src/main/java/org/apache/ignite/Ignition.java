@@ -429,6 +429,7 @@ public class Ignition {
      *
      * @param springXmlPath Spring XML configuration file path (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
@@ -447,6 +448,7 @@ public class Ignition {
      *
      * @param springXmlUrl Spring XML configuration file URL (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
@@ -465,6 +467,7 @@ public class Ignition {
      *
      * @param springXmlStream Input stream containing Spring XML configuration (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */

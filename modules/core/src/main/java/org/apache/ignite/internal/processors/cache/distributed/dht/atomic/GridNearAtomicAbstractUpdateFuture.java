@@ -100,9 +100,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Optional filter. */
     protected final CacheEntryPredicate[] filter;
 
-    /** Subject ID. */
-    protected final UUID subjId;
-
     /** Task name hash. */
     protected final int taskNameHash;
 
@@ -160,7 +157,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param rawRetval Raw return value flag.
      * @param expiryPlc Expiry policy.
      * @param filter Filter.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
@@ -177,7 +173,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         CacheEntryPredicate[] filter,
-        UUID subjId,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
@@ -198,7 +193,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.rawRetval = rawRetval;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;

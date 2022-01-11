@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -52,6 +53,9 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
+
+    /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
+    private transient volatile boolean startStageEnded;
 
     /**
      * @param reqId Request ID.
@@ -121,6 +125,20 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void error(Throwable err) {
         this.err = err;
+    }
+
+    /**
+     * @return Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
+     */
+    protected boolean startStageEnded() {
+        return startStageEnded;
+    }
+
+    /**
+     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
+     */
+    protected void startStageEnded(boolean startStageEnded) {
+        this.startStageEnded = startStageEnded;
     }
 
     /** {@inheritDoc} */

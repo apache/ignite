@@ -19,11 +19,11 @@ package org.apache.ignite.internal.managers.collision;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -61,7 +61,7 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
             });
         }
         else
-            U.warn(log, "Collision resolution is disabled (all jobs will be activated upon arrival).");
+            log.info("Collision resolution is disabled (all jobs will be activated upon arrival).");
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

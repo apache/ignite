@@ -78,6 +78,8 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
@@ -267,6 +269,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Service invocation. */
     private static final short OP_SERVICE_INVOKE = 7000;
+
+    /** Get service descriptors. */
+    private static final short OP_SERVICE_GET_DESCRIPTORS = 7001;
+
+    /** Get service descriptor. */
+    private static final short OP_SERVICE_GET_DESCRIPTOR = 7002;
 
     /** Data streamers. */
     /** */
@@ -483,7 +491,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientExecuteTaskRequest(reader);
 
             case OP_SERVICE_INVOKE:
-                return new ClientServiceInvokeRequest(reader);
+                return new ClientServiceInvokeRequest(reader, protocolCtx);
+
+            case OP_SERVICE_GET_DESCRIPTORS:
+                return new ClientServiceGetDescriptorsRequest(reader);
+
+            case OP_SERVICE_GET_DESCRIPTOR:
+                return new ClientServiceGetDescriptorRequest(reader);
 
             case OP_DATA_STREAMER_START:
                 return new ClientDataStreamerStartRequest(reader);

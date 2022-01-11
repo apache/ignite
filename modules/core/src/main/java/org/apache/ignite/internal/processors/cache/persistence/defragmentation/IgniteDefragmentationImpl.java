@@ -42,6 +42,7 @@ public class IgniteDefragmentationImpl implements IgniteDefragmentation {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
+    /** */
     public IgniteDefragmentationImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
@@ -211,7 +212,7 @@ public class IgniteDefragmentationImpl implements IgniteDefragmentation {
 
         assert dbMgr instanceof GridCacheDatabaseSharedManager;
 
-        CachePartitionDefragmentationManager defrgMgr = ((GridCacheDatabaseSharedManager) dbMgr)
+        CachePartitionDefragmentationManager defrgMgr = ((GridCacheDatabaseSharedManager)dbMgr)
                 .defragmentationManager();
 
         if (defrgMgr == null)

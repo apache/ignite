@@ -591,7 +591,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                MiniFuture mini = (MiniFuture) future(i);
+                MiniFuture mini = (MiniFuture)future(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())
@@ -957,7 +957,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             cnt,
                             0,
                             inTx() ? tx.size() : cnt,
-                            inTx() ? tx.subjectId() : null,
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,
@@ -1411,7 +1410,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     if (rec && !entry.isInternal())
                                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                             null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                            false, null, null, null, false);
+                                            false, null, null, false);
                                 }
                             }
                             finally {

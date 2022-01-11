@@ -37,7 +37,6 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
-    # pylint: disable=R0913
     def __init__(self, cluster, ssl_params=None, username=None, password=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
@@ -175,6 +174,14 @@ class ControlUtility:
         assert ('VisorIdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
+
+    def check_consistency(self, args):
+        """
+        Consistency check.
+        """
+        data = self.__run(f"--consistency {args} --enable-experimental")
+
+        assert ('Command [CONSISTENCY] finished with code: 0' in data), data
 
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """

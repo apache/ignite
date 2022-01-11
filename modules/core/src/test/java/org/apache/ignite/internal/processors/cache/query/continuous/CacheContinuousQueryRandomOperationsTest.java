@@ -1791,7 +1791,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            QueryTestValue that = (QueryTestValue) o;
+            QueryTestValue that = (QueryTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }
@@ -1884,7 +1884,14 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      *
      */
     protected enum ContinuousDeploy {
-        CLIENT, SERVER, ALL
+        /** */
+        CLIENT,
+
+        /** */
+        SERVER,
+
+        /** */
+        ALL
     }
 
     /**

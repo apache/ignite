@@ -27,7 +27,7 @@ public class NoopSpiSpecificSpan implements SpiSpecificSpan {
     /**
      * Constructor.
      */
-    private NoopSpiSpecificSpan(){
+    private NoopSpiSpecificSpan() {
 
     }
 

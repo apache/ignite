@@ -56,6 +56,7 @@ public class MinkowskiDistance implements DistanceMeasure {
         return Math.pow(result, 1 / p);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -65,10 +66,12 @@ public class MinkowskiDistance implements DistanceMeasure {
         return Double.compare(that.p, p) == 0;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(p);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "MinkowskiDistance{" +
             "p=" + p +

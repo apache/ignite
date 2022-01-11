@@ -189,11 +189,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Get time. */
     private final HistogramMetricImpl getTime;
 
+    /** GetAll time. */
+    private final HistogramMetricImpl getAllTime;
+
     /** Put time. */
     private final HistogramMetricImpl putTime;
 
+    /** PutAll time. */
+    private final HistogramMetricImpl putAllTime;
+
     /** Remove time. */
     private final HistogramMetricImpl rmvTime;
+
+    /** RemoveAll time. */
+    private final HistogramMetricImpl rmvAllTime;
 
     /** Commit time. */
     private final HistogramMetricImpl commitTime;
@@ -279,13 +288,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             "The total number of cache invocations, caused no updates.");
 
         entryProcessorInvokeTimeNanos = mreg.longMetric("EntryProcessorInvokeTimeNanos",
-            "The total time of cache invocations, in nanoseconds.");
+            "The total time of cache invocations for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes.");
+            "So far, the minimum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes.");
+            "So far, the maximum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
@@ -314,13 +323,13 @@ public class CacheMetricsImpl implements CacheMetrics {
         rmCnt = mreg.longMetric("CacheRemovals", "The total number of removals from the cache.");
 
         putTimeTotal = mreg.longMetric("PutTimeTotal",
-            "The total time of cache puts, in nanoseconds.");
+            "The total time of cache puts for which this node is the initiator, in nanoseconds.");
 
         getTimeTotal = mreg.longMetric("GetTimeTotal",
-            "The total time of cache gets, in nanoseconds.");
+            "The total time of cache gets for which this node is the initiator, in nanoseconds.");
 
         rmvTimeTotal = mreg.longMetric("RemoveTimeTotal",
-            "The total time of cache removal, in nanoseconds.");
+            "The total time of cache removal for which this node is the initiator, in nanoseconds.");
 
         commitTimeTotal = mreg.longMetric("CommitTimeTotal",
             "The total time of commit, in nanoseconds.");
@@ -379,11 +388,23 @@ public class CacheMetricsImpl implements CacheMetrics {
         mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
             "True if index rebuild is in progress.");
 
-        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
+        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS,
+            "Get time for which this node is the initiator, in nanoseconds.");
 
-        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
+        getAllTime = mreg.histogram("GetAllTime", HISTOGRAM_BUCKETS,
+            "GetAll time for which this node is the initiator, in nanoseconds.");
 
-        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
+        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS,
+            "Put time for which this node is the initiator, in nanoseconds.");
+
+        putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS,
+            "PutAll time for which this node is the initiator, in nanoseconds.");
+
+        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS,
+            "Remove time for which this node is the initiator, in nanoseconds.");
+
+        rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS,
+            "RemoveAll time for which this node is the initiator, in nanoseconds.");
 
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 
@@ -714,8 +735,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapEvicts.reset();
 
         getTime.reset();
+        getAllTime.reset();
         putTime.reset();
+        putAllTime.reset();
         rmvTime.reset();
+        rmvAllTime.reset();
         commitTime.reset();
         rollbackTime.reset();
 
@@ -1134,6 +1158,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the getAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addGetAllTimeNanos(long duration) {
+        getTimeTotal.add(duration);
+
+        getAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addGetAllTimeNanos(duration);
+    }
+
+    /**
      * Increments the put time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1148,6 +1186,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the putAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllTimeNanos(long duration) {
+        putTimeTotal.add(duration);
+
+        putAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllTimeNanos(duration);
+    }
+
+    /**
      * Increments the remove time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1159,6 +1211,20 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllTimeNanos(long duration) {
+        rmvTimeTotal.add(duration);
+
+        rmvAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllTimeNanos(duration);
     }
 
     /**

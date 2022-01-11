@@ -96,6 +96,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
@@ -370,8 +372,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize(),
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
             ),
             persistenceEnabled
@@ -380,8 +382,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createVolatileDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize()
             ),
             false
         );
@@ -579,8 +581,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemRegionInitialSize(),
-            memCfg.getSystemRegionMaxSize()
+            memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+            memCfg.getSystemDataRegionConfiguration().getMaxSize()
         );
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
@@ -646,14 +648,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             long min = memCfg.getMinWalArchiveSize();
 
-            if (min != HALF_MAX_WAL_ARCHIVE_SIZE && min > max) {
-                throw new IgniteCheckedException(String.format(
-                    "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
-                        "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
-                        "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
-                        "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
-                        "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
-                    HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+            double percentage = getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, -1);
+
+            if (min != HALF_MAX_WAL_ARCHIVE_SIZE) {
+                if (min > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "DataRegionConfiguration.minWalArchiveSize must be less than or equal to " +
+                            "DataRegionConfiguration.maxWalArchiveSize or equal to %d " +
+                            "(to be half of maxWalArchiveSize), current settings:" + U.nl() +
+                            "DataRegionConfiguration.minWalArchiveSize: %d bytes" + U.nl() +
+                            "DataRegionConfiguration.maxWalArchiveSize: %d bytes",
+                        HALF_MAX_WAL_ARCHIVE_SIZE, min, max));
+                }
+            }
+            else if (percentage != -1) {
+                log.warning(String.format(
+                    "%s is deprecated, use DataRegionConfiguration.minWalArchiveSize instead",
+                    IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                ));
+
+                if ((long)(max * percentage) > max) {
+                    throw new IgniteCheckedException(String.format(
+                        "%s must be less than or equal to 1.0",
+                        IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE
+                    ));
+                }
             }
         }
     }
@@ -1015,11 +1034,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Schedule new checkpoint.
+     * Schedule a new checkpoint.<p>
+     * Note: if a checkpoint is already running and the locks have not been taken yet,
+     *       then a new checkpoint will not be forced.
      *
      * @param reason Reason.
      */
     @Nullable public CheckpointProgress forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * Schedule a new checkpoint.
+     *
+     * @param reason Reason.
+     * @param lsnr Listener which will be called on scheduled checkpoint finish.
+     */
+    @Nullable public <R> CheckpointProgress forceNewCheckpoint(String reason,
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         return null;
     }
 
@@ -1244,7 +1276,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (plcCfg.getMemoryAllocator() == null)
+            plcCfg.setMemoryAllocator(memCfg.getMemoryAllocator());
+
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
+            trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1283,7 +1319,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File allocPath = buildAllocPath(plcCfg);
 
         return allocPath == null ?
-            new UnsafeMemoryProvider(log) :
+            new UnsafeMemoryProvider(log, plcCfg.getMemoryAllocator()) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath);

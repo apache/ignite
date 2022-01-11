@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -41,7 +42,7 @@ public class GeoSpatialUtils {
     private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
 
     static {
-        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry) k));
+        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry)k));
     }
 
     /** */
@@ -49,15 +50,15 @@ public class GeoSpatialUtils {
         try {
             IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
 
-            List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).keyDefinitions();
+            LinkedHashMap<String, IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).keyDefinitions();
 
-            List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
+            List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
             QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes, DUMMY_SETTINGS);
 
             final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
 
-            IndexDefinition def = new GeoSpatialIndexDefinition(name, rowHnd, segments);
+            IndexDefinition def = new GeoSpatialIndexDefinition(name, keyDefs, rowHnd, segments);
 
             Index idx = tbl.cacheContext().kernalContext().indexProcessor().createIndex(
                 tbl.cacheContext(), GeoSpatialIndexFactory.INSTANCE, def);

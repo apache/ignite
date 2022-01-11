@@ -38,7 +38,7 @@ public class GeoSpatialIndexFactory implements IndexFactory {
 
     /** {@inheritDoc} */
     @Override public Index createIndex(@Nullable GridCacheContext<?, ?> cctx, IndexDefinition definition) {
-        GeoSpatialIndexDefinition def = (GeoSpatialIndexDefinition) definition;
+        GeoSpatialIndexDefinition def = (GeoSpatialIndexDefinition)definition;
 
         try {
             List<IndexColumn> cols = def.rowHandler().getH2IdxColumns();

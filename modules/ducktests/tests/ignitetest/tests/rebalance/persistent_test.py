@@ -30,12 +30,10 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
-# pylint: disable=W0223
 class RebalancePersistentTest(IgniteTest):
     """
     Tests rebalance scenarios in persistent mode.
     """
-    # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[5_000], entry_size=[50_000], preloaders=[1],
@@ -70,17 +68,18 @@ class RebalancePersistentTest(IgniteTest):
 
         await_and_check_rebalance(new_node)
 
-        control_utility.deactivate()
-
         nodes = ignites.nodes.copy()
 
         nodes.append(new_node.nodes[0])
 
+        result = get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
+
+        control_utility.deactivate()
+
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(nodes, ignites.database_dir)}')
 
-        return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
+        return result
 
-    # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1],
@@ -118,11 +117,13 @@ class RebalancePersistentTest(IgniteTest):
 
         await_and_check_rebalance(ignites)
 
+        result = get_result(ignites.nodes[:-1], preload_time, cache_count, entry_count, entry_size)
+
         control_utility.deactivate()
 
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
-        return get_result(ignites.nodes[:-1], preload_time, cache_count, entry_count, entry_size)
+        return result
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -186,11 +187,13 @@ class RebalancePersistentTest(IgniteTest):
 
         await_and_check_rebalance(ignites, rebalance_nodes, False)
 
+        result = get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
+
         control_utility.deactivate()
 
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
-        return get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
+        return result
 
 
 def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list = None, is_full: bool = True):

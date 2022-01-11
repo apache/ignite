@@ -1379,7 +1379,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 tx = ses.beginTransaction();
 
-                ses.save(new ParentEntity(0, (Entity) ses.load(Entity.class, 0)));
+                ses.save(new ParentEntity(0, (Entity)ses.load(Entity.class, 0)));
 
                 tx.commit();
             }

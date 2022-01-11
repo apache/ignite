@@ -797,10 +797,10 @@ public abstract class PageIO {
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_DATA_REF_MVCC_INNER:
-                return (Q) MvccCacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
+                return (Q)MvccCacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_DATA_REF_MVCC_LEAF:
-                return (Q) MvccCacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+                return (Q)MvccCacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_MVCC_INNER:
                 return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);
@@ -833,10 +833,10 @@ public abstract class PageIO {
                 return (Q)MetastorageBPlusIO.LEAF_IO_VERSIONS.forVersion(ver);
 
             case T_DEFRAG_LINK_MAPPING_INNER:
-                return (Q) LinkMap.INNER_IO_VERSIONS.forVersion(ver);
+                return (Q)LinkMap.INNER_IO_VERSIONS.forVersion(ver);
 
             case T_DEFRAG_LINK_MAPPING_LEAF:
-                return (Q) LinkMap.LEAF_IO_VERSIONS.forVersion(ver);
+                return (Q)LinkMap.LEAF_IO_VERSIONS.forVersion(ver);
 
             default:
                 // For tests.
@@ -945,5 +945,23 @@ public abstract class PageIO {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Asserts that page type of the page stored at pageAddr matches page type of this PageIO.
+     *
+     * @param pageAddr address of a page to use for assertion
+     */
+    protected final void assertPageType(long pageAddr) {
+        assert getType(pageAddr) == getType() : "Expected type " + getType() + ", but got " + getType(pageAddr);
+    }
+
+    /**
+     * Asserts that page type of the page stored in the given buffer matches page type of this PageIO.
+     *
+     * @param buf   buffer where the page for assertion is stored
+     */
+    protected final void assertPageType(ByteBuffer buf) {
+        assert getType(buf) == getType() : "Expected type " + getType() + ", but got " + getType(buf);
     }
 }

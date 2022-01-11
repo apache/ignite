@@ -70,6 +70,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         testIterator(1024);
     }
 
+    /** */
     @Test(expected = NoSuchElementException.class)
     public void shouldThrowExceptionIfHasNotNextElement() {
         IntSet intSet = new BitSetIntSet(2);
@@ -82,6 +83,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         iterator.next();
     }
 
+    /** */
     @Test
     public void hasNextShouldBeIdempotent() {
         IntSet intSet = new BitSetIntSet(3);
@@ -90,18 +92,19 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(3);
         Iterator<Integer> iter = intSet.iterator();
 
-        assertEquals(1, (int) iter.next());
+        assertEquals(1, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
         iter.hasNext();
-        assertEquals(2, (int) iter.next());
+        assertEquals(2, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
-        assertEquals(3, (int) iter.next());
+        assertEquals(3, (int)iter.next());
     }
 
+    /** */
     @Test
     public void toIntArray() {
         IntSet emptySet = new BitSetIntSet();

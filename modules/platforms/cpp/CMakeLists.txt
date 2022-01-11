@@ -16,12 +16,9 @@
 #
 
 cmake_minimum_required(VERSION 3.6)
-project(Ignite.C++ VERSION 2.11.0.51807)
+project(Ignite.C++ VERSION 2.13.0.58917)
 
 set(CMAKE_CXX_STANDARD 98)
-
-find_package(Java 1.8 REQUIRED)
-find_package(JNI REQUIRED)
 
 set(CMAKE_PROJECT_VERSION ${PROJECT_VERSION})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
@@ -52,10 +49,17 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
-option (WITH_ODBC OFF)
-option (WITH_THIN_CLIENT OFF)
-option (WITH_TESTS OFF)
-option (WARNINGS_AS_ERRORS OFF)
+option (WITH_CORE "Build Ignite.C++ Core module" ON)
+option (WITH_ODBC "Build Ignite.C++ ODBC driver module" OFF)
+option (WITH_ODBC_MSI "Build Ignite.C++ ODBC driver installer for Windows" OFF)
+option (WITH_THIN_CLIENT "Build Ignite.C++ Thin Client module" OFF)
+option (WITH_TESTS "Build Ignite.C++ tests" OFF)
+option (WARNINGS_AS_ERRORS "Treat warning as errors" OFF)
+
+if (${WITH_CORE} OR ${WITH_TESTS})
+    find_package(Java 1.8 REQUIRED)
+    find_package(JNI REQUIRED)
+endif()
 
 if (${WARNINGS_AS_ERRORS})
     if (MSVC)
@@ -67,9 +71,11 @@ endif()
 
 add_subdirectory(common)
 add_subdirectory(binary)
-add_subdirectory(jni)
-add_subdirectory(core)
-add_subdirectory(ignite)
+
+if (${WITH_CORE} OR ${WITH_TESTS})
+    add_subdirectory(core)
+    add_subdirectory(ignite)
+endif()
 
 if (${WITH_TESTS})
     enable_testing()

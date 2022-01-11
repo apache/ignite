@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -35,7 +33,7 @@ public class ProgressPrinter {
     private static final int MIN_PROGRESS_BAR_LENGTH = 20;
 
     /** */
-    private static final int MAX_CAPTION_LENTH = 40;
+    private static final int MAX_CAPTION_LENGTH = 40;
 
     /** */
     private final long total;
@@ -77,7 +75,7 @@ public class ProgressPrinter {
      */
     public ProgressPrinter(PrintStream printStream, String caption, long total, int chunksNum) {
         this.printStream = printStream;
-        this.caption = caption.length() >= MAX_CAPTION_LENTH ? caption.substring(0, MAX_CAPTION_LENTH) : caption;
+        this.caption = caption.length() >= MAX_CAPTION_LENGTH ? caption.substring(0, MAX_CAPTION_LENGTH) : caption;
         this.total = total;
         this.chunksNum = chunksNum;
     }
@@ -107,7 +105,7 @@ public class ProgressPrinter {
 
     /** */
     private void printProgress0(long curr, double currRatio) {
-        int progressBarLen = MIN_PROGRESS_BAR_LENGTH + (MAX_CAPTION_LENTH - caption.length());
+        int progressBarLen = MIN_PROGRESS_BAR_LENGTH + (MAX_CAPTION_LENGTH - caption.length());
 
         String progressBarFmt = "\r%s %4s [%" + progressBarLen + "s] %-50s";
 
@@ -121,22 +119,17 @@ public class ProgressPrinter {
         for (int i = 0; i < progressBarLen; i++)
             progressBuilder.a(i < progressCurrLen ? "=" : " ");
 
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-
-        long dayMillis = 24 * 60 * 60 * 1000;
-        long daysRunning = timeRunning / dayMillis;
-        long daysEstimated = timeEstimated / dayMillis;
-
-        timeFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        long daysRunning = TimeUnit.MILLISECONDS.toDays(timeRunning);
+        long daysEstimated = TimeUnit.MILLISECONDS.toDays(timeEstimated);
 
         String txtProgress = String.format(
             "%s/%s (%s%s / %s%s)",
             curr,
             total,
             daysRunning > 0 ? daysRunning + " days " : "",
-            timeFormat.format(new Date(timeRunning)),
+            formatDuration(timeRunning),
             daysEstimated > 0 ? daysEstimated + " days " : "",
-            timeFormat.format(new Date(timeEstimated))
+            formatDuration(timeEstimated)
         );
 
         String progressBar = String.format(
@@ -148,5 +141,16 @@ public class ProgressPrinter {
         );
 
         printStream.print(progressBar);
+    }
+
+    /**
+     * Formats the given duration in milliseconds in "HH:mm:ss" format.
+     */
+    private static String formatDuration(long durationMillis) {
+        long seconds = (durationMillis / 1000) % 60;
+        long minutes = (durationMillis / (1000 * 60)) % 60;
+        long hours = durationMillis / (1000 * 60 * 60);
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }

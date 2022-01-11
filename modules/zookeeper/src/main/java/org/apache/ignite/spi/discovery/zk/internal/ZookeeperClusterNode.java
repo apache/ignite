@@ -54,7 +54,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     private static final byte CLIENT_NODE_MASK = 0x01;
 
     /** */
-    private UUID id;
+    private volatile UUID id;
 
     /** */
     private Serializable consistentId;
@@ -353,10 +353,10 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readUuid(in);
-        consistentId = (Serializable) in.readObject();
+        consistentId = (Serializable)in.readObject();
         internalId = in.readLong();
         order = in.readLong();
-        ver = (IgniteProductVersion) in.readObject();
+        ver = (IgniteProductVersion)in.readObject();
         attrs = U.sealMap(U.readMap(in));
         addrs = U.readCollection(in);
         hostNames = U.readCollection(in);

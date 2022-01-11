@@ -66,7 +66,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private GridTcpRestNioListener lsnr;
 
     /** The name of the metric registry associated with the REST TCP connector. */
-    public static final String REST_CONNECTOR_METRIC_REGISTRY_NAME = metricName("connector", "client", "rest", "tcp");
+    public static final String REST_CONNECTOR_METRIC_REGISTRY_NAME = metricName("rest", "client");
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {

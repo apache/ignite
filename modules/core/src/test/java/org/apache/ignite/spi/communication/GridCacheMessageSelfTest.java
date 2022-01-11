@@ -162,7 +162,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 try {
                     latch.countDown();
 
-                    Collection<TestMessage1> messages = ((TestMessage) msg).entries();
+                    Collection<TestMessage1> messages = ((TestMessage)msg).entries();
 
                     assertEquals(10, messages.size());
 
@@ -175,7 +175,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(cnt, i);
 
-                        TestMessage2 msg2 = (TestMessage2) msg1.message();
+                        TestMessage2 msg2 = (TestMessage2)msg1.message();
 
                         assertEquals(TEST_BODY + "_" + i + "_2", msg2.body());
 
@@ -183,7 +183,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(i, msg2.id());
 
-                        GridTestMessage msg3 = (GridTestMessage) msg2.message();
+                        GridTestMessage msg3 = (GridTestMessage)msg2.message();
 
                         assertEquals(cnt, msg3.getMsgId());
 

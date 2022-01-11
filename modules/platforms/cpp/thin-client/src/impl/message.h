@@ -168,19 +168,49 @@ namespace ignite
                     OP_TX_START = 4000,
 
                     /** Commit transaction. */
-                    OP_TX_END = 4001
+                    OP_TX_END = 4001,
+
+                    /** Execute compute task. */
+                    COMPUTE_TASK_EXECUTE = 6000,
+
+                    /** Compute task completion notification. */
+                    COMPUTE_TASK_FINISHED = 6001,
+                };
+            };
+
+            /**
+             * Message flags.
+             */
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+
+                    /** Server notification flag. */
+                    NOTIFICATION = 1 << 2
                 };
             };
 
             /**
              * Request.
-             *
-             * @tparam OpCode Operation code.
              */
-            template<int32_t OpCode>
             class Request
             {
             public:
+                /**
+                 * Constructor.
+                 */
+                Request() :
+                    id(0)
+                {
+                    // No-op.
+                }
+
                 /**
                  * Destructor.
                  */
@@ -194,10 +224,7 @@ namespace ignite
                  *
                  * @return Operation code.
                  */
-                static int32_t GetOperationCode()
-                {
-                    return OpCode;
-                }
+                virtual int16_t GetOperationCode() const = 0;
 
                 /**
                  * Write request using provided writer.
@@ -208,12 +235,64 @@ namespace ignite
                 {
                     // No-op.
                 }
+
+                /**
+                 * Set request ID.
+                 *
+                 * @param id ID.
+                 */
+                void SetId(int64_t id)
+                {
+                    this->id = id;
+                }
+
+                /**
+                 * Get request ID.
+                 *
+                 * @return ID.
+                 */
+                int64_t GetId() const
+                {
+                    return id;
+                }
+
+            private:
+                /** Request ID. Only set when request is sent. */
+                int64_t id;
+            };
+
+            /**
+             * Request adapter.
+             *
+             * @tparam OpCode Operation code.
+             */
+            template<int16_t OpCode>
+            class RequestAdapter : public Request
+            {
+            public:
+                /**
+                 * Destructor.
+                 */
+                virtual ~RequestAdapter()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get operation code.
+                 *
+                 * @return Operation code.
+                 */
+                virtual int16_t GetOperationCode() const
+                {
+                    return OpCode;
+                }
             };
 
             /**
              * Cache partitions request.
              */
-            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            class CachePartitionsRequest : public RequestAdapter<RequestType::CACHE_PARTITIONS>
             {
             public:
                 /**
@@ -245,7 +324,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class GetOrCreateCacheWithNameRequest : public Request<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
+            class GetOrCreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -278,7 +357,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class CreateCacheWithNameRequest : public Request<RequestType::CACHE_CREATE_WITH_NAME>
+            class CreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -311,7 +390,7 @@ namespace ignite
             /**
              * Destroy cache request.
              */
-            class DestroyCacheRequest : public Request<RequestType::CACHE_DESTROY>
+            class DestroyCacheRequest : public RequestAdapter<RequestType::CACHE_DESTROY>
             {
             public:
                 /**
@@ -351,7 +430,7 @@ namespace ignite
              * Request to cache.
              */
             template<int32_t OpCode>
-            class CacheRequest : public Request<OpCode>
+            class CacheRequest : public RequestAdapter<OpCode>
             {
             public:
                 /**
@@ -619,7 +698,7 @@ namespace ignite
             /**
              * Tx start request.
              */
-            class TxStartRequest : public Request<RequestType::OP_TX_START>
+            class TxStartRequest : public RequestAdapter<RequestType::OP_TX_START>
             {
             public:
                 /**
@@ -676,7 +755,7 @@ namespace ignite
             /**
              * Tx end request.
              */
-            class TxEndRequest : public Request<RequestType::OP_TX_END>
+            class TxEndRequest : public RequestAdapter<RequestType::OP_TX_END>
             {
             public:
                 /**
@@ -721,7 +800,7 @@ namespace ignite
             /**
              * Cache get binary type request.
              */
-            class BinaryTypeGetRequest : public Request<RequestType::GET_BINARY_TYPE>
+            class BinaryTypeGetRequest : public RequestAdapter<RequestType::GET_BINARY_TYPE>
             {
             public:
                 /**
@@ -758,7 +837,7 @@ namespace ignite
             /**
              * Cache put binary type request.
              */
-            class BinaryTypePutRequest : public Request<RequestType::PUT_BINARY_TYPE>
+            class BinaryTypePutRequest : public RequestAdapter<RequestType::PUT_BINARY_TYPE>
             {
             public:
                 /**
@@ -829,7 +908,7 @@ namespace ignite
             /**
              * Cache SQL fields cursor get page request.
              */
-            class SqlFieldsCursorGetPageRequest : public Request<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            class SqlFieldsCursorGetPageRequest : public RequestAdapter<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
             {
             public:
                 /**
@@ -861,6 +940,59 @@ namespace ignite
             private:
                 /** Cursor ID. */
                 const int64_t cursorId;
+            };
+
+            /**
+             * Compute task execute request.
+             */
+            class ComputeTaskExecuteRequest : public RequestAdapter<RequestType::COMPUTE_TASK_EXECUTE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param flags Flags.
+                 * @param timeout Timeout in milliseconds.
+                 * @param taskName Task name.
+                 * @param arg Argument.
+                 */
+                ComputeTaskExecuteRequest(int8_t flags, int64_t timeout, const std::string& taskName,
+                    const Writable& arg) :
+                    flags(flags),
+                    timeout(timeout),
+                    taskName(taskName),
+                    arg(arg)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Flags. */
+                const int8_t flags;
+
+                /** Timeout in milliseconds. */
+                const int64_t timeout;
+
+                /** Task name. */
+                const std::string& taskName;
+
+                /** Argument. */
+                const Writable& arg;
             };
 
             /**
@@ -1389,6 +1521,113 @@ namespace ignite
             private:
                 /** Cursor Page. */
                 cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Compute task execute response.
+             */
+            class ComputeTaskExecuteResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskExecuteResponse() :
+                    taskId(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskExecuteResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get Notification ID.
+                 * @return Notification ID.
+                 */
+                int64_t GetNotificationId() const
+                {
+                    return taskId;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Task ID. */
+                int64_t taskId;
+            };
+
+            /**
+             * Compute task finished notification.
+             */
+            class ComputeTaskFinishedNotification
+            {
+            public:
+                typedef ComputeTaskExecuteResponse ResponseType;
+
+                /**
+                 * Constructor.
+                 */
+                ComputeTaskFinishedNotification(Readable& result) :
+                    status(0),
+                    errorMessage(),
+                    result(result)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskFinishedNotification()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Check if the message is failure.
+                 * @return @c true on failure.
+                 */
+                bool IsFailure() const
+                {
+                    return !errorMessage.empty();
+                }
+
+                /**
+                 * Get error message.
+                 * @return Error message.
+                 */
+                const std::string& GetErrorMessage() const
+                {
+                    return errorMessage;
+                }
+
+                /**
+                 * Read response using provided reader.
+                 * @param reader Reader.
+                 * @param ver Protocol version.
+                 */
+                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            private:
+                /** Status. */
+                int32_t status;
+
+                /** Error message. */
+                std::string errorMessage;
+
+                /** Result. */
+                Readable& result;
             };
         }
     }

@@ -784,7 +784,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             tx.size(),
-            tx.subjectId(),
             tx.taskNameHash(),
             tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()
@@ -918,7 +917,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             0,
-            null,
             0,
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),

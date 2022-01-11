@@ -85,6 +85,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -177,7 +178,10 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
 
     /** */
     public enum DeclaredBodyEnum {
+        /** */
         ONE,
+
+        /** */
         TWO {
             /** {@inheritDoc} */
             @Override public boolean isSupported() {

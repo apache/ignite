@@ -28,10 +28,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -120,6 +118,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -165,11 +164,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected IgniteLogger log;
 
-    /** */
+    /** Cache data store for <tt>LOCAL</tt> caches only. */
     private CacheDataStore locCacheDataStore;
-
-    /** */
-    protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
     private PendingEntriesTree pendingEntries;
@@ -267,10 +263,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Long> restorePartitionStates(
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException {
-        return Collections.emptyMap(); // No-op.
+    @Override public long restoreStateOfPartition(int p, @Nullable Integer recoveryState) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePartitionStates() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void confirmPartitionStatesRestored() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -311,25 +315,39 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /**
-     * @param part Partition.
-     * @return Data store for given entry.
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return Data store.
      */
-    @Override public CacheDataStore dataStore(GridDhtLocalPartition part) {
+    @Nullable private CacheDataStore dataStore(GridCacheContext<?, ?> cctx, KeyCacheObject key) {
         if (grp.isLocal())
             return locCacheDataStore;
-        else {
-            assert part != null;
 
-            return part.dataStore();
-        }
+        return dataStore(cctx.affinity().partition(key), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part) {
+        if (grp.isLocal())
+            return locCacheDataStore;
+
+        assert part != null;
+
+        return part.dataStore();
     }
 
     /**
-     * @param part Partition.
-     * @return Data store for given entry.
+     * @param partId Partition id.
+     * @param includeRenting {@code true} if includeRenting partitions must also be shown.
+     * @return Related partition cache data store or {@code null} if partition haven't been initialized.
      */
-    public CacheDataStore dataStore(int part) {
-        return grp.isLocal() ? locCacheDataStore : partDataStores.get(part);
+    @Nullable private CacheDataStore dataStore(int partId, boolean includeRenting) {
+        if (grp.isLocal())
+            return locCacheDataStore;
+
+        GridDhtLocalPartition part = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, includeRenting);
+
+        return part == null ? null : part.dataStore();
     }
 
     /** {@inheritDoc} */
@@ -343,33 +361,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long totalPartitionEntriesCount(int p) {
-        if (grp.isLocal())
-            return locCacheDataStore.fullSize();
-        else {
-            GridDhtLocalPartition part = grp.topology().localPartition(p, AffinityTopologyVersion.NONE, false, true);
-
-            return part != null ? part.dataStore().fullSize() : 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
-    }
-
-    /**
-     * @param p Partition.
-     * @return Partition data.
-     */
-    @Nullable private CacheDataStore partitionData(int p) {
-        if (grp.isLocal())
-            return locCacheDataStore;
-        else {
-            GridDhtLocalPartition part = grp.topology().localPartition(p, AffinityTopologyVersion.NONE, false, true);
-
-            return part != null ? part.dataStore() : null;
-        }
     }
 
     /** {@inheritDoc} */
@@ -398,14 +391,31 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public long cacheEntriesCount(int cacheId, int part) {
-        CacheDataStore store = partitionData(part);
+        CacheDataStore store = dataStore(part, true);
 
         return store == null ? 0 : store.cacheSize(cacheId);
     }
 
+    /** {@inheritDoc} */
+    @Override public Iterable<CacheDataStore> cacheDataStores() {
+        return cacheDataStores(F.alwaysTrue());
+    }
+
+    /**
+     * @param filter Filtering predicate.
+     * @return Iterable over all existing cache data stores except which one is marked as <tt>destroyed</tt>.
+     */
+    private Iterable<CacheDataStore> cacheDataStores(
+        IgnitePredicate<GridDhtLocalPartition> filter
+    ) {
+        return grp.isLocal() ? Collections.singletonList(locCacheDataStore) :
+            F.iterator(grp.topology().currentLocalPartitions(), GridDhtLocalPartition::dataStore, true,
+                filter, p -> !p.dataStore().destroyed());
+    }
+
     /**
      * @param primary Primary data flag.
-     * @param backup Primary data flag.
+     * @param backup Backup data flag.
      * @param topVer Topology version.
      * @return Data stores iterator.
      */
@@ -414,17 +424,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         if (grp.isLocal())
             return singletonIterator(locCacheDataStore);
+
+        IgnitePredicate<GridDhtLocalPartition> filter;
+
+        if (primary && backup)
+            filter = F.alwaysTrue();
         else {
-            Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
-
-            if (primary && backup)
-                return F.iterator(it, GridDhtLocalPartition::dataStore, true);
-
             IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
                 grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it, GridDhtLocalPartition::dataStore, true, part -> parts.contains(part.id()));
+            filter = part -> parts.contains(part.id());
         }
+
+        return cacheDataStores(filter).iterator();
     }
 
     /** {@inheritDoc} */
@@ -664,20 +676,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return dataStore != null ? dataStore.mvccAllVersionsCursor(cctx, key, x) : EMPTY_CURSOR;
     }
 
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @return Data store.
-     */
-    @Nullable private CacheDataStore dataStore(GridCacheContext cctx, KeyCacheObject key) {
-        if (grp.isLocal())
-            return locCacheDataStore;
-
-        GridDhtLocalPartition part = grp.topology().localPartition(cctx.affinity().partition(key), null, false);
-
-        return part != null ? dataStore(part) : null;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean containsKey(GridCacheMapEntry entry) {
         try {
@@ -688,21 +686,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             return false;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionCounterUpdated(int part, long cntr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionInitialCounterUpdated(int part, long start, long delta) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastUpdatedPartitionCounter(int part) {
-        return 0;
     }
 
     /**
@@ -814,7 +797,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, int part)
         throws IgniteCheckedException {
-        CacheDataStore data = partitionData(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -864,7 +847,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
         @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) {
-        CacheDataStore data = partitionData(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -874,7 +857,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> partitionIterator(int part) {
-        CacheDataStore data = partitionData(part);
+        CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
@@ -1156,7 +1139,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return null;
         }
 
-        CacheDataStore data = partitionData(part);
+        CacheDataStore data = dataStore(loc);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
@@ -1245,9 +1228,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+    @Override public void storeEntries(GridDhtLocalPartition part, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(partId);
+        CacheDataStore dataStore = dataStore(part);
 
         List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
 
@@ -1259,7 +1242,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             batch.add(new DataRowCacheAware(info.key(),
                 info.value(),
                 info.version(),
-                partId,
+                part.id(),
                 info.expireTime(),
                 info.cacheId(),
                 grp.storeCacheIdInDataPage()));
@@ -1280,22 +1263,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore;
-
         partStoreLock.lock(p);
 
         try {
-            assert !partDataStores.containsKey(p);
-
-            dataStore = createCacheDataStore0(p);
-
-            partDataStores.put(p, dataStore);
+            return createCacheDataStore0(p);
         }
         finally {
             partStoreLock.unlock(p);
         }
-
-        return dataStore;
     }
 
     /**
@@ -1321,15 +1296,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             FLAG_IDX
         );
 
-        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<CacheDataStore> cacheDataStores() {
-        if (grp.isLocal())
-            return Collections.singleton(locCacheDataStore);
-
-        return () -> partDataStores.values().iterator();
+        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log, null);
     }
 
     /** {@inheritDoc} */
@@ -1339,10 +1306,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            boolean rmv = partDataStores.remove(p, store);
-
-            if (!rmv)
-                return; // Already destroyed.
+            if (store.destroyed())
+                return;
 
             destroyCacheDataStore0(store);
         }
@@ -1487,7 +1452,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
-        private final AtomicLong storageSize = new AtomicLong();
+        private final LongAdder storageSize = new LongAdder();
 
         /** */
         private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap<>();
@@ -1512,6 +1477,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final int updateValSizeThreshold;
 
+        /** */
+        private volatile GridQueryRowCacheCleaner rowCacheCleaner;
+
         /**
          * @param partId Partition number.
          * @param rowStore Row store.
@@ -1524,7 +1492,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             Supplier<PendingEntriesTree> pendingEntries,
             CacheGroupContext grp,
             GridSpinBusyLock busyLock,
-            IgniteLogger log
+            IgniteLogger log,
+            @Nullable Supplier<GridQueryRowCacheCleaner> cleaner
         ) {
             this.partId = partId;
             this.rowStore = rowStore;
@@ -1546,6 +1515,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccUpdateMarker = new MvccMarkUpdatedHandler(grp);
             mvccUpdateTxStateHint = new MvccUpdateTxStateHintHandler(grp);
             mvccApplyChanges = new MvccApplyChangesHandler(grp);
+
+            if (cleaner == null)
+                rowStore.setRowCacheCleaner(() -> rowCacheCleaner);
+            else
+                rowStore.setRowCacheCleaner(cleaner);
         }
 
         /** {@inheritDoc} */
@@ -1585,7 +1559,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return size != null ? (int)size.get() : 0;
             }
 
-            return storageSize.get();
+            return storageSize.sum();
         }
 
         /** {@inheritDoc} */
@@ -1602,7 +1576,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            return storageSize.get();
+            return storageSize.sum();
         }
 
         /**
@@ -1614,7 +1588,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                  * TODO https://issues.apache.org/jira/browse/IGNITE-10082
                  * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
                  */
-                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
+                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.sum() == 0;
             }
             catch (IgniteCheckedException e) {
                 U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
@@ -1625,7 +1599,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
-            storageSize.addAndGet(delta);
+            storageSize.add(delta);
 
             if (grp.sharedGroup()) {
                 AtomicLong size = cacheSizes.get(cacheId);
@@ -3025,6 +2999,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public boolean destroyed() {
+            return dataTree.destroyed();
+        }
+
+        /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
@@ -3086,7 +3065,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
-            rowStore().setRowCacheCleaner(rowCacheCleaner);
+            this.rowCacheCleaner = rowCacheCleaner;
         }
 
         /**
@@ -3098,7 +3077,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
             pCntr.init(updCntr, cntrUpdData);
 
-            storageSize.set(size);
+            storageSize.reset();
+            storageSize.add(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
@@ -3310,6 +3290,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheGroupContext grp;
 
+        /** */
         private MvccMarkUpdatedHandler(CacheGroupContext grp) {
             this.grp = grp;
         }

@@ -56,6 +56,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String copyright();
 
     /**
+     * @param <T> Type of the plugin.
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
@@ -73,6 +74,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *
      * @param ctx Plugin context.
      * @param cls Ignite component class.
+     * @param <T> Ignite component type.
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
