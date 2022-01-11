@@ -580,9 +580,9 @@ public class GridServiceProxy<T> implements Serializable {
             Object res;
 
             if (svcCtx.service() instanceof PlatformService && mtd == null)
-                res = callPlatformService(svcCtx);
+                res = callPlatformService((PlatformService)svcCtx.service());
             else
-                res = callOrdinaryService(svcCtx, mtd);
+                res = callOrdinaryService(svcCtx.service(), mtd);
 
             return U.marshal(ignite.configuration().getMarshaller(), res);
         }
@@ -601,7 +601,7 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callService(Service srv, Method mtd) throws Exception {
+        private Object callOrdinaryService(Service srv, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
