@@ -104,31 +104,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         [Test]
-        public void TestGetAndPutIfAbsentRestoresPlatformCacheDataFromPersistence()
-        {
-            TestCacheOperation(k => _cache.GetAndPutIfAbsent(k, -k), k => -k);
-        }
-
-        [Test]
         public void TestGetAllRestoresPlatformCacheDataFromPersistence()
         {
-            var k1 = _key++;
-            var k2 = _key++;
-
-            Assert.AreEqual(new[] { k1, k2 },
-                _cache.GetAll(new[] { k1, k2 }).Select(x => x.Value).OrderBy(x => x).ToArray());
-
-            Assert.AreEqual(k1, _cache.LocalPeek(k1, CachePeekMode.Platform));
-            Assert.AreEqual(k2, _cache.LocalPeek(k2, CachePeekMode.Platform));
+            TestCacheOperation(k => _cache.GetAll(new[] { k }));
         }
 
         [Test]
         public void TestContainsKeyRestoresPlatformCacheDataFromPersistence()
         {
-            var k = _key++;
+            TestCacheOperation(k => _cache.ContainsKey(k));
+        }
 
-            Assert.IsTrue(_cache.ContainsKey(k));
-            Assert.AreEqual(k, _cache.LocalPeek(k, CachePeekMode.Platform));
+        [Test]
+        public void TestContainsKeysRestoresPlatformCacheDataFromPersistence()
+        {
+            TestCacheOperation(k => _cache.ContainsKeys(new[] { k }));
         }
 
         /// <summary>
@@ -156,12 +146,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var res = _cache.Query(new ScanQuery<int, int> { Filter = new EvenValueFilter() }).GetAll();
             Assert.AreEqual(Count / 2, res.Count);
-        }
-
-        [Test]
-        public void TestRemoteNode()
-        {
-            Assert.Fail("TODO");
         }
 
         /// <summary>
