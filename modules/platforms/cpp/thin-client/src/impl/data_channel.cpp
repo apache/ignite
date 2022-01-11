@@ -18,10 +18,11 @@
 #include <cstddef>
 
 #include <ignite/common/fixed_size_array.h>
+#include <ignite/common/promise.h>
+
 #include <ignite/network/network.h>
 
 #include "impl/message.h"
-#include "impl/remote_type_updater.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -50,15 +51,24 @@ namespace ignite
             const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
                 supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-            DataChannel::DataChannel(const ignite::thin::IgniteClientConfiguration& cfg,
-                binary::BinaryTypeManager& typeMgr) :
-                ioMutex(),
-                node(),
+            DataChannel::DataChannel(
+                uint64_t id,
+                const network::EndPoint& addr,
+                const ignite::network::SP_AsyncClientPool& asyncPool,
+                const ignite::thin::IgniteClientConfiguration& cfg,
+                binary::BinaryTypeManager& typeMgr,
+                ChannelStateHandler& stateHandler
+            ) :
+                stateHandler(stateHandler),
+                handshakePerformed(false),
+                id(id),
+                asyncPool(asyncPool),
+                node(addr),
                 config(cfg),
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
                 reqIdCounter(0),
-                socket()
+                responseMutex()
             {
                 // No-op.
             }
@@ -68,224 +78,166 @@ namespace ignite
                 Close();
             }
 
-            bool DataChannel::Connect(const std::string& host, uint16_t port, int32_t timeout)
+            void DataChannel::StartHandshake()
             {
-                using ignite::thin::SslMode;
-
-                if (socket.get() != 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Already connected.");
-
-                if (config.GetEndPoints().empty())
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
-
-                SslMode::Type sslMode = config.GetSslMode();
-
-                if (sslMode != SslMode::DISABLE)
-                {
-                    socket.reset(network::ssl::MakeSecureSocketClient(
-                        config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
-                }
-                else
-                    socket.reset(network::ssl::MakeTcpSocketClient());
-
-                node = IgniteNode(host, port);
-
-                return TryRestoreConnection(timeout);
+                DoHandshake(VERSION_DEFAULT);
             }
 
             void DataChannel::Close()
             {
-                if (socket.get() != 0)
-                {
-                    socket->Close();
-
-                    socket.reset();
-                }
+                asyncPool.Get()->Close(id, 0);
+                handlerMap.clear();
             }
 
-            void DataChannel::InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout)
+            void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
             {
-                common::concurrent::CsLockGuard lock(ioMutex);
+                Future<network::DataBuffer> rspFut = AsyncMessage(req);
 
-                InternalSyncMessageUnguarded(mem, timeout);
-            }
-
-            void DataChannel::InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout)
-            {
-                bool success = Send(mem.Data(), mem.Length(), timeout);
+                bool success = true;
+                if (timeout)
+                    success = rspFut.WaitFor(timeout);
+                else
+                    rspFut.Wait();
 
                 if (!success)
                 {
-                    success = TryRestoreConnection(timeout);
+                    common::concurrent::CsLockGuard lock(responseMutex);
 
-                    if (!success)
-                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                                          "Can not send message to remote host: timeout");
+                    responseMap.erase(req.GetId());
 
-                    success = Send(mem.Data(), mem.Length(), timeout);
+                    std::string msg = "Can not send message to remote host " +
+                        node.GetEndPoint().ToString() + " within timeout.";
 
-                    if (!success)
-                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                                          "Can not send message to remote host: timeout");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
                 }
 
-                success = Receive(mem, timeout);
+                DeserializeMessage(rspFut.GetValue(), rsp);
+            }
+
+            int64_t DataChannel::GenerateRequestMessage(Request &req, interop::InteropMemory &mem)
+            {
+                interop::InteropOutputStream outStream(&mem);
+                binary::BinaryWriterImpl writer(&outStream, &typeMgr);
+
+                // Space for RequestSize + OperationCode + RequestID.
+                outStream.Reserve(4 + 2 + 8);
+
+                req.Write(writer, currentVersion);
+
+                int64_t reqId = GenerateRequestId();
+                req.SetId(reqId);
+
+                outStream.WriteInt32(0, outStream.Position() - 4);
+                outStream.WriteInt16(4, req.GetOperationCode());
+                outStream.WriteInt64(6, reqId);
+
+                outStream.Synchronize();
+
+                return reqId;
+            }
+
+            Future<network::DataBuffer> DataChannel::AsyncMessage(Request &req)
+            {
+                // Allocating 64 KB to decrease number of re-allocations.
+                enum { BUFFER_SIZE = 1024 * 64 };
+
+                interop::SP_InteropMemory mem(new interop::InteropUnpooledMemory(BUFFER_SIZE));
+
+                int64_t reqId = GenerateRequestMessage(req, *mem.Get());
+
+                common::concurrent::CsLockGuard lock1(responseMutex);
+                SP_PromiseDataBuffer& sp = responseMap[reqId];
+                if (!sp.IsValid())
+                    sp = SP_PromiseDataBuffer(new common::Promise<network::DataBuffer>());
+
+                Future<network::DataBuffer> future = sp.Get()->GetFuture();
+                lock1.Reset();
+
+                network::DataBuffer buffer(mem);
+                bool success = asyncPool.Get()->Send(id, buffer);
 
                 if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                                      "Can not receive message response from the remote host: timeout");
-            }
-
-            bool DataChannel::Send(const int8_t* data, size_t len, int32_t timeout)
-            {
-                if (socket.get() == 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
-
-                OperationResult::T res = SendAll(data, len, timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Can not send message due to connection failure");
-
-                return true;
-            }
-
-            DataChannel::OperationResult::T DataChannel::SendAll(const int8_t* data, size_t len, int32_t timeout)
-            {
-                int sent = 0;
-
-                while (sent != static_cast<int64_t>(len))
                 {
-                    int res = socket->Send(data + sent, len - sent, timeout);
+                    common::concurrent::CsLockGuard lock2(responseMutex);
 
-                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
+                    responseMap.erase(reqId);
+
+                    std::string msg = "Can not send message to remote host " + node.GetEndPoint().ToString();
+
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, msg.c_str());
+                }
+
+                return future;
+            }
+
+            void DataChannel::ProcessMessage(const network::DataBuffer& msg)
+            {
+                if (!handshakePerformed)
+                {
+                    OnHandshakeResponse(msg);
+                    return;
+                }
+
+                interop::InteropInputStream inStream(msg.GetInputStream());
+
+                inStream.Ignore(4);
+
+                int64_t rspId = inStream.ReadInt64();
+                int16_t flags = inStream.ReadInt16();
+
+                if (flags & Flag::NOTIFICATION)
+                {
+                    common::concurrent::CsLockGuard lock(handlerMutex);
+
+                    NotificationHandlerHolder& holder = handlerMap[rspId];
+                    holder.ProcessNotification(msg);
+
+                    if (holder.IsProcessingComplete())
+                        handlerMap.erase(rspId);
+                }
+                else
+                {
+                    common::concurrent::CsLockGuard lock(responseMutex);
+
+                    ResponseMap::iterator it = responseMap.find(rspId);
+                    if (it != responseMap.end())
                     {
-                        Close();
+                        common::Promise<network::DataBuffer>& rsp = *it->second.Get();
 
-                        return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
+                        rsp.SetValue(std::auto_ptr<network::DataBuffer>(new network::DataBuffer(msg.Clone())));
+
+                        responseMap.erase(rspId);
                     }
-
-                    sent += res;
                 }
-
-                assert(static_cast<size_t>(sent) == len);
-
-                return OperationResult::SUCCESS;
             }
 
-            bool DataChannel::Receive(interop::InteropMemory& msg, int32_t timeout)
+            void DataChannel::RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler)
             {
-                assert(msg.Capacity() > 4);
+                common::concurrent::CsLockGuard lock(handlerMutex);
 
-                if (socket.get() == 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "DataChannel is not established");
+                NotificationHandlerHolder& holder = handlerMap[notId];
+                holder.SetHandler(handler);
 
-                // Message size
-                msg.Length(4);
-
-                OperationResult::T res = ReceiveAll(msg.Data(), static_cast<size_t>(msg.Length()), timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Can not receive message header");
-
-                interop::InteropInputStream inStream(&msg);
-
-                int32_t msgLen = inStream.ReadInt32();
-
-                if (msgLen < 0)
-                {
-                    Close();
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Protocol error: Message length is negative");
-                }
-
-                if (msgLen == 0)
-                    return true;
-
-                if (msg.Capacity() < msgLen + 4)
-                    msg.Reallocate(msgLen + 4);
-
-                msg.Length(4 + msgLen);
-
-                res = ReceiveAll(msg.Data() + 4, msgLen, timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Connection failure: Can not receive message body");
-
-                return true;
+                if (holder.IsProcessingComplete())
+                    handlerMap.erase(notId);
             }
 
-            DataChannel::OperationResult::T DataChannel::ReceiveAll(void* dst, size_t len, int32_t timeout)
-            {
-                size_t remain = len;
-                int8_t* buffer = reinterpret_cast<int8_t*>(dst);
-
-                while (remain)
-                {
-                    size_t received = len - remain;
-
-                    int res = socket->Receive(buffer + received, remain, timeout);
-
-                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
-                    {
-                        Close();
-
-                        return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
-                    }
-
-                    remain -= static_cast<size_t>(res);
-                }
-
-                return OperationResult::SUCCESS;
-            }
-
-            bool DataChannel::MakeRequestHandshake(const ProtocolVersion& propVer,
-                ProtocolVersion& resVer, int32_t timeout)
+            bool DataChannel::DoHandshake(const ProtocolVersion& propVer)
             {
                 currentVersion = propVer;
 
-                resVer = ProtocolVersion();
-                bool accepted = false;
-
-                try
-                {
-                    // Workaround for some Linux systems that report connection on non-blocking
-                    // sockets as successful but fail to establish real connection.
-                    accepted = Handshake(propVer, resVer, timeout);
-                }
-                catch (const IgniteError&)
-                {
-                    return false;
-                }
-
-                if (!accepted)
-                    return false;
-
-                resVer = propVer;
-
-                return true;
+                return Handshake(propVer);
             }
 
-            bool DataChannel::Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer, int32_t timeout)
+            bool DataChannel::Handshake(const ProtocolVersion& propVer)
             {
-                // Allocating 4KB just in case.
-                enum { BUFFER_SIZE = 1024 * 4 };
+                // Allocating 4 KB just in case.
+                enum {
+                    BUFFER_SIZE = 1024 * 4
+                };
 
-                common::concurrent::CsLockGuard lock(ioMutex);
-
-                interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-                interop::InteropOutputStream outStream(&mem);
+                interop::SP_InteropMemory mem(new interop::InteropUnpooledMemory(BUFFER_SIZE));
+                interop::InteropOutputStream outStream(mem.Get());
                 binary::BinaryWriterImpl writer(&outStream, 0);
 
                 int32_t lenPos = outStream.Reserve(4);
@@ -297,10 +249,9 @@ namespace ignite
 
                 writer.WriteInt8(ClientType::THIN_CLIENT);
 
-                if (propVer >= VERSION_1_7_0)
-                {
+                if (propVer >= VERSION_1_7_0) {
                     // Use features for any new changes in protocol.
-                    int8_t features[] = { 0 };
+                    int8_t features[] = {0};
 
                     writer.WriteInt8Array(features, 0);
                 }
@@ -310,19 +261,17 @@ namespace ignite
 
                 outStream.WriteInt32(lenPos, outStream.Position() - 4);
 
-                bool success = Send(mem.Data(), outStream.Position(), timeout);
+                outStream.Synchronize();
 
-                if (!success)
-                    return false;
+                network::DataBuffer buffer(mem);
+                return asyncPool.Get()->Send(id, buffer);
+            }
 
-                success = Receive(mem, timeout);
+            void DataChannel::OnHandshakeResponse(const network::DataBuffer& msg)
+            {
+                interop::InteropInputStream inStream(msg.GetInputStream());
 
-                if (!success)
-                    return false;
-
-                interop::InteropInputStream inStream(&mem);
-
-                inStream.Position(4);
+                inStream.Ignore(4);
 
                 binary::BinaryReaderImpl reader(&inStream);
 
@@ -334,17 +283,33 @@ namespace ignite
                     int16_t minor = reader.ReadInt16();
                     int16_t maintenance = reader.ReadInt16();
 
-                    resVer = ProtocolVersion(major, minor, maintenance);
+                    ProtocolVersion resVer(major, minor, maintenance);
 
                     std::string error;
                     reader.ReadString(error);
 
-                    reader.ReadInt32();
+                    int32_t errorCode = reader.ReadInt32();
 
-                    return false;
+                    bool shouldRetry = IsVersionSupported(resVer) && resVer != currentVersion;
+                    if (shouldRetry)
+                        shouldRetry = DoHandshake(resVer);
+
+                    if (!shouldRetry)
+                    {
+                        std::stringstream ss;
+                        ss << errorCode << ": " << error;
+                        std::string newMsg = ss.str();
+
+                        IgniteError err(IgniteError::IGNITE_ERR_GENERIC, newMsg.c_str());
+
+                        if (!handshakePerformed)
+                            stateHandler.OnHandshakeError(id, err);
+                    }
+
+                    return;
                 }
 
-                if (propVer >= VERSION_1_7_0)
+                if (currentVersion >= VERSION_1_7_0)
                 {
                     int32_t len = reader.ReadInt8Array(0, 0);
                     std::vector<int8_t> features;
@@ -356,74 +321,39 @@ namespace ignite
                     }
                 }
 
-                if (propVer >= VERSION_1_4_0)
+                if (currentVersion >= VERSION_1_4_0)
                 {
                     Guid nodeGuid = reader.ReadGuid();
 
                     node.SetGuid(nodeGuid);
                 }
 
-                return true;
-            }
-
-            bool DataChannel::EnsureConnected(int32_t timeout)
-            {
-                if (socket.get() != 0)
-                    return true;
-
-                return TryRestoreConnection(timeout);
-            }
-
-            bool DataChannel::NegotiateProtocolVersion(int32_t timeout)
-            {
-                ProtocolVersion resVer;
-                ProtocolVersion propVer = VERSION_DEFAULT;
-
-                bool success = MakeRequestHandshake(propVer, resVer, timeout);
-
-                while (!success)
-                {
-                    if (resVer == propVer || !IsVersionSupported(resVer))
-                        return false;
-
-                    propVer = resVer;
-
-                    success = MakeRequestHandshake(propVer, resVer, timeout);
-                }
-
-                return true;
-            }
-
-            bool DataChannel::TryRestoreConnection(int32_t timeout)
-            {
-                bool connected = false;
-
-                const network::EndPoint& endPoint = node.GetEndPoint();
-
-                connected = socket->Connect(endPoint.host.c_str(), endPoint.port, timeout);
-
-                if (!connected)
-                {
-                    Close();
-
-                    return false;
-                }
-
-                connected = NegotiateProtocolVersion(timeout);
-
-                if (!connected)
-                {
-                    Close();
-
-                    return false;
-                }
-
-                return true;
+                handshakePerformed = true;
+                stateHandler.OnHandshakeSuccess(id);
             }
 
             bool DataChannel::IsVersionSupported(const ProtocolVersion& ver)
             {
                 return supportedVersions.find(ver) != supportedVersions.end();
+            }
+
+            void DataChannel::FailPendingRequests(const IgniteError* err)
+            {
+                IgniteError defaultErr(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection was closed");
+                if (!err)
+                    err = &defaultErr;
+
+                {
+                    common::concurrent::CsLockGuard lock(responseMutex);
+
+                    for (ResponseMap::iterator it = responseMap.begin(); it != responseMap.end(); ++it)
+                        it->second.Get()->SetError(*err);
+
+                    responseMap.clear();
+                }
+
+                if (!handshakePerformed)
+                    stateHandler.OnHandshakeError(id, *err);
             }
         }
     }

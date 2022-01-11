@@ -691,6 +691,49 @@ namespace ignite
                 /** State. */
                 bool state;
             };
+
+            /**
+             * Thread.
+             */
+            class IGNITE_IMPORT_EXPORT Thread
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Thread();
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Thread();
+
+                /**
+                 * Run thread.
+                 */
+                virtual void Run() = 0;
+
+                /**
+                 * Start thread.
+                 */
+                virtual void Start();
+
+                /**
+                 * Join thread.
+                 */
+                virtual void Join();
+
+            private:
+                /**
+                 * Routine.
+                 * @param lpParam Param.
+                 * @return Return code.
+                 */
+                static void* ThreadRoutine(void* arg);
+
+                /** Thread handle. */
+                pthread_t thread;
+            };
         }
     }
 }

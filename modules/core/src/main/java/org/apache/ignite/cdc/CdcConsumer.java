@@ -35,7 +35,7 @@ import org.apache.ignite.resources.LoggerResource;
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
  *
- * In case consumer implementation wants to user {@link IgniteLogger}, please, use, {@link LoggerResource} annotation:
+ * In case consumer implementation wants to use {@link IgniteLogger}, please, use, {@link LoggerResource} annotation:
  * <pre>
  * public class ChangeDataCaptureConsumer implements ChangeDataCaptureConsumer {
  *     &#64;LoggerResource

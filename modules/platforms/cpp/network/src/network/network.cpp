@@ -17,8 +17,15 @@
 
 #include "network/sockets.h"
 
+#ifdef WIN32
+#   include "network/win_async_client_pool.h"
+#else // Other. Assume Linux
+#   include "network/linux_async_client_pool.h"
+#endif
+
 #include <ignite/network/network.h>
 
+#include "network/async_client_pool_adapter.h"
 #include "network/ssl/ssl_gateway.h"
 #include "network/ssl/secure_socket_client.h"
 #include "network/tcp_socket_client.h"
@@ -34,11 +41,6 @@ namespace ignite
                 SslGateway::GetInstance().LoadAll();
             }
 
-            IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient()
-            {
-                return new TcpSocketClient;
-            }
-
             IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
                 const std::string& keyPath, const std::string& caPath)
             {
@@ -46,6 +48,24 @@ namespace ignite
 
                 return new SecureSocketClient(certPath, keyPath, caPath);
             }
+        }
+
+        IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient()
+        {
+            return new TcpSocketClient;
+        }
+
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool(const std::vector<SP_DataFilter>& filters)
+        {
+            SP_AsyncClientPool platformPool = SP_AsyncClientPool(
+#ifdef WIN32
+                new WinAsyncClientPool()
+#else // Other. Assume Linux
+                new LinuxAsyncClientPool()
+#endif
+            );
+
+            return SP_AsyncClientPool(new AsyncClientPoolAdapter(filters, platformPool));
         }
     }
 }
