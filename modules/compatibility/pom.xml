@@ -109,6 +109,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>${maven.model.version}</version>
+        </dependency>
+
         <!-- Note: when adding new Ignite module dependency please register it in
         org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest.getDependencies()
         method. This will allow to use original version dependency instead current code base. -->
