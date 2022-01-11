@@ -43,7 +43,7 @@ namespace ignite
                 namespace continuous
                 {
                     /**
-                     * Continuous query.
+                     * Continuous query client.
                      *
                      * Continuous query client allow to register a listener for cache update events. On any update to
                      * the related cache an event is sent to the client that has executed the query and listener is
@@ -84,11 +84,13 @@ namespace ignite
                          * @param lsnr Event listener. Invoked on the node where continuous query execution has been
                          * started.
                          */
-                        ContinuousQueryClient(Reference<event::CacheEntryEventListener<K, V> > lsnr)
-//                            impl(new impl::cache::query::continuous::ContinuousQueryClientImpl<K, V>(lsnr, false))
+                        explicit ContinuousQueryClient(Reference<event::CacheEntryEventListener<K, V> > lsnr) :
+                            bufferSize(DEFAULT_BUFFER_SIZE),
+                            timeInterval(DEFAULT_TIME_INTERVAL),
+                            includeExpired(false),
+                            listener(lsnr)
                         {
-                            //TODO: Implement me
-                            IGNITE_UNUSED(lsnr);
+                            // No-op.
                         }
 
                         /**
@@ -102,9 +104,7 @@ namespace ignite
                          */
                         void SetBufferSize(int32_t val)
                         {
-                            //TODO: Implement me
-                            IGNITE_UNUSED(val);
-//                            impl.Get()->SetBufferSize(val);
+                            bufferSize = val;
                         }
 
                         /**
@@ -118,9 +118,7 @@ namespace ignite
                          */
                         int32_t GetBufferSize() const
                         {
-                            //TODO: Implement me
-                            return 0;
-//                            return impl.Get()->GetBufferSize();
+                            return bufferSize;
                         }
 
                         /**
@@ -137,9 +135,7 @@ namespace ignite
                          */
                         void SetTimeInterval(int64_t val)
                         {
-                            //TODO: Implement me
-                            IGNITE_UNUSED(val);
-//                            impl.Get()->SetTimeInterval(val);
+                            timeInterval = val;
                         }
 
                         /**
@@ -156,9 +152,7 @@ namespace ignite
                          */
                         int64_t GetTimeInterval() const
                         {
-                            //TODO: Implement me
-                            return 0;
-//                            return impl.Get()->GetTimeInterval();
+                            return timeInterval;
                         }
 
                         /**
@@ -173,8 +167,7 @@ namespace ignite
                          */
                         void SetIncludeExpired(bool val)
                         {
-                            IGNITE_UNUSED(val);
-                            // TODO: Implement me.
+                            includeExpired = val;
                         }
 
                         /**
@@ -185,12 +178,11 @@ namespace ignite
                          *
                          * Defaults to @c false.
                          *
-                         * @param val Flag value.
+                         * @return Flag value.
                          */
                         bool GetIncludeExpired()
                         {
-                            // TODO: Implement me.
-                            return false;
+                            return includeExpired;
                         }
 
                         /**
@@ -202,9 +194,7 @@ namespace ignite
                          */
                         void SetListener(Reference<event::CacheEntryEventListener<K, V> > lsnr)
                         {
-                            //TODO: Implement me
-                            IGNITE_UNUSED(lsnr);
-//                            impl.Get()->SetListener(lsnr);
+                            listener = lsnr;
                         }
 
                         /**
@@ -214,10 +204,7 @@ namespace ignite
                          */
                         const event::CacheEntryEventListener<K, V>& GetListener() const
                         {
-                            //TODO: Implement me
-                            static event::CacheEntryEventListener<K, V> dummy;
-                            return dummy;
-//                            return impl.Get()->GetListener();
+                            return listener.Get();
                         }
 
                         /**
@@ -227,15 +214,21 @@ namespace ignite
                          */
                         event::CacheEntryEventListener<K, V>& GetListener()
                         {
-                            //TODO: Implement me
-                            static event::CacheEntryEventListener<K, V> dummy;
-                            return dummy;
-//                            return impl.Get()->GetListener();
+                            return listener.Get();
                         }
 
                     private:
-                        /** Implementation. */
-                        common::concurrent::SharedPointer<void> impl;
+                        /** Buffer size. */
+                        int32_t bufferSize;
+
+                        /** Time interval. */
+                        int64_t timeInterval;
+
+                        /** Include expired. */
+                        bool includeExpired;
+
+                        /** Listener. */
+                        Reference<event::CacheEntryEventListener<K, V> > listener;
                     };
                 }
             }
