@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
 
-            _persistenceEnabled = DoOutOp((int)CacheOp.PersistenceEnabled, 0) == True;
+            _persistenceEnabled = target.InLongOutLong((int)CacheOp.PersistenceEnabled, 0) == True;
 
             if (configuration.PlatformCacheConfiguration != null)
             {
