@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,17 +59,27 @@ public class H2QueryInfo {
     /** Prepared statement. */
     private final Prepared stmt;
 
+    /** Originator node uid. */
+    private final UUID nodeId;
+
+    /** Query id. */
+    private final long queryId;
+
     /**
      * @param type Query type.
      * @param stmt Query statement.
      * @param sql Query statement.
+     * @param nodeId Originator node id.
+     * @param queryId Query id.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
         try {
             assert stmt != null;
 
             this.type = type;
             this.sql = sql;
+            this.nodeId = nodeId;
+            this.queryId = queryId;
 
             beginTs = U.currentTimeMillis();
 
@@ -106,22 +119,24 @@ public class H2QueryInfo {
      * @param additionalInfo Additional query info.
      */
     public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
-        StringBuilder msgSb = new StringBuilder(msg + " [");
+        StringBuilder msgSb = new StringBuilder(msg);
+
+        if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
+            msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
+        else
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
 
         if (additionalInfo != null)
-            msgSb.append(additionalInfo).append(", ");
+            msgSb.append(", ").append(additionalInfo);
 
-        msgSb.append("duration=").append(time()).append("ms")
-            .append(", type=").append(type)
-            .append(", distributedJoin=").append(distributedJoin)
-            .append(", enforceJoinOrder=").append(enforceJoinOrder)
-            .append(", lazy=").append(lazy)
-            .append(", schema=").append(schema);
-
-        msgSb.append(", sql='")
-            .append(sql);
-
-        msgSb.append("', plan=").append(stmt.getPlanSQL());
+        msgSb.append(", duration=").append(time()).append("ms")
+                .append(", type=").append(type)
+                .append(", distributedJoin=").append(distributedJoin)
+                .append(", enforceJoinOrder=").append(enforceJoinOrder)
+                .append(", lazy=").append(lazy)
+                .append(", schema=").append(schema)
+                .append(", sql='").append(sql)
+                .append("', plan=").append(stmt.getPlanSQL());
 
         printInfo(msgSb);
 

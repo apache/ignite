@@ -22,6 +22,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/network/socket_client.h>
+#include <ignite/network/async_client_pool.h>
 
 namespace ignite
 {
@@ -40,11 +41,6 @@ namespace ignite
             IGNITE_IMPORT_EXPORT void EnsureSslLoaded();
 
             /**
-             * Make basic TCP socket.
-             */
-            IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient();
-
-            /**
              * Make secure socket for SSL/TLS connection.
              *
              * @param certPath Certificate file path.
@@ -56,6 +52,20 @@ namespace ignite
             IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
                 const std::string& keyPath, const std::string& caPath);
         }
+
+        /**
+         * Make basic TCP socket.
+         */
+        IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient();
+
+        /**
+         * Make asynchronous client pool.
+         *
+         * @param handler Event handler.
+         * @param filters Filters.
+         * @return Async client pool.
+         */
+        IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool(const std::vector<SP_DataFilter>& filters);
     }
 }
 

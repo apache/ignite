@@ -87,7 +87,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -1045,7 +1044,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param name Service name.
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
-     * @param callCtxProvider Caller context provider.
+     * @param callAttrsProvider Service call context attributes provider.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
@@ -1056,7 +1055,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         String name,
         Class<? super T> srvcCls,
         boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
         long timeout,
         boolean keepBinary
     ) throws IgniteException {
@@ -1068,7 +1067,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (ctx != null && !ctx.isStatisticsEnabled()) {
                 Service srvc = ctx.service();
 
-                if (srvc != null && callCtxProvider == null) {
+                if (srvc != null && callAttrsProvider == null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -1079,7 +1078,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider, keepBinary).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callAttrsProvider, keepBinary).proxy();
     }
 
     /**

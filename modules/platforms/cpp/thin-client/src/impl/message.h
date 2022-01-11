@@ -179,14 +179,38 @@ namespace ignite
             };
 
             /**
-             * Request.
-             *
-             * @tparam OpCode Operation code.
+             * Message flags.
              */
-            template<int32_t OpCode>
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+
+                    /** Server notification flag. */
+                    NOTIFICATION = 1 << 2
+                };
+            };
+
+            /**
+             * Request.
+             */
             class Request
             {
             public:
+                /**
+                 * Constructor.
+                 */
+                Request() :
+                    id(0)
+                {
+                    // No-op.
+                }
+
                 /**
                  * Destructor.
                  */
@@ -200,10 +224,7 @@ namespace ignite
                  *
                  * @return Operation code.
                  */
-                static int32_t GetOperationCode()
-                {
-                    return OpCode;
-                }
+                virtual int16_t GetOperationCode() const = 0;
 
                 /**
                  * Write request using provided writer.
@@ -214,12 +235,64 @@ namespace ignite
                 {
                     // No-op.
                 }
+
+                /**
+                 * Set request ID.
+                 *
+                 * @param id ID.
+                 */
+                void SetId(int64_t id)
+                {
+                    this->id = id;
+                }
+
+                /**
+                 * Get request ID.
+                 *
+                 * @return ID.
+                 */
+                int64_t GetId() const
+                {
+                    return id;
+                }
+
+            private:
+                /** Request ID. Only set when request is sent. */
+                int64_t id;
+            };
+
+            /**
+             * Request adapter.
+             *
+             * @tparam OpCode Operation code.
+             */
+            template<int16_t OpCode>
+            class RequestAdapter : public Request
+            {
+            public:
+                /**
+                 * Destructor.
+                 */
+                virtual ~RequestAdapter()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get operation code.
+                 *
+                 * @return Operation code.
+                 */
+                virtual int16_t GetOperationCode() const
+                {
+                    return OpCode;
+                }
             };
 
             /**
              * Cache partitions request.
              */
-            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            class CachePartitionsRequest : public RequestAdapter<RequestType::CACHE_PARTITIONS>
             {
             public:
                 /**
@@ -251,7 +324,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class GetOrCreateCacheWithNameRequest : public Request<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
+            class GetOrCreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -284,7 +357,7 @@ namespace ignite
             /**
              * Get or create cache request.
              */
-            class CreateCacheWithNameRequest : public Request<RequestType::CACHE_CREATE_WITH_NAME>
+            class CreateCacheWithNameRequest : public RequestAdapter<RequestType::CACHE_CREATE_WITH_NAME>
             {
             public:
                 /**
@@ -317,7 +390,7 @@ namespace ignite
             /**
              * Destroy cache request.
              */
-            class DestroyCacheRequest : public Request<RequestType::CACHE_DESTROY>
+            class DestroyCacheRequest : public RequestAdapter<RequestType::CACHE_DESTROY>
             {
             public:
                 /**
@@ -357,7 +430,7 @@ namespace ignite
              * Request to cache.
              */
             template<int32_t OpCode>
-            class CacheRequest : public Request<OpCode>
+            class CacheRequest : public RequestAdapter<OpCode>
             {
             public:
                 /**
@@ -625,7 +698,7 @@ namespace ignite
             /**
              * Tx start request.
              */
-            class TxStartRequest : public Request<RequestType::OP_TX_START>
+            class TxStartRequest : public RequestAdapter<RequestType::OP_TX_START>
             {
             public:
                 /**
@@ -682,7 +755,7 @@ namespace ignite
             /**
              * Tx end request.
              */
-            class TxEndRequest : public Request<RequestType::OP_TX_END>
+            class TxEndRequest : public RequestAdapter<RequestType::OP_TX_END>
             {
             public:
                 /**
@@ -727,7 +800,7 @@ namespace ignite
             /**
              * Cache get binary type request.
              */
-            class BinaryTypeGetRequest : public Request<RequestType::GET_BINARY_TYPE>
+            class BinaryTypeGetRequest : public RequestAdapter<RequestType::GET_BINARY_TYPE>
             {
             public:
                 /**
@@ -764,7 +837,7 @@ namespace ignite
             /**
              * Cache put binary type request.
              */
-            class BinaryTypePutRequest : public Request<RequestType::PUT_BINARY_TYPE>
+            class BinaryTypePutRequest : public RequestAdapter<RequestType::PUT_BINARY_TYPE>
             {
             public:
                 /**
@@ -835,7 +908,7 @@ namespace ignite
             /**
              * Cache SQL fields cursor get page request.
              */
-            class SqlFieldsCursorGetPageRequest : public Request<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            class SqlFieldsCursorGetPageRequest : public RequestAdapter<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
             {
             public:
                 /**
@@ -872,7 +945,7 @@ namespace ignite
             /**
              * Compute task execute request.
              */
-            class ComputeTaskExecuteRequest : public Request<RequestType::COMPUTE_TASK_EXECUTE>
+            class ComputeTaskExecuteRequest : public RequestAdapter<RequestType::COMPUTE_TASK_EXECUTE>
             {
             public:
                 /**
