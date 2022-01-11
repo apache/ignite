@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     /// <summary>
     /// Tests platform cache with native persistence.
     /// </summary>
-    public class PlatformCacheRestoreFromPersistenceTest
+    public class PlatformCacheWithPersistenceTest
     {
         /** Cache name. */
         private const string CacheName = "persistentCache";
