@@ -1792,14 +1792,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param ioFactory Factory to create IO interface over a page stores.
      */
-    void ioFactory(FileIOFactory ioFactory) {
+    public void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }
 
     /**
      * @return Factory to create IO interface over a page stores.
      */
-    FileIOFactory ioFactory() {
+    public FileIOFactory ioFactory() {
         return ioFactory;
     }
 

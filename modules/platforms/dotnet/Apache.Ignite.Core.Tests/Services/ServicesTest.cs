@@ -320,6 +320,13 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployClusterSingleton(SvcName, svc);
 
+            // Check proxy creation with an invalid implementation.
+            Assert.Throws<ArgumentException>(() => 
+                Grid1.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, new CustomServiceCallContext()));
+
+            Assert.Throws<ArgumentException>(() => 
+                Grid1.GetServices().GetDynamicServiceProxy(SvcName, false, new CustomServiceCallContext()));
+
             foreach (var grid in Grids)
             {
                 var nodeId = grid.GetCluster().ForLocal().GetNode().Id;
@@ -1911,6 +1918,24 @@ namespace Apache.Ignite.Core.Tests.Services
             public TestServiceException(string message, Exception cause) : base(message, cause)
             {
                 // No-op.
+            }
+        }
+
+        /// <summary>
+        /// Custom implementation of the service call context.
+        /// </summary>
+        private class CustomServiceCallContext : IServiceCallContext
+        {
+            /** <inheritdoc /> */
+            public string GetAttribute(string name)
+            {
+                return null;
+            }
+
+            /** <inheritdoc /> */
+            public byte[] GetBinaryAttribute(string name)
+            {
+                return null;
             }
         }
 
