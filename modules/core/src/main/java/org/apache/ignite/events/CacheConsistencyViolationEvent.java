@@ -131,7 +131,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     }
 
     /**
-     * Resurns strategy.
+     * Returns strategy.
      *
      * @return Strategy.
      */
