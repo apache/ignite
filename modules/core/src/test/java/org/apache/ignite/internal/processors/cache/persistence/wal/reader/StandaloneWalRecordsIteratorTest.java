@@ -167,8 +167,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        while (iter.hasNext())
-            cnt += iter.next().get2().type() == SNAPSHOT ? 1 : 0;
+        while (iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = iter.next();
+
+            cnt += next.get2().type() == SNAPSHOT ? 1 : 0;
+
+            assertEquals("Last read should point to the current record", next.get1(), iter.lastRead().get());
+        }
 
         iter.close();
 
@@ -192,7 +197,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         int cnt = prev.get2().type() == SNAPSHOT ? 1 : 0;
 
-        assertEquals("Last read should point to the curretn record", prev.get1(), iter.lastRead().get());
+        assertEquals("Last read should point to the current record", prev.get1(), iter.lastRead().get());
 
         iter.close();
 
