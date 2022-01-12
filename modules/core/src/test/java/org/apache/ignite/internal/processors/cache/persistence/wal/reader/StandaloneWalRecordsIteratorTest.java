@@ -93,7 +93,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /** */
+    /**
+     *
+     */
     private String createWalFiles() throws Exception {
         return createWalFiles(1);
     }
@@ -160,9 +162,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         while (iter.hasNext())
             iter.next();
 
-        iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+        iter.close();
+
+        iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
 
         assertFalse(iter.hasNext());
+
+        iter.close();
     }
 
     /** */
@@ -174,22 +180,30 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         IgniteBiTuple<WALPointer, WALRecord> prev = iter.next();
 
-        iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+        assertEquals("Last read should point to the curretn record", prev.get1(), iter.lastRead().get());
+
+        iter.close();
+
+        iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
 
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> cur = iter.next();
+
+            assertEquals("Last read should point to the current record", cur.get1(), iter.lastRead().get());
 
             assertFalse(
                 "Should read next record[prev=" + prev.get1() + ", cur=" + cur.get1() + ']',
                 prev.get1().equals(cur.get1())
             );
 
-            assertFalse(prev.get1().equals(iter.lastRead().get()));
-
             prev = cur;
 
-            iter = createWalIterator(dir, iter.lastRead().get(), null, false);
+            iter.close();
+
+            iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
         }
+
+        iter.close();
     }
 
     /**
