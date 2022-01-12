@@ -18,8 +18,8 @@
 package org.apache.ignite.compatibility.testframework.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,18 +30,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.Repository;
+import org.apache.maven.model.RepositoryBase;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -167,22 +164,18 @@ public class MavenUtils {
         if (!prjPomFile.exists())
             return Collections.emptyList();
 
-        String out = exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom");
+        Path outPath = Files.createTempFile("effective-pom", "");
 
-        Matcher startTagMatcher = Pattern.compile("<project>|<project .*>").matcher(out);
+        try {
+            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
 
-        String endTag = "</project>";
+            Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
 
-        int endTagPos = out.indexOf(endTag);
-
-        if (!startTagMatcher.find() || endTagPos < 0)
-            throw new IgniteException("Failed to parse help:effective-pom plugin output.");
-
-        Model model = new MavenXpp3Reader().read(new StringReader(
-            out.substring(startTagMatcher.start(), endTagPos + endTag.length())
-        ));
-
-        return model.getRepositories().stream().map(Repository::getUrl).collect(Collectors.toList());
+            return F.transform(model.getRepositories(), RepositoryBase::getUrl);
+        }
+        finally {
+            Files.deleteIfExists(outPath);
+        }
     }
 
     /**
