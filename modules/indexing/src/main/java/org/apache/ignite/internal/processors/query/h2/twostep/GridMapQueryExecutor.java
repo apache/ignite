@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -242,8 +241,8 @@ public class GridMapQueryExecutor {
 
                 Span span = MTC.span();
 
-                ctx.closure().callLocal(
-                    (GridPlainCallable<Void>)() -> {
+                ctx.closure().runLocal(
+                    () -> {
                         try (TraceSurroundings ignored = MTC.supportContinual(span)) {
                             onQueryRequest0(node,
                                 req.queryId(),
@@ -266,8 +265,9 @@ public class GridMapQueryExecutor {
                                 dataPageScanEnabled,
                                 treatReplicatedAsPartitioned
                             );
-
-                            return null;
+                        }
+                        catch (Throwable e) {
+                            sendError(node, req.requestId(), e);
                         }
                     },
                     QUERY_POOL);
@@ -566,12 +566,15 @@ public class GridMapQueryExecutor {
                         if (qryRetryErr != null)
                             sendError(node, reqId, qryRetryErr);
                         else {
-                            U.error(log, "Failed to execute local query.", e);
+                            if (e instanceof Error) {
+                                U.error(log, "Failed to execute local query.", e);
+
+                                throw (Error)e;
+                            }
+
+                            U.warn(log, "Failed to execute local query.", e);
 
                             sendError(node, reqId, e);
-
-                            if (e instanceof Error)
-                                throw (Error)e;
                         }
                     }
                 }
