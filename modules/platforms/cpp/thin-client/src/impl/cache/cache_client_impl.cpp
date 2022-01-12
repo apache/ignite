@@ -51,11 +51,13 @@ namespace ignite
 
                 CacheClientImpl::~CacheClientImpl()
                 {
-                    // No-op.
+                    DataRouter* router0 = router.Get();
+                    if (router0)
+                        router0->Close();
                 }
 
                 template<typename ReqT, typename RspT>
-                void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp)
+                void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, ReqT& req, RspT& rsp)
                 {
                     DataRouter& router0 = *router.Get();
 
@@ -91,7 +93,7 @@ namespace ignite
                 }
 
                 template<typename ReqT, typename RspT>
-                SP_DataChannel CacheClientImpl::SyncMessage(const ReqT& req, RspT& rsp)
+                SP_DataChannel CacheClientImpl::SyncMessage(ReqT& req, RspT& rsp)
                 {
                     SP_DataChannel channel = router.Get()->SyncMessage(req, rsp);
 
@@ -102,7 +104,7 @@ namespace ignite
                 }
 
                 template<typename ReqT, typename RspT>
-                SP_DataChannel CacheClientImpl::SyncMessageSql(const ReqT& req, RspT& rsp)
+                SP_DataChannel CacheClientImpl::SyncMessageSql(ReqT& req, RspT& rsp)
                 {
                     SP_DataChannel channel;
                     try {

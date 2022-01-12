@@ -758,7 +758,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             CacheObject val;
 
-            boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
+            AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
+            boolean valid = valid(topVer);
 
             if (valid) {
                 val = this.val;
@@ -768,6 +769,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         unswap(null, false);
 
                         val = this.val;
+
+                        if (val != null && tx == null)
+                            updatePlatformCache(val, topVer);
                     }
                 }
 
