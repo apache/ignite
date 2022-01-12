@@ -78,7 +78,6 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <jackson.version>2.12.4</jackson.version>
-        <jackson1.version>1.9.13</jackson1.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.20.0-GA</javassist.version>
