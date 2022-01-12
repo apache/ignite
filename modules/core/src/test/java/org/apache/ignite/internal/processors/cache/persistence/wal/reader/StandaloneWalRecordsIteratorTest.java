@@ -231,6 +231,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         while (iter.hasNext())
             lastRec = iter.next();
 
+        iter.close();
+
         assertNotNull(lastRec);
 
         WALPointer lastPointer = iter.lastRead().get();
@@ -247,6 +249,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
             assertTrue(lastRec.get2().type() != lastRecType);
         }
+
+        iter.close();
 
         assertNotNull(lastRec);
 
