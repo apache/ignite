@@ -26,43 +26,45 @@ namespace ignite
     {
         namespace bits
         {
+            int32_t NumberOfTrailingZerosU32(uint32_t i) {
+                // See https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
+                // for details.
+                int32_t c = 32;
+                if (!i)
+                    return c;
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4146)
+#endif
+                i &= -i;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+                if (i)
+                    c--;
+
+                if (i & 0x0000FFFF)
+                    c -= 16;
+
+                if (i & 0x00FF00FF)
+                    c -= 8;
+
+                if (i & 0x0F0F0F0F)
+                    c -= 4;
+
+                if (i & 0x33333333)
+                    c -= 2;
+
+                if (i & 0x55555555)
+                    c -= 1;
+
+                return c;
+            }
+
             int32_t NumberOfTrailingZerosI32(int32_t i)
             {
-                int32_t y;
-
-                if (i == 0) return 32;
-
-                int32_t n = 31;
-
-                y = i << 16;
-
-                if (y != 0) {
-                    n = n - 16;
-                    i = y;
-                }
-
-                y = i << 8; 
-
-                if (y != 0) {
-                    n = n - 8;
-                    i = y;
-                }
-
-                y = i << 4;
-
-                if (y != 0) {
-                    n = n - 4;
-                    i = y;
-                }
-
-                y = i << 2;
-
-                if (y != 0) {
-                    n = n - 2;
-                    i = y;
-                }
-
-                return n - static_cast<int32_t>(static_cast<uint32_t>(i << 1) >> 31);
+                return NumberOfTrailingZerosU32(static_cast<uint32_t>(i));
             }
 
             int32_t NumberOfLeadingZerosI32(int32_t i)
@@ -139,7 +141,7 @@ namespace ignite
                     x <<= 2;
                 }
 
-                n -= x >> 31;
+                n -= static_cast<int32_t>(x >> 31);
 
                 return n;
             }

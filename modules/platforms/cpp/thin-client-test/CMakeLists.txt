@@ -56,5 +56,7 @@ set(TEST_TARGET IgniteThinClientTest)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} --catch_system_errors=no --log_level=all)
 
-set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
-        IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
+string(CONCAT ENV_VARIABLES "ASAN_OPTIONS=handle_segv=0:detect_leaks=0;UBSAN_OPTIONS=print_stacktrace=1;"
+        "IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config")
+
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT "${ENV_VARIABLES}")

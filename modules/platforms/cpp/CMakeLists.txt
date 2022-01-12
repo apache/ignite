@@ -55,6 +55,11 @@ option (WITH_ODBC_MSI "Build Ignite.C++ ODBC driver installer for Windows" OFF)
 option (WITH_THIN_CLIENT "Build Ignite.C++ Thin Client module" OFF)
 option (WITH_TESTS "Build Ignite.C++ tests" OFF)
 option (WARNINGS_AS_ERRORS "Treat warning as errors" OFF)
+option (WITH_SANITIZERS "Build with sanitizers" OFF)
+
+if (${WITH_SANITIZERS} AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fno-sanitize-recover=all -g")
+endif()
 
 if (${WITH_CORE} OR ${WITH_TESTS})
     find_package(Java 1.8 REQUIRED)
