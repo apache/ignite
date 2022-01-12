@@ -53,6 +53,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -234,8 +235,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
-        if (strategy == null)
-            throw new IllegalArgumentException("Read Repair strategy should be specified.");
+        A.notNull(strategy, "Read Repair strategy should be specified.");
 
         CacheOperationGate opGate = onEnter();
 
