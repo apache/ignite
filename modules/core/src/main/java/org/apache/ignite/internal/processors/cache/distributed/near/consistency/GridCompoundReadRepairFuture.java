@@ -59,8 +59,8 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
 
         if (e != null) {
             if (e instanceof IgniteIrreparableConsistencyViolationException) {
-                Collection<?> keys = ((IgniteIrreparableConsistencyViolationException)e).repairableKeys();
-                Collection<?> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
+                Collection<Object> keys = ((IgniteIrreparableConsistencyViolationException)e).repairableKeys();
+                Collection<Object> irreparableKeys = ((IgniteIrreparableConsistencyViolationException)e).irreparableKeys();
 
                 assert keys.isEmpty() : keys.size();
                 assert irreparableKeys.size() == 1 : irreparableKeys.size(); // Single key fix.
