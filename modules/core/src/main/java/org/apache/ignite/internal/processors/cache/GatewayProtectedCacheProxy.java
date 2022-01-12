@@ -235,7 +235,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
-        A.notNull(strategy, "Read Repair strategy should be specified.");
+        A.notNull(strategy, "strategy");
 
         CacheOperationGate opGate = onEnter();
 
