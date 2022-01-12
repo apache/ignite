@@ -810,6 +810,7 @@ public class PlannerTest extends AbstractPlannerTest {
         assertEquals(3, plan.fragments().size());
     }
 
+    /** Multiple join test. */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-16046")
     public void testMultipleJoin() throws Exception {
@@ -869,7 +870,8 @@ public class PlannerTest extends AbstractPlannerTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4 ON T4.C = T3.C AND T4.A = T1.A";
+        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4 ON " +
+            "T4.C = T3.C AND T4.A = T1.A";
 
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(BaseQueryContext.builder()
@@ -1403,118 +1405,6 @@ public class PlannerTest extends AbstractPlannerTest {
                 sql,
                 publicSchema
             );
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
-    }
-
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16046")
-    public void testMultipleJoin() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("B", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-
-        TestTable t2 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-
-        TestTable t3 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("B", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t4 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T1", t1);
-        publicSchema.addTable("T2", t2);
-        publicSchema.addTable("T3", t3);
-        publicSchema.addTable("T4", t4);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4 ON T4.C = T3.C AND T4.A = T1.A";
-
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .costFactory(new IgniteCostFactory(1, 100, 1, 1))
-                    .build())
-                .logger(log)
-                .build()
-            )
-            .query(sql)
-            .build();
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            assertNotNull(rel);
-
-            // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .replace(CorrelationTrait.UNCORRELATED)
-                .simplify();
-
-            IgniteRel phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            assertNotNull(phys);
 
             checkSplitAndSerialization(phys, publicSchema);
         }
