@@ -20,7 +20,6 @@ package org.apache.ignite.client.handler.requests.sql;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
-import org.apache.ignite.client.proto.query.event.QueryExecuteResult;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 
@@ -34,7 +33,7 @@ public class ClientSqlExecuteRequest {
      * @param in      Client message unpacker.
      * @param out     Client message packer.
      * @param handler Query event handler.
-     * @return null value indicates synchronous operation.
+     * @return Operation future.
      */
     public static CompletableFuture<Void> execute(
             ClientMessageUnpacker in,
@@ -45,10 +44,6 @@ public class ClientSqlExecuteRequest {
 
         req.readBinary(in);
 
-        QueryExecuteResult res = handler.query(req);
-
-        res.writeBinary(out);
-
-        return null;
+        return handler.queryAsync(req).thenAccept(res -> res.writeBinary(out));
     }
 }

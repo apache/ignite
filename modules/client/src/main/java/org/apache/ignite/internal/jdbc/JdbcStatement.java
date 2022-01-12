@@ -130,7 +130,7 @@ public class JdbcStatement implements Statement {
         QueryExecuteRequest req = new QueryExecuteRequest(schema, pageSize, maxRows, sql,
                 args == null ? ArrayUtils.OBJECT_EMPTY_ARRAY : args.toArray());
 
-        QueryExecuteResult res = conn.handler().query(req);
+        QueryExecuteResult res = conn.handler().queryAsync(req).join();
 
         if (!res.hasResults()) {
             throw IgniteQueryErrorCode.createJdbcSqlException(res.err(), res.status());
@@ -547,7 +547,7 @@ public class JdbcStatement implements Statement {
         BatchExecuteRequest req = new BatchExecuteRequest(conn.getSchema(), batch, conn.getAutoCommit());
 
         try {
-            BatchExecuteResult res = conn.handler().batch(req);
+            BatchExecuteResult res = conn.handler().batchAsync(req).join();
 
             if (!res.hasResults()) {
                 throw new BatchUpdateException(res.err(),

@@ -22,8 +22,8 @@ import static org.apache.ignite.client.proto.query.IgniteQueryErrorCode.UNSUPPOR
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -40,9 +40,7 @@ import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasRequest;
 import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
-import org.apache.ignite.client.proto.query.event.JdbcPrimaryKeyMeta;
 import org.apache.ignite.client.proto.query.event.JdbcQueryMetadataRequest;
-import org.apache.ignite.client.proto.query.event.JdbcTableMeta;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
@@ -87,10 +85,10 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
 
     /** {@inheritDoc} */
     @Override
-    public QueryExecuteResult query(QueryExecuteRequest req) {
+    public CompletableFuture<QueryExecuteResult> queryAsync(QueryExecuteRequest req) {
         if (req.pageSize() <= 0) {
-            return new QueryExecuteResult(Response.STATUS_FAILED,
-                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
+            return CompletableFuture.completedFuture(new QueryExecuteResult(Response.STATUS_FAILED,
+                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']'));
         }
 
         List<SqlCursor<List<?>>> cursors;
@@ -99,13 +97,13 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         } catch (Exception e) {
             StringWriter sw = getWriterWithStackTrace(e);
 
-            return new QueryExecuteResult(Response.STATUS_FAILED,
-                    "Exception while executing query " + req.sqlQuery() + ". Error message: " + sw);
+            return CompletableFuture.completedFuture(new QueryExecuteResult(Response.STATUS_FAILED,
+                    "Exception while executing query " + req.sqlQuery() + ". Error message: " + sw));
         }
 
         if (cursors.isEmpty()) {
-            return new QueryExecuteResult(Response.STATUS_FAILED,
-                    "At least one cursor is expected for query " + req.sqlQuery());
+            return CompletableFuture.completedFuture(new QueryExecuteResult(Response.STATUS_FAILED,
+                    "At least one cursor is expected for query " + req.sqlQuery()));
         }
 
         List<QuerySingleResult> results = new ArrayList<>();
@@ -118,26 +116,26 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
 
-            return new QueryExecuteResult(Response.STATUS_FAILED,
-                    "Failed to fetch results for query " + req.sqlQuery() + ". Error message: " + sw);
+            return CompletableFuture.completedFuture(new QueryExecuteResult(Response.STATUS_FAILED,
+                    "Failed to fetch results for query " + req.sqlQuery() + ". Error message: " + sw));
         }
 
-        return new QueryExecuteResult(results);
+        return CompletableFuture.completedFuture(new QueryExecuteResult(results));
     }
 
     /** {@inheritDoc} */
     @Override
-    public QueryFetchResult fetch(QueryFetchRequest req) {
+    public CompletableFuture<QueryFetchResult> fetchAsync(QueryFetchRequest req) {
         Cursor<List<?>> cur = openCursors.get(req.cursorId());
 
         if (cur == null) {
-            return new QueryFetchResult(Response.STATUS_FAILED,
-                    "Failed to find query cursor with ID: " + req.cursorId());
+            return CompletableFuture.completedFuture(new QueryFetchResult(Response.STATUS_FAILED,
+                    "Failed to find query cursor with ID: " + req.cursorId()));
         }
 
         if (req.pageSize() <= 0) {
-            return new QueryFetchResult(Response.STATUS_FAILED,
-                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
+            return CompletableFuture.completedFuture(new QueryFetchResult(Response.STATUS_FAILED,
+                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']'));
         }
 
         List<List<Object>> fetch;
@@ -149,28 +147,28 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
 
-            return new QueryFetchResult(Response.STATUS_FAILED,
-                    "Failed to fetch results for cursor id " + req.cursorId() + ". Error message: " + sw);
+            return CompletableFuture.completedFuture(new QueryFetchResult(Response.STATUS_FAILED,
+                    "Failed to fetch results for cursor id " + req.cursorId() + ". Error message: " + sw));
         }
 
-        return new QueryFetchResult(fetch, hasNext);
+        return CompletableFuture.completedFuture(new QueryFetchResult(fetch, hasNext));
     }
 
     /** {@inheritDoc} */
     @Override
-    public BatchExecuteResult batch(BatchExecuteRequest req) {
-        return new BatchExecuteResult(UNSUPPORTED_OPERATION,
-                "ExecuteBatch operation is not implemented yet.");
+    public CompletableFuture<BatchExecuteResult> batchAsync(BatchExecuteRequest req) {
+        return CompletableFuture.completedFuture(new BatchExecuteResult(UNSUPPORTED_OPERATION,
+                "ExecuteBatch operation is not implemented yet."));
     }
 
     /** {@inheritDoc} */
     @Override
-    public QueryCloseResult close(QueryCloseRequest req) {
+    public CompletableFuture<QueryCloseResult> closeAsync(QueryCloseRequest req) {
         Cursor<List<?>> cur = openCursors.remove(req.cursorId());
 
         if (cur == null) {
-            return new QueryCloseResult(Response.STATUS_FAILED,
-                    "Failed to find query cursor with ID: " + req.cursorId());
+            return CompletableFuture.completedFuture(new QueryCloseResult(Response.STATUS_FAILED,
+                    "Failed to find query cursor with ID: " + req.cursorId()));
         }
 
         try {
@@ -178,35 +176,35 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         } catch (Exception ex) {
             StringWriter sw = getWriterWithStackTrace(ex);
 
-            return new QueryCloseResult(Response.STATUS_FAILED,
-                    "Failed to close SQL query [curId=" + req.cursorId() + "]. Error message: " + sw);
+            return CompletableFuture.completedFuture(new QueryCloseResult(Response.STATUS_FAILED,
+                    "Failed to close SQL query [curId=" + req.cursorId() + "]. Error message: " + sw));
         }
 
-        return new QueryCloseResult();
+        return CompletableFuture.completedFuture(new QueryCloseResult());
     }
 
     /** {@inheritDoc} */
     @Override
-    public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
+    public CompletableFuture<JdbcMetaColumnsResult> queryMetadataAsync(JdbcQueryMetadataRequest req) {
         SqlCursor<List<?>> cur = openCursors.get(req.cursorId());
 
         if (cur == null) {
-            return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
-                    "Failed to find query cursor with ID: " + req.cursorId());
+            return CompletableFuture.completedFuture(new JdbcMetaColumnsResult(Response.STATUS_FAILED,
+                    "Failed to find query cursor with ID: " + req.cursorId()));
         }
 
         ResultSetMetadata metadata = cur.metadata();
 
         if (metadata == null) {
-            return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
-                    "Failed to get query metadata for cursor with ID : " + req.cursorId());
+            return CompletableFuture.completedFuture(new JdbcMetaColumnsResult(Response.STATUS_FAILED,
+                    "Failed to get query metadata for cursor with ID : " + req.cursorId()));
         }
 
         List<JdbcColumnMeta> meta = metadata.fields().stream()
                 .map(this::createColumnMetadata)
                 .collect(Collectors.toList());
 
-        return new JdbcMetaColumnsResult(meta);
+        return CompletableFuture.completedFuture(new JdbcMetaColumnsResult(meta));
     }
 
     /**
@@ -236,34 +234,26 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
 
     /** {@inheritDoc} */
     @Override
-    public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
-        List<JdbcTableMeta> tblsMeta = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
-
-        return new JdbcMetaTablesResult(tblsMeta);
+    public CompletableFuture<JdbcMetaTablesResult> tablesMetaAsync(JdbcMetaTablesRequest req) {
+        return meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes()).thenApply(JdbcMetaTablesResult::new);
     }
 
     /** {@inheritDoc} */
     @Override
-    public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
-        Collection<JdbcColumnMeta> tblsMeta = meta.getColumnsMeta(req.schemaName(), req.tableName(), req.columnName());
-
-        return new JdbcMetaColumnsResult(tblsMeta);
+    public CompletableFuture<JdbcMetaColumnsResult> columnsMetaAsync(JdbcMetaColumnsRequest req) {
+        return meta.getColumnsMeta(req.schemaName(), req.tableName(), req.columnName()).thenApply(JdbcMetaColumnsResult::new);
     }
 
     /** {@inheritDoc} */
     @Override
-    public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
-        Collection<String> tblsMeta = meta.getSchemasMeta(req.schemaName());
-
-        return new JdbcMetaSchemasResult(tblsMeta);
+    public CompletableFuture<JdbcMetaSchemasResult> schemasMetaAsync(JdbcMetaSchemasRequest req) {
+        return meta.getSchemasMeta(req.schemaName()).thenApply(JdbcMetaSchemasResult::new);
     }
 
     /** {@inheritDoc} */
     @Override
-    public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
-        Collection<JdbcPrimaryKeyMeta> tblsMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
-
-        return new JdbcMetaPrimaryKeysResult(tblsMeta);
+    public CompletableFuture<JdbcMetaPrimaryKeysResult> primaryKeysMetaAsync(JdbcMetaPrimaryKeysRequest req) {
+        return meta.getPrimaryKeys(req.schemaName(), req.tableName()).thenApply(JdbcMetaPrimaryKeysResult::new);
     }
 
     /**

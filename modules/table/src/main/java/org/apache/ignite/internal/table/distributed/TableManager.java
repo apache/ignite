@@ -998,33 +998,35 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @return Future representing pending completion of the operation.
      */
     private CompletableFuture<List<Table>> tablesAsyncInternal() {
-        List<IgniteUuid> tableIds = directTableIds();
+        // TODO: IGNITE-16288 directTableIds should use async configuration API
+        return CompletableFuture.supplyAsync(this::directTableIds)
+                .thenCompose(tableIds -> {
+                    var tableFuts = new CompletableFuture[tableIds.size()];
 
-        var tableFuts = new CompletableFuture[tableIds.size()];
+                    var i = 0;
 
-        var i = 0;
-
-        for (IgniteUuid tblId : tableIds) {
-            tableFuts[i++] = tableAsyncInternal(tblId, false);
-        }
-
-        return CompletableFuture.allOf(tableFuts).thenApply(unused -> {
-            var tables = new ArrayList<Table>(tableIds.size());
-
-            try {
-                for (var fut : tableFuts) {
-                    var table = fut.get();
-
-                    if (table != null) {
-                        tables.add((Table) table);
+                    for (IgniteUuid tblId : tableIds) {
+                        tableFuts[i++] = tableAsyncInternal(tblId, false);
                     }
-                }
-            } catch (Throwable t) {
-                throw new CompletionException(t);
-            }
 
-            return tables;
-        });
+                    return CompletableFuture.allOf(tableFuts).thenApply(unused -> {
+                        var tables = new ArrayList<Table>(tableIds.size());
+
+                        try {
+                            for (var fut : tableFuts) {
+                                var table = fut.get();
+
+                                if (table != null) {
+                                    tables.add((Table) table);
+                                }
+                            }
+                        } catch (Throwable t) {
+                            throw new CompletionException(t);
+                        }
+
+                        return tables;
+                    });
+                });
     }
 
     /**

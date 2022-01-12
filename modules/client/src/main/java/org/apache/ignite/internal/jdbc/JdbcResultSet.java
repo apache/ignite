@@ -207,7 +207,7 @@ public class JdbcResultSet implements ResultSet {
         ensureNotClosed();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            QueryFetchResult res = qryHandler.fetch(new QueryFetchRequest(cursorId, fetchSize));
+            QueryFetchResult res = qryHandler.fetchAsync(new QueryFetchRequest(cursorId, fetchSize)).join();
 
             if (!res.hasResults()) {
                 throw IgniteQueryErrorCode.createJdbcSqlException(res.err(), res.status());
@@ -259,7 +259,7 @@ public class JdbcResultSet implements ResultSet {
 
         try {
             if (stmt != null && (!finished || (isQuery && !autoClose))) {
-                QueryCloseResult res = qryHandler.close(new QueryCloseRequest(cursorId));
+                QueryCloseResult res = qryHandler.closeAsync(new QueryCloseRequest(cursorId)).join();
 
                 if (!res.hasResults()) {
                     throw IgniteQueryErrorCode.createJdbcSqlException(res.err(), res.status());
@@ -2186,7 +2186,7 @@ public class JdbcResultSet implements ResultSet {
         }
 
         if (!metaInit) {
-            JdbcMetaColumnsResult res = qryHandler.queryMetadata(new JdbcQueryMetadataRequest(cursorId));
+            JdbcMetaColumnsResult res = qryHandler.queryMetadataAsync(new JdbcQueryMetadataRequest(cursorId)).join();
 
             meta = res.meta();
 

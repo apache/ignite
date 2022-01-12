@@ -121,6 +121,7 @@ public class ItNoThreadsLeftTest extends IgniteAbstractTest {
                         !thread.getName().startsWith("nioEventLoopGroup")
                                 && !thread.getName().startsWith("globalEventExecutor")
                                 && !thread.getName().startsWith("ForkJoinPool")
+                                && !thread.getName().startsWith("process reaper")
                                 && !thread.getName().startsWith("parallel"))
                 .collect(Collectors.toSet());
     }

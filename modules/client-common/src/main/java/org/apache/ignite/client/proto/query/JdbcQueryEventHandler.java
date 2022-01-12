@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client.proto.query;
 
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.proto.query.event.BatchExecuteRequest;
 import org.apache.ignite.client.proto.query.event.BatchExecuteResult;
 import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsRequest;
@@ -43,71 +44,71 @@ public interface JdbcQueryEventHandler {
      * {@link QueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
-     * @return Result.
+     * @return Result future.
      */
-    QueryExecuteResult query(QueryExecuteRequest req);
+    CompletableFuture<QueryExecuteResult> queryAsync(QueryExecuteRequest req);
 
     /**
      * {@link QueryFetchRequest} command handler.
      *
      * @param req Fetch query request.
-     * @return Result.
+     * @return Result future.
      */
-    QueryFetchResult fetch(QueryFetchRequest req);
+    CompletableFuture<QueryFetchResult> fetchAsync(QueryFetchRequest req);
 
     /**
      * {@link BatchExecuteRequest} command handler.
      *
      * @param req Batch query request.
-     * @return Result.
+     * @return Result future.
      */
-    BatchExecuteResult batch(BatchExecuteRequest req);
+    CompletableFuture<BatchExecuteResult> batchAsync(BatchExecuteRequest req);
 
     /**
      * {@link QueryCloseRequest} command handler.
      *
      * @param req Close query request.
-     * @return Result.
+     * @return Result future.
      */
-    QueryCloseResult close(QueryCloseRequest req);
+    CompletableFuture<QueryCloseResult> closeAsync(QueryCloseRequest req);
 
     /**
      * {@link JdbcMetaTablesRequest} command handler.
      *
      * @param req Jdbc tables metadata request.
-     * @return Result.
+     * @return Result future.
      */
-    JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req);
+    CompletableFuture<JdbcMetaTablesResult> tablesMetaAsync(JdbcMetaTablesRequest req);
 
     /**
      * {@link JdbcMetaColumnsRequest} command handler.
      *
      * @param req Jdbc columns metadata request.
-     * @return Result.
+     * @return Result future.
      */
-    JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req);
+    CompletableFuture<JdbcMetaColumnsResult> columnsMetaAsync(JdbcMetaColumnsRequest req);
 
     /**
      * {@link JdbcMetaSchemasRequest} command handler.
      *
      * @param req Jdbc schemas metadata request.
-     * @return Result.
+     * @return Result future.
      */
-    JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req);
+    CompletableFuture<JdbcMetaSchemasResult> schemasMetaAsync(JdbcMetaSchemasRequest req);
 
     /**
      * {@link JdbcMetaPrimaryKeysRequest} command handler.
      *
      * @param req Jdbc primary keys metadata request.
-     * @return Result.
+     * @return Result future.
      */
-    JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req);
+    CompletableFuture<JdbcMetaPrimaryKeysResult> primaryKeysMetaAsync(JdbcMetaPrimaryKeysRequest req);
 
     /**
      * {@link JdbcQueryMetadataRequest} command handler.
      *
      * @param req Jdbc query metadata request.
-     * @return Result.
+     * @return Result future.
      */
-    JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req);
+    CompletableFuture<JdbcMetaColumnsResult> queryMetadataAsync(JdbcQueryMetadataRequest req);
 }
