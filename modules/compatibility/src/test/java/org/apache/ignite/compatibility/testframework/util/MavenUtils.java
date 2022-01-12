@@ -18,25 +18,28 @@
 package org.apache.ignite.compatibility.testframework.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.RepositoryBase;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -161,15 +164,18 @@ public class MavenUtils {
         if (!prjPomFile.exists())
             return Collections.emptyList();
 
-        String out = exec(buildMvnCommand() + " -f " + workDir + ' ' + MAVEN_DEPENDENCY_PLUGIN + ":list-repositories");
+        Path outPath = Files.createTempFile("effective-pom", "");
 
-        String urlPrefix = "url:";
+        try {
+            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
 
-        return Arrays.stream(out.split(U.nl()))
-            .map(String::trim)
-            .filter(s -> s.startsWith(urlPrefix))
-            .map(s -> s.substring(urlPrefix.length()).trim())
-            .collect(Collectors.toList());
+            Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
+
+            return F.transform(model.getRepositories(), RepositoryBase::getUrl);
+        }
+        finally {
+            Files.deleteIfExists(outPath);
+        }
     }
 
     /**
