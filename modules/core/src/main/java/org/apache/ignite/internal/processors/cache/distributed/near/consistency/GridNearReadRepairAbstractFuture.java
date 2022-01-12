@@ -384,7 +384,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             ctx.discovery().localNode(),
             "Consistency violation fixed.",
             entries,
-            fixed, strategy));
+            fixed,
+            strategy));
     }
 
     /**
