@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assumptions.assumingThat;
 
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.network.serialization.BuiltinType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.apache.ignite.internal.network.serialization.Null;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.jupiter.api.Test;
@@ -63,6 +65,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class DefaultUserObjectMarshallerWithBuiltinsTest {
     private final ClassDescriptorFactoryContext descriptorRegistry = new ClassDescriptorFactoryContext();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
+    private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
@@ -76,7 +79,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     }
 
     private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
-        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
 
         assertThat(unmarshalled, is(notNullValue()));
 
@@ -94,13 +97,22 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsBareObjectWithCorrectDescriptorIdInMarshalledRepresentation() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new Object());
 
-        assertThat(readType(marshalled), is(BuiltinType.BARE_OBJECT.descriptorId()));
+        assertThat(readDescriptorId(marshalled), is(BuiltinType.BARE_OBJECT.descriptorId()));
     }
 
-    private int readType(MarshalledObject marshalled) throws IOException {
+    private int readDescriptorId(MarshalledObject marshalled) throws IOException {
         try (var dis = new DataInputStream(new ByteArrayInputStream(marshalled.bytes()))) {
-            return dis.readInt();
+            return ProtocolMarshalling.readDescriptorOrCommandId(dis);
         }
+    }
+
+    @Test
+    void marshalsAndUnmarshalsNullThrowable() throws Exception {
+        MarshalledObject marshalled = marshaller.marshal(null, Throwable.class);
+
+        Throwable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
+
+        assertThat(unmarshalled, is(nullValue()));
     }
 
     @Test
@@ -126,11 +138,10 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsAndUnmarshalsBuiltInNonCollectionTypes(BuiltInTypeValue typeValue) throws Exception {
         MarshalledObject marshalled = marshaller.marshal(typeValue.value, typeValue.valueClass);
 
-        Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
+        Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
 
         assertThat(unmarshalled, is(equalTo(typeValue.value)));
-        if (typeValue.builtinType != BuiltinType.VOID && typeValue.builtinType != BuiltinType.NULL
-                && typeValue.value.getClass().isArray()) {
+        if (typeValue.builtinType != BuiltinType.NULL && typeValue.value.getClass().isArray()) {
             assertThat(unmarshalled, is(notNullValue()));
             assertThat(unmarshalled.getClass().getComponentType(), is(typeValue.value.getClass().getComponentType()));
         }
@@ -200,8 +211,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
                         BuiltinType.ENUM_ARRAY
                 ),
                 builtInTypeValue(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltinType.BIT_SET),
-                builtInTypeValue(null, Null.class, BuiltinType.NULL),
-                builtInTypeValue(null, Void.class, BuiltinType.VOID)
+                builtInTypeValue(null, Null.class, BuiltinType.NULL)
         ).map(Arguments::of);
     }
 
@@ -253,7 +263,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsBuiltInTypesWithCorrectDescriptorIdsInMarshalledRepresentation(BuiltInTypeValue typeValue) throws Exception {
         MarshalledObject marshalled = marshaller.marshal(typeValue.value, typeValue.valueClass);
 
-        assertThat(readType(marshalled), is(equalTo(typeValue.builtinType.descriptorId())));
+        assertThat(readDescriptorId(marshalled), is(equalTo(typeValue.builtinType.descriptorId())));
     }
 
     static Stream<Arguments> builtInTypes() {
@@ -318,18 +328,6 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
                 new MutableContainerSelfAssignment<>(LinkedHashMap.class, LinkedHashMap::new, (map, el) -> map.put(el, el),
                         map -> (LinkedHashMap<?, ?>) map.values().iterator().next())
         ).map(Arguments::of);
-    }
-
-    private enum SimpleEnum {
-        FIRST,
-        SECOND
-    }
-
-    private enum EnumWithAnonClassesForMembers {
-        FIRST {
-        },
-        SECOND {
-        }
     }
 
     private static class BuiltInTypeValue {

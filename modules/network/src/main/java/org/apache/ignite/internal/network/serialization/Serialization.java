@@ -24,8 +24,10 @@ public class Serialization {
     /** Serialization type. */
     private final SerializationType type;
 
-    /** Whether a Serializable has writeObject()/readObject()/readObjectNoData() methods. */
+    /** Whether a Serializable has writeObject() + readObject() methods. */
     private final boolean hasSerializationOverride;
+    /** Whether a Serializable has readObjectNoData() method. */
+    private final boolean hasReadObjectNoData;
     /** Whether a Serializable/Externalizable has writeReplace() method. */
     private final boolean hasWriteReplace;
     /** Whether a Serializable/Externalizable has readResolve() method. */
@@ -35,17 +37,25 @@ public class Serialization {
      * Creates a new Serialization.
      *
      * @param type                     type
-     * @param hasSerializationOverride whether a Serializable has writeObject()/readObject()/readObjectNoData() methods
+     * @param hasSerializationOverride whether a Serializable has writeObject() + readObject() methods
+     * @param hasReadObjectNoData      whether a Serializable has readObjectNoData() method
      * @param hasWriteReplace          whether a Serializable/Externalizable has writeReplace() method
      * @param hasReadResolve           whether a Serializable/Externalizable has readResolve() method
      */
-    public Serialization(SerializationType type, boolean hasSerializationOverride, boolean hasWriteReplace, boolean hasReadResolve) {
+    public Serialization(
+            SerializationType type,
+            boolean hasSerializationOverride,
+            boolean hasReadObjectNoData,
+            boolean hasWriteReplace,
+            boolean hasReadResolve
+    ) {
         assert type == SerializationType.SERIALIZABLE
-                || (type == SerializationType.EXTERNALIZABLE && !hasSerializationOverride)
+                || (type == SerializationType.EXTERNALIZABLE && !hasSerializationOverride && !hasReadObjectNoData)
                 || (!hasSerializationOverride && !hasWriteReplace && !hasReadResolve);
 
         this.type = type;
         this.hasSerializationOverride = hasSerializationOverride;
+        this.hasReadObjectNoData = hasReadObjectNoData;
         this.hasWriteReplace = hasWriteReplace;
         this.hasReadResolve = hasReadResolve;
     }
@@ -56,7 +66,7 @@ public class Serialization {
      * @param type serialization type
      */
     public Serialization(SerializationType type) {
-        this(type, false, false, false);
+        this(type, false, false, false, false);
     }
 
     /**
@@ -69,12 +79,21 @@ public class Serialization {
     }
 
     /**
-     * Returns whether serialization override (writeObject()/readObject()/readObjectNoData()) is present.
+     * Returns whether serialization override (writeObject() + readObject()) is present.
      *
-     * @return whether serialization override (writeObject()/readObject()/readObjectNoData()) is present
+     * @return whether serialization override (writeObject() + readObject()) is present
      */
     public boolean hasSerializationOverride() {
         return hasSerializationOverride;
+    }
+
+    /**
+     * Returns whether readObjectNoData() method is present.
+     *
+     * @return whether readObjectNoData() method is present
+     */
+    public boolean hasReadObjectNoData() {
+        return hasReadObjectNoData;
     }
 
     /**

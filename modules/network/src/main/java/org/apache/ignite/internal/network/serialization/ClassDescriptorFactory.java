@@ -29,12 +29,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +42,8 @@ import org.jetbrains.annotations.Nullable;
 public class ClassDescriptorFactory {
     /** Means that no serialization override is present; used for readability instead of {@code false}. */
     private static final boolean NO_SERIALIZATION_OVERRIDE = false;
+    /** Means that no readObjectNoData() method is present; used for readability instead of {@code false}. */
+    private static final boolean NO_READ_OBJECT_NO_DATA = false;
 
     /**
      * Factory context.
@@ -129,14 +129,37 @@ public class ClassDescriptorFactory {
         return new ClassDescriptor(
                 clazz,
                 descriptorId,
+                superClassDescriptor(clazz),
                 Collections.emptyList(),
                 new Serialization(
                         SerializationType.EXTERNALIZABLE,
                         NO_SERIALIZATION_OVERRIDE,
+                        NO_READ_OBJECT_NO_DATA,
                         hasWriteReplace(clazz),
                         hasReadResolve(clazz)
                 )
         );
+    }
+
+    /**
+     * If the given class has a super-class (which is not Object) and the class is not an Enum subclass, parses the super-class
+     * and registers the resulting descriptor.
+     *
+     * @param clazz class which super-class to parse
+     * @return descriptor of the super-class or {@code null} if the class is an enum, or it has no super-class, or the super-class is Object
+     */
+    private ClassDescriptor superClassDescriptor(Class<?> clazz) {
+        if (Enum.class.isAssignableFrom(clazz)) {
+            return null;
+        }
+
+        Class<?> superclass = clazz.getSuperclass();
+
+        if (superclass == null || superclass == Object.class) {
+            return null;
+        }
+
+        return create(superclass);
     }
 
     /**
@@ -174,10 +197,12 @@ public class ClassDescriptorFactory {
         return new ClassDescriptor(
                 clazz,
                 descriptorId,
+                superClassDescriptor(clazz),
                 fields(clazz),
                 new Serialization(
                         SerializationType.SERIALIZABLE,
                         hasOverrideSerialization(clazz),
+                        hasReadObjectNoData(clazz),
                         hasWriteReplace(clazz),
                         hasReadResolve(clazz)
                 )
@@ -193,11 +218,19 @@ public class ClassDescriptorFactory {
     }
 
     private boolean hasOverrideSerialization(Class<? extends Serializable> clazz) {
-        Method writeObject = getWriteObject(clazz);
-        Method readObject = getReadObject(clazz);
-        Method readObjectNoData = getReadObjectNoData(clazz);
+        return hasWriteObject(clazz) && hasReadObject(clazz);
+    }
 
-        return writeObject != null && readObject != null && readObjectNoData != null;
+    private boolean hasReadObject(Class<? extends Serializable> clazz) {
+        return getReadObject(clazz) != null;
+    }
+
+    private boolean hasWriteObject(Class<? extends Serializable> clazz) {
+        return getWriteObject(clazz) != null;
+    }
+
+    private boolean hasReadObjectNoData(Class<? extends Serializable> clazz) {
+        return getReadObjectNoData(clazz) != null;
     }
 
     /**
@@ -208,50 +241,23 @@ public class ClassDescriptorFactory {
      * @return Class descriptor.
      */
     private ClassDescriptor arbitrary(int descriptorId, Class<?> clazz) {
-        return new ClassDescriptor(clazz, descriptorId, fields(clazz), new Serialization(SerializationType.ARBITRARY));
+        return new ClassDescriptor(
+                clazz,
+                descriptorId,
+                superClassDescriptor(clazz),
+                fields(clazz),
+                new Serialization(SerializationType.ARBITRARY)
+        );
     }
 
     /**
-     * Gets field descriptors of the class in the correct order (see {@link #classFields(Class)}. If a field's type
-     * doesn't have an id yet, generates it.
-     *
-     * @param clazz Class.
-     * @return List of field descriptor.
-     */
-    private List<FieldDescriptor> fields(Class<?> clazz) {
-        List<Class<?>> lineage = lineage(clazz);
-
-        return lineage.stream()
-                .flatMap(this::classFields)
-                .collect(toList());
-    }
-
-    /**
-     * Returns the lineage (all the ancestors, from Object down the line, including the given class).
-     *
-     * @param clazz class from which to obtain lineage
-     * @return ancestors from Object down the line, plus the given class itself
-     */
-    private List<Class<?>> lineage(Class<?> clazz) {
-        List<Class<?>> classes = new ArrayList<>();
-
-        Class<?> currentClass = clazz;
-        while (currentClass != null) {
-            classes.add(currentClass);
-            currentClass = currentClass.getSuperclass();
-        }
-
-        Collections.reverse(classes);
-        return classes;
-    }
-
-    /**
-     * Returns 'serializable' (i.e. non-static non-transient) declared fields of the given class sorted lexicographically by their names.
+     * Returns descriptors of 'serializable' (i.e. non-static non-transient) declared fields of the given class
+     * sorted lexicographically by their names.
      *
      * @param clazz class
-     * @return properly sorted fields
+     * @return properly sorted field descriptors
      */
-    private Stream<FieldDescriptor> classFields(Class<?> clazz) {
+    private List<FieldDescriptor> fields(Class<?> clazz) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .sorted(comparing(Field::getName))
                 .filter(field -> {
@@ -260,7 +266,8 @@ public class ClassDescriptorFactory {
                     // Ignore static and transient fields.
                     return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers);
                 })
-                .map(field -> new FieldDescriptor(field, context.getId(field.getType())));
+                .map(field -> new FieldDescriptor(field, context.getId(field.getType())))
+                .collect(toList());
     }
 
     /**

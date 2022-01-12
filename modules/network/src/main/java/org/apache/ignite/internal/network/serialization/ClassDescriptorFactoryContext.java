@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class descriptor factory context.
  */
-public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, ClassIndexedDescriptors {
+public class ClassDescriptorFactoryContext implements ClassIndexedDescriptors {
     /** Quantity of descriptor ids reserved for the default descriptors. */
     private static final int DEFAULT_DESCRIPTORS_OFFSET_COUNT = 1000;
 
@@ -81,7 +81,6 @@ public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, Clas
      * @param descriptorId Descriptor id.
      * @return Descriptor.
      */
-    @Override
     @Nullable
     public ClassDescriptor getDescriptor(int descriptorId) {
         return descriptorMap.get(descriptorId);
@@ -112,6 +111,32 @@ public class ClassDescriptorFactoryContext implements IdIndexedDescriptors, Clas
      */
     public ClassDescriptor getBuiltInDescriptor(BuiltinType builtinType) {
         return getRequiredDescriptor(builtinType.descriptorId());
+    }
+
+    /**
+     * Returns a descriptor by ID or throws an exception if no such descriptor is known.
+     *
+     * @param descriptorId ID of the descriptor
+     * @return descriptor by ID
+     */
+    public ClassDescriptor getRequiredDescriptor(int descriptorId) {
+        ClassDescriptor descriptor = getDescriptor(descriptorId);
+
+        if (descriptor == null) {
+            throw new IllegalStateException("Did not find a descriptor with ID=" + descriptorId);
+        }
+
+        return descriptor;
+    }
+
+    /**
+     * Returns {@code true} if there is a descriptor for the id.
+     *
+     * @param descriptorId Descriptor id.
+     * @return {@code true} if there is a descriptor for the id.
+     */
+    public boolean hasDescriptor(int descriptorId) {
+        return getDescriptor(descriptorId) != null;
     }
 
     /**

@@ -22,17 +22,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.lenient;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
-import org.apache.ignite.internal.network.serialization.ClassIndexedDescriptors;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -40,22 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 class SerializableInstantiationTest {
-    @Mock
-    private ClassIndexedDescriptors descriptors;
-    @Mock
-    private ClassDescriptor descriptor;
-
-    private Instantiation instantiation;
-
-    @BeforeEach
-    void initMocks() {
-        lenient().when(descriptors.getRequiredDescriptor(any())).thenReturn(descriptor);
-    }
-
-    @BeforeEach
-    void createInstantiation() {
-        instantiation = new SerializableInstantiation(descriptors);
-    }
+    private final Instantiation instantiation = new SerializableInstantiation();
 
     @Test
     void doesNotSupportNonSerializableClasses() {
@@ -68,20 +46,14 @@ class SerializableInstantiationTest {
     }
 
     @Test
-    void doesNotSupportClassesWithWriteReplace() {
-        doReturn(true).when(descriptor).hasWriteReplace();
-
-        assertFalse(instantiation.supports(WithWriteReplace.class));
+    void supportsClassesWithWriteReplace() {
+        assertTrue(instantiation.supports(WithWriteReplace.class));
     }
 
     @Test
-    void doesNotSupportClassesWithReadResolve() {
-        doReturn(true).when(descriptor).hasReadResolve();
-
-        assertFalse(instantiation.supports(WithReadResolve.class));
+    void supportsClassesWithReadResolve() {
+        assertTrue(instantiation.supports(WithReadResolve.class));
     }
-
-    // TODO: IGNITE-16165 - test that it does not support instantiation of Serializable classes with writeObject()/readObject()
 
     @Test
     void instantiatesSerializableClassesWithoutNoArgConstructor() throws Exception {

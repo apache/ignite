@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
+import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Thrown when unmarshalling fails.
+ * {@link IdIndexedDescriptors} implementation that is backed by a {@link ClassDescriptorFactoryContext}.
  */
-public class UnmarshalException extends IgniteInternalCheckedException {
-    public UnmarshalException(String msg) {
-        super(msg);
+class ContextBasedIdIndexedDescriptors implements IdIndexedDescriptors {
+    private final ClassDescriptorFactoryContext context;
+
+    ContextBasedIdIndexedDescriptors(ClassDescriptorFactoryContext context) {
+        this.context = context;
     }
 
-    public UnmarshalException(String message, Throwable cause) {
-        super(message, cause);
+    @Override
+    @Nullable
+    public ClassDescriptor getDescriptor(int descriptorId) {
+        return context.getDescriptor(descriptorId);
     }
 }

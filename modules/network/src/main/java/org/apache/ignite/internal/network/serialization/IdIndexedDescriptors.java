@@ -48,13 +48,4 @@ public interface IdIndexedDescriptors {
         return descriptor;
     }
 
-    /**
-     * Returns {@code true} if there is a descriptor for the id.
-     *
-     * @param descriptorId Descriptor id.
-     * @return {@code true} if there is a descriptor for the id.
-     */
-    default boolean hasDescriptor(int descriptorId) {
-        return getDescriptor(descriptorId) != null;
-    }
 }

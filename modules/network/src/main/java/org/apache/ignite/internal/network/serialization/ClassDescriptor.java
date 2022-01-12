@@ -20,17 +20,12 @@ package org.apache.ignite.internal.network.serialization;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class descriptor for the user object serialization.
  */
 public class ClassDescriptor {
-    /**
-     * Name of the class.
-     */
-    @NotNull
-    private final String className;
-
     /**
      * Class.
      */
@@ -43,7 +38,13 @@ public class ClassDescriptor {
     private final int descriptorId;
 
     /**
-     * List of the class fields' descriptors.
+     * Superclass descriptor (might be missing).
+     */
+    @Nullable
+    private final ClassDescriptor superClassDescriptor;
+
+    /**
+     * List of the declared class fields' descriptors.
      */
     @NotNull
     private final List<FieldDescriptor> fields;
@@ -63,10 +64,16 @@ public class ClassDescriptor {
     /**
      * Constructor.
      */
-    public ClassDescriptor(@NotNull Class<?> clazz, int descriptorId, @NotNull List<FieldDescriptor> fields, Serialization serialization) {
-        this.className = clazz.getName();
+    public ClassDescriptor(
+            @NotNull Class<?> clazz,
+            int descriptorId,
+            @Nullable ClassDescriptor superClassDescriptor,
+            @NotNull List<FieldDescriptor> fields,
+            Serialization serialization
+    ) {
         this.clazz = clazz;
         this.descriptorId = descriptorId;
+        this.superClassDescriptor = superClassDescriptor;
         this.fields = List.copyOf(fields);
         this.serialization = serialization;
         this.isFinal = Modifier.isFinal(clazz.getModifiers());
@@ -84,7 +91,37 @@ public class ClassDescriptor {
     }
 
     /**
-     * Returns fields' descriptors.
+     * Returns descriptor of the superclass of the described class (might be {@code null}).
+     *
+     * @return descriptor of the superclass of the described class (might be {@code null})
+     */
+    @Nullable
+    public ClassDescriptor superClassDescriptor() {
+        return superClassDescriptor;
+    }
+
+    /**
+     * Returns ID of the superclass descriptor (might be {@code null}).
+     *
+     * @return ID of the superclass descriptor (might be {@code null})
+     */
+    @Nullable
+    public Integer superClassDescriptorId() {
+        return superClassDescriptor == null ? null : superClassDescriptor.descriptorId();
+    }
+
+    /**
+     * Returns name of the superclass (might be {@code null}).
+     *
+     * @return name of the superclass (might be {@code null})
+     */
+    @Nullable
+    public String superClassName() {
+        return superClassDescriptor == null ? null : superClassDescriptor.className();
+    }
+
+    /**
+     * Returns declared fields' descriptors.
      *
      * @return Fields' descriptors.
      */
@@ -100,7 +137,7 @@ public class ClassDescriptor {
      */
     @NotNull
     public String className() {
-        return className;
+        return clazz.getName();
     }
 
     /**
@@ -169,6 +206,15 @@ public class ClassDescriptor {
     }
 
     /**
+     * Returns {@code true} if the described class has writeObject() and readObject() methods.
+     *
+     * @return {@code true} if the described class has writeObject() and readObject() methods
+     */
+    public boolean hasSerializationOverride() {
+        return serialization.hasSerializationOverride();
+    }
+
+    /**
      * Returns {@code true} if the described class has {@code writeReplace()} method.
      *
      * @return {@code true} if the described class has {@code writeReplace()} method
@@ -227,8 +273,18 @@ public class ClassDescriptor {
     @Override
     public String toString() {
         return "ClassDescriptor{"
-                + "className='" + className + '\''
+                + "className='" + className() + '\''
                 + ", descriptorId=" + descriptorId
                 + '}';
+    }
+
+    /**
+     * Returns {@code true} if this descriptor describes same class as the given descriptor.
+     *
+     * @param other a descriptor to match against
+     * @return {@code true} if this descriptor describes same class as the given descriptor
+     */
+    public boolean describesSameClass(ClassDescriptor other) {
+        return other.clazz() == clazz();
     }
 }

@@ -80,9 +80,8 @@ public enum BuiltinType {
     HASH_MAP(40, HashMap.class),
     LINKED_HASH_MAP(41, LinkedHashMap.class),
     BIT_SET(42, BitSet.class),
-    NULL(43, Null.class),
-    VOID(44, Void.class)
-    // 45 is REFERENCE command, see SerializedStreamCommands#REFERENCE
+    NULL(43, Null.class)
+    // 44 is REFERENCE command, see SerializedStreamCommands#REFERENCE
     ;
 
     /**
@@ -125,7 +124,7 @@ public enum BuiltinType {
     }
 
     /**
-     * Creates a descriptor for this default type.
+     * Creates a descriptor for this built-in type.
      *
      * @return Descriptor.
      */
@@ -133,6 +132,7 @@ public enum BuiltinType {
         return new ClassDescriptor(
                 clazz,
                 descriptorId,
+                null,
                 Collections.emptyList(),
                 new Serialization(SerializationType.BUILTIN)
         );

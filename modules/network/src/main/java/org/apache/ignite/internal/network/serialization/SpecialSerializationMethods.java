@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 /**
  * Encapsulates special serialization methods like writeReplace()/readResolve() for convenient invocation.
  */
@@ -48,4 +51,30 @@ public interface SpecialSerializationMethods {
      * @throws SpecialMethodInvocationException if the invocation fails
      */
     Object readResolve(Object object) throws SpecialMethodInvocationException;
+
+    /**
+     * Invokes {@code writeObject()} on the target object. Should only be used if the target descriptor supports
+     * the method (that is, its serialization type is
+     * {@link org.apache.ignite.internal.network.serialization.SerializationType#SERIALIZABLE} and the class
+     * actually has writeObject() method).
+     * If any of these conditions fail, a {@link NullPointerException} will be thrown.
+     *
+     * @param object target object on which to invoke the method
+     * @param stream stream to pass to the method
+     * @throws SpecialMethodInvocationException if the invocation fails
+     */
+    void writeObject(Object object, ObjectOutputStream stream) throws SpecialMethodInvocationException;
+
+    /**
+     * Invokes {@code readObject()} on the target object. Should only be used if the target descriptor supports
+     * the method (that is, its serialization type is
+     * {@link org.apache.ignite.internal.network.serialization.SerializationType#SERIALIZABLE} and the class
+     * actually has readObject() method).
+     * If any of these conditions fail, a {@link NullPointerException} will be thrown.
+     *
+     * @param object target object on which to invoke the method
+     * @param stream stream to pass to the method
+     * @throws SpecialMethodInvocationException if the invocation fails
+     */
+    void readObject(Object object, ObjectInputStream stream) throws SpecialMethodInvocationException;
 }

@@ -17,17 +17,10 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
-
 /**
- * Thrown when unmarshalling fails.
+ * An enum for the simpliest case.
  */
-public class UnmarshalException extends IgniteInternalCheckedException {
-    public UnmarshalException(String msg) {
-        super(msg);
-    }
-
-    public UnmarshalException(String message, Throwable cause) {
-        super(message, cause);
-    }
+enum SimpleEnum {
+    FIRST,
+    SECOND
 }

@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
-
 /**
- * Thrown when unmarshalling fails.
+ * Holds an int value.
  */
-public class UnmarshalException extends IgniteInternalCheckedException {
-    public UnmarshalException(String msg) {
-        super(msg);
-    }
+class IntHolder {
+    final int value;
 
-    public UnmarshalException(String message, Throwable cause) {
-        super(message, cause);
+    IntHolder(int value) {
+        this.value = value;
     }
 }

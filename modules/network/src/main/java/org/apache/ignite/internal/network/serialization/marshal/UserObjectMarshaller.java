@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import java.lang.reflect.Field;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,8 +31,8 @@ public interface UserObjectMarshaller {
      * Marshals the provided object.
      *
      * @param object        object to marshal
-     * @param declaredClass class of the object as it is seen externally; it may differ from object.getClass() only
-     *                      when it is for a primitive type (i.e. byte.class) or Void.class
+     * @param declaredClass class of the object as it is perceived externally, usually in {@link Field#getType()} from which the value
+     *                      is extracted; it may differ from object.getClass() only when it is for a primitive type (i.e. byte.class)
      * @return marshalled representation
      * @throws MarshalException if marshalling fails
      */

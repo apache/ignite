@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.network.serialization.marshal;
 
 import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.BitSet;
@@ -67,7 +69,6 @@ class BuiltInNonContainerMarshallers {
         addSingle(map, Enum[].class, BuiltInMarshalling::writeEnumArray, BuiltInMarshalling::readEnumArray);
         addSingle(map, BitSet.class, BuiltInMarshalling::writeBitSet, BuiltInMarshalling::readBitSet);
         addSingle(map, Null.class, (obj, output) -> {}, input -> null);
-        addSingle(map, Void.class, (obj, output) -> {}, input -> null);
 
         return Map.copyOf(map);
     }
@@ -127,7 +128,7 @@ class BuiltInNonContainerMarshallers {
         return builtInMarshallers.containsKey(classToCheck);
     }
 
-    void writeBuiltIn(Object object, ClassDescriptor descriptor, DataOutput output, MarshallingContext context)
+    void writeBuiltIn(Object object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
             throws IOException, MarshalException {
         BuiltInMarshaller<?> builtInMarshaller = findBuiltInMarshaller(descriptor);
 
@@ -136,7 +137,8 @@ class BuiltInNonContainerMarshallers {
         context.addUsedDescriptor(descriptor);
     }
 
-    Object readBuiltIn(ClassDescriptor descriptor, DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
+    Object readBuiltIn(ClassDescriptor descriptor, DataInputStream input, UnmarshallingContext context)
+            throws IOException, UnmarshalException {
         BuiltInMarshaller<?> builtinMarshaller = findBuiltInMarshaller(descriptor);
         return builtinMarshaller.unmarshal(input, context);
     }
@@ -160,11 +162,11 @@ class BuiltInNonContainerMarshallers {
             this.reader = reader;
         }
 
-        private void marshal(Object object, DataOutput output, MarshallingContext context) throws IOException, MarshalException {
+        private void marshal(Object object, DataOutputStream output, MarshallingContext context) throws IOException, MarshalException {
             writer.write(valueRefClass.cast(object), output, context);
         }
 
-        private Object unmarshal(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
+        private Object unmarshal(DataInputStream input, UnmarshallingContext context) throws IOException, UnmarshalException {
             return reader.read(input, context);
         }
     }

@@ -25,7 +25,7 @@ public class SerializedStreamCommands {
     /**
      * Reference: an object that was already seen in the graph, so we relate to it by its ID instead of serializing it again.
      */
-    public static final int REFERENCE = 45;
+    public static final int REFERENCE = 44;
 
     private SerializedStreamCommands() {
     }

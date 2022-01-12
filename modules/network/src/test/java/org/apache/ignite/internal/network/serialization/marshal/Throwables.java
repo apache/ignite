@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Thrown when unmarshalling fails.
+ * Throwable-related utilities.
  */
-public class UnmarshalException extends IgniteInternalCheckedException {
-    public UnmarshalException(String msg) {
-        super(msg);
+class Throwables {
+    static List<Throwable> causalChain(Throwable th) {
+        List<Throwable> lineage = new ArrayList<>();
+
+        Throwable current = th;
+        while (current != null) {
+            lineage.add(current);
+            current = current.getCause();
+        }
+
+        return List.copyOf(lineage);
     }
 
-    public UnmarshalException(String message, Throwable cause) {
-        super(message, cause);
+    private Throwables() {
     }
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.network.serialization.Serialization;
 import org.apache.ignite.internal.network.serialization.SerializationType;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
+import org.jetbrains.annotations.Nullable;
 
 /** Message for the {@link ClassDescriptor}. */
 @Transferable(NetworkMessageTypes.CLASS_DESCRIPTOR_MESSAGE)
@@ -41,6 +42,21 @@ public interface ClassDescriptorMessage extends NetworkMessage {
      * @see ClassDescriptor#descriptorId()
      */
     int descriptorId();
+
+    /**
+     * Super-class name.
+     *
+     * @see ClassDescriptor#superClassDescriptor()
+     */
+    @Nullable
+    String superClassName();
+
+    /**
+     * Super-class descriptor ID. {@link Integer#MIN_VALUE} if super-class is missing.
+     *
+     * @see ClassDescriptor#superClassDescriptor()
+     */
+    int superClassDescriptorId();
 
     /**
      * List of the class fields' descriptors.
@@ -62,6 +78,13 @@ public interface ClassDescriptorMessage extends NetworkMessage {
      * @see Serialization#hasSerializationOverride()
      */
     boolean hasSerializationOverride();
+
+    /**
+     * Has readObjectNoData().
+     *
+     * @see Serialization#hasReadObjectNoData()
+     */
+    boolean hasReadObjectNoData();
 
     /**
      * Has writeReplace.

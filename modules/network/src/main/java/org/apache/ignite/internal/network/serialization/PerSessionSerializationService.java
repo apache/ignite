@@ -31,6 +31,7 @@ import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 /**
@@ -40,6 +41,9 @@ import org.jetbrains.annotations.TestOnly;
 public class PerSessionSerializationService {
     /** Network messages factory. */
     private static final NetworkMessagesFactory MSG_FACTORY = new NetworkMessagesFactory();
+
+    /** Integer value that is sent when there is no descriptor. */
+    private static final int NO_DESCRIPTOR_ID = Integer.MIN_VALUE;
 
     /** Global serialization service. */
     @NotNull
@@ -114,7 +118,6 @@ public class PerSessionSerializationService {
                                 .name(d.name())
                                 .typeDescriptorId(d.typeDescriptorId())
                                 .className(d.clazz().getName())
-                                .declaringClassName(d.declaringClass().getName())
                                 .build();
                     })
                     .collect(toList());
@@ -126,12 +129,25 @@ public class PerSessionSerializationService {
                     .isFinal(descriptor.isFinal())
                     .serializationType(serialization.type().value())
                     .hasSerializationOverride(serialization.hasSerializationOverride())
+                    .hasReadObjectNoData(serialization.hasReadObjectNoData())
                     .hasWriteReplace(serialization.hasWriteReplace())
                     .hasReadResolve(serialization.hasReadResolve())
                     .descriptorId(descriptor.descriptorId())
                     .className(descriptor.className())
+                    .superClassDescriptorId(superClassDescriptorIdForMessage(descriptor))
+                    .superClassName(descriptor.superClassName())
                     .build();
         }).collect(toList());
+    }
+
+    private int superClassDescriptorIdForMessage(ClassDescriptor descriptor) {
+        Integer id = descriptor.superClassDescriptorId();
+
+        if (id == null) {
+            return NO_DESCRIPTOR_ID;
+        }
+
+        return id;
     }
 
     private void mergeDescriptors(List<ClassDescriptorMessage> remoteDescriptors) {
@@ -164,7 +180,7 @@ public class PerSessionSerializationService {
         ClassDescriptor localDescriptor = serializationService.getClassDescriptor(clsMsg.className());
 
         List<FieldDescriptor> remoteFields = clsMsg.fields().stream()
-                .map(this::fieldDescriptorFromMessage)
+                .map(fieldMsg -> fieldDescriptorFromMessage(fieldMsg, localDescriptor.clazz()))
                 .collect(toList());
 
         SerializationType serializationType = SerializationType.getByValue(clsMsg.serializationType());
@@ -172,6 +188,7 @@ public class PerSessionSerializationService {
         var serialization = new Serialization(
                 serializationType,
                 clsMsg.hasSerializationOverride(),
+                clsMsg.hasReadObjectNoData(),
                 clsMsg.hasWriteReplace(),
                 clsMsg.hasReadResolve()
         );
@@ -179,6 +196,7 @@ public class PerSessionSerializationService {
         ClassDescriptor remoteDescriptor = new ClassDescriptor(
                 localDescriptor.clazz(),
                 clsMsg.descriptorId(),
+                superClassDescriptor(clsMsg),
                 remoteFields,
                 serialization
         );
@@ -186,9 +204,16 @@ public class PerSessionSerializationService {
         return mergeDescriptor(localDescriptor, remoteDescriptor);
     }
 
-    private FieldDescriptor fieldDescriptorFromMessage(FieldDescriptorMessage fieldMsg) {
+    @Nullable
+    private ClassDescriptor superClassDescriptor(ClassDescriptorMessage clsMsg) {
+        if (clsMsg.superClassDescriptorId() == NO_DESCRIPTOR_ID) {
+            return null;
+        }
+        return getClassDescriptor(clsMsg.superClassDescriptorId(), clsMsg.superClassName());
+    }
+
+    private FieldDescriptor fieldDescriptorFromMessage(FieldDescriptorMessage fieldMsg, Class<?> declaringClass) {
         int typeDescriptorId = fieldMsg.typeDescriptorId();
-        Class<?> declaringClass = serializationService.getClassDescriptor(fieldMsg.declaringClassName()).clazz();
         return new FieldDescriptor(fieldMsg.name(), getClass(typeDescriptorId, fieldMsg.className()), typeDescriptorId, declaringClass);
     }
 
@@ -197,12 +222,16 @@ public class PerSessionSerializationService {
         return remoteDescriptor;
     }
 
-    private Class<?> getClass(int descriptorId, String typeName) {
+    private ClassDescriptor getClassDescriptor(int descriptorId, String typeName) {
         if (serializationService.shouldBeBuiltIn(descriptorId)) {
-            return serializationService.getClassDescriptor(descriptorId).clazz();
+            return serializationService.getClassDescriptor(descriptorId);
         } else {
-            return serializationService.getClassDescriptor(typeName).clazz();
+            return serializationService.getClassDescriptor(typeName);
         }
+    }
+
+    private Class<?> getClass(int descriptorId, String typeName) {
+        return getClassDescriptor(descriptorId, typeName).getClass();
     }
 
     @TestOnly

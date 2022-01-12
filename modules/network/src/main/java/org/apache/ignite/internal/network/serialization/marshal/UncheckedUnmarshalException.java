@@ -17,17 +17,11 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
-
 /**
- * Thrown when unmarshalling fails.
+ * An unchecked variation of {@link UnmarshalException}.
  */
-public class UnmarshalException extends IgniteInternalCheckedException {
-    public UnmarshalException(String msg) {
-        super(msg);
-    }
-
-    public UnmarshalException(String message, Throwable cause) {
+class UncheckedUnmarshalException extends RuntimeException {
+    public UncheckedUnmarshalException(String message, Throwable cause) {
         super(message, cause);
     }
 }

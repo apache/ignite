@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * Knows how to write a value to a {@link DataOutput}.
+ * Knows how to write a value to a {@link DataOutputStream}.
  */
 interface ValueWriter<T> {
     /**
-     * Writes the given value to a {@link DataOutput}.
+     * Writes the given value to a {@link DataOutputStream}.
      *
      * @param value     value to write
      * @param output    where to write to
@@ -33,5 +33,5 @@ interface ValueWriter<T> {
      * @throws IOException      if an I/O problem occurs
      * @throws MarshalException if another problem occurs
      */
-    void write(T value, DataOutput output, MarshallingContext context) throws IOException, MarshalException;
+    void write(T value, DataOutputStream output, MarshallingContext context) throws IOException, MarshalException;
 }

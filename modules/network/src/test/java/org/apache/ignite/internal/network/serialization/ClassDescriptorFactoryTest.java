@@ -21,7 +21,10 @@ import static org.apache.ignite.internal.network.serialization.SerializationType
 import static org.apache.ignite.internal.network.serialization.SerializationType.EXTERNALIZABLE;
 import static org.apache.ignite.internal.network.serialization.SerializationType.SERIALIZABLE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -445,31 +448,68 @@ public class ClassDescriptorFactoryTest {
     }
 
     @Test
-    void shouldSortArbitraryObjectFieldsByClassHierarchyAndLexicographicallyByFieldName() {
-        ClassDescriptor descriptor = factory.create(ArbitraryWithFieldNameClashAndOrderPermutation.class);
+    void shouldOnlyConsiderDeclaredFields() {
+        ClassDescriptor descriptor = factory.create(Child.class);
+
+        assertThat(descriptor.fields(), hasSize(1));
 
         assertThat(descriptor.fields().get(0).clazz(), is(String.class));
-        assertThat(descriptor.fields().get(0).name(), is("value"));
-
-        assertThat(descriptor.fields().get(1).clazz(), is(int.class));
-        assertThat(descriptor.fields().get(1).name(), is("apple"));
-
-        assertThat(descriptor.fields().get(2).clazz(), is(int.class));
-        assertThat(descriptor.fields().get(2).name(), is("banana"));
-
-        assertThat(descriptor.fields().get(3).clazz(), is(int.class));
-        assertThat(descriptor.fields().get(3).name(), is("value"));
+        assertThat(descriptor.fields().get(0).name(), is("childValue"));
     }
 
-    @SuppressWarnings("unused")
+    @Test
+    void shouldSortArbitraryObjectFieldsLexicographicallyByFieldName() {
+        ClassDescriptor descriptor = factory.create(ClassWithFieldOrderPermutation.class);
+
+        assertThat(descriptor.fields().get(0).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(0).name(), is("apple"));
+
+        assertThat(descriptor.fields().get(1).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(1).name(), is("banana"));
+
+        assertThat(descriptor.fields().get(2).clazz(), is(int.class));
+        assertThat(descriptor.fields().get(2).name(), is("value"));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void detectsSuperClass() {
+        ClassDescriptor descriptor = factory.create(Child.class);
+
+        assertThat(descriptor.superClassDescriptor().clazz(), is(Parent.class));
+    }
+
+    @Test
+    void detectsSuperClassAsNullIfTheSuperClassIsObject() {
+        ClassDescriptor descriptor = factory.create(ExtendsObject.class);
+
+        assertThat(descriptor.superClassDescriptor(), is(nullValue()));
+    }
+
+    @Test
+    void registersSuperClassDescriptorOnParsingSubClass() {
+        factory.create(Child.class);
+
+        assertDoesNotThrow(() -> context.getRequiredDescriptor(Parent.class));
+    }
+
     private static class Parent {
+        @SuppressWarnings("unused")
         private String value;
     }
 
+    private static class Child extends Parent {
+        @SuppressWarnings("unused")
+        private String childValue;
+    }
+
     @SuppressWarnings("unused")
-    private static class ArbitraryWithFieldNameClashAndOrderPermutation extends Parent {
+    private static class ClassWithFieldOrderPermutation {
         private int value;
         private int banana;
         private int apple;
+    }
+
+    private static class ExtendsObject {
     }
 }

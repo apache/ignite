@@ -17,99 +17,56 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
-import java.io.ObjectStreamConstants;
 import java.io.Serializable;
-import org.apache.ignite.internal.network.serialization.ClassDescriptor;
-import org.apache.ignite.internal.network.serialization.ClassIndexedDescriptors;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 /**
- * Instantiates {@link Serializable} classes (they are the only ones supported) by crafting a representation of
- * a serialized object of a given class (without any field data) and then deserializing it using the standard
- * Java Serialization.
+ * Instantiates {@link Serializable} classes using the mechanism defined by Java Serialization. That is,
+ * for an {@link java.io.Externalizable}, its no-arg constructor is invoked. For a non-Externalizable {@link Serializable},
+ * a new constructor is generated that invokes the no-arg constructor of the deepest non-serializable ancestor in the hierarchy.
  */
 class SerializableInstantiation implements Instantiation {
 
-    private static final int STREAM_VERSION = 5;
+    private static final MethodHandle STREAM_CLASS_NEW_INSTANCE;
 
-    private final ClassIndexedDescriptors descriptors;
+    static {
+        try {
+            STREAM_CLASS_NEW_INSTANCE = streamClassNewInstanceMethodHandle();
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
-    SerializableInstantiation(ClassIndexedDescriptors descriptors) {
-        this.descriptors = descriptors;
+    private static MethodHandle streamClassNewInstanceMethodHandle() throws NoSuchMethodException, IllegalAccessException {
+        MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(ObjectStreamClass.class, MethodHandles.lookup());
+        return lookup.findVirtual(ObjectStreamClass.class, "newInstance", MethodType.methodType(Object.class));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean supports(Class<?> objectClass) {
-        if (!Serializable.class.isAssignableFrom(objectClass)) {
-            return false;
-        }
-
-        ClassDescriptor descriptor = descriptors.getRequiredDescriptor(objectClass);
-        return !descriptor.hasWriteReplace() && !descriptor.hasReadResolve();
+        return Serializable.class.isAssignableFrom(objectClass);
     }
 
     /** {@inheritDoc} */
     @Override
     public Object newInstance(Class<?> objectClass) throws InstantiationException {
-        byte[] jdkSerialization = jdkSerializationOfEmptyInstanceOf(objectClass);
+        // Using the standard machinery (ObjectStreamClass) to instantiate an object to avoid generating excessive constructors
+        // (as the standard machinery caches the constructors effectively).
 
-        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(jdkSerialization))) {
-            return ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new InstantiationException("Cannot deserialize JDK serialization of an empty instance", e);
+        ObjectStreamClass desc = ObjectStreamClass.lookup(objectClass);
+
+        // But as ObjectStreamClass#newInstance() is package-local, we have to resort to reflection/method handles magic.
+
+        try {
+            return STREAM_CLASS_NEW_INSTANCE.invokeExact(desc);
+        } catch (Error e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new InstantiationException("Cannot instantiate", e);
         }
-    }
-
-    private byte[] jdkSerializationOfEmptyInstanceOf(Class<?> objectClass) throws InstantiationException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        try (DataOutputStream dos = new DataOutputStream(baos)) {
-            writeSignature(dos);
-
-            dos.writeByte(ObjectStreamConstants.TC_OBJECT);
-            dos.writeByte(ObjectStreamConstants.TC_CLASSDESC);
-            dos.writeUTF(objectClass.getName());
-
-            dos.writeLong(serialVersionUid(objectClass));
-
-            writeFlags(dos);
-
-            writeZeroFields(dos);
-
-            dos.writeByte(ObjectStreamConstants.TC_ENDBLOCKDATA);
-            writeNullForNoParentDescriptor(dos);
-        } catch (IOException e) {
-            throw new InstantiationException("Cannot create JDK serialization of an empty instance", e);
-        }
-
-        return baos.toByteArray();
-    }
-
-    private void writeSignature(DataOutputStream dos) throws IOException {
-        dos.writeShort(ObjectStreamConstants.STREAM_MAGIC);
-        dos.writeShort(STREAM_VERSION);
-    }
-
-    private long serialVersionUid(Class<?> objectClass) {
-        ObjectStreamClass descriptor = ObjectStreamClass.lookup(objectClass);
-        return descriptor.getSerialVersionUID();
-    }
-
-    private void writeFlags(DataOutputStream dos) throws IOException {
-        dos.writeByte(ObjectStreamConstants.SC_SERIALIZABLE);
-    }
-
-    private void writeZeroFields(DataOutputStream dos) throws IOException {
-        dos.writeShort(0);
-    }
-
-    private void writeNullForNoParentDescriptor(DataOutputStream dos) throws IOException {
-        dos.writeByte(ObjectStreamConstants.TC_NULL);
     }
 }
