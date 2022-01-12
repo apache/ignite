@@ -150,7 +150,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    protected void init() {
+    protected final void init() {
         map();
     }
 
@@ -218,7 +218,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      * @param topVer Topology version.
      */
-    protected void remap(AffinityTopologyVersion topVer) {
+    protected final void remap(AffinityTopologyVersion topVer) {
         futs.clear();
 
         this.topVer = topVer;
@@ -231,7 +231,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      *
      * @param finished Future represents a result of GET operation.
      */
-    protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
+    protected final synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
         if (isDone() // All subfutures (including currently processing) were successfully finished at previous future processing.
             || (topVer == null) // Remapping, ignoring any updates until remapped.
             || !futs.containsValue((GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>)finished)) // Remapped.
@@ -276,9 +276,11 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected abstract void reduce();
 
     /**
+     * Checks consistency.
      *
+     * @return Regular `get` result when data is consistent.
      */
-    protected Map<KeyCacheObject, EntryGetResult> check() throws IgniteCheckedException {
+    protected final Map<KeyCacheObject, EntryGetResult> check() throws IgniteCheckedException {
         Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
@@ -323,7 +325,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      * @param fixedEntries Fixed map.
      */
-    protected void recordConsistencyViolation(
+    protected final void recordConsistencyViolation(
         Collection<KeyCacheObject> inconsistentKeys,
         Map<KeyCacheObject, EntryGetResult> fixedEntries,
         ReadRepairStrategy strategy
