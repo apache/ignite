@@ -157,7 +157,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    protected synchronized void map() {
+    private synchronized void map() {
         assert futs.isEmpty() : "Remapping started without the clean-up.";
 
         Map<KeyCacheObject, ClusterNode> primaryNodes = new HashMap<>();
