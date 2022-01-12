@@ -320,7 +320,7 @@ public class GridSqlQuerySplitter {
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
         boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
         boolean replicatedOnly = splitter.mapSqlQrys.stream().noneMatch(GridCacheSqlQuery::isPartitioned);
-        boolean treatReplicatedAsPartitioned = splitter.mapSqlQrys.stream().anyMatch(GridCacheSqlQuery::hasOuterJoinReplicatedPartitioned);
+        boolean treatReplicatedAsPartitioned = splitter.mapSqlQrys.stream().anyMatch(GridCacheSqlQuery::treatReplicatedAsPartitioned);
 
         H2Utils.checkQuery(idx, cacheIds, splitter.tbls);
 
@@ -1280,7 +1280,9 @@ public class GridSqlQuerySplitter {
         map.sortColumns(mapQry.sort());
         map.partitioned(traverser.hasPartitionedTables());
         map.hasSubQueries(traverser.hasSubQueries());
-        map.hasOuterJoinReplicatedPartitioned(traverser.hasOuterJoinReplicatedPartitioned());
+        map.treatReplicatedAsPartitioned(
+            traverser.hasOuterJoinReplicatedPartitioned() || traverser.hasReplicatedWithPartitionedAndSubQuery()
+        );
 
         if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));

@@ -162,7 +162,7 @@ Depending on how you use Ignite, you can enable modules or extensions using one 
 the following methods:
 
 * If you use the binary distribution, move the
-`lib/optional/{module-dir}` to the `lib` directory before starting the
+`lib/optional/{module-dir}` to the `libs` directory before starting the
 node.
 * Add libraries from `lib/optional/{module-dir}` to the classpath of
 your application.

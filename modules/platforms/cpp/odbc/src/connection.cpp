@@ -136,7 +136,7 @@ namespace ignite
             return InternalEstablish(config);
         }
 
-        void Connection::Establish(const config::Configuration cfg)
+        void Connection::Establish(const config::Configuration& cfg)
         {
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
@@ -147,7 +147,7 @@ namespace ignite
 
             if (sslMode == ssl::SslMode::DISABLE)
             {
-                socket.reset(network::ssl::MakeTcpSocketClient());
+                socket.reset(network::MakeTcpSocketClient());
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -288,7 +288,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << common::HexDump(msg.GetData(), msg.GetSize()));
 #endif //PER_BYTE_DEBUG
 
             return true;
@@ -357,7 +357,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+            LOG_MSG("Message received: " << common::HexDump(&msg[0], msg.size()));
 #endif //PER_BYTE_DEBUG
 
             return true;

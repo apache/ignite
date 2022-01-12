@@ -207,6 +207,38 @@ namespace ignite
             {
                 TlsSetValue(winTlsIdx, ptr);
             }
+
+            Thread::Thread() :
+                handle(NULL)
+            {
+                // No-op.
+            }
+
+            Thread::~Thread()
+            {
+                CloseHandle(handle);
+            }
+
+            DWORD Thread::ThreadRoutine(LPVOID lpParam)
+            {
+                Thread* self = static_cast<Thread*>(lpParam);
+
+                self->Run();
+
+                return 0;
+            }
+
+            void Thread::Start()
+            {
+                handle = CreateThread(NULL, 0, Thread::ThreadRoutine, this, 0, NULL);
+
+                assert(handle != NULL);
+            }
+
+            void Thread::Join()
+            {
+                WaitForSingleObject(handle, INFINITE);
+            }
         }
     }
 }
