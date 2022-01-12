@@ -5118,7 +5118,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx);
 
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                    get((K)key); // Repair.
+                    get((K)key, null, false, false); // Repair.
 
                     final GridNearTxLocal tx0 = checkCurrentTx();
 
