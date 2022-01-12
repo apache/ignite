@@ -209,12 +209,10 @@ public class GridServiceProxy<T> implements Serializable {
 
                             if (svc != null) {
                                 HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
-                                        svcCtx.metrics().findMetric(mtd.getName()) : null;
+                                    svcCtx.metrics().findMetric(mtd.getName()) : null;
 
-                                if (hist != null)
-                                    return measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
-
-                                return callServiceLocally(svc, mtd, args, callAttrs);
+                                return hist == null ? callServiceLocally(svc, mtd, args, callAttrs) :
+                                    measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
                             }
                         }
                     }
@@ -568,10 +566,9 @@ public class GridServiceProxy<T> implements Serializable {
 
             HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? ctx.metrics().findMetric(mtd.getName()) : null;
 
-            if (hist != null)
-                return U.marshal(ignite.configuration().getMarshaller(), measureCall(hist, () -> callService(ctx, mtd)));
-            else
-                return U.marshal(ignite.configuration().getMarshaller(), callService(ctx, mtd));
+            Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
+
+            return U.marshal(ignite.configuration().getMarshaller(), res);
         }
 
         /** */
