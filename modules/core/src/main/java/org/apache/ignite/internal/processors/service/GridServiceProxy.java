@@ -456,7 +456,7 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * @param mtd Method to invoke.
      */
-    static String methodName(Method mtd) {
+    private static String methodName(Method mtd) {
         PlatformServiceMethod ann = mtd.getDeclaredAnnotation(PlatformServiceMethod.class);
 
         return ann == null ? mtd.getName() : ann.value();
@@ -566,25 +566,20 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ?
-                    ctx.metrics().findMetric(mtd.getName()) : null;
+            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? ctx.metrics().findMetric(mtd.getName()) : null;
 
             if (hist != null)
-                return measureCall(hist, () -> callServiceAndUnmarshalResult(ctx, mtd));
-
-            return callServiceAndUnmarshalResult(ctx, mtd);
+                return U.marshal(ignite.configuration().getMarshaller(), measureCall(hist, () -> callService(ctx, mtd)));
+            else
+                return U.marshal(ignite.configuration().getMarshaller(), callService(ctx, mtd));
         }
 
         /** */
-        private byte[] callServiceAndUnmarshalResult(ServiceContextImpl svcCtx, Method mtd) throws Exception {
-            Object res;
-
+        private Object callService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             if (svcCtx.service() instanceof PlatformService && mtd == null)
-                res = callPlatformService((PlatformService)svcCtx.service());
+                return callPlatformService((PlatformService)svcCtx.service());
             else
-                res = callOrdinaryService(svcCtx.service(), mtd);
-
-            return U.marshal(ignite.configuration().getMarshaller(), res);
+                return callOrdinaryService(svcCtx.service(), mtd);
         }
 
         /** */

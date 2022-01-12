@@ -22,7 +22,7 @@ import org.apache.ignite.services.ServiceContext;
 /**
  * Package-private service implementation.
  */
-public class MyServiceImpl implements MyService {
+class MyServiceImpl implements MyService {
     /** {@inheritDoc} */
     @Override public int hello() {
         return 42;
