@@ -98,7 +98,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             onDone(check());
         }
         catch (IgniteConsistencyViolationException e) {
-            Collection<KeyCacheObject> inconsistentKeys = (Collection<KeyCacheObject>)e.keys();
+            Collection<KeyCacheObject> inconsistentKeys = e.keys();
 
             if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
                 if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
