@@ -95,7 +95,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
             onDone(Collections.emptyMap()); // Everything is fine.
         }
-        catch (IgniteConsistencyViolationException ec) { // Check found inconsistent entries.
+        catch (IgniteConsistencyViolationException ec) { // Inconsistent entries found.
             try {
                 Map<KeyCacheObject, EntryGetResult> fixedMap; // Entries required to be re-committed.
 
