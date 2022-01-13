@@ -147,8 +147,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> fixWithLww(Collection<?> inconsistentKeys)
-        throws IgniteCheckedException {
+    public Map<KeyCacheObject, EntryGetResult> fixWithLww(Set<KeyCacheObject> inconsistentKeys) throws IgniteCheckedException {
         Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(inconsistentKeys.size()); // Newest entries (by version).
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
@@ -217,7 +216,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> fixWithPrimary(Collection<?> inconsistentKeys) {
+    public Map<KeyCacheObject, EntryGetResult> fixWithPrimary(Collection<KeyCacheObject> inconsistentKeys) {
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
@@ -236,7 +235,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> fixWithRemove(Collection<?> inconsistentKeys) {
+    public Map<KeyCacheObject, EntryGetResult> fixWithRemove(Collection<KeyCacheObject> inconsistentKeys) {
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
         for (Object key : inconsistentKeys)
@@ -248,7 +247,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> fixWithMajority(Collection<?> inconsistentKeys)
+    public Map<KeyCacheObject, EntryGetResult> fixWithMajority(Collection<KeyCacheObject> inconsistentKeys)
         throws IgniteCheckedException {
         /** */
         class ByteArrayWrapper {
