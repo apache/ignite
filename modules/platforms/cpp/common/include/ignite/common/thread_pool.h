@@ -120,11 +120,11 @@ namespace ignite
                 void Push(const SP_ThreadPoolTask& task);
 
                 /**
-                 * Pull a task from the queue.
+                 * Pop a task from the queue.
                  *
                  * @return New task or null when unblocked.
                  */
-                SP_ThreadPoolTask Pull();
+                SP_ThreadPoolTask Pop();
 
                 /**
                  * Unblock queue. When unblocked queue will not block or return new tasks.
@@ -187,6 +187,9 @@ namespace ignite
 
             /** Worker Threads. */
             std::vector<SP_WorkerThread> threads;
+
+            /** Critical section. */
+            concurrent::CriticalSection mutex;
         };
     }
 }

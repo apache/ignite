@@ -45,6 +45,8 @@ namespace ignite
 
         void ThreadPool::Start()
         {
+            concurrent::CsLockGuard guard(mutex);
+
             if (started)
                 return;
 
@@ -56,7 +58,9 @@ namespace ignite
 
         void ThreadPool::Stop()
         {
-            if (stopped)
+            concurrent::CsLockGuard guard(mutex);
+
+            if (stopped || !started)
                 return;
 
             stopped = true;
@@ -95,7 +99,7 @@ namespace ignite
             waitPoint.NotifyOne();
         }
 
-        SP_ThreadPoolTask ThreadPool::TaskQueue::Pull()
+        SP_ThreadPoolTask ThreadPool::TaskQueue::Pop()
         {
             concurrent::CsLockGuard guard(mutex);
             if (unblocked)
@@ -136,7 +140,7 @@ namespace ignite
         {
             while (true)
             {
-                SP_ThreadPoolTask task = taskQueue.Pull();
+                SP_ThreadPoolTask task = taskQueue.Pop();
 
                 // Queue is unblocked and workers should stop.
                 if (!task.IsValid())
