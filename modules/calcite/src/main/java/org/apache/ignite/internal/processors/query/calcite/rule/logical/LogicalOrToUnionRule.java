@@ -19,23 +19,30 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,7 +71,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     /** Rule instance to replace table scans with condition. */
     public static final RelOptRule SCAN_INSTANCE = new LogicalOrToUnionRule(Config.SCAN) {
         @Override protected RexNode getCondition(RelOptRuleCall call) {
-            final ProjectableFilterableTableScan rel = call.rel(0);
+            final IgniteLogicalTableScan rel = call.rel(0);
 
             return rel.condition();
         }
@@ -74,11 +81,14 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
         }
 
         @Override protected void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
-            ProjectableFilterableTableScan scan = (ProjectableFilterableTableScan)input;
+            IgniteLogicalTableScan scan = (IgniteLogicalTableScan)input;
+
+            // Set default traits, real traits will be calculated for physical node.
+            RelTraitSet trait = scan.getCluster().traitSet();
 
             relBldr.push(IgniteLogicalTableScan.create(
                 scan.getCluster(),
-                scan.getTraitSet(),
+                trait,
                 scan.getTable(),
                 scan.projects(),
                 condition,
@@ -158,10 +168,56 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     }
 
     /** */
-    private static boolean preMatch(ProjectableFilterableTableScan scan) {
-        return scan.condition() != null &&
-            scan.getTraitSet().getConvention() == Convention.NONE &&
-            !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes
+    private static boolean preMatch(IgniteLogicalTableScan scan) {
+        RexNode cond = scan.condition();
+
+        if (cond == null ||
+            // _key_PK not interesting here, but it`s depend on current PK implementation, in future PK can be removed
+            // and this condition will become incorrect.
+            scan.getTable().unwrap(IgniteTable.class).indexes().size() < 2)
+            return false;
+
+        ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+        new RexShuttle() {
+            @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                builder.set(inputRef.getIndex());
+                return inputRef;
+            }
+        }.apply(cond);
+
+        ImmutableBitSet requiredColumns = builder.build();
+
+        assert requiredColumns != null;
+
+        IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
+        IgniteTypeFactory typeFactory = Commons.typeFactory(scan.getCluster());
+        int fieldCount = tbl.getRowType(typeFactory).getFieldCount();
+
+        boolean idxPreMatch = false;
+
+        for (IgniteIndex idx : tbl.indexes().values()) {
+            RelCollation col0 = idx.collation();
+
+            ImmutableBitSet scanReqCols = F.isEmpty(scan.requiredColumns()) ? requiredColumns : scan.requiredColumns();
+
+            col0 = col0.apply(Commons.mapping(scanReqCols, fieldCount));
+
+            if (col0.getFieldCollations().isEmpty())
+                continue;
+
+            for (int colIdx : requiredColumns) {
+                if (col0.getKeys().contains(colIdx)) {
+                    idxPreMatch = true;
+                    break;
+                }
+            }
+
+            if (idxPreMatch)
+                break;
+        }
+
+        return idxPreMatch;
     }
 
     /** */
@@ -178,7 +234,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
             .withOperandSupplier(o -> o.operand(LogicalFilter.class)
             .inputs(
                 b0 -> b0.operand(LogicalFilter.class)
-                    .oneInput(b1 -> b1.operand(ProjectableFilterableTableScan.class)
+                    .oneInput(b1 -> b1.operand(IgniteLogicalTableScan.class)
                         .predicate(LogicalOrToUnionRule::preMatch)
                         .noInputs()))
             )
@@ -187,7 +243,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
         /** */
         Config SCAN = DEFAULT
             .withDescription("ScanLogicalOrToUnionRule")
-            .withOperandSupplier(o -> o.operand(ProjectableFilterableTableScan.class)
+            .withOperandSupplier(o -> o.operand(IgniteLogicalTableScan.class)
                 .predicate(LogicalOrToUnionRule::preMatch)
                 .noInputs()
             )
