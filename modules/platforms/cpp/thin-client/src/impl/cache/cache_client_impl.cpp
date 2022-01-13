@@ -381,7 +381,6 @@ namespace ignite
 
                     SP_DataChannel channel = SyncMessage(req, rsp);
 
-                    // TODO: Add user thread pool
                     query::continuous::SP_ContinuousQueryNotificationHandler handler(
                             new query::continuous::ContinuousQueryNotificationHandler(*channel.Get(), continuousQuery));
 
