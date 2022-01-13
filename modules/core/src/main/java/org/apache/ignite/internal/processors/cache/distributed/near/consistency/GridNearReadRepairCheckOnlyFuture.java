@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -98,7 +99,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             onDone(check());
         }
         catch (IgniteConsistencyViolationException e) {
-            Collection<KeyCacheObject> inconsistentKeys = e.keys();
+            Set<KeyCacheObject> inconsistentKeys = e.keys();
 
             if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
                 if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
