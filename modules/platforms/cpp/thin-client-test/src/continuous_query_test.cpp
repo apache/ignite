@@ -273,57 +273,57 @@ protected:
     CacheClient<int32_t, TestEntry> cache;
 };
 
-void CheckEvents(CacheClient<int32_t, TestEntry>& cache, Listener<int32_t, TestEntry>& lsnr)
+void CheckEvents(CacheClient<int32_t, TestEntry>& cache, Listener<int32_t, TestEntry>& listener)
 {
     cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
+    listener.CheckNextEvent(1, boost::none, TestEntry(10));
 
     cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+    listener.CheckNextEvent(1, TestEntry(10), TestEntry(20));
 
     cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
+    listener.CheckNextEvent(2, boost::none, TestEntry(20));
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20));
+    listener.CheckNextEvent(1, TestEntry(20), TestEntry(20));
 }
 
 BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestBasic)
 {
-    Listener<int32_t, TestEntry> lsnr;
+    Listener<int32_t, TestEntry> listener;
 
-    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
 
     ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
-    CheckEvents(cache, lsnr);
+    CheckEvents(cache, listener);
 }
 
 BOOST_AUTO_TEST_CASE(TestExpiredQuery)
 {
-    Listener<int32_t, TestEntry> lsnr;
+    Listener<int32_t, TestEntry> listener;
     ContinuousQueryHandleClient handle;
 
     {
         // Query scope.
-        ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
+        ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
 
         handle = cache.QueryContinuous(qry);
     }
 
     // Query is destroyed here.
 
-    CheckEvents(cache, lsnr);
+    CheckEvents(cache, listener);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 {
     typedef ContinuousQueryClient<int32_t, TestEntry> QueryType;
-    Listener<int32_t, TestEntry> lsnr;
+    Listener<int32_t, TestEntry> listener;
 
-    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
 
     BOOST_CHECK_EQUAL(qry.GetBufferSize(), (int32_t) QueryType::DEFAULT_BUFFER_SIZE);
 
@@ -335,15 +335,15 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 
     BOOST_CHECK_EQUAL(qry.GetBufferSize(), 2 * QueryType::DEFAULT_BUFFER_SIZE);
 
-    CheckEvents(cache, lsnr);
+    CheckEvents(cache, listener);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
 {
     typedef ContinuousQueryClient<int32_t, TestEntry> QueryType;
-    Listener<int32_t, TestEntry> lsnr;
+    Listener<int32_t, TestEntry> listener;
 
-    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(lsnr));
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
 
     qry.SetBufferSize(10);
 
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
 
     BOOST_CHECK_EQUAL(qry.GetTimeInterval(), 500);
 
-    CheckEvents(cache, lsnr);
+    CheckEvents(cache, listener);
 }
 
 BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
