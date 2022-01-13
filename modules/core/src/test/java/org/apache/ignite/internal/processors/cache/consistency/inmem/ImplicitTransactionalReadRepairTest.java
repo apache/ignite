@@ -71,7 +71,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfPossible.accept(data,
+            (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, true)));
     }
 
@@ -84,7 +84,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfPossible.accept(data,
+            (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true)));
     }
 

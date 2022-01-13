@@ -250,7 +250,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    protected final BiConsumer<ReadRepairData, Runnable> repairIfPossible = (data, r) -> {
+    protected final BiConsumer<ReadRepairData, Runnable> repairIfRepairable = (data, r) -> {
         try {
             r.run();
 

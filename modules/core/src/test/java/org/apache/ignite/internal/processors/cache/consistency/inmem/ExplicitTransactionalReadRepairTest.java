@@ -87,7 +87,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfPossible.accept(data, () -> {
+            (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
 
@@ -104,7 +104,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfPossible.accept(data, () -> {
+            (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
                 testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true, true);
             }));
