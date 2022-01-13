@@ -238,8 +238,8 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     public Map<KeyCacheObject, EntryGetResult> fixWithRemove(Collection<KeyCacheObject> inconsistentKeys) {
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
-        for (Object key : inconsistentKeys)
-            fixedMap.put((KeyCacheObject)key, null);
+        for (KeyCacheObject key : inconsistentKeys)
+            fixedMap.put(key, null);
 
         return fixedMap;
     }
@@ -272,7 +272,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         Set<KeyCacheObject> irreparableSet = new HashSet<>(inconsistentKeys.size());
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
-        for (Object inconsistentKey : inconsistentKeys) {
+        for (KeyCacheObject inconsistentKey : inconsistentKeys) {
             Map<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> cntMap = new HashMap<>();
 
             for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
@@ -315,14 +315,14 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             assert max > 0;
 
             if (sorted.length > 1 && sorted[1] == max) { // Majority was not found.
-                irreparableSet.add((KeyCacheObject)inconsistentKey);
+                irreparableSet.add(inconsistentKey);
 
                 continue;
             }
 
             for (Map.Entry<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> count : cntMap.entrySet())
                 if (count.getValue().getValue().equals(max)) {
-                    fixedMap.put((KeyCacheObject)inconsistentKey, count.getValue().getKey());
+                    fixedMap.put(inconsistentKey, count.getValue().getKey());
 
                     break;
                 }
