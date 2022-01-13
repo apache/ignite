@@ -38,25 +38,21 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <bean parent="cache-template">
                     <property name="name" value="transactional_no_backup"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    <property name="backups" value="0"/>
-                    <property name="queryEntities">
-                        <list>
-                            <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="keyType" value="java.lang.Integer"/>
-                                <property name="valueType" value="TestEntry"/>
+                </bean>
 
-                                <property name="fields">
-                                    <map>
-                                        <entry key="value" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                            </bean>
-                        </list>
+                <bean parent="cache-template">
+                    <property name="name" value="with_expiry"/>
+                    <property name="expiryPolicyFactory">
+                        <bean class="javax.cache.expiry.CreatedExpiryPolicy" factory-method="factoryOf">
+                            <constructor-arg>
+                                <bean class="javax.cache.expiry.Duration">
+                                    <constructor-arg value="MILLISECONDS"/>
+                                    <constructor-arg value="500"/>
+                                </bean>
+                            </constructor-arg>
+                        </bean>
                     </property>
                 </bean>
             </list>
@@ -76,6 +72,27 @@
                 </property>
                 <property name="socketTimeout" value="300" />
             </bean>
+        </property>
+    </bean>
+
+    <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="cacheMode" value="PARTITIONED"/>
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="backups" value="0"/>
+        <property name="queryEntities">
+            <list>
+                <bean class="org.apache.ignite.cache.QueryEntity">
+                    <property name="keyType" value="java.lang.Integer"/>
+                    <property name="valueType" value="TestEntry"/>
+
+                    <property name="fields">
+                        <map>
+                            <entry key="value" value="java.lang.Integer"/>
+                        </map>
+                    </property>
+                </bean>
+            </list>
         </property>
     </bean>
 </beans>

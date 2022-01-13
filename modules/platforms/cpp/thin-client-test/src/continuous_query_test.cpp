@@ -113,7 +113,9 @@ template<typename K, typename V>
 class Listener : public CacheEntryEventListener<K, V>
 {
 public:
-    /*
+    enum { DEFAULT_WAIT_TIMEOUT = 1000 };
+
+    /**
      * Default constructor.
      */
     Listener()
@@ -133,17 +135,18 @@ public:
             eventQueue.Push(evts[i]);
     }
 
-    /*
+    /**
      * Check that next received event contains specific values.
      *
      * @param key Key.
      * @param oldVal Old value.
      * @param val Current value.
+     * @param eType Event type.
      */
-    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val)
+    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val, CacheEntryEventType::Type eType)
     {
         CacheEntryEvent<K, V> event;
-        bool success = eventQueue.Pull(event, 1000);
+        bool success = eventQueue.Pull(event, DEFAULT_WAIT_TIMEOUT);
 
         BOOST_REQUIRE(success);
 
@@ -156,6 +159,35 @@ public:
 
         if (val && event.HasValue())
             BOOST_CHECK_EQUAL(event.GetValue().value, val->value);
+    }
+
+    /**
+     * Check that there is no nex event in specified period of time.
+     *
+     * @param millis Time span in milliseconds.
+     */
+    void CheckNoEvent(uint32_t millis = DEFAULT_WAIT_TIMEOUT)
+    {
+        CacheEntryEvent<K, V> event;
+        bool success = eventQueue.Pull(event, millis);
+
+        BOOST_CHECK(!success);
+    }
+
+    /**
+     * Check that next event is the cache entry expiry event.
+     *
+     * @param key Key.
+     */
+    void CheckExpired(const K& key)
+    {
+        CacheEntryEvent<K, V> event;
+        bool success = eventQueue.Pull(event, DEFAULT_WAIT_TIMEOUT);
+
+        BOOST_CHECK(success);
+
+        BOOST_CHECK_EQUAL(event.GetKey(), key);
+        BOOST_CHECK_EQUAL(event.GetEventType(), CacheEntryEventType::EXPIRED);
     }
 
 private:
@@ -228,7 +260,7 @@ public:
         cache()
     {
         client = StartClient();
-        cache = GetTestCache(client);
+        cache = GetDefaultCache(client);
     }
 
     /**
@@ -257,9 +289,19 @@ public:
      *
      * @param client Client to use.
      */
-    static CacheClient<int32_t, TestEntry> GetTestCache(IgniteClient& client)
+    static CacheClient<int32_t, TestEntry> GetDefaultCache(IgniteClient& client)
     {
-        return client.GetOrCreateCache<int32_t, TestEntry>("ContinuousQueryTestSuite");
+        return client.GetOrCreateCache<int32_t, TestEntry>("transactional_no_backup");
+    }
+
+    /**
+     * Get cache with configured expiry policy using client.
+     *
+     * @param client Client to use.
+     */
+    static CacheClient<int32_t, TestEntry> GetExpiryCache(IgniteClient& client)
+    {
+        return client.GetOrCreateCache<int32_t, TestEntry>("with_expiry");
     }
 
 protected:
@@ -276,16 +318,16 @@ protected:
 void CheckEvents(CacheClient<int32_t, TestEntry>& cache, Listener<int32_t, TestEntry>& listener)
 {
     cache.Put(1, TestEntry(10));
-    listener.CheckNextEvent(1, boost::none, TestEntry(10));
+    listener.CheckNextEvent(1, boost::none, TestEntry(10), CacheEntryEventType::CREATED);
 
     cache.Put(1, TestEntry(20));
-    listener.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+    listener.CheckNextEvent(1, TestEntry(10), TestEntry(20), CacheEntryEventType::UPDATED);
 
     cache.Put(2, TestEntry(20));
-    listener.CheckNextEvent(2, boost::none, TestEntry(20));
+    listener.CheckNextEvent(2, boost::none, TestEntry(20), CacheEntryEventType::CREATED);
 
     cache.Remove(1);
-    listener.CheckNextEvent(1, TestEntry(20), TestEntry(20));
+    listener.CheckNextEvent(1, TestEntry(20), TestEntry(20), CacheEntryEventType::REMOVED);
 }
 
 BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
@@ -316,6 +358,39 @@ BOOST_AUTO_TEST_CASE(TestExpiredQuery)
     // Query is destroyed here.
 
     CheckEvents(cache, listener);
+}
+
+BOOST_AUTO_TEST_CASE(TestExpiredEventsReceived)
+{
+    cache = GetExpiryCache(client);
+
+    Listener<int32_t, TestEntry> listener;
+
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
+    qry.SetIncludeExpired(true);
+
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
+
+    cache.Put(1, TestEntry(10));
+    listener.CheckNextEvent(1, boost::none, TestEntry(10), CacheEntryEventType::CREATED);
+    listener.CheckNoEvent(100);
+    listener.CheckExpired(1);
+}
+
+BOOST_AUTO_TEST_CASE(TestExpiredEventsNotReceived)
+{
+    cache = GetExpiryCache(client);
+
+    Listener<int32_t, TestEntry> listener;
+
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReference(listener));
+    qry.SetIncludeExpired(false);
+
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
+
+    cache.Put(1, TestEntry(10));
+    listener.CheckNextEvent(1, boost::none, TestEntry(10), CacheEntryEventType::CREATED);
+    listener.CheckNoEvent();
 }
 
 BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
