@@ -172,7 +172,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
                 if (candidateRes != null) {
                     if (newestRes == null) {
-                        if (hasNewest) // Newewst is null.
+                        if (hasNewest) // Newest is null.
                             irreparableSet.add(key);
                         else { // Existing data wins.
                             newestMap.put(key, candidateRes);
