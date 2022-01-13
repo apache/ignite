@@ -276,32 +276,30 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             Map<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> cntMap = new HashMap<>();
 
             for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-                for (KeyCacheObject key : fut.keys()) {
-                    if (!inconsistentKey.equals(key))
-                        continue;
+                if (!fut.keys().contains(inconsistentKey))
+                    continue;
 
-                    EntryGetResult res = fut.result().get(key);
+                EntryGetResult res = fut.result().get(inconsistentKey);
 
-                    ByteArrayWrapper wrapped;
-                    GridCacheVersion ver;
+                ByteArrayWrapper wrapped;
+                GridCacheVersion ver;
 
-                    if (res != null) {
-                        CacheObjectAdapter val = res.value();
+                if (res != null) {
+                    CacheObjectAdapter val = res.value();
 
-                        wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
-                        ver = res.version();
-                    }
-                    else {
-                        wrapped = new ByteArrayWrapper(null);
-                        ver = null;
-                    }
-
-                    T2<ByteArrayWrapper, GridCacheVersion> keyVer = new T2<>(wrapped, ver);
-
-                    cntMap.putIfAbsent(keyVer, new T2<>(res, 0));
-
-                    cntMap.compute(keyVer, (kv, ri) -> new T2<>(ri.getKey(), ri.getValue() + 1));
+                    wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
+                    ver = res.version();
                 }
+                else {
+                    wrapped = new ByteArrayWrapper(null);
+                    ver = null;
+                }
+
+                T2<ByteArrayWrapper, GridCacheVersion> keyVer = new T2<>(wrapped, ver);
+
+                cntMap.putIfAbsent(keyVer, new T2<>(res, 0));
+
+                cntMap.compute(keyVer, (kv, ri) -> new T2<>(ri.getKey(), ri.getValue() + 1));
             }
 
             int[] sorted = cntMap.values().stream()
