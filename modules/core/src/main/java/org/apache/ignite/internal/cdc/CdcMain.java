@@ -475,7 +475,7 @@ public class CdcMain implements Runnable {
                 if (commit) {
                     assert it.lastRead().isPresent();
 
-                    WALPointer ptr = it.lastRead().get();
+                    WALPointer ptr = it.lastRead().get().next();
 
                     state.save(ptr);
 
