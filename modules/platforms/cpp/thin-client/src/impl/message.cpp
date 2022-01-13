@@ -390,7 +390,7 @@ namespace ignite
                 writer.WriteInt64(timeInterval);
                 writer.WriteBool(includeExpired);
 
-                // TODO: implement remote filters.
+                // TODO: IGNITE-16291: Implement remote filters for Continuous Queries.
                 writer.WriteNull();
             }
 
