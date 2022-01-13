@@ -314,8 +314,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestEnumValueSerialization()
         {
-            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            
             CheckSerializeDeserialize(ByteEnum.Foo);
             CheckSerializeDeserialize(ByteEnum.Bar);
             CheckSerializeDeserialize(SByteEnum.Foo);
@@ -343,8 +341,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestEnumArraysSerialization()
         {
-            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-
             CheckSerializeDeserialize(new[] {ByteEnum.Foo, ByteEnum.Bar});
             CheckSerializeDeserialize(new[] {SByteEnum.Foo, SByteEnum.Bar});
             CheckSerializeDeserialize(new Enum[] {ByteEnum.Foo, SByteEnum.Bar});
@@ -380,8 +376,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSystemEnumDeclaration()
         {
-            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-
             CheckSerializeDeserialize(new EnumsRawBinarizable());
             CheckSerializeDeserialize(new [] {new EnumsRawBinarizable(), new EnumsRawBinarizable()});
             CheckSerializeDeserialize(new EnumsRawBinarizable2());
