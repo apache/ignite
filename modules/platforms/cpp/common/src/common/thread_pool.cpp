@@ -27,6 +27,8 @@ namespace ignite
             threads()
         {
             uint32_t threadToStart = threadsNum != 0 ? threadsNum : concurrent::GetNumberOfProcessors();
+            if (!threadToStart)
+                threadToStart = 2;
 
             threads.reserve(threadToStart);
             for (uint32_t i = 0; i < threadToStart; ++i)
