@@ -273,10 +273,10 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Collection<?> irreparableKeys = e != null ? e.irreparableKeys() : null;
 
         if (e != null) {
-            Collection<?> keys = e.repairableKeys();
+            Collection<?> repairableKeys = e.repairableKeys();
 
-            if (keys != null)
-                assertTrue(Collections.disjoint(keys, irreparableKeys));
+            if (repairableKeys != null)
+                assertTrue(Collections.disjoint(repairableKeys, irreparableKeys));
 
             Collection<?> plannedToBeIrreparableKeys = data.data.entrySet().stream()
                 .filter(entry -> !entry.getValue().repairable)
