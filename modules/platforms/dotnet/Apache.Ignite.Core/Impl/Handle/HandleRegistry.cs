@@ -230,14 +230,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <returns>Target.</returns>
         public T Get<T>(long id)
         {
-            try
-            {
-                return Get<T>(id, false);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return Get<T>(id, false);
         }
 
         /// <summary>
@@ -249,32 +242,25 @@ namespace Apache.Ignite.Core.Impl.Handle
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         public T Get<T>(long id, bool throwOnAbsent)
         {
-            try
+            object target;
+
+            if (id < _fastCap)
             {
-                object target;
+                target = Thread.VolatileRead(ref _fast[id]);
 
-                if (id < _fastCap)
-                {
-                    target = Thread.VolatileRead(ref _fast[id]);
-
-                    if (target != null)
-                        return (T) target;
-                }
-                else
-                {
-                    if (_slow.TryGetValue(id, out target))
-                        return (T) target;
-                }
-
-                if (throwOnAbsent)
-                    throw new InvalidOperationException("Resource handle has been released (is Ignite stopping?).");
-
-                return default(T);
+                if (target != null)
+                    return (T)target;
             }
-            catch (Exception)
+            else
             {
-                throw;
+                if (_slow.TryGetValue(id, out target))
+                    return (T) target;
             }
+
+            if (throwOnAbsent)
+                throw new InvalidOperationException("Resource handle has been released (is Ignite stopping?).");
+
+            return default(T);
         }
 
         /// <summary>

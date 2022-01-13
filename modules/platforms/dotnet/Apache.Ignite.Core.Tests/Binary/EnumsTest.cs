@@ -307,6 +307,64 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             CheckSerializeDeserialize(val);
         }
+        
+        [Test]
+        public void TestPutGetEnum()
+        {
+            CheckSerializeDeserialize(ByteEnum.Foo);
+            CheckSerializeDeserialize(ByteEnum.Bar);
+            CheckSerializeDeserialize(SByteEnum.Foo);
+            CheckSerializeDeserialize(SByteEnum.Bar);
+
+            CheckSerializeDeserialize(ShortEnum.Foo);
+            CheckSerializeDeserialize(ShortEnum.Bar);
+            CheckSerializeDeserialize(UShortEnum.Foo);
+            CheckSerializeDeserialize(UShortEnum.Bar);
+
+            CheckSerializeDeserialize(IntEnum.Foo);
+            CheckSerializeDeserialize(IntEnum.Bar);
+            CheckSerializeDeserialize(UIntEnum.Foo);
+            CheckSerializeDeserialize(UIntEnum.Bar);
+
+            CheckSerializeDeserialize(LongEnum.Foo);
+            CheckSerializeDeserialize(LongEnum.Bar);
+            CheckSerializeDeserialize(ULongEnum.Foo);
+            CheckSerializeDeserialize(ULongEnum.Bar);
+
+            CheckSerializeDeserialize(new[] {ByteEnum.Foo, ByteEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {ByteEnum.Foo, ByteEnum.Bar});
+            CheckSerializeDeserialize(new[] {SByteEnum.Foo, SByteEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {SByteEnum.Foo, SByteEnum.Bar});
+
+            CheckSerializeDeserialize(new[] {ShortEnum.Foo, ShortEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {ShortEnum.Foo, ShortEnum.Bar});
+            CheckSerializeDeserialize(new[] {UShortEnum.Foo, UShortEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {UShortEnum.Foo, UShortEnum.Bar});
+
+            CheckSerializeDeserialize(new[] {IntEnum.Foo, IntEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {IntEnum.Foo, IntEnum.Bar});
+            CheckSerializeDeserialize(new[] {UIntEnum.Foo, UIntEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {UIntEnum.Foo, UIntEnum.Bar});
+
+            CheckSerializeDeserialize(new[] {LongEnum.Foo, LongEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {LongEnum.Foo, LongEnum.Bar});
+            CheckSerializeDeserialize(new[] {ULongEnum.Foo, ULongEnum.Bar});
+            CheckSerializeDeserialize(new Enum[] {ULongEnum.Foo, ULongEnum.Bar});
+
+            CheckSerializeDeserialize(new Enum[]
+            {
+                ByteEnum.Foo, ByteEnum.Bar,
+                SByteEnum.Foo, SByteEnum.Bar,
+                ShortEnum.Foo, ShortEnum.Bar,
+                UShortEnum.Foo, ShortEnum.Bar,
+                IntEnum.Foo, IntEnum.Bar,
+                UIntEnum.Foo, UIntEnum.Bar,
+                LongEnum.Foo, LongEnum.Bar,
+                ULongEnum.Foo, LongEnum.Bar,
+            });
+            
+            CheckSerializeDeserialize(new EnumsRawBinarizable());
+        }
 
         private enum ByteEnum : byte
         {
@@ -354,6 +412,37 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             Foo = ulong.MinValue,
             Bar = ulong.MaxValue
+        }
+
+        private class EnumsRawBinarizable
+        {
+            private readonly Enum enmByte = ByteEnum.Bar;
+            private readonly Enum enmUByte = SByteEnum.Bar;
+            private readonly Enum enmShort = ShortEnum.Bar;
+            private readonly Enum enmUShort = UShortEnum.Bar;
+            private readonly Enum enmInt = IntEnum.Bar;
+            private readonly Enum enmUInt = UIntEnum.Bar;
+            private readonly Enum enmLong = LongEnum.Bar;
+            private readonly Enum enmULong = ULongEnum.Bar;
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+
+                var other = (EnumsRawBinarizable) obj;
+
+                return enmByte.Equals(other.enmByte) && enmUByte.Equals(other.enmUByte) &&
+                       enmShort.Equals(other.enmShort) && enmUShort.Equals(other.enmUShort) &&
+                       enmInt.Equals(other.enmInt) && enmUInt.Equals(other.enmUInt) &&
+                       enmLong.Equals(other.enmLong) && enmULong.Equals(other.enmULong);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(enmByte, enmUByte, enmShort, enmUShort, enmInt, enmUInt, enmLong, enmULong);
+            }
         }
 
         private class EnumsBinarizable

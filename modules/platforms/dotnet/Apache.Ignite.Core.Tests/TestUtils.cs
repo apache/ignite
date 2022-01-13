@@ -96,14 +96,7 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private static readonly IList<string> JvmDebugOpts =
-            new List<string> { 
-                "-Xmx2048M"
-                //"-Xdebug", 
-                //"-Xnoagent", 
-                //"-Djava.compiler=NONE", 
-                //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", 
-               // "-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false" 
-            };
+            new List<string> { "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", "-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false" };
 
         /** */
         public static bool JvmDebug = true;

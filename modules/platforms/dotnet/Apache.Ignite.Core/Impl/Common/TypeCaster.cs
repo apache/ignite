@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
+    using System.Reflection;
 
     /// <summary>
     /// Does type casts without extra boxing. 
@@ -73,23 +75,57 @@ namespace Apache.Ignite.Core.Impl.Common
             /// </summary>
             private static Func<TFrom, T> Compile()
             {
-                if (typeof (T) == typeof (TFrom))
+                var fromType = typeof(TFrom);
+                var toType = typeof(T);
+                
+                var fromParamExpr = Expression.Parameter(fromType);
+
+                if (toType == fromType)
                 {
                     // Just return what we have
-                    var pExpr = Expression.Parameter(typeof(TFrom));
-
-                    return Expression.Lambda<Func<TFrom, T>>(pExpr, pExpr).Compile();
+                    return Expression.Lambda<Func<TFrom, T>>(fromParamExpr, fromParamExpr).Compile();
                 }
 
-                if (typeof(T) == typeof(UIntPtr) && typeof(TFrom) == typeof(long))
+                if (toType == typeof(UIntPtr) && fromType == typeof(long))
                 {
-                    return l => unchecked ((T) (object) (UIntPtr) (ulong) (long) (object) l);
+                    return l => unchecked((T) (object) (UIntPtr) (ulong) (long) (object) l);
                 }
 
-                var paramExpr = Expression.Parameter(typeof(TFrom));
-                var convertExpr = Expression.Convert(paramExpr, typeof(T));
+                Expression convertExpr = null;
 
-                return Expression.Lambda<Func<TFrom, T>>(convertExpr, paramExpr).Compile();
+                if (fromType == typeof(Enum))
+                    convertExpr = TryConvertRawEnum(toType, fromParamExpr);
+                
+                if (convertExpr == null)
+                    convertExpr = Expression.Convert(fromParamExpr, toType);
+
+                return Expression.Lambda<Func<TFrom, T>>(convertExpr, fromParamExpr).Compile();
+            }
+
+            private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
+            {
+                string mtdName = null;
+                
+                if (toType == typeof(byte))
+                    mtdName = "ToByte";
+                else if (toType == typeof(sbyte))
+                    mtdName = "ToSByte";
+                else if (toType == typeof(short))
+                    mtdName = "ToInt16";
+                else if (toType == typeof(ushort))
+                    mtdName = "ToUInt16";
+                else if (toType == typeof(int))
+                    mtdName = "ToInt32";
+                else if (toType == typeof(uint))
+                    mtdName = "ToUInt32";
+
+                if (mtdName == null) return null;
+                
+                MethodInfo toIntMtd = typeof(Convert).GetMethod(mtdName, new[] {typeof(object)});
+                
+                Debug.Assert(toIntMtd != null);
+
+                return Expression.Call(null, toIntMtd, fromParamExpr);
             }
         }
     }
