@@ -53,6 +53,10 @@ public interface MarshallerContext {
      * Same as {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} but with shortened
      * parameters list.
      *
+     * @param platformId ID of a platform (java, .NET, etc.) to register mapping for.
+     * @param typeId Type ID.
+     * @param clsName Class name.
+     * @return {@code True} if mapping was registered successfully.
      * @deprecated Use {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} instead.
      *      This particular method will be deleted in future releases.
      */
@@ -117,7 +121,7 @@ public interface MarshallerContext {
     public IgnitePredicate<String> classNameFilter();
 
     /**
-     * Returns JDK marshaller instance.
+     * @return  JDK marshaller instance.
      */
     public JdkMarshaller jdkMarshaller();
 }

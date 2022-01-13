@@ -33,8 +33,8 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
@@ -242,8 +242,9 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * Indexing that blocks index rebuild until status request is completed.
      */
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
+        /** {@inheritDoc} */
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+            SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
             idxRebuildsStartedNum.incrementAndGet();
 
             fut.listen((CI1<IgniteInternalFuture<?>>)f -> idxRebuildsStartedNum.decrementAndGet());

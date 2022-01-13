@@ -17,6 +17,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <ignite/ignite_error.h>
 #include <ignite/ignition.h>
 
 #include <ignite/thin/ignite_client_configuration.h>
@@ -53,6 +54,30 @@ public:
     ~SqlFieldsQueryTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
+    }
+
+    /**
+     * Perform an invalid SQL query and check whether returned SQLSTATE is expected.
+     */
+    void CheckSqlStateForQuery(const std::string& sql, const std::string& expectedSqlState)
+    {
+        SqlFieldsQuery testQry(sql);
+        testQry.SetSchema("PUBLIC");
+
+        try
+        {
+            cacheAllFields.Query(testQry);
+
+            BOOST_FAIL("Expected to get SQL error here");
+        }
+        catch (ignite::IgniteError& err)
+        {
+            std::string msg(err.GetText());
+
+            std::string sqlState(msg.substr(0, msg.find(':')));
+
+            BOOST_CHECK_EQUAL(expectedSqlState, sqlState);
+        }
     }
 
 protected:
@@ -492,6 +517,24 @@ BOOST_AUTO_TEST_CASE(TestInsertNull)
     CheckRowCursorEmpty(row);
 
     CheckCursorEmpty(cursor);
+}
+
+
+/**
+ * Test that SQL errors contain SQLSTATE with cause.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlStateOnErrors)
+{
+    CheckSqlStateForQuery("select * from \"UnknownCache\".UNKNOWN_TABLE", "42000");
+    CheckSqlStateForQuery("select * from UNKNOWN_TABLE", "42000");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values(null)", "22004");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values('abc')", "0700B");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key, _val) values(1, null)", "0A000");
+
+    SqlFieldsQuery qry("CREATE TABLE PUBLIC.varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
+    cacheAllFields.Query(qry);
+
+    CheckSqlStateForQuery("insert into varchar_table(id, str) values(1, 'too_long')", "23000");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

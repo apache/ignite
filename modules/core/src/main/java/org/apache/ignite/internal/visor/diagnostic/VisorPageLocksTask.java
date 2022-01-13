@@ -41,6 +41,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
+/** */
 @GridInternal
 public class VisorPageLocksTask
     extends VisorMultiNodeTask<VisorPageLocksTrackerArgs, Map<ClusterNode, VisorPageLocksResult>, VisorPageLocksResult> {

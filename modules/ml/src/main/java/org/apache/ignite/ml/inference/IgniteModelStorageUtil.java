@@ -46,7 +46,7 @@ public final class IgniteModelStorageUtil {
     /**
      *
      */
-    private IgniteModelStorageUtil(){
+    private IgniteModelStorageUtil() {
         // No-op.
     }
 

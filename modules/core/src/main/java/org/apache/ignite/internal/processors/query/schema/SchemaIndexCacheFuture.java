@@ -24,14 +24,14 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  */
 public class SchemaIndexCacheFuture extends GridFutureAdapter<Void> {
     /** Token for canceling index rebuilding. */
-    private final SchemaIndexOperationCancellationToken cancelTok;
+    private final IndexRebuildCancelToken cancelTok;
 
     /**
      * Constructor.
      *
      * @param cancelTok Token for canceling index rebuilding.
      */
-    public SchemaIndexCacheFuture(SchemaIndexOperationCancellationToken cancelTok) {
+    public SchemaIndexCacheFuture(IndexRebuildCancelToken cancelTok) {
         this.cancelTok = cancelTok;
     }
 
@@ -40,7 +40,7 @@ public class SchemaIndexCacheFuture extends GridFutureAdapter<Void> {
      *
      * @return Cancellation token.
      */
-    public SchemaIndexOperationCancellationToken cancelToken() {
+    public IndexRebuildCancelToken cancelToken() {
         return cancelTok;
     }
 }

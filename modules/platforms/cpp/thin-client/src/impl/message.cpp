@@ -31,24 +31,6 @@ namespace ignite
     {
         namespace thin
         {
-            /**
-             * Message flags.
-             */
-            struct Flag
-            {
-                enum Type
-                {
-                    /** Failure flag. */
-                    FAILURE = 1,
-
-                    /** Affinity topology change flag. */
-                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
-
-                    /** Server notification flag. */
-                    NOTIFICATION = 1 << 2
-                };
-            };
-
             CachePartitionsRequest::CachePartitionsRequest(const std::vector<int32_t>& cacheIds) :
                 cacheIds(cacheIds)
             {
@@ -208,8 +190,11 @@ namespace ignite
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
 
-                // Affinity Key Field name.
-                writer.WriteNull();
+                const std::string& affFieldName = snapshot.GetAffinityFieldName();
+                if (affFieldName.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(affFieldName);
 
                 const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
 
@@ -236,11 +221,10 @@ namespace ignite
                 std::string typeName;
                 reader.ReadString(typeName);
 
-                // Unused for now.
-                std::string affKeyFieldNameUnused;
-                reader.ReadString(affKeyFieldNameUnused);
+                std::string affKeyFieldName;
+                reader.ReadString(affKeyFieldName);
 
-                snapshot = binary::SPSnap(new binary::Snap(typeName, typeId));
+                snapshot = binary::SPSnap(new binary::Snap(typeName, affKeyFieldName, typeId));
 
                 int32_t fieldsNum = reader.ReadInt32();
 

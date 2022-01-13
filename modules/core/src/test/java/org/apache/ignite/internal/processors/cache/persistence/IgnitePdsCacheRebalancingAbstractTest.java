@@ -668,7 +668,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
                     if (cntrs.containsKey(part.id()))
-                        assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
+                        assertEquals(String.valueOf(part.id()), (long)cntrs.get(part.id()), part.updateCounter());
                     else
                         cntrs.put(part.id(), part.updateCounter());
                 }
@@ -753,10 +753,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         /** Flag indicates that value has removed. */
         private final boolean removed;
 
+        /** */
         private TestValue(long order, int v1, int v2) {
             this(order, v1, v2, false);
         }
 
+        /** */
         private TestValue(long order, int v1, int v2, boolean removed) {
             this.order = order;
             this.v1 = v1;
@@ -770,7 +772,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestValue testValue = (TestValue) o;
+            TestValue testValue = (TestValue)o;
 
             return order == testValue.order &&
                 v1 == testValue.v1 &&

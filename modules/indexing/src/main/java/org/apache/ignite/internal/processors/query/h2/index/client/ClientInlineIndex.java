@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * We need indexes on an not affinity nodes. The index shouldn't contains any data.
+ * We need indexes on non-affinity nodes. This index does not contain any data.
  */
 public class ClientInlineIndex implements InlineIndex {
     /** */
@@ -65,13 +65,14 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment,
-        IndexQueryContext qryCtx) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(
+        IndexRow lower,
+        IndexRow upper,
+        boolean lowIncl,
+        boolean upIncl,
+        int segment,
+        IndexQueryContext qryCtx
+    ) throws IgniteCheckedException {
         throw unsupported();
     }
 

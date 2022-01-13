@@ -397,7 +397,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
             if (targetObj instanceof TestAopTarget)
                 res = ((TestAopTarget)targetObj).gridifyDefault("1");
             else
-                res = ((TestAopTargetInterface) targetObj).gridifyDefault("1");
+                res = ((TestAopTargetInterface)targetObj).gridifyDefault("1");
 
             assert res == 1 : "Invalid gridifyDefault result: " + res;
         }
@@ -426,7 +426,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
             Method gridifyMtd = targetObj.getClass().getDeclaredMethod("gridifyDefault", String.class);
 
-            res = (Integer) gridifyMtd.invoke(targetObj, "1");
+            res = (Integer)gridifyMtd.invoke(targetObj, "1");
 
             if (res != 1)
                 fail("Method gridifyDefault returned wrong value [result=" + res + ", expect=1]");
@@ -508,7 +508,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
             Method gridifyMtd = targetObj.getClass().getDeclaredMethod("gridifyDefaultResource", String.class);
 
-            res = (Integer) gridifyMtd.invoke(targetObj, "2");
+            res = (Integer)gridifyMtd.invoke(targetObj, "2");
 
             if (res != 2)
                 fail("Method gridifyDefaultResource returned wrong value [result=" + res + ", expect=2]");
@@ -542,9 +542,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
             Object targetObj = target();
 
             if (targetObj instanceof TestAopTarget)
-                res = ((TestAopTarget) targetObj).gridifyNonDefaultClass("1");
+                res = ((TestAopTarget)targetObj).gridifyNonDefaultClass("1");
             else
-                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultClass("1");
+                res = ((TestAopTargetInterface)targetObj).gridifyNonDefaultClass("1");
 
             if (res != 10)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=10]");
@@ -575,9 +575,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
             Object targetObj = target();
 
             if (targetObj instanceof TestAopTarget)
-                res = ((TestAopTarget) targetObj).gridifyNonDefaultName("2");
+                res = ((TestAopTarget)targetObj).gridifyNonDefaultName("2");
             else
-                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultName("2");
+                res = ((TestAopTargetInterface)targetObj).gridifyNonDefaultName("2");
 
             if (res != 20)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=2]");
@@ -607,9 +607,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
             try {
                 if (targetObj instanceof TestAopTarget)
-                    ((TestAopTarget) targetObj).gridifyDefaultException("1");
+                    ((TestAopTarget)targetObj).gridifyDefaultException("1");
                 else
-                    ((TestAopTargetInterface) targetObj).gridifyDefaultException("1");
+                    ((TestAopTargetInterface)targetObj).gridifyDefaultException("1");
             }
             catch (TestGridifyException e) {
                 info("@Gridify method gridifyDefaultException(0) returns exception: " + e);
@@ -683,9 +683,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
             Object targetObj = target();
 
             if (targetObj instanceof TestAopTarget)
-                res = ((TestAopTarget) targetObj).gridifyNonDefaultClassResource("3");
+                res = ((TestAopTarget)targetObj).gridifyNonDefaultClassResource("3");
             else
-                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultClassResource("3");
+                res = ((TestAopTargetInterface)targetObj).gridifyNonDefaultClassResource("3");
 
             if (res != 30)
                 fail("Method gridifyNonDefaultClassResource returned wrong value [result=" + res + ", expect=3]");

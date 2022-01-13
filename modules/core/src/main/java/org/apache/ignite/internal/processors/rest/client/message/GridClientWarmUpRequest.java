@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+/** */
 public class GridClientWarmUpRequest extends GridClientNodeStateBeforeStartRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

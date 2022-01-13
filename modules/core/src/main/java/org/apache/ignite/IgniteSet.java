@@ -125,6 +125,8 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * This is not supported for non-collocated sets.
      *
      * @param job Job which will be co-located with the set.
+     * @param <R> Type of the job result.
+     * @return Job result.
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;

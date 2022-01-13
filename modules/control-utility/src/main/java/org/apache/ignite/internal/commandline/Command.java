@@ -105,7 +105,7 @@ public interface Command<T> {
      * @param cmd Command.
      * @param args Arguments.
      */
-    public static void usage(Logger logger, String desc, CommandList cmd, String... args) {
+    public default void usage(Logger logger, String desc, CommandList cmd, String... args) {
         usage(logger, desc, cmd, null, args);
     }
 
@@ -118,7 +118,7 @@ public interface Command<T> {
      * @param paramsDesc Description of parameters (optional).
      * @param args Arguments.
      */
-    public static void usage(
+    public default void usage(
         Logger logger,
         String desc,
         CommandList cmd,
@@ -126,6 +126,10 @@ public interface Command<T> {
         String... args
     ) {
         logger.info("");
+
+        if (experimental())
+            logger.info(INDENT + "[EXPERIMENTAL]");
+
         logger.info(INDENT + desc);
         logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
 
@@ -145,7 +149,7 @@ public interface Command<T> {
      * @param indent Indent string.
      * @param logger Logger to use.
      */
-    public static void usageParams(Map<String, String> paramsDesc, String indent, Logger logger) {
+    public default void usageParams(Map<String, String> paramsDesc, String indent, Logger logger) {
         int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
 
         for (Map.Entry<String, String> param : paramsDesc.entrySet())

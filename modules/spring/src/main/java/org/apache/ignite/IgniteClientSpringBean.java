@@ -229,18 +229,23 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         cli.close();
     }
 
-    /** Sets Ignite client configuration. */
+    /**
+     * Sets Ignite client configuration.
+     *
+     * @param cfg Ignite thin client configuration.
+     * @return {@code this} for chaining.
+     */
     public IgniteClientSpringBean setClientConfiguration(ClientConfiguration cfg) {
         this.cfg = cfg;
 
         return this;
     }
 
-    /** Gets Ignite client configuration. */
+    /** @return Ignite client configuration. */
     public ClientConfiguration getClientConfiguration() {
         return cfg;
     }
@@ -249,6 +254,9 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
      * Sets {@link SmartLifecycle} phase during which the current bean will be initialized. Note, underlying Ignite
      * client will be closed during handling of {@link DisposableBean} since {@link IgniteClient}
      * implements {@link AutoCloseable} interface.
+     *
+     * @param phase {@link SmartLifecycle} phase.
+     * @return {@code this} for chaining.
      */
     public IgniteClientSpringBean setPhase(int phase) {
         this.phase = phase;

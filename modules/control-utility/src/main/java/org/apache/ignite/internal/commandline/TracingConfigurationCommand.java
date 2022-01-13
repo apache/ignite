@@ -56,19 +56,19 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(
+        usage(
             log,
             "Print tracing configuration: ",
             TRACING_CONFIGURATION);
 
-        Command.usage(
+        usage(
             log,
             "Print tracing configuration: ",
             TRACING_CONFIGURATION,
             TracingConfigurationSubcommand.GET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
 
-        Command.usage(
+        usage(
             log,
             "Print specific tracing configuration based on specified " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
@@ -78,7 +78,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command.usage(
+        usage(
             log,
             "Reset all specific tracing configuration the to default. If " +
                 TracingConfigurationCommandArg.SCOPE.argName() +
@@ -89,7 +89,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
             RESET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
 
-        Command.usage(
+        usage(
             log,
             "Reset specific tracing configuration to the default. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
@@ -102,7 +102,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command.usage(
+        usage(
             log,
             "Set new tracing configuration. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +

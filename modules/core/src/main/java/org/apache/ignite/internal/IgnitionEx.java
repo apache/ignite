@@ -69,9 +69,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -1325,14 +1327,14 @@ public class IgnitionEx {
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
         for (IgniteNamedInstance grid : grids.values()) {
             IgniteKernal g = grid.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
@@ -1352,14 +1354,14 @@ public class IgnitionEx {
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
         for (IgniteNamedInstance grid : grids.values()) {
             IgniteKernal g = grid.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
@@ -1871,6 +1873,8 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
+            BinaryArray.initUseBinaryArrays();
+
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
             String ggHome = cfg.getIgniteHome();
@@ -1991,8 +1995,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
-                myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+            initializeDefaultMBeanServer(myCfg);
 
             Marshaller marsh = myCfg.getMarshaller();
 
@@ -2350,7 +2353,7 @@ public class IgnitionEx {
                     if (safeToStop) {
                         try {
                             HashSet<UUID> newNodesToExclude = new HashSet<>(nodesToExclude);
-                            newNodesToExclude.add(grid.getLocalNodeId());
+                            newNodesToExclude.add(grid.localNodeId());
 
                             if (metaStorage.compareAndSet(GRACEFUL_SHUTDOWN_METASTORE_KEY, originalNodesToExclude,
                                 newNodesToExclude))
@@ -2421,7 +2424,7 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.getLocalNodeId();
+            UUID localNodeId = grid.localNodeId();
 
             GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
 
@@ -2674,6 +2677,12 @@ public class IgnitionEx {
         }
     }
 
+    /** Initialize default mbean server. */
+    public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
+            myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+    }
+
     /**
      * @param cfg Ignite Configuration with legacy data storage configuration.
      */
@@ -2690,8 +2699,12 @@ public class IgnitionEx {
 
         dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
         dsCfg.setPageSize(memCfg.getPageSize());
-        dsCfg.setSystemRegionInitialSize(memCfg.getSystemCacheInitialSize());
-        dsCfg.setSystemRegionMaxSize(memCfg.getSystemCacheMaxSize());
+
+        dsCfg.setSystemDataRegionConfiguration(
+                new SystemDataRegionConfiguration()
+                        .setInitialSize(memCfg.getSystemCacheInitialSize())
+                        .setMaxSize(memCfg.getSystemCacheMaxSize())
+        );
 
         List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
 

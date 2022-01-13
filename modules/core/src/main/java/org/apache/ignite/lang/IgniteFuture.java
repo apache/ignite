@@ -116,6 +116,7 @@ public interface IgniteFuture<V> {
      * It is guaranteed that done callback will be called only ONCE.
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param <T> Type of the converted result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb);
@@ -126,6 +127,7 @@ public interface IgniteFuture<V> {
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @param exec Executor to run done callback. Cannot be {@code null}.
+     * @param <T> Type of the converted result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec);

@@ -274,6 +274,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Entry set.
      */
     private class EntrySet extends AbstractSet<Entry<K, V>> {
+        /** {@inheritDoc} */
         @Override public Iterator<Entry<K, V>> iterator() {
             return new Iterator<Entry<K, V>>() {
                 /** */
@@ -345,6 +346,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
             };
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return GridLeanMap.this.size();
         }

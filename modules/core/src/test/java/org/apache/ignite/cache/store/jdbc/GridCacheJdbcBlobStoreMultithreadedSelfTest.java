@@ -219,6 +219,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * Test store factory.
      */
     private static class TestStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             try {
                 CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();

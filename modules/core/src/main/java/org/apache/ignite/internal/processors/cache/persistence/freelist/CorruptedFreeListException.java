@@ -17,22 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception to distinguish {@link AbstractFreeList} broken invariants.
  */
-public class CorruptedFreeListException extends IgniteCheckedException implements CorruptedPersistenceException {
-    /** */
+public class CorruptedFreeListException extends CorruptedDataStructureException {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**
+     * Constructor.
+     *
      * @param msg Message.
      * @param cause Cause.
+     * @param grpId Cache group id.
+     * @param pageIds PageId's that can be corrupted.
      */
-    public CorruptedFreeListException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
+    public CorruptedFreeListException(String msg, @Nullable Throwable cause, int grpId, long... pageIds) {
+        super(msg, cause, grpId, pageIds);
     }
 }

@@ -54,6 +54,7 @@ The following example illustrates how you can colocate the person objects with t
 
 :javaSourceFile: {javaCodeDir}/AffinityCollocationExample.java
 :dotnetSourceFile: code-snippets/dotnet/AffinityCollocation.cs
+:cppSourceFile: code-snippets/cpp/src/affinity_collocation.cpp
 
 [tabs]
 --
@@ -67,7 +68,11 @@ tab:C#/.NET[]
 ----
 include::{dotnetSourceFile}[tag=affinityCollocation,indent=0]
 ----
-tab:C++[unsupported]
+tab:C++[]
+[source,cpp]
+----
+include::{cppSourceFile}[tag=affinity-collocation,indent=0]
+----
 
 tab:SQL[]
 [source,sql]

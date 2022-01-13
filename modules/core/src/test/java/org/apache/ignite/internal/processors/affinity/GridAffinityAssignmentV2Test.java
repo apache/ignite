@@ -53,18 +53,25 @@ public class GridAffinityAssignmentV2Test {
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
 
+    /** */
     private ClusterNode clusterNode1 = node(metrics, ver, "1");
 
+    /** */
     private ClusterNode clusterNode2 = node(metrics, ver, "2");
 
+    /** */
     private ClusterNode clusterNode3 = node(metrics, ver, "3");
 
+    /** */
     private ClusterNode clusterNode4 = node(metrics, ver, "4");
 
+    /** */
     private ClusterNode clusterNode5 = node(metrics, ver, "5");
 
+    /** */
     private ClusterNode clusterNode6 = node(metrics, ver, "6");
 
+    /** */
     private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
         add(clusterNode1);
         add(clusterNode2);
@@ -163,6 +170,7 @@ public class GridAffinityAssignmentV2Test {
             assertTrue(unwrapped instanceof BitSetIntSet);
     }
 
+    /** */
     private void assertPartitions(AffinityAssignment gridAffinityAssignment) {
         List<Integer> parts = new ArrayList<Integer>() {{
             add(0);

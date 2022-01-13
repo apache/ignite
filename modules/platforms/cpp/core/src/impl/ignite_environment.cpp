@@ -743,7 +743,7 @@ namespace ignite
 
         void IgniteEnvironment::OnStartCallback(int64_t memPtr, jobject proc)
         {
-            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
+            this->proc = jni::JavaGlobalRef(ctx, proc);
 
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);

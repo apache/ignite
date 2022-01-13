@@ -313,7 +313,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         return runningCnt + heldCnt;
     }
 
-    /*
+    /**
      * Gets number of currently running (not {@code 'held}) jobs.
      *
      * @return Number of currently running (not {@code 'held}) jobs.

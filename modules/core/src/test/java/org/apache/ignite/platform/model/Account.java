@@ -31,6 +31,7 @@ public class Account {
     public Account() {
     }
 
+    /** */
     public Account(String id, int amount) {
         this.id = id;
         this.amount = amount;
@@ -56,6 +57,7 @@ public class Account {
         this.amount = amount;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -65,6 +67,7 @@ public class Account {
         return Objects.equals(id, account.id);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(id);
     }

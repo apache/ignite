@@ -69,16 +69,17 @@ Register name: `cache.{cache_name}.{near}`
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
-|EntryProcessorInvokeTimeNanos | long|The total time of cache invocations, in nanoseconds.
-|EntryProcessorMaxInvocationTime |long|So far, the maximum time to execute cache invokes.
-|EntryProcessorMinInvocationTime |long|So far, the minimum time to execute cache invokes.
+|EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
+|EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
+|EntryProcessorMinInvocationTime |long | So far, the minimum time to execute cache invokes for which this node is the initiator.
 |EntryProcessorMisses |long|The total number of invocations on keys, which don't exist in cache.
 |EntryProcessorPuts   |long|The total number of cache invocations, caused update.
 |EntryProcessorReadOnlyInvocations   |long|The total number of cache invocations, caused no updates.
 |EntryProcessorRemovals  |long|The total number of cache invocations, caused removals.
 |EstimatedRebalancingKeys|long|Number estimated to rebalance keys.
-|GetTime |histogram|   Get time in nanoseconds.
-|GetTimeTotal|long|The total time of cache gets, in nanoseconds.
+|GetAllTime | histogram | GetAll time for which this node is the initiator, in nanoseconds.
+|GetTime | histogram | Get time for which this node is the initiator, in nanoseconds.
+|GetTimeTotal | long | The total time of cache gets for which this node is the initiator, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
 |IndexRebuildKeysProcessed|long | The number of keys with rebuilt indexes.
 |IsIndexRebuildInProgress|boolean | True if index build or rebuild is in progress.
@@ -91,8 +92,9 @@ Register name: `cache.{cache_name}.{near}`
 |OffHeapPrimaryEntriesCount|long|Offheap primary entries count.
 |OffHeapPuts |long|The total number of put requests to the off-heap memory.
 |OffHeapRemovals |long|The total number of removals from the off-heap memory.
-|PutTime | histogram|   Put time in nanoseconds.
-|PutTimeTotal|long|The total time of cache puts, in nanoseconds.
+|PutAllTime | histogram | PutAll time for which this node is the initiator, in nanoseconds.
+|PutTime | histogram | Put time for which this node is the initiator, in nanoseconds.
+|PutTimeTotal | long | The total time of cache puts for which this node is the initiator, in nanoseconds.
 |QueryCompleted  |long|Count of completed queries.
 |QueryExecuted   |long|Count of executed queries.
 |QueryFailed |long|Count of failed queries.
@@ -104,8 +106,9 @@ Register name: `cache.{cache_name}.{near}`
 |RebalancedKeys |long| Number of already rebalanced keys.
 |RebalancingBytesRate|long|Estimated rebalancing speed in bytes.
 |RebalancingKeysRate |long|Estimated rebalancing speed in keys.
-|RemoveTime  |histogram|   Remove time in nanoseconds.
-|RemoveTimeTotal |long|The total time of cache removal, in nanoseconds.
+|RemoveAllTime | histogram | RemoveAll time for which this node is the initiator, in nanoseconds.
+|RemoveTime | histogram | Remove time for which this node is the initiator. in nanoseconds.
+|RemoveTimeTotal | long | The total time of cache removal, in nanoseconds.
 |RollbackTime|histogram|   Rollback time in nanoseconds.
 |RollbackTimeTotal   |long|The total time of rollback, in nanoseconds.
 |TotalRebalancedBytes|long|Number of already rebalanced bytes.

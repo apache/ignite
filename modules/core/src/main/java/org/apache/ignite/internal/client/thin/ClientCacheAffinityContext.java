@@ -181,6 +181,28 @@ public class ClientCacheAffinityContext {
      * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and key.
      */
     public UUID affinityNode(int cacheId, Object key) {
+        ClientCacheAffinityMapping mapping = currentMapping();
+
+        return mapping == null ? null : mapping.affinityNode(binary, cacheId, key);
+    }
+
+    /**
+     * Calculates affinity node for given cache and partition.
+     *
+     * @param cacheId Cache ID.
+     * @param part Partition.
+     * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and partition.
+     */
+    public UUID affinityNode(int cacheId, int part) {
+        ClientCacheAffinityMapping mapping = currentMapping();
+
+        return mapping == null ? null : mapping.affinityNode(cacheId, part);
+    }
+
+    /**
+     * Current affinity mapping.
+     */
+    private ClientCacheAffinityMapping currentMapping() {
         TopologyNodes top = lastTop.get();
 
         if (top == null)
@@ -194,7 +216,7 @@ public class ClientCacheAffinityContext {
         if (top.topVer.compareTo(mapping.topologyVersion()) > 0)
             return null;
 
-        return mapping.affinityNode(binary, cacheId, key);
+        return mapping;
     }
 
     /**

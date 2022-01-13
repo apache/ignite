@@ -328,6 +328,15 @@ namespace ignite
                 void Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
+                 * Perform Invoke of Java entry processor.
+                 *
+                 * @param inOp Input.
+                 * @param outOp Output.
+                 * @param err Error.
+                 */
+                void InvokeJava(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
+
+                /**
                  * Start continuous query execution.
                  *
                  * @param qry Continuous query.

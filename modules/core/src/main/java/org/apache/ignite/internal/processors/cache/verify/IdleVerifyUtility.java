@@ -268,6 +268,7 @@ public class IdleVerifyUtility {
             CacheDataRow row = it.nextX();
 
             partHash += row.key().hashCode();
+            partHash += row.version().hashCode(); // Detects ABA problem.
 
             // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));

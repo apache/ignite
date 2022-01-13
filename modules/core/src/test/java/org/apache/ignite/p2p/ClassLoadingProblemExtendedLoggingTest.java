@@ -55,6 +55,7 @@ public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTe
     @Parameterized.Parameter(0)
     public Integer allowSuccessfulClassRequestsCnt;
 
+    /** */
     @Parameterized.Parameters(name = "{0}")
     public static List<Integer> allowSuccessfulClassRequestsCntList() {
         return asList(0, 1);

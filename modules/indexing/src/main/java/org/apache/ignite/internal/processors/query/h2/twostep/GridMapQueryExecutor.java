@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -217,34 +216,36 @@ public class GridMapQueryExecutor {
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
         boolean treatReplicatedAsPartitioned = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED_AS_PARTITIONED);
 
-        Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
+        try {
+            Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
-        final List<Integer> cacheIds = req.caches();
+            final List<Integer> cacheIds = req.caches();
 
-        final boolean singlePart = parts != null && parts.length == 1;
-        final int parallelism = explain || replicated || F.isEmpty(cacheIds) ? 1 :
-            CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
+            final boolean singlePart = parts != null && parts.length == 1;
+            final int parallelism = explain || replicated || F.isEmpty(cacheIds) ? 1 :
+                CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
-        final int segments = explain || replicated || singlePart ? 1 : parallelism;
-        final int singleSegment = singlePart ? calculateSegment(parallelism, parts[0]) : 0;
+            final int segments = explain || replicated || singlePart ? 1 : parallelism;
+            final int singleSegment = singlePart ? calculateSegment(parallelism, parts[0]) : 0;
 
-        final Object[] params = req.parameters();
+            final Object[] params = req.parameters();
 
-        final int timeout = req.timeout() > 0 || req.explicitTimeout()
-            ? req.timeout()
-            : (int)h2.distributedConfiguration().defaultQueryTimeout();
+            final int timeout = req.timeout() > 0 || req.explicitTimeout()
+                ? req.timeout()
+                : (int)h2.distributedConfiguration().defaultQueryTimeout();
 
-        for (int i = 1; i < segments; i++) {
-            assert !F.isEmpty(cacheIds);
+            for (int i = 1; i < segments; i++) {
+                assert !F.isEmpty(cacheIds);
 
-            final int segment = i;
+                final int segment = i;
 
-            Span span = MTC.span();
+                Span span = MTC.span();
 
-            ctx.closure().callLocal(
-                (GridPlainCallable<Void>)() -> {
-                    try (TraceSurroundings ignored = MTC.supportContinual(span)) {
+                ctx.closure().runLocal(
+                    () -> {
+                        try (TraceSurroundings ignored = MTC.supportContinual(span)) {
                             onQueryRequest0(node,
+                                req.queryId(),
                                 req.requestId(),
                                 segment,
                                 req.schemaName(),
@@ -264,37 +265,44 @@ public class GridMapQueryExecutor {
                                 dataPageScanEnabled,
                                 treatReplicatedAsPartitioned
                             );
-
-                            return null;
+                        }
+                        catch (Throwable e) {
+                            sendError(node, req.requestId(), e);
                         }
                     },
-                QUERY_POOL);
-        }
+                    QUERY_POOL);
+            }
 
-        onQueryRequest0(node,
-            req.requestId(),
-            singleSegment,
-            req.schemaName(),
-            req.queries(),
-            cacheIds,
-            req.topologyVersion(),
-            partsMap,
-            parts,
-            req.pageSize(),
-            distributedJoins,
-            enforceJoinOrder,
-            replicated,
-            timeout,
-            params,
-            lazy,
-            req.mvccSnapshot(),
-            dataPageScanEnabled,
-            treatReplicatedAsPartitioned
-        );
+            onQueryRequest0(node,
+                req.queryId(),
+                req.requestId(),
+                singleSegment,
+                req.schemaName(),
+                req.queries(),
+                cacheIds,
+                req.topologyVersion(),
+                partsMap,
+                parts,
+                req.pageSize(),
+                distributedJoins,
+                enforceJoinOrder,
+                replicated,
+                timeout,
+                params,
+                lazy,
+                req.mvccSnapshot(),
+                dataPageScanEnabled,
+                treatReplicatedAsPartitioned
+            );
+        }
+        catch (Throwable e) {
+            sendError(node, req.requestId(), e);
+        }
     }
 
     /**
      * @param node Node authored request.
+     * @param qryId Query ID.
      * @param reqId Request ID.
      * @param segmentId index segment ID.
      * @param schemaName Schema name.
@@ -315,6 +323,7 @@ public class GridMapQueryExecutor {
      */
     private void onQueryRequest0(
         final ClusterNode node,
+        final long qryId,
         final long reqId,
         final int segmentId,
         final String schemaName,
@@ -449,7 +458,7 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
+                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
 
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,
@@ -557,12 +566,15 @@ public class GridMapQueryExecutor {
                         if (qryRetryErr != null)
                             sendError(node, reqId, qryRetryErr);
                         else {
-                            U.error(log, "Failed to execute local query.", e);
+                            if (e instanceof Error) {
+                                U.error(log, "Failed to execute local query.", e);
+
+                                throw (Error)e;
+                            }
+
+                            U.warn(log, "Failed to execute local query.", e);
 
                             sendError(node, reqId, e);
-
-                            if (e instanceof Error)
-                                throw (Error)e;
                         }
                     }
                 }

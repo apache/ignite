@@ -25,8 +25,10 @@ import java.io.IOException;
  * Helper class for {@link IpcSharedMemoryNativeLoaderSelfTest#testLoadWithCorruptedLibFile()} test, which contains test logic.
  */
 public class LoadWithCorruptedLibFileTestRunner {
+    /** */
     public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
 
+    /** */
     public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(IpcSharedMemoryNativeLoader.LIB_NAME);
 
     /**

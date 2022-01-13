@@ -26,6 +26,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
 
+/** */
 @RunWith(Parameterized.class)
 public class VectorNormCasesTest {
   /**
@@ -33,6 +34,7 @@ public class VectorNormCasesTest {
    */
   private static final double PRECISION = 0.01;
 
+  /** */
   @Parameterized.Parameters(name = "{0}")
   public static Collection<TestData> data() {
     return Arrays.asList(
@@ -64,12 +66,15 @@ public class VectorNormCasesTest {
     );
   }
 
+  /** */
   private final TestData testData;
 
+  /** */
   public VectorNormCasesTest(TestData testData) {
     this.testData = testData;
   }
 
+  /** */
   @Test
   public void test() {
     assertEquals(
@@ -79,19 +84,25 @@ public class VectorNormCasesTest {
     );
   }
 
+  /** */
   private static class TestData {
+    /** */
     public final Vector vector;
 
+    /** */
     public final Double p;
 
+    /** */
     public final Double expRes;
 
+    /** */
     private TestData(double[] vector, double p, double expRes) {
       this.vector = new DenseVector(vector);
       this.p = p;
       this.expRes = expRes;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
       return String.format("norm(%s, %s) = %s",
           Arrays.toString(vector.asArray()),

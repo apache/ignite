@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -96,9 +95,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -131,7 +127,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
      *      cache entry has a value.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
@@ -147,7 +142,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
-        UUID subjId,
         int taskNameHash,
         long createTtl,
         long accessTtl,
@@ -180,7 +174,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         }
 
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
@@ -220,13 +213,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -272,6 +258,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         return (flags & RECOVERY_FLAG_MASK) != 0;
     }
 
+    /** */
     public boolean addReaders() {
         return (flags & ADD_READER_FLAG_MASK) != 0;
     }
@@ -424,30 +411,24 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -534,14 +515,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 12:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -549,7 +522,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -557,7 +530,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
@@ -565,7 +538,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -585,7 +558,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 17;
+        return 16;
     }
 
     /** {@inheritDoc} */

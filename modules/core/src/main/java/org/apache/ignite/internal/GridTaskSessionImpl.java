@@ -759,7 +759,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         try {
-            return (T) ctx.checkpoint().loadCheckpoint(ses, key);
+            return (T)ctx.checkpoint().loadCheckpoint(ses, key);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -58,7 +58,7 @@ public class GridifyAspectJAspect {
     @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "unchecked"})
     @Around("execution(@org.apache.ignite.compute.gridify.Gridify * *(..)) && !cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
-        Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();
+        Method mtd = ((MethodSignature)joinPnt.getSignature()).getMethod();
 
         Gridify ann = mtd.getAnnotation(Gridify.class);
 
@@ -112,7 +112,7 @@ public class GridifyAspectJAspect {
             return ignite.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg);
         }
         catch (Exception e) {
-            for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {
+            for (Class<?> ex : ((MethodSignature)joinPnt.getSignature()).getMethod().getExceptionTypes()) {
                 // Descend all levels down.
                 Throwable cause = e.getCause();
 

@@ -191,11 +191,13 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         stopGrid(0);
     }
 
+    /** */
     @After
     public void after() {
         stopAllGrids();
     }
 
+    /** */
     @Before
     public void before() throws Exception {
         cleanPersistenceDir();

@@ -171,6 +171,9 @@ namespace ignite
                 /** Invalid SQL data type. */
                 SHY004_INVALID_SQL_DATA_TYPE,
 
+                /** Operation canceled. */
+                SHY008_OPERATION_CANCELED,
+
                 /** Invalid use of null pointer. */
                 SHY009_INVALID_USE_OF_NULL_POINTER,
 

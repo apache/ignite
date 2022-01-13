@@ -121,7 +121,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testTwoStepGroupAndAggregates() throws Exception {
         IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
 
-        GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
+        GridQueryProcessor qryProc = ((IgniteKernal)ignite).context().query();
 
         Set<Integer> set1 = new HashSet<>();
 
@@ -147,7 +147,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
-            assertTrue(set0.add((Integer) o.get(0)));
+            assertTrue(set0.add((Integer)o.get(0)));
         }
 
         assertEquals(set0, set1);
@@ -238,7 +238,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testMultiStatement() throws Exception {
         final IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
 
-        final GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
+        final GridQueryProcessor qryProc = ((IgniteKernal)ignite).context().query();
 
         final SqlFieldsQuery qry = new SqlFieldsQuery(
             "insert into FactPurchase(_key, id, productId, storeId, price) values (555, 555, 555, 555, 555);" +
@@ -471,6 +471,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         private int productId;
 
+        /** */
         @QuerySqlField
         private int price;
 

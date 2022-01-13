@@ -20,18 +20,25 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests for use partition pruning at the SELECT step of the UPDATE/DELETE statements execution.
  */
-@SuppressWarnings("deprecation")
 public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningBaseTest {
     /** Rows count for test tables. */
     private static final int ROWS = 10;
 
     /** Recreate tables before each test statement. */
     private boolean recreateTables;
+
+    /** */
+    @Parameterized.Parameters(name = "createWithSql = {0}")
+    public static List<?> params() {
+        return F.asList(false, true);
+    }
 
     /**
      * Test UPDATE statement.

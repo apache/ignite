@@ -182,6 +182,24 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
         doTestStartupWithOldVersion("2.9.0");
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_9_1() throws Exception {
+        doTestStartupWithOldVersion("2.9.1");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_10() throws Exception {
+        doTestStartupWithOldVersion("2.10.0");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_11() throws Exception {
+        doTestStartupWithOldVersion("2.11.0");
+    }
+
     /**
      * Tests opportunity to read data from previous Ignite DB version.
      *
@@ -321,7 +339,14 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
 
     /** Enum for cover binaryObject enum save/load. */
     public enum TestEnum {
-        /** */A, /** */B, /** */C
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
     }
 
     /** Special class to test WAL reader resistance to Serializable interface. */

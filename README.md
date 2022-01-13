@@ -1,6 +1,6 @@
 # Apache Ignite
 
-<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/ignite_logo_full.svg" hspace="20"/></a>
+<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/assets/images/apache_ignite_logo.svg" hspace="20"/></a>
 
 [![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
 [![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
@@ -15,7 +15,7 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 
 <p align="center">
     <a href="https://ignite.apache.org">
-        <img src="https://github.com/apache/ignite-website/blob/master/images/png-diagrams/ignite_cluster.png" width="400px"/>
+        <img src="https://github.com/apache/ignite-website/blob/master/docs/2.9.0/images/ignite_clustering.png" width="400px"/>
     </a>
 </p>
 

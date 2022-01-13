@@ -184,7 +184,10 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
      * @param original Original IgnitePredicate.
      * @return Security aware IgnitePredicate.
      */
-    private <T> IgnitePredicate<Event> securityAwareRemoteFilter(IgnitePredicate<T> original) {
+    private <T> IgnitePredicate<Event> securityAwareRemoteFilter(@Nullable IgnitePredicate<T> original) {
+        if (original == null)
+            return null;
+
         IgnitePredicate<Event> res = (IgnitePredicate<Event>)original;
 
         if (ctx.security().enabled()) {

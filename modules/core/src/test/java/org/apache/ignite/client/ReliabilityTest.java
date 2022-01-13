@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +32,22 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -51,6 +59,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * High Availability tests.
  */
 public class ReliabilityTest extends AbstractThinClientTest {
+    /** Service name. */
+    private static final String SERVICE_NAME = "svc";
+
     /**
      * Thin clint failover.
      */
@@ -182,6 +193,132 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Reuse second address without fail.
             cachePut(cache, 0, 0);
         }
+    }
+
+    /**
+     * Test single server can be used multiple times in configuration.
+     */
+    @Test
+    public void testRetryReadPolicyRetriesCacheGet() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ClientRetryReadPolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            cache.get(0);
+        }
+    }
+
+    /**
+     * Tests that retry limit of 1 effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testRetryLimitDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryLimit(1)
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that setting retry policy to null effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testNullRetryPolicyDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(null)
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that retry limit of 1 effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testRetryNonePolicyDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ClientRetryNonePolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that {@link ClientOperationType} is updated accordingly when {@link ClientOperation} is added.
+     */
+    @Test
+    public void testRetryPolicyConvertOpAllOperationsSupported() {
+        List<ClientOperation> nullOps = Arrays.stream(ClientOperation.values())
+                .filter(o -> o.toPublicOperationType() == null)
+                .collect(Collectors.toList());
+
+        String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
+
+        long expectedNullCount = 12;
+
+        String msg = expectedNullCount
+                + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
+                + nullOpsNames;
+
+        assertEquals(msg, expectedNullCount, nullOps.size());
     }
 
     /**
@@ -371,6 +508,69 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Test that client can invoke service method with externalizable parameter after
+     * cluster failover.
+     */
+    @Test
+    public void testServiceMethodInvocationAfterFailover() throws Exception {
+        PersonExternalizable person = new PersonExternalizable("Person 1");
+
+        ServiceConfiguration testServiceConfig = new ServiceConfiguration();
+        testServiceConfig.setName(SERVICE_NAME);
+        testServiceConfig.setService(new TestService());
+        testServiceConfig.setTotalCount(1);
+
+        Ignite ignite = null;
+        IgniteClient client = null;
+        try {
+            // Initialize cluster and client
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            client = startClient(ignite);
+            TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
+
+            // Invoke the service method with Externalizable parameter for the first time.
+            // This triggers registration of the PersonExternalizable type in the cluter.
+            String result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+
+            // Kill the cluster node, clean up the working directory (with cached types)
+            // and drop the client connection.
+            ignite.close();
+            U.delete(U.resolveWorkDirectory(
+                    U.defaultWorkDirectory(),
+                    DataStorageConfiguration.DFLT_MARSHALLER_PATH,
+                    false));
+            dropAllThinClientConnections();
+
+            // Invoke the service.
+            GridTestUtils.assertThrowsWithCause(() -> svc.testMethod(person), ClientConnectionException.class);
+
+            // Restore the cluster and redeploy the service.
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+
+            // Invoke the service method with Externalizable parameter once again.
+            // This should restore the client connection and trigger registration of the
+            // PersonExternalizable once again.
+            result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+        } finally {
+            if (ignite != null) {
+                try {
+                    ignite.close();
+                } catch (Throwable ignore) {
+                }
+            }
+
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (Throwable ignore) {
+                }
+            }
+        }
+    }
+
+    /**
      * Performs cache put.
      *
      * @param cache Cache.
@@ -426,5 +626,36 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     protected boolean isPartitionAware() {
         return false;
+    }
+
+    /** */
+    public static interface TestServiceInterface {
+        /** */
+        public String testMethod(PersonExternalizable person);
+    }
+
+    /**
+     * Implementation of TestServiceInterface.
+     */
+    public static class TestService implements Service, TestServiceInterface {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String testMethod(PersonExternalizable person) {
+            return "testMethod(PersonExternalizable person): " + person;
+        }
     }
 }

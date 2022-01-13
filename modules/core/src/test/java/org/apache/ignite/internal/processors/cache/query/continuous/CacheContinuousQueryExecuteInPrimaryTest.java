@@ -235,6 +235,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
         }
     }
 
+    /** */
     private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry,
         boolean isTransactional) {
         try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {

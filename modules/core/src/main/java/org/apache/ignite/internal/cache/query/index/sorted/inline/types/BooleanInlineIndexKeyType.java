@@ -27,13 +27,13 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<BooleanIndexKey> {
     /** */
     public BooleanInlineIndexKeyType() {
-        super(IndexKeyTypes.BOOLEAN, (short) 1);
+        super(IndexKeyTypes.BOOLEAN, (short)1);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, BooleanIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putByte(pageAddr, off + 1, (byte)((boolean) key.key() ? 1 : 0));
+        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off + 1, (byte)((boolean)key.key() ? 1 : 0));
 
         return keySize + 1;
     }
@@ -49,7 +49,7 @@ public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<Boolea
     @Override public int compare0(long pageAddr, int off, BooleanIndexKey key) {
         boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
 
-        return Integer.signum(Boolean.compare(bool1, (boolean) key.key()));
+        return Integer.signum(Boolean.compare(bool1, (boolean)key.key()));
     }
 
     /** {@inheritDoc} */

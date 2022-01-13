@@ -78,7 +78,7 @@ public class ChangeMasterKeyCommand extends AbstractCommand<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Change the master key:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
+        usage(log, "Change the master key:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
     }
 
     /** {@inheritDoc} */

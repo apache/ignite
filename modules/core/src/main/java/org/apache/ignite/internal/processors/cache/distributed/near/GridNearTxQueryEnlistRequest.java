@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -50,9 +52,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** */
     private int miniId;
-
-    /** */
-    private UUID subjId;
 
     /** */
     private AffinityTopologyVersion topVer;
@@ -107,7 +106,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
      * @param threadId Thread id.
      * @param futId Future id.
      * @param miniId Mini fture id.
-     * @param subjId Subject id.
      * @param topVer Topology version.
      * @param lockVer Lock version.
      * @param mvccSnapshot MVCC snspshot.
@@ -128,7 +126,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         long threadId,
         IgniteUuid futId,
         int miniId,
-        UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
         MvccSnapshot mvccSnapshot,
@@ -155,7 +152,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;
-        this.subjId = subjId;
         this.topVer = topVer;
         this.lockVer = lockVer;
         this.mvccSnapshot = mvccSnapshot;
@@ -183,13 +179,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Subject id.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -297,7 +286,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */
@@ -312,7 +301,15 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (paramsBytes != null && params == null)
+        if (paramsBytes == null || params != null)
+            return;
+
+        Marshaller m = ctx.kernalContext().config().getMarshaller();
+
+        if (m instanceof BinaryMarshaller)
+            // To avoid deserializing of enum types.
+            params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
+        else
             params = U.unmarshal(ctx, paramsBytes, ldr);
     }
 
@@ -404,36 +401,30 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeLong("txTimeout", txTimeout))
                     return false;
 
@@ -552,14 +543,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 16:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -567,7 +550,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -575,7 +558,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -583,7 +566,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -591,7 +574,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 txTimeout = reader.readLong("txTimeout");
 
                 if (!reader.isLastRead())

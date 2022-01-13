@@ -129,6 +129,10 @@ tab:C++[unsupported]
 
 The following table lists the properties of `CacheConfiguration` related to rebalancing:
 
+[CAUTION]
+====
+`rebalanceDelay` and related API's are deprecated and will be removed in the next releases.
+====
 
 [cols="1,4,1",opts="header"]
 |===

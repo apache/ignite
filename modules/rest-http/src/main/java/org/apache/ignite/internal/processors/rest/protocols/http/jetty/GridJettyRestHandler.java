@@ -257,6 +257,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    /** */
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
         Map<String, String> params,

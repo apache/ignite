@@ -36,6 +36,7 @@ public class TestClosure implements IgniteClosure<Object, Object> {
     @LoggerResource
     private IgniteLogger log;
 
+    /** {@inheritDoc} */
     @Override public Object apply(Object o) {
         Assert.assertNotNull(ignite);
         Assert.assertNotNull(log);

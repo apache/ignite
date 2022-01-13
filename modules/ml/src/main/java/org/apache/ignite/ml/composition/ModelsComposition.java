@@ -55,6 +55,7 @@ public class ModelsComposition<M extends IgniteModel<Vector, Double>>
         this.models = Collections.unmodifiableList(models);
     }
 
+    /** */
     public ModelsComposition() {
     }
 

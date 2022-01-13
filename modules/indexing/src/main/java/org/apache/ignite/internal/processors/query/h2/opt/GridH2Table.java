@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -698,7 +700,7 @@ public class GridH2Table extends TableBase {
 
             if (SysProperties.CHECK) {
                 for (SchemaObject obj : database.getAllSchemaObjects(DbObject.INDEX)) {
-                    Index idx = (Index) obj;
+                    Index idx = (Index)obj;
                     if (idx.getTable() == this)
                         DbException.throwInternalError("index not dropped: " + idx.getName());
                 }
@@ -737,13 +739,18 @@ public class GridH2Table extends TableBase {
      */
     private void destroyIndex(Index idx) {
         if (idx instanceof GridH2IndexBase) {
-            GridH2IndexBase h2idx = (GridH2IndexBase) idx;
+            GridH2IndexBase h2idx = (GridH2IndexBase)idx;
 
             // Destroy underlying Ignite index.
             IndexDefinition deleteDef = new IndexDefinition() {
                 /** {@inheritDoc} */
                 @Override public IndexName idxName() {
                     return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
+                }
+
+                /** {@inheritDoc} */
+                @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
+                    throw new UnsupportedOperationException("Hasn't be invoked for destroyed index.");
                 }
             };
 

@@ -153,7 +153,7 @@ abstract class TcpDiscoveryImpl {
         log = spi.log;
 
         if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx) spi.ignite()).context().tracing();
+            tracing = ((IgniteEx)spi.ignite()).context().tracing();
         else
             tracing = new NoopTracing();
     }

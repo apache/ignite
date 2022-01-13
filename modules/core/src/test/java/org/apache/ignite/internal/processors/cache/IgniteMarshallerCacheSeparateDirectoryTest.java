@@ -201,13 +201,19 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
 
     /** */
     private enum AccessMode {
+        /** */
         SERVER,
+
+        /** */
         CLIENT,
+
+        /** */
         CLOSURE;
     }
 
     /** */
     static class TestClass {
+        /** */
         @QuerySqlField
         private int f = 42;
     }

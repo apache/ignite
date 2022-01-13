@@ -305,6 +305,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }
@@ -349,6 +350,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }

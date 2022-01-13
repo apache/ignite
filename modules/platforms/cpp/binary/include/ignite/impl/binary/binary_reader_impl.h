@@ -949,7 +949,7 @@ namespace ignite
                 template<typename T>
                 T ReadTopObject()
                 {
-                    return ignite::binary::ReadHelper<T>::Read(*this);
+                    return ReadHelper<T>::Read(*this);
                 }
 
                 /**
@@ -960,7 +960,7 @@ namespace ignite
                 template<typename T>
                 void ReadTopObject(T& res)
                 {
-                    return ignite::binary::ReadHelper<T>::Read(*this, res);
+                    return ReadHelper<T>::Read(*this, res);
                 }
 
                 /**

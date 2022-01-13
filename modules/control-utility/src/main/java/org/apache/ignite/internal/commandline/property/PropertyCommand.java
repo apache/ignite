@@ -24,7 +24,6 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 
-import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.PROPERTY;
 import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.GET;
 import static org.apache.ignite.internal.commandline.property.PropertySubCommandsList.HELP;

@@ -167,37 +167,37 @@ public interface CacheGroupMetricsMXBean {
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap();
 
     /**
-     * Cache group type.
+     * @return Cache group type.
      */
     @MXBeanDescription("Cache group type.")
     public String getType();
 
     /**
-     * Local partition ids.
+     * @return Local partition ids..
      */
     @MXBeanDescription("Local partition ids.")
     public List<Integer> getPartitionIds();
 
     /**
-     * Cache group total allocated pages.
+     * @return Cache group total allocated pages.
      */
     @MXBeanDescription("Cache group total allocated pages.")
     public long getTotalAllocatedPages();
 
     /**
-     * Total size of memory allocated for group, in bytes.
+     * @return Total size of memory allocated for group, in bytes.
      */
     @MXBeanDescription("Total size of memory allocated for group, in bytes.")
     public long getTotalAllocatedSize();
 
     /**
-     * Storage space allocated for group, in bytes.
+     * @return Storage space allocated for group, in bytes.
      */
     @MXBeanDescription("Storage space allocated for group, in bytes.")
     public long getStorageSize();
 
     /**
-     * Storage space allocated for group adjusted for possible sparsity, in bytes.
+     * @return Storage space allocated for group adjusted for possible sparsity, in bytes.
      */
     @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
     public long getSparseStorageSize();

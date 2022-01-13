@@ -276,7 +276,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
             final MutableEntry<Integer, Integer> entry,
             final Object... arguments
         ) throws EntryProcessorException {
-            entry.setValue((Integer) arguments[0]);
+            entry.setValue((Integer)arguments[0]);
 
             return null;
         }

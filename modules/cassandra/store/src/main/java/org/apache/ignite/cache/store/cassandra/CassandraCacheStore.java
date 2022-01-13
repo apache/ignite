@@ -133,7 +133,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
                     String qry = ((String)obj).trim();
 
                     if (qry.toLowerCase().startsWith("select"))
-                        task = new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo);
+                        task = new LoadCacheCustomQueryWorker<>(ses, (String)obj, controller, log, clo);
                 }
 
                 if (task != null)

@@ -372,8 +372,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize(),
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
             ),
             persistenceEnabled
@@ -382,8 +382,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createVolatileDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize()
             ),
             false
         );
@@ -581,8 +581,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemRegionInitialSize(),
-            memCfg.getSystemRegionMaxSize()
+            memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+            memCfg.getSystemDataRegionConfiguration().getMaxSize()
         );
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
@@ -1034,11 +1034,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Schedule new checkpoint.
+     * Schedule a new checkpoint.<p>
+     * Note: if a checkpoint is already running and the locks have not been taken yet,
+     *       then a new checkpoint will not be forced.
      *
      * @param reason Reason.
      */
     @Nullable public CheckpointProgress forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * Schedule a new checkpoint.
+     *
+     * @param reason Reason.
+     * @param lsnr Listener which will be called on scheduled checkpoint finish.
+     */
+    @Nullable public <R> CheckpointProgress forceNewCheckpoint(String reason,
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         return null;
     }
 
@@ -1263,7 +1276,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (plcCfg.getMemoryAllocator() == null)
+            plcCfg.setMemoryAllocator(memCfg.getMemoryAllocator());
+
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
+            trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1302,7 +1319,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File allocPath = buildAllocPath(plcCfg);
 
         return allocPath == null ?
-            new UnsafeMemoryProvider(log) :
+            new UnsafeMemoryProvider(log, plcCfg.getMemoryAllocator()) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath);

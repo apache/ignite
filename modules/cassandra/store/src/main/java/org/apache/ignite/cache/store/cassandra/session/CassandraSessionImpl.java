@@ -112,6 +112,7 @@ public class CassandraSessionImpl implements CassandraSession {
      * @param fetchSize Number of rows to immediately fetch in CQL statement execution.
      * @param readConsistency Consistency level for Cassandra READ operations (select).
      * @param writeConsistency Consistency level for Cassandra WRITE operations (insert/update/delete).
+     * @param expirationTimeout Expiration timout.
      * @param log Logger.
      */
     public CassandraSessionImpl(Cluster.Builder builder, Integer fetchSize, ConsistencyLevel readConsistency,

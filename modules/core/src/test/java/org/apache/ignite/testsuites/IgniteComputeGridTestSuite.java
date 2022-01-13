@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
 import org.apache.ignite.internal.GridCancelUnusedJobSelfTest;
 import org.apache.ignite.internal.GridCancelledJobsMetricsSelfTest;
 import org.apache.ignite.internal.GridCollisionJobsContextSelfTest;
+import org.apache.ignite.internal.GridCollisionManagerLoggingSelfTest;
 import org.apache.ignite.internal.GridDeploymentMultiThreadedSelfTest;
 import org.apache.ignite.internal.GridDeploymentSelfTest;
 import org.apache.ignite.internal.GridEventStorageCheckAllEventsSelfTest;
@@ -164,6 +165,7 @@ import org.junit.runners.Suite;
     PublicThreadpoolStarvationTest.class,
     StripedExecutorTest.class,
     GridJobServicesAddNodeTest.class,
+    GridCollisionManagerLoggingSelfTest.class,
 
     IgniteComputeCustomExecutorConfigurationSelfTest.class,
     IgniteComputeCustomExecutorSelfTest.class,

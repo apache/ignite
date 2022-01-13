@@ -34,13 +34,17 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
    */
   private static final long serialVersionUID = 1771556549784040096L;
 
+  /** */
   private int p = 1;
 
+  /** */
   private final double[] weights;
 
+  /** */
   @JsonIgnore
   private final Vector internalWeights;
 
+  /** */
   @JsonCreator
   public WeightedMinkowskiDistance(@JsonProperty("p")int p, @JsonProperty("weights")double[] weights) {
     this.p = p;
@@ -59,7 +63,7 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
             .map(x -> Math.pow(Math.abs(x), p))
             .times(internalWeights)
             .sum(),
-        1 / (double) p
+        1 / (double)p
     );
   }
 
@@ -89,6 +93,7 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
     return getClass().hashCode();
   }
 
+  /** {@inheritDoc} */
   @Override public String toString() {
     return "WeightedMinkowskiDistance{" +
         "p=" + p +

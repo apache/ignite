@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 
 /**
  * This class defines {@link CdcMain} runtime configuration.
@@ -38,6 +39,9 @@ public class CdcConfiguration {
 
     /** Change Data Capture consumer. */
     private CdcConsumer consumer;
+
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
 
     /** Keep binary flag.<br>Default value {@code true}. */
     private boolean keepBinary = DFLT_KEEP_BINARY;
@@ -64,6 +68,25 @@ public class CdcConfiguration {
     /** @param consumer CDC consumer. */
     public void setConsumer(CdcConsumer consumer) {
         this.consumer = consumer;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @see CdcConfiguration#getMetricExporterSpi()
+     */
+    public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+    }
+
+    /**
+     * Gets fully configured metric SPI implementations.
+     *
+     * @return Metric exporter SPI implementations.
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
     }
 
     /** @return keep binary value. */
