@@ -176,8 +176,11 @@ public abstract class AbstractWalRecordsIterator
                 curRec = advanceRecord(currWalSegment);
 
                 if (curRec != null) {
-                    if (curRec.get2().type() == null)
+                    if (curRec.get2().type() == null) {
+                        lastRead = curRec.get1();
+
                         continue; // Record was skipped by filter of current serializer, should read next record.
+                    }
 
                     return;
                 }
