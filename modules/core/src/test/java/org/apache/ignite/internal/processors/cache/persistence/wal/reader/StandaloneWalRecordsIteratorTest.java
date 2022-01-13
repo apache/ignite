@@ -161,6 +161,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         WALIterator iter = createWalIterator(dir, null, null, false);
 
         assertFalse(iter.lastRead().isPresent());
+        assertTrue(iter.hasNext());
 
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> curr = iter.next();
@@ -195,6 +196,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
 
         assertFalse(iter.lastRead().isPresent());
+        assertTrue(iter.hasNext());
 
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> cur = iter.next();
@@ -241,6 +243,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         // Iterating and filter out last record.
         iter = createWalIterator(dir, null, null, false, (type, ptr) -> type != lastRecType);
+
+        assertTrue(iter.hasNext());
 
         while (iter.hasNext()) {
             lastRec = iter.next();
