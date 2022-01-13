@@ -132,6 +132,7 @@ namespace ignite
     
                         oldVal = other.oldVal;
                         hasOldValue = other.hasOldValue;
+                        eventType = other.eventType;
                     }
     
                     return *this;
