@@ -53,8 +53,8 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     public SpecialSerializationMethodsImpl(ClassDescriptor descriptor) {
         writeReplaceHandle = descriptor.hasWriteReplace() ? writeReplaceHandle(descriptor) : null;
         readResolveHandle = descriptor.hasReadResolve() ? readResolveHandle(descriptor) : null;
-        writeObjectHandle = descriptor.hasSerializationOverride() ? writeObjectHandle(descriptor) : null;
-        readObjectHandle = descriptor.hasSerializationOverride() ? readObjectHandle(descriptor) : null;
+        writeObjectHandle = descriptor.hasWriteObject() ? writeObjectHandle(descriptor) : null;
+        readObjectHandle = descriptor.hasReadObject() ? readObjectHandle(descriptor) : null;
     }
 
     private static MethodHandle writeReplaceHandle(ClassDescriptor descriptor) {

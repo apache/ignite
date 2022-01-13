@@ -331,7 +331,7 @@ public class ClassDescriptorFactoryTest {
         ClassDescriptor arbitraryDescriptor = context.getDescriptor(ArbitraryClass.class);
         assertNotNull(arbitraryDescriptor);
 
-        ClassDescriptor intDescriptor = context.getDescriptor(BuiltinType.INT.descriptorId());
+        ClassDescriptor intDescriptor = context.getDescriptor(BuiltInType.INT.descriptorId());
         assertNotNull(intDescriptor);
 
         List<FieldDescriptor> fields = holderDescriptor.fields();
@@ -398,6 +398,27 @@ public class ClassDescriptorFactoryTest {
         checkSerializable(descriptor.serialization(), true, true, true);
     }
 
+    @Test
+    void writeObjectMethodWithNonVoidReturnTypeIsIgnored() {
+        ClassDescriptor descriptor = factory.create(WithWriteObjectWithNonVoidReturnType.class);
+
+        assertFalse(descriptor.hasWriteObject());
+    }
+
+    @Test
+    void readObjectMethodWithNonVoidReturnTypeIsIgnored() {
+        ClassDescriptor descriptor = factory.create(WithReadObjectWithNonVoidReturnType.class);
+
+        assertFalse(descriptor.hasReadObject());
+    }
+
+    @Test
+    void readObjectNoDataMethodWithNonVoidReturnTypeIsIgnored() {
+        ClassDescriptor descriptor = factory.create(WithReadObjectNoDataWithNonVoidReturnType.class);
+
+        assertFalse(descriptor.hasReadObjectNoData());
+    }
+
     /**
      * Checks that serialization type is {@link SerializationType#ARBITRARY}.
      *
@@ -405,7 +426,11 @@ public class ClassDescriptorFactoryTest {
      */
     private void checkArbitraryType(Serialization serialization) {
         assertEquals(ARBITRARY, serialization.type());
-        assertFalse(serialization.hasSerializationOverride());
+
+        assertFalse(serialization.hasWriteObject());
+        assertFalse(serialization.hasReadObject());
+        assertFalse(serialization.hasReadObjectNoData());
+
         assertFalse(serialization.hasWriteReplace());
         assertFalse(serialization.hasReadResolve());
     }
@@ -426,7 +451,11 @@ public class ClassDescriptorFactoryTest {
      */
     private void checkSimpleExternalizable(Serialization serialization) {
         assertEquals(EXTERNALIZABLE, serialization.type());
-        assertFalse(serialization.hasSerializationOverride());
+
+        assertFalse(serialization.hasWriteObject());
+        assertFalse(serialization.hasReadObject());
+        assertFalse(serialization.hasReadObjectNoData());
+
         assertFalse(serialization.hasWriteReplace());
         assertFalse(serialization.hasReadResolve());
     }
@@ -442,7 +471,9 @@ public class ClassDescriptorFactoryTest {
     private void checkSerializable(Serialization serialization, boolean override, boolean writeReplace, boolean readResolve) {
         assertEquals(SERIALIZABLE, serialization.type());
 
-        assertEquals(override, serialization.hasSerializationOverride());
+        assertEquals(override, serialization.hasWriteObject());
+        assertEquals(override, serialization.hasReadObject());
+
         assertEquals(writeReplace, serialization.hasWriteReplace());
         assertEquals(readResolve, serialization.hasReadResolve());
     }
@@ -511,5 +542,26 @@ public class ClassDescriptorFactoryTest {
     }
 
     private static class ExtendsObject {
+    }
+
+    private static class WithWriteObjectWithNonVoidReturnType implements Serializable {
+        @SuppressWarnings("unused")
+        private Object writeObject(ObjectOutputStream stream) {
+            return null;
+        }
+    }
+
+    private static class WithReadObjectWithNonVoidReturnType implements Serializable {
+        @SuppressWarnings("unused")
+        private Object readObject(ObjectInputStream stream) {
+            return null;
+        }
+    }
+
+    private static class WithReadObjectNoDataWithNonVoidReturnType implements Serializable {
+        @SuppressWarnings("unused")
+        private Object readObjectNoData(ObjectInputStream stream) {
+            return null;
+        }
     }
 }

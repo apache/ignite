@@ -40,11 +40,6 @@ public class FieldDescriptor {
     private final int typeDescriptorId;
 
     /**
-     * The class in which the field is declared.
-     */
-    private final Class<?> declaringClass;
-
-    /**
      * Accessor for accessing this field.
      */
     private final FieldAccessor accessor;
@@ -53,7 +48,7 @@ public class FieldDescriptor {
      * Constructor.
      */
     public FieldDescriptor(Field field, int typeDescriptorId) {
-        this(field.getName(), field.getType(), typeDescriptorId, field.getDeclaringClass());
+        this(field.getName(), field.getType(), typeDescriptorId, new UnsafeFieldAccessor(field));
     }
 
     /**
@@ -65,12 +60,14 @@ public class FieldDescriptor {
      * @param declaringClass    the class in which the field if declared
      */
     public FieldDescriptor(String fieldName, Class<?> fieldClazz, int typeDescriptorId, Class<?> declaringClass) {
+        this(fieldName, fieldClazz, typeDescriptorId, new UnsafeFieldAccessor(fieldName, declaringClass));
+    }
+
+    private FieldDescriptor(String fieldName, Class<?> fieldClazz, int typeDescriptorId, FieldAccessor accessor) {
         this.name = fieldName;
         this.clazz = fieldClazz;
         this.typeDescriptorId = typeDescriptorId;
-        this.declaringClass = declaringClass;
-
-        accessor = new FieldAccessorImpl(this);
+        this.accessor = accessor;
     }
 
     /**
@@ -100,15 +97,6 @@ public class FieldDescriptor {
      */
     public int typeDescriptorId() {
         return typeDescriptorId;
-    }
-
-    /**
-     * Returns the class in which the field is declared.
-     *
-     * @return the class in which the field is declared
-     */
-    public Class<?> declaringClass() {
-        return declaringClass;
     }
 
     /**

@@ -31,12 +31,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.network.serialization.BuiltinType;
+import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
-import org.apache.ignite.internal.network.serialization.SerializedStreamCommands;
 import org.apache.ignite.internal.network.serialization.SpecialMethodInvocationException;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +63,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         this.localDescriptors = localDescriptors;
         this.descriptorFactory = descriptorFactory;
 
-        structuredObjectMarshaller = new StructuredObjectMarshaller(this::marshalToOutput, this::unmarshalFromInput);
+        structuredObjectMarshaller = new StructuredObjectMarshaller(localDescriptors, this::marshalToOutput, this::unmarshalFromInput);
 
         externalizableMarshaller = new ExternalizableMarshaller(
                 this::unmarshalFromInput,
@@ -227,7 +226,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         } else {
             // This is some custom class (not a built-in). If it's a non-built-in array, we need to handle it as a generic container.
             if (objectClass.isArray()) {
-                return localDescriptors.getBuiltInDescriptor(BuiltinType.OBJECT_ARRAY);
+                return localDescriptors.getBuiltInDescriptor(BuiltInType.OBJECT_ARRAY);
             }
 
             return descriptorFactory.create(objectClass);
@@ -239,7 +238,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
     }
 
     private void writeReference(int objectId, DataOutput output) throws IOException {
-        ProtocolMarshalling.writeDescriptorOrCommandId(SerializedStreamCommands.REFERENCE, output);
+        ProtocolMarshalling.writeDescriptorOrCommandId(BuiltInType.REFERENCE.descriptorId(), output);
         ProtocolMarshalling.writeObjectId(objectId, output);
     }
 
@@ -314,7 +313,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
 
     private <T> T unmarshalFromInput(DataInputStream input, UnmarshallingContext context) throws IOException, UnmarshalException {
         int commandOrDescriptorId = ProtocolMarshalling.readDescriptorOrCommandId(input);
-        if (commandOrDescriptorId == SerializedStreamCommands.REFERENCE) {
+        if (commandOrDescriptorId == BuiltInType.REFERENCE.descriptorId()) {
             return unmarshalReference(input, context);
         }
 

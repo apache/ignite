@@ -31,23 +31,21 @@ import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Built-in types.
- *
- * <p>They share ID space with commands defined in {@link SerializedStreamCommands}.
  */
-public enum BuiltinType {
-    BYTE(0, byte.class),
+public enum BuiltInType {
+    BYTE(BuiltInTypeIds.BYTE, byte.class),
     BYTE_BOXED(1, Byte.class),
-    SHORT(2, short.class),
+    SHORT(BuiltInTypeIds.SHORT, short.class),
     SHORT_BOXED(3, Short.class),
-    INT(4, int.class),
+    INT(BuiltInTypeIds.INT, int.class),
     INT_BOXED(5, Integer.class),
-    FLOAT(6, float.class),
+    FLOAT(BuiltInTypeIds.FLOAT, float.class),
     FLOAT_BOXED(7, Float.class),
-    LONG(8, long.class),
+    LONG(BuiltInTypeIds.LONG, long.class),
     LONG_BOXED(9, Long.class),
-    DOUBLE(10, double.class),
+    DOUBLE(BuiltInTypeIds.DOUBLE, double.class),
     DOUBLE_BOXED(11, Double.class),
-    BOOLEAN(12, boolean.class),
+    BOOLEAN(BuiltInTypeIds.BOOLEAN, boolean.class),
     BOOLEAN_BOXED(13, Boolean.class),
     CHAR(14, char.class),
     CHAR_BOXED(15, Character.class),
@@ -80,8 +78,8 @@ public enum BuiltinType {
     HASH_MAP(40, HashMap.class),
     LINKED_HASH_MAP(41, LinkedHashMap.class),
     BIT_SET(42, BitSet.class),
-    NULL(43, Null.class)
-    // 44 is REFERENCE command, see SerializedStreamCommands#REFERENCE
+    NULL(43, Null.class),
+    REFERENCE(44, DummyPlaceholder.class)
     ;
 
     /**
@@ -100,7 +98,7 @@ public enum BuiltinType {
      * @param descriptorId Descriptor id.
      * @param clazz        Type.
      */
-    BuiltinType(int descriptorId, Class<?> clazz) {
+    BuiltInType(int descriptorId, Class<?> clazz) {
         this.descriptorId = descriptorId;
         this.clazz = clazz;
     }
@@ -136,5 +134,8 @@ public enum BuiltinType {
                 Collections.emptyList(),
                 new Serialization(SerializationType.BUILTIN)
         );
+    }
+
+    private static class DummyPlaceholder {
     }
 }

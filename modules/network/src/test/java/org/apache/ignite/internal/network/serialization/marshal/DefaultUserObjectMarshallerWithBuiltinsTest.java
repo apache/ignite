@@ -47,7 +47,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.ignite.internal.network.serialization.BuiltinType;
+import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
@@ -97,7 +97,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsBareObjectWithCorrectDescriptorIdInMarshalledRepresentation() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new Object());
 
-        assertThat(readDescriptorId(marshalled), is(BuiltinType.BARE_OBJECT.descriptorId()));
+        assertThat(readDescriptorId(marshalled), is(BuiltInType.BARE_OBJECT.descriptorId()));
     }
 
     private int readDescriptorId(MarshalledObject marshalled) throws IOException {
@@ -141,7 +141,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
         Object unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
 
         assertThat(unmarshalled, is(equalTo(typeValue.value)));
-        if (typeValue.builtinType != BuiltinType.NULL && typeValue.value.getClass().isArray()) {
+        if (typeValue.builtinType != BuiltInType.NULL && typeValue.value.getClass().isArray()) {
             assertThat(unmarshalled, is(notNullValue()));
             assertThat(unmarshalled.getClass().getComponentType(), is(typeValue.value.getClass().getComponentType()));
         }
@@ -152,7 +152,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     void marshalsUsingOnlyCorrespondingDescriptorForBuiltInNonCollectionTypes(BuiltInTypeValue typeValue) {
         // #marshalsObjectArrayUsingExactlyDescriptorsOfObjectArrayAndComponents() checks the same for OBJECT_ARRAY
 
-        assumingThat(typeValue.builtinType != BuiltinType.OBJECT_ARRAY, () -> {
+        assumingThat(typeValue.builtinType != BuiltInType.OBJECT_ARRAY, () -> {
             MarshalledObject marshalled = marshaller.marshal(typeValue.value, typeValue.valueClass);
 
             ClassDescriptor expectedDescriptor = descriptorRegistry.getBuiltInDescriptor(typeValue.builtinType);
@@ -162,56 +162,56 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
 
     static Stream<Arguments> builtInNonCollectionTypes() {
         return Stream.of(
-                builtInTypeValue((byte) 42, byte.class, BuiltinType.BYTE),
-                builtInTypeValue((byte) 42, Byte.class, BuiltinType.BYTE_BOXED),
-                builtInTypeValue((short) 42, short.class, BuiltinType.SHORT),
-                builtInTypeValue((short) 42, Short.class, BuiltinType.SHORT_BOXED),
-                builtInTypeValue(42, int.class, BuiltinType.INT),
-                builtInTypeValue(42, Integer.class, BuiltinType.INT_BOXED),
-                builtInTypeValue(42.0f, float.class, BuiltinType.FLOAT),
-                builtInTypeValue(42.0f, Float.class, BuiltinType.FLOAT_BOXED),
-                builtInTypeValue((long) 42, long.class, BuiltinType.LONG),
-                builtInTypeValue((long) 42, Long.class, BuiltinType.LONG_BOXED),
-                builtInTypeValue(42.0, double.class, BuiltinType.DOUBLE),
-                builtInTypeValue(42.0, Double.class, BuiltinType.DOUBLE_BOXED),
-                builtInTypeValue(true, boolean.class, BuiltinType.BOOLEAN),
-                builtInTypeValue(true, Boolean.class, BuiltinType.BOOLEAN_BOXED),
-                builtInTypeValue('a', char.class, BuiltinType.CHAR),
-                builtInTypeValue('a', Character.class, BuiltinType.CHAR_BOXED),
+                builtInTypeValue((byte) 42, byte.class, BuiltInType.BYTE),
+                builtInTypeValue((byte) 42, Byte.class, BuiltInType.BYTE_BOXED),
+                builtInTypeValue((short) 42, short.class, BuiltInType.SHORT),
+                builtInTypeValue((short) 42, Short.class, BuiltInType.SHORT_BOXED),
+                builtInTypeValue(42, int.class, BuiltInType.INT),
+                builtInTypeValue(42, Integer.class, BuiltInType.INT_BOXED),
+                builtInTypeValue(42.0f, float.class, BuiltInType.FLOAT),
+                builtInTypeValue(42.0f, Float.class, BuiltInType.FLOAT_BOXED),
+                builtInTypeValue((long) 42, long.class, BuiltInType.LONG),
+                builtInTypeValue((long) 42, Long.class, BuiltInType.LONG_BOXED),
+                builtInTypeValue(42.0, double.class, BuiltInType.DOUBLE),
+                builtInTypeValue(42.0, Double.class, BuiltInType.DOUBLE_BOXED),
+                builtInTypeValue(true, boolean.class, BuiltInType.BOOLEAN),
+                builtInTypeValue(true, Boolean.class, BuiltInType.BOOLEAN_BOXED),
+                builtInTypeValue('a', char.class, BuiltInType.CHAR),
+                builtInTypeValue('a', Character.class, BuiltInType.CHAR_BOXED),
                 // BARE_OBJECT is handled separately
-                builtInTypeValue("abc", String.class, BuiltinType.STRING),
-                builtInTypeValue(UUID.fromString("c6f57d4a-619f-11ec-add6-73bc97c3c49e"), UUID.class, BuiltinType.UUID),
+                builtInTypeValue("abc", String.class, BuiltInType.STRING),
+                builtInTypeValue(UUID.fromString("c6f57d4a-619f-11ec-add6-73bc97c3c49e"), UUID.class, BuiltInType.UUID),
                 builtInTypeValue(IgniteUuid.fromString("1234-c6f57d4a-619f-11ec-add6-73bc97c3c49e"), IgniteUuid.class,
-                        BuiltinType.IGNITE_UUID),
-                builtInTypeValue(new Date(42), Date.class, BuiltinType.DATE),
-                builtInTypeValue(new byte[]{1, 2, 3}, byte[].class, BuiltinType.BYTE_ARRAY),
-                builtInTypeValue(new short[]{1, 2, 3}, short[].class, BuiltinType.SHORT_ARRAY),
-                builtInTypeValue(new int[]{1, 2, 3}, int[].class, BuiltinType.INT_ARRAY),
-                builtInTypeValue(new float[]{1.0f, 2.0f, 3.0f}, float[].class, BuiltinType.FLOAT_ARRAY),
-                builtInTypeValue(new long[]{1, 2, 3}, long[].class, BuiltinType.LONG_ARRAY),
-                builtInTypeValue(new double[]{1.0, 2.0, 3.0}, double[].class, BuiltinType.DOUBLE_ARRAY),
-                builtInTypeValue(new boolean[]{true, false}, boolean[].class, BuiltinType.BOOLEAN_ARRAY),
-                builtInTypeValue(new char[]{'a', 'b'}, char[].class, BuiltinType.CHAR_ARRAY),
-                builtInTypeValue(new Object[]{42, "123", null}, Object[].class, BuiltinType.OBJECT_ARRAY),
+                        BuiltInType.IGNITE_UUID),
+                builtInTypeValue(new Date(42), Date.class, BuiltInType.DATE),
+                builtInTypeValue(new byte[]{1, 2, 3}, byte[].class, BuiltInType.BYTE_ARRAY),
+                builtInTypeValue(new short[]{1, 2, 3}, short[].class, BuiltInType.SHORT_ARRAY),
+                builtInTypeValue(new int[]{1, 2, 3}, int[].class, BuiltInType.INT_ARRAY),
+                builtInTypeValue(new float[]{1.0f, 2.0f, 3.0f}, float[].class, BuiltInType.FLOAT_ARRAY),
+                builtInTypeValue(new long[]{1, 2, 3}, long[].class, BuiltInType.LONG_ARRAY),
+                builtInTypeValue(new double[]{1.0, 2.0, 3.0}, double[].class, BuiltInType.DOUBLE_ARRAY),
+                builtInTypeValue(new boolean[]{true, false}, boolean[].class, BuiltInType.BOOLEAN_ARRAY),
+                builtInTypeValue(new char[]{'a', 'b'}, char[].class, BuiltInType.CHAR_ARRAY),
+                builtInTypeValue(new Object[]{42, "123", null}, Object[].class, BuiltInType.OBJECT_ARRAY),
                 builtInTypeValue(new BitSet[]{BitSet.valueOf(new long[]{42, 43}), BitSet.valueOf(new long[]{1, 2}), null},
-                        BitSet[].class, BuiltinType.OBJECT_ARRAY),
-                builtInTypeValue(new String[]{"Ignite", "rulez"}, String[].class, BuiltinType.STRING_ARRAY),
-                builtInTypeValue(new BigDecimal(42), BigDecimal.class, BuiltinType.DECIMAL),
+                        BitSet[].class, BuiltInType.OBJECT_ARRAY),
+                builtInTypeValue(new String[]{"Ignite", "rulez"}, String[].class, BuiltInType.STRING_ARRAY),
+                builtInTypeValue(new BigDecimal(42), BigDecimal.class, BuiltInType.DECIMAL),
                 builtInTypeValue(new BigDecimal[]{new BigDecimal(42), new BigDecimal(43)}, BigDecimal[].class,
-                        BuiltinType.DECIMAL_ARRAY),
-                builtInTypeValue(SimpleEnum.FIRST, SimpleEnum.class, BuiltinType.ENUM),
-                builtInTypeValue(new Enum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, Enum[].class, BuiltinType.ENUM_ARRAY),
-                builtInTypeValue(new SimpleEnum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, SimpleEnum[].class, BuiltinType.ENUM_ARRAY),
-                builtInTypeValue(EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.class, BuiltinType.ENUM),
+                        BuiltInType.DECIMAL_ARRAY),
+                builtInTypeValue(SimpleEnum.FIRST, SimpleEnum.class, BuiltInType.ENUM),
+                builtInTypeValue(new Enum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, Enum[].class, BuiltInType.ENUM_ARRAY),
+                builtInTypeValue(new SimpleEnum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, SimpleEnum[].class, BuiltInType.ENUM_ARRAY),
+                builtInTypeValue(EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.class, BuiltInType.ENUM),
                 builtInTypeValue(new Enum[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND}, Enum[].class,
-                        BuiltinType.ENUM_ARRAY),
+                        BuiltInType.ENUM_ARRAY),
                 builtInTypeValue(
                         new EnumWithAnonClassesForMembers[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND},
                         EnumWithAnonClassesForMembers[].class,
-                        BuiltinType.ENUM_ARRAY
+                        BuiltInType.ENUM_ARRAY
                 ),
-                builtInTypeValue(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltinType.BIT_SET),
-                builtInTypeValue(null, Null.class, BuiltinType.NULL)
+                builtInTypeValue(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltInType.BIT_SET),
+                builtInTypeValue(null, Null.class, BuiltInType.NULL)
         ).map(Arguments::of);
     }
 
@@ -242,19 +242,19 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
 
         assertThat(marshalled.usedDescriptors(), containsInAnyOrder(
                 descriptorRegistry.getBuiltInDescriptor(typeValue.builtinType),
-                descriptorRegistry.getBuiltInDescriptor(BuiltinType.INT_BOXED)
+                descriptorRegistry.getBuiltInDescriptor(BuiltInType.INT_BOXED)
         ));
     }
 
     static Stream<Arguments> builtInCollectionTypes() {
         return Stream.of(
-                builtInTypeValue(new ArrayList<>(List.of(42, 43)), ArrayList.class, BuiltinType.ARRAY_LIST),
-                builtInTypeValue(new LinkedList<>(List.of(42, 43)), LinkedList.class, BuiltinType.LINKED_LIST),
-                builtInTypeValue(new HashSet<>(Set.of(42, 43)), HashSet.class, BuiltinType.HASH_SET),
-                builtInTypeValue(new LinkedHashSet<>(Set.of(42, 43)), LinkedHashSet.class, BuiltinType.LINKED_HASH_SET),
-                builtInTypeValue(singletonList(42), BuiltinType.SINGLETON_LIST.clazz(), BuiltinType.SINGLETON_LIST),
-                builtInTypeValue(new HashMap<>(Map.of(42, 43)), HashMap.class, BuiltinType.HASH_MAP),
-                builtInTypeValue(new LinkedHashMap<>(Map.of(42, 43)), LinkedHashMap.class, BuiltinType.LINKED_HASH_MAP)
+                builtInTypeValue(new ArrayList<>(List.of(42, 43)), ArrayList.class, BuiltInType.ARRAY_LIST),
+                builtInTypeValue(new LinkedList<>(List.of(42, 43)), LinkedList.class, BuiltInType.LINKED_LIST),
+                builtInTypeValue(new HashSet<>(Set.of(42, 43)), HashSet.class, BuiltInType.HASH_SET),
+                builtInTypeValue(new LinkedHashSet<>(Set.of(42, 43)), LinkedHashSet.class, BuiltInType.LINKED_HASH_SET),
+                builtInTypeValue(singletonList(42), BuiltInType.SINGLETON_LIST.clazz(), BuiltInType.SINGLETON_LIST),
+                builtInTypeValue(new HashMap<>(Map.of(42, 43)), HashMap.class, BuiltInType.HASH_MAP),
+                builtInTypeValue(new LinkedHashMap<>(Map.of(42, 43)), LinkedHashMap.class, BuiltInType.LINKED_HASH_MAP)
         ).map(Arguments::of);
     }
 
@@ -270,7 +270,7 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
         return Stream.concat(builtInNonCollectionTypes(), builtInCollectionTypes());
     }
 
-    private static BuiltInTypeValue builtInTypeValue(Object value, Class<?> valueClass, BuiltinType type) {
+    private static BuiltInTypeValue builtInTypeValue(Object value, Class<?> valueClass, BuiltInType type) {
         return new BuiltInTypeValue(value, valueClass, type);
     }
 
@@ -333,9 +333,9 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
     private static class BuiltInTypeValue {
         private final Object value;
         private final Class<?> valueClass;
-        private final BuiltinType builtinType;
+        private final BuiltInType builtinType;
 
-        private BuiltInTypeValue(Object value, Class<?> valueClass, BuiltinType builtinType) {
+        private BuiltInTypeValue(Object value, Class<?> valueClass, BuiltInType builtinType) {
             this.value = value;
             this.valueClass = valueClass;
             this.builtinType = builtinType;

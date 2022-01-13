@@ -128,7 +128,8 @@ public class PerSessionSerializationService {
                     .fields(fields)
                     .isFinal(descriptor.isFinal())
                     .serializationType(serialization.type().value())
-                    .hasSerializationOverride(serialization.hasSerializationOverride())
+                    .hasWriteObject(serialization.hasWriteObject())
+                    .hasReadObject(serialization.hasReadObject())
                     .hasReadObjectNoData(serialization.hasReadObjectNoData())
                     .hasWriteReplace(serialization.hasWriteReplace())
                     .hasReadResolve(serialization.hasReadResolve())
@@ -187,7 +188,8 @@ public class PerSessionSerializationService {
 
         var serialization = new Serialization(
                 serializationType,
-                clsMsg.hasSerializationOverride(),
+                clsMsg.hasWriteObject(),
+                clsMsg.hasReadObject(),
                 clsMsg.hasReadObjectNoData(),
                 clsMsg.hasWriteReplace(),
                 clsMsg.hasReadResolve()

@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.network.serialization;
 
 /**
- * Lists commands used in the serialized stream.
- * Command IDs share space with IDs of {@link ClassDescriptor}s (most importantly, those that are defined in {@link BuiltinType}.
+ * IDs of built-in descriptors. Only defines part of IDs which are needed directly in constant expressions (like switch);
+ * most of them are defined directly on enum members in {@link BuiltInType}.
  */
-public class SerializedStreamCommands {
-    /**
-     * Reference: an object that was already seen in the graph, so we relate to it by its ID instead of serializing it again.
-     */
-    public static final int REFERENCE = 44;
-
-    private SerializedStreamCommands() {
-    }
+public class BuiltInTypeIds {
+    public static final int BYTE = 0;
+    public static final int SHORT = 2;
+    public static final int INT = 4;
+    public static final int FLOAT = 6;
+    public static final int LONG = 8;
+    public static final int DOUBLE = 10;
+    public static final int BOOLEAN = 12;
+    public static final int CHAR = 14;
 }

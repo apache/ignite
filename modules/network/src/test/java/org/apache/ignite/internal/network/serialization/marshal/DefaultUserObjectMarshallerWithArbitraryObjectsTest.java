@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -38,11 +39,12 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.apache.ignite.internal.network.serialization.BuiltinType;
+import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
@@ -91,7 +93,7 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
 
         assertThat(marshalled.usedDescriptors(), equalTo(Set.of(
                 descriptorRegistry.getRequiredDescriptor(Simple.class),
-                descriptorRegistry.getBuiltInDescriptor(BuiltinType.INT)
+                descriptorRegistry.getBuiltInDescriptor(BuiltInType.INT)
         )));
     }
 
@@ -410,6 +412,56 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         assertThat(unmarshalled.value, is(EnumWithAnonClassesForMembers.FIRST));
     }
 
+    @Test
+    void marshalsAndUnmarshalsPrimitivesInFieldsCorrectly() throws Exception {
+        WithPrimitives unmarshalled = marshalAndUnmarshalNonNull(new WithPrimitives());
+
+        assertThat(unmarshalled.byteVal, is((byte) 1));
+        assertThat(unmarshalled.shortVal, is((short) 2));
+        assertThat(unmarshalled.intVal, is(3));
+        assertThat(unmarshalled.longVal, is(4L));
+        assertThat(unmarshalled.floatVal, is(5.0f));
+        assertThat(unmarshalled.doubleVal, is(6.0));
+        assertThat(unmarshalled.charVal, is('a'));
+        assertThat(unmarshalled.booleanVal, is(true));
+    }
+
+    @Test
+    void marshalsAndUnmarshalsPrimitiveWrappersInFieldsCorrectly() throws Exception {
+        WithPrimitiveWrappers unmarshalled = marshalAndUnmarshalNonNull(new WithPrimitiveWrappers());
+
+        assertThat(unmarshalled.byteVal, is((byte) 1));
+        assertThat(unmarshalled.shortVal, is((short) 2));
+        assertThat(unmarshalled.integerVal, is(3));
+        assertThat(unmarshalled.longVal, is(4L));
+        assertThat(unmarshalled.floatVal, is(5.0f));
+        assertThat(unmarshalled.doubleVal, is(6.0));
+        assertThat(unmarshalled.characterVal, is('a'));
+        assertThat(unmarshalled.booleanVal, is(true));
+    }
+
+    @Test
+    void unmarshalsReferencesToSameObjectOfNonBuiltInTypeToSameObject() throws Exception {
+        Simple obj = new Simple(42);
+        List<?> list = new ArrayList<>(Arrays.asList(obj, obj));
+
+        List<?> unmarshalled = marshalAndUnmarshalNonNull(list);
+
+        assertThat(unmarshalled.get(0), sameInstance(unmarshalled.get(1)));
+    }
+
+    @Test
+    void unmarshalsDifferentButEqualObjectsToDifferentObjects() throws Exception {
+        long longValue = 1_000_000;
+        String obj1 = String.valueOf(longValue);
+        String obj2 = String.valueOf(longValue);
+        List<?> list = new ArrayList<>(Arrays.asList(obj1, obj2));
+
+        List<?> unmarshalled = marshalAndUnmarshalNonNull(list);
+
+        assertThat(unmarshalled.get(0), not(sameInstance(unmarshalled.get(1))));
+    }
+
     private static class Simple {
         private int value;
 
@@ -565,5 +617,27 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         private WithEnumWithAnonClassesForMembersField(EnumWithAnonClassesForMembers value) {
             this.value = value;
         }
+    }
+
+    private static class WithPrimitives {
+        private final byte byteVal = 1;
+        private final short shortVal = 2;
+        private final int intVal = 3;
+        private final long longVal = 4L;
+        private final float floatVal = 5.0f;
+        private final double doubleVal = 6.0;
+        private final char charVal = 'a';
+        private final boolean booleanVal = true;
+    }
+
+    private static class WithPrimitiveWrappers {
+        private final Byte byteVal = 1;
+        private final Short shortVal = 2;
+        private final Integer integerVal = 3;
+        private final Long longVal = 4L;
+        private final Float floatVal = 5.0f;
+        private final Double doubleVal = 6.0;
+        private final Character characterVal = 'a';
+        private final Boolean booleanVal = true;
     }
 }

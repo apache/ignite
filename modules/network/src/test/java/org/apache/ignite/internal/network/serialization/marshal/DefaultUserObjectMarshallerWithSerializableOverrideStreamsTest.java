@@ -37,7 +37,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.apache.ignite.internal.network.serialization.BuiltinType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactoryContext;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
@@ -332,7 +331,6 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
         byte[] overrideBytes = readOverrideBytes(marshalled);
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(overrideBytes));
 
-        assertThat(ProtocolMarshalling.readDescriptorOrCommandId(dis), is(BuiltinType.INT.descriptorId()));
         assertThat(dis.readInt(), is(42));
         assertThatDrained(dis);
     }

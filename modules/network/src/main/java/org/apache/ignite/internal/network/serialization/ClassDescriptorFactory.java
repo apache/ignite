@@ -40,8 +40,10 @@ import org.jetbrains.annotations.Nullable;
  * Class descriptor factory for the user object serialization.
  */
 public class ClassDescriptorFactory {
-    /** Means that no serialization override is present; used for readability instead of {@code false}. */
-    private static final boolean NO_SERIALIZATION_OVERRIDE = false;
+    /** Means that no writeObject() method is present; used for readability instead of {@code false}. */
+    private static final boolean NO_WRITE_OBJECT = false;
+    /** Means that no readObject() method is present; used for readability instead of {@code false}. */
+    private static final boolean NO_READ_OBJECT = false;
     /** Means that no readObjectNoData() method is present; used for readability instead of {@code false}. */
     private static final boolean NO_READ_OBJECT_NO_DATA = false;
 
@@ -133,7 +135,8 @@ public class ClassDescriptorFactory {
                 Collections.emptyList(),
                 new Serialization(
                         SerializationType.EXTERNALIZABLE,
-                        NO_SERIALIZATION_OVERRIDE,
+                        NO_WRITE_OBJECT,
+                        NO_READ_OBJECT,
                         NO_READ_OBJECT_NO_DATA,
                         hasWriteReplace(clazz),
                         hasReadResolve(clazz)
@@ -201,7 +204,8 @@ public class ClassDescriptorFactory {
                 fields(clazz),
                 new Serialization(
                         SerializationType.SERIALIZABLE,
-                        hasOverrideSerialization(clazz),
+                        hasWriteObject(clazz),
+                        hasReadObject(clazz),
                         hasReadObjectNoData(clazz),
                         hasWriteReplace(clazz),
                         hasReadResolve(clazz)
@@ -215,10 +219,6 @@ public class ClassDescriptorFactory {
 
     private boolean hasWriteReplace(Class<? extends Serializable> clazz) {
         return getWriteReplace(clazz) != null;
-    }
-
-    private boolean hasOverrideSerialization(Class<? extends Serializable> clazz) {
-        return hasWriteObject(clazz) && hasReadObject(clazz);
     }
 
     private boolean hasReadObject(Class<? extends Serializable> clazz) {
@@ -312,13 +312,16 @@ public class ClassDescriptorFactory {
     @Nullable
     private static Method getWriteObject(Class<? extends Serializable> clazz) {
         try {
-            Method writeObject = clazz.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+            Method method = clazz.getDeclaredMethod("writeObject", ObjectOutputStream.class);
 
-            if (!Modifier.isPrivate(writeObject.getModifiers())) {
+            if (!Modifier.isPrivate(method.getModifiers())) {
+                return null;
+            }
+            if (method.getReturnType() != void.class) {
                 return null;
             }
 
-            return writeObject;
+            return method;
         } catch (NoSuchMethodException e) {
             return null;
         }
@@ -335,13 +338,16 @@ public class ClassDescriptorFactory {
     @Nullable
     private static Method getReadObject(Class<? extends Serializable> clazz) {
         try {
-            Method writeObject = clazz.getDeclaredMethod("readObject", ObjectInputStream.class);
+            Method method = clazz.getDeclaredMethod("readObject", ObjectInputStream.class);
 
-            if (!Modifier.isPrivate(writeObject.getModifiers())) {
+            if (!Modifier.isPrivate(method.getModifiers())) {
+                return null;
+            }
+            if (method.getReturnType() != void.class) {
                 return null;
             }
 
-            return writeObject;
+            return method;
         } catch (NoSuchMethodException e) {
             return null;
         }
@@ -357,13 +363,16 @@ public class ClassDescriptorFactory {
     @Nullable
     private static Method getReadObjectNoData(Class<? extends Serializable> clazz) {
         try {
-            Method writeObject = clazz.getDeclaredMethod("readObjectNoData");
+            Method method = clazz.getDeclaredMethod("readObjectNoData");
 
-            if (!Modifier.isPrivate(writeObject.getModifiers())) {
+            if (!Modifier.isPrivate(method.getModifiers())) {
+                return null;
+            }
+            if (method.getReturnType() != void.class) {
                 return null;
             }
 
-            return writeObject;
+            return method;
         } catch (NoSuchMethodException e) {
             return null;
         }

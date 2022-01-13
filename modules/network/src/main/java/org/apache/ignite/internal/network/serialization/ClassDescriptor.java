@@ -206,12 +206,30 @@ public class ClassDescriptor {
     }
 
     /**
-     * Returns {@code true} if the described class has writeObject() and readObject() methods.
+     * Returns {@code true} if the described class has writeObject() method.
      *
-     * @return {@code true} if the described class has writeObject() and readObject() methods
+     * @return {@code true} if the described class has writeObject() method
      */
-    public boolean hasSerializationOverride() {
-        return serialization.hasSerializationOverride();
+    public boolean hasWriteObject() {
+        return serialization.hasWriteObject();
+    }
+
+    /**
+     * Returns {@code true} if the described class has readObject() method.
+     *
+     * @return {@code true} if the described class has readObject() method
+     */
+    public boolean hasReadObject() {
+        return serialization.hasReadObject();
+    }
+
+    /**
+     * Returns {@code true} if the described class has readObjectNoData() method.
+     *
+     * @return {@code true} if the described class has readObjectNoData() method
+     */
+    public boolean hasReadObjectNoData() {
+        return serialization.hasReadObjectNoData();
     }
 
     /**
@@ -238,7 +256,7 @@ public class ClassDescriptor {
      * @return {@code true} if this is the descriptor of {@code null} values
      */
     public boolean isNull() {
-        return descriptorId == BuiltinType.NULL.descriptorId();
+        return descriptorId == BuiltInType.NULL.descriptorId();
     }
 
     /**
@@ -247,7 +265,7 @@ public class ClassDescriptor {
      * @return {@code true} if this is the descriptor of {@link java.util.Collections#singletonList(Object)} type
      */
     public boolean isSingletonList() {
-        return descriptorId == BuiltinType.SINGLETON_LIST.descriptorId();
+        return descriptorId == BuiltInType.SINGLETON_LIST.descriptorId();
     }
 
     /**

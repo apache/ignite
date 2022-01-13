@@ -73,11 +73,18 @@ public interface ClassDescriptorMessage extends NetworkMessage {
     int serializationType();
 
     /**
-     * Has serialization override.
+     * Has writeObject().
      *
-     * @see Serialization#hasSerializationOverride()
+     * @see Serialization#hasWriteObject()
      */
-    boolean hasSerializationOverride();
+    boolean hasWriteObject();
+
+    /**
+     * Has readObject().
+     *
+     * @see Serialization#hasReadObject()
+     */
+    boolean hasReadObject();
 
     /**
      * Has readObjectNoData().

@@ -22,18 +22,146 @@ package org.apache.ignite.internal.network.serialization;
  */
 public interface FieldAccessor {
     /**
-     * Returns the bound field value of the given object.
+     * Returns the bound object field value of the given object.
      *
      * @param target target object
      * @return the bound field value of the given object
      */
-    Object get(Object target);
+    Object getObject(Object target);
 
     /**
-     * Sets the bound field value on the given object.
+     * Sets the bound object field value on the given object.
      *
      * @param target     target object
      * @param fieldValue value to set
      */
-    void set(Object target, Object fieldValue);
+    void setObject(Object target, Object fieldValue);
+
+    /**
+     * Returns the bound byte field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    byte getByte(Object target);
+
+    /**
+     * Sets the bound byte field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setByte(Object target, byte fieldValue);
+
+    /**
+     * Returns the bound short field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    short getShort(Object target);
+
+    /**
+     * Sets the bound short field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setShort(Object target, short fieldValue);
+
+    /**
+     * Returns the bound int field value of the given object.
+     *
+     * @param target target object
+     * @return the bound int field value of the given object
+     */
+    int getInt(Object target);
+
+    /**
+     * Sets the bound int field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setInt(Object target, int fieldValue);
+
+    /**
+     * Returns the bound long field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    long getLong(Object target);
+
+    /**
+     * Sets the bound long field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setLong(Object target, long fieldValue);
+
+    /**
+     * Returns the bound float field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    float getFloat(Object target);
+
+    /**
+     * Sets the bound float field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setFloat(Object target, float fieldValue);
+
+    /**
+     * Returns the bound double field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    double getDouble(Object target);
+
+    /**
+     * Sets the bound double field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setDouble(Object target, double fieldValue);
+
+    /**
+     * Returns the bound char field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    char getChar(Object target);
+
+    /**
+     * Sets the bound char field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setChar(Object target, char fieldValue);
+
+    /**
+     * Returns the bound boolean field value of the given object.
+     *
+     * @param target target object
+     * @return the bound byte field value of the given object
+     */
+    boolean getBoolean(Object target);
+
+    /**
+     * Sets the bound boolean field value on the given object.
+     *
+     * @param target     target object
+     * @param fieldValue value to set
+     */
+    void setBoolean(Object target, boolean fieldValue);
 }
