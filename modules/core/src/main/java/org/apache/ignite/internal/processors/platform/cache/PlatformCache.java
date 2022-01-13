@@ -377,6 +377,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_INVOKE_JAVA = 98;
 
+    /** */
+    public static final int OP_PERSISTENCE_ENABLED = 99;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -1265,6 +1268,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return FALSE;
             }
+
+            case OP_PERSISTENCE_ENABLED:
+                return cache.context().group().persistenceEnabled() ? TRUE : FALSE;
         }
         return super.processInLongOutLong(type, val);
     }
