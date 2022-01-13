@@ -211,7 +211,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             Integer key = mapping.getKey();
             Integer fixed = mapping.getValue().fixed;
             Integer primary = mapping.getValue().primary;
-            boolean reparable = mapping.getValue().repairable;
+            boolean repairable = mapping.getValue().repairable;
 
             Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> evtEntryInfos = evtEntries.get(key);
 
@@ -231,9 +231,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             // keys() contain repairable but not repaired (because of irreparable entry at the same tx) entries.
             if (e == null || (e.repairableKeys() != null && !e.repairableKeys().contains(key))) {
-                assertEquals(reparable, evtFixed.containsKey(key));
+                assertEquals(repairable, evtFixed.containsKey(key));
 
-                if (reparable)
+                if (repairable)
                     assertEquals(fixed, evtFixed.get(key));
             }
 
