@@ -66,10 +66,22 @@ namespace ignite
             public:
                 /**
                  * Constructor.
+                 *
+                 * @param msg Message.
+                 * @param handler Notification handler.
+                 * @param channelId Channel ID.
+                 * @param channelStateHandler Channel state handler.
                  */
-                HandleNotificationTask(const network::DataBuffer& msg, const SP_NotificationHandler& handler) :
+                HandleNotificationTask(
+                    const network::DataBuffer& msg,
+                    const SP_NotificationHandler& handler,
+                    uint64_t channelId,
+                    ChannelStateHandler& channelStateHandler
+                ) :
                     msg(msg),
-                    handler(handler)
+                    handler(handler),
+                    channelId(channelId),
+                    channelStateHandler(channelStateHandler)
                 {
                     // No-op.
                 }
@@ -90,12 +102,28 @@ namespace ignite
                     handler.Get()->OnNotification(msg);
                 }
 
+                /**
+                 * Called if error occurred during task processing.
+                 *
+                 * @param err Error.
+                 */
+                virtual void OnError(const IgniteError& err)
+                {
+                    channelStateHandler.OnNotificationHandlingError(channelId, err);
+                }
+
             private:
                 /** Message. */
                 network::DataBuffer msg;
 
                 /** Handler. */
                 SP_NotificationHandler handler;
+
+                /** Channel ID. */
+                uint64_t channelId;
+
+                /** Channel state handler. */
+                ChannelStateHandler& channelStateHandler;
             };
 
             /** Notification handler. */
@@ -127,14 +155,18 @@ namespace ignite
                  * Process notification.
                  *
                  * @param msg Notification message to process.
+                 * @param channelId Channel ID.
+                 * @param channelStateHandler Channel state handler.
                  * @return Task for dispatching if handler is present and null otherwise.
                  */
-                common::SP_ThreadPoolTask ProcessNotification(const network::DataBuffer& msg)
+                common::SP_ThreadPoolTask ProcessNotification(const network::DataBuffer& msg,
+                    uint64_t channelId, ChannelStateHandler& channelStateHandler)
                 {
                     network::DataBuffer notification(msg.Clone());
 
                     if (handler.IsValid())
-                        return common::SP_ThreadPoolTask(new HandleNotificationTask(notification, handler));
+                        return common::SP_ThreadPoolTask(
+                            new HandleNotificationTask(notification, handler, channelId, channelStateHandler));
                     else
                     {
                         queue.push_back(notification);
@@ -148,13 +180,13 @@ namespace ignite
                  *
                  * @param handler Notification handler.
                  */
-                void SetHandler(const SP_NotificationHandler& handler)
+                void SetHandler(const SP_NotificationHandler& handler0)
                 {
-                    if (this->handler.IsValid())
+                    if (handler.IsValid())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Internal error: handler is already set for the notification");
 
-                    this->handler = handler;
+                    handler = handler0;
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
                         this->handler.Get()->OnNotification(*it);
 

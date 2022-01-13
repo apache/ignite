@@ -26,6 +26,8 @@
 #include <deque>
 #include <vector>
 
+#include <ignite/ignite_error.h>
+
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 
@@ -51,6 +53,13 @@ namespace ignite
              * Execute task.
              */
             virtual void Execute() = 0;
+
+            /**
+             * Called if error occurred during task processing.
+             *
+             * @param err Error.
+             */
+             virtual void OnError(const IgniteError& err) = 0;
         };
 
         /** Shared pointer to thread pool task. */
@@ -168,6 +177,14 @@ namespace ignite
                  * Run thread.
                  */
                 virtual void Run();
+
+                /**
+                 * Handle an error that occurred during task execution.
+                 *
+                 * @param task Task.
+                 * @param err Error.
+                 */
+                static void HandleTaskError(ThreadPoolTask &task, const IgniteError &err);
 
                 /** Task queue. */
                 TaskQueue& taskQueue;

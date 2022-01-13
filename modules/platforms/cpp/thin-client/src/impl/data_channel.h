@@ -132,8 +132,10 @@ namespace ignite
 
                 /**
                  * Close connection.
+                 *
+                 * @param err Error.
                  */
-                void Close();
+                void Close(const IgniteError* err);
 
                 /**
                  * Synchronously send request message and receive response. Uses provided timeout.

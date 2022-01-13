@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <exception>
+
 #include <ignite/common/thread_pool.h>
 
 namespace ignite
@@ -146,15 +148,53 @@ namespace ignite
                 if (!task.IsValid())
                     break;
 
+                ThreadPoolTask &task0 = *task.Get();
+
                 try
                 {
-                    task.Get()->Execute();
+                    task0.Execute();
+                }
+                catch (const IgniteError& err)
+                {
+                    HandleTaskError(task0, err);
+                }
+                catch (const std::exception& err)
+                {
+                    IgniteError err0(IgniteError::IGNITE_ERR_STD, err.what());
+                    HandleTaskError(task0, err0);
                 }
                 catch (...)
                 {
-                    // No-op.
+                    IgniteError err(IgniteError::IGNITE_ERR_UNKNOWN, "Unknown error occurred when executing task");
+                    HandleTaskError(task0, err);
                 }
             }
+        }
+
+        void ThreadPool::WorkerThread::HandleTaskError(ThreadPoolTask &task, const IgniteError &err)
+        {
+            try
+            {
+                task.OnError(err);
+
+                return;
+            }
+            catch (const IgniteError& err0)
+            {
+                std::cerr << "Exception is thrown during handling of exception: "
+                          << err0.what() << "Aborting execution" << std::endl;
+            }
+            catch (const std::exception& err0)
+            {
+                std::cerr << "Exception is thrown during handling of exception: "
+                          << err0.what() << "Aborting execution" << std::endl;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown exception is thrown during handling of exception. Aborting execution" << std::endl;
+            }
+
+            std::terminate();
         }
     }
 }

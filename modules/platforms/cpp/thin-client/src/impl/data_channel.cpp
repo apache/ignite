@@ -77,7 +77,7 @@ namespace ignite
 
             DataChannel::~DataChannel()
             {
-                Close();
+                Close(0);
             }
 
             void DataChannel::StartHandshake()
@@ -85,9 +85,9 @@ namespace ignite
                 DoHandshake(VERSION_DEFAULT);
             }
 
-            void DataChannel::Close()
+            void DataChannel::Close(const IgniteError* err)
             {
-                asyncPool.Get()->Close(id, 0);
+                asyncPool.Get()->Close(id, err);
                 handlerMap.clear();
             }
 
@@ -194,7 +194,7 @@ namespace ignite
                         common::concurrent::CsLockGuard lock(handlerMutex);
 
                         NotificationHandlerHolder& holder = handlerMap[rspId];
-                        task = holder.ProcessNotification(msg);
+                        task = holder.ProcessNotification(msg, id, stateHandler);
                     }
 
                     if (task.IsValid())

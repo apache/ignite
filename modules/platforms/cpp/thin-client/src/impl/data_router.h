@@ -149,6 +149,14 @@ namespace ignite
                 virtual void OnHandshakeError(uint64_t id, const IgniteError& err);
 
                 /**
+                 * Called if notification handling failed.
+                 *
+                 * @param id Channel ID.
+                 * @param err Error.
+                 */
+                virtual void OnNotificationHandlingError(uint64_t id, const IgniteError& err);
+
+                /**
                  * Synchronously send request message and receive response.
                  *
                  * @param req Request message.
@@ -313,6 +321,23 @@ namespace ignite
                  * @throw IgniteError if there is error.
                  */
                 void CheckHandshakeErrorLocked();
+
+                /**
+                 * Find channel by ID.
+                 *
+                 * @param id Channel ID
+                 * @return Channel or null if is not present.
+                 */
+                SP_DataChannel FindChannel(uint64_t id);
+
+                /**
+                 * Find channel by ID.
+                 * @warning May only be called when lock is held!
+                 *
+                 * @param id Channel ID
+                 * @return Channel or null if is not present.
+                 */
+                SP_DataChannel FindChannelLocked(uint64_t id);
 
                 /** Configuration. */
                 ignite::thin::IgniteClientConfiguration config;

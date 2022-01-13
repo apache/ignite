@@ -177,13 +177,9 @@ namespace ignite
                 {
                     common::concurrent::CsLockGuard lock(channelsMutex);
 
+                    channel = FindChannelLocked(id);
+
                     connectedChannels.erase(id);
-
-                    ChannelsIdMap::iterator it = channels.find(id);
-                    if (it == channels.end())
-                        return;
-
-                    channel = it->second;
                     InvalidateChannelLocked(channel);
                 }
 
@@ -192,14 +188,7 @@ namespace ignite
 
             void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
             {
-                SP_DataChannel channel;
-                {
-                    common::concurrent::CsLockGuard lock(channelsMutex);
-
-                    ChannelsIdMap::iterator it = channels.find(id);
-                    if (it != channels.end())
-                        channel = it->second;
-                }
+                SP_DataChannel channel = FindChannel(id);
 
                 if (channel.IsValid())
                     channel.Get()->ProcessMessage(msg);
@@ -218,12 +207,7 @@ namespace ignite
                 connectedChannels.insert(id);
                 channelsWaitPoint.NotifyAll();
 
-                SP_DataChannel channel;
-
-                ChannelsIdMap::iterator it = channels.find(id);
-                if (it != channels.end())
-                    channel = it->second;
-
+                SP_DataChannel channel = FindChannelLocked(id);
                 if (channel.IsValid())
                 {
                     const IgniteNode& node = channel.Get()->GetNode();
@@ -240,6 +224,14 @@ namespace ignite
 
                 lastHandshakeError.reset(new IgniteError(err));
                 channelsWaitPoint.NotifyAll();
+            }
+
+            void DataRouter::OnNotificationHandlingError(uint64_t id, const IgniteError &err)
+            {
+                SP_DataChannel channel = FindChannel(id);
+
+                if (channel.IsValid())
+                    channel.Get()->Close(&err);
             }
 
             SP_DataChannel DataRouter::SyncMessage(Request &req, Response &rsp)
@@ -426,6 +418,21 @@ namespace ignite
                 utility::ParseAddress(str, ranges, DEFAULT_PORT);
 
                 std::random_shuffle(ranges.begin(), ranges.end());
+            }
+
+            SP_DataChannel DataRouter::FindChannel(uint64_t id)
+            {
+                common::concurrent::CsLockGuard lock(channelsMutex);
+                return FindChannelLocked(id);
+            }
+
+            SP_DataChannel DataRouter::FindChannelLocked(uint64_t id)
+            {
+                ChannelsIdMap::iterator it = channels.find(id);
+                if (it != channels.end())
+                    return it->second;
+
+                return SP_DataChannel();
             }
         }
     }
