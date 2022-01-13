@@ -98,18 +98,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
-        
-        [Test]
-        public void TestPutEnum()
-        {
-            var cache = Ignition.GetIgnite(null).GetOrCreateCache<int, object>("TestEnumCahce");
-
-            // cache.Put(1, TestEnum.One);
-            
-            cache.Put(2, new TestObject() {Value = TestEnum.One});
-            
-            // cache.Put(2, new TestObject2());
-        }
 
 #if !NETCOREAPP// AppDomains are not supported in .NET Core
         /// <summary>
@@ -252,28 +240,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             return string.Format("<document>{0}</document>", text);
         }
-    }
-    
-    public enum TestEnum
-    {
-        One,
-        Two
-    }
-    
-    public class TestObject
-    {
-        public Enum Value { get; set; }
-    }
-    
-    [Serializable]
-    public class TestObject2
-    {
-        public TestObject2()
-        {
-            Value = 111;
-        }
-        
-        public int Value { get; set; }
     }
 
     [Serializable]
