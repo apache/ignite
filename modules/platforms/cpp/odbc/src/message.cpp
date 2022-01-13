@@ -60,7 +60,7 @@ namespace ignite
 
         void HandshakeRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::HANDSHAKE);
+            writer.WriteInt8(RequestType::HANDSHAKE);
 
             ProtocolVersion version = config.GetProtocolVersion();
             writer.WriteInt16(version.GetMajor());
@@ -108,7 +108,7 @@ namespace ignite
 
         void QueryExecuteRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
         {
-            writer.WriteInt8(MessageType::EXECUTE_SQL_QUERY);
+            writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
 
             if (schema.empty())
                 writer.WriteNull();
@@ -147,7 +147,7 @@ namespace ignite
 
         void QueryExecuteBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
         {
-            writer.WriteInt8(MessageType::EXECUTE_SQL_QUERY_BATCH);
+            writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH);
 
             if (schema.empty())
                 writer.WriteNull();
@@ -177,7 +177,7 @@ namespace ignite
 
         void QueryCloseRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::CLOSE_SQL_QUERY);
+            writer.WriteInt8(RequestType::CLOSE_SQL_QUERY);
             writer.WriteInt64(queryId);
         }
 
@@ -195,7 +195,7 @@ namespace ignite
 
         void QueryFetchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::FETCH_SQL_QUERY);
+            writer.WriteInt8(RequestType::FETCH_SQL_QUERY);
 
             writer.WriteInt64(queryId);
             writer.WriteInt32(pageSize);
@@ -217,7 +217,7 @@ namespace ignite
 
         void QueryGetColumnsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::GET_COLUMNS_METADATA);
+            writer.WriteInt8(RequestType::GET_COLUMNS_METADATA);
 
             writer.WriteObject<std::string>(schema);
             writer.WriteObject<std::string>(table);
@@ -238,7 +238,7 @@ namespace ignite
 
         void QueryGetResultsetMetaRequest::Write(impl::binary::BinaryWriterImpl &writer, const ProtocolVersion &) const
         {
-            writer.WriteInt8(MessageType::META_RESULTSET);
+            writer.WriteInt8(RequestType::META_RESULTSET);
 
             writer.WriteObject<std::string>(schema);
             writer.WriteObject<std::string>(sqlQuery);
@@ -261,7 +261,7 @@ namespace ignite
 
         void QueryGetTablesMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::GET_TABLES_METADATA);
+            writer.WriteInt8(RequestType::GET_TABLES_METADATA);
 
             writer.WriteObject<std::string>(catalog);
             writer.WriteObject<std::string>(schema);
@@ -271,7 +271,7 @@ namespace ignite
 
         void QueryGetParamsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::GET_PARAMS_METADATA);
+            writer.WriteInt8(RequestType::GET_PARAMS_METADATA);
 
             writer.WriteObject<std::string>(schema);
             writer.WriteObject<std::string>(sqlQuery);
@@ -279,7 +279,7 @@ namespace ignite
 
         void QueryMoreResultsRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::QUERY_MORE_RESULTS);
+            writer.WriteInt8(RequestType::QUERY_MORE_RESULTS);
 
             writer.WriteInt64(queryId);
             writer.WriteInt32(pageSize);
@@ -302,7 +302,7 @@ namespace ignite
 
         void StreamingBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
-            writer.WriteInt8(MessageType::STREAMING_BATCH);
+            writer.WriteInt8(RequestType::STREAMING_BATCH);
 
             writer.WriteString(schema);
 
