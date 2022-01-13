@@ -50,7 +50,7 @@ public enum ReadRepairStrategy {
      * For example, when we have 5 copies (4 backups) and value `A` found twice, but `X`,`Y` and `Z` only once, `A` wins.
      * But, when `A` found twice, as well as `B`, and `X` only once, the strategy unable to determine the winner.
      * <p>
-     * When we have 4 copies (3 backups) any value found two or more times, when others are found only once, is the winner.
+     * When we have 4 copies (3 backups), any value found two or more times, when others are found only once, is the winner.
      */
     RELATIVE_MAJORITY("RELATIVE_MAJORITY"),
 
