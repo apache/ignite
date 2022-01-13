@@ -26,7 +26,6 @@
 #include <ignite/reference.h>
 
 #include <ignite/thin/cache/event/cache_entry_event_listener.h>
-#include <ignite/thin/cache/event/cache_entry_event_filter.h>
 
 namespace ignite
 {
