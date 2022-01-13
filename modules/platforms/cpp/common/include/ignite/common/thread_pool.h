@@ -67,31 +67,31 @@ namespace ignite
              *
              * @param threadsNum Number of threads. If set to 0 current number of processors is used.
              */
-            explicit ThreadPool(uint32_t threadsNum);
+            IGNITE_IMPORT_EXPORT explicit ThreadPool(uint32_t threadsNum);
 
             /**
              * Destructor.
              */
-            virtual ~ThreadPool();
+            IGNITE_IMPORT_EXPORT virtual ~ThreadPool();
 
             /**
              * Start threads in pool.
              */
-            void Start();
+            IGNITE_IMPORT_EXPORT void Start();
 
             /**
              * Stop threads in pool.
              *
              * @warning Once stopped it can not be restarted.
              */
-            void Stop();
+            IGNITE_IMPORT_EXPORT void Stop();
 
             /**
              * Dispatch task.
              *
              * @param task Task.
              */
-            void Dispatch(const SP_ThreadPoolTask& task);
+            IGNITE_IMPORT_EXPORT void Dispatch(const SP_ThreadPoolTask& task);
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(ThreadPool);

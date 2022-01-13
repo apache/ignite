@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <ignite/ignite_error.h>
+#include <ignite/common/thread_pool.h>
 #include <ignite/network/data_buffer.h>
 
 #include <ignite/impl/interop/interop_memory.h>
@@ -51,11 +52,51 @@ namespace ignite
                  * @param msg Message.
                  * @return @c true if processing complete.
                  */
-                virtual bool OnNotification(const network::DataBuffer& msg) = 0;
+                virtual void OnNotification(const network::DataBuffer& msg) = 0;
             };
 
             /** Shared pointer to notification handler. */
             typedef common::concurrent::SharedPointer<NotificationHandler> SP_NotificationHandler;
+
+            /**
+             * Task that handles notification
+             */
+            class HandleNotificationTask : public common::ThreadPoolTask
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                HandleNotificationTask(const network::DataBuffer& msg, const SP_NotificationHandler& handler) :
+                    msg(msg),
+                    handler(handler)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~HandleNotificationTask()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Execute task.
+                 */
+                virtual void Execute()
+                {
+                    handler.Get()->OnNotification(msg);
+                }
+
+            private:
+                /** Message. */
+                network::DataBuffer msg;
+
+                /** Handler. */
+                SP_NotificationHandler handler;
+            };
 
             /** Notification handler. */
             class NotificationHandlerHolder
@@ -69,8 +110,7 @@ namespace ignite
                  */
                 NotificationHandlerHolder() :
                     queue(),
-                    handler(),
-                    complete(false)
+                    handler()
                 {
                     // No-op.
                 }
@@ -87,16 +127,20 @@ namespace ignite
                  * Process notification.
                  *
                  * @param msg Notification message to process.
+                 * @return Task for dispatching if handler is present and null otherwise.
                  */
-                void ProcessNotification(const network::DataBuffer& msg)
+                common::SP_ThreadPoolTask ProcessNotification(const network::DataBuffer& msg)
                 {
-                    if (complete)
-                        return;
+                    network::DataBuffer notification(msg.Clone());
 
                     if (handler.IsValid())
-                        complete = handler.Get()->OnNotification(msg);
+                        return common::SP_ThreadPoolTask(new HandleNotificationTask(notification, handler));
                     else
-                        queue.push_back(msg.Clone());
+                    {
+                        queue.push_back(notification);
+
+                        return common::SP_ThreadPoolTask();
+                    }
                 }
 
                 /**
@@ -112,19 +156,9 @@ namespace ignite
 
                     this->handler = handler;
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
-                        complete = complete || this->handler.Get()->OnNotification(*it);
+                        this->handler.Get()->OnNotification(*it);
 
                     queue.clear();
-                }
-
-                /**
-                 * Check whether processing complete.
-                 *
-                 * @return @c true if processing complete.
-                 */
-                bool IsProcessingComplete() const
-                {
-                    return complete;
                 }
 
             private:
@@ -133,9 +167,6 @@ namespace ignite
 
                 /** Notification handler. */
                 SP_NotificationHandler handler;
-
-                /** Processing complete. */
-                bool complete;
             };
         }
     }

@@ -45,12 +45,10 @@ namespace ignite
                             // No-op.
                         }
 
-                        bool ContinuousQueryNotificationHandler::OnNotification(const network::DataBuffer& msg)
+                        void ContinuousQueryNotificationHandler::OnNotification(const network::DataBuffer& msg)
                         {
                             ClientCacheEntryEventNotification notification(*continuousQuery.Get());
                             channel.DeserializeMessage(msg, notification);
-
-                            return false;
                         }
                     }
                 }

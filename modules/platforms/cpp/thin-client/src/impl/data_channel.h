@@ -26,6 +26,7 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/common/thread_pool.h>
 #include <ignite/network/socket_client.h>
 #include <ignite/network/async_client_pool.h>
 
@@ -107,13 +108,15 @@ namespace ignite
                  * @param cfg Configuration.
                  * @param typeMgr Type manager.
                  * @param stateHandler State handler.
+                 * @param userThreadPool Thread pool to use to dispatch tasks that can run user code.
                  */
                 DataChannel(uint64_t id,
                     const network::EndPoint& addr,
                     const ignite::network::SP_AsyncClientPool& asyncPool,
                     const ignite::thin::IgniteClientConfiguration& cfg,
                     binary::BinaryTypeManager& typeMgr,
-                    ChannelStateHandler& stateHandler);
+                    ChannelStateHandler& stateHandler,
+                    common::ThreadPool& userThreadPool);
 
                 /**
                  * Destructor.
@@ -309,6 +312,9 @@ namespace ignite
 
                 /** Notification handlers. */
                 NotificationHandlerMap handlerMap;
+
+                /** Thread pool to dispatch user code execution. */
+                common::ThreadPool& userThreadPool;
             };
 
             /** Shared pointer type. */

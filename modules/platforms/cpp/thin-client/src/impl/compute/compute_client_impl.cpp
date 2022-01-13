@@ -51,7 +51,7 @@ namespace
             // No-op.
         }
 
-        virtual bool OnNotification(const network::DataBuffer& msg)
+        virtual void OnNotification(const network::DataBuffer& msg)
         {
             ComputeTaskFinishedNotification notification(res);
             channel.DeserializeMessage(msg, notification);
@@ -63,8 +63,6 @@ namespace
             }
             else
                 promise.SetValue();
-
-            return true;
         }
 
         /**
@@ -111,6 +109,8 @@ namespace ignite
                     channel.Get()->RegisterNotificationHandler(rsp.GetNotificationId(), handler);
 
                     handler.Get()->GetFuture().GetValue();
+
+                    channel.Get()->DeregisterNotificationHandler(rsp.GetNotificationId());
                 }
             }
         }

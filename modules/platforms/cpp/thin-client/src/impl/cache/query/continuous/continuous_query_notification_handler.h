@@ -67,7 +67,7 @@ namespace ignite
                              * @param msg Message.
                              * @return @c true if processing complete.
                              */
-                            virtual bool OnNotification(const network::DataBuffer& msg);
+                            virtual void OnNotification(const network::DataBuffer& msg);
 
                         private:
                             /** Query. */

@@ -57,7 +57,8 @@ namespace ignite
                 const ignite::network::SP_AsyncClientPool& asyncPool,
                 const ignite::thin::IgniteClientConfiguration& cfg,
                 binary::BinaryTypeManager& typeMgr,
-                ChannelStateHandler& stateHandler
+                ChannelStateHandler& stateHandler,
+                common::ThreadPool& userThreadPool
             ) :
                 stateHandler(stateHandler),
                 handshakePerformed(false),
@@ -68,7 +69,8 @@ namespace ignite
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
                 reqIdCounter(0),
-                responseMutex()
+                responseMutex(),
+                userThreadPool(userThreadPool)
             {
                 // No-op.
             }
@@ -187,13 +189,16 @@ namespace ignite
 
                 if (flags & Flag::NOTIFICATION)
                 {
-                    common::concurrent::CsLockGuard lock(handlerMutex);
+                    common::SP_ThreadPoolTask task;
+                    {
+                        common::concurrent::CsLockGuard lock(handlerMutex);
 
-                    NotificationHandlerHolder& holder = handlerMap[rspId];
-                    holder.ProcessNotification(msg);
+                        NotificationHandlerHolder& holder = handlerMap[rspId];
+                        task = holder.ProcessNotification(msg);
+                    }
 
-                    if (holder.IsProcessingComplete())
-                        handlerMap.erase(rspId);
+                    if (task.IsValid())
+                        userThreadPool.Dispatch(task);
                 }
                 else
                 {
@@ -217,9 +222,6 @@ namespace ignite
 
                 NotificationHandlerHolder& holder = handlerMap[notId];
                 holder.SetHandler(handler);
-
-                if (holder.IsProcessingComplete())
-                    handlerMap.erase(notId);
             }
 
             void DataChannel::DeregisterNotificationHandler(int64_t notId)

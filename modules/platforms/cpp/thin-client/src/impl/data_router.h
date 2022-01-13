@@ -29,6 +29,7 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/common/thread_pool.h>
 #include <ignite/common/promise.h>
 #include <ignite/network/end_point.h>
 #include <ignite/network/tcp_range.h>
@@ -348,6 +349,9 @@ namespace ignite
 
                 /** Cache affinity manager. */
                 affinity::AffinityManager affinityManager;
+
+                /** Thread pool to dispatch user code execution. */
+                common::ThreadPool userThreadPool;
             };
 
             /** Shared pointer type. */
