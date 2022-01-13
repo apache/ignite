@@ -168,14 +168,10 @@ public class ServiceExample {
         serviceCfg.setService(new MyCounterServiceImpl());
 
         // Enable service statistics.
-        // NOTE: Statistics slows invocation of service's methods.
         serviceCfg.setStatisticsEnabled(true);
 
         ignite.services().deploy(serviceCfg);
 
-        // If service statistics is enabled, service reference is proxyed even if local instance is available.
-        // The proxy is slower compared to direct implementation.
-        // Remote service instance is always proxied.
         MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
         //end::start-with-statistics[]
 
