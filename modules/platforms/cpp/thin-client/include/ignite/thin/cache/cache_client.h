@@ -606,10 +606,11 @@ namespace ignite
                  * @return Query handle. Once all instances are destroyed query execution stopped.
                  */
                 query::continuous::ContinuousQueryHandleClient QueryContinuous(
-                        query::continuous::ContinuousQueryClient<K, V> continuousQuery)
+                    query::continuous::ContinuousQueryClient<K, V> continuousQuery)
                 {
-                    impl::thin::cache::query::continuous::SP_ContinuousQueryClientHolderBase holder(
-                        new impl::thin::cache::query::continuous::ContinuousQueryClientHolder<K, V>(continuousQuery));
+                    using namespace impl::thin::cache::query::continuous;
+
+                    SP_ContinuousQueryClientHolderBase holder(new ContinuousQueryClientHolder<K, V>(continuousQuery));
 
                     return proxy.QueryContinuous(holder);
                 }

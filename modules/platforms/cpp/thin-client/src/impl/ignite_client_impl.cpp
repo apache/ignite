@@ -41,7 +41,9 @@ namespace ignite
 
             IgniteClientImpl::~IgniteClientImpl()
             {
-                // No-op.
+                DataRouter* router0 = router.Get();
+                if (router0)
+                    router0->Close();
             }
 
             void IgniteClientImpl::Start()
