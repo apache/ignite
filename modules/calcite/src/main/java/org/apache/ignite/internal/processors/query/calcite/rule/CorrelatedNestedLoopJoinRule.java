@@ -142,8 +142,8 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
     /** {@inheritDoc} */
     @Override public boolean matches(RelOptRuleCall call) {
-        LogicalJoin corr = call.rel(0);
+        LogicalJoin join = call.rel(0);
 
-        return corr.getJoinType() == JoinRelType.INNER || corr.getJoinType() == JoinRelType.LEFT;
+        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT;
     }
 }

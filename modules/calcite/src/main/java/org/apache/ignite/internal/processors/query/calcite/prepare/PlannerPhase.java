@@ -217,7 +217,6 @@ public enum PlannerPhase {
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
                     FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
 
-                    LogicalOrToUnionRule.FILTER_INSTANCE,
                     LogicalOrToUnionRule.SCAN_INSTANCE,
 
                     CorrelatedNestedLoopJoinRule.INSTANCE,

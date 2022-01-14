@@ -59,9 +59,8 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @return Relational node for given traits combination.
      */
     default RelNode createNode(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
-        List<RelNode> tr = Commons.transform(Ord.zip(inTraits),
-            o -> RelOptRule.convert(getInput(o.i), o.e));
-        return copy(nodeTraits, tr);
+        return copy(nodeTraits, Commons.transform(Ord.zip(inTraits),
+            o -> RelOptRule.convert(getInput(o.i), o.e)));
     }
 
     /**
