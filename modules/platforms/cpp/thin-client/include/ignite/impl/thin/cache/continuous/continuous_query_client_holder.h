@@ -75,6 +75,13 @@ namespace ignite
                              * @return Flag value.
                              */
                             virtual bool GetIncludeExpired() const = 0;
+
+                            /**
+                             * Disconnected callback.
+                             *
+                             * Called if channel was disconnected.
+                             */
+                            virtual void OnDisconnected() = 0;
                         };
 
                         /** Shared pointer to ContinuousQueryClientHolderBase. */
@@ -149,6 +156,16 @@ namespace ignite
                             virtual bool GetIncludeExpired() const
                             {
                                 return continuousQuery.GetIncludeExpired();
+                            }
+
+                            /**
+                             * Disconnected callback.
+                             *
+                             * Called if channel was disconnected.
+                             */
+                            virtual void OnDisconnected()
+                            {
+                                continuousQuery.GetListener().OnDisconnected();
                             }
 
                         private:

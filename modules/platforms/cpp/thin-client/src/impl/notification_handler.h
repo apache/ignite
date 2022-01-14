@@ -53,6 +53,13 @@ namespace ignite
                  * @return @c true if processing complete.
                  */
                 virtual void OnNotification(const network::DataBuffer& msg) = 0;
+
+                /**
+                 * Disconnected callback.
+                 *
+                 * Called if channel was disconnected.
+                 */
+                virtual void OnDisconnected() = 0;
             };
 
             /** Shared pointer to notification handler. */
@@ -126,6 +133,56 @@ namespace ignite
                 ChannelStateHandler& channelStateHandler;
             };
 
+            /**
+             * Task that handles connection closing
+             */
+            class DisconnectedTask : public common::ThreadPoolTask
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param handler Notification handler.
+                 */
+                explicit DisconnectedTask(const SP_NotificationHandler& handler) :
+                    handler(handler)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~DisconnectedTask()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Execute task.
+                 */
+                virtual void Execute()
+                {
+                    handler.Get()->OnDisconnected();
+                }
+
+                /**
+                 * Called if error occurred during task processing.
+                 *
+                 * @param err Error.
+                 */
+                virtual void OnError(const IgniteError& err)
+                {
+                    // No-op. Connection already closed so there is not much we can do.
+                    // TODO: Add logging here once it's implemented.
+                }
+
+            private:
+                /** Handler. */
+                SP_NotificationHandler handler;
+            };
+
+
             /** Notification handler. */
             class NotificationHandlerHolder
             {
@@ -137,6 +194,7 @@ namespace ignite
                  * Default constructor.
                  */
                 NotificationHandlerHolder() :
+                    disconnected(false),
                     queue(),
                     handler()
                 {
@@ -167,12 +225,25 @@ namespace ignite
                     if (handler.IsValid())
                         return common::SP_ThreadPoolTask(
                             new HandleNotificationTask(notification, handler, channelId, channelStateHandler));
-                    else
-                    {
-                        queue.push_back(notification);
 
-                        return common::SP_ThreadPoolTask();
-                    }
+                    queue.push_back(notification);
+
+                    return common::SP_ThreadPoolTask();
+                }
+
+                /**
+                 * Process disconnect.
+                 *
+                 * @return Task for dispatching if handler is present and null otherwise.
+                 */
+                common::SP_ThreadPoolTask ProcessClosed()
+                {
+                    disconnected = true;
+
+                    if (handler.IsValid())
+                        return common::SP_ThreadPoolTask(new DisconnectedTask(handler));
+
+                    return common::SP_ThreadPoolTask();
                 }
 
                 /**
@@ -188,12 +259,18 @@ namespace ignite
 
                     handler = handler0;
                     for (MessageQueue::iterator it = queue.begin(); it != queue.end(); ++it)
-                        this->handler.Get()->OnNotification(*it);
+                        handler.Get()->OnNotification(*it);
 
                     queue.clear();
+
+                    if (disconnected)
+                        handler.Get()->OnDisconnected();
                 }
 
             private:
+                /** Disconnected flag. */
+                bool disconnected;
+
                 /** Notification queue. */
                 MessageQueue queue;
 

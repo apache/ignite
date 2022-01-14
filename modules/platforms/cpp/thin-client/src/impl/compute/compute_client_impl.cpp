@@ -65,6 +65,11 @@ namespace
                 promise.SetValue();
         }
 
+        virtual void OnDisconnected()
+        {
+            promise.SetError(IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed"));
+        }
+
         /**
          * Get future result.
          *

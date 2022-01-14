@@ -50,6 +50,11 @@ namespace ignite
                             ClientCacheEntryEventNotification notification(*continuousQuery.Get());
                             channel.DeserializeMessage(msg, notification);
                         }
+
+                        void ContinuousQueryNotificationHandler::OnDisconnected()
+                        {
+                            continuousQuery.Get()->OnDisconnected();
+                        }
                     }
                 }
             }

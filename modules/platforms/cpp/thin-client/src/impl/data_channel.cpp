@@ -88,7 +88,6 @@ namespace ignite
             void DataChannel::Close(const IgniteError* err)
             {
                 asyncPool.Get()->Close(id, err);
-                handlerMap.clear();
             }
 
             void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
@@ -371,6 +370,18 @@ namespace ignite
                         it->second.Get()->SetError(*err);
 
                     responseMap.clear();
+                }
+
+                {
+                    common::concurrent::CsLockGuard lock(handlerMutex);
+
+                    for (NotificationHandlerMap::iterator it = handlerMap.begin(); it != handlerMap.end(); ++it)
+                    {
+                        common::SP_ThreadPoolTask task = it->second.ProcessClosed();
+
+                        if (task.IsValid())
+                            userThreadPool.Dispatch(task);
+                    }
                 }
 
                 if (!handshakePerformed)

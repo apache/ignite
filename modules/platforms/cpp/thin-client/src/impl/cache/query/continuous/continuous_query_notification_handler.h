@@ -69,6 +69,13 @@ namespace ignite
                              */
                             virtual void OnNotification(const network::DataBuffer& msg);
 
+                            /**
+                             * Disconnected callback.
+                             *
+                             * Called if channel was disconnected.
+                             */
+                            virtual void OnDisconnected();
+
                         private:
                             /** Query. */
                             SP_ContinuousQueryClientHolderBase continuousQuery;
