@@ -118,7 +118,19 @@ public:
     /**
      * Default constructor.
      */
-    Listener()
+    Listener() :
+        handlingDelay(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param handlingDelay Handling delay.
+     */
+    Listener(uint32_t handlingDelay) :
+        handlingDelay(handlingDelay)
     {
         // No-op.
     }
@@ -132,7 +144,12 @@ public:
     virtual void OnEvent(const CacheEntryEvent<K, V>* evts, uint32_t num)
     {
         for (uint32_t i = 0; i < num; ++i)
+        {
+            if (handlingDelay)
+                boost::this_thread::sleep_for(boost::chrono::milliseconds(handlingDelay));
+
             eventQueue.Push(evts[i]);
+        }
     }
 
     /**
@@ -191,7 +208,10 @@ public:
     }
 
 private:
-    // Events queue.
+    /** Handling delay. */
+    uint32_t handlingDelay;
+
+    /** Events queue. */
     ConcurrentQueue< CacheEntryEvent<K, V> > eventQueue;
 };
 
@@ -445,6 +465,18 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
 
     BOOST_CHECK_EQUAL(static_cast<int>(QueryImplType::DEFAULT_BUFFER_SIZE),
         static_cast<int>(QueryType::DEFAULT_BUFFER_SIZE));
+}
+
+BOOST_AUTO_TEST_CASE(TestLongEventsProcessing)
+{
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReferenceFromOwningPointer(new Listener<int32_t, TestEntry>(200)));
+
+    ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
+
+    for (int32_t i = 0; i < 20; ++i)
+        cache.Put(i, TestEntry(i * 10));
+
+    Ignition::Stop(node.GetName(), true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

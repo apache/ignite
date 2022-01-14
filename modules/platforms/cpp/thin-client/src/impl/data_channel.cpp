@@ -382,7 +382,17 @@ namespace ignite
                 ResourceCloseRequest req(resourceId);
                 Response rsp;
 
-                SyncMessage(req, rsp, config.GetConnectionTimeout());
+                try
+                {
+                    SyncMessage(req, rsp, config.GetConnectionTimeout());
+                }
+                catch (const IgniteError& err)
+                {
+                    // Network failure means connection is closed or broken, which means
+                    // that all resources were freed automatically.
+                    if (err.GetCode() != IgniteError::IGNITE_ERR_NETWORK_FAILURE)
+                        throw;
+                }
             }
         }
     }

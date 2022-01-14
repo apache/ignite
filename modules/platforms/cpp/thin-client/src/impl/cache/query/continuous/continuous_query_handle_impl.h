@@ -66,8 +66,8 @@ namespace ignite
 
                                 DataChannel& channel0 = *channel.Get();
 
-                                channel0.CloseResource(queryId);
                                 channel0.DeregisterNotificationHandler(queryId);
+                                channel0.CloseResource(queryId);
                             }
 
                         private:
