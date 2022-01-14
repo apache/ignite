@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.tostring.S;
+import org.apache.ignite.internal.util.ArrayUtils;
 
 /**
  * JDBC batch execute result.
@@ -64,7 +65,7 @@ public class BatchExecuteResult extends Response {
      * @return Update count for DML queries.
      */
     public int[] updateCounts() {
-        return updateCnts;
+        return updateCnts == null ? ArrayUtils.INT_EMPTY_ARRAY : updateCnts;
     }
 
     /** {@inheritDoc} */

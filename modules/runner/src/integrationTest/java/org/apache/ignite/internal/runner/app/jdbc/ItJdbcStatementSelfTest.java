@@ -31,62 +31,33 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Statement test.
  */
-@SuppressWarnings({"ThrowableNotThrown"})
-public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
+public class ItJdbcStatementSelfTest extends ItJdbcAbstractStatementSelfTest {
     /** SQL query. */
-    private static final String SQL =
-            "select 1::INTEGER, true, 1::TINYINT, 1::SMALLINT, 1::INTEGER, 1::BIGINT, 1.0::FLOAT, 1.0::DOUBLE, 1.0::DOUBLE, '1';";
+    private static final String SQL = "select * from PERSON where age > 30";
 
-    /** Statement. */
-    private Statement stmt;
+    @BeforeAll
+    public static void beforeClass() throws Exception {
+        try (Statement statement = conn.createStatement()) {
+            statement.executeUpdate("create table TEST(ID int primary key, NAME varchar(20));");
 
-    /** Connection. */
-    private Connection conn;
+            int stmtCnt = 10;
 
-    /**
-     * Create the connection ant statement.
-     *
-     * @throws Exception if failed.
-     */
-    @BeforeEach
-    protected void beforeTest() throws Exception {
-        conn = DriverManager.getConnection(URL);
-
-        stmt = conn.createStatement();
-
-        assertNotNull(stmt);
-        assertFalse(stmt.isClosed());
-    }
-
-    /**
-     * Close the connection and statement.
-     *
-     * @throws Exception if failed.
-     */
-    @AfterEach
-    protected void afterTest() throws Exception {
-        if (stmt != null && !stmt.isClosed()) {
-            stmt.close();
-
-            assertTrue(stmt.isClosed());
+            for (int i = 0; i < stmtCnt; ++i) {
+                statement.executeUpdate("insert into TEST (ID, NAME) values (" + i + ", 'name_" + i + "'); ");
+            }
         }
-
-        conn.close();
-
-        assertTrue(stmt.isClosed());
-        assertTrue(conn.isClosed());
     }
 
     @Test
-    @Disabled("IGNITE-15108")
     public void testExecuteQuery0() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -136,7 +107,6 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled("IGNITE-15108")
     public void testExecute() throws Exception {
         assertTrue(stmt.execute(SQL));
 
@@ -172,7 +142,7 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled("IGNITE-15108")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16269")
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 
@@ -262,12 +232,17 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testCloseResultSetByConnectionClose() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        try (
+                Connection conn = DriverManager.getConnection(URL);
+                Statement stmt = conn.createStatement()
+        ) {
+            ResultSet rs = stmt.executeQuery(SQL);
 
-        conn.close();
+            conn.close();
 
-        assertTrue(stmt.isClosed(), "Statement must be implicitly closed after close connection");
-        assertTrue(rs.isClosed(), "ResultSet must be implicitly closed after close connection");
+            assertTrue(stmt.isClosed(), "Statement must be implicitly closed after close connection");
+            assertTrue(rs.isClosed(), "ResultSet must be implicitly closed after close connection");
+        }
     }
 
     @Test
@@ -326,7 +301,7 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
-        //        assertTrue(conn.getMetaData().supportsMultipleResultSets());
+        assertTrue(conn.getMetaData().supportsMultipleResultSets());
 
         int stmtCnt = 10;
 
@@ -358,10 +333,7 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled("IGNITE-15108")
     public void testExecuteQueryMultipleOnlyDml() throws Exception {
-        conn.setSchema(null);
-
         Statement stmt0 = conn.createStatement();
 
         int stmtCnt = 10;
@@ -395,12 +367,8 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled("IGNITE-15108")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16276")
     public void testExecuteQueryMultipleMixed() throws Exception {
-        conn.setSchema(null);
-
-        Statement stmt0 = conn.createStatement();
-
         int stmtCnt = 10;
 
         StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
@@ -413,30 +381,28 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
             }
         }
 
-        assertFalse(stmt0.execute(sql.toString()));
+        assertFalse(stmt.execute(sql.toString()));
 
         // DROP TABLE statement
-        assertNull(stmt0.getResultSet());
-        assertEquals(0, stmt0.getUpdateCount());
+        assertNull(stmt.getResultSet());
+        assertEquals(0, stmt.getUpdateCount());
 
-        assertTrue(stmt0.getMoreResults(), "Result set doesn't have more results.");
+        assertTrue(stmt.getMoreResults(), "Result set doesn't have more results.");
 
         // CREATE TABLE statement
-        assertNull(stmt0.getResultSet());
-        assertEquals(0, stmt0.getUpdateCount());
-
-        boolean notEmptyResult = false;
+        assertNull(stmt.getResultSet());
+        assertEquals(0, stmt.getUpdateCount());
 
         for (int i = 0; i < stmtCnt; ++i) {
-            assertTrue(stmt0.getMoreResults());
+            assertTrue(stmt.getMoreResults());
 
             if (i % 2 == 0) {
-                assertNull(stmt0.getResultSet());
-                assertEquals(1, stmt0.getUpdateCount());
+                assertNull(stmt.getResultSet());
+                assertEquals(1, stmt.getUpdateCount());
             } else {
-                assertEquals(-1, stmt0.getUpdateCount());
+                assertEquals(-1, stmt.getUpdateCount());
 
-                ResultSet rs = stmt0.getResultSet();
+                ResultSet rs = stmt.getResultSet();
 
                 int rowsCnt = 0;
 
@@ -444,23 +410,16 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
                     rowsCnt++;
                 }
 
-                assertTrue(rowsCnt <= (i + 1) / 2);
-
-                if (rowsCnt == (i + 1) / 2) {
-                    notEmptyResult = true;
-                }
-
-                assertTrue(notEmptyResult);
-
-                assertFalse(stmt0.getMoreResults());
+                assertEquals((i + 1) / 2, rowsCnt);
             }
         }
+
+        assertFalse(stmt.getMoreResults());
     }
 
     @Test
-    @Disabled("IGNITE-15108")
     public void testExecuteUpdate() throws Exception {
-        final String sqlText = "update test set val=1 where _key=1";
+        final String sqlText = "update TEST set NAME='CHANGED_NAME_1' where ID=1;";
 
         assertEquals(1, stmt.executeUpdate(sqlText));
 
@@ -471,11 +430,28 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testExecuteUpdateProducesResultSet() {
-        final String sqlText = "select * from test";
+        final String sqlText = "select * from TEST;";
 
         assertThrows(SQLException.class, () -> stmt.executeUpdate(sqlText),
                 "Given statement type does not match that declared by JDBC driver"
         );
+    }
+
+    @Test
+    public void testExecuteUpdateOnDdl() throws SQLException {
+        String tableName = "\"test_" + UUID.randomUUID().toString() + "\"";
+
+        stmt.executeUpdate("CREATE TABLE " + tableName + "(id INT PRIMARY KEY, val VARCHAR)");
+
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tableName);
+
+        assertNotNull(rs, "ResultSet expected");
+        assertTrue(rs.next(), "One row expected");
+        assertEquals(0L, rs.getLong(1));
+
+        stmt.executeUpdate("DROP TABLE " + tableName);
+
+        assertThrows(SQLException.class, () -> stmt.executeQuery("SELECT COUNT(*) FROM " + tableName));
     }
 
     @Test
@@ -517,7 +493,7 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16269")
     public void testGetSetMaxRows() throws Exception {
         assertEquals(0, stmt.getMaxRows());
 
@@ -670,15 +646,7 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
         checkStatementClosed(() -> stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT));
     }
 
-    /**
-     * TODO Enable when batch query is supported
-     *
-     * <p>Verifies that empty batch can be performed.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
     public void testBatchEmpty() throws Exception {
         assertTrue(conn.getMetaData().supportsBatchUpdates());
 
@@ -752,26 +720,23 @@ public class ItJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled("IGNITE-15108")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16268")
     public void testStatementTypeMismatchUpdate() throws Exception {
         assertThrows(
                 SQLException.class,
-                () -> stmt.executeQuery("update test set val=28 where _key=1"),
+                () -> stmt.executeQuery("update TEST set NAME='28' where ID=1"),
                 "Given statement type does not match that declared by JDBC driver"
         );
 
-        ResultSet rs = stmt.executeQuery("select val from test where _key=1");
+        ResultSet rs = stmt.executeQuery("select NAME from TEST where ID=1");
 
         boolean next = rs.next();
 
         assertTrue(next);
 
-        assertEquals(
-                1,
-                rs.getInt(1),
+        assertEquals(1, rs.getInt(1),
                 "The data must not be updated. "
                         + "Because update statement is executed via 'executeQuery' method."
-                        + " Data [val=" + rs.getInt(1) + ']'
-        );
+                        + " Data [val=" + rs.getInt(1) + ']');
     }
 }

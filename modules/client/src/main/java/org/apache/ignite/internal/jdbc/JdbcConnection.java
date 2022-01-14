@@ -21,6 +21,7 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.client.proto.query.SqlStateCode.CLIENT_CONNECTION_FAILED;
 import static org.apache.ignite.client.proto.query.SqlStateCode.CONNECTION_CLOSED;
 
 import java.sql.Array;
@@ -134,7 +135,7 @@ public class JdbcConnection implements Connection {
      *
      * @param props Connection properties.
      */
-    public JdbcConnection(ConnectionProperties props) {
+    public JdbcConnection(ConnectionProperties props) throws SQLException {
         this.connProps = props;
         autoCommit = true;
 
@@ -148,14 +149,19 @@ public class JdbcConnection implements Connection {
         long reconnectThrottlingPeriod = connProps.getReconnectThrottlingPeriod();
         int reconnectThrottlingRetries = connProps.getReconnectThrottlingRetries();
 
-        client = ((TcpIgniteClient) IgniteClient
-                .builder()
-                .addresses(addrs)
-                .connectTimeout(netTimeout)
-                .retryLimit(retryLimit)
-                .reconnectThrottlingPeriod(reconnectThrottlingPeriod)
-                .reconnectThrottlingRetries(reconnectThrottlingRetries)
-                .build());
+        try {
+            client = ((TcpIgniteClient) IgniteClient
+                    .builder()
+                    .addresses(addrs)
+                    .connectTimeout(netTimeout)
+                    .retryLimit(retryLimit)
+                    .reconnectThrottlingPeriod(reconnectThrottlingPeriod)
+                    .reconnectThrottlingRetries(reconnectThrottlingRetries)
+                    .build());
+
+        } catch (Exception e) {
+            throw new SQLException("Failed to connect to server", CLIENT_CONNECTION_FAILED, e);
+        }
 
         this.handler = new JdbcClientQueryEventHandler(client);
 
@@ -228,7 +234,9 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency);
 
-        Objects.requireNonNull(sql);
+        if (sql == null) {
+            throw new SQLException("SQL string cannot be null.");
+        }
 
         JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql, resSetHoldability, schema);
 

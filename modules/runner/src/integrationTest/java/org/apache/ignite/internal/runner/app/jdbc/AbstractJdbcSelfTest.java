@@ -21,14 +21,22 @@ import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeN
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteLogger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,10 +46,19 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class AbstractJdbcSelfTest {
     /** URL. */
-    protected static final String URL = "jdbc:ignite:thin://127.0.1.1:10800";
+    protected static final String URL = "jdbc:ignite:thin://127.0.0.1:10800";
 
     /** Cluster nodes. */
     protected static final List<Ignite> clusterNodes = new ArrayList<>();
+
+    /** Connection. */
+    protected static Connection conn;
+
+    /** Statement. */
+    protected Statement stmt;
+
+    /** Logger. */
+    protected IgniteLogger log;
 
     /**
      * Creates a cluster of three nodes.
@@ -49,12 +66,16 @@ public class AbstractJdbcSelfTest {
      * @param temp Temporal directory.
      */
     @BeforeAll
-    public static void beforeAll(@TempDir Path temp, TestInfo testInfo) {
+    public static void beforeAll(@TempDir Path temp, TestInfo testInfo) throws SQLException {
         String nodeName = testNodeName(testInfo, 47500);
 
         String configStr = "node.metastorageNodes: [ \"" + nodeName + "\" ]";
 
         clusterNodes.add(IgnitionManager.start(nodeName, configStr, temp.resolve(nodeName)));
+
+        conn = DriverManager.getConnection(URL);
+
+        conn.setSchema("PUBLIC");
     }
 
     /**
@@ -64,11 +85,49 @@ public class AbstractJdbcSelfTest {
      */
     @AfterAll
     public static void afterAll() throws Exception {
-        for (Ignite clusterNode : clusterNodes) {
-            clusterNode.close();
-        }
+        IgniteUtils.closeAll(
+                Stream.concat(
+                        Stream.of(conn != null && !conn.isClosed() ? conn : (AutoCloseable) () -> {/* NO-OP */}),
+                        clusterNodes.stream()
+                )
+        );
 
+        conn = null;
         clusterNodes.clear();
+    }
+
+    @BeforeEach
+    protected void beforeTest() throws Exception {
+        stmt = conn.createStatement();
+
+        assert stmt != null;
+        assert !stmt.isClosed();
+    }
+
+    @AfterEach
+    protected void afterTest() throws Exception {
+        if (stmt != null) {
+            stmt.close();
+
+            assert stmt.isClosed();
+        }
+    }
+
+    /**
+     * Constructor.
+     */
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    protected AbstractJdbcSelfTest() {
+        log = IgniteLogger.forClass(getClass());
+    }
+
+    /**
+     * Returns logger.
+     *
+     * @return Logger.
+     */
+    protected IgniteLogger logger() {
+        return log;
     }
 
     /**

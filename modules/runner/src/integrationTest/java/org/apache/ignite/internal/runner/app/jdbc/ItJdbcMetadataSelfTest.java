@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.schema.SchemaBuilders;
@@ -56,10 +57,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Metadata tests.
  */
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
-    /** URL. */
-    protected static final String URL = "jdbc:ignite:thin://127.0.1.1:10800";
-
     /** Creates tables. */
     @BeforeAll
     public static void createTables() {
@@ -127,13 +126,12 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
     }
 
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15507")
     public void testDecimalAndDateTypeMetaData() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            Statement stmt = conn.createStatement();
+        createMetaTable();
 
-            ResultSet rs = stmt.executeQuery(
-                    "select t.decimal, t.date from \"metaTest\".MetaTest as t");
+        try {
+            ResultSet rs = stmt.executeQuery("SELECT t.DECIMAL_COL, t.DATE FROM PUBLIC.METATEST t;");
 
             assertNotNull(rs);
 
@@ -144,125 +142,139 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
             assertEquals(2, meta.getColumnCount());
 
             assertEquals("METATEST", meta.getTableName(1).toUpperCase());
-            assertEquals("DECIMAL", meta.getColumnName(1).toUpperCase());
-            assertEquals("DECIMAL", meta.getColumnLabel(1).toUpperCase());
+            assertEquals("DECIMAL_COL", meta.getColumnName(1).toUpperCase());
+            assertEquals("DECIMAL_COL", meta.getColumnLabel(1).toUpperCase());
             assertEquals(DECIMAL, meta.getColumnType(1));
             assertEquals(meta.getColumnTypeName(1), "DECIMAL");
             assertEquals(meta.getColumnClassName(1), "java.math.BigDecimal");
 
             assertEquals("METATEST", meta.getTableName(2).toUpperCase());
-            assertEquals("DATE", meta.getColumnName(2).toUpperCase());
-            assertEquals("DATE", meta.getColumnLabel(2).toUpperCase());
+            assertEquals("DATE_COL", meta.getColumnName(2).toUpperCase());
+            assertEquals("DATE_COL", meta.getColumnLabel(2).toUpperCase());
             assertEquals(DATE, meta.getColumnType(2));
             assertEquals(meta.getColumnTypeName(2), "DATE");
             assertEquals(meta.getColumnClassName(2), "java.sql.Date");
+        } finally {
+            stmt.execute("DROP TABLE METATEST;");
         }
+    }
+
+    private void createMetaTable() {
+        Ignite ignite = clusterNodes.get(0);
+
+        TableDefinition metaTableDef = SchemaBuilders.tableBuilder("PUBLIC", "METATEST")
+                .columns(
+                        SchemaBuilders.column("DECIMAL_COL", ColumnType.decimalOf()).build(),
+                        SchemaBuilders.column("DATE_COL", ColumnType.DATE).build(),
+                        SchemaBuilders.column("ID", ColumnType.INT32).asNullable(false).build())
+                .withPrimaryKey("ID")
+                .build();
+
+        ignite.tables().createTable(metaTableDef.canonicalName(), (tableChange) -> {
+            SchemaConfigurationConverter.convert(metaTableDef, tableChange).changeReplicas(1).changePartitions(10);
+        });
     }
 
     @Test
     public void testGetTables() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
+        DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTables("IGNITE", "PUBLIC", "%", new String[]{"TABLE"});
-            assertNotNull(rs);
-            assertTrue(rs.next());
-            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
-            assertTrue(rs.next());
-            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals("PERSON", rs.getString("TABLE_NAME"));
+        ResultSet rs = meta.getTables("IGNITE", "PUBLIC", "%", new String[]{"TABLE"});
+        assertNotNull(rs);
+        assertTrue(rs.next());
+        assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+        assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+        assertTrue(rs.next());
+        assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+        assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("IGNITE", "PUBLIC", "%", null);
-            assertNotNull(rs);
-            assertTrue(rs.next());
-            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+        rs = meta.getTables("IGNITE", "PUBLIC", "%", null);
+        assertNotNull(rs);
+        assertTrue(rs.next());
+        assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+        assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("IGNITE", "PUBLIC", "", new String[]{"WRONG"});
-            assertFalse(rs.next());
-        }
+        rs = meta.getTables("IGNITE", "PUBLIC", "", new String[]{"WRONG"});
+        assertFalse(rs.next());
     }
 
     @Test
     public void testGetColumns() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
+        DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("IGNITE", "PUBLIC", "PERSON", "%");
+        ResultSet rs = meta.getColumns("IGNITE", "PUBLIC", "PERSON", "%");
 
-            assertNotNull(rs);
+        assertNotNull(rs);
 
-            Collection<String> names = new ArrayList<>(2);
+        Collection<String> names = new ArrayList<>(2);
 
-            names.add("NAME");
-            names.add("AGE");
-            names.add("ORGID");
+        names.add("NAME");
+        names.add("AGE");
+        names.add("ORGID");
 
-            int cnt = 0;
+        int cnt = 0;
 
-            while (rs.next()) {
-                String name = rs.getString("COLUMN_NAME");
+        while (rs.next()) {
+            String name = rs.getString("COLUMN_NAME");
 
-                assertTrue(names.remove(name));
+            assertTrue(names.remove(name));
 
-                if ("NAME".equals(name)) {
-                    assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "VARCHAR");
-                    assertEquals(1, rs.getInt("NULLABLE"));
-                } else if ("AGE".equals(name)) {
-                    assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
-                    assertEquals(1, rs.getInt("NULLABLE"));
-                } else if ("ORGID".equals(name)) {
-                    assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
-                    assertEquals(0, rs.getInt("NULLABLE"));
+            if ("NAME".equals(name)) {
+                assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "VARCHAR");
+                assertEquals(1, rs.getInt("NULLABLE"));
+            } else if ("AGE".equals(name)) {
+                assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
+                assertEquals(1, rs.getInt("NULLABLE"));
+            } else if ("ORGID".equals(name)) {
+                assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
+                assertEquals(0, rs.getInt("NULLABLE"));
 
-                }
-                cnt++;
             }
-
-            assertTrue(names.isEmpty());
-            assertEquals(3, cnt);
-
-            rs = meta.getColumns("IGNITE", "PUBLIC", "ORGANIZATION", "%");
-
-            assertNotNull(rs);
-
-            names.add("ID");
-            names.add("NAME");
-            names.add("BIGDATA");
-
-            cnt = 0;
-
-            while (rs.next()) {
-                String name = rs.getString("COLUMN_NAME");
-
-                assertTrue(names.remove(name));
-
-                if ("ID".equals(name)) {
-                    assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                } else if ("NAME".equals(name)) {
-                    assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "VARCHAR");
-                    assertEquals(1, rs.getInt("NULLABLE"));
-                } else if ("BIGDATA".equals(name)) {
-                    assertEquals(DECIMAL, rs.getInt("DATA_TYPE"));
-                    assertEquals(rs.getString("TYPE_NAME"), "DECIMAL");
-                    assertEquals(1, rs.getInt("NULLABLE"));
-                    assertEquals(10, rs.getInt("DECIMAL_DIGITS"));
-                    assertEquals(20, rs.getInt("COLUMN_SIZE"));
-                }
-
-                cnt++;
-            }
-
-            assertTrue(names.isEmpty());
-            assertEquals(3, cnt);
+            cnt++;
         }
+
+        assertTrue(names.isEmpty());
+        assertEquals(3, cnt);
+
+        rs = meta.getColumns("IGNITE", "PUBLIC", "ORGANIZATION", "%");
+
+        assertNotNull(rs);
+
+        names.add("ID");
+        names.add("NAME");
+        names.add("BIGDATA");
+
+        cnt = 0;
+
+        while (rs.next()) {
+            String name = rs.getString("COLUMN_NAME");
+
+            assertTrue(names.remove(name));
+
+            if ("ID".equals(name)) {
+                assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "INTEGER");
+                assertEquals(0, rs.getInt("NULLABLE"));
+            } else if ("NAME".equals(name)) {
+                assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "VARCHAR");
+                assertEquals(1, rs.getInt("NULLABLE"));
+            } else if ("BIGDATA".equals(name)) {
+                assertEquals(DECIMAL, rs.getInt("DATA_TYPE"));
+                assertEquals(rs.getString("TYPE_NAME"), "DECIMAL");
+                assertEquals(1, rs.getInt("NULLABLE"));
+                assertEquals(10, rs.getInt("DECIMAL_DIGITS"));
+                assertEquals(20, rs.getInt("COLUMN_SIZE"));
+            }
+
+            cnt++;
+        }
+
+        assertTrue(names.isEmpty());
+        assertEquals(3, cnt);
     }
 
     /**
@@ -270,135 +282,119 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
      */
     @Test
     public void testCheckSupports() throws SQLException {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
+        DatabaseMetaData meta = conn.getMetaData();
 
-            assertTrue(meta.supportsANSI92EntryLevelSQL());
-            assertTrue(meta.supportsAlterTableWithAddColumn());
-            assertTrue(meta.supportsAlterTableWithDropColumn());
-            assertTrue(meta.nullPlusNonNullIsNull());
-        }
+        assertTrue(meta.supportsANSI92EntryLevelSQL());
+        assertTrue(meta.supportsAlterTableWithAddColumn());
+        assertTrue(meta.supportsAlterTableWithDropColumn());
+        assertTrue(meta.nullPlusNonNullIsNull());
     }
 
     @Test
     public void testVersions() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            assertEquals(conn.getMetaData().getDatabaseProductVersion(), ProtocolVersion.LATEST_VER.toString(),
-                    "Unexpected ignite database product version.");
-            assertEquals(conn.getMetaData().getDriverVersion(), ProtocolVersion.LATEST_VER.toString(),
-                    "Unexpected ignite driver version.");
-        }
+        assertEquals(conn.getMetaData().getDatabaseProductVersion(), ProtocolVersion.LATEST_VER.toString(),
+                "Unexpected ignite database product version.");
+        assertEquals(conn.getMetaData().getDriverVersion(), ProtocolVersion.LATEST_VER.toString(),
+                "Unexpected ignite driver version.");
     }
 
     @Test
     public void testSchemasMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rs = conn.getMetaData().getSchemas();
+        ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "PUBLIC"));
+        Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "PUBLIC"));
 
-            Set<String> schemas = new HashSet<>();
+        Set<String> schemas = new HashSet<>();
 
-            while (rs.next()) {
-                schemas.add(rs.getString(1));
-            }
-
-            assertEquals(schemas, expectedSchemas);
+        while (rs.next()) {
+            schemas.add(rs.getString(1));
         }
+
+        assertEquals(schemas, expectedSchemas);
     }
 
     @Test
     public void testEmptySchemasMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
+        ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
 
-            assertFalse(rs.next(), "Empty result set is expected");
-        }
+        assertFalse(rs.next(), "Empty result set is expected");
     }
 
     @Test
     public void testPrimaryKeyMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL);
-                ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "PUBLIC", "PERSON")) {
+        ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "PUBLIC", "PERSON");
 
-            int cnt = 0;
+        int cnt = 0;
 
-            while (rs.next()) {
-                assertEquals(rs.getString("COLUMN_NAME"), "ORGID");
+        while (rs.next()) {
+            assertEquals(rs.getString("COLUMN_NAME"), "ORGID");
 
-                cnt++;
-            }
-
-            assertEquals(1, cnt);
+            cnt++;
         }
+
+        assertEquals(1, cnt);
     }
 
     @Test
     public void testGetAllPrimaryKeys() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
+        ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
 
-            Set<String> expectedPks = new HashSet<>(Arrays.asList(
-                    "PUBLIC.ORGANIZATION.PK_ORGANIZATION.ID",
-                    "PUBLIC.PERSON.PK_PERSON.ORGID"));
+        Set<String> expectedPks = new HashSet<>(Arrays.asList(
+                "PUBLIC.ORGANIZATION.PK_ORGANIZATION.ID",
+                "PUBLIC.PERSON.PK_PERSON.ORGID"));
 
-            Set<String> actualPks = new HashSet<>(expectedPks.size());
+        Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while (rs.next()) {
-                actualPks.add(rs.getString("TABLE_SCHEM")
-                        + '.' + rs.getString("TABLE_NAME")
-                        + '.' + rs.getString("PK_NAME")
-                        + '.' + rs.getString("COLUMN_NAME"));
-            }
-
-            assertEquals(expectedPks, actualPks, "Metadata contains unexpected primary keys info.");
+        while (rs.next()) {
+            actualPks.add(rs.getString("TABLE_SCHEM")
+                    + '.' + rs.getString("TABLE_NAME")
+                    + '.' + rs.getString("PK_NAME")
+                    + '.' + rs.getString("COLUMN_NAME"));
         }
+
+        assertEquals(expectedPks, actualPks, "Metadata contains unexpected primary keys info.");
     }
 
     @Test
     public void testInvalidCatalog() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
+        DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getSchemas("q", null);
+        ResultSet rs = meta.getSchemas("q", null);
 
-            assertFalse(rs.next(), "Results must be empty");
+        assertFalse(rs.next(), "Results must be empty");
 
-            rs = meta.getTables("q", null, null, null);
+        rs = meta.getTables("q", null, null, null);
 
-            assertFalse(rs.next(), "Results must be empty");
+        assertFalse(rs.next(), "Results must be empty");
 
-            rs = meta.getColumns("q", null, null, null);
+        rs = meta.getColumns("q", null, null, null);
 
-            assertFalse(rs.next(), "Results must be empty");
+        assertFalse(rs.next(), "Results must be empty");
 
-            rs = meta.getIndexInfo("q", null, null, false, false);
+        rs = meta.getIndexInfo("q", null, null, false, false);
 
-            assertFalse(rs.next(), "Results must be empty");
+        assertFalse(rs.next(), "Results must be empty");
 
-            rs = meta.getPrimaryKeys("q", null, null);
+        rs = meta.getPrimaryKeys("q", null, null);
 
-            assertFalse(rs.next(), "Results must be empty");
-        }
+        assertFalse(rs.next(), "Results must be empty");
     }
 
     @Test
     public void testGetTableTypes() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
+        DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTableTypes();
+        ResultSet rs = meta.getTableTypes();
 
-            assertTrue(rs.next());
+        assertTrue(rs.next());
 
-            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+        assertEquals("TABLE", rs.getString("TABLE_TYPE"));
 
-            assertFalse(rs.next());
-        }
+        assertFalse(rs.next());
     }
 
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16203")
     public void testParametersMetadata() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {

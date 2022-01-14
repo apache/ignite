@@ -290,14 +290,14 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
             case QUERY:
                 return new QuerySingleResult(cursorId, fetch, !hasNext);
             case DML:
-            case DDL: {
                 if (!validateDmlResult(fetch, hasNext)) {
                     return new QuerySingleResult(Response.STATUS_FAILED,
                             "Unexpected result for DML query [" + req.sqlQuery() + "].");
                 }
 
                 return new QuerySingleResult(cursorId, (Long) fetch.get(0).get(0));
-            }
+            case DDL:
+                return new QuerySingleResult(cursorId, 0);
             default:
                 return new QuerySingleResult(UNSUPPORTED_OPERATION,
                         "Query type [" + cur.queryType() + "] is not supported yet.");

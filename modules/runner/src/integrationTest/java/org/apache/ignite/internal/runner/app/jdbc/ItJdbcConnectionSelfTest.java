@@ -62,6 +62,7 @@ import org.junit.jupiter.api.Test;
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     /**
      * Test JDBC loading via ServiceLoader.
@@ -85,7 +86,7 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     @SuppressWarnings({"EmptyTryBlock", "unused"})
     @Test
     public void testDefaults() throws Exception {
-        var url = "jdbc:ignite:thin://127.0.1.1:10800";
+        var url = "jdbc:ignite:thin://127.0.0.1:10800";
 
         try (Connection conn = DriverManager.getConnection(url)) {
             // No-op.
@@ -97,8 +98,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @Disabled
     @Test
-    @Disabled("ITDS-1887")
     public void testDefaultsIpv6() throws Exception {
         var url = "jdbc:ignite:thin://[::1]:10800";
 
@@ -224,12 +225,11 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO  IGNITE-15188.
+     * Test create statement.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int[] rsTypes = new int[]{TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
@@ -266,12 +266,11 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO  IGNITE-15188.
+     * Test create statement.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int[] rsTypes = new int[]{ TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE };
@@ -318,8 +317,9 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
             assertThrows(
-                    NullPointerException.class,
-                    () -> conn.prepareStatement(null)
+                    SQLException.class,
+                    () -> conn.prepareStatement(null),
+                    "SQL string cannot be null"
             );
 
             final String sqlText = "select * from test where param = ?";
@@ -336,12 +336,11 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO  IGNITE-15188.
+     * Test prepare statement.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testPrepareStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
@@ -385,12 +384,11 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO  IGNITE-15188.
+     * Test prepare statement.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testPrepareStatement4() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
@@ -515,13 +513,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO Enable when transactions are ready.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testGetSetAutoCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             boolean ac0 = conn.getAutoCommit();
@@ -582,13 +575,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * Enable when transactions are ready.
-     *
-     * @throws Exception if failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testBeginFailsWhenMvccIsDisabled() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.createStatement().execute("BEGIN");
@@ -599,13 +587,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * Enable when transactions are ready.
-     *
-     * @throws Exception if failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setAutoCommit(false);
@@ -616,13 +599,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         // assert no exception
     }
 
-    /**
-     * Enable when transactions are ready.
-     *
-     * @throws Exception if failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setAutoCommit(false);
@@ -635,12 +613,11 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO  IGNITE-15188.
+     * Test get metadata.
      *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testGetMetaData() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -667,13 +644,7 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO  IGNITE-15188.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
     public void testGetSetCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertFalse(conn.getMetaData().supportsCatalogsInDataManipulation());
@@ -788,7 +759,6 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testGetSetHoldability() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // default value
@@ -824,13 +794,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO  IGNITE-15188.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertFalse(conn.getMetaData().supportsSavepoints());
@@ -848,13 +813,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO  IGNITE-15188.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertFalse(conn.getMetaData().supportsSavepoints());
@@ -881,13 +841,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO  IGNITE-15188.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertFalse(conn.getMetaData().supportsSavepoints());
@@ -914,13 +869,8 @@ public class ItJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * TODO  IGNITE-15188.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15087")
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertFalse(conn.getMetaData().supportsSavepoints());

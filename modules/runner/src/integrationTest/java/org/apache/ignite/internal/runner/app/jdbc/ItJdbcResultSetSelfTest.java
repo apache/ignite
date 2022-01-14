@@ -30,69 +30,95 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
 import java.sql.NClob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.tostring.S;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
+import org.apache.ignite.table.RecordView;
+import org.apache.ignite.table.Tuple;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Result set test.
  */
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
-    /** SQL query. */
-    private static final String SQL =
+    /** SQL static query. */
+    private static final String STATIC_SQL =
             "SELECT 1::INTEGER as id, true as boolVal, 1::TINYINT as byteVal, 1::SMALLINT as shortVal, 1::INTEGER as intVal, 1::BIGINT "
                     + "as longVal, 1.0::FLOAT as floatVal, 1.0::DOUBLE as doubleVal, 1.0::DECIMAL as bigVal, "
                     + "'1' as strVal, '1', '1901-02-01'::DATE as dateVal, '01:01:01'::TIME as timeVal, 1::TIMESTAMP as tsVal;";
 
-    /** Statement. */
-    private Statement stmt;
+    /** SQL query. */
+    private static final String SQL_SINGLE_RES = "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, "
+            + "doubleVal, bigVal, strVal from TEST WHERE id = 1";
 
-    /**
-     * Create the connection ant statement.
-     *
-     * @throws Exception if failed.
-     */
-    @BeforeEach
-    public void beforeTest() throws Exception {
-        Connection conn = DriverManager.getConnection(URL);
+    @BeforeAll
+    public static void beforeClass() {
+        Ignite ignite = clusterNodes.get(0);
 
-        stmt = conn.createStatement();
+        List<ColumnDefinition> columns = new ArrayList<>();
 
-        assertNotNull(stmt);
-        assertFalse(stmt.isClosed());
-    }
+        columns.add(SchemaBuilders.column("ID", ColumnType.INT32).build());
+        columns.add(SchemaBuilders.column("BOOLVAL", ColumnType.INT8).asNullable(true).build());
+        columns.add(SchemaBuilders.column("BYTEVAL", ColumnType.INT8).asNullable(true).build());
+        columns.add(SchemaBuilders.column("SHORTVAL", ColumnType.INT16).asNullable(true).build());
+        columns.add(SchemaBuilders.column("INTVAL", ColumnType.INT32).asNullable(true).build());
+        columns.add(SchemaBuilders.column("LONGVAL", ColumnType.INT64).asNullable(true).build());
+        columns.add(SchemaBuilders.column("FLOATVAL", ColumnType.FLOAT).asNullable(true).build());
+        columns.add(SchemaBuilders.column("DOUBLEVAL", ColumnType.DOUBLE).asNullable(true).build());
+        columns.add(SchemaBuilders.column("BIGVAL", ColumnType.decimalOf()).asNullable(true).build());
+        columns.add(SchemaBuilders.column("STRVAL", ColumnType.string()).asNullable(true).build());
+        columns.add(SchemaBuilders.column("ARRVAL", ColumnType.blobOf()).asNullable(true).build());
+        columns.add(SchemaBuilders.column("DATEVAL", ColumnType.DATE).asNullable(true).build());
+        columns.add(SchemaBuilders.column("TIMEVAL", ColumnType.TemporalColumnType.time()).asNullable(true).build());
+        columns.add(SchemaBuilders.column("TSVAL", ColumnType.TemporalColumnType.timestamp()).asNullable(true).build());
+        columns.add(SchemaBuilders.column("URLVAL", ColumnType.blobOf()).asNullable(true).build());
 
-    /**
-     * Close the connection and statement.
-     *
-     * @throws Exception if failed.
-     */
-    @AfterEach
-    public void afterTest() throws Exception {
-        if (stmt != null) {
-            stmt.getConnection().close();
+        TableDefinition personTableDef = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
+                .columns(columns)
+                .withPrimaryKey("ID")
+                .build();
 
-            stmt.close();
+        ignite.tables().createTable(personTableDef.canonicalName(), (tableChange) ->
+                SchemaConfigurationConverter.convert(personTableDef, tableChange).changeReplicas(1).changePartitions(10)
+        );
 
-            assertTrue(stmt.isClosed());
-        }
+        RecordView<Tuple> tupleRecordView = ignite.tables().table("PUBLIC.TEST").recordView();
+
+        Tuple tuple = Tuple.create();
+
+        tuple.set("BOOLVAL", (byte) 1).set("BYTEVAL", (byte) 1).set("SHORTVAL", (short) 1)
+            .set("INTVAL", 1).set("LONGVAL", 1L).set("FLOATVAL", 1.0f).set("DOUBLEVAL", 1.0d)
+            .set("BIGVAL", new BigDecimal("1")).set("STRVAL", "1")
+            .set("DATEVAL", LocalDate.parse("1901-02-01"))
+            .set("TIMEVAL", LocalTime.parse("01:01:01"))
+            .set("TSVAL", Instant.ofEpochMilli(1));
+
+        tupleRecordView.insert(null, tuple.set("ID", 1));
+        tupleRecordView.insert(null, tuple.set("ID", 2));
     }
 
     @Test
     public void testBoolean() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -107,7 +133,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1.0, rs.getDouble(2));
                 assertEquals(1.0f, rs.getFloat(2));
                 assertEquals(new BigDecimal(1), rs.getBigDecimal(2));
-                assertEquals(rs.getString(2), "true");
+                assertEquals(rs.getString(2), "1"); // Because we don't support bool values right now.
 
                 assertTrue(rs.getObject(2, Boolean.class));
                 assertEquals((byte) 1, rs.getObject(2, Byte.class));
@@ -117,7 +143,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1.0f, rs.getObject(2, Float.class));
                 assertEquals(1.0, rs.getObject(2, Double.class));
                 assertEquals(new BigDecimal(1), rs.getObject(2, BigDecimal.class));
-                assertEquals("true", rs.getObject(2, String.class));
+                assertEquals("1", rs.getObject(2, String.class)); // Because we don't support bool values right now.
             }
 
             cnt++;
@@ -162,7 +188,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testByte() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -199,7 +225,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testShort() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -237,7 +263,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testInteger() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -275,7 +301,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testLong() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -313,7 +339,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testFloat() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -351,7 +377,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testDouble() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -389,7 +415,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testBigDecimal() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -404,8 +430,8 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1, rs.getLong(9));
                 assertEquals(1.0, rs.getDouble(9));
                 assertEquals(1.0f, rs.getFloat(9));
-                assertEquals(new BigDecimal("1.0"), rs.getBigDecimal(9));
-                assertEquals(rs.getString(9), "1.0");
+                assertEquals(new BigDecimal("1.000"), rs.getBigDecimal(9));
+                assertEquals(rs.getString(9), "1.000");
 
                 assertTrue(rs.getObject(9, Boolean.class));
                 assertEquals((byte) 1, rs.getObject(9, Byte.class));
@@ -414,8 +440,8 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1, rs.getObject(9, Long.class));
                 assertEquals(1.f, rs.getObject(9, Float.class));
                 assertEquals(1, rs.getObject(9, Double.class));
-                assertEquals(new BigDecimal("1.0"), rs.getObject(9, BigDecimal.class));
-                assertEquals(rs.getObject(9, String.class), "1.0");
+                assertEquals(new BigDecimal("1.000"), rs.getObject(9, BigDecimal.class));
+                assertEquals(rs.getObject(9, String.class), "1.000");
             }
 
             cnt++;
@@ -430,7 +456,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testBigDecimalScale() throws Exception {
         assertEquals(convertStringToBigDecimalViaJdbc("0.1234", 2).toString(), "0.12");
         assertEquals(convertStringToBigDecimalViaJdbc("1.0005", 3).toString(), "1.001");
@@ -456,7 +481,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testString() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         int cnt = 0;
 
@@ -492,53 +517,25 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * TODO: IGNITE-15163.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @Disabled
-    public void testArray() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
-
-        int cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0) {
-                assertArrayEquals(new byte[]{1}, rs.getBytes("arrVal"));
-                assertArrayEquals(new byte[]{1}, rs.getBytes(11));
-            }
-
-            cnt++;
-        }
-
-        assertEquals(1, cnt);
-    }
-
-    /**
-     * TODO: IGNITE-15163.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("deprecation")
     @Test
     public void testDate() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(STATIC_SQL);
 
         int cnt = 0;
 
+        Date exp = Date.valueOf(LocalDate.parse("1901-02-01"));
+
         while (rs.next()) {
             if (cnt == 0) {
-                assert rs.getDate("dateVal").equals(new Date(1, 1, 1));
+                assertEquals(exp, rs.getDate("dateVal"));
 
-                assertEquals(new Date(1, 1, 1), rs.getDate(12));
-                assertEquals(new Time(new Date(1, 1, 1).getTime()), rs.getTime(12));
-                assertEquals(new Timestamp(new Date(1, 1, 1).getTime()), rs.getTimestamp(12));
+                assertEquals(exp, rs.getDate(12));
+                assertEquals(new Time(exp.getTime()), rs.getTime(12));
+                assertEquals(new Timestamp(exp.getTime()), rs.getTimestamp(12));
 
-                assertEquals(new Date(1, 1, 1), rs.getObject(12, Date.class));
-                assertEquals(new Time(new Date(1, 1, 1).getTime()), rs.getObject(12, Time.class));
-                assertEquals(new Timestamp(new Date(1, 1, 1).getTime()), rs.getObject(12, Timestamp.class));
+                assertEquals(exp, rs.getObject(12, Date.class));
+                assertEquals(new Time(exp.getTime()), rs.getObject(12, Time.class));
+                assertEquals(new Timestamp(exp.getTime()), rs.getObject(12, Timestamp.class));
             }
 
             cnt++;
@@ -548,14 +545,14 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163.
+     * Test date-time.
      *
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
     @Test
     public void testTime() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(STATIC_SQL);
 
         int cnt = 0;
 
@@ -585,7 +582,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
      */
     @Test
     public void testTimestamp() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = stmt.executeQuery(STATIC_SQL);
 
         int cnt = 0;
 
@@ -607,46 +604,9 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * TODO Enable when sql engine will be fully integrated.
-     *
-     * @throws Exception If failed.
-     */
     @Test
-    @Disabled
-    public void testObject() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
-
-        int cnt = 0;
-
-        TestObjectField exp = new TestObjectField(100, "AAAA");
-
-        while (rs.next()) {
-            if (cnt == 0) {
-                assertEquals(exp, rs.getObject("objVal"));
-
-                assertEquals(exp, rs.getObject(15));
-
-                assertEquals(exp, rs.getObject(15, Object.class));
-
-                assertEquals(exp, rs.getObject(15, TestObjectField.class));
-            }
-
-            cnt++;
-        }
-
-        assertEquals(1, cnt);
-    }
-
-    /**
-     * TODO Enable when sql engine will be fully integrated.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @Disabled
     public void testNavigation() throws Exception {
-        ResultSet rs = stmt.executeQuery("select id from TestObject where id > 0");
+        ResultSet rs = stmt.executeQuery("SELECT * FROM test where id > 0");
 
         assertTrue(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
@@ -678,14 +638,14 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertFalse(rs.isLast());
         assertEquals(0, rs.getRow());
 
-        rs = stmt.executeQuery("select id from TestObject where id < 0");
+        rs = stmt.executeQuery("select id from test where id < 0");
 
         assertFalse(rs.isBeforeFirst());
     }
 
     @Test
     public void testFindColumn() throws Exception {
-        final ResultSet rs = stmt.executeQuery(SQL);
+        final ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         assertNotNull(rs);
         assertTrue(rs.next());
@@ -697,7 +657,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testNotSupportedTypes() throws Exception {
-        final ResultSet rs = stmt.executeQuery(SQL);
+        final ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         assertTrue(rs.next());
 
@@ -748,7 +708,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testUpdateNotSupported() throws Exception {
-        final ResultSet rs = stmt.executeQuery(SQL);
+        final ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         assertTrue(rs.next());
 
@@ -921,7 +881,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
     @Test
     public void testExceptionOnClosedResultSet() throws Exception {
-        final ResultSet rs = stmt.executeQuery(SQL);
+        final ResultSet rs = stmt.executeQuery(SQL_SINGLE_RES);
 
         rs.close();
 
