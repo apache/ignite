@@ -571,7 +571,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         long variations = vals.stream().distinct().count();
 
-        if (variations == 1 && (!misses || rmvd/*some misses but single value is also null*/)) { // Consistent value.
+        if (variations == 1) { // Consistent value.
             repairable = true;
             fixed = rmvd ? null : incVal;
             consistent = true;
