@@ -213,6 +213,18 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             Integer primary = mapping.getValue().primary;
             boolean repairable = mapping.getValue().repairable;
 
+            if (!repairable)
+                assertNotNull(e);
+
+            if (e == null) {
+                assertTrue(repairable);
+                assertTrue(evtFixed.containsKey(key));
+                assertEquals(fixed, evtFixed.get(key));
+            }
+            // Repairable but not repaired (because of irreparable entry at the same tx) entries.
+            else if (e.irreparableKeys().contains(key) || (e.repairableKeys() != null && e.repairableKeys().contains(key)))
+                assertFalse(evtFixed.containsKey(key));
+
             Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> evtEntryInfos = evtEntries.get(key);
 
             if (evtEntryInfos != null)
@@ -228,17 +240,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                         assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
                     }
                 }
-
-            if (e == null || e.irreparableKeys().contains(key)) {
-                assertEquals(repairable, evtFixed.containsKey(key));
-
-                if (repairable)
-                    assertEquals(fixed, evtFixed.get(key));
-            }
-
-            // Repairable but not repaired (because of irreparable entry at the same tx) entries.
-            if (e != null && e.repairableKeys() != null && e.repairableKeys().contains(key))
-                assertFalse(evtFixed.containsKey(key));
         }
 
         int expectedFixedCnt = inconsistent.size() -
