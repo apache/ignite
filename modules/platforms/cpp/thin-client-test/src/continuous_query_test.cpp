@@ -119,6 +119,7 @@ public:
      * Default constructor.
      */
     Listener() :
+        disconnected(false),
         handlingDelay(0)
     {
         // No-op.
@@ -129,7 +130,8 @@ public:
      *
      * @param handlingDelay Handling delay.
      */
-    Listener(uint32_t handlingDelay) :
+    Listener(int32_t handlingDelay) :
+        disconnected(false),
         handlingDelay(handlingDelay)
     {
         // No-op.
@@ -150,6 +152,20 @@ public:
 
             eventQueue.Push(evts[i]);
         }
+    }
+
+    /**
+     * Disconnected callback.
+     *
+     * Called if channel was disconnected. This also means that continuous query was closed and no more
+     * events will be provided for this listener.
+     */
+    virtual void OnDisconnected()
+    {
+        common::concurrent::CsLockGuard guard(disconnectedMutex);
+
+        disconnected = true;
+        disconnectedCv.NotifyAll();
     }
 
     /**
@@ -183,7 +199,7 @@ public:
      *
      * @param millis Time span in milliseconds.
      */
-    void CheckNoEvent(uint32_t millis = DEFAULT_WAIT_TIMEOUT)
+    void CheckNoEvent(int32_t millis = DEFAULT_WAIT_TIMEOUT)
     {
         CacheEntryEvent<K, V> event;
         bool success = eventQueue.Pull(event, millis);
@@ -207,9 +223,34 @@ public:
         BOOST_CHECK_EQUAL(event.GetEventType(), CacheEntryEventType::EXPIRED);
     }
 
+    /**
+     * Make sure that channel is disconnected within specified time.
+     *
+     * @param millis Time span in milliseconds.
+     */
+    void CheckDisconnected(int32_t millis = DEFAULT_WAIT_TIMEOUT)
+    {
+        common::concurrent::CsLockGuard guard(disconnectedMutex);
+
+        if (disconnected)
+            return;
+
+        disconnectedCv.WaitFor(disconnectedMutex, millis);
+        BOOST_CHECK(disconnected);
+    }
+
 private:
+    /** Disconnected Mutex. */
+    common::concurrent::CriticalSection disconnectedMutex;
+
+    /** Disconnected Condition variable. */
+    common::concurrent::ConditionVariable disconnectedCv;
+
+    /** Disconnected flag. */
+    bool disconnected;
+
     /** Handling delay. */
-    uint32_t handlingDelay;
+    int32_t handlingDelay;
 
     /** Events queue. */
     ConcurrentQueue< CacheEntryEvent<K, V> > eventQueue;
@@ -467,9 +508,11 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
         static_cast<int>(QueryType::DEFAULT_BUFFER_SIZE));
 }
 
-BOOST_AUTO_TEST_CASE(TestLongEventsProcessing)
+BOOST_AUTO_TEST_CASE(TestLongEventsProcessingDisconnect)
 {
-    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReferenceFromOwningPointer(new Listener<int32_t, TestEntry>(200)));
+    boost::shared_ptr< Listener<int32_t, TestEntry> > listener(new Listener<int32_t, TestEntry>(200));
+
+    ContinuousQueryClient<int32_t, TestEntry> qry(MakeReferenceFromSmartPointer(listener));
 
     ContinuousQueryHandleClient handle = cache.QueryContinuous(qry);
 
@@ -477,6 +520,8 @@ BOOST_AUTO_TEST_CASE(TestLongEventsProcessing)
         cache.Put(i, TestEntry(i * 10));
 
     Ignition::Stop(node.GetName(), true);
+
+    listener->CheckDisconnected();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

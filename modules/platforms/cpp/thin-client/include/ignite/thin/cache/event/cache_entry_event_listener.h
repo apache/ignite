@@ -65,6 +65,14 @@ namespace ignite
                      * @param num Events number.
                      */
                     virtual void OnEvent(const CacheEntryEvent<K, V>* evts, uint32_t num) = 0;
+
+                    /**
+                     * Disconnected callback.
+                     *
+                     * Called if channel was disconnected. This also means that continuous query was closed and no more
+                     * events will be provided for this listener.
+                     */
+                    virtual void OnDisconnected() = 0;
                 };
             }
         }
