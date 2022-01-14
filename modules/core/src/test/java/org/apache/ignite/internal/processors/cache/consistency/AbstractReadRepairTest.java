@@ -385,8 +385,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             nodes = keeped;
         }
 
-        boolean repairable = atomicityMode() != ATOMIC; // Currently, Atomic caches can not be repaired.
-
         boolean rmvd = false;
 
         boolean incVer = rnd.nextBoolean();
@@ -507,6 +505,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         Integer fixed;
 
         boolean consistent;
+        boolean repairable;
 
         if (vals.stream().distinct().count() == 1) { // Consistent value.
             consistent = true;
@@ -515,6 +514,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         }
         else {
             consistent = false;
+            repairable = atomicityMode() != ATOMIC; // Currently, Atomic caches can not be repaired.
 
             switch (strategy) {
                 case LWW:
