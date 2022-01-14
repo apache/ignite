@@ -48,7 +48,6 @@ import org.junit.runners.Suite;
     // Special (inmem)
     ReplicatedExplicitTransactionalReadRepairTest.class,
     ReplicatedImplicitTransactionalReadRepairTest.class,
-
     SingleBackupExplicitTransactionalReadRepairTest.class,
     SingleBackupImplicitTransactionalReadRepairTest.class,
 })
