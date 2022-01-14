@@ -178,17 +178,17 @@ namespace ignite
                  */
                 virtual void Run();
 
-                /**
-                 * Handle an error that occurred during task execution.
-                 *
-                 * @param task Task.
-                 * @param err Error.
-                 */
-                static void HandleTaskError(ThreadPoolTask &task, const IgniteError &err);
-
                 /** Task queue. */
                 TaskQueue& taskQueue;
             };
+
+            /**
+             * Handle an error that occurred during task execution.
+             *
+             * @param task Task.
+             * @param err Error.
+             */
+            static void HandleTaskError(ThreadPoolTask &task, const IgniteError &err);
 
             /** Shared pointer to thread pool worker thread. */
             typedef concurrent::SharedPointer< WorkerThread > SP_WorkerThread;

@@ -96,6 +96,14 @@ namespace ignite
 
             concurrent::CsLockGuard guard(mutex);
 
+            if (unblocked)
+            {
+                IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Execution thread pool is stopped");
+                HandleTaskError(*task.Get(), err);
+
+                return;
+            }
+
             tasks.push_back(task);
 
             waitPoint.NotifyOne();
@@ -124,6 +132,13 @@ namespace ignite
         {
             concurrent::CsLockGuard guard(mutex);
             unblocked = true;
+
+            IgniteError err(IgniteError::IGNITE_ERR_GENERIC, "Execution thread pool is stopped");
+            for (std::deque< SP_ThreadPoolTask >::iterator it = tasks.begin(); it != tasks.end(); ++it)
+                HandleTaskError(*it->Get(), err);
+
+            tasks.clear();
+
             waitPoint.NotifyAll();
         }
 
@@ -171,7 +186,7 @@ namespace ignite
             }
         }
 
-        void ThreadPool::WorkerThread::HandleTaskError(ThreadPoolTask &task, const IgniteError &err)
+        void ThreadPool::HandleTaskError(ThreadPoolTask &task, const IgniteError &err)
         {
             try
             {
