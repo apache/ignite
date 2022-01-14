@@ -52,6 +52,14 @@ namespace ignite
                  * @param err Error.
                  */
                 virtual void OnHandshakeError(uint64_t id, const IgniteError& err) = 0;
+
+                /**
+                 * Called if notification handling failed.
+                 *
+                 * @param id Channel ID.
+                 * @param err Error.
+                 */
+                virtual void OnNotificationHandlingError(uint64_t id, const IgniteError& err) = 0;
             };
         }
     }

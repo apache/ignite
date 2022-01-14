@@ -57,7 +57,8 @@ namespace ignite
                 const ignite::network::SP_AsyncClientPool& asyncPool,
                 const ignite::thin::IgniteClientConfiguration& cfg,
                 binary::BinaryTypeManager& typeMgr,
-                ChannelStateHandler& stateHandler
+                ChannelStateHandler& stateHandler,
+                common::ThreadPool& userThreadPool
             ) :
                 stateHandler(stateHandler),
                 handshakePerformed(false),
@@ -68,14 +69,15 @@ namespace ignite
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
                 reqIdCounter(0),
-                responseMutex()
+                responseMutex(),
+                userThreadPool(userThreadPool)
             {
                 // No-op.
             }
 
             DataChannel::~DataChannel()
             {
-                Close();
+                Close(0);
             }
 
             void DataChannel::StartHandshake()
@@ -83,10 +85,9 @@ namespace ignite
                 DoHandshake(VERSION_DEFAULT);
             }
 
-            void DataChannel::Close()
+            void DataChannel::Close(const IgniteError* err)
             {
-                asyncPool.Get()->Close(id, 0);
-                handlerMap.clear();
+                asyncPool.Get()->Close(id, err);
             }
 
             void DataChannel::SyncMessage(Request &req, Response &rsp, int32_t timeout)
@@ -187,13 +188,16 @@ namespace ignite
 
                 if (flags & Flag::NOTIFICATION)
                 {
-                    common::concurrent::CsLockGuard lock(handlerMutex);
+                    common::SP_ThreadPoolTask task;
+                    {
+                        common::concurrent::CsLockGuard lock(handlerMutex);
 
-                    NotificationHandlerHolder& holder = handlerMap[rspId];
-                    holder.ProcessNotification(msg);
+                        NotificationHandlerHolder& holder = handlerMap[rspId];
+                        task = holder.ProcessNotification(msg, id, stateHandler);
+                    }
 
-                    if (holder.IsProcessingComplete())
-                        handlerMap.erase(rspId);
+                    if (task.IsValid())
+                        userThreadPool.Dispatch(task);
                 }
                 else
                 {
@@ -217,9 +221,13 @@ namespace ignite
 
                 NotificationHandlerHolder& holder = handlerMap[notId];
                 holder.SetHandler(handler);
+            }
 
-                if (holder.IsProcessingComplete())
-                    handlerMap.erase(notId);
+            void DataChannel::DeregisterNotificationHandler(int64_t notId)
+            {
+                common::concurrent::CsLockGuard lock(handlerMutex);
+
+                handlerMap.erase(notId);
             }
 
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)
@@ -241,7 +249,7 @@ namespace ignite
                 binary::BinaryWriterImpl writer(&outStream, 0);
 
                 int32_t lenPos = outStream.Reserve(4);
-                writer.WriteInt8(RequestType::HANDSHAKE);
+                writer.WriteInt8(MessageType::HANDSHAKE);
 
                 writer.WriteInt16(propVer.GetMajor());
                 writer.WriteInt16(propVer.GetMinor());
@@ -337,6 +345,18 @@ namespace ignite
                 return supportedVersions.find(ver) != supportedVersions.end();
             }
 
+            void DataChannel::DeserializeMessage(const network::DataBuffer &data, Response &msg)
+            {
+                interop::InteropInputStream inStream(data.GetInputStream());
+
+                // Skipping size (4 bytes) and reqId (8 bytes)
+                inStream.Ignore(12);
+
+                binary::BinaryReaderImpl reader(&inStream);
+
+                msg.Read(reader, currentVersion);
+            }
+
             void DataChannel::FailPendingRequests(const IgniteError* err)
             {
                 IgniteError defaultErr(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection was closed");
@@ -352,8 +372,38 @@ namespace ignite
                     responseMap.clear();
                 }
 
+                {
+                    common::concurrent::CsLockGuard lock(handlerMutex);
+
+                    for (NotificationHandlerMap::iterator it = handlerMap.begin(); it != handlerMap.end(); ++it)
+                    {
+                        common::SP_ThreadPoolTask task = it->second.ProcessClosed();
+
+                        if (task.IsValid())
+                            userThreadPool.Dispatch(task);
+                    }
+                }
+
                 if (!handshakePerformed)
                     stateHandler.OnHandshakeError(id, *err);
+            }
+
+            void DataChannel::CloseResource(int64_t resourceId)
+            {
+                ResourceCloseRequest req(resourceId);
+                Response rsp;
+
+                try
+                {
+                    SyncMessage(req, rsp, config.GetConnectionTimeout());
+                }
+                catch (const IgniteError& err)
+                {
+                    // Network failure means connection is closed or broken, which means
+                    // that all resources were freed automatically.
+                    if (err.GetCode() != IgniteError::IGNITE_ERR_NETWORK_FAILURE)
+                        throw;
+                }
             }
         }
     }

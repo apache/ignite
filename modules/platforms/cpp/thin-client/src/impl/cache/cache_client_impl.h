@@ -23,9 +23,12 @@
 
 #include <ignite/thin/cache/query/query_sql_fields.h>
 
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
+
 #include "impl/data_router.h"
 #include "impl/transactions/transactions_impl.h"
 #include "impl/cache/query/query_fields_cursor_impl.h"
+#include "impl/cache/query/continuous/continuous_query_handle_impl.h"
 
 namespace ignite
 {
@@ -297,6 +300,15 @@ namespace ignite
                      * @return Query cursor.
                      */
                     query::SP_QueryFieldsCursorImpl Query(const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                    /**
+                     * Starts the continuous query execution
+                     *
+                     * @param continuousQuery Continuous query.
+                     * @return Query handle. Once all instances are destroyed query execution stopped.
+                     */
+                    query::continuous::SP_ContinuousQueryHandleClientImpl QueryContinuous(
+                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery);
 
                 private:
                     /**
