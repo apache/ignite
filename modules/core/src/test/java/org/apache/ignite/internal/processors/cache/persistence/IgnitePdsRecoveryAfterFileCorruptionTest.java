@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -48,12 +49,16 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
  * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
@@ -62,8 +67,17 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     /** Total pages. */
     private static final int totalPages = 512;
 
+    /** WAL segment size. */
+    private static final int WAL_SEGMENT_SIZE = 2 * 1024 * 1024;
+
+    /** Number of WAL segments. */
+    private static final int WAL_SEGMENTS_CNT = 5;
+
     /** Cache name. */
     private final String cacheName = "cache";
+
+    /** Dummy cache name. */
+    private final String dummyCacheName = "dummy";
 
     /** Policy name. */
     private final String policyName = "dfltDataRegion";
@@ -82,7 +96,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(ccfg, new CacheConfiguration<>(dummyCacheName));
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -91,7 +105,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                     .setPersistenceEnabled(true)
                     .setName(policyName))
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointFrequency(500)
+            .setWalSegmentSize(WAL_SEGMENT_SIZE)
+            .setWalSegments(WAL_SEGMENTS_CNT)
             .setAlwaysWriteFullPages(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -117,10 +132,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
-
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
@@ -175,8 +190,43 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         stopAllGrids();
 
         ig = startGrid(0);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-        ig.cluster().active(true);
+        checkRestore(ig, pages);
+
+        // It is necessary to clear the current WAL history to make sure that the restored pages have been saved.
+        GridCacheSharedContext<Object, Object> cctx = ig.context().cache().context();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cctx.wal();
+
+        dbMgr.enableCheckpoints(true).get(getTestTimeout());
+
+        WALPointer trucateWalPtr = dbMgr.checkpointHistory().lastCheckpoint().checkpointMark();
+
+        IgniteCache<Object, Object> dummyCache = ig.cache(dummyCacheName);
+
+        byte[] dummyData = new byte[WAL_SEGMENT_SIZE / 2];
+
+        // Try to move current WAL segment into archive.
+        for (int i = 0; i < WAL_SEGMENTS_CNT * 2; i++) {
+            dummyCache.put(i, dummyData);
+
+            if (wal.lastArchivedSegment() >= trucateWalPtr.index())
+                break;
+        }
+
+        assertTrue(wal.lastArchivedSegment() >= trucateWalPtr.index());
+
+        // todo separate test for check WAL recovery if next checkpoint fails.
+        forceCheckpoint();
+
+        wal.truncate(trucateWalPtr);
+        dbMgr.onWalTruncated(trucateWalPtr);
+
+        stopAllGrids();
+
+        ig = startGrid(0);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         checkRestore(ig, pages);
     }

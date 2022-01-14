@@ -929,6 +929,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
+                    setDirty(fullId, lockedPageAbsPtr, true, true);
+
+                    beforeReleaseWrite(fullId, pageAddr, true);
+
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     dataRegionMetrics.onPageRead();
