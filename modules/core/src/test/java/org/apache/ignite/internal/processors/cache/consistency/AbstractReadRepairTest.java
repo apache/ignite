@@ -506,75 +506,76 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         Integer fixed;
 
-        switch (strategy) {
-            case LWW:
-                if (misses || rmvd || !incVer) {
+        boolean consistent;
+
+        if (vals.stream().distinct().count() == 1) { // Consistent value.
+            consistent = true;
+            repairable = true;
+            fixed = vals.iterator().next().getKey();
+        }
+        else {
+            consistent = false;
+
+            switch (strategy) {
+                case LWW:
+                    if (misses || rmvd || !incVer) {
+                        repairable = false;
+
+                        fixed = Integer.MIN_VALUE; // Should never be returned.
+                    }
+                    else
+                        fixed = incVal;
+
+                    break;
+
+                case PRIMARY:
+                    fixed = primVal;
+
+                    break;
+
+                case RELATIVE_MAJORITY:
+                    fixed = Integer.MIN_VALUE; // Should never be returned.
+
+                    Map<T2<Integer, GridCacheVersion>, Integer> counts = new HashMap<>();
+
+                    for (T2<Integer, GridCacheVersion> val : vals) {
+                        counts.putIfAbsent(val, 0);
+
+                        counts.compute(val, (k, v) -> v + 1);
+                    }
+
+                    int[] sorted = counts.values().stream().sorted(Comparator.reverseOrder()).mapToInt(v -> v).toArray();
+
+                    int max = sorted[0];
+
+                    if (sorted.length > 1 && sorted[1] == max)
+                        repairable = false;
+
+                    if (repairable)
+                        for (Map.Entry<T2<Integer, GridCacheVersion>, Integer> count : counts.entrySet())
+                            if (count.getValue().equals(max)) {
+                                fixed = count.getKey().getKey();
+
+                                break;
+                            }
+
+                    break;
+
+                case REMOVE:
+                    fixed = null;
+
+                    break;
+
+                case CHECK_ONLY:
                     repairable = false;
 
                     fixed = Integer.MIN_VALUE; // Should never be returned.
-                }
-                else
-                    fixed = incVal;
 
-                break;
+                    break;
 
-            case PRIMARY:
-                fixed = primVal;
-
-                break;
-
-            case RELATIVE_MAJORITY:
-                fixed = Integer.MIN_VALUE; // Should never be returned.
-
-                Map<T2<Integer, GridCacheVersion>, Integer> counts = new HashMap<>();
-
-                for (T2<Integer, GridCacheVersion> val : vals) {
-                    counts.putIfAbsent(val, 0);
-
-                    counts.compute(val, (k, v) -> v + 1);
-                }
-
-                int[] sorted = counts.values().stream().sorted(Comparator.reverseOrder()).mapToInt(v -> v).toArray();
-
-                int max = sorted[0];
-
-                if (sorted.length > 1 && sorted[1] == max)
-                    repairable = false;
-
-                if (repairable)
-                    for (Map.Entry<T2<Integer, GridCacheVersion>, Integer> count : counts.entrySet())
-                        if (count.getValue().equals(max)) {
-                            fixed = count.getKey().getKey();
-
-                            break;
-                        }
-
-                break;
-
-            case REMOVE:
-                fixed = null;
-
-                break;
-
-            case CHECK_ONLY:
-                repairable = false;
-
-                fixed = Integer.MIN_VALUE; // Should never be returned.
-
-                break;
-
-            default:
-                throw new UnsupportedOperationException(strategy.toString());
-        }
-
-        boolean consistent = false;
-
-        long variations = vals.stream().distinct().count();
-
-        if (variations == 1) { // Consistent value.
-            repairable = true;
-            fixed = rmvd ? null : incVal;
-            consistent = true;
+                default:
+                    throw new UnsupportedOperationException(strategy.toString());
+            }
         }
 
         return new InconsistentMapping(mapping, primVal, fixed, repairable, consistent);
