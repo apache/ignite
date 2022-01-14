@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryR
 import org.apache.ignite.internal.processors.service.GridServiceDeployClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
+import org.apache.ignite.internal.processors.service.GridServiceMetricsTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorBatchDeploySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
@@ -121,6 +122,7 @@ import org.junit.runners.Suite;
     GridServiceDeployClusterReadOnlyModeTest.class,
     GridServiceClusterReadOnlyModeTest.class,
     IgniteServiceCallContextTest.class,
+    GridServiceMetricsTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

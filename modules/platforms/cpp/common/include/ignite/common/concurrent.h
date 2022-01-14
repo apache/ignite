@@ -293,7 +293,7 @@ namespace ignite
                  *
                  * @return Raw pointer.
                  */
-                const T* Get() const
+                T* Get() const
                 {
                     return ptr;
                 }

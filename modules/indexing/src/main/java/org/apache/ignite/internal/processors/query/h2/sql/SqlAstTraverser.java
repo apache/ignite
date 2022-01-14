@@ -44,6 +44,9 @@ class SqlAstTraverser {
     /** Whether query has joins between replicated and partitioned tables. */
     private boolean hasOuterJoinReplicatedPartitioned;
 
+    /** Whether top-level table is replicated. */
+    private boolean isRootTableReplicated;
+
     /** */
     SqlAstTraverser(GridSqlAst root, boolean distributedJoins, IgniteLogger log) {
         this.root = root;
@@ -53,6 +56,13 @@ class SqlAstTraverser {
 
     /** */
     public void traverse() {
+        if (root instanceof GridSqlSelect) {
+            GridSqlTable table = getTable(((GridSqlSelect)root).from().child());
+
+            if (table != null && !table.dataTable().isPartitioned())
+                isRootTableReplicated = true;
+        }
+
         lookForPartitionedJoin(root, null);
     }
 
@@ -69,6 +79,11 @@ class SqlAstTraverser {
     /** */
     public boolean hasOuterJoinReplicatedPartitioned() {
         return hasOuterJoinReplicatedPartitioned;
+    }
+
+    /** */
+    public boolean hasReplicatedWithPartitionedAndSubQuery() {
+        return (isRootTableReplicated && hasSubQueries && hasPartitionedTables);
     }
 
     /**

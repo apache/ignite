@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -205,8 +207,13 @@ public class GridServiceProxy<T> implements Serializable {
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
 
-                            if (svc != null)
-                                return callServiceLocally(svc, mtd, args, callAttrs);
+                            if (svc != null) {
+                                HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
+                                    svcCtx.metrics().findMetric(mtd.getName()) : null;
+
+                                return hist == null ? callServiceLocally(svc, mtd, args, callAttrs) :
+                                    measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
+                            }
                         }
                     }
                     else {
@@ -447,10 +454,29 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * @param mtd Method to invoke.
      */
-    String methodName(Method mtd) {
+    private static String methodName(Method mtd) {
         PlatformServiceMethod ann = mtd.getDeclaredAnnotation(PlatformServiceMethod.class);
 
         return ann == null ? mtd.getName() : ann.value();
+    }
+
+    /**
+     * Calls the target, measures and registers its duration.
+     *
+     * @param histogram Related metric.
+     * @param target    Target to call and measure.
+     */
+    private static <T> T measureCall(
+            HistogramMetricImpl histogram,
+            Callable<T> target
+    ) throws Exception {
+        long startTime = System.nanoTime();
+
+        try {
+            return target.call();
+        } finally {
+            histogram.value(System.nanoTime() - startTime);
+        }
     }
 
     /**
@@ -538,14 +564,19 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            Object res;
+            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? ctx.metrics().findMetric(mtd.getName()) : null;
 
-            if (ctx.service() instanceof PlatformService && mtd == null)
-                res = callPlatformService((PlatformService)ctx.service());
-            else
-                res = callService(ctx.service(), mtd);
+            Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 
             return U.marshal(ignite.configuration().getMarshaller(), res);
+        }
+
+        /** */
+        private Object callService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
+            if (svcCtx.service() instanceof PlatformService && mtd == null)
+                return callPlatformService((PlatformService)svcCtx.service());
+            else
+                return callOrdinaryService(svcCtx.service(), mtd);
         }
 
         /** */
@@ -562,7 +593,7 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callService(Service srv, Method mtd) throws Exception {
+        private Object callOrdinaryService(Service srv, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
