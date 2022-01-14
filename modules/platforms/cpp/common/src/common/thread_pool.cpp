@@ -16,6 +16,7 @@
  */
 
 #include <exception>
+#include <iostream>
 
 #include <ignite/common/thread_pool.h>
 

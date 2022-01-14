@@ -171,7 +171,7 @@ namespace ignite
                  *
                  * @param err Error.
                  */
-                virtual void OnError(const IgniteError& err)
+                virtual void OnError(const IgniteError&)
                 {
                     // No-op. Connection already closed so there is not much we can do.
                     // TODO: Add logging here once it's implemented.

@@ -186,6 +186,7 @@ public:
         BOOST_CHECK_EQUAL(event.GetKey(), key);
         BOOST_CHECK_EQUAL(event.HasOldValue(), oldVal.is_initialized());
         BOOST_CHECK_EQUAL(event.HasValue(), val.is_initialized());
+        BOOST_CHECK_EQUAL(event.GetEventType(), eType);
 
         if (oldVal && event.HasOldValue())
             BOOST_CHECK_EQUAL(event.GetOldValue().value, oldVal->value);
