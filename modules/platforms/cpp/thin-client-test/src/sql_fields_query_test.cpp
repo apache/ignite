@@ -210,6 +210,7 @@ void CheckRowEqualsValue(QueryFieldsRow& row, const ignite::TestType& val)
  *
  * @param seed Seed to generate value.
  */
+IGNORE_SIGNED_OVERFLOW
 ignite::TestType MakeCustomTestValue(int32_t seed)
 {
     ignite::TestType val;

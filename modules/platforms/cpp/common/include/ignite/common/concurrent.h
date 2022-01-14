@@ -262,6 +262,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
+                IGNORE_FALSE_UNDEFINED
                 ~SharedPointer()
                 {
                     if (impl && impl->Decrement())
