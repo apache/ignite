@@ -34,7 +34,8 @@ namespace ignite
             /**
              * Interop output stream.
              */
-            class IGNITE_IMPORT_EXPORT InteropOutputStream {
+            class IGNITE_IMPORT_EXPORT InteropOutputStream
+            {
                 friend class OutputStreamHelper;
             public:
                 /**

@@ -27,9 +27,13 @@ namespace ignite
     {
         namespace interop
         {
-            class OutputStreamHelper {
+            class OutputStreamHelper
+            {
             public:
-                explicit OutputStreamHelper(InteropOutputStream& os0) : os(os0) {};
+                explicit OutputStreamHelper(InteropOutputStream& os0) : os(os0)
+                {
+                    // No-op;
+                };
 
                 template<typename T>
                 void WritePrimitiveAt(const T& val, int32_t pos)

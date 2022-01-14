@@ -27,20 +27,17 @@ namespace ignite
         namespace bits
         {
             int32_t NumberOfTrailingZerosU32(uint32_t i) {
-                // See https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
-                // for details.
                 int32_t c = 32;
                 if (!i)
                     return c;
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4146)
-#endif
-                i &= -i;
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_ctz(i);
+#else
+                // See https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
+                // for details.
+                i &= ~i + 1u;
+
                 if (i)
                     c--;
 
@@ -60,6 +57,7 @@ namespace ignite
                     c -= 1;
 
                 return c;
+#endif
             }
 
             int32_t NumberOfTrailingZerosI32(int32_t i)
@@ -74,9 +72,12 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosU32(uint32_t i)
             {
-                if (i == 0)
+                if (!i)
                     return 32;
 
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_clz(i);
+#else
                 int32_t n = 1;
 
                 if (i >> 16 == 0) {
@@ -100,6 +101,7 @@ namespace ignite
                 }
 
                 return n - static_cast<int32_t>(i >> 31);
+#endif
             }
 
             int32_t NumberOfLeadingZerosI64(int64_t i)
@@ -109,8 +111,11 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosU64(uint64_t i)
             {
-                if (i == 0)
+                if (!i)
                     return 64;
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_clzll(i);
+#else
 
                 int32_t n = 1;
 
@@ -144,10 +149,14 @@ namespace ignite
                 n -= static_cast<int32_t>(x >> 31);
 
                 return n;
+#endif
             }
 
             int32_t BitCountI32(int32_t i)
             {
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_popcount(i);
+#else
                 uint32_t ui = static_cast<uint32_t>(i);
 
                 ui -= (ui >> 1) & 0x55555555;
@@ -157,6 +166,7 @@ namespace ignite
                 ui += ui >> 16;
 
                 return static_cast<int32_t>(ui & 0x3f);
+#endif
             }
 
             int32_t BitLengthI32(int32_t i)

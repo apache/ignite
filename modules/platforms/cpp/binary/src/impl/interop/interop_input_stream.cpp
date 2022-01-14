@@ -27,9 +27,13 @@ namespace ignite
     {
         namespace interop
         {
-            class InputStreamHelper {
+            class InputStreamHelper
+            {
             public:
-                explicit InputStreamHelper(InteropInputStream& is0) : is(is0) {};
+                explicit InputStreamHelper(InteropInputStream& is0) : is(is0)
+                {
+                    // No-op;
+                };
 
                 template<typename T>
                 T ReadPrimitiveAt(int32_t pos)

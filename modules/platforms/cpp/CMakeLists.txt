@@ -59,6 +59,20 @@ option (WITH_SANITIZERS "Build with sanitizers" OFF)
 
 if (${WITH_SANITIZERS} AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fno-sanitize-recover=all -g")
+
+    if (DEFINED ENV{ASAN_OPTIONS})
+        list(APPEND SANITIZERS_ENV $ENV{ASAN_OPTIONS})
+    else()
+        list(APPEND SANITIZERS_ENV "ASAN_OPTIONS=handle_segv=0:detect_leaks=0")
+    endif()
+
+    if (DEFINED ENV{UBSAN_OPTIONS})
+        list(APPEND SANITIZERS_ENV $ENV{UBSAN_OPTIONS})
+    else()
+        list(APPEND SANITIZERS_ENV "UBSAN_OPTIONS=print_stacktrace=1")
+    endif()
+
+    message("Built with sanitizers. Sanitizers options for ctest: ${SANITIZERS_ENV}")
 endif()
 
 if (${WITH_CORE} OR ${WITH_TESTS})
