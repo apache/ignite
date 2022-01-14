@@ -44,6 +44,16 @@ namespace ignite
             IGNITE_IMPORT_EXPORT int32_t NumberOfTrailingZerosI32(int32_t i);
 
             /**
+             * Get number of trailing zero bits in the binary representation of the specified
+             * 32-bit unsigned int value.
+             *
+             * @param i The value whose bits are to be counted.
+             * @return The number of trailing zero bits in the binary representation
+             *     of the specified 32-bit unsigned int value.
+             */
+            IGNITE_IMPORT_EXPORT int32_t NumberOfTrailingZerosU32(uint32_t i);
+
+            /**
              * Get number of leading zero bits in the two's complement binary
              * representation of the specified 32-bit int value.
              *
@@ -54,15 +64,15 @@ namespace ignite
             IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosI32(int32_t i);
 
             /**
-             * Get number of leading zero bits in the two's complement binary
-             * representation of the specified 32-bit int value.
+             * Get number of leading zero bits in the binary representation
+             * of the specified unsigned 32-bit int value.
              *
              * @param i The value whose bits are to be counted.
-             * @return The number of leading zero bits in the two's complement
-             *     binary representation of the specified 32-bit int value.
+             * @return The number of leading zero bits in the binary representation
+             *     of the specified unsigned 32-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosU32(uint32_t i);
-            
+
             /**
              * Get number of leading zero bits in the two's complement binary
              * representation of the specified 64-bit int value.
@@ -72,7 +82,7 @@ namespace ignite
              *     binary representation of the specified 64-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosI64(int64_t i);
-            
+
             /**
              * Get number of leading zero bits in the two's complement binary
              * representation of the specified 64-bit int value.

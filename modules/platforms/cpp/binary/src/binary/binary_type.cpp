@@ -21,6 +21,7 @@ namespace ignite
 {
     namespace binary
     {
+        IGNORE_SIGNED_OVERFLOW
         int32_t GetBinaryStringHashCode(const char* val)
         {
             if (val)
