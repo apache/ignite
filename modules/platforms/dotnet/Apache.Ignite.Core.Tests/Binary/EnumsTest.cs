@@ -374,109 +374,24 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests enums serialization when declared as System.Enum.
         /// </summary>
         [Test]
-        public void TestSystemEnumDeclaration()
+        public void TestSystemEnumHolders()
         {
-            CheckSerializeDeserialize(new EnumsRawBinarizable());
-            CheckSerializeDeserialize(new [] {new EnumsRawBinarizable(), new EnumsRawBinarizable()});
+            CheckSerializeDeserialize(new EnumsHolder());
+            CheckSerializeDeserialize(new [] {new EnumsHolder(), new EnumsHolder()});
             CheckSerializeDeserialize(new EnumsRawBinarizable2());
             CheckSerializeDeserialize(new [] {new EnumsRawBinarizable2(), new EnumsRawBinarizable2()});
-            CheckSerializeDeserialize(new [] {new EnumsRawBinarizable(), new EnumsRawBinarizable2()});
-        }
-
-        private enum ByteEnum : byte
-        {
-            Foo = byte.MinValue,
-            Bar = byte.MaxValue
-        }
-
-        private enum SByteEnum : sbyte
-        {
-            Foo = sbyte.MinValue,
-            Bar = sbyte.MaxValue
-        }
-
-        private enum ShortEnum : short
-        {
-            Foo = short.MinValue,
-            Bar = short.MaxValue
-        }
-
-        private enum UShortEnum : ushort
-        {
-            Foo = ushort.MinValue,
-            Bar = ushort.MaxValue
-        }
-
-        private enum IntEnum
-        {
-            Foo = int.MinValue,
-            Bar = int.MaxValue
-        }
-
-        private enum UIntEnum : uint
-        {
-            Foo = uint.MinValue,
-            Bar = uint.MaxValue
-        }
-
-        private enum LongEnum : long
-        {
-            Foo = long.MinValue,
-            Bar = long.MaxValue
-        }
-
-        private enum ULongEnum : ulong
-        {
-            Foo = ulong.MinValue,
-            Bar = ulong.MaxValue
-        }
-
-        /// <summary>
-        /// Holds enums declared as System.Enum.
-        /// </summary>
-        #pragma warning disable 659
-        private class EnumsRawBinarizable
-        {
-            private Enum EnmByteRaw { get; set; } = ByteEnum.Bar;
-            private Enum EnmUByteRaw { get; set; } = SByteEnum.Foo;
-            private Enum EnmShortRaw { get; set; } = ShortEnum.Bar;
-            private Enum EnmUShortRaw { get; set; } = UShortEnum.Foo;
-            private Enum EnmIntRaw { get; set; } = IntEnum.Bar;
-            private Enum EnmUIntRaw { get; set; } = UIntEnum.Foo;
-            private Enum EnmLongRaw { get; set; } = LongEnum.Bar;
-            private Enum EnmULongRaw { get; set; } = ULongEnum.Foo;
-
-            private Enum[] EnmRawArr { get; set; } = new Enum[]
-            {
-                ByteEnum.Bar, SByteEnum.Foo, ShortEnum.Bar,
-                UShortEnum.Foo, IntEnum.Bar, UIntEnum.Foo, LongEnum.Bar, ULongEnum.Foo
-            };
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
-
-                var other = (EnumsRawBinarizable) obj;
-
-                return Equals(EnmByteRaw, other.EnmByteRaw) && Equals(EnmUByteRaw, other.EnmUByteRaw) &&
-                       Equals(EnmShortRaw, other.EnmShortRaw) && Equals(EnmUShortRaw, other.EnmUShortRaw) &&
-                       Equals(EnmIntRaw, other.EnmIntRaw) && Equals(EnmUIntRaw, other.EnmUIntRaw) &&
-                       Equals(EnmLongRaw, other.EnmLongRaw) && Equals(EnmULongRaw, other.EnmULongRaw) &&
-                       Enumerable.SequenceEqual(EnmRawArr, other.EnmRawArr);
-            }
+            CheckSerializeDeserialize(new [] {new EnumsHolder(), new EnumsRawBinarizable2()});
         }
 
         /// <summary>
         /// Additionally holds enums holder as field mixed with other simple fields and enums.
         /// </summary>
         #pragma warning disable 659
-        private class EnumsRawBinarizable2 : EnumsRawBinarizable
+        private class EnumsRawBinarizable2 : EnumsHolder
         {
-            private EnumsRawBinarizable EnmHolder { get; set; } = new EnumsRawBinarizable();
+            private EnumsHolder EnmHolder { get; set; } = new EnumsHolder();
 
-            private object Holder { get; set; } = new EnumsRawBinarizable();
+            private object Holder { get; set; } = new EnumsHolder();
 
             private int IntVal { get; set; } = 1;
 

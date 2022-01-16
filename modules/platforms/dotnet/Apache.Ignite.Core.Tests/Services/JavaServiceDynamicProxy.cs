@@ -276,6 +276,12 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return _svc.testBinarizable(x);
         }
+        
+        /** <inheritDoc /> */
+        public EnumsHolder testEnumHolder(EnumsHolder enmHolder)
+        {
+            return _svc.testEnumHolder(enmHolder);
+        }
 
         /** <inheritDoc /> */
         public object[] testBinarizableArrayOfObjects(object[] x)
@@ -399,6 +405,54 @@ namespace Apache.Ignite.Core.Tests.Services
         public object testRoundtrip(object x)
         {
             return x;
+        }
+
+        /** <inheritDoc /> */
+        public ByteEnum testEnum(ByteEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+
+        /** <inheritDoc /> */
+        public SByteEnum testEnum(SByteEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+
+        /** <inheritDoc /> */
+        public ShortEnum testEnum(ShortEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+
+        /** <inheritDoc /> */
+        public UShortEnum testEnum(UShortEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+
+        /** <inheritDoc /> */
+        public IntEnum testEnum(IntEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+
+        /** <inheritDoc /> */
+        public UIntEnum testEnum(UIntEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+        
+        /** <inheritDoc /> */
+        public LongEnum testEnum(LongEnum enm)
+        {
+            return _svc.testEnum(enm);
+        }
+        
+        /** <inheritDoc /> */
+        public ULongEnum testEnum(ULongEnum enm)
+        {
+            return _svc.testEnum(enm);
         }
 
         /** <inheritDoc /> */
