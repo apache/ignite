@@ -17,37 +17,11 @@
 
 package org.apache.ignite.platform.model;
 
-/** Test value object. */
-public class Role {
+/** Test enum. */
+public enum AccessLevel {
     /** */
-    String name;
+    USER,
 
     /** */
-    AccessLevel accessLevel;
-
-    /** */
-    public Role(String name, AccessLevel accessLevel) {
-        this.name = name;
-        this.accessLevel = accessLevel;
-    }
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /** */
-    public AccessLevel getAccessLevel() {
-        return accessLevel;
-    }
-
-    /** */
-    public void setAccessLevel(AccessLevel accessLevel) {
-        this.accessLevel = accessLevel;
-    }
+    SUPER
 }
