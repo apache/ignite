@@ -37,7 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -300,8 +300,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
                         inconsistentKeys.add(key);
                     else {
-                        CacheObjectAdapter curVal = curRes.value();
-                        CacheObjectAdapter prevVal = prevRes.value();
+                        CacheObject curVal = curRes.value();
+                        CacheObject prevVal = prevRes.value();
 
                         byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
                         byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());

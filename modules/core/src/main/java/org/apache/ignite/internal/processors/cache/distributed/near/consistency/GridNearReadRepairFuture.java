@@ -28,7 +28,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -189,8 +189,8 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                         else if (compareRes < 0)
                             fixedMap.put(key, newestRes);
                         else if (compareRes == 0) {
-                            CacheObjectAdapter candidateVal = candidateRes.value();
-                            CacheObjectAdapter newestVal = newestRes.value();
+                            CacheObject candidateVal = candidateRes.value();
+                            CacheObject newestVal = newestRes.value();
 
                             byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
                             byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
@@ -285,7 +285,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                 GridCacheVersion ver;
 
                 if (res != null) {
-                    CacheObjectAdapter val = res.value();
+                    CacheObject val = res.value();
 
                     wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
                     ver = res.version();
