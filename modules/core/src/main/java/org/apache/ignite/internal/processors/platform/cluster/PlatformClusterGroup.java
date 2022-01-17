@@ -29,6 +29,7 @@ import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteServicesEx;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
@@ -471,7 +472,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 return new PlatformEvents(platformCtx, platformCtx.kernalContext().grid().events(prj));
 
             case OP_GET_SERVICES:
-                return new PlatformServices(platformCtx, platformCtx.kernalContext().grid().services(prj), false);
+                return new PlatformServices(platformCtx,
+                    (IgniteServicesEx)platformCtx.kernalContext().grid().services(prj), false);
         }
 
         return super.processOutObject(type);

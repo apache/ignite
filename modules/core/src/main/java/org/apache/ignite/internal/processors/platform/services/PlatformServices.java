@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesEx;
 import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -120,7 +121,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
 
     /** */
-    private final IgniteServices services;
+    private final IgniteServicesEx services;
 
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
@@ -132,7 +133,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param services Services facade.
      * @param srvKeepBinary Server keep binary flag.
      */
-    public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepBinary) {
+    public PlatformServices(PlatformContext platformCtx, IgniteServicesEx services, boolean srvKeepBinary) {
         super(platformCtx);
 
         assert services != null;
@@ -434,8 +435,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @param services Services.
      */
-    private void dotnetDeploy(BinaryRawReaderEx reader, IgniteServices services) {
-        ServiceConfiguration cfg = dotnetConfiguration(reader);
+    private void dotnetDeploy(BinaryRawReaderEx reader, IgniteServicesEx services) {
+        PlatformServiceConfiguration cfg = dotnetConfiguration(reader);
 
         services.deploy(cfg);
     }
@@ -447,8 +448,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param services Services.
      * @return Future of the operation.
      */
-    private IgniteFuture<Void> dotnetDeployAsync(BinaryRawReaderEx reader, IgniteServices services) {
-        ServiceConfiguration cfg = dotnetConfiguration(reader);
+    private IgniteFuture<Void> dotnetDeployAsync(BinaryRawReaderEx reader, IgniteServicesEx services) {
+        PlatformServiceConfiguration cfg = dotnetConfiguration(reader);
 
         return services.deployAsync(cfg);
     }
@@ -459,8 +460,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @param services Services.
      */
-    private void dotnetDeployAll(BinaryRawReaderEx reader, IgniteServices services) {
-        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+    private void dotnetDeployAll(BinaryRawReaderEx reader, IgniteServicesEx services) {
+        Collection<PlatformServiceConfiguration> cfgs = dotnetConfigurations(reader);
 
         services.deployAll(cfgs);
     }
@@ -472,8 +473,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param services Services.
      * @return Future of the operation.
      */
-    private IgniteFuture<Void> dotnetDeployAllAsync(BinaryRawReaderEx reader, IgniteServices services) {
-        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+    private IgniteFuture<Void> dotnetDeployAllAsync(BinaryRawReaderEx reader, IgniteServicesEx services) {
+        Collection<PlatformServiceConfiguration> cfgs = dotnetConfigurations(reader);
 
         return services.deployAllAsync(cfgs);
     }
@@ -484,7 +485,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
+    @NotNull private PlatformServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
         ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName(reader.readString());
@@ -499,7 +500,14 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
-        return cfg;
+        cfg.setStatisticsEnabled(reader.readBoolean());
+
+        PlatformServiceConfiguration platformCfg = new PlatformServiceConfiguration(cfg);
+
+        if (cfg.isStatisticsEnabled())
+            platformCfg.setMtdNames(reader.readStringArray());
+
+        return platformCfg;
     }
 
     /**
@@ -508,14 +516,13 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private Collection<ServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
+    @NotNull private Collection<PlatformServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
         int numServices = reader.readInt();
 
-        List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
+        List<PlatformServiceConfiguration> cfgs = new ArrayList<>(numServices);
 
-        for (int i = 0; i < numServices; i++) {
+        for (int i = 0; i < numServices; i++)
             cfgs.add(dotnetConfiguration(reader));
-        }
 
         return cfgs;
     }
@@ -823,4 +830,5 @@ public class PlatformServices extends PlatformAbstractTarget {
             dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
         w.writeObjectDetached(dotnetFilter);
     }
+
 }

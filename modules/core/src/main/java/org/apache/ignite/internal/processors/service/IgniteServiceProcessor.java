@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -96,7 +97,6 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -1302,7 +1302,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
         }
 
-        ReadOnlyMetricRegistry invocationMetrics = null;
+        MetricRegistry invocationMetrics = null;
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
@@ -2014,7 +2014,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param srvcCtx ServiceContext.
      * @return Created metric registry.
      */
-    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
+    private MetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
         for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
@@ -2022,12 +2022,17 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 if (metricIgnored(mtd.getDeclaringClass()))
                     continue;
 
-                metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
-                    '\'' + mtd.getName() + "()'");
+                addInvocationMetric(metricRegistry, mtd.getName());
             }
         }
 
         return metricRegistry;
+    }
+
+    /** */
+    static HistogramMetricImpl addInvocationMetric(MetricRegistry metricRegistry, String mtdName) {
+        return metricRegistry.histogram(mtdName, DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                '\'' + mtdName + "()'");
     }
 
     /**
@@ -2043,7 +2048,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param srvcName Name of the service.
      * @return registry name for service {@code srvcName}.
      */
-    static String serviceMetricRegistryName(String srvcName) {
+    public static String serviceMetricRegistryName(String srvcName) {
         return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,4 +52,8 @@ public interface IgniteServicesEx extends IgniteServices {
         @Nullable Supplier<Map<String, Object>> callAttrsProvider,
         long timeout
     ) throws IgniteException;
+
+    /** TODO */
+    void deploy(PlatformServiceConfiguration cfg);
+
 }

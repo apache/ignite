@@ -63,6 +63,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.addInvocationMetric;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
 /**
@@ -564,11 +565,25 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? ctx.metrics().findMetric(mtd.getName()) : null;
+            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? invocationHistogramm(ctx, mtdName, args) : null;
 
             Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 
             return U.marshal(ignite.configuration().getMarshaller(), res);
+        }
+
+        /** TODO */
+        private HistogramMetricImpl invocationHistogramm(ServiceContextImpl ctx, String mtdName, Object[] args) {
+            if (ctx.service() instanceof PlatformService) {
+                assert args.length > 0 && args[0] instanceof String;
+                assert ctx.metrics() != null;
+
+                HistogramMetricImpl hist = ctx.metrics().findMetric((String)args[0]);
+
+                return hist == null ? addInvocationMetric(ctx.metrics(), (String)args[0]) : hist;
+            }
+            else
+                return ctx.metrics().findMetric(mtdName);
         }
 
         /** */
