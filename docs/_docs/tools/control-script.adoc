@@ -1053,7 +1053,7 @@ Parameters:
 | Parameter | Description
 | `cache-name`| Cache to be checked/repaired.
 | `partition`| Cache's partition to be checked/repaired.
-| `strategy`| Repair strategy [LWW, PRIMARY, RELATIVE_MAJORTY, REMOVE, CHECK_ONLY].
+| `strategy`| Repair strategy [LWW, PRIMARY, RELATIVE_MAJORITY, REMOVE, CHECK_ONLY].
 |===
 
 === Status
