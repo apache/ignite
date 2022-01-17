@@ -90,12 +90,11 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 var paramExpr = Expression.Parameter(typeof(TFrom));
 
-                if (typeof(TFrom) == typeof(Enum))
-                    return Expression.Lambda<Func<TFrom, T>>(TryConvertRawEnum(typeof(T), paramExpr),
-                        paramExpr).Compile();
+                var convertExpr = typeof(TFrom) == typeof(Enum)
+                    ? TryConvertRawEnum(typeof(T), paramExpr)
+                    : Expression.Convert(paramExpr, typeof(T));
 
-                return Expression.Lambda<Func<TFrom, T>>(Expression.Convert(paramExpr, typeof(T)),
-                    paramExpr).Compile();
+                return Expression.Lambda<Func<TFrom, T>>(convertExpr, paramExpr).Compile();
             }
 
             private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
