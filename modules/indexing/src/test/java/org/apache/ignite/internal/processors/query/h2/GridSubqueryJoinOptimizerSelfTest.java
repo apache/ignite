@@ -933,12 +933,10 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        for (String param : Lists.newArrayList("id")) {
-            for (String subSelect : subSelects) {
-                String formattedSubSelect = String.format(subSelect, param);
+        for (String subSelect : subSelects) {
+            String formattedSubSelect = String.format(subSelect, "id");
 
-                check(String.format(outerSqlTemplate, formattedSubSelect), 1);
-            }
+             check(String.format(outerSqlTemplate, formattedSubSelect), 1);
         }
     }
 
