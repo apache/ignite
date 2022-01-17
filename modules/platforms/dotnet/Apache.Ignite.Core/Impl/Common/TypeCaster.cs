@@ -99,8 +99,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
             {
-                string mtdName = null;
-                
+                string mtdName = "";
+
                 if (toType == typeof(byte))
                     mtdName = "ToByte";
                 else if (toType == typeof(sbyte))
@@ -114,11 +114,12 @@ namespace Apache.Ignite.Core.Impl.Common
                 else if (toType == typeof(uint))
                     mtdName = "ToUInt32";
 
-                if (mtdName == null) return null;
-                
-                MethodInfo toIntMtd = typeof(Convert).GetMethod(mtdName, new[] {typeof(object)});
-                
-                Debug.Assert(toIntMtd != null);
+                var toIntMtd = typeof(Convert).GetMethod(mtdName, new[] {typeof(object)});
+
+                if (toIntMtd == null)
+                {
+                    throw new InvalidCastException($"Unable to convert 'System.Enum' to '{toType}': no converter found.");
+                }
 
                 return Expression.Call(null, toIntMtd, fromParamExpr);
             }
