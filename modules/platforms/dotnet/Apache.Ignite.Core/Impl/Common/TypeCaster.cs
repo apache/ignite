@@ -76,28 +76,27 @@ namespace Apache.Ignite.Core.Impl.Common
             /// </summary>
             private static Func<TFrom, T> Compile()
             {
-                var fromType = typeof(TFrom);
-                var toType = typeof(T);
-                
-                var fromParamExpr = Expression.Parameter(fromType);
-
-                if (toType == fromType)
+                if (typeof(T) == typeof(TFrom))
                 {
                     // Just return what we have
-                    return Expression.Lambda<Func<TFrom, T>>(fromParamExpr, fromParamExpr).Compile();
+                    var pExpr = Expression.Parameter(typeof(TFrom));
+
+                    return Expression.Lambda<Func<TFrom, T>>(pExpr, pExpr).Compile();
                 }
 
-                if (toType == typeof(UIntPtr) && fromType == typeof(long))
+                if (typeof(T) == typeof(UIntPtr) && typeof(TFrom) == typeof(long))
                 {
                     return l => unchecked((T) (object) (UIntPtr) (ulong) (long) (object) l);
                 }
 
-                if (fromType == typeof(Enum))
-                    return Expression.Lambda<Func<TFrom, T>>(TryConvertRawEnum(toType, fromParamExpr),
+                var fromParamExpr = Expression.Parameter(typeof(TFrom));
+
+                if (typeof(TFrom) == typeof(Enum))
+                    return Expression.Lambda<Func<TFrom, T>>(TryConvertRawEnum(typeof(T), fromParamExpr),
                         fromParamExpr).Compile();
 
-                return Expression.Lambda<Func<TFrom, T>>(Expression.Convert(fromParamExpr, toType), fromParamExpr)
-                    .Compile();
+                return Expression.Lambda<Func<TFrom, T>>(Expression.Convert(fromParamExpr, typeof(T)),
+                    fromParamExpr).Compile();
             }
 
             private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
