@@ -20,6 +20,7 @@
 #include "impl/response_status.h"
 #include "impl/message.h"
 #include "impl/cache/cache_client_impl.h"
+#include "impl/cache/query/continuous/continuous_query_notification_handler.h"
 #include "impl/transactions/transactions_impl.h"
 
 using namespace ignite::impl::thin::transactions;
@@ -51,9 +52,7 @@ namespace ignite
 
                 CacheClientImpl::~CacheClientImpl()
                 {
-                    DataRouter* router0 = router.Get();
-                    if (router0)
-                        router0->Close();
+                    // No-op.
                 }
 
                 template<typename ReqT, typename RspT>
@@ -161,7 +160,7 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
+                    Cache2ValueRequest<MessageType::CACHE_PUT> req(id, binary, key, value);
                     Response rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -169,7 +168,7 @@ namespace ignite
 
                 void CacheClientImpl::Get(const WritableKey& key, Readable& value)
                 {
-                    CacheValueRequest<RequestType::CACHE_GET> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_GET> req(id, binary, key);
                     CacheValueResponse rsp(value);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -177,7 +176,7 @@ namespace ignite
 
                 void CacheClientImpl::PutAll(const Writable & pairs)
                 {
-                    CacheValueRequest<RequestType::CACHE_PUT_ALL> req(id, binary, pairs);
+                    CacheValueRequest<MessageType::CACHE_PUT_ALL> req(id, binary, pairs);
                     Response rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -185,7 +184,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAll(const Writable& keys, Readable& pairs)
                 {
-                    CacheValueRequest<RequestType::CACHE_GET_ALL> req(id, binary, keys);
+                    CacheValueRequest<MessageType::CACHE_GET_ALL> req(id, binary, keys);
                     CacheValueResponse rsp(pairs);
 
                     TransactionalSyncMessage(req, rsp);
@@ -193,7 +192,7 @@ namespace ignite
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& value)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
+                    Cache2ValueRequest<MessageType::CACHE_REPLACE> req(id, binary, key, value);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -203,7 +202,7 @@ namespace ignite
 
                 bool CacheClientImpl::ContainsKey(const WritableKey& key)
                 {
-                    CacheValueRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_CONTAINS_KEY> req(id, binary, key);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -213,7 +212,7 @@ namespace ignite
 
                 bool CacheClientImpl::ContainsKeys(const Writable& keys)
                 {
-                    CacheValueRequest<RequestType::CACHE_CONTAINS_KEYS> req(id, binary, keys);
+                    CacheValueRequest<MessageType::CACHE_CONTAINS_KEYS> req(id, binary, keys);
                     BoolResponse rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -233,7 +232,7 @@ namespace ignite
 
                 bool CacheClientImpl::Remove(const WritableKey& key)
                 {
-                    CacheValueRequest<RequestType::CACHE_REMOVE_KEY> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_REMOVE_KEY> req(id, binary, key);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -243,7 +242,7 @@ namespace ignite
 
                 bool CacheClientImpl::Remove(const WritableKey& key, const Writable& val)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_REMOVE_IF_EQUALS> req(id, binary, key, val);
+                    Cache2ValueRequest<MessageType::CACHE_REMOVE_IF_EQUALS> req(id, binary, key, val);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -253,7 +252,7 @@ namespace ignite
 
                 void CacheClientImpl::RemoveAll(const Writable& keys)
                 {
-                    CacheValueRequest<RequestType::CACHE_REMOVE_KEYS> req(id, binary, keys);
+                    CacheValueRequest<MessageType::CACHE_REMOVE_KEYS> req(id, binary, keys);
                     Response rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -261,7 +260,7 @@ namespace ignite
 
                 void CacheClientImpl::RemoveAll()
                 {
-                    CacheRequest<RequestType::CACHE_REMOVE_ALL> req(id, binary);
+                    CacheRequest<MessageType::CACHE_REMOVE_ALL> req(id, binary);
                     Response rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -269,7 +268,7 @@ namespace ignite
 
                 void CacheClientImpl::Clear(const WritableKey& key)
                 {
-                    CacheValueRequest<RequestType::CACHE_CLEAR_KEY> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_CLEAR_KEY> req(id, binary, key);
                     Response rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -277,7 +276,7 @@ namespace ignite
 
                 void CacheClientImpl::Clear()
                 {
-                    CacheRequest<RequestType::CACHE_CLEAR> req(id, binary);
+                    CacheRequest<MessageType::CACHE_CLEAR> req(id, binary);
                     Response rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -285,7 +284,7 @@ namespace ignite
 
                 void CacheClientImpl::ClearAll(const Writable& keys)
                 {
-                    CacheValueRequest<RequestType::CACHE_CLEAR_KEYS> req(id, binary, keys);
+                    CacheValueRequest<MessageType::CACHE_CLEAR_KEYS> req(id, binary, keys);
                     Response rsp;
 
                     TransactionalSyncMessage(req, rsp);
@@ -293,7 +292,7 @@ namespace ignite
 
                 void CacheClientImpl::LocalPeek(const WritableKey& key, Readable& value)
                 {
-                    CacheValueRequest<RequestType::CACHE_LOCAL_PEEK> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_LOCAL_PEEK> req(id, binary, key);
                     CacheValueResponse rsp(value);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -301,7 +300,7 @@ namespace ignite
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
                 {
-                    Cache3ValueRequest<RequestType::CACHE_REPLACE_IF_EQUALS> req(id, binary, key, oldVal, newVal);
+                    Cache3ValueRequest<MessageType::CACHE_REPLACE_IF_EQUALS> req(id, binary, key, oldVal, newVal);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -311,7 +310,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
+                    Cache2ValueRequest<MessageType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -319,7 +318,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndRemove(const WritableKey& key, Readable& valOut)
                 {
-                    CacheValueRequest<RequestType::CACHE_GET_AND_REMOVE> req(id, binary, key);
+                    CacheValueRequest<MessageType::CACHE_GET_AND_REMOVE> req(id, binary, key);
                     CacheValueResponse rsp(valOut);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -327,7 +326,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
+                    Cache2ValueRequest<MessageType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -335,7 +334,7 @@ namespace ignite
 
                 bool CacheClientImpl::PutIfAbsent(const WritableKey& key, const Writable& val)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
+                    Cache2ValueRequest<MessageType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
                     BoolResponse rsp;
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -345,7 +344,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
+                    Cache2ValueRequest<MessageType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     TransactionalSyncCacheKeyMessage(key, req, rsp);
@@ -368,6 +367,25 @@ namespace ignite
                             static_cast<int32_t>(qry.GetTimeout())));
 
                     return cursorImpl;
+                }
+
+                query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(
+                        const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery)
+                {
+                    const query::continuous::ContinuousQueryClientHolderBase& cq = *continuousQuery.Get();
+
+                    ContinuousQueryRequest req(id, cq.GetBufferSize(), cq.GetTimeInterval(), cq.GetIncludeExpired());
+                    ContinuousQueryResponse rsp;
+
+                    SP_DataChannel channel = SyncMessage(req, rsp);
+
+                    query::continuous::SP_ContinuousQueryNotificationHandler handler(
+                            new query::continuous::ContinuousQueryNotificationHandler(*channel.Get(), continuousQuery));
+
+                    channel.Get()->RegisterNotificationHandler(rsp.GetQueryId(), handler);
+
+                    return query::continuous::SP_ContinuousQueryHandleClientImpl(
+                        new query::continuous::ContinuousQueryHandleClientImpl(channel, rsp.GetQueryId()));
                 }
             }
         }
