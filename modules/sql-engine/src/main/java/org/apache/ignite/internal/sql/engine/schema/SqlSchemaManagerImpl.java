@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 public class SqlSchemaManagerImpl implements SqlSchemaManager {
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
 
-    private final Map<IgniteUuid, InternalIgniteTable> tablesById = new ConcurrentHashMap<>();
+    private final Map<IgniteUuid, IgniteTable> tablesById = new ConcurrentHashMap<>();
 
     private final Map<String, Schema> externalCatalogs = new HashMap<>();
 
@@ -79,8 +79,8 @@ public class SqlSchemaManagerImpl implements SqlSchemaManager {
     /** {@inheritDoc} */
     @Override
     @NotNull
-    public InternalIgniteTable tableById(IgniteUuid id) {
-        InternalIgniteTable table = tablesById.get(id);
+    public IgniteTable tableById(IgniteUuid id) {
+        IgniteTable table = tablesById.get(id);
 
         // there is a chance that someone tries to resolve table before
         // the distributed event of that table creation has been processed
@@ -124,7 +124,12 @@ public class SqlSchemaManagerImpl implements SqlSchemaManager {
     private void registerExternalSchema(String catalogName, String schemaName, ExternalSchema schema) {
         Map<String, Table> tables = new HashMap<>();
 
-        schema.tableNames().forEach(name -> tables.put(name, schema.table(name)));
+        for (String name : schema.tableNames()) {
+            IgniteTable table = schema.table(name);
+
+            tables.put(name, table);
+            tablesById.put(table.id(), table);
+        }
 
         SchemaPlus schemaPlus = (SchemaPlus) externalCatalogs.computeIfAbsent(catalogName, n -> Frameworks.createRootSchema(false));
 
@@ -159,18 +164,21 @@ public class SqlSchemaManagerImpl implements SqlSchemaManager {
                 .map(col -> new ColumnDescriptorImpl(
                         col.name(),
                         descriptor.isKeyColumn(col.schemaIndex()),
+                        col.columnOrder(),
                         col.schemaIndex(),
                         col.type(),
                         col::defaultValue
                 ))
                 .collect(Collectors.toList());
 
-        TableDescriptorImpl desc = new TableDescriptorImpl(colDescriptors);
+        IgniteTableImpl igniteTable = new IgniteTableImpl(
+                new TableDescriptorImpl(colDescriptors),
+                table.internalTable(),
+                table.schemaView()
+        );
 
-        IgniteTableImpl table0 = new IgniteTableImpl(desc, table);
-
-        schema.addTable(removeSchema(schemaName, table.name()), table0);
-        tablesById.put(table0.id(), table0);
+        schema.addTable(removeSchema(schemaName, table.name()), igniteTable);
+        tablesById.put(igniteTable.id(), igniteTable);
 
         rebuild();
     }

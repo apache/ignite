@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.sql.engine.schema;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -38,6 +39,11 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.schema.row.Row;
+import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.sql.engine.exec.ExecutionContext;
 import org.apache.ignite.internal.sql.engine.exec.RowHandler;
 import org.apache.ignite.internal.sql.engine.metadata.ColocationGroup;
@@ -47,9 +53,8 @@ import org.apache.ignite.internal.sql.engine.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.sql.engine.trait.IgniteDistribution;
 import org.apache.ignite.internal.sql.engine.trait.RewindabilityTrait;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeFactory;
-import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,11 +63,17 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteTableImpl extends AbstractTable implements InternalIgniteTable {
     private final TableDescriptor desc;
 
-    private final TableImpl table;
+    private final InternalTable table;
+
+    private final SchemaRegistry schemaRegistry;
+
+    public final SchemaDescriptor schemaDescriptor;
 
     private final Statistic statistic;
 
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
+
+    private final List<ColumnDescriptor> columnsOrderedByPhysSchema;
 
     /**
      * Constructor.
@@ -70,10 +81,26 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
      * @param desc  Table descriptor.
      * @param table Physical table this schema object created for.
      */
-    public IgniteTableImpl(TableDescriptor desc, TableImpl table) {
+    public IgniteTableImpl(
+            TableDescriptor desc,
+            InternalTable table,
+            SchemaRegistry schemaRegistry
+    ) {
         this.desc = desc;
         this.table = table;
+        this.schemaRegistry = schemaRegistry;
+        this.schemaDescriptor = schemaRegistry.schema();
 
+        assert schemaDescriptor != null;
+
+        List<ColumnDescriptor> tmp = new ArrayList<>(desc.columnsCount());
+        for (int i = 0; i < desc.columnsCount(); i++) {
+            tmp.add(desc.columnDescriptor(i));
+        }
+
+        tmp.sort(Comparator.comparingInt(ColumnDescriptor::physicalIndex));
+
+        columnsOrderedByPhysSchema = tmp;
         statistic = new StatisticsImpl();
     }
 
@@ -104,7 +131,7 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
 
     /** {@inheritDoc} */
     @Override
-    public TableImpl table() {
+    public InternalTable table() {
         return table;
     }
 
@@ -191,7 +218,7 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
     @Override
     public <RowT> RowT toRow(
             ExecutionContext<RowT> ectx,
-            Tuple row,
+            BinaryRow binaryRow,
             RowHandler.RowFactory<RowT> factory,
             @Nullable ImmutableBitSet requiredColumns
     ) {
@@ -203,17 +230,19 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
 
         assert handler.columnCount(res) == (requiredColumns == null ? desc.columnsCount() : requiredColumns.cardinality());
 
+        Row row = schemaRegistry.resolve(binaryRow, schemaDescriptor);
+
         if (requiredColumns == null) {
             for (int i = 0; i < desc.columnsCount(); i++) {
                 ColumnDescriptor colDesc = desc.columnDescriptor(i);
 
-                handler.set(i, res, row.value(colDesc.fieldIndex()));
+                handler.set(i, res, row.value(colDesc.physicalIndex()));
             }
         } else {
             for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
                 ColumnDescriptor colDesc = desc.columnDescriptor(j);
 
-                handler.set(i, res, row.value(colDesc.fieldIndex()));
+                handler.set(i, res, row.value(colDesc.physicalIndex()));
             }
         }
 
@@ -222,7 +251,7 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
 
     /** {@inheritDoc} */
     @Override
-    public <RowT> Tuple toTuple(
+    public <RowT> BinaryRow toBinaryRow(
             ExecutionContext<RowT> ectx,
             RowT row,
             TableModify.Operation op,
@@ -242,63 +271,114 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
         }
     }
 
-    private <RowT> Tuple insertTuple(RowT row, ExecutionContext<RowT> ectx) {
-        Tuple tuple = Tuple.create(desc.columnsCount());
+    private <RowT> BinaryRow insertTuple(RowT row, ExecutionContext<RowT> ectx) {
+        int nonNullVarlenKeyCols = 0;
+        int nonNullVarlenValCols = 0;
 
         RowHandler<RowT> hnd = ectx.rowHandler();
 
-        for (int i = 0; i < desc.columnsCount(); i++) {
-            tuple.set(desc.columnDescriptor(i).name(), hnd.get(i, row));
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            if (colDesc.physicalType().spec().fixedLength()) {
+                continue;
+            }
+
+            Object val = hnd.get(colDesc.logicalIndex(), row);
+
+            if (val != null) {
+                if (colDesc.key()) {
+                    nonNullVarlenKeyCols++;
+                } else {
+                    nonNullVarlenValCols++;
+                }
+            }
         }
 
-        return tuple;
+        RowAssembler rowAssembler = new RowAssembler(schemaDescriptor, nonNullVarlenKeyCols, nonNullVarlenValCols);
+
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            RowAssembler.writeValue(rowAssembler, colDesc.physicalType(), hnd.get(colDesc.logicalIndex(), row));
+        }
+
+        return rowAssembler.build();
     }
 
-    private <RowT> Tuple updateTuple(RowT row, List<String> updateColList, ExecutionContext<RowT> ectx) {
+    private <RowT> BinaryRow updateTuple(RowT row, List<String> updateColList, ExecutionContext<RowT> ectx) {
+        int nonNullVarlenKeyCols = 0;
+        int nonNullVarlenValCols = 0;
+
         RowHandler<RowT> hnd = ectx.rowHandler();
         int offset = desc.columnsCount();
-        Tuple tuple = Tuple.create(desc.columnsCount());
-        Set<String> colsToSkip = new HashSet<>(updateColList);
+        Set<String> toUpdate = new HashSet<>(updateColList);
 
-        for (int i = 0; i < desc.columnsCount(); i++) {
-            String colName = desc.columnDescriptor(i).name();
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            if (colDesc.physicalType().spec().fixedLength()) {
+                continue;
+            }
 
-            if (!colsToSkip.contains(colName)) {
-                tuple.set(colName, hnd.get(i, row));
+            Object val = toUpdate.contains(colDesc.name())
+                    ? hnd.get(colDesc.logicalIndex() + offset, row)
+                    : hnd.get(colDesc.logicalIndex(), row);
+
+            if (val != null) {
+                if (colDesc.key()) {
+                    nonNullVarlenKeyCols++;
+                } else {
+                    nonNullVarlenValCols++;
+                }
             }
         }
 
-        for (int i = 0; i < updateColList.size(); i++) {
-            final ColumnDescriptor colDesc = Objects.requireNonNull(desc.columnDescriptor(updateColList.get(i)));
+        RowAssembler rowAssembler = new RowAssembler(schemaDescriptor, nonNullVarlenKeyCols, nonNullVarlenValCols);
 
-            assert !colDesc.key();
-
-            Object fieldVal = hnd.get(i + offset, row);
-
-            tuple.set(colDesc.name(), fieldVal);
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            RowAssembler.writeValue(
+                    rowAssembler,
+                    colDesc.physicalType(),
+                    toUpdate.contains(colDesc.name())
+                            ? hnd.get(colDesc.logicalIndex() + offset, row)
+                            : hnd.get(colDesc.logicalIndex(), row)
+            );
         }
 
-        return tuple;
+        return rowAssembler.build();
     }
 
-    private <RowT> Tuple deleteTuple(RowT row, ExecutionContext<RowT> ectx) {
+    private <RowT> BinaryRow deleteTuple(RowT row, ExecutionContext<RowT> ectx) {
+        int nonNullVarlenKeyCols = 0;
+
         RowHandler<RowT> hnd = ectx.rowHandler();
-        Tuple tuple = Tuple.create();
 
-        int idx = 0;
-        for (int i = 0; i < desc.columnsCount(); i++) {
-            ColumnDescriptor colDesc = desc.columnDescriptor(i);
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            if (!colDesc.key()) {
+                break;
+            }
 
-            if (colDesc.key()) {
-                tuple.set(colDesc.name(), hnd.get(idx++, row));
+            if (colDesc.physicalType().spec().fixedLength()) {
+                continue;
+            }
+
+            Object val = hnd.get(colDesc.logicalIndex(), row);
+
+            if (val != null) {
+                nonNullVarlenKeyCols++;
             }
         }
 
-        return tuple;
+        RowAssembler rowAssembler = new RowAssembler(schemaDescriptor, nonNullVarlenKeyCols, 0);
+
+        for (ColumnDescriptor colDesc : columnsOrderedByPhysSchema) {
+            if (!colDesc.key()) {
+                break;
+            }
+
+            RowAssembler.writeValue(rowAssembler, colDesc.physicalType(), hnd.get(colDesc.logicalIndex(), row));
+        }
+
+        return rowAssembler.build();
     }
 
     private ColocationGroup partitionedGroup() {
-        List<List<String>> assignments = table.internalTable().assignments().stream()
+        List<List<String>> assignments = table.assignments().stream()
                 .map(Collections::singletonList)
                 .collect(Collectors.toList());
 

@@ -236,7 +236,7 @@ public class TypeUtils {
 
         assert fldDesc != null;
 
-        return nativeTypeToClass(fldDesc.storageType());
+        return nativeTypeToClass(fldDesc.physicalType());
     }
 
     /**

@@ -153,13 +153,25 @@ public class RowAssembler {
      * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
     public static void writeValue(RowAssembler rowAsm, Column col, Object val) throws SchemaMismatchException {
+        writeValue(rowAsm, col.type(), val);
+    }
+
+    /**
+     * Helper method.
+     *
+     * @param rowAsm Writes a value as a specified type to assembler.
+     * @param type   Type of the value.
+     * @param val    Value.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
+     */
+    public static void writeValue(RowAssembler rowAsm, NativeType type, Object val) throws SchemaMismatchException {
         if (val == null) {
             rowAsm.appendNull();
 
             return;
         }
 
-        switch (col.type().spec()) {
+        switch (type.spec()) {
             case INT8: {
                 rowAsm.appendByte((byte) val);
 
@@ -241,7 +253,7 @@ public class RowAssembler {
                 break;
             }
             default:
-                throw new InvalidTypeException("Unexpected value: " + col.type());
+                throw new InvalidTypeException("Unexpected value: " + type);
         }
     }
 

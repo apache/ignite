@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.sql.engine;
 
 import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsAnyProject;
-import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsIndexScan;
+import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsProject;
-import static org.apache.ignite.internal.sql.engine.util.QueryChecker.containsTableScan;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
@@ -81,12 +80,11 @@ public class ItProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
     /**
      * Tests that the projects exist only for simple expressions without any predicates.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14925")
     @Test
     public void testProjects() {
         assertQuery("SELECT NAME FROM products d;")
-                .matches(containsTableScan("PUBLIC", "PRODUCTS"))
-                .matches(containsOneProject("PUBLIC", "PRODUCTS", 4))
+                .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
+                .matches(containsOneProject("PUBLIC", "PRODUCTS", 5))
                 .returns("noname1")
                 .returns("noname2")
                 .returns("noname3")
@@ -94,8 +92,8 @@ public class ItProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
                 .check();
 
         assertQuery("SELECT SUBCAT_ID, NAME FROM products d;")
-                .matches(containsTableScan("PUBLIC", "PRODUCTS"))
-                .matches(containsOneProject("PUBLIC", "PRODUCTS", 2, 4))
+                .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
+                .matches(containsOneProject("PUBLIC", "PRODUCTS", 4, 5))
                 .returns(11, "noname1")
                 .returns(11, "noname2")
                 .returns(12, "noname3")
@@ -103,8 +101,8 @@ public class ItProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
                 .check();
 
         assertQuery("SELECT NAME FROM products d WHERE CAT_ID > 1;")
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
-                .matches(containsProject("PUBLIC", "PRODUCTS", 1, 4))
+                .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
+                .matches(containsProject("PUBLIC", "PRODUCTS", 2, 5))
                 .returns("noname2")
                 .returns("noname3")
                 .returns("noname4")

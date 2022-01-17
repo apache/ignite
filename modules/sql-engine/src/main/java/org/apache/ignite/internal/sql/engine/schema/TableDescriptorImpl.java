@@ -63,7 +63,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
             descriptorsMap.put(descriptor.name(), descriptor);
 
             if (descriptor.key()) {
-                keyFieldsBuilder.set(descriptor.fieldIndex());
+                keyFieldsBuilder.set(descriptor.logicalIndex());
             }
         }
 

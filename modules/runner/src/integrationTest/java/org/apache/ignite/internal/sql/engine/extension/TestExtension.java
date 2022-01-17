@@ -143,9 +143,9 @@ public class TestExtension implements SqlExtension {
         private final Map<String, IgniteTable> tables = Map.of(TEST_TABLE_NAME, new TestTableImpl(
                 new TableDescriptorImpl(
                         List.of(
-                                new ColumnDescriptorImpl("NODE_ID", true, 0, NativeTypes.stringOf(256), null),
-                                new ColumnDescriptorImpl("NUM", true, 1, NativeTypes.INT32, null),
-                                new ColumnDescriptorImpl("VAL", false, 2, NativeTypes.stringOf(256), null)
+                                new ColumnDescriptorImpl("NODE_ID", true, 0, 0, NativeTypes.stringOf(256), null),
+                                new ColumnDescriptorImpl("NUM", true, 1, 1, NativeTypes.INT32, null),
+                                new ColumnDescriptorImpl("VAL", false, 2, 2, NativeTypes.stringOf(256), null)
                         )
                 )
         ));

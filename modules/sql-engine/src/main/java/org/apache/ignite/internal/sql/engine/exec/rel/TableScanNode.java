@@ -32,8 +32,7 @@ import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.sql.engine.exec.ExecutionContext;
 import org.apache.ignite.internal.sql.engine.exec.RowHandler;
 import org.apache.ignite.internal.sql.engine.schema.InternalIgniteTable;
-import org.apache.ignite.internal.table.TableImpl;
-import org.apache.ignite.internal.table.TableRow;
+import org.apache.ignite.internal.table.InternalTable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,7 +43,7 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     private static final int NOT_WAITING = -1;
 
     /** Table that provides access to underlying data. */
-    private final TableImpl physTable;
+    private final InternalTable physTable;
 
     /** Table that is an object in SQL schema. */
     private final InternalIgniteTable schemaTable;
@@ -212,7 +211,7 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
         if (subscription != null) {
             subscription.request(waiting);
         } else if (curPartIdx < parts.length) {
-            physTable.internalTable().scan(parts[curPartIdx++], null).subscribe(new SubscriberImpl());
+            physTable.scan(parts[curPartIdx++], null).subscribe(new SubscriberImpl());
         } else {
             waiting = NOT_WAITING;
         }
@@ -270,8 +269,6 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     }
 
     private RowT convert(BinaryRow binRow) {
-        final org.apache.ignite.internal.schema.row.Row wrapped = physTable.schemaView().resolve(binRow);
-
-        return schemaTable.toRow(context(), TableRow.tuple(wrapped), factory, requiredColumns);
+        return schemaTable.toRow(context(), binRow, factory, requiredColumns);
     }
 }

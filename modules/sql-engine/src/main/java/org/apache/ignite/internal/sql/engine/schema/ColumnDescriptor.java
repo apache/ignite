@@ -32,11 +32,13 @@ public interface ColumnDescriptor {
 
     String name();
 
-    int fieldIndex();
+    int logicalIndex();
+
+    int physicalIndex();
 
     RelDataType logicalType(IgniteTypeFactory f);
 
-    NativeType storageType();
+    NativeType physicalType();
 
     Object defaultValue();
 }

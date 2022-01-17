@@ -85,6 +85,14 @@ class UpgradingRowAdapter extends Row {
 
     /** {@inheritDoc} */
     @Override
+    public Object value(int colIdx) {
+        int mappedId = mapColumn(colIdx);
+
+        return mappedId < 0 ? mapper.mappedColumn(colIdx).defaultValue() : super.value(mappedId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public byte byteValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
 

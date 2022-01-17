@@ -22,6 +22,7 @@ import static org.apache.ignite.internal.sql.engine.util.TypeUtils.combinedRowTy
 import static org.apache.ignite.internal.util.ArrayUtils.asList;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -330,6 +331,10 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
         Function<RowT, RowT> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup group = ctx.group(rel.sourceId());
+
+        if (!group.nodeIds().contains(ctx.localNodeId())) {
+            return new ScanNode<>(ctx, rowType, Collections.emptyList());
+        }
 
         return new TableScanNode<>(
                 ctx,

@@ -105,6 +105,12 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     /** {@inheritDoc} */
     @Override
+    public Row resolve(BinaryRow row, SchemaDescriptor desc) {
+        return row == null ? null : new Row(desc, row);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public Row resolve(BinaryRow row) {
         return row == null ? null : new Row(schema(row.schemaVersion()), row);
     }

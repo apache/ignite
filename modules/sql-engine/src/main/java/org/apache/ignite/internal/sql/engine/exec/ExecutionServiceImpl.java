@@ -488,7 +488,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sql, planner);
 
-        String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
+        String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
 
         return new ExplainPlan(plan, explainFieldsMetadata(ctx));
     }

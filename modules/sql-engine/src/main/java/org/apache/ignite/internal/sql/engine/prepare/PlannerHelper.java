@@ -233,7 +233,7 @@ public class PlannerHelper {
 
             spoolNeeded = modifyNode.getUpdateColumnList().stream()
                     .map(tbl.descriptor()::columnDescriptor)
-                    .mapToInt(ColumnDescriptor::fieldIndex)
+                    .mapToInt(ColumnDescriptor::logicalIndex)
                     .anyMatch(indexedCols::contains);
 
             return (IgniteRel) scan;

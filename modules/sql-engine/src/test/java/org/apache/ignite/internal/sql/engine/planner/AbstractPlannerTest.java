@@ -70,6 +70,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.sql.engine.exec.ExecutionContext;
 import org.apache.ignite.internal.sql.engine.exec.RowHandler.RowFactory;
@@ -97,12 +98,11 @@ import org.apache.ignite.internal.sql.engine.trait.IgniteDistribution;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeFactory;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeSystem;
 import org.apache.ignite.internal.sql.engine.util.BaseQueryContext;
-import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -730,20 +730,20 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public TableImpl table() {
+        public InternalTable table() {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override
-        public <RowT> RowT toRow(ExecutionContext<RowT> ectx, Tuple row, RowFactory<RowT> factory,
+        public <RowT> RowT toRow(ExecutionContext<RowT> ectx, BinaryRow row, RowFactory<RowT> factory,
                 @Nullable ImmutableBitSet requiredColumns) {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override
-        public <RowT> Tuple toTuple(ExecutionContext<RowT> ectx, RowT row, Operation op, @Nullable Object arg) {
+        public <RowT> BinaryRow toBinaryRow(ExecutionContext<RowT> ectx, RowT row, Operation op, @Nullable Object arg) {
             throw new AssertionError();
         }
     }
@@ -867,7 +867,13 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public int fieldIndex() {
+        public int logicalIndex() {
+            return idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public int physicalIndex() {
             return idx;
         }
 
@@ -879,7 +885,7 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public NativeType storageType() {
+        public NativeType physicalType() {
             throw new AssertionError();
         }
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.sql.engine.extension;
 
-import static org.apache.ignite.internal.sql.engine.trait.TraitUtils.changeTraits;
+import static org.apache.calcite.sql.SqlExplainLevel.EXPPLAN_ATTRIBUTES;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -26,11 +26,14 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.sql.engine.externalize.RelInputEx;
 import org.apache.ignite.internal.sql.engine.rel.IgniteRel;
 import org.apache.ignite.internal.sql.engine.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.sql.engine.schema.IgniteTable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -56,7 +59,12 @@ public class TestPhysTableScan extends TableScan implements IgniteRel {
      * @param input Context to recover this relation from.
      */
     public TestPhysTableScan(RelInput input) {
-        super(changeTraits(input, TestExtension.CONVENTION));
+        super(
+                input.getCluster(),
+                input.getTraitSet(),
+                List.of(),
+                ((RelInputEx) input).getTableById("tableId")
+        );
     }
 
     /** {@inheritDoc} */
@@ -69,6 +77,15 @@ public class TestPhysTableScan extends TableScan implements IgniteRel {
     @Override
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new TestPhysTableScan(cluster, getTraitSet(), getHints(), getTable());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        return pw
+                .itemIf("table", table.getQualifiedName(), pw.getDetailLevel() == EXPPLAN_ATTRIBUTES)
+                .itemIf("tableId", table.unwrap(IgniteTable.class).id().toString(),
+                        pw.getDetailLevel() != EXPPLAN_ATTRIBUTES);
     }
 
     @Override

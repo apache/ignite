@@ -24,14 +24,14 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.sql.engine.exec.ExecutionContext;
 import org.apache.ignite.internal.sql.engine.exec.RowHandler;
 import org.apache.ignite.internal.sql.engine.metadata.ColocationGroup;
 import org.apache.ignite.internal.sql.engine.prepare.MappingQueryContext;
 import org.apache.ignite.internal.sql.engine.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.sql.engine.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.table.TableImpl;
-import org.apache.ignite.table.Tuple;
+import org.apache.ignite.internal.table.InternalTable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -80,7 +80,7 @@ public interface InternalIgniteTable extends IgniteTable {
     );
 
     /** Returns the internal table. */
-    TableImpl table();
+    InternalTable table();
 
     /**
      * Converts a tuple to relational node row.
@@ -92,7 +92,7 @@ public interface InternalIgniteTable extends IgniteTable {
      */
     <RowT> RowT toRow(
             ExecutionContext<RowT> ectx,
-            Tuple row,
+            BinaryRow row,
             RowHandler.RowFactory<RowT> factory,
             @Nullable ImmutableBitSet requiredColumns
     );
@@ -106,7 +106,7 @@ public interface InternalIgniteTable extends IgniteTable {
      * @param arg  Operation specific argument.
      * @return Cache key-value tuple;
      */
-    <RowT> Tuple toTuple(
+    <RowT> BinaryRow toBinaryRow(
             ExecutionContext<RowT> ectx,
             RowT row,
             TableModify.Operation op,

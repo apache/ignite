@@ -65,6 +65,15 @@ public interface SchemaRegistry {
     public int lastSchemaVersion();
 
     /**
+     * Resolve row for the give schema.
+     *
+     * @param row  Binary row.
+     * @param desc Desired schema.
+     * @return Schema-aware row.
+     */
+    Row resolve(BinaryRow row, SchemaDescriptor desc);
+
+    /**
      * Resolve row.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      *

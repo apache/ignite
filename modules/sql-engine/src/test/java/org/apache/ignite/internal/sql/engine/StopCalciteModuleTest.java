@@ -112,8 +112,8 @@ public class StopCalciteModuleTest {
 
         SchemaDescriptor schemaDesc = new SchemaDescriptor(
                 0,
-                new Column[]{new Column("ID", NativeTypes.INT32, false)},
-                new Column[]{new Column("VAL", NativeTypes.INT32, false)}
+                new Column[]{new Column(0, "ID", NativeTypes.INT32, false)},
+                new Column[]{new Column(1, "VAL", NativeTypes.INT32, false)}
         );
 
         schemaReg = new SchemaRegistryImpl(0, (v) -> schemaDesc, () -> INITIAL_SCHEMA_VERSION);

@@ -25,13 +25,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.sql.engine.exec.ExecutionContext;
 import org.apache.ignite.internal.sql.engine.exec.RowHandler;
 import org.apache.ignite.internal.sql.engine.schema.InternalIgniteTable;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeFactory;
+import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.lang.IgniteInternalException;
-import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.Tuple;
 
 /**
  * ModifyNode.
@@ -44,9 +44,9 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
 
     private final List<String> cols;
 
-    private final RecordView<Tuple> tableView;
+    private final InternalTable tableView;
 
-    private List<Tuple> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
+    private List<BinaryRow> rows = new ArrayList<>(MODIFY_BATCH_SIZE);
 
     private long updatedRows;
 
@@ -81,7 +81,7 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
         this.op = op;
         this.cols = cols;
 
-        tableView = table.table().recordView();
+        tableView = table.table();
     }
 
     /** {@inheritDoc} */
@@ -114,7 +114,7 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
             case DELETE:
             case UPDATE:
             case INSERT:
-                tuples.add(table.toTuple(context(), row, op, cols));
+                rows.add(table.toBinaryRow(context(), row, op, cols));
 
                 flushTuples(false);
 
@@ -186,17 +186,17 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
     }
 
     private void flushTuples(boolean force) {
-        if (nullOrEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE) {
+        if (nullOrEmpty(rows) || !force && rows.size() < MODIFY_BATCH_SIZE) {
             return;
         }
 
-        List<Tuple> tuples = this.tuples;
-        this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
+        List<BinaryRow> rows = this.rows;
+        this.rows = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         // TODO: IGNITE-15087 Implement support for transactional SQL
         switch (op) {
             case INSERT:
-                Collection<Tuple> duplicates = tableView.insertAll(null, tuples);
+                Collection<BinaryRow> duplicates = tableView.insertAll(rows, null).join();
 
                 if (!duplicates.isEmpty()) {
                     IgniteTypeFactory typeFactory = context().getTypeFactory();
@@ -207,8 +207,8 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
 
                     throw new IgniteInternalException(
                             "Failed to INSERT some keys because they are already in cache. "
-                                    + "[tuples=" + duplicates.stream()
-                                    .map(tup -> table.toRow(context(), tup, rowFactory, null))
+                                    + "[rows=" + duplicates.stream()
+                                    .map(binRow -> table.toRow(context(), binRow, rowFactory, null))
                                     .map(context().rowHandler()::toString)
                                     .collect(Collectors.toList()) + ']'
                     );
@@ -216,18 +216,18 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
 
                 break;
             case UPDATE:
-                tableView.upsertAll(null, tuples);
+                tableView.upsertAll(rows, null).join();
 
                 break;
             case DELETE:
-                tableView.deleteAll(null, tuples);
+                tableView.deleteAll(rows, null).join();
 
                 break;
             default:
                 throw new AssertionError();
         }
 
-        updatedRows += tuples.size();
+        updatedRows += rows.size();
     }
 
     private enum State {

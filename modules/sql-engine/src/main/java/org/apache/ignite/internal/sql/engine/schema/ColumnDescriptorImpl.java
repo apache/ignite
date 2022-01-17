@@ -36,7 +36,9 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
 
     private final @Nullable Supplier<Object> dfltVal;
 
-    private final int fieldIdx;
+    private final int logicalIndex;
+
+    private final int physicalIndex;
 
     private final NativeType storageType;
 
@@ -47,14 +49,16 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
     public ColumnDescriptorImpl(
             String name,
             boolean key,
-            int fieldIdx,
+            int logicalIndex,
+            int physicalIndex,
             NativeType storageType,
             @Nullable Supplier<Object> dfltVal
     ) {
         this.key = key;
         this.name = name;
         this.dfltVal = dfltVal;
-        this.fieldIdx = fieldIdx;
+        this.logicalIndex = logicalIndex;
+        this.physicalIndex = physicalIndex;
         this.storageType = storageType;
     }
 
@@ -84,8 +88,14 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
 
     /** {@inheritDoc} */
     @Override
-    public int fieldIndex() {
-        return fieldIdx;
+    public int logicalIndex() {
+        return logicalIndex;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int physicalIndex() {
+        return physicalIndex;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +106,7 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
 
     /** {@inheritDoc} */
     @Override
-    public NativeType storageType() {
+    public NativeType physicalType() {
         return storageType;
     }
 }

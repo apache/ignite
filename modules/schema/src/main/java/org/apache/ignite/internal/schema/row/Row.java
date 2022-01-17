@@ -91,6 +91,16 @@ public class Row implements BinaryRow, SchemaAware {
      *
      * @param col Column index.
      * @return Column value.
+     */
+    public Object value(int col) {
+        return schema.column(col).type().spec().objectValue(this, col);
+    }
+
+    /**
+     * Reads value for specified column.
+     *
+     * @param col Column index.
+     * @return Column value.
      * @throws InvalidTypeException If actual column type does not match the requested column type.
      */
     public byte byteValue(int col) throws InvalidTypeException {
