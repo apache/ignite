@@ -508,6 +508,7 @@ namespace ignite
                  *
                  * @return Hash code of the value.
                  */
+                IGNORE_SIGNED_OVERFLOW
                 virtual int32_t GetHashCode() const
                 {
                     int32_t hash = 0;
