@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.BitSet;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
@@ -25,7 +26,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexBuilder;
@@ -48,35 +49,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Converts OR to UNION ALL.
  */
-public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
+public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     /** Rule instance to replace table scans with condition. */
-    public static final RelOptRule SCAN_INSTANCE = new LogicalOrToUnionRule(Config.SCAN) {
-        @Override protected RexNode getCondition(RelOptRuleCall call) {
-            final IgniteLogicalTableScan rel = call.rel(0);
-
-            return rel.condition();
-        }
-
-        @Override protected RelNode getInput(RelOptRuleCall call) {
-            return call.rel(0);
-        }
-
-        @Override protected void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
-            IgniteLogicalTableScan scan = (IgniteLogicalTableScan)input;
-
-            // Set default traits, real traits will be calculated for physical node.
-            RelTraitSet trait = scan.getCluster().traitSet();
-
-            relBldr.push(IgniteLogicalTableScan.create(
-                scan.getCluster(),
-                trait,
-                scan.getTable(),
-                scan.projects(),
-                condition,
-                scan.requiredColumns()
-            ));
-        }
-    };
+    public static final RelOptRule INSTANCE = new LogicalOrToUnionRule(Config.SCAN);
 
     /**
      * Constructor.
@@ -108,12 +83,16 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     }
 
     /** */
-    protected abstract RexNode getCondition(RelOptRuleCall call);
+    private RexNode getCondition(RelOptRuleCall call) {
+        final IgniteLogicalTableScan rel = call.rel(0);
+
+        return rel.condition();
+    }
 
     /**
      * Returns common required columns from scan.
      */
-    protected ImmutableBitSet getRequiredColumns(RelOptRuleCall call, int fldCount) {
+    private ImmutableBitSet getRequiredColumns(RelOptRuleCall call, int fldCount) {
         final IgniteLogicalTableScan scan = call.rel(0);
 
         ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
@@ -133,7 +112,9 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     }
 
     /** */
-    protected abstract RelNode getInput(RelOptRuleCall call);
+    private RelNode getInput(RelOptRuleCall call) {
+        return call.rel(0);
+    }
 
     /**
      * @param call Set of appropriate RelNode.
@@ -147,47 +128,36 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
 
         IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = Commons.typeFactory(scan.getCluster());
-        int fieldCount = tbl.getRowType(typeFactory).getFieldCount();
+        int fieldCnt = tbl.getRowType(typeFactory).getFieldCount();
 
-        ImmutableBitSet commonReqCols = getRequiredColumns(call, fieldCount);
+        BitSet idxsFirstFields = new BitSet(fieldCnt);
 
-        Mappings.TargetMapping mapping = Commons.inverseMapping(commonReqCols, fieldCount);
+        for (IgniteIndex idx : tbl.indexes().values()) {
+            List<RelFieldCollation> fieldCollations = idx.collation().getFieldCollations();
 
-        boolean idxPreMatch = false;
+            if (!F.isEmpty(fieldCollations))
+                idxsFirstFields.set(fieldCollations.get(0).getFieldIndex());
+        }
+
+        Mappings.TargetMapping mapping = scan.requiredColumns() == null ? null :
+            Commons.inverseMapping(scan.requiredColumns(), fieldCnt);
 
         for (RexNode op : operands) {
-            ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+            BitSet conditionFields = new BitSet(fieldCnt);
 
             new RexShuttle() {
                 @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                    builder.set(mapping.getSourceOpt(inputRef.getIndex()));
+                    conditionFields.set(mapping == null ? inputRef.getIndex() :
+                        mapping.getSourceOpt(inputRef.getIndex()));
                     return inputRef;
                 }
             }.apply(op);
 
-            ImmutableBitSet localReqCols = builder.build();
-
-            idxPreMatch = false;
-
-            for (IgniteIndex idx : tbl.indexes().values()) {
-                final RelCollation col0 = idx.collation();
-
-                if (col0.getFieldCollations().isEmpty())
-                    continue;
-
-                int firstIdxColPos = col0.getKeys().get(0);
-
-                if (localReqCols.get(firstIdxColPos)) {
-                    idxPreMatch = true;
-                    break;
-                }
-            }
-
-            if (!idxPreMatch)
-                break;
+            if (!conditionFields.intersects(idxsFirstFields))
+                return false;
         }
 
-        return idxPreMatch;
+        return true;
     }
 
     /** */
@@ -206,7 +176,21 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     }
 
     /** */
-    protected abstract void buildInput(RelBuilder relBldr, RelNode input, RexNode condition);
+    private void buildInput(RelBuilder relBldr, RelNode input, RexNode condition) {
+        IgniteLogicalTableScan scan = (IgniteLogicalTableScan)input;
+
+        // Set default traits, real traits will be calculated for physical node.
+        RelTraitSet trait = scan.getCluster().traitSet();
+
+        relBldr.push(IgniteLogicalTableScan.create(
+            scan.getCluster(),
+            trait,
+            scan.getTable(),
+            scan.projects(),
+            condition,
+            scan.requiredColumns()
+        ));
+    }
 
     /**
      * Creates 'UnionAll' for conditions.
@@ -231,7 +215,6 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     /** */
     private static boolean preMatch(IgniteLogicalTableScan scan) {
         return scan.condition() != null &&
-            !F.isEmpty(scan.requiredColumns()) &&
             // _key_PK not interesting here, but it`s depend on current PK implementation, in future PK can be removed
             // and this condition will become incorrect.
             scan.getTable().unwrap(IgniteTable.class).indexes().size() >= 2;
