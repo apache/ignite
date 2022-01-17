@@ -31,7 +31,7 @@ public class CalciteQueryEngineConfiguration implements QueryEngineConfiguration
     public static final String ENGINE_NAME = "calcite";
 
     /** */
-    private volatile boolean isDflt;
+    private boolean isDflt;
 
     /** {@inheritDoc} */
     @Override public String engineName() {

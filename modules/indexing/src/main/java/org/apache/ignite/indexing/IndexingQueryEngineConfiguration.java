@@ -29,7 +29,7 @@ public class IndexingQueryEngineConfiguration implements QueryEngineConfiguratio
     public static final String ENGINE_NAME = "h2";
 
     /** */
-    private volatile boolean isDflt;
+    private boolean isDflt;
 
     /** {@inheritDoc} */
     @Override public String engineName() {
