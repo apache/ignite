@@ -38,7 +38,7 @@ class DefaultUserObjectMarshallerCommonTest {
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
     @Test
-    void marshalsAndUnmarshalsBareObject() throws Exception {
+    void throwsOnExcessiveInputWhenUnmarshalling() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(null);
 
         byte[] tooManyBytes = Arrays.copyOf(marshalled.bytes(), marshalled.bytes().length + 1);

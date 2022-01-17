@@ -65,6 +65,8 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
 
     private static boolean constructorCalled;
 
+    private static final int INT_OUT_OF_INT_CACHE_RANGE = 1_000_000;
+
     @Test
     void marshalsAndUnmarshalsSimpleClassInstances() throws Exception {
         Simple unmarshalled = marshalAndUnmarshalNonNull(new Simple(42));
@@ -451,10 +453,20 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
     }
 
     @Test
+    void unmarshalsSamePrimitiveWrapperReferencesToSameInstances() throws Exception {
+        Integer obj = INT_OUT_OF_INT_CACHE_RANGE;
+        List<?> list = new ArrayList<>(Arrays.asList(obj, obj));
+
+        List<?> unmarshalled = marshalAndUnmarshalNonNull(list);
+
+        assertThat(unmarshalled.get(0), sameInstance(unmarshalled.get(1)));
+    }
+
+    @Test
     void unmarshalsDifferentButEqualObjectsToDifferentObjects() throws Exception {
-        long longValue = 1_000_000;
-        String obj1 = String.valueOf(longValue);
-        String obj2 = String.valueOf(longValue);
+        int intValue = INT_OUT_OF_INT_CACHE_RANGE;
+        String obj1 = String.valueOf(intValue);
+        String obj2 = String.valueOf(intValue);
         List<?> list = new ArrayList<>(Arrays.asList(obj1, obj2));
 
         List<?> unmarshalled = marshalAndUnmarshalNonNull(list);
