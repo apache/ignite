@@ -121,7 +121,5 @@ query I valuesort label-1200
 SELECT pk FROM tab2 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab2 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab2 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1
 ----
 
-query II valuesort label-1210
-SELECT pk, col0 FROM tab3 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab3 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab3 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 2 DESC
-----
+
 

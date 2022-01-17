@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -44,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -152,16 +151,16 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
 
         ImmutableBitSet commonReqCols = getRequiredColumns(call, fieldCount);
 
-        boolean idxPreMatch = false;
+        Mappings.TargetMapping mapping = Commons.inverseMapping(commonReqCols, fieldCount);
 
-        Map<String, RelCollation> cache = new HashMap<>();
+        boolean idxPreMatch = false;
 
         for (RexNode op : operands) {
             ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
             new RexShuttle() {
                 @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                    builder.set(inputRef.getIndex());
+                    builder.set(mapping.getSourceOpt(inputRef.getIndex()));
                     return inputRef;
                 }
             }.apply(op);
@@ -173,13 +172,10 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
             for (IgniteIndex idx : tbl.indexes().values()) {
                 final RelCollation col0 = idx.collation();
 
-                RelCollation collProj =
-                    cache.computeIfAbsent(idx.name(), k -> col0.apply(Commons.mapping(commonReqCols, fieldCount)));
-
-                if (collProj.getFieldCollations().isEmpty())
+                if (col0.getFieldCollations().isEmpty())
                     continue;
 
-                int firstIdxColPos = collProj.getKeys().get(0);
+                int firstIdxColPos = col0.getKeys().get(0);
 
                 if (localReqCols.get(firstIdxColPos)) {
                     idxPreMatch = true;
@@ -235,6 +231,7 @@ public abstract class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.
     /** */
     private static boolean preMatch(IgniteLogicalTableScan scan) {
         return scan.condition() != null &&
+            !F.isEmpty(scan.requiredColumns()) &&
             // _key_PK not interesting here, but it`s depend on current PK implementation, in future PK can be removed
             // and this condition will become incorrect.
             scan.getTable().unwrap(IgniteTable.class).indexes().size() >= 2;
