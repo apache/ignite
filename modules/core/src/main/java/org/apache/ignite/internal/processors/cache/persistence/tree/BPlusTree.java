@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * thus positive. Each level represents a singly linked list - each page has a link to the <i>forward</i> page at the
  * same level. It can be retrieved by calling {@link BPlusIO#getForward(long)}. This link must be a zero if there's no
  * forward page. Forward links on level {@code 0} allows iterating trees keys and values effectively without traversing
- * any inner nodes ({@link AbstractForwardCursor}). Forward links in inner nodes have different purpose, more on that
+ * any inner nodes ({@code AbstractForwardCursor}). Forward links in inner nodes have different purpose, more on that
  * later.
  * <p/>
  * Leaves have no links other than forward links. But inner nodes also have links to their children nodes. Every inner
@@ -676,8 +676,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** */
     private class LockTailExact extends GetPageHandler<Update> {
         /** {@inheritDoc} */
-        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Update u, int lvl)
-            throws IgniteCheckedException {
+        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Update u, int lvl) {
             // Check the triangle invariant.
             if (io.getForward(pageAddr) != u.fwdId)
                 return RETRY;
@@ -4534,7 +4533,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Remove operation.
      */
-    private final class Remove extends Update implements ReuseBag {
+    public final class Remove extends Update implements ReuseBag {
         /** */
         Bool needReplaceInner = FALSE;
 
