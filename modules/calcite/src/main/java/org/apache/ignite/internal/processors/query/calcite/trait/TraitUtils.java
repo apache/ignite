@@ -438,8 +438,7 @@ public class TraitUtils {
     private static boolean fillRecursive(
         RelTraitSet outTraits,
         List<List<RelTraitSet>> inTraits,
-        ImmutableSet.Builder<Pair<RelTraitSet,
-        List<RelTraitSet>>> result,
+        ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> result,
         RelTraitSet[] combination,
         int idx
     ) throws ControlFlowException
