@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -98,15 +97,12 @@ public class CdcSelfTest extends AbstractCdcTest {
         return params;
     }
 
-    /** Consistent id. */
-    private UUID consistentId = UUID.randomUUID();
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (specificConsistentId)
-            cfg.setConsistentId(consistentId);
+            cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setCdcEnabled(true)
@@ -193,9 +189,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReadBeforeGracefulShutdown() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-        Ignite ign = startGrid(cfg);
+        Ignite ign = startGrid(getConfiguration("ignite-0"));
 
         ign.cluster().state(ACTIVE);
 
@@ -217,7 +211,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = createCdc(cnsmr, cfg);
+        CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
         runAsync(cdc);
 
@@ -253,9 +247,6 @@ public class CdcSelfTest extends AbstractCdcTest {
     public void testMultiNodeConsumption() throws Exception {
         IgniteEx ign1 = startGrid(0);
 
-        if (specificConsistentId)
-            consistentId = UUID.randomUUID();
-
         IgniteEx ign2 = startGrid(1);
 
         ign1.cluster().state(ACTIVE);
@@ -279,8 +270,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         UserCdcConsumer cnsmr1 = new UserCdcConsumer();
         UserCdcConsumer cnsmr2 = new UserCdcConsumer();
 
-        IgniteConfiguration cfg1 = ign1.configuration();
-        IgniteConfiguration cfg2 = ign2.configuration();
+        IgniteConfiguration cfg1 = getConfiguration(ign1.name());
+        IgniteConfiguration cfg2 = getConfiguration(ign2.name());
 
         // Always run CDC with consistent id to ensure instance read data for specific node.
         if (!specificConsistentId) {
@@ -346,8 +337,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         UserCdcConsumer cnsmr1 = new UserCdcConsumer();
         UserCdcConsumer cnsmr2 = new UserCdcConsumer();
 
-        IgniteInternalFuture<?> fut1 = runAsync(createCdc(cnsmr1, ign.configuration()));
-        IgniteInternalFuture<?> fut2 = runAsync(createCdc(cnsmr2, ign.configuration()));
+        IgniteInternalFuture<?> fut1 = runAsync(createCdc(cnsmr1, getConfiguration(ign.name())));
+        IgniteInternalFuture<?> fut2 = runAsync(createCdc(cnsmr2, getConfiguration(ign.name())));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -368,9 +359,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReReadWhenStateWasNotStored() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-        IgniteEx ign = startGrid(cfg);
+        IgniteEx ign = startGrid(getConfiguration("ignite-0"));
 
         ign.cluster().state(ACTIVE);
 
@@ -385,7 +374,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
             };
 
-            CdcMain cdc = createCdc(cnsmr, cfg);
+            CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -431,7 +420,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = createCdc(cnsmr, cfg);
+        CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -449,7 +438,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         consumeHalf.set(false);
 
-        cdc = createCdc(cnsmr, cfg);
+        cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
         fut = runAsync(cdc);
 
