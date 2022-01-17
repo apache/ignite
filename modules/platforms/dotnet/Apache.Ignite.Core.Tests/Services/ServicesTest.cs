@@ -1049,7 +1049,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(_javaSvcName, true, callContext()));
 
-            DoTestService(svc, true, false);
+            DoTestService(svc, true);
 
             DoTestJavaExceptions(svc);
         }
@@ -1059,7 +1059,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private void DoAllServiceTests(IJavaService svc, IJavaService binSvc, bool isClient, bool isPlatform, bool supportCtxAttrs = true)
         {
-            DoTestService(svc, supportCtxAttrs, isPlatform);
+            DoTestService(svc, supportCtxAttrs);
 
             DoTestBinary(svc, binSvc, isPlatform);
 
@@ -1070,7 +1070,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests service methods.
         /// </summary>
-        private void DoTestService(IJavaService svc, bool supportCtxAttrs, bool isPlatformService)
+        private void DoTestService(IJavaService svc, bool supportCtxAttrs)
         {
             // Basics
             Assert.IsTrue(svc.isInitialized());
@@ -1143,21 +1143,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(bools.GetType(), typeof(bool[]));
             Assert.AreEqual(new[] {false, true, false}, bools);
-
-            // Enums
-            if (isPlatformService)
-            {
-                Assert.AreEqual(svc.testEnum(ByteEnum.Bar), ByteEnum.Foo);
-                Assert.AreEqual(svc.testEnum(SByteEnum.Bar), SByteEnum.Foo);
-                Assert.AreEqual(svc.testEnum(ShortEnum.Bar), ShortEnum.Foo);
-                Assert.AreEqual(svc.testEnum(UShortEnum.Bar), UShortEnum.Foo);
-                Assert.AreEqual(svc.testEnum(IntEnum.Bar), IntEnum.Foo);
-                Assert.AreEqual(svc.testEnum(UIntEnum.Bar), UIntEnum.Foo);
-                Assert.AreEqual(svc.testEnum(LongEnum.Bar), LongEnum.Foo);
-                Assert.AreEqual(svc.testEnum(ULongEnum.Bar), ULongEnum.Foo);
-                
-                Assert.AreNotEqual(new EnumsHolder().EnmIntRaw, svc.testEnumHolder(new EnumsHolder()).EnmIntRaw);
-            }
 
             // Nulls
             Assert.AreEqual(9, svc.testNull(8));

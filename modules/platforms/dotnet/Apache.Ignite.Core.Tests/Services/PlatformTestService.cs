@@ -371,12 +371,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public EnumsHolder testEnumHolder(EnumsHolder enmHolder)
-        {
-            return enmHolder.change();
-        }
-
-        /** <inheritDoc /> */
         public object[] testBinarizableArrayOfObjects(object[] x)
         {
             if (x == null)
@@ -630,54 +624,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public object testRoundtrip(object x)
         {
             return x;
-        }
-
-        /** <inheritDoc /> */
-        public ByteEnum testEnum(ByteEnum enm)
-        {
-            return enm == ByteEnum.Bar ? ByteEnum.Foo : ByteEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public SByteEnum testEnum(SByteEnum enm)
-        {
-            return enm == SByteEnum.Bar ? SByteEnum.Foo : SByteEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public ShortEnum testEnum(ShortEnum enm)
-        {
-            return enm == ShortEnum.Bar ? ShortEnum.Foo : ShortEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public UShortEnum testEnum(UShortEnum enm)
-        {
-            return enm == UShortEnum.Bar ? UShortEnum.Foo : UShortEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public IntEnum testEnum(IntEnum enm)
-        {
-            return enm == IntEnum.Bar ? IntEnum.Foo : IntEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public UIntEnum testEnum(UIntEnum enm)
-        {
-            return enm == UIntEnum.Bar ? UIntEnum.Foo : UIntEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public LongEnum testEnum(LongEnum enm)
-        {
-            return enm == LongEnum.Bar ? LongEnum.Foo : LongEnum.Bar;
-        }
-
-        /** <inheritDoc /> */
-        public ULongEnum testEnum(ULongEnum enm)
-        {
-            return enm == ULongEnum.Bar ? ULongEnum.Foo : ULongEnum.Bar;
         }
 
         /** <inheritDoc /> */
