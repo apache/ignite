@@ -149,6 +149,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
+        
+        /** */
+        EnumsHolder testEnumHolder(EnumsHolder holder);
 
         /** */
         object[] testBinarizableArrayOfObjects(object[] x);
@@ -209,6 +212,30 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         object testRoundtrip(object x);
+        
+        /** */
+        ByteEnum testEnum(ByteEnum x);
+        
+        /** */
+        SByteEnum testEnum(SByteEnum x);
+        
+        /** */
+        ShortEnum testEnum(ShortEnum x);
+        
+        /** */
+        UShortEnum testEnum(UShortEnum x);
+
+        /** */
+        IntEnum testEnum(IntEnum x);
+
+        /** */
+        UIntEnum testEnum(UIntEnum x);
+        
+        /** */
+        LongEnum testEnum(LongEnum x);
+        
+        /** */
+        ULongEnum testEnum(ULongEnum x);
 
         /** */
         void sleep(long delayMs);
