@@ -13,7 +13,7 @@
 
 Name:             apache-ignite
 Version:          2.12.0
-Release:          1
+Release:          2
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
 License:          ASL 2.0
@@ -29,6 +29,40 @@ BuildArch:        noarch
 Ignite™ is a memory-centric distributed database, caching, and processing
 platform for transactional, analytical, and streaming workloads, delivering
 in-memory speeds at petabyte scale
+
+
+%package benchmark
+Summary:          Apache Ignite benchmark utilities
+
+%description benchmark
+Benchmark utilities for Ignite
+
+
+%package doc
+Summary:          Apache Ignite documentation
+
+%description doc
+Documentation files for Ignite
+
+
+%package cpp
+Summary:         Apache Ignite C++ platform source code
+
+%description cpp
+Apache Ignite C++ provides data grid functionality that can perform
+concurrent operations on the data stored in cache.
+Apache Ignite C++ can access cluster and share data with .Net and
+Java applications using binary object format.
+
+
+%package dotnet
+Summary:        Apache Ignite DotNet platform source code
+
+%description dotnet
+Apache Ignite DotNet provides data grid functionality that can perform
+concurrent operations on the data stored in cache.
+Apache Ignite DotNet can access cluster and share data with .Net and
+Java applications using binary object format.
 
 
 %prep
@@ -241,13 +275,11 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %dir %{_sharedstatedir}/%{name}
 %dir %{_log}/%{name}
 
-%{_datadir}/%{name}/benchmarks
 %{_datadir}/%{name}/bin
 %{_datadir}/%{name}/config
 %{_datadir}/%{name}/libs
 %{_datadir}/%{name}/platforms
 %{_datadir}/%{name}/work
-%{_datadir}/doc/%{name}-%{version}
 %{_libdir}/%{name}
 %{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log
@@ -261,11 +293,30 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %license LICENSE
 
 
+%files benchmark
+%{_datadir}/%{name}/benchmarks
+
+
+%files doc
+%{_datadir}/doc/%{name}-%{version}
+
+%files cpp
+%{_datadir}/%{name}/platforms/cpp
+
+
+%files dotnet
+%{_datadir}/%{name}/platforms/dotnet
+
+
 %changelog
 #-------------------------------------------------------------------------------
 #
 # Changelog
 #
+
+* Mon Jan 17 2022 Azamat Khakimov <akkhaki1@mts.ru> - 2.12.0-2
+- Split package into small subpackages in order to save some space on
+  non-required components
 
 * Thu Oct 21 2021 Nikita Amelchev <namelchev@apache.org> - 2.12.0-1
 - Updated Apache Ignite to version 2.12.0
