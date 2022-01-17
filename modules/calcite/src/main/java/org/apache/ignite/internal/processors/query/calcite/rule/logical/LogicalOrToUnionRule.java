@@ -190,14 +190,6 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     }
 
     /** */
-    private static boolean preMatch(IgniteLogicalTableScan scan) {
-        return scan.condition() != null &&
-            // _key_PK not interesting here, but it`s depend on current PK implementation, in future PK can be removed
-            // and this condition will become incorrect.
-            scan.getTable().unwrap(IgniteTable.class).indexes().size() >= 2;
-    }
-
-    /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
         /** */
@@ -209,7 +201,7 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
         Config SCAN = DEFAULT
             .withDescription("ScanLogicalOrToUnionRule")
             .withOperandSupplier(o -> o.operand(IgniteLogicalTableScan.class)
-                .predicate(LogicalOrToUnionRule::preMatch)
+                .predicate(scan -> scan.condition() != null)
                 .noInputs()
             )
             .as(Config.class);
