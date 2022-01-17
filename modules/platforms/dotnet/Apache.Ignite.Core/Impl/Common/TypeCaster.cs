@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Common
             /// </summary>
             private static Func<TFrom, T> Compile()
             {
-                if (typeof(T) == typeof(TFrom))
+                if (typeof (T) == typeof (TFrom))
                 {
                     // Just return what we have
                     var pExpr = Expression.Parameter(typeof(TFrom));
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 if (typeof(T) == typeof(UIntPtr) && typeof(TFrom) == typeof(long))
                 {
-                    return l => unchecked((T) (object) (UIntPtr) (ulong) (long) (object) l);
+                    return l => unchecked ((T) (object) (UIntPtr) (ulong) (long) (object) l);
                 }
 
                 var fromParamExpr = Expression.Parameter(typeof(TFrom));
