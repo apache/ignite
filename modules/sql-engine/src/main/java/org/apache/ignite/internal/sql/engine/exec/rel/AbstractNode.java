@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql.engine.exec.rel;
 
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+import static org.apache.ignite.lang.IgniteStringFormatter.format;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -193,7 +194,9 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
         if (thread == null) {
             thread = Thread.currentThread();
         } else {
-            assert thread == Thread.currentThread();
+            assert thread == Thread.currentThread() : format("expThread={}, actThread={}, "
+                            + "qryId={}, fragmentId={}", thread.getName(), Thread.currentThread().getName(),
+                    context().queryId(), context().fragmentId());
         }
     }
 

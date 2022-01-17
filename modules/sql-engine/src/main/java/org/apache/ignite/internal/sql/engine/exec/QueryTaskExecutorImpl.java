@@ -29,9 +29,6 @@ import org.apache.ignite.lang.IgniteLogger;
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.UncaughtExceptionHandler {
-    /** Default Ignite thread keep alive time. */
-    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
-
     private static final IgniteLogger LOG = IgniteLogger.forClass(QueryTaskExecutorImpl.class);
 
     private final String nodeName;
@@ -54,8 +51,8 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.Uncaught
                 4,
                 NamedThreadFactory.threadPrefix(nodeName, "calciteQry"),
                 null,
-                true,
-                DFLT_THREAD_KEEP_ALIVE_TIME
+                false,
+                0
         );
     }
 
