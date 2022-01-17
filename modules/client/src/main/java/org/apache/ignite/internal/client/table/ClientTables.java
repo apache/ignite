@@ -123,6 +123,6 @@ public class ClientTables implements IgniteTables {
         Objects.requireNonNull(name);
 
         return ch.serviceAsync(ClientOp.TABLE_GET, w -> w.out().packString(name),
-                r -> new ClientTable(ch, r.in().unpackIgniteUuid(), name));
+                r -> r.in().tryUnpackNil() ? null : new ClientTable(ch, r.in().unpackIgniteUuid(), name));
     }
 }

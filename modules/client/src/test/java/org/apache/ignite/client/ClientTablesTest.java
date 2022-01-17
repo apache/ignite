@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,6 +55,21 @@ public class ClientTablesTest extends AbstractClientTest {
         var tables = client.tables().tables();
 
         assertEquals(0, tables.size());
+    }
+
+    @Test
+    public void testTableReturnsInstanceWhenExists() {
+        server.tables().createTable(DEFAULT_TABLE, null);
+        Table table = client.tables().table(DEFAULT_TABLE);
+
+        assertEquals(DEFAULT_TABLE, table.name());
+    }
+
+    @Test
+    public void testTableReturnsNullWhenDoesNotExist() {
+        Table table = client.tables().table("non-existent-table");
+
+        assertNull(table);
     }
 
     @Test
