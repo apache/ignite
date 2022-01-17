@@ -89,28 +89,6 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
         return rel.condition();
     }
 
-    /**
-     * Returns common required columns from scan.
-     */
-    private ImmutableBitSet getRequiredColumns(RelOptRuleCall call, int fldCount) {
-        final IgniteLogicalTableScan scan = call.rel(0);
-
-        ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
-
-        Mappings.TargetMapping mapping = Commons.inverseMapping(scan.requiredColumns(), fldCount);
-
-        new RexShuttle() {
-            @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                builder.set(mapping.getSourceOpt(inputRef.getIndex()));
-                return inputRef;
-            }
-        }.apply(scan.condition());
-
-        builder.addAll(scan.requiredColumns());
-
-        return builder.build();
-    }
-
     /** */
     private RelNode getInput(RelOptRuleCall call) {
         return call.rel(0);
