@@ -206,6 +206,18 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check request with hidden keys.
+     */
+    @Test
+    public void testWithHiddenKeys() {
+        checkQuery("SELECT _key, _val FROM products WHERE category = 'Photo' OR subcat_id = 22")
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
+            .check();
+    }
+
+    /**
      * Check 'OR -> UNION' rule is not applied for range conditions on indexed columns.
      */
     @Test

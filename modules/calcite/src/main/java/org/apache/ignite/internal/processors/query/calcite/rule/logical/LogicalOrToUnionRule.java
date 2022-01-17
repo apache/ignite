@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.BitSet;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
@@ -26,22 +25,21 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,31 +105,30 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
         IgniteTypeFactory typeFactory = Commons.typeFactory(scan.getCluster());
         int fieldCnt = tbl.getRowType(typeFactory).getFieldCount();
 
-        BitSet idxsFirstFields = new BitSet(fieldCnt);
-
-        for (IgniteIndex idx : tbl.indexes().values()) {
-            List<RelFieldCollation> fieldCollations = idx.collation().getFieldCollations();
-
-            if (!F.isEmpty(fieldCollations))
-                idxsFirstFields.set(fieldCollations.get(0).getFieldIndex());
-        }
-
-        Mappings.TargetMapping mapping = scan.requiredColumns() == null ? null :
-            Commons.inverseMapping(scan.requiredColumns(), fieldCnt);
-
         for (RexNode op : operands) {
-            BitSet conditionFields = new BitSet(fieldCnt);
+            boolean condAcceptable = false;
 
-            new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                    conditionFields.set(mapping == null ? inputRef.getIndex() :
-                        mapping.getSourceOpt(inputRef.getIndex()));
-                    return inputRef;
+            for (IgniteIndex idx : tbl.indexes().values()) {
+                RelCollation collation = idx.collation();
+
+                if (scan.requiredColumns() != null)
+                    collation = collation.apply(Commons.mapping(scan.requiredColumns(), fieldCnt));
+
+                if (F.isEmpty(collation.getFieldCollations()))
+                    continue;
+
+                IndexConditions idxCond = RexUtils.buildSortedIndexConditions(scan.getCluster(), collation,
+                    op, tbl.getRowType(typeFactory), scan.requiredColumns(), true);
+
+                if (idxCond.lowerBound() != null) {
+                    condAcceptable = true;
+
+                    break;
                 }
-            }.apply(op);
+            }
 
-            if (!conditionFields.intersects(idxsFirstFields))
-                return false;
+            if (!condAcceptable)
+                return condAcceptable;
         }
 
         return true;

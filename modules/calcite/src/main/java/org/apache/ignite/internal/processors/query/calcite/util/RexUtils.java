@@ -168,6 +168,19 @@ public class RexUtils {
         RelDataType rowType,
         ImmutableBitSet requiredColumns
     ) {
+        return buildSortedIndexConditions(cluster, collation, condition, rowType, requiredColumns, false);
+    }
+    /**
+     * Builds index conditions.
+     */
+    public static IndexConditions buildSortedIndexConditions(
+        RelOptCluster cluster,
+        RelCollation collation,
+        RexNode condition,
+        RelDataType rowType,
+        ImmutableBitSet requiredColumns,
+        boolean buildOnlyLower
+    ) {
         if (condition == null)
             return new IndexConditions();
 
@@ -273,10 +286,12 @@ public class RexUtils {
         else
             lower = null;
 
-        if (!F.isEmpty(upper))
-            upperBound = asBound(cluster, upper, rowType, mapping);
-        else
-            upper = null;
+        if (!buildOnlyLower) {
+            if (!F.isEmpty(upper))
+                upperBound = asBound(cluster, upper, rowType, mapping);
+            else
+                upper = null;
+        }
 
         return new IndexConditions(lower, upper, lowerBound, upperBound);
     }
