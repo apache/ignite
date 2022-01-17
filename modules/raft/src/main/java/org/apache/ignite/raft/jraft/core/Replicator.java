@@ -16,6 +16,13 @@
  */
 package org.apache.ignite.raft.jraft.core;
 
+import static java.util.stream.Collectors.toList;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.MetricSet;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -27,11 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.MetricSet;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Node;
 import org.apache.ignite.raft.jraft.Status;
@@ -67,8 +69,6 @@ import org.apache.ignite.raft.jraft.util.Requires;
 import org.apache.ignite.raft.jraft.util.ThreadId;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.internal.ThrowUtil;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Replicator for replicating log entry from leader to followers.
@@ -1599,7 +1599,12 @@ public class Replicator implements ThreadId.OnError {
                 new RpcResponseClosureAdapter<AppendEntriesResponse>() {
                     @Override
                     public void run(final Status status) {
-                        RecycleUtil.recycle(recyclable); // TODO: recycle on send success, not response received IGNITE-14832.
+                        if (status.isOk()) {
+                            // TODO: recycle on send success, not response received IGNITE-14832.
+                            // Also, this closure can be executed when rpcFuture was cancelled, but the request was not sent (meaning
+                            // it's too early to recycle byte buffer)
+                            RecycleUtil.recycle(recyclable);
+                        }
                         onRpcReturned(Replicator.this.id, RequestType.AppendEntries, status, request, getResponse(),
                             seq, v, monotonicSendTimeMs);
                     }
