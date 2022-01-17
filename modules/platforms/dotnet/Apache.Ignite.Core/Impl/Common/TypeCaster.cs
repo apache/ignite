@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -123,91 +122,6 @@ namespace Apache.Ignite.Core.Impl.Common
                 Debug.Assert(toIntMtd != null);
 
                 return Expression.Call(null, toIntMtd, fromParamExpr);
-            }
-        }
-        
-        private enum ByteEnum : byte
-        {
-            Foo = byte.MinValue,
-            Bar = byte.MaxValue
-        }
-        
-        private enum SByteEnum : sbyte
-        {
-            Foo = sbyte.MinValue,
-            Bar = sbyte.MaxValue
-        }
-
-        private enum ShortEnum : short
-        {
-            Foo = short.MinValue,
-            Bar = short.MaxValue
-        }
-
-        private enum UShortEnum : ushort
-        {
-            Foo = ushort.MinValue,
-            Bar = ushort.MaxValue
-        }
-
-        private enum IntEnum
-        {
-            Foo = int.MinValue,
-            Bar = int.MaxValue
-        }
-
-        private enum UIntEnum : uint
-        {
-            Foo = uint.MinValue,
-            Bar = uint.MaxValue
-        }
-
-        private enum LongEnum : long
-        {
-            Foo = long.MinValue,
-            Bar = long.MaxValue
-        }
-
-        private enum ULongEnum : ulong
-        {
-            Foo = ulong.MinValue,
-            Bar = ulong.MaxValue
-        }
-        
-        /// <summary>
-        /// Holds enums declared as System.Enum.
-        /// </summary>
-        #pragma warning disable 659
-        private class EnumsHolder
-        {
-            private Enum EnmByteRaw { get; set; } = ByteEnum.Bar;
-            private Enum EnmUByteRaw { get; set; } = SByteEnum.Foo;
-            private Enum EnmShortRaw { get; set; } = ShortEnum.Bar;
-            private Enum EnmUShortRaw { get; set; } = UShortEnum.Foo;
-            private Enum EnmIntRaw { get; set; } = IntEnum.Bar;
-            private Enum EnmUIntRaw { get; set; } = UIntEnum.Foo;
-            private Enum EnmLongRaw { get; set; } = LongEnum.Bar;
-            private Enum EnmULongRaw { get; set; } = ULongEnum.Bar;
-
-            private Enum[] EnmRawArr { get; set; } = new Enum[]
-            {
-                ByteEnum.Bar, SByteEnum.Foo, ShortEnum.Bar,
-                UShortEnum.Foo, IntEnum.Bar, UIntEnum.Foo, LongEnum.Bar, ULongEnum.Foo
-            };
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
-
-                var other = (EnumsHolder) obj;
-
-                return Equals(EnmByteRaw, other.EnmByteRaw) && Equals(EnmUByteRaw, other.EnmUByteRaw) &&
-                       Equals(EnmShortRaw, other.EnmShortRaw) && Equals(EnmUShortRaw, other.EnmUShortRaw) &&
-                       Equals(EnmIntRaw, other.EnmIntRaw) && Equals(EnmUIntRaw, other.EnmUIntRaw) &&
-                       Equals(EnmLongRaw, other.EnmLongRaw) && Equals(EnmULongRaw, other.EnmULongRaw) &&
-                       Enumerable.SequenceEqual(EnmRawArr, other.EnmRawArr);
             }
         }
     }

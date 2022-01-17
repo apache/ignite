@@ -376,11 +376,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSystemEnumHolders()
         {
-            CheckSerializeDeserialize(new EnumsHolder());
-            CheckSerializeDeserialize(new [] {new EnumsHolder(), new EnumsHolder()});
-            CheckSerializeDeserialize(new EnumsHolder2());
-            CheckSerializeDeserialize(new [] {new EnumsHolder2(), new EnumsHolder2()});
-            CheckSerializeDeserialize(new [] {new EnumsHolder(), new EnumsHolder2()});
+            CheckSerializeDeserialize(new RawEnumsHolder());
+            CheckSerializeDeserialize(new [] {new RawEnumsHolder(), new RawEnumsHolder()});
+            CheckSerializeDeserialize(new RawEnumsHolder2());
+            CheckSerializeDeserialize(new [] {new RawEnumsHolder2(), new RawEnumsHolder2()});
+            CheckSerializeDeserialize(new [] {new RawEnumsHolder(), new RawEnumsHolder2()});
         }
         
         private enum ByteEnum : byte
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Holds enums declared as System.Enum.
         /// </summary>
         #pragma warning disable 659
-        private class EnumsHolder
+        private class RawEnumsHolder
         {
             private Enum EnmByteRaw { get; set; } = ByteEnum.Bar;
             private Enum EnmUByteRaw { get; set; } = SByteEnum.Foo;
@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 if (ReferenceEquals(this, obj)) return true;
                 if (obj.GetType() != this.GetType()) return false;
 
-                var other = (EnumsHolder) obj;
+                var other = (RawEnumsHolder) obj;
 
                 return Equals(EnmByteRaw, other.EnmByteRaw) && Equals(EnmUByteRaw, other.EnmUByteRaw) &&
                        Equals(EnmShortRaw, other.EnmShortRaw) && Equals(EnmUShortRaw, other.EnmUShortRaw) &&
@@ -667,11 +667,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Additionally holds enums holder as field mixed with other simple fields and enums.
         /// </summary>
         #pragma warning disable 659
-        private class EnumsHolder2 : EnumsHolder
+        private class RawEnumsHolder2 : RawEnumsHolder
         {
-            private EnumsHolder EnmHolder { get; set; } = new EnumsHolder();
+            private RawEnumsHolder EnmHolder { get; set; } = new RawEnumsHolder();
 
-            private object Holder { get; set; } = new EnumsHolder();
+            private object Holder { get; set; } = new RawEnumsHolder();
 
             private int IntVal { get; set; } = 1;
 
@@ -687,7 +687,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 if (ReferenceEquals(this, obj)) return true;
                 if (obj.GetType() != this.GetType()) return false;
 
-                var other = (EnumsHolder2) obj;
+                var other = (RawEnumsHolder2) obj;
 
                 return base.Equals(other) && Equals(EnmHolder, other.EnmHolder) && Equals(Holder, other.Holder) &&
                        IntVal == other.IntVal && StringVal == other.StringVal && Equals(EnmVal1, other.EnmVal1) &&
