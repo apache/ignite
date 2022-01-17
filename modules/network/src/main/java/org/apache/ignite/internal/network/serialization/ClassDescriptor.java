@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import static java.util.stream.Collectors.toUnmodifiableMap;
+
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +65,21 @@ public class ClassDescriptor {
      */
     private final boolean isFinal;
 
+    /** Total number of bytes needed to store all primitive fields. */
+    private final int primitiveFieldsDataSize;
+    /** Total number of non-primitive fields. */
+    private final int objectFieldsCount;
+
+    private Map<String, FieldDescriptor> fieldsByName;
+    /**
+     * Offsets into primitive fields data array (which has size {@link #primitiveFieldsDataSize}).
+     * This array is a byte array containing data of all the primitive fields of an object.
+     * (Not to be confused with the offsets used in the context of {@link sun.misc.Unsafe}).
+     */
+    private Object2IntMap<String> primitiveFieldDataOffsets;
+    /** Indices of non-primitive fields in the object fields array. */
+    private Object2IntMap<String> objectFieldIndices;
+
     private final SpecialSerializationMethods serializationMethods;
 
     /**
@@ -78,7 +99,26 @@ public class ClassDescriptor {
         this.serialization = serialization;
         this.isFinal = Modifier.isFinal(clazz.getModifiers());
 
+        primitiveFieldsDataSize = computePrimitiveFieldsDataSize(fields);
+        objectFieldsCount = computeObjectFieldsCount(fields);
+
         serializationMethods = new SpecialSerializationMethodsImpl(this);
+    }
+
+    private static int computePrimitiveFieldsDataSize(List<FieldDescriptor> fields) {
+        int accumulatedBytes = 0;
+        for (FieldDescriptor fieldDesc : fields) {
+            if (fieldDesc.isPrimitive()) {
+                accumulatedBytes += Primitives.widthInBytes(fieldDesc.clazz());
+            }
+        }
+        return accumulatedBytes;
+    }
+
+    private static int computeObjectFieldsCount(List<FieldDescriptor> fields) {
+        return (int) fields.stream()
+                .filter(fieldDesc -> !fieldDesc.isPrimitive())
+                .count();
     }
 
     /**
@@ -288,14 +328,6 @@ public class ClassDescriptor {
         return serializationMethods;
     }
 
-    @Override
-    public String toString() {
-        return "ClassDescriptor{"
-                + "className='" + className() + '\''
-                + ", descriptorId=" + descriptorId
-                + '}';
-    }
-
     /**
      * Returns {@code true} if this descriptor describes same class as the given descriptor.
      *
@@ -304,5 +336,116 @@ public class ClassDescriptor {
      */
     public boolean describesSameClass(ClassDescriptor other) {
         return other.clazz() == clazz();
+    }
+
+    /**
+     * Returns total number of bytes needed to store all primitive fields.
+     *
+     * @return total number of bytes needed to store all primitive fields
+     */
+    public int primitiveFieldsDataSize() {
+        return primitiveFieldsDataSize;
+    }
+
+    /**
+     * Returns total number of object (i.e. non-primitive) fields.
+     *
+     * @return total number of object (i.e. non-primitive) fields
+     */
+    public int objectFieldsCount() {
+        return objectFieldsCount;
+    }
+
+    /**
+     * Return offset into primitive fields data (which has size {@link #primitiveFieldsDataSize()}).
+     * These are different from the offsets used in the context of {@link sun.misc.Unsafe}.
+     *
+     * @param fieldName    primitive field name
+     * @param requiredType field type
+     * @return offset into primitive fields data
+     */
+    public int primitiveFieldDataOffset(String fieldName, Class<?> requiredType) {
+        assert requiredType.isPrimitive();
+
+        if (fieldsByName == null) {
+            fieldsByName = fieldsByNameMap(fields);
+        }
+
+        FieldDescriptor fieldDesc = fieldsByName.get(fieldName);
+        if (fieldDesc == null) {
+            throw new IllegalStateException("Did not find a field with name " + fieldName);
+        }
+        if (fieldDesc.clazz() != requiredType) {
+            throw new IllegalStateException("Field " + fieldName + " has type " + fieldDesc.clazz()
+                    + ", but it was used as " + requiredType);
+        }
+
+        if (primitiveFieldDataOffsets == null) {
+            primitiveFieldDataOffsets = primitiveFieldDataOffsetsMap(fields);
+        }
+
+        assert primitiveFieldDataOffsets.containsKey(fieldName);
+
+        return primitiveFieldDataOffsets.getInt(fieldName);
+    }
+
+    private static Map<String, FieldDescriptor> fieldsByNameMap(List<FieldDescriptor> fields) {
+        return fields.stream()
+                .collect(toUnmodifiableMap(FieldDescriptor::name, Function.identity()));
+    }
+
+    private static Object2IntMap<String> primitiveFieldDataOffsetsMap(List<FieldDescriptor> fields) {
+        Object2IntMap<String> map = new Object2IntOpenHashMap<>();
+
+        int accumulatedOffset = 0;
+        for (FieldDescriptor fieldDesc : fields) {
+            if (fieldDesc.isPrimitive()) {
+                map.put(fieldDesc.name(), accumulatedOffset);
+                accumulatedOffset += Primitives.widthInBytes(fieldDesc.clazz());
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * Returns index of a non-primitive (i.e. object) field in the object fields array.
+     *
+     * @param fieldName object field name
+     * @return index of a non-primitive (i.e. object) field in the object fields array
+     */
+    public int objectFieldIndex(String fieldName) {
+        if (objectFieldIndices == null) {
+            objectFieldIndices = computeObjectFieldIndices(fields);
+        }
+
+        if (!objectFieldIndices.containsKey(fieldName)) {
+            throw new IllegalStateException("Did not find an object field with name " + fieldName);
+        }
+
+        return objectFieldIndices.getInt(fieldName);
+    }
+
+    private Object2IntMap<String> computeObjectFieldIndices(List<FieldDescriptor> fields) {
+        Object2IntMap<String> map = new Object2IntOpenHashMap<>();
+
+        int currentIndex = 0;
+        for (FieldDescriptor fieldDesc : fields) {
+            if (!fieldDesc.isPrimitive()) {
+                map.put(fieldDesc.name(), currentIndex);
+                currentIndex++;
+            }
+        }
+
+        return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "ClassDescriptor{"
+                + "className='" + className() + '\''
+                + ", descriptorId=" + descriptorId
+                + '}';
     }
 }

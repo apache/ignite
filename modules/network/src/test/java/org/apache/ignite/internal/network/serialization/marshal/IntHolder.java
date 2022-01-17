@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import java.util.Objects;
+
 /**
  * Holds an int value.
  */
@@ -25,5 +27,32 @@ class IntHolder {
 
     IntHolder(int value) {
         this.value = value;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        IntHolder intHolder = (IntHolder) o;
+        return value == intHolder.value;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "IntHolder{"
+                + "value=" + value
+                + '}';
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.network.serialization.marshal;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +29,8 @@ import org.apache.ignite.internal.network.serialization.FieldAccessor;
 import org.apache.ignite.internal.network.serialization.FieldDescriptor;
 import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.apache.ignite.internal.network.serialization.SpecialMethodInvocationException;
+import org.apache.ignite.internal.network.serialization.marshal.UosObjectInputStream.UosGetField;
+import org.apache.ignite.internal.network.serialization.marshal.UosObjectOutputStream.UosPutField;
 
 /**
  * (Un)marshals objects that have structure (fields). These are {@link java.io.Serializable}s
@@ -93,17 +94,20 @@ class StructuredObjectMarshaller implements DefaultFieldsReaderWriter {
 
     private void writeWithWriteObject(Object object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
             throws IOException, MarshalException {
+        // Do not close the stream yet!
+        UosObjectOutputStream oos = context.objectOutputStream(output, valueWriter, this);
+
+        UosPutField oldPut = oos.replaceCurrentPutFieldWithNull();
         context.startWritingWithWriteObject(object, descriptor);
 
         try {
-            // Do not close the stream yet!
-            UosObjectOutputStream oos = context.objectOutputStream(output, valueWriter, this);
             descriptor.serializationMethods().writeObject(object, oos);
             oos.flush();
         } catch (SpecialMethodInvocationException e) {
             throw new MarshalException("Cannot invoke writeObject()", e);
         } finally {
             context.endWritingWithWriteObject();
+            oos.restoreCurrentPutFieldTo(oldPut);
         }
     }
 
@@ -191,16 +195,19 @@ class StructuredObjectMarshaller implements DefaultFieldsReaderWriter {
             ClassDescriptor descriptor,
             UnmarshallingContext context
     ) throws IOException, UnmarshalException {
+        // Do not close the stream yet!
+        UosObjectInputStream ois = context.objectInputStream(input, valueReader, this);
+
+        UosGetField oldGet = ois.replaceCurrentGetFieldWithNull();
         context.startReadingWithReadObject(object, descriptor);
 
         try {
-            // Do not close the stream yet!
-            ObjectInputStream ois = context.objectInputStream(input, valueReader, this);
             descriptor.serializationMethods().readObject(object, ois);
         } catch (SpecialMethodInvocationException e) {
             throw new UnmarshalException("Cannot invoke readObject()", e);
         } finally {
             context.endReadingWithReadObject();
+            ois.restoreCurrentGetFieldTo(oldGet);
         }
     }
 

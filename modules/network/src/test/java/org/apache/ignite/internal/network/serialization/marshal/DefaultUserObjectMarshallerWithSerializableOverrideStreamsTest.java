@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import static org.apache.ignite.internal.network.serialization.marshal.Throwables.causalChain;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,13 +61,18 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
 
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
-    /** This is static so that writeObject()/readObject() can easily find it. */
+    /** Reader+writer is static so that writeObject()/readObject() can easily find it. */
     private static ReaderAndWriter<?> readerAndWriter;
 
     /** Static access to the marshaller (for using in parameterized tests). */
     private static UserObjectMarshaller staticMarshaller;
     /** Static access to the registry (for using in parameterized tests). */
     private static ClassDescriptorRegistry staticDescriptorRegistry;
+
+    /** Putter is static so that writeObject() can easily find it. */
+    private static FieldPutter fieldPutter;
+    /** Filler is static so that readObject() can easily find it. */
+    private static FieldFiller fieldFiller;
 
     @BeforeEach
     void initStatics() {
@@ -203,9 +212,6 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
         ).map(Arguments::of);
     }
 
-    // TODO: IGNITE-16240 - implement putFields()/writeFields()
-    // TODO: IGNITE-16240 - implement readFields()
-
     @SuppressWarnings("SameParameterValue")
     private static byte[] readBytes(InputStream is, int count) throws IOException {
         byte[] bytes = new byte[count];
@@ -254,6 +260,155 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
     }
 
     @Test
+    void putFieldsWritesAllPrimitiveTypesAndObjectsSoThatDefaultUnmarshallingReadsThem() throws Exception {
+        fieldPutter = putField -> {
+            putField.put("byteVal", (byte) 101);
+            putField.put("shortVal", (short) 102);
+            putField.put("intVal", 103);
+            putField.put("longVal", (long) 104);
+            putField.put("floatVal", (float) 105);
+            putField.put("doubleVal", (double) 106);
+            putField.put("charVal", 'z');
+            putField.put("booleanVal", true);
+            putField.put("objectVal", new IntHolder(142));
+        };
+
+        WithPutFields unmarshalled = marshalAndUnmarshalNonNull(new WithPutFields());
+
+        assertThat(unmarshalled.byteVal, is((byte) 101));
+        assertThat(unmarshalled.shortVal, is((short) 102));
+        assertThat(unmarshalled.intVal, is(103));
+        assertThat(unmarshalled.longVal, is((long) 104));
+        assertThat(unmarshalled.floatVal, is((float) 105));
+        assertThat(unmarshalled.doubleVal, is((double) 106));
+        assertThat(unmarshalled.charVal, is('z'));
+        assertThat(unmarshalled.booleanVal, is(true));
+        assertThat(unmarshalled.objectVal, is(new IntHolder(142)));
+    }
+
+    @Test
+    void putFieldsWritesDefaultValuesForFieldsNotSpecifiedExplicitly() throws Exception {
+        fieldPutter = putField -> {
+            // do not put anything -> defaults should be written
+        };
+
+        WithPutFields unmarshalled = marshalAndUnmarshalNonNull(new WithPutFields());
+
+        assertThat(unmarshalled.byteVal, is((byte) 0));
+        assertThat(unmarshalled.shortVal, is((short) 0));
+        assertThat(unmarshalled.intVal, is(0));
+        assertThat(unmarshalled.longVal, is((long) 0));
+        assertThat(unmarshalled.floatVal, is((float) 0));
+        assertThat(unmarshalled.doubleVal, is((double) 0));
+        assertThat(unmarshalled.charVal, is('\0'));
+        assertThat(unmarshalled.booleanVal, is(false));
+        assertThat(unmarshalled.objectVal, is(nullValue()));
+    }
+
+    @Test
+    void putFieldsThrowsForAnUnknownFieldAccess() {
+        fieldPutter = putField -> putField.put("no-such-field", 1);
+
+        Exception exception = assertThrows(Exception.class, () -> marshalAndUnmarshalNonNull(new WithPutFields()));
+        assertThat(causalChain(exception), hasItem(hasProperty("message", equalTo("Did not find a field with name no-such-field"))));
+    }
+
+    @Test
+    void readFieldsReadsAllPrimitiveTypesAndObjectsWrittenWithDefaultMarshalling() throws Exception {
+        WithReadFields original = new WithReadFields();
+        original.byteVal = (byte) 101;
+        original.shortVal = (short) 102;
+        original.intVal = 103;
+        original.longVal = (long) 104;
+        original.floatVal = (float) 105;
+        original.doubleVal = (double) 106;
+        original.charVal = 'z';
+        original.booleanVal = true;
+        original.objectVal = new IntHolder(142);
+
+        fieldFiller = (getField, target) -> {
+            target.byteVal = getField.get("byteVal", (byte) 201);
+            target.shortVal = getField.get("shortVal", (short) 202);
+            target.intVal = getField.get("intVal", 203);
+            target.longVal = getField.get("longVal", (long) 204);
+            target.floatVal = getField.get("floatVal", (float) 205);
+            target.doubleVal = getField.get("doubleVal", (double) 206);
+            target.charVal = getField.get("charVal", '!');
+            target.booleanVal = getField.get("booleanVal", false);
+            target.objectVal = getField.get("objectVal", new IntHolder(242));
+        };
+
+        WithReadFields unmarshalled = marshalAndUnmarshalNonNull(original);
+
+        assertThat(unmarshalled.byteVal, is((byte) 101));
+        assertThat(unmarshalled.shortVal, is((short) 102));
+        assertThat(unmarshalled.intVal, is(103));
+        assertThat(unmarshalled.longVal, is((long) 104));
+        assertThat(unmarshalled.floatVal, is((float) 105));
+        assertThat(unmarshalled.doubleVal, is((double) 106));
+        assertThat(unmarshalled.charVal, is('z'));
+        assertThat(unmarshalled.booleanVal, is(true));
+        assertThat(unmarshalled.objectVal, is(new IntHolder(142)));
+    }
+
+    @Test
+    void whenReadFieldsIsUsedTheDefaultMechanismFillsNoFieldsItself() throws Exception {
+        fieldFiller = (getField, target) -> {
+            // do not fill anything, so default values must remain
+        };
+
+        WithReadFields unmarshalled = marshalAndUnmarshalNonNull(new WithReadFields());
+
+        assertThat(unmarshalled.byteVal, is((byte) 0));
+        assertThat(unmarshalled.shortVal, is((short) 0));
+        assertThat(unmarshalled.intVal, is(0));
+        assertThat(unmarshalled.longVal, is((long) 0));
+        assertThat(unmarshalled.floatVal, is((float) 0));
+        assertThat(unmarshalled.doubleVal, is((double) 0));
+        assertThat(unmarshalled.charVal, is('\0'));
+        assertThat(unmarshalled.booleanVal, is(false));
+        assertThat(unmarshalled.objectVal, is(nullValue()));
+    }
+
+    @Test
+    void getFieldsThrowsForAnUnknownFieldAccess() {
+        fieldFiller = (getField, target) -> getField.get("no-such-field", 1);
+
+        Exception exception = assertThrows(Exception.class, () -> marshalAndUnmarshalNonNull(new WithReadFields()));
+        assertThat(causalChain(exception), hasItem(hasProperty("message", equalTo("Did not find a field with name no-such-field"))));
+    }
+
+    @Test
+    void getFieldAlwaysReturnsFalseForDefaulted() {
+        // TODO: IGNITE-15948 - test that defaulted() works as intended when it's ready
+
+        fieldFiller = (getField, target) -> {
+            assertFalse(getField.defaulted("byteVal"));
+        };
+
+        assertDoesNotThrow(() -> marshalAndUnmarshalNonNull(new WithReadFields()));
+    }
+
+    @Test
+    void nestedPutReadFieldsAreSupported() throws Exception {
+        NestHostWithPutGetFields unmarshalled = marshalAndUnmarshalNonNull(new NestHostWithPutGetFields());
+
+        assertThat(unmarshalled.intValue, is(2));
+        assertThat(unmarshalled.objectValue, is(12));
+        assertThat(unmarshalled.nested.intValue, is(1));
+        assertThat(unmarshalled.nested.objectValue, is(11));
+    }
+
+    @Test
+    void readFieldsObjectStreamClassIsAccessible() {
+        fieldFiller = (getField, target) -> {
+            assertThat(getField.getObjectStreamClass().getName(), is(equalTo(WithReadFields.class.getName())));
+        };
+
+        assertDoesNotThrow(() -> marshalAndUnmarshalNonNull(new WithReadFields()));
+    }
+
+    @Test
     void supportsFlushInsideWriteObject() {
         readerAndWriter = new ReaderAndWriter<>(ObjectOutputStream::flush, ois -> null);
 
@@ -265,7 +420,7 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
     }
 
     @Test
-    void resetThrowsInsideWriteObject() {
+    void resetErrorsOutInsideWriteObject() {
         readerAndWriter = new ReaderAndWriter<>(ObjectOutputStream::reset, ois -> null);
 
         assertThrows(MarshalException.class, this::marshalAndUnmarshalWithCustomizableOverride);
@@ -436,6 +591,103 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
         @SuppressWarnings("unchecked")
         private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
             value = (T) readerAndWriter.reader.readFrom(ois);
+        }
+    }
+
+    private interface FieldPutter {
+        void putWith(ObjectOutputStream.PutField putField);
+    }
+
+    @SuppressWarnings("FieldMayBeFinal")
+    private static class WithPutFields implements Serializable {
+        private byte byteVal = 1;
+        private short shortVal = 2;
+        private int intVal = 3;
+        private long longVal = 4;
+        private float floatVal = 5;
+        private double doubleVal = 6;
+        private char charVal = 'a';
+        private boolean booleanVal = true;
+        private Object objectVal = new IntHolder(42);
+
+        private void writeObject(ObjectOutputStream oos) throws IOException {
+            ObjectOutputStream.PutField putField = oos.putFields();
+            fieldPutter.putWith(putField);
+            oos.writeFields();
+        }
+
+        private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+            ois.defaultReadObject();
+        }
+    }
+
+    private interface FieldFiller {
+        void fillWith(ObjectInputStream.GetField getField, WithReadFields target) throws IOException;
+    }
+
+    private static class WithReadFields implements Serializable {
+        private byte byteVal = 1;
+        private short shortVal = 2;
+        private int intVal = 3;
+        private long longVal = 4;
+        private float floatVal = 5;
+        private double doubleVal = 6;
+        private char charVal = 'a';
+        private boolean booleanVal = true;
+        private Object objectVal = new IntHolder(42);
+
+        private void writeObject(ObjectOutputStream oos) throws IOException {
+            oos.defaultWriteObject();
+        }
+
+        private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+            ObjectInputStream.GetField getField = ois.readFields();
+            fieldFiller.fillWith(getField, this);
+        }
+    }
+
+    private static class NestedWithPutFields implements Serializable {
+        private int intValue = 1;
+        private Object objectValue = 11;
+
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            ObjectOutputStream.PutField putField = stream.putFields();
+
+            putField.put("intValue", intValue);
+            putField.put("objectValue", objectValue);
+
+            stream.writeFields();
+        }
+
+        private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+            ObjectInputStream.GetField getField = stream.readFields();
+
+            intValue = getField.get("intValue", -1);
+            objectValue = getField.get("objectValue", null);
+        }
+    }
+
+    private static class NestHostWithPutGetFields implements Serializable {
+        private int intValue = 2;
+        private Object objectValue = 12;
+        private NestedWithPutFields nested = new NestedWithPutFields();
+
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            ObjectOutputStream.PutField putField = stream.putFields();
+
+            putField.put("intValue", intValue);
+            putField.put("objectValue", objectValue);
+            putField.put("nested", nested);
+
+            stream.writeFields();
+        }
+
+        private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+            ObjectInputStream.GetField getField = stream.readFields();
+
+            intValue = getField.get("intValue", -1);
+            objectValue = getField.get("objectValue", null);
+            nested = (NestedWithPutFields) getField.get("nested", null);
         }
     }
 

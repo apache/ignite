@@ -100,6 +100,27 @@ public class FieldDescriptor {
     }
 
     /**
+     * Returns {@code true} if this field has a primitive type.
+     *
+     * @return {@code true} if this field has a primitive type
+     */
+    public boolean isPrimitive() {
+        return clazz.isPrimitive();
+    }
+
+    /**
+     * Returns width in bytes (that is, how many bytes a value of the field type takes) of the field type.
+     * If the field type is not primitive, throws an exception.
+     *
+     * @return width in bytes
+     */
+    public int primitiveWidthInBytes() {
+        assert isPrimitive();
+
+        return Primitives.widthInBytes(clazz);
+    }
+
+    /**
      * Returns {@link FieldAccessor} for this field.
      *
      * @return {@link FieldAccessor} for this field
