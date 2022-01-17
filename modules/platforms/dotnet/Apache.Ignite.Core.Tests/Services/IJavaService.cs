@@ -209,6 +209,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         object testRoundtrip(object x);
+        
+        /// <summary> Returns number of measured methods (or certain method) of this service in its metrics. </summary>
+        int testNumberOfInvocations(string svcName, string histName = null);
 
         /** */
         void sleep(long delayMs);

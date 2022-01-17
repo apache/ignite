@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Services
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
 
@@ -63,6 +64,11 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
         public IClusterNodeFilter NodeFilter { get; set; }
+        
+        /// <summary>
+        /// Enables or disables service statistics.
+        /// </summary>
+        public bool StatisticsEnabled { get; set; }
 
         /// <summary>
         /// Serializes the Service configuration using IBinaryRawWriter
@@ -83,6 +89,8 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
+
+            w.WriteBoolean(StatisticsEnabled);
         }
 
         /// <summary>
@@ -125,6 +133,8 @@ namespace Apache.Ignite.Core.Services
             {
                 // Ignore exceptions in user deserealization code.
             }
+
+            StatisticsEnabled = r.ReadBoolean();
         }
     }
 }

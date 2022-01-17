@@ -625,6 +625,12 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return x;
         }
+        
+        /** <inheritDoc /> */
+        public int testNumberOfInvocations(string svcName, string histName = null)
+        {
+            throw new NotImplementedException();
+        }
 
         /** <inheritDoc /> */
         public object contextAttribute(string name)
