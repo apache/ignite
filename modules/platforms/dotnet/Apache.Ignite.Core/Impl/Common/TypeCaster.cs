@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
             {
-                string mtdName = "";
+                var mtdName = "";
 
                 if (toType == typeof(byte))
                     mtdName = "ToByte";
