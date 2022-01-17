@@ -925,7 +925,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         subSelects.add("-(SELECT %s FROM dep WHERE id = 1)");
         subSelects.add("(SELECT %s FROM dep WHERE id = 1) = 2");
 
-        for (String param : Lists.newArrayList("1", "2")) {
+        for (String param : Arrays.asList("1", "2")) {
             for (String subSelect : subSelects) {
                 String formattedSubSelect = String.format(subSelect, param);
 
