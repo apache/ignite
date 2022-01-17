@@ -607,7 +607,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
-            long cacheIdAndPartition = ((long)part << 32) + cacheId;
+            long cacheIdAndPartition = ((long)part << 32) | cacheId;
 
             gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
@@ -681,7 +681,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion ver = fut.topologyVersion();
 
         if (ver != null) {

@@ -6117,6 +6117,25 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Provides all interfaces of {@code cls} including inherited ones. Excludes duplicated ones in case of multiple
+     * inheritance.
+     *
+     * @param cls Class to search for interfaces.
+     * @return Collection of interfaces of {@code cls}.
+     */
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        while (cls != null) {
+            interfaces.addAll(Arrays.asList(cls.getInterfaces()));
+
+            cls = cls.getSuperclass();
+        }
+
+        return interfaces;
+    }
+
+    /**
      * Gets simple class name taking care of empty names.
      *
      * @param cls Class to get the name for.

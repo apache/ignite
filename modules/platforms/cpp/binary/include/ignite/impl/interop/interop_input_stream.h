@@ -27,16 +27,31 @@ namespace ignite
         namespace interop
         {
             /**
+             * Helper class.
+             */
+            class InputStreamHelper;
+
+            /**
              * Interop input stream implementation.
              */
-            class IGNITE_IMPORT_EXPORT InteropInputStream {
+            class IGNITE_IMPORT_EXPORT InteropInputStream
+            {
+                friend class InputStreamHelper;
             public:
                 /**
                  * Constructor.
                  *
                  * @param mem Memory.
                  */
-                explicit InteropInputStream(InteropMemory* mem);
+                explicit InteropInputStream(const InteropMemory* mem);
+
+                /**
+                 * Constructor.
+                 *
+                 * @param mem Memory.
+                 * @param len Length. Should be <= mem->Length().
+                 */
+                explicit InteropInputStream(const InteropMemory* mem, int32_t len);
 
                 /**
                  * Read signed 8-byte int.
@@ -51,7 +66,7 @@ namespace ignite
                  * @param pos Position.
                  * @return Value.
                  */
-                int32_t ReadInt8(int32_t pos);
+                int8_t ReadInt8(int32_t pos);
 
                 /**
                  * Read signed 8-byte int array.
@@ -89,7 +104,7 @@ namespace ignite
                  * @param pos Position.
                  * @return Value.
                  */
-                int32_t ReadInt16(int32_t pos);
+                int16_t ReadInt16(int32_t pos);
 
                 /**
                  * Read signed 16-byte int array.
@@ -219,17 +234,17 @@ namespace ignite
                  * Get memory.
                  * @return Underlying memory.
                  */
-                InteropMemory* GetMemory()
+                const InteropMemory* GetMemory()
                 {
                     return mem;
                 }
 
             private:
                 /** Memory. */
-                InteropMemory* mem; 
+                const InteropMemory* mem;
 
                 /** Pointer to data. */
-                int8_t* data;
+                const int8_t* data;
 
                 /** Length. */
                 int len;
@@ -251,7 +266,7 @@ namespace ignite
                  * @param off Offset.
                  * @param cnt Amount of data to copy.
                  */
-                void CopyAndShift(int8_t* dest, int32_t off, int32_t cnt);
+                void CopyAndShift(void* dest, int32_t off, int32_t cnt);
 
                 /**
                  * Shift stream to the right.

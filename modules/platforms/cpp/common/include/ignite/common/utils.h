@@ -594,7 +594,7 @@ namespace ignite
         };
 
         /**
-         * Deinit guard class template.
+         * De-init guard class template.
          *
          * Upon destruction calls provided deinit function on provided instance.
          *
@@ -655,6 +655,57 @@ namespace ignite
          * @return Full name.
          */
         IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
+
+        /**
+         * Get hex dump of binary data in string form.
+         * @param data Data.
+         * @param count Number of bytes.
+         * @return Hex dump string.
+         */
+        IGNITE_IMPORT_EXPORT std::string HexDump(const void* data, size_t count);
+
+        /**
+         * Fibonacci sequence iterator.
+         *
+         * @tparam S Sequence length. Should be >= 2.
+         */
+        template<size_t S>
+        class FibonacciSequence
+        {
+        public:
+            /** Size. */
+            static const size_t size = S > 2 ? S : 2;
+
+            /**
+             * Constructor.
+             */
+            FibonacciSequence()
+            {
+                sequence[0] = 0;
+                sequence[1] = 1;
+
+                for (size_t i = 2; i < size; ++i)
+                    sequence[i] = sequence[i - 1] + sequence[i - 2];
+            }
+
+            /**
+             * Get n-th or max member of sequence.
+             *
+             * @param n Member position.
+             * @return N-th member of sequence if n < size, or max member.
+             */
+            size_t GetValue(size_t n) const
+            {
+                if (n < size)
+                    return sequence[n];
+
+                return sequence[size-1];
+            }
+
+        private:
+            /** Sequence of fibonacci numbers */
+            size_t sequence[size];
+        };
     }
 }
 

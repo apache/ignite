@@ -78,7 +78,6 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <jackson.version>2.12.4</jackson.version>
-        <jackson1.version>1.9.13</jackson1.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.20.0-GA</javassist.version>
@@ -100,12 +99,13 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.17.0</log4j.version>
+        <log4j.version>2.17.1</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
         <mysql.connector.version>8.0.26</mysql.connector.version>

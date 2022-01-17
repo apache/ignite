@@ -18,6 +18,8 @@
 package org.apache.ignite.client;
 
 import java.util.Collection;
+import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.services.ServiceCallContext;
 
 /**
  * Thin client services facade.
@@ -72,4 +74,38 @@ public interface ClientServices {
      * @return Metadata about all deployed services in the grid.
      */
     public ClientServiceDescriptor serviceDescriptor(String name);
+
+    /**
+     * Gets a remote handle on the service with the specified caller context.
+     * <p>
+     * Note: There are no guarantees that each method invocation for the same proxy will always contact the same remote
+     * service (on the same remote node).
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param callCtx Service call context.
+     * @param <T> Service type.
+     * @return Proxy over remote service.
+     * @see ServiceCallContext
+     */
+    @IgniteExperimental
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx);
+
+    /**
+     * Gets a remote handle on the service with the specified caller context and timeout.
+     * <p>
+     * Note: There are no guarantees that each method invocation for the same proxy will always contact the same remote
+     * service (on the same remote node).
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param callCtx Service call context.
+     * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time.
+     * @param <T> Service type.
+     * @return Proxy over remote service.
+     * @see ServiceCallContext
+     */
+    @IgniteExperimental
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx, long timeout);
 }

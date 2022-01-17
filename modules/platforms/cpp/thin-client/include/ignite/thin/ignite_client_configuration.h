@@ -39,6 +39,9 @@ namespace ignite
         class IgniteClientConfiguration
         {
         public:
+            /** Connection operation timeout in milliseconds. */
+            enum { DEFAULT_CONNECTION_TIMEOUT = 20000 };
+
             /**
              * Default constructor.
              *
@@ -47,7 +50,8 @@ namespace ignite
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
                 partitionAwareness(true),
-                connectionsLimit(0)
+                connectionsLimit(0),
+                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
             {
                 // No-op.
             }
@@ -70,7 +74,7 @@ namespace ignite
              *
              * For example: "localhost,example.com:12345,127.0.0.1:10800..10900,192.168.3.80:5893".
              *
-             *  @param endPoints Addressess of the remote servers to connect.
+             *  @param endPoints Addresses of the remote servers to connect.
              */
             void SetEndPoints(const std::string& endPoints)
             {
@@ -262,6 +266,34 @@ namespace ignite
                 connectionsLimit = limit;
             }
 
+            /**
+             * Get connection timeout.
+             *
+             * Used as a timeout for any operation performed over TCP sockets.
+             *
+             * Zero value means that there is no timeout.
+             *
+             * The default value is @c DEFAULT_CONNECTION_TIMEOUT.
+             *
+             * @return Connection timeout in milliseconds.
+             */
+            int32_t GetConnectionTimeout() const
+            {
+                return connectionTimeout;
+            }
+
+            /**
+             * Set connection timeout.
+             *
+             * @see GetConnectionTimeout for details.
+             *
+             * @param timeout Connection timeout in milliseconds to set.
+             */
+            void SetConnectionTimeout(int32_t timeout)
+            {
+                connectionTimeout = timeout;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -289,6 +321,9 @@ namespace ignite
 
             /** Active connections limit. */
             uint32_t connectionsLimit;
+
+            /** Connection timeout in milliseconds. */
+            int32_t connectionTimeout;
         };
     }
 }
