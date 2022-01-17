@@ -17,6 +17,11 @@
 
 package org.apache.ignite.client;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Ignite client configuration.
  */
@@ -82,4 +87,19 @@ public interface IgniteClientConfiguration {
      * @return Reconnect throttling retries.
      */
     int reconnectThrottlingRetries();
+
+    /**
+     * Gets the async continuation executor.
+     *
+     * <p>When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     *
+     * <p>When async client operation completes, corresponding {@link java.util.concurrent.CompletableFuture} continuations
+     * (such as {@link java.util.concurrent.CompletableFuture#thenApply(Function)}) will be invoked using this executor.
+     *
+     * <p>Server responses are handled by a dedicated network thread. To ensure optimal performance,
+     * this thread should not perform any extra work, so user-defined continuations are offloaded to the specified executor.
+     *
+     * @return Executor for async continuations.
+     */
+    @Nullable Executor asyncContinuationExecutor();
 }

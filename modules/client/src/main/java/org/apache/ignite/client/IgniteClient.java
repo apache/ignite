@@ -25,6 +25,9 @@ import static org.apache.ignite.internal.client.ClientUtils.sync;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.IgniteClientConfigurationImpl;
 import org.apache.ignite.internal.client.TcpIgniteClient;
@@ -69,6 +72,9 @@ public interface IgniteClient extends Ignite {
         /** Reconnect throttling retries. */
         private int reconnectThrottlingRetries = DFLT_RECONNECT_THROTTLING_RETRIES;
 
+        /** Async continuation executor. */
+        private Executor asyncContinuationExecutor;
+
         /**
          * Sets the addresses of Ignite server nodes within a cluster. An address can be an IP address or a hostname, with or without port.
          * If port is not set then Ignite will generate multiple addresses for default port range. See {@link
@@ -80,7 +86,7 @@ public interface IgniteClient extends Ignite {
         public Builder addresses(String... addrs) {
             Objects.requireNonNull(addrs, "addrs is null");
 
-            addresses = addrs;
+            addresses = addrs.clone();
 
             return this;
         }
@@ -167,6 +173,26 @@ public interface IgniteClient extends Ignite {
         }
 
         /**
+         * Sets the async continuation executor.
+         *
+         * <p>When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+         *
+         * <p>When async client operation completes, corresponding {@link java.util.concurrent.CompletableFuture} continuations
+         * (such as {@link java.util.concurrent.CompletableFuture#thenApply(Function)}) will be invoked using this executor.
+         *
+         * <p>Server responses are handled by a dedicated network thread. To ensure optimal performance,
+         * this thread should not perform any extra work, so user-defined continuations are offloaded to the specified executor.
+         *
+         * @param asyncContinuationExecutor Async continuation executor.
+         * @return This instance.
+         */
+        public Builder asyncContinuationExecutor(Executor asyncContinuationExecutor) {
+            this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+            return this;
+        }
+
+        /**
          * Builds the client.
          *
          * @return Ignite client.
@@ -187,7 +213,8 @@ public interface IgniteClient extends Ignite {
                     retryLimit,
                     connectTimeout,
                     reconnectThrottlingPeriod,
-                    reconnectThrottlingRetries);
+                    reconnectThrottlingRetries,
+                    asyncContinuationExecutor);
 
             return TcpIgniteClient.startAsync(cfg);
         }

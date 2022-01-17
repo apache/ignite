@@ -41,7 +41,7 @@ public abstract class AbstractClientTest {
 
     protected static Ignite server;
 
-    protected static Ignite client;
+    protected static IgniteClient client;
 
     protected static int serverPort;
 
@@ -86,7 +86,7 @@ public abstract class AbstractClientTest {
      * @param addrs Addresses.
      * @return Client.
      */
-    public static Ignite startClient(String... addrs) {
+    public static IgniteClient startClient(String... addrs) {
         if (addrs == null || addrs.length == 0) {
             addrs = new String[]{"127.0.0.1:" + serverPort};
         }

@@ -90,7 +90,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) {
         validateConfiguration(cfg);
 
-        asyncContinuationExecutor = ForkJoinPool.commonPool();
+        asyncContinuationExecutor = cfg.clientConfiguration().asyncContinuationExecutor() == null
+                ? ForkJoinPool.commonPool()
+                : cfg.clientConfiguration().asyncContinuationExecutor();
 
         connectTimeout = cfg.clientConfiguration().connectTimeout();
 

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.client;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.client.IgniteClientAddressFinder;
 import org.apache.ignite.client.IgniteClientConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Immutable client configuration.
@@ -42,13 +44,17 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
     /** Reconnect throttling retries. */
     private final int reconnectThrottlingRetries;
 
+    /** Async continuation executor. */
+    private final Executor asyncContinuationExecutor;
+
     /**
      * Constructor.
      *
-     * @param addressFinder  Address finder.
-     * @param addresses      Addresses.
-     * @param retryLimit     Retry limit.
-     * @param connectTimeout Socket connect timeout.
+     * @param addressFinder             Address finder.
+     * @param addresses                 Addresses.
+     * @param retryLimit                Retry limit.
+     * @param connectTimeout            Socket connect timeout.
+     * @param asyncContinuationExecutor Async continuation executor.
      */
     public IgniteClientConfigurationImpl(
             IgniteClientAddressFinder addressFinder,
@@ -56,14 +62,18 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
             int retryLimit,
             long connectTimeout,
             long reconnectThrottlingPeriod,
-            int reconnectThrottlingRetries
-    ) {
+            int reconnectThrottlingRetries,
+            Executor asyncContinuationExecutor) {
         this.addressFinder = addressFinder;
+
+        //noinspection AssignmentOrReturnOfFieldWithMutableType (cloned in Builder).
         this.addresses = addresses;
+
         this.retryLimit = retryLimit;
         this.connectTimeout = connectTimeout;
         this.reconnectThrottlingPeriod = reconnectThrottlingPeriod;
         this.reconnectThrottlingRetries = reconnectThrottlingRetries;
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
     }
 
     /** {@inheritDoc} */
@@ -100,5 +110,11 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
     @Override
     public int reconnectThrottlingRetries() {
         return reconnectThrottlingRetries;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nullable Executor asyncContinuationExecutor() {
+        return asyncContinuationExecutor;
     }
 }
