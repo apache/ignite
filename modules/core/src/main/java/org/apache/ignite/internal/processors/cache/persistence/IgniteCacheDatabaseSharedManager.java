@@ -1103,7 +1103,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         while (iter.hasNext())
             iter.next();
 
-        cctx.wal().resumeLogging(iter.lastRead().orElse(null));
+        WALPointer ptr = iter.lastRead().orElse(null);
+
+        if (ptr != null)
+            ptr = ptr.next();
+
+        cctx.wal().resumeLogging(ptr);
     }
 
     /**
