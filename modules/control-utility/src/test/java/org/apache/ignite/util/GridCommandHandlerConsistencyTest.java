@@ -102,7 +102,6 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(null);
-        cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
 
         return cfg;
     }
