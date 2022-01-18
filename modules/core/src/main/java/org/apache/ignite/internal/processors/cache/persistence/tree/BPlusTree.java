@@ -101,7 +101,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * <p/>
  * Every page in the tree contains a list of <i>items</i>. Item is just a fixed-size binary payload.
  * Inner nodes and leaves may have different item sizes. There's a limit on how many items each page can hold.
- * It is described by a {@link BPlusIO#getMaxCount(long, int)} method is the corresponding IO. There should be no empty
+ * It is defined by a {@link BPlusIO#getMaxCount(long, int)} method of the corresponding IO. There should be no empty
  * pages in trees, so it's expected to have from {@code 1} to {@code max} items in every page.
  * <p/>
  * Items might have different meaning depending on the type of the page. In case of leaves, every item must describe a
@@ -110,7 +110,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * {@link #compare(BPlusIO, long, int, Object)} method. Specifics of the data stored in items are defined in the
  * implementation and generally don't matter.
  * <p/>
- * All pages in the tree are devided into levels. Leaves are always at the level {@code 0}. Levels of inner pages are
+ * All pages in the tree are divided into levels. Leaves are always at the level {@code 0}. Levels of inner pages are
  * thus positive. Each level represents a singly linked list - each page has a link to the <i>forward</i> page at the
  * same level. It can be retrieved by calling {@link BPlusIO#getForward(long)}. This link must be a zero if there's no
  * forward page. Forward links on level {@code 0} allows iterating trees keys and values effectively without traversing
