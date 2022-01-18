@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -429,16 +430,16 @@ public class TraitUtils {
 
     /** */
     private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
-        ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> out = new ImmutableSet.Builder<>();
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
         fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
-        return out.build();
+        return out;
     }
 
     /** */
     private static boolean fillRecursive(
         RelTraitSet outTraits,
         List<List<RelTraitSet>> inTraits,
-        ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> result,
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> result,
         RelTraitSet[] combination,
         int idx
     ) throws ControlFlowException

@@ -170,7 +170,7 @@ public class RexUtils {
     ) {
         return buildSortedIndexConditions(cluster, collation, condition, rowType, requiredColumns, false);
     }
-    
+
     /**
      * Builds index conditions.
      */
