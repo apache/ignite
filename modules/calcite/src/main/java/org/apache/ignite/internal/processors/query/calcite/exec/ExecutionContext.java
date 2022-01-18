@@ -119,7 +119,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         expressionFactory = new ExpressionFactoryImpl<>(
             this,
             qctx.typeFactory(),
-            qctx.config().getParserConfig().conformance()
+            qctx.config().getParserConfig().conformance(),
+            qctx.rexBuilder()
         );
     }
 

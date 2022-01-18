@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -172,6 +173,22 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         return messageService().alive(nodeId);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onOutboundExchangeFinished(UUID qryId, long exchangeId) {
+        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+
+        if (qry != null)
+            qry.onOutboundExchangeFinished(exchangeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId) {
+        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+
+        if (qry != null)
+            qry.onInboundExchangeFinished(nodeId, exchangeId);
+    }
+
     /** */
     protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
         Collection<Inbox<?>> inboxes = mailboxRegistry().inboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
@@ -196,9 +213,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (qry != null)
             qry.cancel();
         else {
-            log.warning("Stale query close message received: [" +
-                "nodeId=" + nodeId +
-                ", queryId=" + msg.queryId() + "]");
+            if (log.isDebugEnabled()) {
+                log.debug("Stale query close message received: [" +
+                    "nodeId=" + nodeId +
+                    ", queryId=" + msg.queryId() + "]");
+            }
         }
     }
 
