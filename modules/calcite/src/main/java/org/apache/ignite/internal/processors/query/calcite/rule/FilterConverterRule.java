@@ -48,8 +48,9 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalFilter rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
+
+        RelTraitSet traits = cluster
+            .traitSetOf(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single());
 
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());

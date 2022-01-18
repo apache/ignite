@@ -220,10 +220,11 @@ public enum PlannerPhase {
                     LogicalOrToUnionRule.FILTER_INSTANCE,
                     LogicalOrToUnionRule.SCAN_INSTANCE,
 
+                    // TODO: https://issues.apache.org/jira/browse/IGNITE-16334 join rules ordering is significant here.
+                    MergeJoinConverterRule.INSTANCE,
                     CorrelatedNestedLoopJoinRule.INSTANCE,
                     CorrelateToNestedLoopRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
-                    MergeJoinConverterRule.INSTANCE,
 
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
