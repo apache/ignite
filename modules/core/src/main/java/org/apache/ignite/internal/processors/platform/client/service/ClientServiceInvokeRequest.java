@@ -27,12 +27,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
@@ -42,6 +45,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 
 /**
  * Request to invoke service method.
@@ -80,12 +85,16 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Objects reader. */
     private final BinaryRawReaderEx reader;
 
+    /** Service call context attributes. */
+    private final Map<String, Object> callAttrs;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
+     * @param protocolCtx Protocol context.
      */
-    public ClientServiceInvokeRequest(BinaryReaderExImpl reader) {
+    public ClientServiceInvokeRequest(BinaryReaderExImpl reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
         name = reader.readString();
@@ -126,6 +135,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             args[i] = reader.readObjectDetached();
         }
 
+        callAttrs = protocolCtx.isFeatureSupported(SERVICE_INVOKE_CALLCTX) ? reader.readMap() : null;
+
         reader.in().position(argsStartPos);
     }
 
@@ -152,9 +163,10 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
             if (PlatformService.class.isAssignableFrom(svcCls)) {
                 // Never deserialize platform service arguments and result: may contain platform-only types.
-                PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
+                PlatformService proxy =
+                    ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, false, timeout, true);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), false, args, null);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args, callAttrs);
             }
             else {
                 // Deserialize Java service arguments when not in keepBinary mode.
@@ -168,13 +180,14 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 }
 
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
-                    ctx.kernalContext(), null);
+                    ctx.kernalContext(), null, true);
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                PlatformServices.convertArrayArgs(args, method);
+                if (!BinaryArray.useBinaryArrays())
+                    PlatformServices.convertArrayArgs(args, method);
 
-                res = proxy.invokeMethod(method, args, null);
+                res = proxy.invokeMethod(method, args, callAttrs);
             }
 
             return new ClientObjectResponse(requestId(), res);
@@ -207,7 +220,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      * @param ctx Connection context.
      * @param name Service name.
      */
-    private static ServiceDescriptor findServiceDescriptor(ClientConnectionContext ctx, String name) {
+    public static ServiceDescriptor findServiceDescriptor(ClientConnectionContext ctx, String name) {
         for (ServiceDescriptor desc : ctx.kernalContext().service().serviceDescriptors()) {
             if (name.equals(desc.name()))
                 return desc;

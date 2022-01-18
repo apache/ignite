@@ -28,6 +28,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -41,7 +43,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -50,6 +51,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.IgniteServicesImpl.DFLT_TIMEOUT;
 
 /**
  * Interop services.
@@ -104,10 +107,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
 
     /** */
-    private static final byte PLATFORM_JAVA = 0;
+    public static final byte PLATFORM_JAVA = 0;
 
     /** */
-    private static final byte PLATFORM_DOTNET = 1;
+    public static final byte PLATFORM_DOTNET = 1;
 
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
@@ -384,9 +387,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                     throw new IgniteException("Failed to find deployed service: " + name);
 
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-                    ? services.serviceProxy(name, PlatformService.class, sticky)
+                    ? ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, sticky, DFLT_TIMEOUT, true)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                        platformCtx.kernalContext(), null);
+                        platformCtx.kernalContext(), null, true);
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -624,10 +627,11 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
-                convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy)
-                    .invokeMethod(mtd, args, callAttrs == null ? null : new ServiceCallContextImpl(callAttrs));
+                if (!BinaryArray.useBinaryArrays())
+                    convertArrayArgs(args, mtd);
+
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, callAttrs);
             }
         }
 

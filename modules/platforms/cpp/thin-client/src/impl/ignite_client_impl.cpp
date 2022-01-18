@@ -41,7 +41,9 @@ namespace ignite
 
             IgniteClientImpl::~IgniteClientImpl()
             {
-                // No-op.
+                DataRouter* router0 = router.Get();
+                if (router0)
+                    router0->Close();
             }
 
             void IgniteClientImpl::Start()
@@ -109,7 +111,7 @@ namespace ignite
 
             void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)
             {
-                Request<RequestType::CACHE_GET_NAMES> req;
+                RequestAdapter<MessageType::CACHE_GET_NAMES> req;
                 GetCacheNamesResponse rsp(cacheNames);
 
                 router.Get()->SyncMessage(req, rsp);

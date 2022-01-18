@@ -255,7 +255,6 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12313")
     @SuppressWarnings("ZeroLengthArrayAllocation")
     @Test
     public void testBinaryDataType() throws Exception {
@@ -362,6 +361,15 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
             // UPDATE
             ignite.context().query().querySqlFields(
                 new SqlFieldsQuery("UPDATE " + tblName + " SET val =  " + revertedValToPut + ";"), false);
+
+            if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
+                !waitForCondition(() -> ignite.context().query().querySqlFields(
+                    new SqlFieldsQuery("SELECT val FROM " + tblName), false).getAll().stream()
+                        .allMatch(r -> r.get(0) instanceof byte[]
+                            ? Arrays.equals((byte[])expRevertedVal, (byte[])r.get(0))
+                            : r.get(0).equals(expRevertedVal)),
+                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                fail("Unable to retrieve data via SELECT.");
 
             // Check UPDATE/SELECT
             check(ignite, "SELECT id, val FROM " + tblName + ";", dataType, expVal, expRevertedVal);

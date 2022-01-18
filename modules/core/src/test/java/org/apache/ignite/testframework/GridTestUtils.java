@@ -1130,7 +1130,31 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
+    public static IgniteInternalFuture runAsync(final RunnableX task) {
+        return runAsync(task, "async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static IgniteInternalFuture runAsync(final RunnableX task, String threadName) {
         return runAsync(() -> {
             task.run();
 

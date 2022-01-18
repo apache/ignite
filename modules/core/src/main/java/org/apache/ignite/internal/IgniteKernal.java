@@ -1037,6 +1037,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         ackP2pConfiguration();
         ackRebalanceConfiguration();
         ackIPv4StackFlagIsSet();
+        ackWaitForBackupsOnShutdownPropertyIsUsed();
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -2860,7 +2861,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             return;
 
         U.log(log, "System cache's DataRegion size is configured to " +
-            (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemDataRegionConfiguration().getInitialSize() / (1024 * 1024)) + " MB. " +
             "Use DataStorageConfiguration.systemRegionInitialSize property to change the setting.");
     }
 
@@ -2979,6 +2980,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             U.quietAndWarn(log, "Please set system property '-Djava.net.preferIPv4Stack=true' " +
                 "to avoid possible problems in mixed environments.");
+        }
+    }
+
+    /**
+     * Prints warning if IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN is used.
+     */
+    private void ackWaitForBackupsOnShutdownPropertyIsUsed() {
+        if (IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN) != null) {
+            log.warning("IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN system property is deprecated and will be removed " +
+                "in a future version. Use ShutdownPolicy instead.");
         }
     }
 

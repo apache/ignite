@@ -63,6 +63,12 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Version 2.11.0. */
     protected static final IgniteProductVersion VER_2_11_0 = IgniteProductVersion.fromString("2.11.0");
 
+    /** Version 2.12.0. */
+    protected static final IgniteProductVersion VER_2_12_0 = IgniteProductVersion.fromString("2.12.0");
+
+    /** Version 2.13.0. */
+    protected static final IgniteProductVersion VER_2_13_0 = IgniteProductVersion.fromString("2.13.0");
+
     /** Ignite versions to test. Note: Only released versions or current version should be included to this list. */
     protected static final String[] TESTED_IGNITE_VERSIONS = new String[] {
         "2.4.0",
@@ -76,6 +82,7 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
         "2.9.0",
         "2.9.1",
         "2.10.0",
+        "2.11.0",
         IgniteVersionUtils.VER_STR
     };
 

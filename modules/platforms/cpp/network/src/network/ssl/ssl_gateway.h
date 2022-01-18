@@ -54,18 +54,25 @@ namespace ignite
                 void *fpSSL_ctrl;
                 void *fpSSLv23_client_method;
                 void *fpSSL_set_connect_state;
+                void *fpSSL_set_bio;
                 void *fpSSL_connect;
                 void *fpSSL_get_error;
                 void *fpSSL_want;
                 void *fpSSL_write;
                 void *fpSSL_read;
                 void *fpSSL_pending;
+                void *fpSSL_get_state;
                 void *fpSSL_get_fd;
+                void *fpSSL_new;
                 void *fpSSL_free;
                 void *fpOPENSSL_config;
                 void *fpX509_free;
+                void *fpBIO_new;
                 void *fpBIO_new_ssl_connect;
                 void *fpBIO_free_all;
+                void *fpBIO_s_mem;
+                void *fpBIO_read;
+                void *fpBIO_write;
                 void *fpBIO_ctrl;
                 void *fpERR_get_error;
                 void *fpERR_error_string_n;
@@ -154,6 +161,8 @@ namespace ignite
 
                 int SSL_connect_(SSL* s);
 
+                void SSL_set_bio_(SSL* s, BIO* rbio, BIO* wbio);
+
                 int SSL_get_error_(const SSL* s, int ret);
 
                 int SSL_want_(const SSL* s);
@@ -164,7 +173,11 @@ namespace ignite
 
                 int SSL_pending_(const SSL* ssl);
 
+                int SSL_is_init_finished_(const SSL* ssl);
+
                 int SSL_get_fd_(const SSL* ssl);
+
+                SSL* SSL_new_(SSL_CTX* ctx);
 
                 void SSL_free_(SSL* ssl);
 
@@ -176,9 +189,19 @@ namespace ignite
 
                 void X509_free_(X509* a);
 
+                BIO* BIO_new_(const BIO_METHOD* method);
+
                 BIO* BIO_new_ssl_connect_(SSL_CTX* ctx);
 
                 void BIO_free_all_(BIO* a);
+
+                const BIO_METHOD* BIO_s_mem_();
+
+                int BIO_read_(BIO* b, void* data, int len);
+
+                int BIO_write_(BIO* b, const void *data, int len);
+
+                int BIO_pending_(BIO* b);
 
                 long BIO_ctrl_(BIO* bp, int cmd, long larg, void* parg);
 

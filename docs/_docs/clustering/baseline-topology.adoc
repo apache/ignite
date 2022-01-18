@@ -35,7 +35,7 @@ occasional network failures or scheduled server maintenance.
 Baseline topology changes automatically when <<Baseline Topology Autoadjustment>> is enabled. This is the default
 behavior for pure in-memory clusters. For persistent clusters, the baseline topology autoadjustment feature must be enabled
 manually. By default, it is disabled and you have to change the baseline topology manually. You can change the baseline
-topology using the link:control-script#activation-deactivation-and-topology-management[control script].
+topology using the link:tools/control-script#activation-deactivation-and-topology-management[control script].
 
 [CAUTION]
 ====
@@ -63,7 +63,7 @@ However, if some nodes do not join after a restart, you must to activate the clu
 
 You can activate the cluster using one of the following tools:
 
-* link:control-script#activating-cluster[Control script]
+* link:tools/control-script#activating-cluster[Control script]
 * link:restapi#change-cluster-state[REST API command]
 * Programmatically:
 +
@@ -109,7 +109,7 @@ the baseline topology.
 Baseline topology is autoadjusted only if the cluster is in the active state.
 
 To enable automatic baseline adjustment, you can use the
-link:control-script#enabling-baseline-topology-autoadjustment[control script] or the
+link:tools/control-script#enabling-baseline-topology-autoadjustment[control script] or the
 programmatic API methods shown below:
 
 [tabs]
@@ -154,6 +154,6 @@ tab:C++[]
 
 You can use the following tools to monitor and/or manage the baseline topology:
 
-* link:control-script[Control Script]
+* link:tools/control-script[Control Script]
 * link:monitoring-metrics/metrics#monitoring-topology[JMX Beans]
 

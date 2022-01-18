@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -346,7 +347,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
             if (m instanceof BinaryMarshaller)
                 // To avoid deserializing of enum types.
-                params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
             else
                 params = U.unmarshal(m, paramsBytes, ldr);
         }

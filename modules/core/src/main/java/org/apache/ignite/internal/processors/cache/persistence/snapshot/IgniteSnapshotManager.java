@@ -59,7 +59,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -160,8 +159,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -255,16 +252,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** Prefix for snapshot threads. */
-    private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
+    public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
 
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
-
-    /** Total number of thread to perform local snapshot. */
-    private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
@@ -343,9 +337,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
 
-    /** Snapshot thread pool to perform local partition snapshots. */
-    private ExecutorService snpRunner;
-
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
@@ -420,15 +411,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
-        snpRunner = new IgniteThreadPoolExecutor(SNAPSHOT_RUNNER_THREAD_PREFIX,
-            cctx.igniteInstanceName(),
-            SNAPSHOT_THREAD_POOL_SIZE,
-            SNAPSHOT_THREAD_POOL_SIZE,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            SYSTEM_POOL,
-            new OomExceptionHandler(ctx));
-
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         storeMgr = (FilePageStoreManager)cctx.pageStore();
@@ -441,7 +423,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
 
-        handlers.initialize(ctx, snpRunner);
+        handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
@@ -525,9 +507,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     clusterSnpFut = null;
                 }
             }
-
-            if (snpRunner != null)
-                snpRunner.shutdownNow();
 
             cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
             cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
@@ -1262,9 +1241,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!(snpDir.exists() && snpDir.isDirectory()))
+            return Collections.emptyList();
+
         List<File> smfs = new ArrayList<>();
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snapshotLocalDir(snpName).toPath())) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
             for (Path d : ds) {
                 if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
                     smfs.add(d.toFile());
@@ -1275,7 +1259,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (smfs.isEmpty())
-            throw new IgniteException("Snapshot metadata files not found: " + snpName);
+            return Collections.emptyList();
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
@@ -1761,7 +1745,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     RemoteSnapshotSender remoteSnapshotSenderFactory(String rqId, UUID nodeId) {
         return new RemoteSnapshotSender(log,
-            snpRunner,
+            cctx.kernalContext().pools().getSnapshotExecutorService(),
             databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             rqId);
@@ -1802,22 +1786,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The executor used to run snapshot tasks.
      */
     ExecutorService snapshotExecutorService() {
-        assert snpRunner != null;
-
-        return snpRunner;
+        return cctx.kernalContext().pools().getSnapshotExecutorService();
     }
 
     /**
      * @param ioFactory Factory to create IO interface over a page stores.
      */
-    void ioFactory(FileIOFactory ioFactory) {
+    public void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }
 
     /**
      * @return Factory to create IO interface over a page stores.
      */
-    FileIOFactory ioFactory() {
+    public FileIOFactory ioFactory() {
         return ioFactory;
     }
 
@@ -2907,7 +2889,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          */
         public LocalSnapshotSender(String snpName) {
-            super(IgniteSnapshotManager.this.log, snpRunner);
+            super(IgniteSnapshotManager.this.log, cctx.kernalContext().pools().getSnapshotExecutorService());
 
             this.snpName = snpName;
             snpLocDir = snapshotLocalDir(snpName);

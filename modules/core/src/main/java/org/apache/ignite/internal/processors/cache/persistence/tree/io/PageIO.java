@@ -946,4 +946,22 @@ public abstract class PageIO {
 
         return sb.toString();
     }
+
+    /**
+     * Asserts that page type of the page stored at pageAddr matches page type of this PageIO.
+     *
+     * @param pageAddr address of a page to use for assertion
+     */
+    protected final void assertPageType(long pageAddr) {
+        assert getType(pageAddr) == getType() : "Expected type " + getType() + ", but got " + getType(pageAddr);
+    }
+
+    /**
+     * Asserts that page type of the page stored in the given buffer matches page type of this PageIO.
+     *
+     * @param buf   buffer where the page for assertion is stored
+     */
+    protected final void assertPageType(ByteBuffer buf) {
+        assert getType(buf) == getType() : "Expected type " + getType() + ", but got " + getType(buf);
+    }
 }

@@ -413,9 +413,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 DataEntry entry = entries.get(idx);
 
-                assertEquals(1, dataRec.writeEntries().size());
+                assertEquals(1, dataRec.entryCount());
 
-                DataEntry readEntry = dataRec.writeEntries().get(0);
+                DataEntry readEntry = dataRec.get(0);
 
                 assertEquals(entry.cacheId(), readEntry.cacheId());
                 assertEquals(entry.key().<Integer>value(coctx, true), readEntry.key().<Integer>value(coctx, true));

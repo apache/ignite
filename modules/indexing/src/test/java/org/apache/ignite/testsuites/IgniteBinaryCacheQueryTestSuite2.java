@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.NoneOrSinglePartit
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.internal.processors.query.timeout.DefaultQueryTimeoutTestSuite;
+import org.apache.ignite.sqltests.SqlByteArrayTest;
 import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -195,6 +196,7 @@ import org.junit.runners.Suite;
     SqlPartOfComplexPkLookupTest.class,
 
     SqlDataTypesCoverageTests.class,
+    SqlByteArrayTest.class,
     SqlPartOfComplexPkLookupTest.class,
 
     IgniteCacheLocalQueryDefaultTimeoutSelfTest.class,

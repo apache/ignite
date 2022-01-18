@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -242,10 +241,11 @@ public class GridMapQueryExecutor {
 
                 Span span = MTC.span();
 
-                ctx.closure().callLocal(
-                    (GridPlainCallable<Void>)() -> {
+                ctx.closure().runLocal(
+                    () -> {
                         try (TraceSurroundings ignored = MTC.supportContinual(span)) {
                             onQueryRequest0(node,
+                                req.queryId(),
                                 req.requestId(),
                                 segment,
                                 req.schemaName(),
@@ -265,14 +265,16 @@ public class GridMapQueryExecutor {
                                 dataPageScanEnabled,
                                 treatReplicatedAsPartitioned
                             );
-
-                            return null;
+                        }
+                        catch (Throwable e) {
+                            sendError(node, req.requestId(), e);
                         }
                     },
                     QUERY_POOL);
             }
 
             onQueryRequest0(node,
+                req.queryId(),
                 req.requestId(),
                 singleSegment,
                 req.schemaName(),
@@ -300,6 +302,7 @@ public class GridMapQueryExecutor {
 
     /**
      * @param node Node authored request.
+     * @param qryId Query ID.
      * @param reqId Request ID.
      * @param segmentId index segment ID.
      * @param schemaName Schema name.
@@ -320,6 +323,7 @@ public class GridMapQueryExecutor {
      */
     private void onQueryRequest0(
         final ClusterNode node,
+        final long qryId,
         final long reqId,
         final int segmentId,
         final String schemaName,
@@ -454,7 +458,7 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
+                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
 
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,
@@ -562,12 +566,15 @@ public class GridMapQueryExecutor {
                         if (qryRetryErr != null)
                             sendError(node, reqId, qryRetryErr);
                         else {
-                            U.error(log, "Failed to execute local query.", e);
+                            if (e instanceof Error) {
+                                U.error(log, "Failed to execute local query.", e);
+
+                                throw (Error)e;
+                            }
+
+                            U.warn(log, "Failed to execute local query.", e);
 
                             sendError(node, reqId, e);
-
-                            if (e instanceof Error)
-                                throw (Error)e;
                         }
                     }
                 }

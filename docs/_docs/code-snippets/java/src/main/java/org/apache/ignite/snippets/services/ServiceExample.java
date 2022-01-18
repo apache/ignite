@@ -50,11 +50,11 @@ public class ServiceExample {
 
         // Print the latest counter value from our counter service.
         System.out.println("Incremented value : " + counterService.get());
-        
+
         //tag::undeploy[]
         services.cancel("myCounterService");
         //end::undeploy[]
-        
+
         ignite.close();
     }
 
@@ -63,7 +63,7 @@ public class ServiceExample {
         //tag::deploy-with-cluster-group[]
         Ignite ignite = Ignition.start();
 
-        //deploy the service to the nodes that host the cache named "myCache" 
+        //deploy the service to the nodes that host the cache named "myCache"
         ignite.services(ignite.cluster().forCacheNodes("myCache"));
 
         //end::deploy-with-cluster-group[]
@@ -83,11 +83,11 @@ public class ServiceExample {
 
     @Test
     void affinityKey() {
-        
+
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
 
-        //making sure the cache exists
+        // Making sure the cache exists.
         ignite.getOrCreateCache("orgCache");
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
@@ -152,6 +152,28 @@ public class ServiceExample {
 
         ignite.services().deploy(serviceCfg);
         //end::start-with-service-config[]
+
+        ignite.close();
+    }
+
+    @Test
+    void startWithStatistics() {
+        //tag::start-with-statistics[]
+        Ignite ignite = Ignition.start();
+
+        ServiceConfiguration serviceCfg = new ServiceConfiguration();
+
+        serviceCfg.setName("myService");
+        serviceCfg.setMaxPerNodeCount(1);
+        serviceCfg.setService(new MyCounterServiceImpl());
+
+        // Enable service statistics.
+        serviceCfg.setStatisticsEnabled(true);
+
+        ignite.services().deploy(serviceCfg);
+
+        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
+        //end::start-with-statistics[]
 
         ignite.close();
     }

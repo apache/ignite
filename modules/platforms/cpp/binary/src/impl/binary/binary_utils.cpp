@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <time.h>
+#include <cstring>
 
 #include "ignite/ignite_error.h"
 
@@ -36,7 +36,7 @@ namespace
      * @param pos Position.
      * @param len Data to read.
      */
-    inline void CheckEnoughData(InteropMemory& mem, int32_t pos, int32_t len)
+    inline void CheckEnoughData(const InteropMemory& mem, int32_t pos, int32_t len)
     {
         if (mem.Length() < (pos + len))
         {
@@ -55,11 +55,13 @@ namespace
      * @return Primitive.
      */
     template<typename T>
-    inline T ReadPrimitive(InteropMemory& mem, int32_t pos)
+    inline T ReadPrimitive(const InteropMemory& mem, int32_t pos)
     {
         CheckEnoughData(mem, pos, sizeof(T));
 
-        return *reinterpret_cast<T*>(mem.Data() + pos);
+        T res;
+        std::memcpy(&res, mem.Data() + pos, sizeof(res));
+        return res;
     }
 
     /**
@@ -71,9 +73,11 @@ namespace
      * @return Primitive.
      */
     template<typename T>
-    inline T UnsafeReadPrimitive(InteropMemory& mem, int32_t pos)
+    inline T UnsafeReadPrimitive(const InteropMemory& mem, int32_t pos)
     {
-        return *reinterpret_cast<T*>(mem.Data() + pos);
+        T res;
+        std::memcpy(&res, mem.Data() + pos, sizeof(res));
+        return res;
     }
 }
 
@@ -83,6 +87,7 @@ namespace ignite
     {
         namespace binary
         {
+            IGNORE_SIGNED_OVERFLOW
             int32_t BinaryUtils::GetDataHashCode(const void * data, size_t size)
             {
                 if (data)
@@ -204,12 +209,12 @@ namespace ignite
                 return stream->ReadInt32();
             }
 
-            int32_t BinaryUtils::ReadInt32(InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::ReadInt32(const InteropMemory& mem, int32_t pos)
             {
                 return ReadPrimitive<int32_t>(mem, pos);
             }
 
-            int32_t BinaryUtils::UnsafeReadInt32(InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::UnsafeReadInt32(const InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int32_t>(mem, pos);
             }

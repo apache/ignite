@@ -462,6 +462,12 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         Byte[] bytesCol;
 
         /**
+         * Data bytes array.
+         */
+        @QuerySqlField
+        Person[] personCol;
+
+        /**
          * Data bytes primitive array.
          */
         @QuerySqlField

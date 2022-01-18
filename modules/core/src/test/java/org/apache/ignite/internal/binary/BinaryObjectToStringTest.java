@@ -35,13 +35,12 @@ import javassist.CtNewMethod;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
 /** */
-public class BinaryObjectToStringTest extends GridCommonAbstractTest {
+public class BinaryObjectToStringTest extends AbstractBinaryArraysTest {
     /** */
     @Test
     public void testToStringInaccessibleOptimizedMarshallerClass() throws Exception {
@@ -57,7 +56,7 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
         assertStringFormContains(new TestIntContainer(123), "i=123");
 
         assertStringFormContains(new TestContainer(new int[]{1, 2}), "x=[1, 2]");
-        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), "x=[1, 2]");
+        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), useBinaryArrays ? "[1, 2]" : "x=[1, 2]");
         assertStringFormContains(new TestContainer(new ArrayList<>(Arrays.asList(1, 2))), "x=ArrayList {1, 2}");
         assertStringFormContains(new TestContainer(new HashSet<>(Arrays.asList(1, 2))), "x=HashSet {1, 2}");
         assertStringFormContains(new TestContainer(new HashMap<>(ImmutableMap.of(1, 2))), "x=HashMap {1=2}");
@@ -227,5 +226,12 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
         private TestIntContainer(int i) {
             this.i = i;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 }
