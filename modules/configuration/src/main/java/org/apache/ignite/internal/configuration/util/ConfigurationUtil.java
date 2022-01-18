@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
 import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.ConfigurationNode;
+import org.apache.ignite.internal.configuration.DynamicConfiguration;
 import org.apache.ignite.internal.configuration.NamedListConfiguration;
 import org.apache.ignite.internal.configuration.direct.DirectNamedListProxy;
 import org.apache.ignite.internal.configuration.direct.DirectPropertyProxy;
@@ -841,6 +842,21 @@ public class ConfigurationUtil {
 
     private static String joinPath(List<KeyPathNode> path) {
         return path.stream().map(pathNode -> pathNode.key).map(ConfigurationUtil::escape).collect(joining(KEY_SEPARATOR));
+    }
+
+    /**
+     * Ensures that dynamic configuration tree is up-to-date.
+     *
+     * @param cfg Dynamic configuration node instance.
+     */
+    public static void touch(DynamicConfiguration<?, ?> cfg) {
+        cfg.touchMembers();
+
+        for (ConfigurationProperty<?> value : cfg.members().values()) {
+            if (value instanceof DynamicConfiguration) {
+                touch((DynamicConfiguration<?, ?>) value);
+            }
+        }
     }
 
     /**

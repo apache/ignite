@@ -19,7 +19,7 @@ package org.apache.ignite.internal.configuration;
 
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil.notifyListeners;
+import static org.apache.ignite.internal.configuration.notifications.ConfigurationNotifier.notifyListeners;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.collectSchemas;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.innerNodeVisitor;
@@ -28,6 +28,7 @@ import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.is
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.polymorphicInstanceId;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.polymorphicSchemaExtensions;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.schemaFields;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.touch;
 import static org.apache.ignite.internal.util.CollectionUtils.difference;
 import static org.apache.ignite.internal.util.CollectionUtils.viewReadOnly;
 
@@ -62,7 +63,6 @@ import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
-import org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.ExceptKeysValidator;
@@ -203,7 +203,7 @@ public class ConfigurationRegistry implements IgniteComponent {
         for (RootKey<?, ?> rootKey : rootKeys) {
             DynamicConfiguration<?, ?> dynCfg = configs.get(rootKey.key());
 
-            ConfigurationNotificationsUtil.touch(dynCfg);
+            touch(dynCfg);
         }
     }
 
@@ -280,7 +280,7 @@ public class ConfigurationRegistry implements IgniteComponent {
                 assert oldRoot != null && cfg != null : key;
 
                 if (oldRoot != newRoot) {
-                    notifyListeners(oldRoot, newRoot, cfg, storageRevision, futures);
+                    futures.addAll(notifyListeners(oldRoot, newRoot, cfg, storageRevision));
                 }
 
                 return null;

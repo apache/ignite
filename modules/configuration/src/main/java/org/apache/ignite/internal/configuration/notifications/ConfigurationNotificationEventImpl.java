@@ -15,47 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.configuration.util;
+package org.apache.ignite.internal.configuration.notifications;
 
-import java.util.Map;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of the {@link ConfigurationNotificationEvent}.
+ *
+ * @param <VIEWT> Type of the subtree or the value that has been changed.
  */
 class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotificationEvent<VIEWT> {
     /** Previous value of the updated configuration. */
+    @Nullable
     private final VIEWT oldValue;
 
     /** Updated value of the configuration. */
+    @Nullable
     private final VIEWT newValue;
 
     /** Storage revision. */
     private final long storageRevision;
 
-    /** Configuration containers. */
-    private final Map<Class<?>, ConfigurationContainer> configs;
+    /** The tail of containers, implements a stack for safe traversal. */
+    private final ConfigurationContainer tail;
 
     /**
      * Constructor.
      *
-     * @param oldValue        Previous value of the updated configuration.
-     * @param newValue        Updated value of the configuration.
+     * @param oldValue Old value.
+     * @param newValue New value.
      * @param storageRevision Storage revision.
-     * @param configs         Configuration containers.
+     * @param tail The tail of containers.
      */
     ConfigurationNotificationEventImpl(
-            VIEWT oldValue,
-            VIEWT newValue,
+            @Nullable VIEWT oldValue,
+            @Nullable VIEWT newValue,
             long storageRevision,
-            Map<Class<?>, ConfigurationContainer> configs
+            ConfigurationContainer tail
     ) {
         this.oldValue = oldValue;
         this.newValue = newValue;
         this.storageRevision = storageRevision;
-        this.configs = configs;
+        this.tail = tail;
     }
 
     /** {@inheritDoc} */
@@ -79,16 +82,30 @@ class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotifica
     /** {@inheritDoc} */
     @Override
     public <T extends ConfigurationProperty> @Nullable T config(Class<?> configClass) {
-        ConfigurationContainer container = configs.get(configClass);
+        ConfigurationContainer container = findContainer(configClass);
 
-        return container == null ? null : (T) container.config;
+        return container == null ? null : (T) container.specificConfig();
     }
 
     /** {@inheritDoc} */
     @Override
     public @Nullable String name(Class<?> configClass) {
-        ConfigurationContainer container = configs.get(configClass);
+        ConfigurationContainer container = findContainer(configClass);
 
-        return container == null ? null : container.keyNamedConfig;
+        return container == null ? null : container.name;
+    }
+
+    private @Nullable ConfigurationContainer findContainer(Class<?> configClass) {
+        ConfigurationContainer curr = tail;
+
+        while (curr != null) {
+            if (configClass.isAssignableFrom(curr.configClass())) {
+                return curr;
+            } else {
+                curr = curr.prev;
+            }
+        }
+
+        return null;
     }
 }

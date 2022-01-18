@@ -1534,7 +1534,7 @@ public class ConfigurationAsmGenerator {
                     if (isValue(polymorphicField)) {
                         if (!hasDefault(polymorphicField)) {
                             // return;
-                            switchBuilder.addCase(polymorphicField.getName(), new BytecodeBlock().ret());
+                            switchBuilderPolymorphicExtension.addCase(polymorphicField.getName(), new BytecodeBlock().ret());
                         } else {
                             FieldDefinition fieldDef = fieldDefs.get(fieldName(polymorphicField));
                             FieldDefinition specFieldDef = specFields.get(polymorphicField.getDeclaringClass());

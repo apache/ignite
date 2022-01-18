@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
-import org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil;
 import org.jetbrains.annotations.Nullable;
 
 /**

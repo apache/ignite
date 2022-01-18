@@ -28,20 +28,26 @@ import static org.apache.ignite.internal.configuration.notifications.Configurati
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnUpdate;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.doNothingConsumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.configuration.ConfigurationListenOnlyException;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
+import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
@@ -67,6 +73,9 @@ public class ConfigurationAnyListenerTest {
         /** Nested named child configuration. */
         @NamedConfigValue
         public FirstSubConfigurationSchema elements;
+
+        @NamedConfigValue
+        public PolyAnyConfigurationSchema polyNamed;
     }
 
     /**
@@ -97,6 +106,36 @@ public class ConfigurationAnyListenerTest {
         public int intVal = 10;
     }
 
+    /**
+     * Polymorphic configuration schema.
+     */
+    @PolymorphicConfig
+    public static class PolyAnyConfigurationSchema {
+        @PolymorphicId
+        public String type;
+
+        @Value
+        public int intVal;
+    }
+
+    /**
+     * First extension of {@link PolyAnyConfigurationSchema}.
+     */
+    @PolymorphicConfigInstance("first")
+    public static class FirstPolyAnyConfigurationSchema extends PolyAnyConfigurationSchema {
+        @Value
+        public String strVal;
+    }
+
+    /**
+     * Second extension of {@link PolyAnyConfigurationSchema}.
+     */
+    @PolymorphicConfigInstance("second")
+    public static class SecondPolyAnyConfigurationSchema extends PolyAnyConfigurationSchema {
+        @Value
+        public String strVal;
+    }
+
     /** Configuration registry. */
     private ConfigurationRegistry registry;
 
@@ -116,7 +155,7 @@ public class ConfigurationAnyListenerTest {
                 Map.of(),
                 new TestConfigurationStorage(LOCAL),
                 List.of(),
-                List.of()
+                List.of(FirstPolyAnyConfigurationSchema.class, SecondPolyAnyConfigurationSchema.class)
         );
 
         registry.start();
@@ -655,5 +694,70 @@ public class ConfigurationAnyListenerTest {
         }));
 
         rootConfig.elements().get(key0).elements2().get(key1).intVal().update(newVal).get(1, SECONDS);
+    }
+
+    @Test
+    void testAnyCreateNamedPolymorphicConfig() throws Exception {
+        AtomicBoolean invokeListener = new AtomicBoolean();
+
+        rootConfig.polyNamed().any().listen(configListener(ctx -> {
+            invokeListener.set(true);
+
+            assertInstanceOf(FirstPolyAnyView.class, ctx.newValue());
+            assertInstanceOf(PolyAnyView.class, ctx.newValue());
+
+            assertNull(ctx.oldValue());
+
+            assertEquals("0", ctx.name(PolyAnyConfiguration.class));
+            assertEquals("0", ctx.name(FirstPolyAnyConfiguration.class));
+
+            assertNull(ctx.name(SecondPolyAnyConfiguration.class));
+
+            assertInstanceOf(PolyAnyConfiguration.class, ctx.config(PolyAnyConfiguration.class));
+            assertInstanceOf(FirstPolyAnyConfiguration.class, ctx.config(FirstPolyAnyConfiguration.class));
+
+            assertNull(ctx.config(SecondPolyAnyConfiguration.class));
+        }));
+
+        rootConfig.polyNamed()
+                .change(c -> c.create("0", c1 -> c1.convert(FirstPolyAnyChange.class).changeStrVal("0").changeIntVal(0)))
+                .get(1, SECONDS);
+
+        assertTrue(invokeListener.get());
+    }
+
+    @Test
+    void testAnyUpdateNamedPolymorphicConfig() throws Exception {
+        rootConfig.polyNamed()
+                .change(c -> c.create("0", c1 -> c1.convert(FirstPolyAnyChange.class).changeStrVal("0").changeIntVal(0)))
+                .get(1, SECONDS);
+
+        AtomicBoolean invokeListener = new AtomicBoolean();
+
+        rootConfig.polyNamed().any().listen(configListener(ctx -> {
+            invokeListener.set(true);
+
+            assertInstanceOf(SecondPolyAnyView.class, ctx.newValue());
+            assertInstanceOf(PolyAnyView.class, ctx.newValue());
+
+            assertInstanceOf(FirstPolyAnyView.class, ctx.oldValue());
+            assertInstanceOf(PolyAnyView.class, ctx.oldValue());
+
+            assertEquals("0", ctx.name(PolyAnyConfiguration.class));
+            assertEquals("0", ctx.name(SecondPolyAnyConfiguration.class));
+
+            assertNull(ctx.name(FirstPolyAnyConfiguration.class));
+
+            assertInstanceOf(PolyAnyConfiguration.class, ctx.config(PolyAnyConfiguration.class));
+            assertInstanceOf(SecondPolyAnyConfiguration.class, ctx.config(SecondPolyAnyConfiguration.class));
+
+            assertNull(ctx.config(FirstPolyAnyConfiguration.class));
+        }));
+
+        rootConfig.polyNamed()
+                .change(c -> c.update("0", c1 -> c1.convert(SecondPolyAnyChange.class).changeStrVal("0").changeIntVal(0)))
+                .get(1, SECONDS);
+
+        assertTrue(invokeListener.get());
     }
 }
