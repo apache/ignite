@@ -28,6 +28,40 @@ import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Abstract IO routines for B+Tree pages.
+ * <p/>
+ * Every B+Tree page has a similar structure:
+ * <pre><code>
+ *     | HEADER | count | forwardId | removeId | items... |
+ * </code></pre>
+ * {@code HEADER} is a common structure that's present in every page. Please refer to {@link PageIO} and
+ * {@link PageIO#COMMON_HEADER_END} specifically for more details.
+ * <p/>
+ * {@code count} ({@link #getCount(long)}) is an unsigned short value that represents a number of {@code items} in the
+ * page. What the {@code item} is exactly is defined by specific implementations. Item size is defined by a
+ * {@link #itemSize} constant. Two implementations of the IO handle items list differently:
+ * <ul>
+ *     <li>
+ *         {@link BPlusLeafIO} uses an array to store all items, with no gaps inbetween:
+ *         <pre><code>
+ * | item0 | item1 | ... | itemN-2 | itemN-1 |
+ *         </code></pre>
+ *     </li>
+ *     <li>
+ *         {@link BPlusInnerIO} interlaces items arrays with links array. It looks like this:
+ *         <pre><code>
+ * | link0 | item0 | link1 | item1 | ... | linkN-1 | itemN-1 | linkN |
+ *         </code></pre>
+ *         This layout affects the way offset is calculated and the total amount of items that can be put into a single
+ *         page.
+ *     </li>
+ * </ul>
+ * {@code forwardId} ({@link #getForward(long)}) is a link to the forward page, please refer to {@link BPlusTree} for
+ * the explanation.
+ * <p/>
+ * {@code removeId} ({@link #getRemoveId(long)}) is a special value that's used to check tree invariants durning
+ * deletions. Please refer to {@link BPlusTree} for better explanation.
+ *
+ * @see BPlusTree
  */
 public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     /** */
