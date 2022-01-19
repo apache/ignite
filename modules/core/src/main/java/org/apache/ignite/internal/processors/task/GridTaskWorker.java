@@ -86,6 +86,7 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER;
@@ -499,8 +500,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             ses.setClassLoader(dep.classLoader());
 
             // Nodes are ignored by affinity tasks.
-            final List<ClusterNode> shuffledNodes =
-                affCacheIds == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
+            final List<ClusterNode> shuffledNodes = affCacheIds == null ? getTaskTopology() : emptyList();
 
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -513,16 +513,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                        return task.map(shuffledNodes, arg);
-                    }
-                });
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(
+                dep.classLoader(),
+                (Callable<Map<? extends ComputeJob, ClusterNode>>)() -> task.map(shuffledNodes, arg)
+            );
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
                     ", mappedJobs=" + mappedJobs + ", ses=" + ses + ']');
+            }
 
             if (F.isEmpty(mappedJobs)) {
                 synchronized (mux) {
@@ -633,6 +632,10 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         "@ComputeTaskNoResultCache annotation.");
             }
         }
+
+        ses.jobNodes(F.viewReadOnly(jobs.values(), F.node2id()));
+
+        evtLsnr.onJobsMapped(this);
 
         // Set mapped flag.
         ses.onMapped();
@@ -854,7 +857,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 List<ComputeJobResult> results;
 
                 if (!resCache)
-                    results = Collections.emptyList();
+                    results = emptyList();
                 else {
                     synchronized (mux) {
                         results = getRemoteResults();
@@ -1640,7 +1643,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 recordTaskEvent(EVT_TASK_FAILED, "Task failed.");
 
             // Clean resources prior to finishing future.
-            evtLsnr.onTaskFinished(this);
+            evtLsnr.onTaskFinished(this, e);
 
             if (cancelChildren)
                 cancelChildren();
