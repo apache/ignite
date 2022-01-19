@@ -260,6 +260,7 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
         assertEquals(session.getTaskNodeId(), snapshot.originatingNodeId());
         assertEquals(session.getStartTime(), snapshot.startTime());
         assertEquals(session.isFullSupport(), snapshot.fullSupport());
+        assertEquals(session.isInternal(), session.isInternal());
 
         checkLogin(session, snapshot);
 

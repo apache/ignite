@@ -81,4 +81,9 @@ public interface ComputeTaskStatusSnapshot {
      * @return User who created the task, {@code null} if security is not available.
      */
     @Nullable Object createBy();
+
+    /**
+     * @return {@code True} if task is internal.
+     */
+    boolean internal();
 }
