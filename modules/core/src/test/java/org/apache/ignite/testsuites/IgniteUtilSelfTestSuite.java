@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsUnitTest;
-import org.apache.ignite.internal.direct.DirectMarshallingMessagesTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioServerTest;
@@ -145,7 +144,6 @@ import org.junit.runners.Suite;
     GridCountDownCallbackTest.class,
 
     DistributedProcessCoordinatorLeftTest.class,
-    DirectMarshallingMessagesTest.class,
 
     BasicRateLimiterTest.class,
 

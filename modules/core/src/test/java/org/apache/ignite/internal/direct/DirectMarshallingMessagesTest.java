@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,6 +48,21 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         SingleNodeMessage<?> srcMsg =
             new SingleNodeMessage<>(UUID.randomUUID(), TEST_PROCESS, "data", new Exception("error"));
 
+        SingleNodeMessage<?> resMsg = doMarshalUnmarshal(srcMsg);
+
+        assertEquals(srcMsg.type(), resMsg.type());
+        assertEquals(srcMsg.processId(), resMsg.processId());
+        assertEquals(srcMsg.response(), resMsg.response());
+        assertEquals(srcMsg.error().getClass(), resMsg.error().getClass());
+        assertEquals(srcMsg.error().getMessage(), resMsg.error().getMessage());
+    }
+
+    /**
+     * @param srcMsg Message to marshal.
+     * @param <T> Message type.
+     * @return Unmarshalled message.
+     */
+    private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
         boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(PROTO_VER)));
@@ -61,25 +77,13 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
         assertEquals(srcMsg.directType(), type);
 
-        SingleNodeMessage<?> resMsg = (SingleNodeMessage<?>)msgFactory.create(type);
+        T resMsg = (T)msgFactory.create(type);
 
         boolean fullyRead = loopBuffer(buf, buf.position(),
             buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, PROTO_VER)));
         assertTrue("The message was not read completely.", fullyRead);
 
-        assertEquals(srcMsg.type(), resMsg.type());
-        assertEquals(srcMsg.processId(), resMsg.processId());
-        assertEquals(srcMsg.response(), resMsg.response());
-
-        Exception expErr = srcMsg.error();
-        Exception resErr = resMsg.error();
-
-        if (expErr == null)
-            assertNull(resErr);
-        else {
-            assertEquals(expErr.getClass(), resErr.getClass());
-            assertEquals(expErr.getMessage(), resErr.getMessage());
-        }
+        return resMsg;
     }
 
     /**
