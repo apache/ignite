@@ -36,7 +36,7 @@ class SnapshotTest(IgniteTest):
     """
     SNAPSHOT_NAME = "test_snapshot"
 
-    CACHE_NAME = "TEST_CACHE"
+    CACHE_NAME = "test-cache-1"
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -63,8 +63,14 @@ class SnapshotTest(IgniteTest):
         loader = IgniteApplicationService(
             self.test_context,
             loader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            params={"start": 0, "cacheName": self.CACHE_NAME, "interval": 500_000, "valueSizeKb": 1}
+            java_class_name="org.apache.ignite.internal.ducktest.tests.data_generation.DataGenerationApplication",
+            params={
+                "backups": 1,
+                "cacheCount": 1,
+                "entrySize": 1,
+                "from": 0,
+                "to": 500_000
+            }
         )
 
         loader.run()
@@ -78,7 +84,14 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        loader.params = {"start": 500_000, "cacheName": self.CACHE_NAME, "interval": 100_000, "valueSizeKb": 1}
+        loader.params = {
+            "backups": 1,
+            "cacheCount": 1,
+            "entrySize": 1,
+            "from": 500_000,
+            "to": 600_000
+        }
+
         loader.run()
 
         dump_2 = control_utility.idle_verify_dump(node)

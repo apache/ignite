@@ -149,7 +149,7 @@ def preload_data(context, config, rebalance_params: RebalanceParams, timeout=360
         app = IgniteApplicationService(
             context,
             config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.data_generation.DataGenerationApplication",
             params={
                 "backups": rebalance_params.backups,
                 "cacheCount": rebalance_params.cache_count,
