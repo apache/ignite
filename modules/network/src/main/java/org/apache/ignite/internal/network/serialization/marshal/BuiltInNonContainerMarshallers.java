@@ -69,6 +69,7 @@ class BuiltInNonContainerMarshallers {
         addSingle(map, Enum[].class, BuiltInMarshalling::writeEnumArray, BuiltInMarshalling::readEnumArray);
         addSingle(map, BitSet.class, BuiltInMarshalling::writeBitSet, BuiltInMarshalling::readBitSet);
         addSingle(map, Null.class, (obj, output) -> {}, input -> null);
+        addSingle(map, Class.class, BuiltInMarshalling::writeClass, BuiltInMarshalling::readClass);
 
         return Map.copyOf(map);
     }

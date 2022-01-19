@@ -43,7 +43,7 @@ class NoArgConstructorInstantiationTest {
 
     @Test
     void doesNotSupportClassesWithoutNoArgConstructor() {
-        assertFalse(instantiation.supports(WithoutNoArgConstructor.class));
+        assertFalse(instantiation.supports(NonSerializableWithoutNoArgConstructor.class));
     }
 
     @Test

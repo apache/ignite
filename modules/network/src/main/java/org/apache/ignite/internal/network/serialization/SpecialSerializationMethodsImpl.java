@@ -19,31 +19,29 @@ package org.apache.ignite.internal.network.serialization;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Encapsulates special serialization methods like writeReplace()/readResolve() for convenient invocation.
+ * Encapsulates special serialization methods like writeReplace()/readResolve() and so on for convenient invocation.
  */
 class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
-    /** MethodHandle that can be used to invoke writeReplace() on the target class. */
+    /** Method that can be used to invoke writeReplace() on the target class. */
     @Nullable
-    private final MethodHandle writeReplaceHandle;
+    private final Method writeReplace;
 
-    /** MethodHandle that can be used to invoke readResolve() on the target class. */
+    /** Method that can be used to invoke readResolve() on the target class. */
     @Nullable
-    private final MethodHandle readResolveHandle;
+    private final Method readResolve;
 
-    /** MethodHandle that can be used to invoke writeObject() on the target class. */
+    /** Method that can be used to invoke writeObject() on the target class. */
     @Nullable
-    private final MethodHandle writeObjectHandle;
+    private final Method writeObject;
 
-    /** MethodHandle that can be used to invoke readObject() on the target class. */
+    /** Method that can be used to invoke readObject() on the target class. */
     @Nullable
-    private final MethodHandle readObjectHandle;
+    private final Method readObject;
 
     /**
      * Creates a new instance from the provided descriptor.
@@ -51,47 +49,47 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
      * @param descriptor class descriptor on which class to operate
      */
     public SpecialSerializationMethodsImpl(ClassDescriptor descriptor) {
-        writeReplaceHandle = descriptor.hasWriteReplace() ? writeReplaceHandle(descriptor) : null;
-        readResolveHandle = descriptor.hasReadResolve() ? readResolveHandle(descriptor) : null;
-        writeObjectHandle = descriptor.hasWriteObject() ? writeObjectHandle(descriptor) : null;
-        readObjectHandle = descriptor.hasReadObject() ? readObjectHandle(descriptor) : null;
+        writeReplace = descriptor.hasWriteReplace() ? writeReplaceInvoker(descriptor) : null;
+        readResolve = descriptor.hasReadResolve() ? readResolveInvoker(descriptor) : null;
+        writeObject = descriptor.hasWriteObject() ? writeObjectInvoker(descriptor) : null;
+        readObject = descriptor.hasReadObject() ? readObjectInvoker(descriptor) : null;
     }
 
-    private static MethodHandle writeReplaceHandle(ClassDescriptor descriptor) {
+    private static Method writeReplaceInvoker(ClassDescriptor descriptor) {
         try {
-            return MethodHandles.privateLookupIn(descriptor.clazz(), MethodHandles.lookup())
-                    .findVirtual(descriptor.clazz(), "writeReplace", MethodType.methodType(Object.class))
-                    .asType(MethodType.methodType(Object.class, Object.class));
+            Method method = descriptor.clazz().getDeclaredMethod("writeReplace");
+            method.setAccessible(true);
+            return method;
         } catch (ReflectiveOperationException e) {
             throw new ReflectionException("Cannot find writeReplace() in " + descriptor.clazz(), e);
         }
     }
 
-    private static MethodHandle readResolveHandle(ClassDescriptor descriptor) {
+    private static Method readResolveInvoker(ClassDescriptor descriptor) {
         try {
-            return MethodHandles.privateLookupIn(descriptor.clazz(), MethodHandles.lookup())
-                    .findVirtual(descriptor.clazz(), "readResolve", MethodType.methodType(Object.class))
-                    .asType(MethodType.methodType(Object.class, Object.class));
+            Method method = descriptor.clazz().getDeclaredMethod("readResolve");
+            method.setAccessible(true);
+            return method;
         } catch (ReflectiveOperationException e) {
             throw new ReflectionException("Cannot find readResolve() in " + descriptor.clazz(), e);
         }
     }
 
-    private static MethodHandle writeObjectHandle(ClassDescriptor descriptor) {
+    private static Method writeObjectInvoker(ClassDescriptor descriptor) {
         try {
-            return MethodHandles.privateLookupIn(descriptor.clazz(), MethodHandles.lookup())
-                    .findVirtual(descriptor.clazz(), "writeObject", MethodType.methodType(void.class, ObjectOutputStream.class))
-                    .asType(MethodType.methodType(void.class, Object.class, ObjectOutputStream.class));
+            Method method = descriptor.clazz().getDeclaredMethod("writeObject", ObjectOutputStream.class);
+            method.setAccessible(true);
+            return method;
         } catch (ReflectiveOperationException e) {
             throw new ReflectionException("Cannot find writeObject() in " + descriptor.clazz(), e);
         }
     }
 
-    private static MethodHandle readObjectHandle(ClassDescriptor descriptor) {
+    private static Method readObjectInvoker(ClassDescriptor descriptor) {
         try {
-            return MethodHandles.privateLookupIn(descriptor.clazz(), MethodHandles.lookup())
-                    .findVirtual(descriptor.clazz(), "readObject", MethodType.methodType(void.class, ObjectInputStream.class))
-                    .asType(MethodType.methodType(void.class, Object.class, ObjectInputStream.class));
+            Method method = descriptor.clazz().getDeclaredMethod("readObject", ObjectInputStream.class);
+            method.setAccessible(true);
+            return method;
         } catch (ReflectiveOperationException e) {
             throw new ReflectionException("Cannot find readObject() in " + descriptor.clazz(), e);
         }
@@ -100,13 +98,11 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     /** {@inheritDoc} */
     @Override
     public Object writeReplace(Object object) throws SpecialMethodInvocationException {
-        Objects.requireNonNull(writeReplaceHandle);
+        Objects.requireNonNull(writeReplace);
 
         try {
-            return writeReplaceHandle.invokeExact(object);
-        } catch (Error e) {
-            throw e;
-        } catch (Throwable e) {
+            return writeReplace.invoke(object, (Object[]) null);
+        } catch (ReflectiveOperationException e) {
             throw new SpecialMethodInvocationException("writeReplace() invocation failed on " + object, e);
         }
     }
@@ -114,13 +110,11 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     /** {@inheritDoc} */
     @Override
     public Object readResolve(Object object) throws SpecialMethodInvocationException {
-        Objects.requireNonNull(readResolveHandle);
+        Objects.requireNonNull(readResolve);
 
         try {
-            return readResolveHandle.invokeExact(object);
-        } catch (Error e) {
-            throw e;
-        } catch (Throwable e) {
+            return readResolve.invoke(object, (Object[]) null);
+        } catch (ReflectiveOperationException e) {
             throw new SpecialMethodInvocationException("readResolve() invocation failed on " + object, e);
         }
     }
@@ -128,13 +122,11 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     /** {@inheritDoc} */
     @Override
     public void writeObject(Object object, ObjectOutputStream stream) throws SpecialMethodInvocationException {
-        Objects.requireNonNull(writeObjectHandle);
+        Objects.requireNonNull(writeObject);
 
         try {
-            writeObjectHandle.invokeExact(object, stream);
-        } catch (Error e) {
-            throw e;
-        } catch (Throwable e) {
+            writeObject.invoke(object, stream);
+        } catch (ReflectiveOperationException e) {
             throw new SpecialMethodInvocationException("writeObject() invocation failed on " + object, e);
         }
     }
@@ -142,13 +134,11 @@ class SpecialSerializationMethodsImpl implements SpecialSerializationMethods {
     /** {@inheritDoc} */
     @Override
     public void readObject(Object object, ObjectInputStream stream) throws SpecialMethodInvocationException {
-        Objects.requireNonNull(readObjectHandle);
+        Objects.requireNonNull(readObject);
 
         try {
-            readObjectHandle.invokeExact(object, stream);
-        } catch (Error e) {
-            throw e;
-        } catch (Throwable e) {
+            readObject.invoke(object, stream);
+        } catch (ReflectiveOperationException e) {
             throw new SpecialMethodInvocationException("readObject() invocation failed on " + object, e);
         }
     }

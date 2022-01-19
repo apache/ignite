@@ -79,7 +79,8 @@ public enum BuiltInType {
     LINKED_HASH_MAP(41, LinkedHashMap.class),
     BIT_SET(42, BitSet.class),
     NULL(43, Null.class),
-    REFERENCE(44, DummyPlaceholder.class)
+    REFERENCE(44, DummyPlaceholder.class),
+    CLASS(45, Class.class)
     ;
 
     /**

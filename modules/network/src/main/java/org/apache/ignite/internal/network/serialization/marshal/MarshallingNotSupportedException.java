@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-class WithoutNoArgConstructor {
-    int value;
+import org.apache.ignite.lang.IgniteException;
 
-    public WithoutNoArgConstructor(int value) {
-        this.value = value;
+/**
+ * Thrown to indicate that an object cannot be marshalled, or that it will be impossible to unmarshal it then.
+ */
+class MarshallingNotSupportedException extends IgniteException {
+    public MarshallingNotSupportedException(String msg) {
+        super(msg);
     }
 }

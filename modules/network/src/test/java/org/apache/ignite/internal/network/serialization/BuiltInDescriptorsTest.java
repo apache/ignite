@@ -29,6 +29,7 @@ import static org.apache.ignite.internal.network.serialization.BuiltInType.BYTE_
 import static org.apache.ignite.internal.network.serialization.BuiltInType.CHAR;
 import static org.apache.ignite.internal.network.serialization.BuiltInType.CHAR_ARRAY;
 import static org.apache.ignite.internal.network.serialization.BuiltInType.CHAR_BOXED;
+import static org.apache.ignite.internal.network.serialization.BuiltInType.CLASS;
 import static org.apache.ignite.internal.network.serialization.BuiltInType.DATE;
 import static org.apache.ignite.internal.network.serialization.BuiltInType.DECIMAL;
 import static org.apache.ignite.internal.network.serialization.BuiltInType.DECIMAL_ARRAY;
@@ -67,9 +68,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for default descriptors.
+ * Tests for built-in descriptors.
  */
-public class DefaultDescriptorsTest {
+public class BuiltInDescriptorsTest {
     /**
      * Tests that default descriptor were not changed by accident.
      */
@@ -120,5 +121,6 @@ public class DefaultDescriptorsTest {
         assertEquals(42, BIT_SET.descriptorId());
         assertEquals(43, NULL.descriptorId());
         assertEquals(44, REFERENCE.descriptorId());
+        assertEquals(45, CLASS.descriptorId());
     }
 }

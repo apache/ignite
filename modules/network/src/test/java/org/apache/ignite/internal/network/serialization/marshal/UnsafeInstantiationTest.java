@@ -34,7 +34,7 @@ class UnsafeInstantiationTest {
 
     @Test
     void supportsClassesWithoutNoArgConstructor() {
-        assertTrue(instantiation.supports(WithoutNoArgConstructor.class));
+        assertTrue(instantiation.supports(NonSerializableWithoutNoArgConstructor.class));
     }
 
     @Test
@@ -46,7 +46,7 @@ class UnsafeInstantiationTest {
 
     @Test
     void instantiatesClassesWithoutNoArgConstructor() throws Exception {
-        Object instance = instantiation.newInstance(WithoutNoArgConstructor.class);
+        Object instance = instantiation.newInstance(NonSerializableWithoutNoArgConstructor.class);
 
         assertThat(instance, is(notNullValue()));
     }

@@ -83,7 +83,7 @@ class BuiltInContainerMarshallers {
 
     <T> void fillGenericRefArray(DataInputStream input, T[] array, ValueReader<T> elementReader, UnmarshallingContext context)
             throws IOException, UnmarshalException {
-        BuiltInMarshalling.fillGenericRefArray(input, array, elementReader, context);
+        BuiltInMarshalling.fillGenericRefArrayFrom(input, array, elementReader, context);
     }
 
     void writeBuiltInCollection(Collection<?> object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)

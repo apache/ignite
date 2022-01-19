@@ -203,15 +203,19 @@ class DefaultUserObjectMarshallerWithBuiltinsTest {
                 builtInTypeValue(new Enum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, Enum[].class, BuiltInType.ENUM_ARRAY),
                 builtInTypeValue(new SimpleEnum[]{SimpleEnum.FIRST, SimpleEnum.SECOND}, SimpleEnum[].class, BuiltInType.ENUM_ARRAY),
                 builtInTypeValue(EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.class, BuiltInType.ENUM),
-                builtInTypeValue(new Enum[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND}, Enum[].class,
-                        BuiltInType.ENUM_ARRAY),
+                builtInTypeValue(
+                        new Enum[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND},
+                        Enum[].class,
+                        BuiltInType.ENUM_ARRAY
+                ),
                 builtInTypeValue(
                         new EnumWithAnonClassesForMembers[]{EnumWithAnonClassesForMembers.FIRST, EnumWithAnonClassesForMembers.SECOND},
                         EnumWithAnonClassesForMembers[].class,
                         BuiltInType.ENUM_ARRAY
                 ),
                 builtInTypeValue(BitSet.valueOf(new long[]{42, 43}), BitSet.class, BuiltInType.BIT_SET),
-                builtInTypeValue(null, Null.class, BuiltInType.NULL)
+                builtInTypeValue(null, Null.class, BuiltInType.NULL),
+                builtInTypeValue(IntHolder.class, Class.class, BuiltInType.CLASS)
         ).map(Arguments::of);
     }
 

@@ -134,10 +134,14 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
 
         Class<?> objectClass = object.getClass();
         if (isInnerClass(objectClass)) {
-            throw new IllegalArgumentException("Non-static inner class instances are not supported for marshalling: " + objectClass);
+            throw new MarshallingNotSupportedException("Non-static inner class instances are not supported for marshalling: "
+                    + objectClass);
         }
         if (isCapturingClosure(objectClass)) {
-            throw new IllegalArgumentException("Capturing nested class instances are not supported for marshalling: " + object);
+            throw new MarshallingNotSupportedException("Capturing nested class instances are not supported for marshalling: " + object);
+        }
+        if (Classes.isLambda(objectClass) && !Classes.isSerializable(objectClass)) {
+            throw new MarshallingNotSupportedException("Non-serializable lambda instances are not supported for marshalling: " + object);
         }
     }
 
