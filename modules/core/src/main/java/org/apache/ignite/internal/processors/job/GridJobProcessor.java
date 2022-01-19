@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
@@ -80,7 +82,6 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -97,6 +98,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -737,26 +740,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // Put either job ID or session ID (they are unique).
             cancelReqs.putIfAbsent(jobId != null ? jobId : sesId, sys);
 
-            IgnitePredicate<GridJobWorker> idsMatch = new P1<GridJobWorker>() {
-                @Override public boolean apply(GridJobWorker e) {
-                    return sesId != null ?
-                        jobId != null ?
-                            e.getSession().getId().equals(sesId) && e.getJobId().equals(jobId) :
-                            e.getSession().getId().equals(sesId) :
-                        e.getJobId().equals(jobId);
-                }
-            };
+            Predicate<GridJobWorker> idsMatch = idMatch(sesId, jobId);
 
             // If we don't have jobId then we have to iterate
             if (jobId == null) {
                 if (!jobAlwaysActivate) {
                     for (GridJobWorker job : passiveJobs.values()) {
-                        if (idsMatch.apply(job))
+                        if (idsMatch.test(job))
                             cancelPassiveJob(job);
                     }
                 }
                 for (GridJobWorker job : activeJobs.values()) {
-                    if (idsMatch.apply(job))
+                    if (idsMatch.test(job))
                         cancelActiveJob(job, sys);
                 }
             }
@@ -764,13 +759,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (!jobAlwaysActivate) {
                     GridJobWorker passiveJob = passiveJobs.get(jobId);
 
-                    if (passiveJob != null && idsMatch.apply(passiveJob) && cancelPassiveJob(passiveJob))
+                    if (passiveJob != null && idsMatch.test(passiveJob) && cancelPassiveJob(passiveJob))
                         return;
                 }
 
                 GridJobWorker activeJob = activeJobs.get(jobId);
 
-                if (activeJob != null && idsMatch.apply(activeJob))
+                if (activeJob != null && idsMatch.test(activeJob))
                     cancelActiveJob(activeJob, sys);
             }
         }
@@ -1248,7 +1243,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.executorName());
+                            req.executorName(),
+                            ctx.security().enabled() ? ctx.security().securityContext().subject().login() : null
+                        );
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -2294,5 +2291,35 @@ public class GridJobProcessor extends GridProcessorAdapter {
         @Override public int size() {
             return sizex();
         }
+    }
+
+    /**
+     * @param sesId Task session ID.
+     * @return Job statistics for the task. Mapping: Job status -> count of jobs.
+     */
+    public Map<ComputeJobStatusEnum, Long> jobStatuses(IgniteUuid sesId) {
+        return Stream.concat(
+                activeJobs.values().stream(),
+                jobAlwaysActivate ? cancelledJobs.values().stream() :
+                    Stream.concat(passiveJobs.values().stream(), cancelledJobs.values().stream())
+            )
+            .filter(idMatch(sesId, null))
+            .collect(groupingBy(GridJobWorker::status, counting()));
+    }
+
+    /**
+     * @param sesId Task session ID.
+     * @param jobId Job ID.
+     * @return ID workers predicate.
+     */
+    private Predicate<GridJobWorker> idMatch(@Nullable IgniteUuid sesId, @Nullable IgniteUuid jobId) {
+        assert sesId != null || jobId != null;
+
+        if (sesId == null)
+            return w -> jobId.equals(w.getJobId());
+        else if (jobId == null)
+            return w -> sesId.equals(w.getSession().getId());
+        else
+            return w -> sesId.equals(w.getSession().getId()) && jobId.equals(w.getJobId());
     }
 }
