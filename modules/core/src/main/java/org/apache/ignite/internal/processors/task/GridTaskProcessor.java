@@ -68,6 +68,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalk
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
@@ -93,6 +94,7 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyMap;
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -778,7 +780,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             startTime,
             endTime,
             Collections.emptyList(),
-            Collections.emptyMap(),
+            emptyMap(),
             fullSup,
             internal,
             execName,
@@ -1664,5 +1666,21 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         finally {
             lock.readUnlock();
         }
+    }
+
+    /**
+     * Collects statistics on jobs locally, only for those jobs that have
+     * already sent a response or are being executed locally.
+     *
+     * @param sesId Task session ID.
+     * @return Job statistics for the task. Mapping: Job status -> count of jobs.
+     */
+    public Map<ComputeJobStatusEnum, Long> jobStatuses(IgniteUuid sesId) {
+        GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
+
+        if (taskWorker == null)
+            return emptyMap();
+        else
+            return taskWorker.jobStatuses();
     }
 }
