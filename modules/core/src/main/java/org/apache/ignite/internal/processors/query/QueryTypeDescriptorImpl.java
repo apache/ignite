@@ -726,10 +726,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         }
                     }
                 }
-                else if (U.classForName(((BinaryObject)propVal).type().typeName(), Object.class, true)
-                        != propType && coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
-                        ((BinaryObject)propVal).type().typeId()) {
+             else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                    ((BinaryObject)propVal).type().typeId()) {                   
+                    final Class<?> cls = U.classForName(((BinaryObject)propVal).type().typeName(), null, true);
 
+                    if ((cls == null && propType == Object.class) || (cls != null && propType.isAssignableFrom(cls)))
+                        continue;
+
+                    throw new IgniteSQLException("Type for a column '" + idxField +
+                        "' is not compatible with index definition. Expected '" +
+                        propType.getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
                     // Check for classes/enums implementing indexed interfaces.
                     String clsName = ((BinaryObject)propVal).type().typeName();
                     try {
