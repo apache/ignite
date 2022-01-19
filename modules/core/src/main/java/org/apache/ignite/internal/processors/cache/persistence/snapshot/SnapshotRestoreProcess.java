@@ -590,7 +590,7 @@ public class SnapshotRestoreProcess {
 
                 ClusterSnapshotFuture fut0 = fut;
 
-                if (fut0 != null && fut0.interruptEx != null)
+                if (fut0 != null)
                     opCtx0.errHnd.accept(fut0.interruptEx);
             }
 
@@ -895,7 +895,7 @@ public class SnapshotRestoreProcess {
                 Set<PartitionRestoreFuture> partFuts = availParts
                     .stream()
                     .filter(p -> p != INDEX_PARTITION && assignment.get(p).contains(locNode))
-                    .map(PartitionRestoreFuture::new)
+                    .map(p -> new PartitionRestoreFuture(p, opCtx0.processedParts))
                     .collect(Collectors.toSet());
 
                 allParts.put(grpId, partFuts);
@@ -947,7 +947,7 @@ public class SnapshotRestoreProcess {
                             PartitionRestoreFuture idxFut;
 
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
-                                .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION));
+                                .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
                             copyLocalAsync(ctx.cache().context().snapshotMgr(),
                                 opCtx0,
@@ -971,7 +971,7 @@ public class SnapshotRestoreProcess {
                     .filter(e -> !e.getKey().equals(ctx.localNodeId()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 (grpId, partId) -> rmtLoadParts.get(grpId) != null &&
-                    rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId)));
+                    rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId, opCtx0.processedParts)));
 
             Map<Integer, File> grpToDir = opCtx0.dirs.stream()
                 .collect(Collectors.toMap(d -> CU.cacheId(FilePageStoreManager.cacheGroupName(d)),
@@ -1019,8 +1019,6 @@ public class SnapshotRestoreProcess {
                                             snpFile,
                                             partFile.toFile(),
                                             snpFile.length());
-
-                                        opCtx0.processedParts.incrementAndGet();
 
                                         partFut.complete(partFile);
                                     }
@@ -1344,8 +1342,6 @@ public class SnapshotRestoreProcess {
 
                 IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
 
-                opCtx.processedParts.incrementAndGet();
-
                 return partFile;
             }, mgr.snapshotExecutorService())
             .whenComplete((r, t) -> opCtx.errHnd.accept(t))
@@ -1490,11 +1486,23 @@ public class SnapshotRestoreProcess {
         /** Partition id. */
         private final int partId;
 
+        /** Counter of the total number of processed partitions. */
+        private final AtomicInteger cntr;
+
         /**
          * @param partId Partition id.
+         * @param cntr Counter of the total number of processed partitions.
          */
-        private PartitionRestoreFuture(int partId) {
+        private PartitionRestoreFuture(int partId, AtomicInteger cntr) {
             this.partId = partId;
+            this.cntr = cntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean complete(Path path) {
+            cntr.incrementAndGet();
+
+            return super.complete(path);
         }
 
         /** {@inheritDoc} */
