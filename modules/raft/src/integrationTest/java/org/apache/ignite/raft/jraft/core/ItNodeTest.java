@@ -2790,7 +2790,6 @@ public class ItNodeTest {
     }
 
     @Test
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15202")
     public void readCommittedUserLog() throws Exception {
         // setup cluster
         List<PeerId> peers = TestUtils.generatePeers(3);
@@ -2805,7 +2804,21 @@ public class ItNodeTest {
         assertNotNull(leader);
         cluster.ensureLeader(leader);
 
-        sendTestTaskAndWait(leader);
+        int amount = 10;
+        sendTestTaskAndWait(leader, amount);
+
+        assertTrue(waitForCondition(() -> {
+            try {
+                // index == 1 is a CONFIGURATION log
+                UserLog userLog = leader.readCommittedUserLog(1 + amount);
+
+                return userLog != null;
+            } catch (Exception ignore) {
+                // There is a gap between task is applied to FSM and FSMCallerImpl.lastAppliedIndex
+                // is updated, so we need to wait.
+                return false;
+            }
+        }, 10_000));
 
         // index == 1 is a CONFIGURATION log, so real_index will be 2 when returned.
         UserLog userLog = leader.readCommittedUserLog(1);
@@ -2852,7 +2865,7 @@ public class ItNodeTest {
         leader.addPeer(testFollower.getNodeId().getPeerId(), new ExpectClosure(latch));
         waitLatch(latch);
 
-        sendTestTaskAndWait(leader, 10, RaftError.SUCCESS);
+        sendTestTaskAndWait(leader, amount, RaftError.SUCCESS);
 
         // trigger leader snapshot for the second time, after this the log of index 1~11 will be deleted.
         LOG.info("Trigger leader snapshot");
@@ -3594,6 +3607,8 @@ public class ItNodeTest {
         this.sendTestTaskAndWait(node, 0, 10, err);
     }
 
+    // Note that waiting for the latch when tasks are applying doesn't guarantee that FSMCallerImpl.lastAppliedIndex
+    // will be updated immediately.
     private void sendTestTaskAndWait(Node node, int start, int amount,
                                      RaftError err) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(amount);
