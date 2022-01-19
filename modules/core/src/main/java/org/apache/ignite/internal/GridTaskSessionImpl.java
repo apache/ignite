@@ -43,6 +43,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableCollection;
+
 /**
  * Task session.
  */
@@ -74,7 +78,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private Collection<ComputeJobSibling> siblings;
 
-    /** */
+    /** Guarded by {@link #mux}. */
     private Map<Object, Object> attrs;
 
     /** */
@@ -120,6 +124,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final String execName;
 
     /**
+     * Nodes on which the jobs of the task will be executed.
+     * Guarded by {@link #mux}.
+     */
+    @Nullable private List<UUID> jobNodes;
+
+    /** User who created the session, {@code null} if security is not enabled. */
+    @Nullable private final Object login;
+
+    /**
+     * Constructor.
+     *
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
      * @param dep Deployment.
@@ -135,6 +150,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param execName Custom executor name.
+     * @param login User who created the session, {@code null} if security is not enabled.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -151,7 +167,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        @Nullable String execName) {
+        @Nullable String execName,
+        @Nullable Object login
+    ) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -169,7 +187,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.sesId = sesId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.siblings = siblings != null ? Collections.unmodifiableCollection(siblings) : null;
+        this.siblings = siblings != null ? unmodifiableCollection(siblings) : null;
         this.ctx = ctx;
 
         if (attrs != null && !attrs.isEmpty()) {
@@ -183,6 +201,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
+
+        this.login = login;
     }
 
     /** {@inheritDoc} */
@@ -359,7 +379,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         if (keys.isEmpty())
-            return Collections.emptyMap();
+            return emptyMap();
 
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
@@ -518,7 +538,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public void setJobSiblings(Collection<ComputeJobSibling> siblings) {
         synchronized (mux) {
-            this.siblings = Collections.unmodifiableCollection(siblings);
+            this.siblings = unmodifiableCollection(siblings);
         }
     }
 
@@ -534,7 +554,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             tmp.addAll(this.siblings);
             tmp.addAll(siblings);
 
-            this.siblings = Collections.unmodifiableCollection(tmp);
+            this.siblings = unmodifiableCollection(tmp);
         }
     }
 
@@ -606,7 +626,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         synchronized (mux) {
-            return attrs == null || attrs.isEmpty() ? Collections.emptyMap() : U.sealMap(attrs);
+            return attrs == null || attrs.isEmpty() ? emptyMap() : U.sealMap(attrs);
         }
     }
 
@@ -912,6 +932,42 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     @Nullable public String executorName() {
         return execName;
+    }
+
+    /**
+     * Sets nodes on which the jobs of the task will be executed.
+     *
+     * @param jobNodes Nodes on which the jobs of the task will be executed.
+     */
+    public void jobNodes(Collection<UUID> jobNodes) {
+        synchronized (mux) {
+            this.jobNodes = F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return Nodes on which the jobs of the task will be executed.
+     */
+    public List<UUID> jobNodesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return All session attributes, without checks.
+     */
+    public Map<Object, Object> attributesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(attrs) ? emptyMap() : new HashMap<>(attrs);
+        }
+    }
+
+    /**
+     * @return User who created the session, {@code null} if security is not enabled.
+     */
+    public Object login() {
+        return login;
     }
 
     /** {@inheritDoc} */
