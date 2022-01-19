@@ -35,7 +35,7 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.apache.ignite.internal.GridTaskSessionInternal;
+import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
@@ -217,38 +217,38 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
 
     /** */
     private void checkTaskStarted(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, RUNNING, false, false);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, RUNNING, false, false);
     }
 
     /** */
     private void checkTaskMapped(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, RUNNING, true, false);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, RUNNING, true, false);
     }
 
     /** */
     private void checkAttributeChanged(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, RUNNING, true, true);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, RUNNING, true, true);
     }
 
     /** */
     private void checkTaskFinished(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, FINISHED, true, true);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, FINISHED, true, true);
     }
 
     /** */
     private void checkTaskFailed(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, FAILED, true, true);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, FAILED, true, true);
     }
 
     /** */
     private void checkSnapshot(ComputeTaskStatusSnapshot snapshot, ComputeTaskSession session) {
-        checkSnapshot(snapshot, (GridTaskSessionInternal)session, RUNNING, true, true);
+        checkSnapshot(snapshot, (GridTaskSessionImpl)session, RUNNING, true, true);
     }
 
     /** */
     private void checkSnapshot(
         ComputeTaskStatusSnapshot snapshot,
-        GridTaskSessionInternal session,
+        GridTaskSessionImpl session,
         ComputeTaskStatusEnum expStatus,
         boolean checkJobNodes,
         boolean checkAttributes
@@ -260,6 +260,8 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
         assertEquals(session.getTaskNodeId(), snapshot.originatingNodeId());
         assertEquals(session.getStartTime(), snapshot.startTime());
         assertEquals(session.isFullSupport(), snapshot.fullSupport());
+
+        checkLogin(session, snapshot);
 
         if (checkJobNodes) {
             assertEquals(
@@ -374,5 +376,14 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
         @Override public Object execute() throws IgniteException {
             return null;
         }
+    }
+
+    /**
+     * @param session Task session.
+     * @param snapshot Task status snapshot.
+     */
+    protected void checkLogin(GridTaskSessionImpl session, ComputeTaskStatusSnapshot snapshot) {
+        assertNull(session.login());
+        assertNull(snapshot.createBy());
     }
 }

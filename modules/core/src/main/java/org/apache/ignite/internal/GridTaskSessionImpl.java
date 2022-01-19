@@ -129,7 +129,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     @Nullable private List<UUID> jobNodes;
 
+    /** User who created the session, {@code null} if security is not enabled. */
+    @Nullable private final Object login;
+
     /**
+     * Constructor.
+     *
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
      * @param dep Deployment.
@@ -145,6 +150,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param execName Custom executor name.
+     * @param login User who created the session, {@code null} if security is not enabled.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -161,7 +167,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        @Nullable String execName) {
+        @Nullable String execName,
+        @Nullable Object login
+    ) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -193,6 +201,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
+
+        this.login = login;
     }
 
     /** {@inheritDoc} */
@@ -951,6 +961,13 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         synchronized (mux) {
             return F.isEmpty(attrs) ? emptyMap() : new HashMap<>(attrs);
         }
+    }
+
+    /**
+     * @return User who created the session, {@code null} if security is not enabled.
+     */
+    public Object login() {
+        return login;
     }
 
     /** {@inheritDoc} */
