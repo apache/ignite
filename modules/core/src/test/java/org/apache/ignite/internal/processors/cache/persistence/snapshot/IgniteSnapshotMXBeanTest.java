@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -40,7 +38,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests {@link SnapshotMXBean}.
@@ -63,14 +60,14 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
 
         assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
-            0, getLongMetric("LastSnapshotEndTime", snpMBean));
+            0, (long)getMetric("LastSnapshotEndTime", snpMBean));
 
         SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
         assertTrue("Waiting for snapshot operation failed.",
-            GridTestUtils.waitForCondition(() -> getLongMetric("LastSnapshotEndTime", snpMBean) > 0, TIMEOUT));
+            GridTestUtils.waitForCondition(() -> (long)getMetric("LastSnapshotEndTime", snpMBean) > 0, TIMEOUT));
 
         stopAllGrids();
 
@@ -107,14 +104,14 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
         DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
 
-        assertEquals(0, getLongMetric("endTime", mReg0));
-        assertEquals(0, getLongMetric("endTime", mReg1));
+        assertEquals(0, (long)getMetric("endTime", mReg0));
+        assertEquals(0, (long)getMetric("endTime", mReg1));
 
         getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
             .restoreSnapshot(SNAPSHOT_NAME, null);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg0) > 0, TIMEOUT));
-        assertTrue(GridTestUtils.waitForCondition(() -> getLongMetric("endTime", mReg1) > 0, TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
@@ -127,6 +124,14 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             return;
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+        DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+        DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
+
+        assertEquals("", getMetric("error", mReg0));
+        assertEquals("", getMetric("error", mReg1));
+        assertEquals(0, (long)getMetric("endTime", mReg0));
+        assertEquals(0, (long)getMetric("endTime", mReg1));
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
@@ -138,24 +143,26 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         spi.waitForBlocked();
 
        IgniteInternalFuture<Boolean> interruptFut = GridTestUtils.runAsync(() -> {
-            // Wait for the process to be interrupted.
-            AtomicReference<?> errRef = U.field((Object)U.field((Object)U.field(
-                grid(0).context().cache().context().snapshotMgr(), "restoreCacheGrpProc"), "opCtx"), "err");
-
-            boolean interrupted = waitForCondition(() -> errRef.get() != null, getTestTimeout());
-
-            spi.stopBlock();
-
-            return interrupted;
+            try {
+                return GridTestUtils.waitForCondition(
+                    () -> !"".equals(getMetric("error", mReg0)) && !"".equals(getMetric("error", mReg1)), TIMEOUT);
+            } finally {
+                spi.stopBlock();
+            }
         });
 
-        getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
-            .cancelSnapshotRestore(SNAPSHOT_NAME);
+        mxBean.cancelSnapshotRestore(SNAPSHOT_NAME);
 
         assertTrue(interruptFut.get());
 
-        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class,
-            "Operation has been canceled by the user");
+        String expErrMsg = "Operation has been canceled by the user.";
+
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expErrMsg);
+
+        assertTrue((long)getMetric("endTime", mReg0) > 0);
+        assertTrue((long)getMetric("endTime", mReg1) > 0);
+        assertTrue(((String)getMetric("error", mReg0)).contains(expErrMsg));
+        assertTrue(((String)getMetric("error", mReg1)).contains(expErrMsg));
 
         assertNull(ignite.cache(DEFAULT_CACHE_NAME));
     }
@@ -165,9 +172,9 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
      * @param name Metric name.
      * @return Metric value.
      */
-    private static long getLongMetric(String name, DynamicMBean mBean) {
+    private static <T> T getMetric(String name, DynamicMBean mBean) {
         try {
-            return (long)mBean.getAttribute(name);
+            return (T)mBean.getAttribute(name);
         }
         catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
             throw new RuntimeException(e);

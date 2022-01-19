@@ -236,14 +236,9 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                UUID reqId = UUID.randomUUID();
+                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
 
-                fut0 = new ClusterSnapshotFuture(reqId, snpName);
-
-                // Creating an empty context to track metrics on the initiator.
-                lastOpCtx = new SnapshotRestoreContext(reqId, snpName, fut0.startTime, null, null);
-
-                fut = fut0;
+                fut0 = fut;
             }
         }
         catch (IgniteException e) {
@@ -650,15 +645,10 @@ public class SnapshotRestoreProcess {
         if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
             throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
 
-        long opStartTime = req.requestId().equals(lastOpCtx.reqId) ? lastOpCtx.startTime : U.currentTimeMillis();
-
         DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
 
-        SnapshotRestoreContext opCtx0 =
-            new SnapshotRestoreContext(req.requestId(), req.snapshotName(), opStartTime, req.operationalNodeId(), discoCache0);
-
         if (F.isEmpty(metas))
-            return opCtx0;
+            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap());
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -711,9 +701,10 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        opCtx0.cfgs = cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
+        Map<Integer, StoredCacheData> cfgsById =
+            cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
-        return opCtx0;
+        return new SnapshotRestoreContext(req, discoCache0, cfgsById);
     }
 
     /**
@@ -1438,26 +1429,28 @@ public class SnapshotRestoreProcess {
         /** Operation end time. */
         private volatile long endTime;
 
-        /**
-         * Default constructor.
-         */
+        /** Creates an empty context. */
         protected SnapshotRestoreContext() {
-            this(null, "", 0, null, null);
+            reqId = null;
+            snpName = "";
+            startTime = 0;
+            opNodeId = null;
+            discoCache = null;
         }
 
         /**
-         * @param reqId Request ID.
-         * @param snpName Snapshot name.
-         * @param startTime Operation start time.
-         * @param opNodeId Operational node id.
+         * @param req Request to prepare cache group restore from the snapshot.
          * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
+         * @param cfgs Cache ID to configuration mapping.
          */
-        protected SnapshotRestoreContext(UUID reqId, String snpName, long startTime, UUID opNodeId, DiscoCache discoCache) {
-            this.reqId = reqId;
-            this.snpName = snpName;
-            this.startTime = startTime;
-            this.opNodeId = opNodeId;
+        protected SnapshotRestoreContext(SnapshotOperationRequest req, DiscoCache discoCache, Map<Integer, StoredCacheData> cfgs) {
+            reqId = req.requestId();
+            snpName = req.snapshotName();
+            opNodeId = req.operationalNodeId();
+            startTime = U.currentTimeMillis();
+
             this.discoCache = discoCache;
+            this.cfgs = cfgs;
         }
 
         /**
