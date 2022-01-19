@@ -1305,7 +1305,12 @@ public class CacheGroupContext {
             ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
     }
 
-    /** */
+    /**
+     * @param ccfg Cache configuration.
+     * @param plugins Ignite plugin processor.
+     * @return Comprehensive collection of topology validators for the cache based on its configuration
+     * and plugin extensions.
+     */
     private Collection<TopologyValidator> topologyValidators(
         CacheConfiguration<?, ?> ccfg,
         IgnitePluginProcessor plugins

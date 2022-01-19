@@ -19,7 +19,18 @@ package org.apache.ignite.plugin;
 
 import org.apache.ignite.configuration.TopologyValidator;
 
-/** */
+/**
+ * The {@link CacheTopologyValidatorProvider} is used to pass an implementation of {@link TopologyValidator}s for a specific
+ * cache through Ignite plugin extensions mechanism. Each cache, on startup, iterates over all registered
+ * {@link CacheTopologyValidatorProvider}s and tries to obtain the instance of {@link TopologyValidator} by
+ * cache name. All obtained {@link TopologyValidator}s are saved in the cache context and successively called during
+ * topology validation process. The topology validation is passed if all {@link TopologyValidator}s consider that
+ * the current topology is valid.
+ *
+ * @see TopologyValidator
+ * @see Extension
+ * @see PluginProvider#initExtensions(PluginContext, ExtensionRegistry)
+ */
 public interface CacheTopologyValidatorProvider extends Extension {
     /**
      * Provides instance of {@link TopologyValidator} for the cache with specified name.
