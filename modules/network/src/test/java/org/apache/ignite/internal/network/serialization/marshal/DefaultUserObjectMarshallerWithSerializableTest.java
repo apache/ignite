@@ -34,6 +34,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
@@ -253,6 +254,26 @@ class DefaultUserObjectMarshallerWithSerializableTest {
         marshalAndUnmarshalNonNull(new WithReadObjectButNoWriteObject());
 
         assertTrue(readObjectCalled);
+    }
+
+    @Test
+    void explicitSerialPersistentFieldsChangesSerializableFieldsList() throws Exception {
+        SerializableWithExplicitSerialPersistentFields unmarshalled = marshalAndUnmarshalNonNull(
+                new SerializableWithExplicitSerialPersistentFields()
+        );
+
+        assertThat(unmarshalled.listed, is(43));
+        assertThat(unmarshalled.notListed, is(0));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsForNonSerializableClasses() throws Exception {
+        NonSerializableWithExplicitSerialPersistentFields unmarshalled = marshalAndUnmarshalNonNull(
+                new NonSerializableWithExplicitSerialPersistentFields()
+        );
+
+        assertThat(unmarshalled.listed, is(43));
+        assertThat(unmarshalled.notListed, is(42));
     }
 
     /**
@@ -509,5 +530,28 @@ class DefaultUserObjectMarshallerWithSerializableTest {
         private void readObject(ObjectInputStream stream) {
             readObjectCalled = true;
         }
+    }
+
+    private static class SerializableWithExplicitSerialPersistentFields implements Serializable {
+        @SuppressWarnings("FieldMayBeFinal")
+        private int notListed = 42;
+        @SuppressWarnings("FieldMayBeFinal")
+        private int listed = 43;
+
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("listed", int.class)
+        };
+    }
+
+    private static class NonSerializableWithExplicitSerialPersistentFields {
+        @SuppressWarnings("FieldMayBeFinal")
+        private int notListed = 42;
+        @SuppressWarnings("FieldMayBeFinal")
+        private int listed = 43;
+
+        @SuppressWarnings("unused")
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("listed", int.class)
+        };
     }
 }

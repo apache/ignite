@@ -21,6 +21,7 @@ import static org.apache.ignite.internal.network.serialization.SerializationType
 import static org.apache.ignite.internal.network.serialization.SerializationType.EXTERNALIZABLE;
 import static org.apache.ignite.internal.network.serialization.SerializationType.SERIALIZABLE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -37,6 +38,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
+import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -524,6 +526,63 @@ public class ClassDescriptorFactoryTest {
         assertDoesNotThrow(() -> registry.getRequiredDescriptor(Parent.class));
     }
 
+    @Test
+    void supportsExplicitSerialPersistentFieldsForSerializableClasses() {
+        ClassDescriptor descriptor = factory.create(SerializableWithExplicitSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), hasSize(1));
+        assertThat(descriptor.fields().get(0).name(), is("listed"));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsForNonSerializableClasses() {
+        ClassDescriptor descriptor = factory.create(NonSerializableWithExplicitSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), hasSize(2));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldIsNotPrivate() {
+        ClassDescriptor descriptor = factory.create(WithNonPrivateSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), is(empty()));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldIsNotStatic() {
+        ClassDescriptor descriptor = factory.create(WithNonStaticSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), hasSize(3));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldIsNotFinal() {
+        ClassDescriptor descriptor = factory.create(WithNonFinalSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), is(empty()));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldIsNull() {
+        ClassDescriptor descriptor = factory.create(WithNullSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), is(empty()));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldIsOfWrongType() {
+        ClassDescriptor descriptor = factory.create(WithWrongTypeSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), is(empty()));
+    }
+
+    @Test
+    void ignoresExplicitSerialPersistentFieldsIfTheFieldContainsDuplicateFieldDefinitions() {
+        ClassDescriptor descriptor = factory.create(WithDuplicateSerialPersistentFields.class);
+
+        assertThat(descriptor.fields(), hasSize(1));
+    }
+
     private static class Parent {
         @SuppressWarnings("unused")
         private String value;
@@ -563,5 +622,71 @@ public class ClassDescriptorFactoryTest {
         private Object readObjectNoData(ObjectInputStream stream) {
             return null;
         }
+    }
+
+    private static class SerializableWithExplicitSerialPersistentFields implements Serializable {
+        @SuppressWarnings("unused")
+        private int notListed;
+        @SuppressWarnings("unused")
+        private int listed;
+
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("listed", int.class)
+        };
+    }
+
+    private static class NonSerializableWithExplicitSerialPersistentFields {
+        @SuppressWarnings("unused")
+        private int notListed;
+        @SuppressWarnings("unused")
+        private int listed;
+
+        @SuppressWarnings("unused")
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("listed", int.class)
+        };
+    }
+
+    private static class WithNonPrivateSerialPersistentFields implements Serializable {
+        static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("field", int.class)
+        };
+    }
+
+    private static class WithNonStaticSerialPersistentFields implements Serializable {
+        @SuppressWarnings("unused")
+        private int first;
+        @SuppressWarnings("unused")
+        private int second;
+
+        @SuppressWarnings("unused")
+        private final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("first", int.class)
+        };
+    }
+
+    private static class WithNonFinalSerialPersistentFields implements Serializable {
+        @SuppressWarnings("FieldMayBeFinal")
+        private static ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("field", int.class)
+        };
+    }
+
+    private static class WithNullSerialPersistentFields implements Serializable {
+        private static final ObjectStreamField[] serialPersistentFields = null;
+    }
+
+    private static class WithWrongTypeSerialPersistentFields implements Serializable {
+        private static final Object serialPersistentFields = new Object();
+    }
+
+    private static class WithDuplicateSerialPersistentFields implements Serializable {
+        @SuppressWarnings("unused")
+        private int field;
+
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("field", int.class),
+                new ObjectStreamField("field", int.class)
+        };
     }
 }

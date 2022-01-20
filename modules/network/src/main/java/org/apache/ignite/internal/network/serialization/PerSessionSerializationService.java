@@ -249,7 +249,13 @@ public class PerSessionSerializationService {
 
     private FieldDescriptor fieldDescriptorFromMessage(FieldDescriptorMessage fieldMsg, Class<?> declaringClass) {
         int typeDescriptorId = fieldMsg.typeDescriptorId();
-        return new FieldDescriptor(fieldMsg.name(), getClass(typeDescriptorId, fieldMsg.className()), typeDescriptorId, declaringClass);
+        return new FieldDescriptor(
+                fieldMsg.name(),
+                getClass(typeDescriptorId, fieldMsg.className()),
+                typeDescriptorId,
+                fieldMsg.unshared(),
+                declaringClass
+        );
     }
 
     private ClassDescriptor mergeDescriptor(ClassDescriptor localDescriptor, ClassDescriptor remoteDescriptor) {

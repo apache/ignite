@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -27,17 +28,21 @@ class MarshallingContextTest {
     private final MarshallingContext context = new MarshallingContext();
 
     @Test
-    void firstMemorizationReturnsFalse() {
-        assertNull(context.rememberAsSeen(new Object()));
+    void firstMemorizationReturnsFreshObjectId() {
+        long flaggedObjectId = context.memorizeObject(new Object(), false);
+
+        assertFalse(FlaggedObjectIds.isAlreadySeen(flaggedObjectId));
     }
 
     @Test
-    void secondMemorizationOfSameObjectReturnsTrue() {
+    void secondMemorizationOfSameObjectReturnsAlreadySeenObjectId() {
         Object object = new Object();
 
-        context.rememberAsSeen(object);
+        context.memorizeObject(object, false);
 
-        assertNotNull(context.rememberAsSeen(object));
+        long flaggedObjectId = context.memorizeObject(object, false);
+
+        assertTrue(FlaggedObjectIds.isAlreadySeen(flaggedObjectId));
     }
 
     @Test
@@ -45,16 +50,36 @@ class MarshallingContextTest {
         Key key1 = new Key("test");
         Key key2 = new Key("test");
 
-        context.rememberAsSeen(key1);
+        context.memorizeObject(key1, false);
 
-        assertNull(context.rememberAsSeen(key2));
+        long flaggedObjectId = context.memorizeObject(key2, false);
+
+        assertFalse(FlaggedObjectIds.isAlreadySeen(flaggedObjectId));
     }
 
     @Test
-    void ignoresNulls() {
-        context.rememberAsSeen(null);
+    void memorizationThrowsOnNullObject() {
+        assertThrows(NullPointerException.class, () -> context.memorizeObject(null, false));
+    }
 
-        assertNull(context.rememberAsSeen(null));
+    @Test
+    void memorizationGeneratesNewObjectIdForAlreadySeenObjectWhenUnsharedIsTrue() {
+        var object = new Object();
+        context.memorizeObject(object, false);
+
+        long flaggedObjectId = context.memorizeObject(object, true);
+
+        assertFalse(FlaggedObjectIds.isAlreadySeen(flaggedObjectId));
+    }
+
+    @Test
+    void unsharedObjectDoesNotGetRememberedAsSeen() {
+        var object = new Object();
+        context.memorizeObject(object, true);
+
+        long flaggedObjectId = context.memorizeObject(object, false);
+
+        assertFalse(FlaggedObjectIds.isAlreadySeen(flaggedObjectId));
     }
 
     private static class Key {

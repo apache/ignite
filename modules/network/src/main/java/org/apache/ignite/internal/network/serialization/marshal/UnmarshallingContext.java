@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -36,6 +38,7 @@ class UnmarshallingContext implements IdIndexedDescriptors {
     private final ClassLoader classLoader;
 
     private final Map<Integer, Object> idsToObjects = new HashMap<>();
+    private final IntSet unsharedObjectIds = new IntOpenHashSet();
 
     private Object objectCurrentlyReadWithReadObject;
     private ClassDescriptor descriptorOfObjectCurrentlyReadWithReadObject;
@@ -58,8 +61,11 @@ class UnmarshallingContext implements IdIndexedDescriptors {
         return classLoader;
     }
 
-    public void registerReference(int objectId, Object object) {
+    public void registerReference(int objectId, Object object, boolean unshared) {
         idsToObjects.put(objectId, object);
+        if (unshared) {
+            unsharedObjectIds.add(objectId);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -71,6 +77,10 @@ class UnmarshallingContext implements IdIndexedDescriptors {
         }
 
         return (T) result;
+    }
+
+    public boolean isUnsharedObjectId(int objectId) {
+        return unsharedObjectIds.contains(objectId);
     }
 
     public void markSource(int readAheadLimit) {
@@ -110,10 +120,11 @@ class UnmarshallingContext implements IdIndexedDescriptors {
     UosObjectInputStream objectInputStream(
             DataInputStream input,
             ValueReader<Object> valueReader,
+            ValueReader<Object> unsharedReader,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter
     ) throws IOException {
         if (objectInputStream == null) {
-            objectInputStream = new UosObjectInputStream(input, valueReader, defaultFieldsReaderWriter, this);
+            objectInputStream = new UosObjectInputStream(input, valueReader, unsharedReader, defaultFieldsReaderWriter, this);
         }
 
         return objectInputStream;

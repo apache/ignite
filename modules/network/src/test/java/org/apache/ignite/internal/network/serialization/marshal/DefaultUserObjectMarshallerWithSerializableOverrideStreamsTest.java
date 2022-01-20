@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.network.serialization.marshal;
 
 import static org.apache.ignite.internal.network.serialization.marshal.Throwables.causalChain;
+import static org.apache.ignite.internal.network.serialization.marshal.Throwables.rootCauseOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,9 +40,12 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
@@ -319,9 +326,9 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
         original.byteVal = (byte) 101;
         original.shortVal = (short) 102;
         original.intVal = 103;
-        original.longVal = (long) 104;
+        original.longVal = 104;
         original.floatVal = (float) 105;
-        original.doubleVal = (double) 106;
+        original.doubleVal = 106;
         original.charVal = 'z';
         original.booleanVal = true;
         original.objectVal = new IntHolder(142);
@@ -406,6 +413,102 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
         };
 
         assertDoesNotThrow(() -> marshalAndUnmarshalNonNull(new WithReadFields()));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void writeUnsharedWritesNewCopyOfObjectEachTime() throws Exception {
+        readerAndWriter = new ReaderAndWriter<>(
+                oos -> {
+                    var object = new IntHolder(42);
+                    oos.writeUnshared(object);
+                    oos.writeUnshared(object);
+                },
+                ois -> {
+                    Object o1 = ois.readObject();
+                    Object o2 = ois.readObject();
+                    return List.of(o1, o2);
+                }
+        );
+
+        var result = (WithCustomizableOverride<List<IntHolder>>) marshalAndUnmarshalWithCustomizableOverride();
+
+        assertThat(result.value.get(0), is(not(sameInstance(result.value.get(1)))));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void noBackReferenceIsGeneratedToObjectWrittenWithWriteUnshared() throws Exception {
+        readerAndWriter = new ReaderAndWriter<>(
+                oos -> {
+                    var object = new IntHolder(42);
+                    oos.writeUnshared(object);
+                    oos.writeObject(object);
+                },
+                ois -> {
+                    Object o1 = ois.readObject();
+                    Object o2 = ois.readObject();
+                    return List.of(o1, o2);
+                }
+        );
+
+        var result = (WithCustomizableOverride<List<IntHolder>>) marshalAndUnmarshalWithCustomizableOverride();
+
+        assertThat(result.value.get(0), is(not(sameInstance(result.value.get(1)))));
+    }
+
+    @Test
+    void readUnsharedThrowsAnExceptionIfTheObjectWasAlreadyReadEarlier() {
+        readerAndWriter = new ReaderAndWriter<>(
+                oos -> {
+                    var object = new IntHolder(42);
+                    oos.writeObject(object);
+                    oos.writeObject(object);
+                },
+                ois -> {
+                    Object o1 = ois.readObject();
+                    Object o2 = ois.readUnshared();
+                    return List.of(o1, o2);
+                }
+        );
+
+        Throwable ex = assertThrows(UnmarshalException.class, this::marshalAndUnmarshalWithCustomizableOverride);
+        assertThat(rootCauseOf(ex), is(instanceOf(InvalidObjectException.class)));
+        assertThat(rootCauseOf(ex).getMessage(), is("cannot read back reference as unshared"));
+    }
+
+    @Test
+    void readUnsharedMakesCorrespondingObjectIdInvalidForReadingWithReadObjectLater() {
+        readerAndWriter = new ReaderAndWriter<>(
+                oos -> {
+                    var object = new IntHolder(42);
+                    oos.writeObject(object);
+                    oos.writeObject(object);
+                },
+                ois -> {
+                    Object o1 = ois.readUnshared();
+                    Object o2 = ois.readObject();
+                    return List.of(o1, o2);
+                }
+        );
+
+        Throwable ex = assertThrows(UnmarshalException.class, this::marshalAndUnmarshalWithCustomizableOverride);
+        assertThat(rootCauseOf(ex), is(instanceOf(InvalidObjectException.class)));
+        assertThat(rootCauseOf(ex).getMessage(), is("cannot read back reference to unshared object"));
+    }
+
+    @Test
+    void putFieldsSupportsUnsharedFields() throws Exception {
+        WithPutFieldsAndUnsharedFields unmarshalled = marshalAndUnmarshalNonNull(new WithPutFieldsAndUnsharedFields());
+
+        assertThat(unmarshalled.value1, is(not(sameInstance(unmarshalled.value2))));
+    }
+
+    @Test
+    void readFieldsSupportsUnsharedFields() {
+        Throwable ex = assertThrows(UnmarshalException.class, () -> marshalAndUnmarshalNonNull(new WithReadFieldsAndReadUnsharedFields()));
+        assertThat(rootCauseOf(ex), is(instanceOf(InvalidObjectException.class)));
+        assertThat(rootCauseOf(ex).getMessage(), is("cannot read back reference as unshared"));
     }
 
     @Test
@@ -688,6 +791,58 @@ class DefaultUserObjectMarshallerWithSerializableOverrideStreamsTest {
             intValue = getField.get("intValue", -1);
             objectValue = getField.get("objectValue", null);
             nested = (NestedWithPutFields) getField.get("nested", null);
+        }
+    }
+
+    private static class WithPutFieldsAndUnsharedFields implements Serializable {
+        private static final IntHolder VALUE = new IntHolder(42);
+
+        private IntHolder value1 = VALUE;
+        private IntHolder value2 = VALUE;
+
+        /** Both serializable fields are marked as unshared. */
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("value1", IntHolder.class, true),
+                new ObjectStreamField("value2", IntHolder.class, true)
+        };
+
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            ObjectOutputStream.PutField putField = stream.putFields();
+
+            putField.put("value1", value1);
+            putField.put("value2", value2);
+
+            stream.writeFields();
+        }
+
+        private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+            value1 = (IntHolder) stream.readObject();
+            value2 = (IntHolder) stream.readObject();
+        }
+    }
+
+    private static class WithReadFieldsAndReadUnsharedFields implements Serializable {
+        private static final IntHolder VALUE = new IntHolder(42);
+
+        private IntHolder value1 = VALUE;
+        private IntHolder value2 = VALUE;
+
+        /** Both serializable fields are marked as unshared. */
+        private static final ObjectStreamField[] serialPersistentFields = {
+                new ObjectStreamField("value1", IntHolder.class, true),
+                new ObjectStreamField("value2", IntHolder.class, true)
+        };
+
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            stream.writeObject(value1);
+            stream.writeObject(value2);
+        }
+
+        private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+            ObjectInputStream.GetField getField = stream.readFields();
+
+            value1 = (IntHolder) getField.get("value1", null);
+            value2 = (IntHolder) getField.get("value2", null);
         }
     }
 

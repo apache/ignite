@@ -32,6 +32,7 @@ import org.apache.ignite.internal.network.serialization.Primitives;
 class UosObjectInputStream extends ObjectInputStream {
     private final DataInputStream input;
     private final ValueReader<Object> valueReader;
+    private final ValueReader<Object> unsharedReader;
     private final DefaultFieldsReaderWriter defaultFieldsReaderWriter;
     private final UnmarshallingContext context;
 
@@ -40,11 +41,13 @@ class UosObjectInputStream extends ObjectInputStream {
     UosObjectInputStream(
             DataInputStream input,
             ValueReader<Object> valueReader,
+            ValueReader<Object> unsharedReader,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter,
             UnmarshallingContext context
     ) throws IOException {
         this.input = input;
         this.valueReader = valueReader;
+        this.unsharedReader = unsharedReader;
         this.defaultFieldsReaderWriter = defaultFieldsReaderWriter;
         this.context = context;
     }
@@ -163,15 +166,22 @@ class UosObjectInputStream extends ObjectInputStream {
         try {
             return valueReader.read(input, context);
         } catch (UnmarshalException e) {
-            throw new UncheckedUnmarshalException("Cannot read object", e);
+            throw new UncheckedUnmarshalException("Cannot read an object", e);
         }
     }
 
     /** {@inheritDoc} */
     @Override
     public Object readUnshared() throws IOException {
-        // TODO: IGNITE-16257 - implement 'unshared' logic?
-        return doReadObject();
+        return doReadUnshared();
+    }
+
+    private Object doReadUnshared() throws IOException {
+        try {
+            return unsharedReader.read(input, context);
+        } catch (UnmarshalException e) {
+            throw new UncheckedUnmarshalException("Cannot read an unshared object", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -323,7 +333,14 @@ class UosObjectInputStream extends ObjectInputStream {
                     int length = Primitives.widthInBytes(fieldDesc.clazz());
                     input.readFully(primitiveFieldsData, offset, length);
                 } else {
-                    objectFieldVals[objectFieldIndex] = doReadObject();
+                    Object readObject;
+                    if (fieldDesc.isUnshared()) {
+                        readObject = doReadUnshared();
+                    } else {
+                        readObject = doReadObject();
+                    }
+
+                    objectFieldVals[objectFieldIndex] = readObject;
                     objectFieldIndex++;
                 }
             }

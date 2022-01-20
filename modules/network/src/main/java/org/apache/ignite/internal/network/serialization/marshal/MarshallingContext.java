@@ -25,9 +25,9 @@ import java.io.NotActiveException;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Context using during marshalling of an object graph accessible from a root object.
@@ -53,48 +53,38 @@ class MarshallingContext {
     }
 
     /**
-     * If the object was already seen before, its ID is returned; otherwise, it's memorized as seen with a fresh ID
-     * and {@code null} is returned.
+     * Memorizes the object and returns an object ID (with flags) for this object. The returned value is a long that should be
+     * handled using {@link FlaggedObjectIds}.
+     * If {@code unshared} is {@code true}, a fresh object ID is generated and the object is not memorized.
+     * If {@code unshared} is {@code false}: if the object was already seen before, its previous ID is returned; otherwise,
+     * it's memorized as seen with a fresh ID which is returned.
      *
-     * @param object object to operate upon
-     * @return object ID if it was seen earlier or {@code null} if the object is new
+     * @param object object to operate upon ({@code null} is not supported)
+     * @param unshared if this is {@code true}, then new object ID is generated even if the object was already seen before
+     * @return object ID with flags (use {@link FlaggedObjectIds} to work with this value)
      */
-    @Nullable
-    public Integer rememberAsSeen(@Nullable Object object) {
-        if (object == null) {
-            return null;
+    public long memorizeObject(Object object, boolean unshared) {
+        Objects.requireNonNull(object);
+
+        if (unshared) {
+            int newId = nextId();
+            return FlaggedObjectIds.freshObjectId(newId);
         }
 
         Integer prevId = objectsToIds.get(object);
         if (prevId != null) {
-            return prevId;
+            return FlaggedObjectIds.alreadySeenObjectId(prevId);
         } else {
             int newId = nextId();
 
             objectsToIds.put(object, newId);
 
-            return null;
+            return FlaggedObjectIds.freshObjectId(newId);
         }
     }
 
     private int nextId() {
         return nextObjectId++;
-    }
-
-    /**
-     * Returns an object ID by the given object.
-     *
-     * @param object lookup object
-     * @return object ID
-     */
-    public int objectId(Object object) {
-        Integer id = objectsToIds.get(object);
-
-        if (id == null) {
-            throw new IllegalStateException("No ID memorized yet for " + object);
-        }
-
-        return id;
     }
 
     public Object objectCurrentlyWrittenWithWriteObject() throws NotActiveException {
@@ -126,10 +116,11 @@ class MarshallingContext {
     UosObjectOutputStream objectOutputStream(
             DataOutputStream output,
             TypedValueWriter valueWriter,
+            TypedValueWriter unsharedWriter,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter
     ) throws IOException {
         if (objectOutputStream == null) {
-            objectOutputStream = new UosObjectOutputStream(output, valueWriter, defaultFieldsReaderWriter, this);
+            objectOutputStream = new UosObjectOutputStream(output, valueWriter, unsharedWriter, defaultFieldsReaderWriter, this);
         }
 
         return objectOutputStream;

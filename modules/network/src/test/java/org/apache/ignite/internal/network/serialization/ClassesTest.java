@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.Externalizable;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import org.junit.jupiter.api.Test;
 
 class ClassesTest {
     @Test
     void isSerializableReturnsFalseForNonSerializableClass() {
-        assertFalse(Classes.isSerializable(NonSerializable.class));
+        assertFalse(Classes.isSerializable(Object.class));
     }
 
     @Test
@@ -36,7 +39,7 @@ class ClassesTest {
 
     @Test
     void isLambdaReturnsFalseForOrdinaryClassInstance() {
-        assertFalse(Classes.isLambda(NonSerializable.class));
+        assertFalse(Classes.isLambda(Object.class));
     }
 
     @SuppressWarnings("Convert2Lambda")
@@ -90,12 +93,34 @@ class ClassesTest {
         assertFalse(Classes.isLambda(EmptyEnum.class));
     }
 
-    private static class NonSerializable {
+    @Test
+    void isExternalizableReturnsFalseForNonExternalizable() {
+        assertFalse(Classes.isExternalizable(Object.class));
+    }
+
+    @Test
+    void isExternalizableReturnsTrueForExternalizableClass() {
+        assertTrue(Classes.isExternalizable(EmptyExternalizable.class));
     }
 
     private static class EmptySerializable implements Serializable {
     }
 
     private enum EmptyEnum {
+    }
+
+    private static class EmptyExternalizable implements Externalizable {
+        public EmptyExternalizable() {
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) {
+            // no-op
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) {
+            // no-op
+        }
     }
 }

@@ -36,6 +36,14 @@ class Throwables {
         return List.copyOf(lineage);
     }
 
+    static Throwable rootCauseOf(Throwable th) {
+        if (th.getCause() == null) {
+            return th;
+        }
+
+        return rootCauseOf(th.getCause());
+    }
+
     private Throwables() {
     }
 }

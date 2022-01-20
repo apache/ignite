@@ -39,14 +39,23 @@ import org.apache.ignite.internal.network.serialization.marshal.UosObjectOutputS
 class StructuredObjectMarshaller implements DefaultFieldsReaderWriter {
     private final IdIndexedDescriptors descriptors;
     private final TypedValueWriter valueWriter;
+    private final TypedValueWriter unsharedWriter;
     private final ValueReader<Object> valueReader;
+    private final ValueReader<Object> unsharedReader;
 
     private final Instantiation instantiation;
 
-    StructuredObjectMarshaller(IdIndexedDescriptors descriptors, TypedValueWriter valueWriter, ValueReader<Object> valueReader) {
+    StructuredObjectMarshaller(
+            IdIndexedDescriptors descriptors,
+            TypedValueWriter valueWriter,
+            TypedValueWriter unsharedWriter,
+            ValueReader<Object> valueReader,
+            ValueReader<Object> unsharedReader) {
         this.descriptors = descriptors;
         this.valueWriter = valueWriter;
+        this.unsharedWriter = unsharedWriter;
         this.valueReader = valueReader;
+        this.unsharedReader = unsharedReader;
 
         instantiation = new BestEffortInstantiation(
                 new SerializableInstantiation(),
@@ -95,7 +104,7 @@ class StructuredObjectMarshaller implements DefaultFieldsReaderWriter {
     private void writeWithWriteObject(Object object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
             throws IOException, MarshalException {
         // Do not close the stream yet!
-        UosObjectOutputStream oos = context.objectOutputStream(output, valueWriter, this);
+        UosObjectOutputStream oos = context.objectOutputStream(output, valueWriter, unsharedWriter, this);
 
         UosPutField oldPut = oos.replaceCurrentPutFieldWithNull();
         context.startWritingWithWriteObject(object, descriptor);
@@ -196,7 +205,7 @@ class StructuredObjectMarshaller implements DefaultFieldsReaderWriter {
             UnmarshallingContext context
     ) throws IOException, UnmarshalException {
         // Do not close the stream yet!
-        UosObjectInputStream ois = context.objectInputStream(input, valueReader, this);
+        UosObjectInputStream ois = context.objectInputStream(input, valueReader, unsharedReader, this);
 
         UosGetField oldGet = ois.replaceCurrentGetFieldWithNull();
         context.startReadingWithReadObject(object, descriptor);

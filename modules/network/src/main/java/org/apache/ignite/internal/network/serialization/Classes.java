@@ -15,19 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization.marshal;
+package org.apache.ignite.internal.network.serialization;
 
+import java.io.Externalizable;
 import java.io.Serializable;
 
 /**
  * Utilities to work with classes.
  */
-class Classes {
-    static boolean isSerializable(Class<?> objectClass) {
+public class Classes {
+    /**
+     * Returns {@code true} if the given class implements {@link Serializable}.
+     *
+     * @param objectClass class to check
+     * @return {@code true} if the given class implements {@link Serializable}
+     */
+    public static boolean isSerializable(Class<?> objectClass) {
         return Serializable.class.isAssignableFrom(objectClass);
     }
 
-    static boolean isLambda(Class<?> objectClass) {
+    /**
+     * Returns {@code true} if the given class is defined by a lambda expression.
+     *
+     * @param objectClass class to check
+     * @return {@code true} if the given class is defined by a lambda expression
+     */
+    public static boolean isLambda(Class<?> objectClass) {
         return !objectClass.isPrimitive() && !objectClass.isArray()
                 && !objectClass.isAnonymousClass() && !objectClass.isLocalClass()
                 && objectClass.isSynthetic()
@@ -41,6 +54,16 @@ class Classes {
         } catch (ClassNotFoundException e) {
             return true;
         }
+    }
+
+    /**
+     * Returns {@code true} if the given class implements {@link Externalizable}.
+     *
+     * @param objectClass class to check
+     * @return {@code true} if the given class implements {@link Externalizable}
+     */
+    public static boolean isExternalizable(Class<?> objectClass) {
+        return Externalizable.class.isAssignableFrom(objectClass);
     }
 
     private Classes() {

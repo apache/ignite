@@ -19,10 +19,12 @@ package org.apache.ignite.internal.network.serialization;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import java.io.Externalizable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -32,7 +34,9 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,10 +111,10 @@ public class ClassDescriptorFactory {
 
         int descriptorId = registry.getId(clazz);
 
-        if (Externalizable.class.isAssignableFrom(clazz)) {
+        if (Classes.isExternalizable(clazz)) {
             //noinspection unchecked
             return externalizable(descriptorId, (Class<? extends Externalizable>) clazz);
-        } else if (Serializable.class.isAssignableFrom(clazz)) {
+        } else if (Classes.isSerializable(clazz)) {
             //noinspection unchecked
             return serializable(descriptorId, (Class<? extends Serializable>) clazz);
         } else {
@@ -258,6 +262,65 @@ public class ClassDescriptorFactory {
      * @return properly sorted field descriptors
      */
     private List<FieldDescriptor> fields(Class<?> clazz) {
+        return maybeSerialPersistentFields(clazz)
+                .orElseGet(() -> actualFields(clazz));
+    }
+
+    @SuppressWarnings("CodeBlock2Expr")
+    private Optional<List<FieldDescriptor>> maybeSerialPersistentFields(Class<?> clazz) {
+        if (!Classes.isSerializable(clazz)) {
+            return Optional.empty();
+        }
+
+        return maybeSerialPersistentFieldsField(clazz)
+                .filter(this::isPrivateStaticFinal)
+                .filter(field -> field.getType() == ObjectStreamField[].class)
+                .map(this::getFieldValue)
+                .map(ObjectStreamField[].class::cast)
+                .filter(this::noDuplicates)
+                .map(serialPersistentFields -> {
+                    return Arrays.stream(serialPersistentFields)
+                            .map(field -> fieldDescriptorFromObjectStreamField(field, clazz))
+                            .collect(toList());
+                });
+    }
+
+    private Optional<Field> maybeSerialPersistentFieldsField(Class<?> clazz) {
+        try {
+            Field field = clazz.getDeclaredField("serialPersistentFields");
+            field.setAccessible(true);
+            return Optional.of(field);
+        } catch (NoSuchFieldException e) {
+            return Optional.empty();
+        }
+    }
+
+    private boolean isPrivateStaticFinal(Field field) {
+        int modifiers = field.getModifiers();
+        return Modifier.isPrivate(modifiers) && Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers);
+    }
+
+    @Nullable
+    private Object getFieldValue(Field serialPersistentFieldsField) {
+        try {
+            return serialPersistentFieldsField.get(null);
+        } catch (IllegalAccessException e) {
+            throw new ReflectionException("Cannot get field value", e);
+        }
+    }
+
+    private boolean noDuplicates(ObjectStreamField[] fields) {
+        Set<String> allFieldNames = Arrays.stream(fields)
+                .map(ObjectStreamField::getName)
+                .collect(toSet());
+        return allFieldNames.size() == fields.length;
+    }
+
+    private FieldDescriptor fieldDescriptorFromObjectStreamField(ObjectStreamField field, Class<?> clazz) {
+        return new FieldDescriptor(field.getName(), field.getType(), registry.getId(field.getType()), field.isUnshared(), clazz);
+    }
+
+    private List<FieldDescriptor> actualFields(Class<?> clazz) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .sorted(comparing(Field::getName))
                 .filter(field -> {

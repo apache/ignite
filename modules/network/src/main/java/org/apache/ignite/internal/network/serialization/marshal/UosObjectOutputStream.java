@@ -34,6 +34,7 @@ import org.apache.ignite.internal.network.serialization.Primitives;
 class UosObjectOutputStream extends ObjectOutputStream {
     private final DataOutputStream output;
     private final TypedValueWriter valueWriter;
+    private final TypedValueWriter unsharedWriter;
     private final DefaultFieldsReaderWriter defaultFieldsReaderWriter;
     private final MarshallingContext context;
 
@@ -42,11 +43,12 @@ class UosObjectOutputStream extends ObjectOutputStream {
     UosObjectOutputStream(
             DataOutputStream output,
             TypedValueWriter valueWriter,
-            DefaultFieldsReaderWriter defaultFieldsReaderWriter,
+            TypedValueWriter unsharedWriter, DefaultFieldsReaderWriter defaultFieldsReaderWriter,
             MarshallingContext context
     ) throws IOException {
         this.output = output;
         this.valueWriter = valueWriter;
+        this.unsharedWriter = unsharedWriter;
         this.defaultFieldsReaderWriter = defaultFieldsReaderWriter;
         this.context = context;
     }
@@ -145,15 +147,22 @@ class UosObjectOutputStream extends ObjectOutputStream {
         try {
             valueWriter.write(obj, objectClass(obj), output, context);
         } catch (MarshalException e) {
-            throw new UncheckedMarshalException("Cannot write object", e);
+            throw new UncheckedMarshalException("Cannot write an object", e);
         }
     }
 
     /** {@inheritDoc} */
     @Override
     public void writeUnshared(Object obj) throws IOException {
-        // TODO: IGNITE-16257 - implement 'unshared' logic?
-        doWriteObject(obj);
+        doWriteUnshared(obj);
+    }
+
+    private void doWriteUnshared(Object obj) throws IOException {
+        try {
+            unsharedWriter.write(obj, objectClass(obj), output, context);
+        } catch (MarshalException e) {
+            throw new UncheckedMarshalException("Cannot write an unshared object", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -314,7 +323,14 @@ class UosObjectOutputStream extends ObjectOutputStream {
                     int length = Primitives.widthInBytes(fieldDesc.clazz());
                     out.write(primitiveFieldsData, offset, length);
                 } else {
-                    doWriteObject(objectFieldVals[objectFieldIndex]);
+                    Object objectToWrite = objectFieldVals[objectFieldIndex];
+
+                    if (fieldDesc.isUnshared()) {
+                        doWriteUnshared(objectToWrite);
+                    } else {
+                        doWriteObject(objectToWrite);
+                    }
+
                     objectFieldIndex++;
                 }
             }

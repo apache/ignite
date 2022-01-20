@@ -28,17 +28,24 @@ import org.apache.ignite.internal.network.serialization.ClassDescriptor;
  */
 class ExternalizableMarshaller {
     private final ValueReader<Object> valueReader;
-    private final TypedValueWriter typedValueWriter;
+    private final ValueReader<Object> unsharedReader;
+    private final TypedValueWriter valueWriter;
+    private final TypedValueWriter unsharedWriter;
     private final DefaultFieldsReaderWriter defaultFieldsReaderWriter;
 
     private final NoArgConstructorInstantiation instantiation = new NoArgConstructorInstantiation();
 
     ExternalizableMarshaller(
-            TypedValueWriter typedValueWriter, ValueReader<Object> valueReader,
+            TypedValueWriter typedValueWriter,
+            TypedValueWriter unsharedWriter,
+            ValueReader<Object> valueReader,
+            ValueReader<Object> unsharedReader,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter
     ) {
+        this.valueWriter = typedValueWriter;
+        this.unsharedWriter = unsharedWriter;
         this.valueReader = valueReader;
-        this.typedValueWriter = typedValueWriter;
+        this.unsharedReader = unsharedReader;
         this.defaultFieldsReaderWriter = defaultFieldsReaderWriter;
     }
 
@@ -52,7 +59,7 @@ class ExternalizableMarshaller {
     private void externalizeTo(Externalizable externalizable, DataOutputStream output, MarshallingContext context)
             throws IOException {
         // Do not close the stream yet!
-        UosObjectOutputStream oos = context.objectOutputStream(output, typedValueWriter, defaultFieldsReaderWriter);
+        UosObjectOutputStream oos = context.objectOutputStream(output, valueWriter, unsharedWriter, defaultFieldsReaderWriter);
 
         UosObjectOutputStream.UosPutField oldPut = oos.replaceCurrentPutFieldWithNull();
         context.endWritingWithWriteObject();
@@ -77,7 +84,7 @@ class ExternalizableMarshaller {
     <T extends Externalizable> void fillExternalizableFrom(DataInputStream input, T object, UnmarshallingContext context)
             throws IOException, UnmarshalException {
         // Do not close the stream yet!
-        UosObjectInputStream ois = context.objectInputStream(input, valueReader, defaultFieldsReaderWriter);
+        UosObjectInputStream ois = context.objectInputStream(input, valueReader, unsharedReader, defaultFieldsReaderWriter);
 
         UosObjectInputStream.UosGetField oldGet = ois.replaceCurrentGetFieldWithNull();
         context.endReadingWithReadObject();

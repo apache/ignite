@@ -36,6 +36,11 @@ public interface FieldDescriptorMessage extends NetworkMessage {
     int typeDescriptorId();
 
     /**
+     * Whether the field is serialized as unshared from the point of view of Java Serialization specification.
+     */
+    boolean unshared();
+
+    /**
      * Field's class name.
      */
     String className();

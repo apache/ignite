@@ -376,14 +376,7 @@ public class ClassDescriptor {
     public int primitiveFieldDataOffset(String fieldName, Class<?> requiredType) {
         assert requiredType.isPrimitive();
 
-        if (fieldsByName == null) {
-            fieldsByName = fieldsByNameMap(fields);
-        }
-
-        FieldDescriptor fieldDesc = fieldsByName.get(fieldName);
-        if (fieldDesc == null) {
-            throw new IllegalStateException("Did not find a field with name " + fieldName);
-        }
+        FieldDescriptor fieldDesc = requiredFieldByName(fieldName);
         if (fieldDesc.clazz() != requiredType) {
             throw new IllegalStateException("Field " + fieldName + " has type " + fieldDesc.clazz()
                     + ", but it was used as " + requiredType);
@@ -396,6 +389,19 @@ public class ClassDescriptor {
         assert primitiveFieldDataOffsets.containsKey(fieldName);
 
         return primitiveFieldDataOffsets.getInt(fieldName);
+    }
+
+    private FieldDescriptor requiredFieldByName(String fieldName) {
+        if (fieldsByName == null) {
+            fieldsByName = fieldsByNameMap(fields);
+        }
+
+        FieldDescriptor fieldDesc = fieldsByName.get(fieldName);
+        if (fieldDesc == null) {
+            throw new IllegalStateException("Did not find a field with name " + fieldName);
+        }
+
+        return fieldDesc;
     }
 
     private static Map<String, FieldDescriptor> fieldsByNameMap(List<FieldDescriptor> fields) {
