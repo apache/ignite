@@ -1,0 +1,59 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Performing Transactions
+
+This Alpha release introduces the key-value API that provides an interface for starting and completing transactions.
+
+== Executing Transactions
+
+Use the `igniteTransactions` class to create a transaction object and the `commit` method to send it.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+Transaction tx = igniteTransactions.begin();
+tx.commit()
+----
+--
+
+== Asynchronous Transactions
+
+You can also perform transactions asynchronously.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+protected Table accounts;
+protected Table customers;
+accounts.recordView().upsert(null, makeValue(1, BALANCE_1));
+accounts.recordView().upsert(null, makeValue(2, BALANCE_2));
+igniteTransactions.beginAsync()
+.thenCompose(tx -> accounts.recordView().getAsync(tx, makeKey(1))
+.thenCombine(accounts.recordView().getAsync(tx, makeKey(2)), (v1, v2) -> new Pair<>(v1, v2))
+.thenCompose(pair -> allOf(
+accounts.recordView().upsertAsync(
+tx, makeValue(1, pair.getFirst().doubleValue("balance") - DELTA)),
+accounts.recordView().upsertAsync(
+tx, makeValue(2, pair.getSecond().doubleValue("balance") + DELTA))
+)
+.thenApply(ignored -> tx)
+)
+).thenCompose(Transaction::commitAsync).join();
+----
+--

@@ -35,12 +35,11 @@ possesses the highest level of usability thanks to the following improvements:
 * See a link:https://cwiki.apache.org/confluence/display/IGNITE/Proposals+for+Ignite+3.0[full list of improvements,window=_blank].
 
 
-== New in Alpha 3
+== New in Alpha 4
 
-Apache Ignite Alpha 3 comes with the following new features:
+Apache Ignite Alpha 4 comes with the following new features:
 
-* New SQL engine based on Apache Calcite with implemented JDBC driver;
-* Persistence implementation based on RocksDB;
-* New binary client protocol with an implementation in Java;
-* Data rebalancing.
+* Transactions functionality;
+* Data Definition Language (DDL) commands;
+* Table views.
 

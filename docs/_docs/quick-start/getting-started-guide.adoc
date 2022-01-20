@@ -14,7 +14,7 @@
 // limitations under the License.
 = Getting Started Guide
 
-This guide provides essential details on how to start working with Ignite 3.0 alpha 3 by using the Ignite CLI tool, including the following information:
+This guide provides essential details on how to start working with Ignite 3.0 Alpha 4 by using the Ignite CLI tool, including the following information:
 
 * How to download and install the tool.
 * How to use the Ignite CLI tool to manage nodes.
@@ -24,13 +24,12 @@ This guide provides essential details on how to start working with Ignite 3.0 al
 == Prerequisites
 
 
-Ignite 3.0 alpha 3 was officially tested on:
+Ignite 3.0 Alpha 4 was officially tested on:
 
 include::../includes/prereqs.adoc[]
 
 
 == Installing Ignite CLI Tool
-
 
 To download and install the Ignite CLI Tool, follow the steps below:
 
@@ -41,7 +40,7 @@ To download and install the Ignite CLI Tool, follow the steps below:
 tab:Unix[]
 [source,shell]
 ----
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha3/apache-ignite-3.0.0-alpha3.zip" -o apache-ignite-3.0.0-alpha3.zip
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha4/apache-ignite-3.0.0-alpha4.zip" -o apache-ignite-3.0.0-alpha4.zip
 ----
 
 tab:Windows (PowerShell)[]
@@ -64,19 +63,19 @@ include::../includes/ignite-cli-download-windows.adoc[tag=command,indent=0]
 tab:Unix[]
 [source,shell]
 ----
-unzip apache-ignite-3.0.0-alpha3.zip && cd apache-ignite-3.0.0-alpha3
+unzip apache-ignite-3.0.0-alpha4.zip && cd apache-ignite-3.0.0-alpha4
 ----
 
 tab:Windows (PowerShell)[]
 [source,shell]
 ----
-Expand-Archive apache-ignite-3.0.0-alpha3.zip -DestinationPath . ; cd apache-ignite-3.0.0-alpha3
+Expand-Archive apache-ignite-3.0.0-alpha4.zip -DestinationPath . ; cd apache-ignite-3.0.0-alpha4
 ----
 
 tab:Windows (CMD)[]
 [source,shell]
 ----
-tar -xf apache-ignite-3.0.0-alpha3.zip & cd apache-ignite-3.0.0-alpha3
+tar -xf apache-ignite-3.0.0-alpha4.zip & cd apache-ignite-3.0.0-alpha4
 ----
 --
 
@@ -141,7 +140,7 @@ WARNING:
 If you have installed one of the Ignite 3 Alpha releases before, please remove the `~/.ignitecfg` file before proceeding. This is a temporary step, the procedure will be improved in the future releases.
 ----
 
-. To start an Ignite 3.0 alpha 3 cluster, you need to install Ignite core artifacts first:
+. To start an Ignite 3.0 Alpha 4 cluster, you need to install Ignite core artifacts first:
 +
 [source, shell]
 ----
@@ -187,7 +186,7 @@ For example, use the `cat` command on a Unix operating system.
 
 == Built-in Examples
 
-Ignite 3.0 alpha 3 comes with examples that are configured as a separate Maven project located in the `examples` folder.
+Ignite 3.0 Alpha 4 comes with examples that are configured as a separate Maven project located in the `examples` folder.
 
 The project includes the following examples:
 
@@ -196,7 +195,7 @@ The project includes the following examples:
 * `SqlJdbcExample` - demonstrates the usage of the Apache Ignite JDBC driver.
 * `RebalanceExample` - demonstrates the data rebalancing process.
 
-To run the `RebalanceExample`, refer to its link:https://github.com/apache/ignite-3/blob/3.0.0-alpha3/examples/src/main/java/org/apache/ignite/example/rebalance/RebalanceExample.java[JavaDoc,window=_blank] for instructions.
+To run the `RebalanceExample`, refer to its link:https://github.com/apache/ignite-3/blob/3.0.0-alpha4/examples/src/main/java/org/apache/ignite/example/rebalance/RebalanceExample.java[JavaDoc,window=_blank] for instructions.
 
 To run any other example, perform the following steps:
 

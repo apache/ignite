@@ -1,0 +1,172 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Supported Operators and Functions
+
+== Aggregate Functions
+
+=== COUNT
+
+[source,sql]
+----
+COUNT( [ ALL | DISTINCT ] value [, value ]*)
+----
+
+Returns the number of input rows for which value is not null (wholly not null if value is composite).
+
+=== AVG
+
+[source,sql]
+----
+AVG( [ ALL | DISTINCT ] numeric)
+----
+
+Returns the average (arithmetic mean) of numeric across all input values.
+
+=== SUM
+
+[source,sql]
+----
+SUM( [ ALL | DISTINCT ] numeric)
+----
+
+Returns the sum of numeric across all input values.
+
+=== MIN
+
+[source,sql]
+----
+MIN( [ ALL | DISTINCT ] value)
+----
+
+Returns the minimum value of value across all input values.
+
+=== MAX
+
+[source,sql]
+----
+MAX( [ ALL | DISTINCT ] value)
+----
+
+Returns the maximum value of value across all input values.
+
+=== STRING_AGG
+
+[source,sql]
+----
+STRING_AGG( value [, separator ] [ ORDER BY ...])
+----
+
+Concatenates the values of string expressions and places separator values between them.
+
+=== STRING_CONCAT
+
+[source,sql]
+----
+STRING_CONCAT(string1, string2, ... stringN)
+----
+
+Concatenates the text values in the specified data ranges.
+
+
+== Functions
+
+
+=== JSON
+
+* JSON_EXISTS
+* JSON_VALUE
+* JSON_QUERY
+* JSON_OBJECT
+* JSON_ARRAY
+* JSON_PRETTY
+* STRING
+* CHAR_LENGTH
+* CHARACTER_LENGTH
+* UPPER
+* LOWER
+* POSITION
+* TRIM
+* OVERLAY
+* SUBSTRING
+* INITCAP
+* SPACE
+* STRCMP
+* REVERSE
+* REGEXP_REPLACE
+* SHA1
+* MD5
+* LTRIM
+* TO_BASE64
+* FROM_BASE64
+* COMPRESS
+* CONCAT
+* TRANSLATE
+* ASCII
+* LEFT
+* RIGHT
+* REPEAT
+* SOUNDEX
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+=== NUMERIC
+
+* POWER
+* ABS
+* MOD
+* SQRT
+* LN
+* LOG10
+* EXP
+* CEIL
+* FLOOR
+* RAND
+* ACOS
+* ASIN
+* ATAN
+* ATAN2
+* CBRT
+* COS
+* COT
+* DEGREES
+* PI()
+* RADIANS
+* ROUND
+* SIGN
+* SIN
+* TAN
+* TRUNCATE
+* CHR
+* COSH
+* SINH
+* TANH
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+=== GENERAL
+
+* NULLIF
+* COALESCE
+* CAST
+* NVL
+* GREATEST
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+
+=== TIMESTAMP
+
+* TIMESTAMP_ADD
+* TIMESTAMP_DIFF
+* EXTRACT
+* LAST_DAY
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].

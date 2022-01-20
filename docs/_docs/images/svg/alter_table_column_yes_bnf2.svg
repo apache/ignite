@@ -1,0 +1,143 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<svg class="railroad-diagram" width="549.5" height="91" viewBox="0 0 549.5 91" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g transform="translate(.5 .5)">
+        <g fill="none" stroke="black" stroke-width="2">
+            <path stroke-dasharray="5,5" d="M10 40 l30 0" />
+        </g>
+        <path d="M40 40h10"></path>
+        <g>
+            <path d="M50 40h0"></path>
+            <path d="M499.5 40h0"></path>
+            <g>
+                <path d="M50 40h0"></path>
+                <path d="M421 40h0"></path>
+                <g>
+                    <path d="M50 40h0"></path>
+                    <path d="M161 40h0"></path>
+                    <path d="M50 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                    <g>
+                        <path d="M70 20h71"></path>
+                    </g>
+                    <path d="M141 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                    <path d="M50 40h20"></path>
+                    <g class="terminal ">
+                        <path d="M70 40h0"></path>
+                        <path d="M141 40h0"></path>
+                        <rect x="70" y="29" width="71" height="22" rx="10" ry="10"></rect>
+                        <text x="105.5" y="44">COLUMN</text>
+                    </g>
+                    <path d="M141 40h20"></path>
+                </g>
+                <g>
+                    <path d="M161 40h0"></path>
+                    <path d="M297.5 40h0"></path>
+                    <path d="M161 40h20"></path>
+                    <g>
+                        <path d="M181 40h96.5"></path>
+                    </g>
+                    <path d="M277.5 40h20"></path>
+                    <path d="M161 40a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                    <g class="terminal ">
+                        <path d="M181 60h0"></path>
+                        <path d="M277.5 60h0"></path>
+                        <rect x="181" y="49" width="96.5" height="22" rx="10" ry="10"></rect>
+                        <text x="229.25" y="64">IF EXISTS</text>
+                    </g>
+                    <path d="M277.5 60a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                </g>
+                <path d="M297.5 40h10"></path>
+                <a xlink:href="https://ignite.apache.org/docs/3.0.0-alpha/sql-reference/ddl#column_list">
+                    <g class="non-terminal ">
+                        <path d="M307.5 40h0"></path>
+                        <path d="M421 40h0"></path>
+                        <rect x="307.5" y="29" width="113.5" height="22"></rect>
+                        <text x="364.25" y="44" fill="blue">column&#95;list</text>
+                    </g>
+                </a>
+            </g>
+            <path d="M421 40h10"></path>
+            <g>
+                <path d="M431 40h0"></path>
+                <path d="M499.5 40h0"></path>
+                <path d="M431 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                <g>
+                    <path d="M451 20h28.5"></path>
+                </g>
+                <path d="M479.5 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                <path d="M431 40h20"></path>
+                <g class="terminal ">
+                    <path d="M451 40h0"></path>
+                    <path d="M479.5 40h0"></path>
+                    <rect x="451" y="29" width="28.5" height="22" rx="10" ry="10"></rect>
+                    <text x="465.25" y="44">;</text>
+                </g>
+                <path d="M479.5 40h20"></path>
+            </g>
+        </g>
+        <path d="M499.5 40h10"></path>
+        <path d="M 509.5 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path>
+    </g>
+    <style>
+        svg {
+        background-color: hsl(0,0%,100%);
+        }
+        path {
+        stroke-width: 2;
+        stroke: black;
+        fill: rgba(0,0,0,0);
+        }
+        text {
+        font: bold 14px monospace;
+        text-anchor: middle;
+        white-space: pre;
+        }
+        text.diagram-text {
+        font-size: 12px;
+        }
+        text.diagram-arrow {
+        font-size: 16px;
+        }
+        text.label {
+        text-anchor: start;
+        }
+        text.comment {
+        font: italic 12px monospace;
+        }
+        g.non-terminal text {
+        /&#42;font-style: italic;&#42;/
+        }
+        rect {
+        stroke-width: 2;
+        stroke: black;
+        fill: hsl(0,0%,100%);
+        }
+        rect.group-box {
+        stroke: gray;
+        stroke-dasharray: 10 5;
+        fill: none;
+        }
+        path.diagram-text {
+        stroke-width: 2;
+        stroke: black;
+        fill: white;
+        cursor: help;
+        }
+        g.diagram-text:hover path.diagram-text {
+        fill: #eee;
+        }</style>
+</svg>

@@ -1,0 +1,156 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<svg class="railroad-diagram" width="527" height="133" viewBox="0 0 527 133" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g transform="translate(.5 .5)">
+        <g>
+            <path d="M20 54v20m0 -10h20"></path>
+        </g>
+        <path d="M40 64h10"></path>
+        <g>
+            <path d="M50 64h0"></path>
+            <path d="M477 64h0"></path>
+            <rect x="50" y="36" width="427" height="77" rx="10" ry="10" class="group-box"></rect>
+            <g>
+                <path d="M50 64h10"></path>
+                <path d="M467 64h10"></path>
+                <g>
+                    <path d="M60 64h0"></path>
+                    <path d="M128.5 64h0"></path>
+                    <path d="M60 64a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                    <g>
+                        <path d="M80 44h28.5"></path>
+                    </g>
+                    <path d="M108.5 44a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                    <path d="M60 64h20"></path>
+                    <g class="terminal ">
+                        <path d="M80 64h0"></path>
+                        <path d="M108.5 64h0"></path>
+                        <rect x="80" y="53" width="28.5" height="22" rx="10" ry="10"></rect>
+                        <text x="94.25" y="68">(</text>
+                    </g>
+                    <path d="M108.5 64h20"></path>
+                </g>
+                <path d="M128.5 64h10"></path>
+                <g>
+                    <path d="M138.5 64h0"></path>
+                    <path d="M388.5 64h0"></path>
+                    <path d="M138.5 64h10"></path>
+                    <g>
+                        <path d="M148.5 64h0"></path>
+                        <path d="M378.5 64h0"></path>
+                        <g class="non-terminal ">
+                            <path d="M148.5 64h0"></path>
+                            <path d="M262 64h0"></path>
+                            <rect x="148.5" y="53" width="113.5" height="22"></rect>
+                            <text x="205.25" y="68">column&#95;name</text>
+                        </g>
+                        <path d="M262 64h10"></path>
+                        <path d="M272 64h10"></path>
+                        <g class="non-terminal ">
+                            <path d="M282 64h0"></path>
+                            <path d="M378.5 64h0"></path>
+                            <rect x="282" y="53" width="96.5" height="22"></rect>
+                            <text x="330.25" y="68">data&#95;type</text>
+                        </g>
+                    </g>
+                    <path d="M378.5 64h10"></path>
+                    <path d="M148.5 64a10 10 0 0 0 -10 10v10a10 10 0 0 0 10 10"></path>
+                    <g class="terminal ">
+                        <path d="M148.5 94h100.75"></path>
+                        <path d="M277.75 94h100.75"></path>
+                        <rect x="249.25" y="83" width="28.5" height="22" rx="10" ry="10"></rect>
+                        <text x="263.5" y="98">,</text>
+                    </g>
+                    <path d="M378.5 94a10 10 0 0 0 10 -10v-10a10 10 0 0 0 -10 -10"></path>
+                </g>
+                <path d="M388.5 64h10"></path>
+                <g>
+                    <path d="M398.5 64h0"></path>
+                    <path d="M467 64h0"></path>
+                    <path d="M398.5 64a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                    <g>
+                        <path d="M418.5 44h28.5"></path>
+                    </g>
+                    <path d="M447 44a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                    <path d="M398.5 64h20"></path>
+                    <g class="terminal ">
+                        <path d="M418.5 64h0"></path>
+                        <path d="M447 64h0"></path>
+                        <rect x="418.5" y="53" width="28.5" height="22" rx="10" ry="10"></rect>
+                        <text x="432.75" y="68">)</text>
+                    </g>
+                    <path d="M447 64h20"></path>
+                </g>
+            </g>
+            <g class="comment ">
+                <path d="M50 28h0"></path>
+                <path d="M235 28h0"></path>
+                <text x="142.5" y="25" class="comment">column&#95;definition&#95;or&#95;list</text>
+            </g>
+        </g>
+        <path d="M477 64h10"></path>
+        <path d="M 487 64 h 20 m 0 -10 v 20"></path>
+    </g>
+    <style>
+        svg {
+        background-color: hsl(0,0%,100%);
+        }
+        path {
+        stroke-width: 2;
+        stroke: black;
+        fill: rgba(0,0,0,0);
+        }
+        text {
+        font: bold 14px monospace;
+        text-anchor: middle;
+        white-space: pre;
+        }
+        text.diagram-text {
+        font-size: 12px;
+        }
+        text.diagram-arrow {
+        font-size: 16px;
+        }
+        text.label {
+        text-anchor: start;
+        }
+        text.comment {
+        font: italic 12px monospace;
+        }
+        g.non-terminal text {
+        /&#42;font-style: italic;&#42;/
+        }
+        rect {
+        stroke-width: 2;
+        stroke: black;
+        fill: hsl(0,0%,100%);
+        }
+        rect.group-box {
+        stroke: gray;
+        stroke-dasharray: 10 5;
+        fill: none;
+        }
+        path.diagram-text {
+        stroke-width: 2;
+        stroke: black;
+        fill: white;
+        cursor: help;
+        }
+        g.diagram-text:hover path.diagram-text {
+        fill: #eee;
+        }</style>
+</svg>

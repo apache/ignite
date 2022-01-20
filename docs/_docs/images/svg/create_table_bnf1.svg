@@ -1,0 +1,120 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<svg class="railroad-diagram" width="549" height="71" viewBox="0 0 549 71" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g transform="translate(.5 .5)">
+        <g>
+            <path d="M20 30v20m10 -20v20m-10 -10h20"></path>
+        </g>
+        <path d="M40 40h10"></path>
+        <g>
+            <path d="M50 40h0"></path>
+            <path d="M499 40h0"></path>
+            <g class="terminal ">
+                <path d="M50 40h0"></path>
+                <path d="M121 40h0"></path>
+                <rect x="50" y="29" width="71" height="22" rx="10" ry="10"></rect>
+                <text x="85.5" y="44">CREATE</text>
+            </g>
+            <path d="M121 40h10"></path>
+            <path d="M131 40h10"></path>
+            <g class="terminal ">
+                <path d="M141 40h0"></path>
+                <path d="M203.5 40h0"></path>
+                <rect x="141" y="29" width="62.5" height="22" rx="10" ry="10"></rect>
+                <text x="172.25" y="44">TABLE</text>
+            </g>
+            <path d="M203.5 40h10"></path>
+            <g>
+                <path d="M213.5 40h0"></path>
+                <path d="M384 40h0"></path>
+                <path d="M213.5 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10"></path>
+                <g>
+                    <path d="M233.5 20h130.5"></path>
+                </g>
+                <path d="M364 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10"></path>
+                <path d="M213.5 40h20"></path>
+                <g class="terminal ">
+                    <path d="M233.5 40h0"></path>
+                    <path d="M364 40h0"></path>
+                    <rect x="233.5" y="29" width="130.5" height="22" rx="10" ry="10"></rect>
+                    <text x="298.75" y="44">IF NOT EXISTS</text>
+                </g>
+                <path d="M364 40h20"></path>
+            </g>
+            <path d="M384 40h10"></path>
+            <a xlink:href="https://ignite.apache.org/docs/3.0.0-alpha/sql-reference/ddl#qualified_table_name">
+                <g class="non-terminal ">
+                    <path d="M394 40h0"></path>
+                    <path d="M499 40h0"></path>
+                    <rect x="394" y="29" width="105" height="22"></rect>
+                    <text x="446.5" y="44" fill="blue">table&#95;name</text>
+                </g>
+            </a>
+        </g>
+        <g fill="none" stroke="black" stroke-width="2">
+            <path stroke-dasharray="5,5" d="M505 40 l30 0" />
+        </g>
+    </g>
+    <style>
+        svg {
+        background-color: hsl(0,0%,100%);
+        }
+        path {
+        stroke-width: 2;
+        stroke: black;
+        fill: rgba(0,0,0,0);
+        }
+        text {
+        font: bold 14px monospace;
+        text-anchor: middle;
+        white-space: pre;
+        }
+        text.diagram-text {
+        font-size: 12px;
+        }
+        text.diagram-arrow {
+        font-size: 16px;
+        }
+        text.label {
+        text-anchor: start;
+        }
+        text.comment {
+        font: italic 12px monospace;
+        }
+        g.non-terminal text {
+        /&#42;font-style: italic;&#42;/
+        }
+        rect {
+        stroke-width: 2;
+        stroke: black;
+        fill: hsl(0,0%,100%);
+        }
+        rect.group-box {
+        stroke: gray;
+        stroke-dasharray: 10 5;
+        fill: none;
+        }
+        path.diagram-text {
+        stroke-width: 2;
+        stroke: black;
+        fill: white;
+        cursor: help;
+        }
+        g.diagram-text:hover path.diagram-text {
+        fill: #eee;
+        }</style>
+</svg>

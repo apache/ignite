@@ -17,10 +17,7 @@
 When a new node joins the cluster, some of the partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called data rebalancing.
 If an existing node permanently leaves the cluster and backups are not configured, you lose the partitions stored on this node. When backups are configured, one of the backup copies of the lost partitions becomes a primary partition and the rebalancing process is initiated.
 
-WARNING:
-----
-Data rebalancing is triggered by changes in the Baseline Topology. In pure in-memory clusters, the default behavior is to start rebalancing immediately when a node leaves or joins the cluster (the baseline topology changes automatically). In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when automatic baseline adjustment is enabled.
-----
+WARNING: Data rebalancing is triggered by changes in the Baseline Topology. In pure in-memory clusters, the default behavior is to start rebalancing immediately when a node leaves or joins the cluster (the baseline topology changes automatically). In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when automatic baseline adjustment is enabled.
 
 == Running an Example
 

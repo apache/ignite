@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Manipulation Language (DML)
+
+This section walks you through all data manipulation language (DML) commands supported by Apache Ignite 3.0 Alpha 4.
+
+WARNING: Currently, `WITH` and `MERGE` commands are not supported.
+
+== SELECT
+
+Retrieves data from a table or multiple tables.
+
+[source,sql]
+----
+SELECT [ hintComment ] [ STREAM ] [ ALL | DISTINCT ]
+    { * | projectItem [, projectItem ]* }
+FROM tableExpression
+[ WHERE booleanExpression ]
+[ GROUP BY { groupItem [, groupItem ]* } ]
+[ HAVING booleanExpression ]
+----
+
+== INSERT
+
+Inserts data into a table.
+
+[source,sql]
+----
+{ INSERT } INTO tablePrimary
+[ '(' column [, column ]* ')' ]
+query
+----
+
+== UPDATE
+
+Updates data in a table.
+
+[source,sql]
+----
+UPDATE tablePrimary
+SET assign [, assign ]*
+[ WHERE booleanExpression ]
+----
+
+== DELETE
+
+Deletes data from a table.
+
+[source,sql]
+----
+DELETE FROM tablePrimary [ [ AS ] alias ]
+[ WHERE booleanExpression ]
+----

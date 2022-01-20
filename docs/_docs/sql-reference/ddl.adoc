@@ -1,0 +1,285 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Definition Language (DDL)
+
+This section walks you through all data definition language (DDL) commands supported by Apache Ignite 3.0 Alpha 4.
+
+== CREATE TABLE
+
+Creates a new table.
+
+[source,sql]
+----
+CREATE TABLE [IF NOT EXISTS] [simpleName | schemaName.simpleName] (tableColumn [, tableColumn]...)
+[WITH paramName=paramValue [,paramName=paramValue]...]
+tableColumn = columnName columnType [[NOT] NULL] [DEFAULT defaultValue] [PRIMARY KEY]
+----
+
+Parameters:
+
+* `tableName` - name of the table.
+* `tableColumn` - name and type of a column to be created in the new table.
+* `DEFAULT` - specifies a default value for the column. Only constant values are accepted.
+* `IF NOT EXISTS` - create the table only if a table with the same name does not exist.
+* `WITH` - accepts additional parameters not defined by ANSI-99 SQL:
+
+** `Replicas` - sets the number of partition copies, including the master copy.
+** `Partitions` - sets the number of table partitions.
+
+image::images/svg/create_table_bnf1.svg[Embedded,opts=inline]
+image::images/svg/create_table_bnf2.svg[Embedded,opts=inline]
+
+Examples:
+
+Create Person table:
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS Person (
+  id int primary key,
+  city_id int,
+  name varchar,
+  age int,
+  company varchar,
+)
+----
+
+== ALTER TABLE
+
+Modifies the structure of an existing table.
+
+[NOTE]
+====
+[discrete]
+=== Scope of ALTER TABLE
+Presently, Apache Ignite only supports addition and removal of columns.
+====
+
+* *ALTER TABLE IF EXISTS table LOGGING*
+
+[source,sql]
+----
+ALTER TABLE [IF EXISTS] tableName {LOGGING}
+----
+
+Parameters:
+
+- `IF EXISTS` - if applied to `TABLE`, do not throw an error if a table with the specified table name does not exist. If applied to `COLUMN`, do not throw an error if a column with the specified name does not exist.
+- `qualified_table_name` - the name of the table.
+- `LOGGING` - enables write-ahead logging for the table. The command is relevant only if Ignite link:https://ignite.apache.org/docs/3.0.0-alpha/persistence[persistence,window=_blank] is used.
+
+image::images/svg/alter_table_logging_bnf.svg[Embedded,opts=inline]
+
+* *ALTER TABLE IF EXISTS table NOLOGGING*
+
+[source,sql]
+----
+ALTER TABLE [IF EXISTS] tableName {NOLOGGING}
+----
+
+Parameters:
+
+- `IF EXISTS` - if applied to `TABLE`, do not throw an error if a table with the specified table name does not exist. If applied to `COLUMN`, do not throw an error if a column with the specified name does not exist.
+- `qualified_table_name` - the name of the table.
+- `NOLOGGING` - disables write-ahead logging for the table. The command is relevant only if Ignite link:https://ignite.apache.org/docs/3.0.0-alpha/persistence[persistence,window=_blank] is used.
+
+image::images/svg/alter_table_no_logging_bnf.svg[Embedded,opts=inline]
+
+* *ALTER TABLE IF EXISTS table ADD COLUMN IF NOT EXISTS (column1 int, column2 int)*
+
+[source,sql]
+----
+ALTER TABLE [IF EXISTS] tableName {ADD [COLUMN] {[IF NOT EXISTS] (tableColumn [column1 int, column2 int])}
+----
+
+Parameters:
+
+- `IF EXISTS` - if applied to `TABLE`, do not throw an error if a table with the specified table name does not exist. If applied to `COLUMN`, do not throw an error if a column with the specified name does not exist.
+- `qualified_table_name` - the name of the table.
+- `ADD` - adds a new column or several columns to a previously created table. Once a column is added, it can be accessed using link:sql-reference/dml[DML commands,window=_blank] and indexed with the CREATE INDEX statement (currently not supported).
+- `COLUMN` - name of the defined column.
+- `IF NOT EXISTS` - do not throw an error if a column with the same name already exists.
+- `column_definition_or_list` - the name of the column or the list of columns to be added.
+
+image::images/svg/alter_table_column_no_bnf1.svg[Embedded,opts=inline]
+image::images/svg/alter_table_column_no_bnf2.svg[Embedded,opts=inline]
+
+* *ALTER TABLE IF EXISTS table ADD COLUMN IF EXISTS (column1, column2 int)*
+
+[source,sql]
+----
+ALTER TABLE [IF EXISTS] tableName DROP [COLUMN] {[IF EXISTS] (columnName [column1, column2 int])}
+----
+
+Parameters:
+
+- `IF EXISTS` - if applied to `TABLE`, do not throw an error if a table with the specified table name does not exist. If applied to `COLUMN`, do not throw an error if a column with the specified name does not exist.
+- `qualified_table_name` - the name of the table.
+- `DROP` - removes an existing column or multiple columns from a table. Once a column is removed, it cannot be accessed within queries. Consider the following notes and limitations:
+- `COLUMN` - name of the defined column.
+- `column_list` - the name of the list of columns to be removed.
+
+image::images/svg/alter_table_column_yes_bnf1.svg[Embedded,opts=inline]
+image::images/svg/alter_table_column_yes_bnf2.svg[Embedded,opts=inline]
+
+- The command does not remove actual data from the cluster which means that if the column 'name' is dropped, the value of the 'name' is still stored in the cluster. This limitation is to be addressed in the next releases.
+- If the column was indexed, the index has to be dropped manually using the 'DROP INDEX' command.
+- It is not possible to remove a column that is a primary key or a part of such a key.
+- It is not possible to remove a column if it represents the whole value stored in the cluster. The limitation is relevant for primitive values.
+Ignite stores data in the form of key-value pairs and all the new columns will belong to the value. It's not possible to change a set of columns of the key (`PRIMARY KEY`).
+
+Both DDL and DML commands targeting the same table are blocked for a short time until `ALTER TABLE` is in progress.
+
+Schema changes applied by this command are persisted on disk if link:https://ignite.apache.org/docs/3.0.0-alpha/persistence[persistence,window=_blank] is enabled. Thus, the changes can survive full cluster restarts.
+
+Examples:
+
+Add a column to the table:
+
+[source,sql]
+----
+ALTER TABLE Person ADD COLUMN city varchar;
+----
+
+Add a new column to the table only if a column with the same name does not exist:
+
+[source,sql]
+----
+ALTER TABLE City ADD COLUMN IF NOT EXISTS population int;
+----
+
+Add a column​ only if the table exists:
+
+[source,sql]
+----
+ALTER TABLE IF EXISTS Missing ADD number long;
+----
+
+Add several columns to the table at once:
+
+[source,sql]
+----
+ALTER TABLE Region ADD COLUMN (code varchar, gdp double);
+----
+
+Drop a column from the table:
+
+[source,sql]
+----
+ALTER TABLE Person DROP COLUMN city;
+----
+
+Drop a column from the table only if a column with the same name does exist:
+
+[source,sql]
+----
+ALTER TABLE Person DROP COLUMN IF EXISTS population;
+----
+
+Drop a column only if the table exists:
+
+[source,sql]
+----
+ALTER TABLE IF EXISTS Person DROP COLUMN number;
+----
+
+Drop several columns from the table at once:
+
+[source,sql]
+----
+ALTER TABLE Person DROP COLUMN (code, gdp);
+----
+
+Disable write-ahead logging:
+
+[source,sql]
+----
+ALTER TABLE Person NOLOGGING
+----
+
+== DROP TABLE
+
+The `DROP TABLE` command drops an existing table.
+The underlying cache with all the data in it is destroyed, too.
+
+[source,sql]
+----
+DROP TABLE [IF EXISTS] tableName
+----
+
+Parameters:
+
+- `tableName` - the name of the table.
+- `IF NOT EXISTS` - do not throw an error if a table with the same name does not exist.
+
+image::images/svg/drop_table_bnf.svg[Embedded,opts=inline]
+
+Both DDL and DML commands targeting the same table are blocked while the `DROP TABLE` is in progress.
+Once the table is dropped, all pending commands will fail with appropriate errors.
+
+Schema changes applied by this command are persisted on disk if link:https://ignite.apache.org/docs/3.0.0-alpha/persistence[persistence,window=_blank] is enabled. Thus, the changes can survive full cluster restarts.
+
+Examples:
+
+Drop Person table if the one exists:
+
+[source,sql]
+----
+DROP TABLE IF EXISTS "Person";
+----
+
+= Grammar Reference
+
+== column_definition_or_list
+
+image::images/svg/column_definition_or_list_bnf.svg[Embedded,opts=inline]
+
+Referenced by:
+
+* link:sql-reference/ddl#alter-table[ALTER TABLE]
+
+== column_definition
+
+image::images/svg/columns_definition_bnf.svg[Embedded,opts=inline]
+
+Referenced by:
+
+* link:sql-reference/ddl#create-table[CREATE TABLE]
+
+== column_list
+
+image::images/svg/column_list_bnf.svg[Embedded,opts=inline]
+
+Referenced by:
+
+* link:sql-reference/ddl#alter-table[ALTER TABLE]
+
+== constraint
+
+image::images/svg/pk_constraint_bnf.svg[Embedded,opts=inline]
+
+Referenced by:
+
+* link:sql-reference/ddl#create-table[CREATE TABLE]
+
+== qualified_table_name
+
+image::images/svg/qualified_table_name_bnf.svg[Embedded,opts=inline]
+
+Referenced by:
+
+* link:sql-reference/ddl#сreate-table[CREATE TABLE]
+* link:sql-reference/ddl#alter-table[ALTER TABLE]
+* link:sql-reference/ddl#drop-table[DROP TABLE]

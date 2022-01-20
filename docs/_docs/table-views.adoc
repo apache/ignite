@@ -1,0 +1,45 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Table Views
+
+Apache Ignite 3.0 Alpha introduces the key-value API to access cached data via built-in table views.
+
+== Key-Value View
+
+This table view maps key objects to value objects. The view cannot contain duplicate key objects; each key object can map to at most one value object.
+
+=== Running an Example
+
+Examples are shipped as a separate Maven project, which is located in the `examples` folder. `KeyValueViewExample` demonstrates the usage of the key-value view.
+
+To start running `KeyValueViewExample`, please refer to its link:https://github.com/apache/ignite-3/blob/main/examples/src/main/java/org/apache/ignite/example/table/KeyValueViewExample.java[JavaDoc,window=_blank] for instructions.
+
+== Record View
+
+This table view provides methods to access table records.
+
+=== Running an Example
+
+Examples are shipped as a separate Maven project, which is located in the `examples` folder. `RecordViewExample` demonstrates the usage of the record view.
+
+To start running `RecordViewExample`, please refer to its link:https://github.com/apache/ignite-3/blob/main/examples/src/main/java/org/apache/ignite/example/table/RecordViewExample.java[JavaDoc,window=_blank] for instructions.
+
+== Record Binary View
+
+NOTE: This is a table view implementation for binary objects.
+
+You can use binary objects to access the cached data. The benefit of using binary objects is that you avoid deserialization, which is important if you access objects from a server node that does not have the object’s class representation.
+
+For more information on record binary view, please see the following link:https://github.com/apache/ignite-3/blob/main/modules/table/src/main/java/org/apache/ignite/internal/table/RecordBinaryViewImpl.java[implementation example,window=_blank].
