@@ -217,7 +217,6 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         assertTrue(wal.lastArchivedSegment() >= trucateWalPtr.index());
 
-        // todo separate test for check WAL recovery if next checkpoint fails.
         forceCheckpoint();
 
         wal.truncate(trucateWalPtr);
