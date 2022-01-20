@@ -48,10 +48,18 @@ public interface TopologyService {
     void addEventHandler(TopologyEventHandler handler);
 
     /**
-     * Returns a cluster node by it's network address in host:port format.
+     * Returns a cluster node by its network address in host:port format.
      *
      * @param addr The address.
-     * @return The node or {@code null} if the node is not yet discovered or dead.
+     * @return The node or {@code null} if the node has not yet been discovered or is offline.
      */
     @Nullable ClusterNode getByAddress(NetworkAddress addr);
+
+    /**
+     * Returns a cluster node by its consistent id.
+     *
+     * @param consistentId Consistent id.
+     * @return The node or {@code null} if the node has not yet been discovered or is offline.
+     */
+    @Nullable ClusterNode getByConsistentId(String consistentId);
 }

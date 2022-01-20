@@ -19,7 +19,6 @@ package org.apache.ignite.internal.network.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import java.net.SocketAddress;
 import java.util.function.BiConsumer;
 import org.apache.ignite.network.NetworkMessage;
 
@@ -28,23 +27,27 @@ import org.apache.ignite.network.NetworkMessage;
  */
 public class MessageHandler extends ChannelInboundHandlerAdapter {
     /** Message listener. */
-    private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
+    private final BiConsumer<String, NetworkMessage> messageListener;
+
+    /** Consistent id of the remote node. */
+    private final String consistentId;
 
     /**
      * Constructor.
      *
      * @param messageListener Message listener.
+     * @param consistentId Consistent id of the remote node.
      */
-    public MessageHandler(BiConsumer<SocketAddress, NetworkMessage> messageListener) {
+    public MessageHandler(BiConsumer<String, NetworkMessage> messageListener, String consistentId) {
         this.messageListener = messageListener;
+        this.consistentId = consistentId;
     }
 
     /** {@inheritDoc} */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        SocketAddress address = ctx.channel().remoteAddress();
         NetworkMessage message = (NetworkMessage) msg;
 
-        messageListener.accept(address, message);
+        messageListener.accept(consistentId, message);
     }
 }

@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A representation of a network address including a host name and a port.
@@ -36,6 +37,10 @@ public class NetworkAddress implements Serializable {
     /** Port. */
     private final int port;
 
+    /** Consistent id. TODO: IGNITE-16373 Temporary until ticket is not resolved. */
+    @Nullable
+    private final String consistentId;
+
     /**
      * Constructor.
      *
@@ -45,6 +50,20 @@ public class NetworkAddress implements Serializable {
     public NetworkAddress(String host, int port) {
         this.host = host;
         this.port = port;
+        this.consistentId = null;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param host Host.
+     * @param port Port.
+     * @param consistentId Consistent id.
+     */
+    public NetworkAddress(String host, int port, String consistentId) {
+        this.host = host;
+        this.port = port;
+        this.consistentId = consistentId;
     }
 
     /**
@@ -104,6 +123,16 @@ public class NetworkAddress implements Serializable {
         return port;
     }
 
+    /**
+     * Returns the consistent id.
+     *
+     * @return Consistent id.
+     */
+    @Nullable
+    public String consistentId() {
+        return consistentId;
+    }
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
@@ -114,13 +143,13 @@ public class NetworkAddress implements Serializable {
             return false;
         }
         NetworkAddress address = (NetworkAddress) o;
-        return port == address.port && host.equals(address.host);
+        return port == address.port && host.equals(address.host) && Objects.equals(consistentId, address.consistentId);
     }
 
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hash(host, port);
+        return Objects.hash(host, port, consistentId);
     }
 
     /** {@inheritDoc} */

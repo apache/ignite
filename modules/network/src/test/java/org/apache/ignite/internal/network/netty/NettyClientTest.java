@@ -33,8 +33,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.handshake.HandshakeResult;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.NetworkMessage;
 import org.junit.jupiter.api.AfterEach;
@@ -248,8 +248,8 @@ public class NettyClientTest {
 
         /** {@inheritDoc} */
         @Override
-        public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
-            return HandshakeAction.REMOVE_HANDLER;
+        public HandshakeResult onMessage(Channel channel, NetworkMessage message) {
+            return HandshakeResult.removeHandler(null, null);
         }
 
         /** {@inheritDoc} */
@@ -260,14 +260,14 @@ public class NettyClientTest {
 
         /** {@inheritDoc} */
         @Override
-        public HandshakeAction init(Channel channel) {
-            return HandshakeAction.NOOP;
+        public HandshakeResult init(Channel channel) {
+            return HandshakeResult.noOp();
         }
 
         /** {@inheritDoc} */
         @Override
-        public HandshakeAction onConnectionOpen(Channel channel) {
-            return HandshakeAction.NOOP;
+        public HandshakeResult onConnectionOpen(Channel channel) {
+            return HandshakeResult.noOp();
         }
     }
 }

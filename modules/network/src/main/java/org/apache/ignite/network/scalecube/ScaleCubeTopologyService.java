@@ -43,8 +43,11 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
      */
     private volatile Cluster cluster;
 
-    /** Topology members. */
+    /** Topology members from the network address to the cluster node.. */
     private final ConcurrentMap<NetworkAddress, ClusterNode> members = new ConcurrentHashMap<>();
+
+    /** Topology members map from the consistent id to the cluster node. */
+    private final ConcurrentMap<String, ClusterNode> consistentIdToMemberMap = new ConcurrentHashMap<>();
 
     /**
      * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
@@ -65,12 +68,22 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
 
         if (event.isAdded()) {
             members.put(member.address(), member);
+            consistentIdToMemberMap.put(member.name(), member);
 
             LOG.info("Node joined: " + member);
 
             fireAppearedEvent(member);
         } else if (event.isRemoved()) {
             members.compute(member.address(), (addr, node) -> {
+                // Ignore stale remove event.
+                if (node == null || node.id().equals(member.id())) {
+                    return null;
+                } else {
+                    return node;
+                }
+            });
+
+            consistentIdToMemberMap.compute(member.name(), (consId, node) -> {
                 // Ignore stale remove event.
                 if (node == null || node.id().equals(member.id())) {
                     return null;
@@ -139,6 +152,12 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     @Override
     public ClusterNode getByAddress(NetworkAddress addr) {
         return members.get(addr);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public ClusterNode getByConsistentId(String consistentId) {
+        return consistentIdToMemberMap.get(consistentId);
     }
 
     /**

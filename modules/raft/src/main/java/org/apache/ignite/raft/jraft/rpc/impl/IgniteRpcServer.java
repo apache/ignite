@@ -24,15 +24,15 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.NetworkMessageHandler;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
-import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.NetworkMessageHandler;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.raft.jraft.NodeManager;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
 import org.apache.ignite.raft.jraft.rpc.RpcServer;
@@ -53,6 +53,7 @@ import org.apache.ignite.raft.jraft.rpc.impl.core.InstallSnapshotRequestProcesso
 import org.apache.ignite.raft.jraft.rpc.impl.core.ReadIndexRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.RequestVoteRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.TimeoutNowRequestProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * TODO https://issues.apache.org/jira/browse/IGNITE-14519 Unsubscribe on shutdown
@@ -135,7 +136,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
      */
     public class RpcMessageHandler implements NetworkMessageHandler {
         /** {@inheritDoc} */
-        @Override public void onReceived(NetworkMessage message, NetworkAddress senderAddr, String correlationId) {
+        @Override public void onReceived(NetworkMessage message, NetworkAddress senderAddr, @Nullable Long correlationId) {
             Class<? extends NetworkMessage> cls = message.getClass();
             RpcProcessor<NetworkMessage> prc = processors.get(cls.getName());
 
@@ -175,7 +176,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
                         }
 
                         @Override public void sendResponse(Object responseObj) {
-                            service.messagingService().send(senderAddr, (NetworkMessage) responseObj, correlationId);
+                            service.messagingService().respond(senderAddr, (NetworkMessage) responseObj, correlationId);
                         }
 
                         @Override public NetworkAddress getRemoteAddress() {

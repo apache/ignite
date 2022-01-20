@@ -51,24 +51,26 @@ public interface MessagingService {
     CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg);
 
     /**
-     * Same as {@link #send(ClusterNode, NetworkMessage)} but attaches the given correlation ID to the given message.
+     * Sends a response to a {@link #invoke} request.
+     * Guarantees are the same as for the {@link #send(ClusterNode, NetworkMessage)}.
      *
      * @param recipient     Recipient of the message.
      * @param msg           Message which should be delivered.
      * @param correlationId Correlation id when replying to the request.
      * @return Future of the send operation.
      */
-    CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg, String correlationId);
+    CompletableFuture<Void> respond(ClusterNode recipient, NetworkMessage msg, long correlationId);
 
     /**
-     * Same as {@link #send(ClusterNode, NetworkMessage)} but attaches the given correlation ID to the given message.
+     * Sends a response to a {@link #invoke} request.
+     * Guarantees are the same as for the {@link #send(ClusterNode, NetworkMessage)}.
      *
      * @param addr          Recipient network address.
      * @param msg           Message which should be delivered.
      * @param correlationId Correlation id when replying to the request.
      * @return Future of the send operation.
      */
-    CompletableFuture<Void> send(NetworkAddress addr, NetworkMessage msg, String correlationId);
+    CompletableFuture<Void> respond(NetworkAddress addr, NetworkMessage msg, long correlationId);
 
     /**
      * Sends a message asynchronously with same guarantees as {@link #send(ClusterNode, NetworkMessage)} and returns a future that will be

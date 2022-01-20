@@ -58,7 +58,7 @@ public class NettyServer {
     private final SerializationService serializationService;
 
     /** Incoming message listener. */
-    private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
+    private final BiConsumer<String, NetworkMessage> messageListener;
 
     /** Handshake manager. */
     private final Supplier<HandshakeManager> handshakeManager;
@@ -94,7 +94,7 @@ public class NettyServer {
             NetworkView configuration,
             Supplier<HandshakeManager> handshakeManager,
             Consumer<NettySender> newConnectionListener,
-            BiConsumer<SocketAddress, NetworkMessage> messageListener,
+            BiConsumer<String, NetworkMessage> messageListener,
             SerializationService serializationService,
             NettyBootstrapFactory bootstrapFactory
     ) {
@@ -139,9 +139,7 @@ public class NettyServer {
                                      */
                                     new InboundDecoder(sessionSerializationService),
                                     // Handshake handler.
-                                    new HandshakeHandler(manager),
-                                    // Handles decoded NetworkMessages.
-                                    new MessageHandler(messageListener),
+                                    new HandshakeHandler(manager, (consistentId) -> new MessageHandler(messageListener, consistentId)),
                                     /*
                                      * Encoder that uses the MessageWriter
                                      * to write chunked data.

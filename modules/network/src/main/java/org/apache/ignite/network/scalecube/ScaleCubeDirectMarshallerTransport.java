@@ -182,10 +182,10 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
     /**
      * Handles new network messages from {@link #connectionManager}.
      *
-     * @param source Message source.
+     * @param senderConsistentId Sender's consistent id.
      * @param msg    Network message.
      */
-    private void onMessage(SocketAddress source, NetworkMessage msg) {
+    private void onMessage(String senderConsistentId, NetworkMessage msg) {
         Message message = fromNetworkMessage(msg);
 
         if (message != null) {

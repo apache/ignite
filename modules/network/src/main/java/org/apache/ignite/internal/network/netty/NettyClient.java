@@ -59,7 +59,7 @@ public class NettyClient {
     private volatile Channel channel = null;
 
     /** Message listener. */
-    private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
+    private final BiConsumer<String, NetworkMessage> messageListener;
 
     /** Handshake manager. */
     private final HandshakeManager handshakeManager;
@@ -79,7 +79,7 @@ public class NettyClient {
             SocketAddress address,
             SerializationService serializationService,
             HandshakeManager manager,
-            BiConsumer<SocketAddress, NetworkMessage> messageListener
+            BiConsumer<String, NetworkMessage> messageListener
     ) {
         this.address = address;
         this.serializationService = serializationService;
@@ -113,8 +113,7 @@ public class NettyClient {
 
                     ch.pipeline().addLast(
                             new InboundDecoder(sessionSerializationService),
-                            new HandshakeHandler(handshakeManager),
-                            new MessageHandler(messageListener),
+                            new HandshakeHandler(handshakeManager, (consistentId) -> new MessageHandler(messageListener, consistentId)),
                             new ChunkedWriteHandler(),
                             new OutboundEncoder(sessionSerializationService),
                             new IoExceptionSuppressingHandler()

@@ -33,6 +33,7 @@ import org.apache.ignite.network.MessagingService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TopologyService;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * MessageServiceImpl.
@@ -131,7 +132,7 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
-    private void onMessage(NetworkMessage msg, NetworkAddress addr, String correlationId) {
+    private void onMessage(NetworkMessage msg, NetworkAddress addr, @Nullable Long correlationId) {
         assert msg.groupType() == GROUP_TYPE : "unexpected message group grpType=" + msg.groupType();
 
         ClusterNode node = topSrvc.getByAddress(addr);

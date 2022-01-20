@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
 import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
-import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.handshake.HandshakeResult;
 import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -147,9 +147,10 @@ public class NettyServerTest {
         HandshakeManager handshakeManager = mock(HandshakeManager.class);
 
         when(handshakeManager.handshakeFuture()).thenReturn(CompletableFuture.completedFuture(mock(NettySender.class)));
-        when(handshakeManager.init(any())).thenReturn(HandshakeAction.NOOP);
-        when(handshakeManager.onConnectionOpen(any())).thenReturn(HandshakeAction.NOOP);
-        when(handshakeManager.onMessage(any(), any())).thenReturn(HandshakeAction.NOOP);
+        HandshakeResult noOp = HandshakeResult.noOp();
+        when(handshakeManager.init(any())).thenReturn(noOp);
+        when(handshakeManager.onConnectionOpen(any())).thenReturn(noOp);
+        when(handshakeManager.onMessage(any(), any())).thenReturn(noOp);
 
         MessageSerializationRegistry registry = mock(MessageSerializationRegistry.class);
 

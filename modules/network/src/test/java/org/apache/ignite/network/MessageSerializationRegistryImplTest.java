@@ -111,7 +111,7 @@ public class MessageSerializationRegistryImplTest {
      * {@link NetworkMessage} implementation.
      */
     private static class Msg implements NetworkMessage {
-        static final short GROUP_TYPE = 0;
+        static final short GROUP_TYPE = 100;
 
         static final short TYPE = 0;
 

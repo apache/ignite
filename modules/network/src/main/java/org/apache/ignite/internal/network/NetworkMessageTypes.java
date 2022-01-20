@@ -19,6 +19,8 @@ package org.apache.ignite.internal.network;
 
 import org.apache.ignite.internal.network.message.ClassDescriptorMessage;
 import org.apache.ignite.internal.network.message.FieldDescriptorMessage;
+import org.apache.ignite.internal.network.message.InvokeRequest;
+import org.apache.ignite.internal.network.message.InvokeResponse;
 import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartMessage;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartResponseMessage;
@@ -30,27 +32,37 @@ import org.apache.ignite.network.annotations.MessageGroup;
 @MessageGroup(groupName = "NetworkMessages", groupType = 1)
 public class NetworkMessageTypes {
     /**
+     * Type for {@link InvokeRequest}.
+     */
+    public static final short INVOKE_REQUEST = 0;
+
+    /**
+     * Type for {@link InvokeResponse}.
+     */
+    public static final short INVOKE_RESPONSE = 1;
+
+    /**
      * Type for {@link ScaleCubeMessage}.
      */
-    public static final short SCALE_CUBE_MESSAGE = 1;
+    public static final short SCALE_CUBE_MESSAGE = 2;
 
     /**
      * Type for {@link HandshakeStartMessage}.
      */
-    public static final short HANDSHAKE_START = 2;
+    public static final short HANDSHAKE_START = 3;
 
     /**
      * Type for {@link HandshakeStartResponseMessage}.
      */
-    public static final short HANDSHAKE_START_RESPONSE = 3;
+    public static final short HANDSHAKE_START_RESPONSE = 4;
 
     /**
      * Type for {@link ClassDescriptorMessage}.
      */
-    public static final short CLASS_DESCRIPTOR_MESSAGE = 4;
+    public static final short CLASS_DESCRIPTOR_MESSAGE = 5;
 
     /**
      * Type for {@link FieldDescriptorMessage}.
      */
-    public static final short FIELD_DESCRIPTOR_MESSAGE = 5;
+    public static final short FIELD_DESCRIPTOR_MESSAGE = 6;
 }

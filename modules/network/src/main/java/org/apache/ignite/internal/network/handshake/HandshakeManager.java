@@ -33,7 +33,7 @@ public interface HandshakeManager {
      * @param channel Channel.
      * @return Action to perform by {@link HandshakeHandler}.
      */
-    HandshakeAction init(Channel channel);
+    HandshakeResult init(Channel channel);
 
     /**
      * Handle an event of the connection opening.
@@ -41,7 +41,7 @@ public interface HandshakeManager {
      * @param channel Channel.
      * @return Action to perform by {@link HandshakeHandler}.
      */
-    HandshakeAction onConnectionOpen(Channel channel);
+    HandshakeResult onConnectionOpen(Channel channel);
 
     /**
      * Handle an incoming message.
@@ -50,7 +50,7 @@ public interface HandshakeManager {
      * @param message Message to handle.
      * @return Action to perform by {@link HandshakeHandler}.
      */
-    HandshakeAction onMessage(Channel channel, NetworkMessage message);
+    HandshakeResult onMessage(Channel channel, NetworkMessage message);
 
     /**
      * Returns future that represents the handshake operation.

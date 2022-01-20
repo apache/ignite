@@ -22,9 +22,9 @@ import io.netty.channel.ChannelFuture;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
-import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeException;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
+import org.apache.ignite.internal.network.handshake.HandshakeResult;
 import org.apache.ignite.internal.network.netty.NettySender;
 import org.apache.ignite.internal.network.netty.NettyUtils;
 import org.apache.ignite.internal.network.recovery.message.HandshakeStartMessage;
@@ -64,13 +64,13 @@ public class RecoveryServerHandshakeManager implements HandshakeManager {
 
     /** {@inheritDoc} */
     @Override
-    public HandshakeAction init(Channel channel) {
-        return HandshakeAction.NOOP;
+    public HandshakeResult init(Channel channel) {
+        return HandshakeResult.noOp();
     }
 
     /** {@inheritDoc} */
     @Override
-    public HandshakeAction onConnectionOpen(Channel channel) {
+    public HandshakeResult onConnectionOpen(Channel channel) {
         HandshakeStartMessage handshakeStartMessage = messageFactory.handshakeStartMessage()
                 .launchId(launchId)
                 .consistentId(consistentId)
@@ -86,25 +86,28 @@ public class RecoveryServerHandshakeManager implements HandshakeManager {
             }
         });
 
-        return HandshakeAction.NOOP;
+        return HandshakeResult.noOp();
     }
 
     /** {@inheritDoc} */
     @Override
-    public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
+    public HandshakeResult onMessage(Channel channel, NetworkMessage message) {
         if (message instanceof HandshakeStartResponseMessage) {
             HandshakeStartResponseMessage msg = (HandshakeStartResponseMessage) message;
 
-            handshakeCompleteFuture.complete(new NettySender(channel, msg.launchId().toString(), msg.consistentId()));
+            UUID remoteLaunchId = msg.launchId();
+            String remoteConsistentId = msg.consistentId();
 
-            return HandshakeAction.REMOVE_HANDLER;
+            handshakeCompleteFuture.complete(new NettySender(channel, remoteLaunchId.toString(), remoteConsistentId));
+
+            return HandshakeResult.removeHandler(remoteLaunchId, remoteConsistentId);
         }
 
         handshakeCompleteFuture.completeExceptionally(
                 new HandshakeException("Unexpected message during handshake: " + message.toString())
         );
 
-        return HandshakeAction.FAIL;
+        return HandshakeResult.fail();
     }
 
     /** {@inheritDoc} */

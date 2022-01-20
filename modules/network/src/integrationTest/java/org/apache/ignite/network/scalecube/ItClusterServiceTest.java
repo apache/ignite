@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.lang.NodeStoppingException;
+import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
@@ -59,7 +60,7 @@ public class ItClusterServiceTest {
         ExecutionException e = assertThrows(
                 ExecutionException.class,
                 () -> service.messagingService()
-                        .send(addr, mock(NetworkMessage.class), "foobar")
+                        .send(mock(ClusterNode.class), mock(NetworkMessage.class))
                         .get(5, TimeUnit.SECONDS)
         );
 

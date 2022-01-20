@@ -230,14 +230,6 @@ public class MetaStorageManager implements IgniteComponent {
             this.metaStorageSvcFut = new CompletableFuture<>();
         }
 
-        // TODO: IGNITE-14088: Uncomment and use real serializer factory
-        //        Arrays.stream(MetaStorageMessageTypes.values()).forEach(
-        //            msgTypeInstance -> net.registerMessageMapper(
-        //                msgTypeInstance.msgType(),
-        //                new DefaultMessageMapperProvider()
-        //            )
-        //        );
-
         // TODO: IGNITE-14414 Cluster initialization flow. Here we should complete metaStorageServiceFuture.
         //        clusterNetSvc.messagingService().addMessageHandler((message, senderAddr, correlationId) -> {});
     }

@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
-import org.apache.ignite.internal.network.message.ScaleCubeMessage;
+import org.apache.ignite.internal.network.message.ClassDescriptorMessage;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -162,9 +163,9 @@ class ItScaleCubeNetworkMessagingTest {
 
             private final NetworkAddress sender;
 
-            private final String correlationId;
+            private final Long correlationId;
 
-            private Data(TestMessage message, NetworkAddress sender, String correlationId) {
+            private Data(TestMessage message, NetworkAddress sender, Long correlationId) {
                 this.message = message;
                 this.sender = sender;
                 this.correlationId = correlationId;
@@ -180,15 +181,14 @@ class ItScaleCubeNetworkMessagingTest {
         );
 
         var requestMessage = messageFactory.testMessage().msg("request").build();
-        var correlationId = "foobar";
 
-        member.messagingService().send(self, requestMessage, correlationId);
+        member.messagingService().send(self, requestMessage);
 
         Data actualData = dataFuture.get(3, TimeUnit.SECONDS);
 
         assertThat(actualData.message.msg(), is(requestMessage.msg()));
-        assertThat(actualData.sender, is(self.address()));
-        assertThat(actualData.correlationId, is(correlationId));
+        assertThat(actualData.sender.consistentId(), is(self.name()));
+        assertNull(actualData.correlationId);
     }
 
     /**
@@ -212,7 +212,7 @@ class ItScaleCubeNetworkMessagingTest {
                 TestMessageTypes.class,
                 (message, senderAddr, correlationId) -> {
                     if (message.equals(requestMessage)) {
-                        member.messagingService().send(self, responseMessage, correlationId);
+                        member.messagingService().respond(self, responseMessage, correlationId);
                     }
                 }
         );
@@ -299,7 +299,7 @@ class ItScaleCubeNetworkMessagingTest {
 
         var testMessage = messageFactory.testMessage().msg("foo").build();
 
-        ScaleCubeMessage networkMessage = new NetworkMessagesFactory().scaleCubeMessage().build();
+        ClassDescriptorMessage networkMessage = new NetworkMessagesFactory().classDescriptorMessage().build();
 
         // test that a message gets delivered to both handlers
         node2.messagingService()
