@@ -18,6 +18,7 @@
 #ifndef _IGNITE_NETWORK_SSL_SSL_GATEWAY
 #define _IGNITE_NETWORK_SSL_SSL_GATEWAY
 
+#include <string>
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
 #include <openssl/err.h>
@@ -121,7 +122,7 @@ namespace ignite
                     return inited;
                 }
 
-                char* SSLeay_version_(int type);
+                char* OpenSSL_version_(int type);
 
                 int OPENSSL_init_ssl_(uint64_t opts, const void* settings);
 
@@ -238,14 +239,22 @@ namespace ignite
                 /**
                  * Load SSL library.
                  * @param name Name.
+                 * @param homeDir OpenSSL home directory.
                  * @return Module.
                  */
-                common::dynamic::Module LoadSslLibrary(const char* name);
+                common::dynamic::Module LoadSslLibrary(const std::string& name, const std::string& homeDir);
 
                 /**
                  * Load all SSL libraries.
                  */
                 void LoadSslLibraries();
+
+                /**
+                 * Try load SSL libraries
+                 * @param homeDir OpenSSL home directory.
+                 * @return @c true on success and @c false if not.
+                 */
+                bool TryLoadSslLibraries(const std::string& homeDir);
 
                 /**
                  * Load mandatory SSL methods.

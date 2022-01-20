@@ -66,34 +66,25 @@ namespace ignite
                 memset(&functions, 0, sizeof(functions));
             }
 
-            common::dynamic::Module SslGateway::LoadSslLibrary(const char* name)
+            common::dynamic::Module SslGateway::LoadSslLibrary(const std::string& name, const std::string& homeDir)
             {
                 using namespace common;
                 using namespace dynamic;
 
-                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
-
-                if (home.empty())
-                    home = GetEnv("OPENSSL_HOME");
-
                 std::string fullName = GetDynamicLibraryName(name);
 
-                if (!home.empty())
+                if (!homeDir.empty())
                 {
-                    const char* paths[] = {"bin", "lib"};
+#ifdef _WIN32
+                    const char* binSubDir = "bin";
+#else
+                    const char* binSubDir = "lib";
+#endif
+                    std::ostringstream oss;
 
-                    for (size_t i = 0; i < 2; i++) {
-                        std::stringstream constructor;
+                    oss << homeDir << Fs << binSubDir << Fs << fullName;
 
-                        constructor << home << Fs << paths[i] << Fs << fullName;
-
-                        std::string fullPath = constructor.str();
-
-                        Module mod = LoadModule(fullPath);
-
-                        if (mod.IsLoaded())
-                            return mod;
-                    }
+                    return LoadModule(oss.str());
                 }
 
                 return LoadModule(fullName);
@@ -101,40 +92,85 @@ namespace ignite
 
             void SslGateway::LoadSslLibraries()
             {
-                libssl = LoadSslLibrary("libssl");
+                using namespace common;
 
-                if (!libssl.IsLoaded())
+                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
+                if (home.empty())
+                    home = GetEnv("OPENSSL_HOME");
+
+                bool isLoaded = false;
+
+                if (!home.empty())
+                    isLoaded = TryLoadSslLibraries(home);
+
+                // Try load from system path.
+                if (!isLoaded)
+                    isLoaded = TryLoadSslLibraries("");
+
+                if (!isLoaded)
                 {
-                    libcrypto = LoadSslLibrary("libcrypto-1_1-x64");
-                    libssl = LoadSslLibrary("libssl-1_1-x64");
-                }
-
-                if (!libssl.IsLoaded())
-                {
-                    libeay32 = LoadSslLibrary("libeay32");
-                    ssleay32 = LoadSslLibrary("ssleay32");
-                }
-
-                if (!libssl.IsLoaded() && (!libeay32.IsLoaded() || !ssleay32.IsLoaded()))
-                {
-                    if (!libssl.IsLoaded())
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Can not load neccessary OpenSSL library: libssl");
-
+#ifdef _WIN32
                     std::stringstream ss;
 
-                    ss << "Can not load neccessary OpenSSL libraries:";
+                    ss << "Can not load necessary OpenSSL libraries:";
 
-                    if (!libeay32.IsLoaded())
-                        ss << " libeay32";
+                    if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                    {
+                        if (!libssl.IsLoaded())
+                            ss << " libssl";
 
-                    if (!ssleay32.IsLoaded())
-                        ss << " ssleay32";
+                        if (!libcrypto.IsLoaded())
+                            ss << " libcrypto";
+                    }
+                    else
+                    {
+                        if (!libeay32.IsLoaded())
+                            ss << " libeay32";
+
+                        if (!ssleay32.IsLoaded())
+                            ss << " ssleay32";
+                    }
 
                     std::string res = ss.str();
 
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, res.c_str());
+#else
+                    if (!libssl.IsLoaded())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Can not load necessary OpenSSL library: libssl");
+#endif
                 }
+            }
+
+            bool SslGateway::TryLoadSslLibraries(const std::string& homeDir)
+            {
+#ifdef _WIN32
+#ifdef _WIN64
+#define SSL_LIB_PLATFORM_POSTFIX "-x64"
+#else
+#define SSL_LIB_PLATFORM_POSTFIX ""
+#endif
+                libcrypto = LoadSslLibrary("libcrypto-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                libssl = LoadSslLibrary("libssl-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
+                    libcrypto = LoadSslLibrary("libcrypto-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                    libssl = LoadSslLibrary("libssl-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                }
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
+                    libeay32 = LoadSslLibrary("libeay32", homeDir);
+                    ssleay32 = LoadSslLibrary("ssleay32", homeDir);
+                }
+
+                return (libssl.IsLoaded() && libcrypto.IsLoaded()) || (libeay32.IsLoaded() && ssleay32.IsLoaded());
+#else
+                libssl = LoadSslLibrary("libssl", homeDir);
+
+                return libssl.IsLoaded();
+#endif
             }
 
             void SslGateway::LoadMandatoryMethods()
@@ -166,7 +202,11 @@ namespace ignite
 
                 functions.fpSSL_get_verify_result = LoadSslMethod("SSL_get_verify_result");
 
-                functions.fpSSL_get_peer_certificate = LoadSslMethod("SSL_get_peer_certificate");
+                functions.fpSSL_get_peer_certificate = TryLoadSslMethod("SSL_get_peer_certificate");
+                // OpenSSL >= 3.0.0
+                if (!functions.fpSSL_get_peer_certificate)
+                    functions.fpSSL_get_peer_certificate = LoadSslMethod("SSL_get1_peer_certificate");
+
                 functions.fpSSL_ctrl = LoadSslMethod("SSL_ctrl");
                 functions.fpSSL_CTX_ctrl = LoadSslMethod("SSL_CTX_ctrl");
 
@@ -275,7 +315,7 @@ namespace ignite
                 return fp;
             }
 
-            char* SslGateway::SSLeay_version_(int type)
+            char* SslGateway::OpenSSL_version_(int type)
             {
                 typedef char* (FuncType)(int);
 
