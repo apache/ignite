@@ -142,26 +142,25 @@ namespace ignite
                 }
             }
 
-            bool SslGateway::TryLoadSslLibraries(const std::string& homeDir) {
+            bool SslGateway::TryLoadSslLibraries(const std::string& homeDir)
+            {
 #ifdef _WIN32
 #ifdef _WIN64
-                libcrypto = LoadSslLibrary("libcrypto-3-x64", homeDir);
-                libssl = LoadSslLibrary("libssl-3-x64", homeDir);
-
-                if (!libssl.IsLoaded() || !libcrypto.IsLoaded()) {
-                    libcrypto = LoadSslLibrary("libcrypto-1_1-x64", homeDir);
-                    libssl = LoadSslLibrary("libssl-1_1-x64", homeDir);
-                }
+#define SSL_LIB_PLATFORM_POSTFIX "-x64"
 #else
-                libcrypto = LoadSslLibrary("libcrypto-3", homeDir);
-                libssl = LoadSslLibrary("libssl-3", homeDir);
-
-                if (!libssl.IsLoaded() || !libcrypto.IsLoaded()) {
-                    libcrypto = LoadSslLibrary("libcrypto-1_1", homeDir);
-                    libssl = LoadSslLibrary("libssl-1_1", homeDir);
-                }
+#define SSL_LIB_PLATFORM_POSTFIX ""
 #endif
-                if (!libssl.IsLoaded() || !libcrypto.IsLoaded()) {
+                libcrypto = LoadSslLibrary("libcrypto-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                libssl = LoadSslLibrary("libssl-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
+                    libcrypto = LoadSslLibrary("libcrypto-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                    libssl = LoadSslLibrary("libssl-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                }
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
                     libeay32 = LoadSslLibrary("libeay32", homeDir);
                     ssleay32 = LoadSslLibrary("ssleay32", homeDir);
                 }
