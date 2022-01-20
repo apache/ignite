@@ -983,10 +983,7 @@ public class SnapshotRestoreProcess {
                                     Path partFile = Paths.get(tmpCacheDir.getAbsolutePath(), snpFile.getName());
 
                                     try {
-                                        IgniteSnapshotManager.copy(snpMgr.ioFactory(),
-                                            snpFile,
-                                            partFile.toFile(),
-                                            snpFile.length());
+                                        Files.move(snpFile.toPath(), partFile);
 
                                         partFut.complete(partFile);
                                     }
