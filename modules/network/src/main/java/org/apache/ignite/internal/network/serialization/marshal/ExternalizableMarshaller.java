@@ -34,8 +34,7 @@ class ExternalizableMarshaller {
     private final NoArgConstructorInstantiation instantiation = new NoArgConstructorInstantiation();
 
     ExternalizableMarshaller(
-            ValueReader<Object> valueReader,
-            TypedValueWriter typedValueWriter,
+            TypedValueWriter typedValueWriter, ValueReader<Object> valueReader,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter
     ) {
         this.valueReader = valueReader;

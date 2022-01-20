@@ -58,7 +58,7 @@ public class ClassDescriptorRegistry implements IdIndexedDescriptors, ClassIndex
 
         Integer existingId = idMap.put(clazz, descriptorId);
 
-        assert existingId == null;
+        assert existingId == null : clazz;
 
         ClassDescriptor existingDescriptor = descriptorMap.put(descriptorId, descriptor);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -80,7 +81,8 @@ public enum BuiltInType {
     BIT_SET(42, BitSet.class),
     NULL(43, Null.class),
     REFERENCE(44, DummyPlaceholder.class),
-    CLASS(45, Class.class)
+    CLASS(45, Class.class),
+    PROXY(46, Proxy.class)
     ;
 
     /**

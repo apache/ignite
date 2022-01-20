@@ -29,6 +29,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.network.serialization.BuiltInType;
@@ -52,6 +53,9 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
     );
     private final StructuredObjectMarshaller structuredObjectMarshaller;
     private final ExternalizableMarshaller externalizableMarshaller;
+    private final ProxyMarshaller proxyMarshaller;
+
+    private final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
     /**
      * Constructor.
@@ -66,10 +70,12 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         structuredObjectMarshaller = new StructuredObjectMarshaller(localDescriptors, this::marshalToOutput, this::unmarshalFromInput);
 
         externalizableMarshaller = new ExternalizableMarshaller(
-                this::unmarshalFromInput,
                 this::marshalToOutput,
+                this::unmarshalFromInput,
                 structuredObjectMarshaller
         );
+
+        proxyMarshaller = new ProxyMarshaller(this::marshalToOutput, this::unmarshalFromInput);
     }
 
     /** {@inheritDoc} */
@@ -91,6 +97,11 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         }
 
         return new MarshalledObject(baos.toByteArray(), context.usedDescriptors());
+    }
+
+    private void marshalToOutput(@Nullable Object object, DataOutputStream output, MarshallingContext context)
+            throws MarshalException, IOException {
+        marshalToOutput(object, objectClass(object), output, context);
     }
 
     private void marshalToOutput(@Nullable Object object, Class<?> declaredClass, DataOutputStream output, MarshallingContext context)
@@ -182,6 +193,9 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         if (isEnumArray(objectClass)) {
             return localDescriptors.getRequiredDescriptor(Enum[].class);
         }
+        if (proxyMarshaller.isProxyClass(objectClass)) {
+            return localDescriptors.getDescriptor(Proxy.class);
+        }
 
         ClassDescriptor descriptor = localDescriptors.getDescriptor(objectClass);
         if (descriptor != null) {
@@ -271,6 +285,9 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
             builtInContainerMarshallers.writeGenericRefArray((Object[]) object, descriptor, output, context);
         } else if (descriptor.isExternalizable()) {
             externalizableMarshaller.writeExternalizable((Externalizable) object, descriptor, output, context);
+        } else if (descriptor.isProxy()) {
+            //noinspection ConstantConditions
+            proxyMarshaller.writeProxy(object, output, context);
         } else {
             structuredObjectMarshaller.writeStructuredObject(object, descriptor, output, context);
         }
@@ -297,7 +314,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
     @Nullable
     public <T> T unmarshal(byte[] bytes, IdIndexedDescriptors mergedDescriptors) throws UnmarshalException {
         try (var bais = new ByteArrayInputStream(bytes); var dis = new DataInputStream(bais)) {
-            UnmarshallingContext context = new UnmarshallingContext(bais, mergedDescriptors);
+            UnmarshallingContext context = new UnmarshallingContext(bais, mergedDescriptors, classLoader);
             T result = unmarshalFromInput(dis, context);
 
             throwIfExcessiveBytesRemain(dis);
@@ -369,7 +386,7 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         return preInstantiatedObject;
     }
 
-    private Object preInstantiate(ClassDescriptor descriptor, DataInput input, UnmarshallingContext context)
+    private Object preInstantiate(ClassDescriptor descriptor, DataInputStream input, UnmarshallingContext context)
             throws IOException, UnmarshalException {
         if (isBuiltInNonContainer(descriptor)) {
             throw new IllegalStateException("Should not be here, descriptor is " + descriptor);
@@ -378,9 +395,11 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
         } else if (isBuiltInMap(descriptor)) {
             return builtInContainerMarshallers.preInstantiateBuiltInMutableMap(descriptor, input, context);
         } else if (isArray(descriptor)) {
-            return builtInContainerMarshallers.preInstantiateGenericRefArray(input);
+            return builtInContainerMarshallers.preInstantiateGenericRefArray(input, context);
         } else if (descriptor.isExternalizable()) {
             return externalizableMarshaller.preInstantiateExternalizable(descriptor);
+        } else if (descriptor.isProxy()) {
+            return proxyMarshaller.preInstantiateProxy(input, context);
         } else {
             return structuredObjectMarshaller.preInstantiateStructuredObject(descriptor);
         }
@@ -398,6 +417,8 @@ public class DefaultUserObjectMarshaller implements UserObjectMarshaller {
             fillGenericRefArrayFrom(input, (Object[]) objectToFill, context);
         } else if (descriptor.isExternalizable()) {
             externalizableMarshaller.fillExternalizableFrom(input, (Externalizable) objectToFill, context);
+        } else if (descriptor.isProxy()) {
+            proxyMarshaller.fillProxyFrom(input, objectToFill, context);
         } else {
             structuredObjectMarshaller.fillStructuredObjectFrom(input, objectToFill, descriptor, context);
         }

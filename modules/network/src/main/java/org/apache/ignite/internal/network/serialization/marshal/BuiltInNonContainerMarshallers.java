@@ -65,11 +65,11 @@ class BuiltInNonContainerMarshallers {
         addSingle(map, String[].class, BuiltInMarshalling::writeStringArray, BuiltInMarshalling::readStringArray);
         addSingle(map, BigDecimal.class, BuiltInMarshalling::writeBigDecimal, BuiltInMarshalling::readBigDecimal);
         addSingle(map, BigDecimal[].class, BuiltInMarshalling::writeBigDecimalArray, BuiltInMarshalling::readBigDecimalArray);
-        addSingle(map, Enum.class, BuiltInMarshalling::writeEnum, BuiltInMarshalling::readEnum);
+        addSingle(map, Enum.class, (obj, out, ctx) -> BuiltInMarshalling.writeEnum(obj, out), BuiltInMarshalling::readEnum);
         addSingle(map, Enum[].class, BuiltInMarshalling::writeEnumArray, BuiltInMarshalling::readEnumArray);
         addSingle(map, BitSet.class, BuiltInMarshalling::writeBitSet, BuiltInMarshalling::readBitSet);
         addSingle(map, Null.class, (obj, output) -> {}, input -> null);
-        addSingle(map, Class.class, BuiltInMarshalling::writeClass, BuiltInMarshalling::readClass);
+        addSingle(map, Class.class, (obj, out, ctx) -> BuiltInMarshalling.writeClass(obj, out), BuiltInMarshalling::readClass);
 
         return Map.copyOf(map);
     }
@@ -120,7 +120,7 @@ class BuiltInNonContainerMarshallers {
     }
 
     /**
-     * Returns {@code true} if we the given descriptor is a built-in we can handle.
+     * Returns {@code true} if the given descriptor is a built-in we can handle.
      *
      * @param classToCheck the class to check
      * @return {@code true} if we the given descriptor is a built-in we can handle

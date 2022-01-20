@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 class UnmarshallingContext implements IdIndexedDescriptors {
     private final ByteArrayInputStream source;
     private final IdIndexedDescriptors descriptors;
+    private final ClassLoader classLoader;
 
     private final Map<Integer, Object> idsToObjects = new HashMap<>();
 
@@ -41,15 +42,20 @@ class UnmarshallingContext implements IdIndexedDescriptors {
 
     private UosObjectInputStream objectInputStream;
 
-    public UnmarshallingContext(ByteArrayInputStream source, IdIndexedDescriptors descriptors) {
+    public UnmarshallingContext(ByteArrayInputStream source, IdIndexedDescriptors descriptors, ClassLoader classLoader) {
         this.source = source;
         this.descriptors = descriptors;
+        this.classLoader = classLoader;
     }
 
     /** {@inheritDoc} */
     @Override
     public @Nullable ClassDescriptor getDescriptor(int descriptorId) {
         return descriptors.getDescriptor(descriptorId);
+    }
+
+    public ClassLoader classLoader() {
+        return classLoader;
     }
 
     public void registerReference(int objectId, Object object) {

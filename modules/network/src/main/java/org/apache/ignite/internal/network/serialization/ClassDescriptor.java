@@ -320,6 +320,15 @@ public class ClassDescriptor {
     }
 
     /**
+     * Returns {@code true} if the described class is a proxy.
+     *
+     * @return {@code true} if the described class is a proxy
+     */
+    public boolean isProxy() {
+        return descriptorId == BuiltInType.PROXY.descriptorId();
+    }
+
+    /**
      * Returns special serialization methods facility.
      *
      * @return special serialization methods facility

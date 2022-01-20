@@ -32,11 +32,15 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +66,7 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
     private static boolean constructorCalled;
+    private static boolean proxyRunCalled;
 
     private static final int INT_OUT_OF_INT_CACHE_RANGE = 1_000_000;
 
@@ -208,9 +213,9 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         assertThat(unmarshalled.call(), is("Hi!"));
     }
 
-    @SuppressWarnings("Convert2Lambda")
     private static Callable<String> nonCapturingAnonymousInstance() {
         return new Callable<>() {
+            /** {@inheritDoc} */
             @Override
             public String call() {
                 return "Hi!";
@@ -226,8 +231,8 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
     }
 
     private Runnable capturingAnonymousInstance() {
-        //noinspection Convert2Lambda
         return new Runnable() {
+            /** {@inheritDoc} */
             @Override
             public void run() {
                 System.out.println(DefaultUserObjectMarshallerWithArbitraryObjectsTest.this);
@@ -478,6 +483,54 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         assertThat(unmarshalled.get(0), not(sameInstance(unmarshalled.get(1))));
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    void marshalsAndUnmarshalsJavaProxies() throws Exception {
+        proxyRunCalled = false;
+
+        Object proxy = testProxyInstance();
+
+        Object unmarshalled = marshalAndUnmarshalNonNull(proxy);
+
+        assertThat(unmarshalled, is(instanceOf(Runnable.class)));
+        Runnable runnable = (Runnable) unmarshalled;
+        runnable.run();
+        assertTrue(proxyRunCalled);
+
+        assertThat(unmarshalled, is(instanceOf(Callable.class)));
+        Callable<String> callable = (Callable<String>) unmarshalled;
+        assertThat(callable.call(), is("Hi!"));
+    }
+
+    private Object testProxyInstance() {
+        InvocationHandler handler = new TestInvocationHandler();
+        return Proxy.newProxyInstance(
+                contextClassLoader(),
+                new Class[]{Runnable.class, Callable.class},
+                handler
+        );
+    }
+
+    @Test
+    void cycleViaProxyIsSupported() throws Exception {
+        InvocationHandlerWithRefToProxy originalHandler = new InvocationHandlerWithRefToProxy();
+        Object originalProxy = Proxy.newProxyInstance(contextClassLoader(), new Class[]{Runnable.class}, originalHandler);
+        originalHandler.ref = originalProxy;
+
+        Object unmarshalledProxy = marshalAndUnmarshalNonNull(originalProxy);
+        var unmarshalledHandler = (InvocationHandlerWithRefToProxy) Proxy.getInvocationHandler(unmarshalledProxy);
+
+        assertThat(unmarshalledHandler.ref, is(sameInstance(unmarshalledProxy)));
+    }
+
+    private ClassLoader contextClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
+    private static boolean noArgs(Method method) {
+        return method.getParameterTypes().length == 0;
+    }
+
     private static class Simple {
         private int value;
 
@@ -655,5 +708,44 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         private final Double doubleVal = 6.0;
         private final Character characterVal = 'a';
         private final Boolean booleanVal = true;
+    }
+
+    private static class TestInvocationHandler implements InvocationHandler {
+        /** {@inheritDoc} */
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if ("run".equals(method.getName()) && noArgs(method)) {
+                proxyRunCalled = true;
+                return null;
+            }
+            if ("call".equals(method.getName()) && noArgs(method)) {
+                return "Hi!";
+            }
+            if ("hashCode".equals(method.getName()) && noArgs(method)) {
+                return hashCode();
+            }
+
+            throw new RuntimeException("Don't know how to handle " + method + " with args" + Arrays.toString(args));
+        }
+    }
+
+    private static class InvocationHandlerWithRefToProxy implements InvocationHandler, Serializable {
+        private Object ref;
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if ("equals".equals(method.getName()) && method.getParameterTypes().length == 1
+                    && method.getParameterTypes()[0] == Object.class) {
+                return proxy == args[0];
+            }
+            if ("hashCode".equals(method.getName()) && noArgs(method)) {
+                return hashCode();
+            }
+            if ("toString".equals(method.getName()) && noArgs(method)) {
+                return "Proxy with placeholder";
+            }
+
+            throw new RuntimeException("Don't know how to handle " + method + " with args" + Arrays.toString(args));
+        }
     }
 }
