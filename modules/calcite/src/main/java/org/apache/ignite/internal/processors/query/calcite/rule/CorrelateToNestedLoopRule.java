@@ -81,15 +81,8 @@ public class CorrelateToNestedLoopRule extends AbstractIgniteConverterRule<Logic
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
-        Correlate join = call.rel(0);
-
-        if (preMatch(join))
-            super.onMatch(call);
-    }
-
-    /** */
-    private static boolean preMatch(Correlate corr) {
+    @Override public boolean matches(RelOptRuleCall call) {
+        Correlate corr = call.rel(0);
         // Only these join types are currently supported by IgniteCorrelatedNestedLoopJoin
         // and only these types are used to rewrite sub-query.
         return corr.getJoinType() == JoinRelType.INNER || corr.getJoinType() == JoinRelType.LEFT;

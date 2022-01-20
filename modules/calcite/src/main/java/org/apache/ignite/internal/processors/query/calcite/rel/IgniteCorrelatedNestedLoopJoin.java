@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
@@ -193,7 +193,8 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         List<RelTraitSet> inTraits) {
         CorrelationTrait nodeCorr = TraitUtils.correlation(nodeTraits);
 
-        Set<CorrelationId> selfCorrIds = new HashSet<>(CorrelationTrait.correlations(variablesSet).correlationIds());
+        Set<CorrelationId> selfCorrIds = U.newHashSet(variablesSet.size() + nodeCorr.correlationIds().size());
+        selfCorrIds.addAll(variablesSet);
         selfCorrIds.addAll(nodeCorr.correlationIds());
 
         return Pair.of(nodeTraits,
@@ -212,10 +213,14 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         if (!rightCorrIds.containsAll(variablesSet))
             return ImmutableList.of();
 
-        Set<CorrelationId> corrIds = new HashSet<>(rightCorrIds);
+        Set<CorrelationId> leftCorrIds = TraitUtils.correlation(inTraits.get(0)).correlationIds();
+
+        Set<CorrelationId> corrIds = U.newHashSet(rightCorrIds.size() + leftCorrIds.size());
+
+        corrIds.addAll(rightCorrIds);
 
         // Left + right
-        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+        corrIds.addAll(leftCorrIds);
 
         corrIds.removeAll(variablesSet);
 

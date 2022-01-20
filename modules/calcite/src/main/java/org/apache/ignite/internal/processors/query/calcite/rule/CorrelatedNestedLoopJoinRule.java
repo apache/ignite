@@ -30,7 +30,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -142,15 +141,9 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override public boolean matches(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        if (preMatch(join))
-            super.onMatch(call);
-    }
-
-    /** */
-    private static boolean preMatch(Join join) {
-        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT; // TODO SEMI, ANTI
+        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT;
     }
 }
