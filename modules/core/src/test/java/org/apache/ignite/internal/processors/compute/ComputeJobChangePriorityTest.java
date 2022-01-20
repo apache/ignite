@@ -26,7 +26,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -254,14 +253,6 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
-            return null;
-        }
-    }
-
-    /** */
-    private static class NoopJob extends ComputeJobAdapter {
-        /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteException {
             return null;
         }
     }

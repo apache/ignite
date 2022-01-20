@@ -898,24 +898,29 @@ public class GridJobProcessor extends GridProcessorAdapter {
             ctx.collision().onCollision(
                 // Passive jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = passiveJobs.values().iterator();
 
                         return new Iterator<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return iter.hasNext();
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 return new CollisionJobContext(iter.next(), true);
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         return passiveJobs.size();
                     }
@@ -923,6 +928,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Active jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
@@ -952,10 +958,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 }
                             }
 
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return w != null;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
@@ -969,21 +977,24 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return ret;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         int ret = activeJobs.size() - heldJobs.size();
 
-                        return ret > 0 ? ret : 0;
+                        return Math.max(ret, 0);
                     }
                 },
 
                 // Held jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
@@ -1013,10 +1024,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 }
                             }
 
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return w != null;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
@@ -1031,12 +1044,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return ret;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         return heldJobs.size();
                     }
