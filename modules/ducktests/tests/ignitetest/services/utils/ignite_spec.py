@@ -246,10 +246,16 @@ class IgniteApplicationSpec(IgniteSpec):
     Spec to run ignite application
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    DEFAULT_IGNITE_APP_HEAP = "-Xmx1G"
+
+    def __init__(self, service, jvm_opts, full_jvm_opts):
+        """Applies the default heap max size if and only if it wasn't passed from the outside"""
+        super().__init__(
+            service,
+            self.__get_jvm_opts(jvm_opts, full_jvm_opts),
+            self.__get_full_jvm_opts(jvm_opts, full_jvm_opts))
+
         self._add_jvm_opts(["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-                            "-Xmx1G",
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
@@ -290,3 +296,26 @@ class IgniteApplicationSpec(IgniteSpec):
 
     def envs(self):
         return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}
+
+    def __has_option(self, prefix, opts):
+        if opts is None:
+            return False
+
+        assert isinstance(opts, (str, list)), "JVM options should be either string or list only."
+
+        if isinstance(opts, str):
+            opts = opts.split()
+
+        return any(opt.startswith(prefix) for opt in opts)
+
+    def __get_jvm_opts(self, jvm_opts, full_jvm_opts):
+        if self.__has_option("-Xmx", jvm_opts) or self.__has_option("-Xmx", full_jvm_opts):
+            return jvm_opts
+        else:
+            return merge_jvm_settings(self.DEFAULT_IGNITE_APP_HEAP, jvm_opts if jvm_opts is not None else [])
+
+    def __get_full_jvm_opts(self, jvm_opts, full_jvm_opts):
+        if self.__has_option("-Xmx", jvm_opts) or self.__has_option("-Xmx", full_jvm_opts):
+            return full_jvm_opts
+        else:
+            return merge_jvm_settings(self.DEFAULT_IGNITE_APP_HEAP, full_jvm_opts if full_jvm_opts is not None else [])
