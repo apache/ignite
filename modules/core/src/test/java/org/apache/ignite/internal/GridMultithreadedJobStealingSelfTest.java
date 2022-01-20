@@ -121,7 +121,9 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         int threadsNum = 10;
 
         GridTestUtils.runMultiThreaded(new Runnable() {
-            /** */
+            /**
+             *
+             */
             @Override public void run() {
                 try {
                     JobStealingResult res = ignite.compute().execute(new JobStealingTask(2), null);
@@ -144,12 +146,12 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        assertNull("Test failed with exception: ",fail.get());
+        assertNull("Test failed with exception: ", fail.get());
 
         // Total jobs number is threadsNum * 2
-        assertEquals("Incorrect processed jobs number",threadsNum * 2, stolen.get() + noneStolen.get());
+        assertEquals("Incorrect processed jobs number", threadsNum * 2, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+        assertFalse("No jobs were stolen.", stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
@@ -157,7 +159,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         // Under these circumstances we should not have  more than 2 jobs
         // difference.
         //(but muted to 4 due to very rare fails and low priority of fix)
-        assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
+        assertTrue("Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
             Math.abs(stolen.get() - noneStolen.get()) <= 4);
     }
 
@@ -181,7 +183,9 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         jobExecutedLatch = new CountDownLatch(threadsNum);
 
         final IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            /** */
+            /**
+             *
+             */
             @Override public void run() {
                 try {
                     final IgniteCompute compute = ignite.compute().withAsync();
@@ -215,17 +219,17 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         future.get();
 
-        assertNull("Test failed with exception: ",fail.get());
+        assertNull("Test failed with exception: ", fail.get());
 
         // Total jobs number is threadsNum * 4
         assertEquals("Incorrect processed jobs number", threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+        assertFalse("No jobs were stolen.", stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
 
-        assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
+        assertTrue("Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
             Math.abs(stolen.get() - 2 * noneStolen.get()) <= 8);
     }
 
