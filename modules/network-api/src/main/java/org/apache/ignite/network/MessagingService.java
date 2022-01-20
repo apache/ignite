@@ -79,7 +79,7 @@ public interface MessagingService {
      * @param timeout   Waiting for response timeout in milliseconds.
      * @return A future holding the response or error if the expected response was not received.
      */
-    <T extends NetworkMessage> CompletableFuture<T> invoke(ClusterNode recipient, NetworkMessage msg, long timeout);
+    CompletableFuture<NetworkMessage> invoke(ClusterNode recipient, NetworkMessage msg, long timeout);
 
     /**
      * Sends a message asynchronously with same guarantees as {@link #send(ClusterNode, NetworkMessage)} and returns a future that will be
@@ -90,7 +90,7 @@ public interface MessagingService {
      * @param timeout Waiting for response timeout in milliseconds.
      * @return A future holding the response or error if the expected response was not received.
      */
-    <T extends NetworkMessage> CompletableFuture<T> invoke(NetworkAddress addr, NetworkMessage msg, long timeout);
+    CompletableFuture<NetworkMessage> invoke(NetworkAddress addr, NetworkMessage msg, long timeout);
 
     /**
      * Registers a listener for a group of network message events.

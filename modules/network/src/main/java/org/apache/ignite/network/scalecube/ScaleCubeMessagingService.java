@@ -43,6 +43,8 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
      */
     private volatile Cluster cluster;
 
+    private volatile boolean isShutdown;
+
     /**
      * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
      *
@@ -50,6 +52,8 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
      */
     void setCluster(Cluster cluster) {
         this.cluster = cluster;
+
+        cluster.onShutdown().doFinally(v -> isShutdown = true).subscribe();
     }
 
     /**
@@ -82,7 +86,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
     public CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg) {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
+        if (isShutdown) {
             return failedFuture(new NodeStoppingException());
         }
 
@@ -102,7 +106,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
     public CompletableFuture<Void> send(NetworkAddress addr, NetworkMessage msg, String correlationId) {
         // TODO: IGNITE-15161 Temporarily, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
+        if (isShutdown) {
             return failedFuture(new NodeStoppingException());
         }
 
@@ -127,7 +131,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
     public CompletableFuture<NetworkMessage> invoke(NetworkAddress addr, NetworkMessage msg, long timeout) {
         // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
-        if (cluster.isShutdown()) {
+        if (isShutdown) {
             return failedFuture(new NodeStoppingException());
         }
 

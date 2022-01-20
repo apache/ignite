@@ -25,6 +25,10 @@ import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.schemas.network.ClusterMembershipView;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
@@ -39,6 +43,7 @@ import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
 import org.apache.ignite.internal.network.serialization.SerializationService;
 import org.apache.ignite.internal.network.serialization.UserObjectSerializationContext;
 import org.apache.ignite.internal.network.serialization.marshal.DefaultUserObjectMarshaller;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -73,6 +78,8 @@ public class ScaleCubeClusterServiceFactory {
             private volatile ClusterImpl cluster;
 
             private volatile ConnectionManager connectionMgr;
+
+            private volatile CompletableFuture<Void> shutdownFuture;
 
             /** {@inheritDoc} */
             @Override
@@ -120,6 +127,8 @@ public class ScaleCubeClusterServiceFactory {
                         .transport(opts -> opts.transportFactory(new DelegatingTransportFactory(messagingService, config -> transport)))
                         .membership(opts -> opts.seedMembers(parseAddresses(finder.findNodes())));
 
+                shutdownFuture = cluster.onShutdown().toFuture();
+
                 // resolve cyclic dependencies
                 messagingService.setCluster(cluster);
                 topologyService.setCluster(cluster);
@@ -159,7 +168,18 @@ public class ScaleCubeClusterServiceFactory {
                 }
 
                 cluster.shutdown();
-                cluster.onShutdown().block();
+
+                try {
+                    shutdownFuture.get(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    throw new IgniteInternalException("Interrupted while waiting for the ClusterService to stop", e);
+                } catch (TimeoutException e) {
+                    throw new IgniteInternalException("Timeout while waiting for the ClusterService to stop", e);
+                } catch (ExecutionException e) {
+                    throw new IgniteInternalException("Unable to stop the ClusterService", e.getCause());
+                }
 
                 connectionMgr.stop();
             }
@@ -173,7 +193,7 @@ public class ScaleCubeClusterServiceFactory {
             /** {@inheritDoc} */
             @Override
             public boolean isStopped() {
-                return cluster.isShutdown();
+                return shutdownFuture.isDone();
             }
         };
     }
