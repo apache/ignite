@@ -68,14 +68,41 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
         ignite = startGridsMultiThreaded(2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite = null;
+        super.afterTest();
 
         stopAllGrids();
+
+        ignite = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
+
+        // One job at a time.
+        colSpi.setActiveJobsThreshold(1);
+        colSpi.setWaitJobsThreshold(0);
+
+        JobStealingFailoverSpi failSpi = new JobStealingFailoverSpi();
+
+        // Verify defaults.
+        assert failSpi.getMaximumFailoverAttempts() == JobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
+
+        cfg.setCollisionSpi(colSpi);
+        cfg.setFailoverSpi(failSpi);
+
+        return cfg;
     }
 
     /**
@@ -117,12 +144,12 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        assertNull("Test failed with exception: ", fail.get());
+        assertNull("Test failed with exception: ",fail.get());
 
         // Total jobs number is threadsNum * 2
-        assertEquals("Incorrect processed jobs number", threadsNum * 2, stolen.get() + noneStolen.get());
+        assertEquals("Incorrect processed jobs number",threadsNum * 2, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.", stolen.get() == 0);
+        assertFalse( "No jobs were stolen.",stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
@@ -188,40 +215,18 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         future.get();
 
-        assertNull("Test failed with exception: ", fail.get());
+        assertNull("Test failed with exception: ",fail.get());
 
-        // Total jobs number is threadsNum * 3
+        // Total jobs number is threadsNum * 4
         assertEquals("Incorrect processed jobs number", threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.", stolen.get() == 0);
+        assertFalse( "No jobs were stolen.",stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
 
         assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
-            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 6);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
-
-        // One job at a time.
-        colSpi.setActiveJobsThreshold(1);
-        colSpi.setWaitJobsThreshold(0);
-
-        JobStealingFailoverSpi failSpi = new JobStealingFailoverSpi();
-
-        // Verify defaults.
-        assert failSpi.getMaximumFailoverAttempts() == JobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
-
-        cfg.setCollisionSpi(colSpi);
-        cfg.setFailoverSpi(failSpi);
-
-        return cfg;
+            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 8);
     }
 
     /**
@@ -300,7 +305,10 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public Serializable execute() {
             try {
-                jobExecutedLatch.countDown();
+                CountDownLatch latch = jobExecutedLatch;
+
+                if (latch != null)
+                    latch.countDown();
 
                 Long sleep = argument(0);
 
