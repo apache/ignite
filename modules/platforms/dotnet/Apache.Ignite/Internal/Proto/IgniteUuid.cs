@@ -26,9 +26,9 @@ namespace Apache.Ignite.Internal.Proto
     internal unsafe struct IgniteUuid
     {
         /// <summary>
-        /// Struct size.
+        /// Struct max size.
         /// </summary>
-        public const int Size = 24;
+        public const int MaxSize = 24;
 
         /// <summary>
         /// IgniteUuid bytes.
@@ -36,6 +36,11 @@ namespace Apache.Ignite.Internal.Proto
         /// We could deserialize the data into <see cref="Guid"/> and <see cref="long"/>, but there is no need to deal
         /// with the parts separately on the client.
         /// </summary>
-        public fixed byte Bytes[Size];
+        public fixed byte Bytes[MaxSize];
+
+        /// <summary>
+        /// Struct size.
+        /// </summary>
+        public byte Size;
     }
 }

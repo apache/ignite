@@ -168,6 +168,7 @@ public class ClientMessagePacker implements AutoCloseable {
                 buf.writeByte(i);
             }
         } else if (i < (1 << 7)) {
+            // Includes negative fixint.
             buf.writeByte(i);
         } else {
             if (i < (1 << 8)) {
@@ -506,13 +507,22 @@ public class ClientMessagePacker implements AutoCloseable {
     public void packIgniteUuid(IgniteUuid val) {
         assert !closed : "Packer is closed";
 
-        packExtensionTypeHeader(ClientMsgPackType.IGNITE_UUID, 24);
+        buf.writeByte(Code.EXT8);
+
+        // Reserve space for varint payload length.
+        int payloadLenPos = buf.writerIndex();
+        buf.writeByte(0);
+
+        buf.writeByte(ClientMsgPackType.IGNITE_UUID);
 
         UUID globalId = val.globalId();
-
         buf.writeLong(globalId.getMostSignificantBits());
         buf.writeLong(globalId.getLeastSignificantBits());
-        buf.writeLong(val.localId());
+
+        packLong(val.localId());
+
+        int payloadLen = buf.writerIndex() - payloadLenPos - 2;
+        buf.setByte(payloadLenPos, payloadLen);
     }
 
     /**
@@ -525,10 +535,43 @@ public class ClientMessagePacker implements AutoCloseable {
 
         byte[] unscaledValue = val.unscaledValue().toByteArray();
 
-        packExtensionTypeHeader(ClientMsgPackType.DECIMAL,
-                4 + unscaledValue.length); // Scale length + data length
+        // Pack scale as varint.
+        int scale = val.scale();
 
-        buf.writeInt(val.scale());
+        int scaleBytes = 5;
+
+        if (scale < (1 << 7)) {
+            scaleBytes = 1;
+        } else if (scale < (1 << 8)) {
+            scaleBytes = 2;
+        } else if (scale < (1 << 16)) {
+            scaleBytes = 3;
+        }
+
+        int payloadLen = scaleBytes + unscaledValue.length;
+
+        packExtensionTypeHeader(ClientMsgPackType.DECIMAL, payloadLen);
+
+        switch (scaleBytes) {
+            case 1:
+                buf.writeByte(scale);
+                break;
+
+            case 2:
+                buf.writeByte(Code.UINT8);
+                buf.writeByte(scale);
+                break;
+
+            case 3:
+                buf.writeByte(Code.UINT16);
+                buf.writeShort(scale);
+                break;
+
+            default:
+                buf.writeByte(Code.UINT32);
+                buf.writeInt(scale);
+        }
+
         buf.writeBytes(unscaledValue);
     }
 

@@ -134,11 +134,12 @@ namespace Apache.Ignite.Internal.Proto
         /// <returns>Ignite UUID.</returns>
         public static unsafe IgniteUuid ReadIgniteUuid(this ref MessagePackReader reader)
         {
-            ValidateExtensionType(ref reader, ClientMessagePackType.IgniteUuid, IgniteUuid.Size);
-            var bytes = reader.ReadRaw(IgniteUuid.Size);
+            var size = ValidateExtensionType(ref reader, ClientMessagePackType.IgniteUuid);
+            var bytes = reader.ReadRaw(size);
 
             var res = default(IgniteUuid);
-            bytes.CopyTo(new Span<byte>(res.Bytes, IgniteUuid.Size));
+            bytes.CopyTo(new Span<byte>(res.Bytes, size));
+            res.Size = (byte)size;
 
             return res;
         }
@@ -168,10 +169,10 @@ namespace Apache.Ignite.Internal.Proto
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ValidateExtensionType(
+        private static int ValidateExtensionType(
             ref MessagePackReader reader,
             ClientMessagePackType expectedType,
-            int expectedLength)
+            int? expectedLength = null)
         {
             ExtensionHeader hdr = reader.ReadExtensionFormatHeader();
 
@@ -181,11 +182,13 @@ namespace Apache.Ignite.Internal.Proto
                     $"Expected {expectedType} extension ({(int)expectedType}), but got {hdr.TypeCode}.");
             }
 
-            if (hdr.Length != expectedLength)
+            if (expectedLength != null && hdr.Length != expectedLength)
             {
                 throw new IgniteClientException(
                     $"Expected {expectedLength} bytes for {expectedType} extension, but got {hdr.Length}.");
             }
+
+            return (int)hdr.Length;
         }
     }
 }

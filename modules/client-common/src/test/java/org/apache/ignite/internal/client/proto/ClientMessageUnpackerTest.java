@@ -133,6 +133,16 @@ public class ClientMessageUnpackerTest {
     }
 
     @ParameterizedTest
+    @ValueSource(ints = {30, 31, 32, 126, 127, 128, 255, 256, 65535, 65536})
+    public void testUnpackLongString(int length) {
+        String s = "x".repeat(length / 3);
+        testUnpacker(p -> p.packString(s), ClientMessageUnpacker::unpackString, s);
+
+        String s2 = "x".repeat(length);
+        testUnpacker(p -> p.packString(s2), ClientMessageUnpacker::unpackString, s2);
+    }
+
+    @ParameterizedTest
     @ValueSource(ints = {0, 1, 255, 256, 65535, 65536, Integer.MAX_VALUE})
     public void testUnpackArrayHeader(int i) {
         testUnpacker(p -> p.packArrayHeader(i), ClientMessageUnpacker::unpackArrayHeader, i);
@@ -171,17 +181,27 @@ public class ClientMessageUnpackerTest {
         testUnpacker(p -> p.writePayload(b, 1, 1), p -> p.readPayload(1), new byte[]{5});
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0, 1, 255, 256, 65535, 65536, Integer.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE, Integer.MIN_VALUE})
+    public void testUnpackIgniteUuid(long l) {
+        IgniteUuid id = new IgniteUuid(UUID.randomUUID(), l);
+
+        testUnpacker(p -> p.packIgniteUuid(id), ClientMessageUnpacker::unpackIgniteUuid, id);
+    }
+
     @Test
     public void testSkipValues() {
         testUnpacker(p -> {
             p.packInt(123456);
             p.packBoolean(false);
 
-            p.packMapHeader(2);
+            p.packMapHeader(3);
             p.packString("x");
             p.packNil();
             p.packUuid(UUID.randomUUID());
             p.packIgniteUuid(new IgniteUuid(UUID.randomUUID(), 123));
+            p.packUuid(UUID.randomUUID());
+            p.packIgniteUuid(new IgniteUuid(UUID.randomUUID(), UUID.randomUUID().getLeastSignificantBits()));
 
             p.packDouble(1.1);
             p.packDouble(2.2);

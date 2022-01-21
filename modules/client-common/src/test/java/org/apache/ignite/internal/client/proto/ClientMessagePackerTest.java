@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.proto;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.netty.buffer.ByteBuf;
@@ -139,6 +140,21 @@ public class ClientMessagePackerTest {
     @ValueSource(strings = {"", "Abc", "Абв", "🔥", "𒀖𝄞"})
     public void testPackString(String s) {
         testPacker(p -> p.packString(s), p -> p.packString(s));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {30, 31, 32, 126, 127, 128, 255, 256, 65535, 65536})
+    public void testPackLongString(int length) {
+        String s = "x".repeat(length / 3);
+        byte[] packed = packIgnite(p -> p.packString(s));
+
+        try (var unpacker = MessagePack.newDefaultUnpacker(packed)) {
+            String res = unpacker.unpackString();
+
+            assertEquals(s, res);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @ParameterizedTest

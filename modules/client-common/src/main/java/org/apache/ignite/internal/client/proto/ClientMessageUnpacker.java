@@ -126,10 +126,14 @@ public class ClientMessageUnpacker implements AutoCloseable {
 
         switch (code) {
             case Code.UINT8:
+                return buf.readUnsignedByte();
+
             case Code.INT8:
                 return buf.readByte();
 
             case Code.UINT16:
+                return buf.readUnsignedShort();
+
             case Code.INT16:
                 return buf.readShort();
 
@@ -245,8 +249,6 @@ public class ClientMessageUnpacker implements AutoCloseable {
                 return buf.readByte();
 
             case Code.UINT16:
-                return (short) buf.readUnsignedShort();
-
             case Code.INT16:
                 return buf.readShort();
 
@@ -752,17 +754,12 @@ public class ClientMessageUnpacker implements AutoCloseable {
 
         var hdr = unpackExtensionTypeHeader();
         var type = hdr.getType();
-        var len = hdr.getLength();
 
         if (type != ClientMsgPackType.IGNITE_UUID) {
             throw new MessageTypeException("Expected Ignite UUID extension (1), but got " + type);
         }
 
-        if (len != 24) {
-            throw new MessageSizeException("Expected 24 bytes for UUID extension, but got " + len, len);
-        }
-
-        return new IgniteUuid(new UUID(buf.readLong(), buf.readLong()), buf.readLong());
+        return new IgniteUuid(new UUID(buf.readLong(), buf.readLong()), unpackLong());
     }
 
     /**
@@ -782,8 +779,11 @@ public class ClientMessageUnpacker implements AutoCloseable {
             throw new MessageTypeException("Expected DECIMAL extension (2), but got " + type);
         }
 
-        int scale = buf.readInt();
-        var bytes = readPayload(len - 4);
+        int pos = buf.readerIndex();
+        int scale = unpackInt();
+        int scaleSize = buf.readerIndex() - pos;
+
+        var bytes = readPayload(len - scaleSize);
 
         return new BigDecimal(new BigInteger(bytes), scale);
     }

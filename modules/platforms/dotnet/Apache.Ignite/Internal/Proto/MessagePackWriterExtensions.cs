@@ -77,9 +77,9 @@ namespace Apache.Ignite.Internal.Proto
         public static unsafe void Write(this ref MessagePackWriter writer, IgniteUuid igniteUuid)
         {
             writer.WriteExtensionFormatHeader(
-                new ExtensionHeader((sbyte)ClientMessagePackType.IgniteUuid, IgniteUuid.Size));
+                new ExtensionHeader((sbyte)ClientMessagePackType.IgniteUuid, igniteUuid.Size));
 
-            writer.WriteRaw(new Span<byte>(igniteUuid.Bytes, IgniteUuid.Size));
+            writer.WriteRaw(new Span<byte>(igniteUuid.Bytes, igniteUuid.Size));
         }
 
         /// <summary>
