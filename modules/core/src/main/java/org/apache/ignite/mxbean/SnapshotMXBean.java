@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteSnapshot;
 
 /**
@@ -40,4 +41,28 @@ public interface SnapshotMXBean {
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Restore cluster-wide snapshot.
+     *
+     * @param name Snapshot name.
+     * @param cacheGroupNames Optional comma-separated list of cache group names.
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     */
+    @MXBeanDescription("Restore cluster-wide snapshot.")
+    public void restoreSnapshot(
+        @MXBeanParameter(name = "snpName", description = "Snapshot name.")
+            String name,
+        @MXBeanParameter(name = "cacheGroupNames", description = "Optional comma-separated list of cache group names.")
+            String cacheGroupNames
+    );
+
+    /**
+     * Cancel previously started snapshot restore operation.
+     *
+     * @param name Snapshot name.
+     * @see IgniteSnapshot#cancelSnapshotRestore(String)
+     */
+    @MXBeanDescription("Cancel previously started snapshot restore operation.")
+    public void cancelSnapshotRestore(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String name);
 }
