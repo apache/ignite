@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -320,7 +319,7 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
             List<ClusterNode> subgrid,
             Void arg
         ) throws IgniteException {
-            return subgrid.stream().collect(toMap(n -> new NoopComputeJob(), identity()));
+            return subgrid.stream().collect(toMap(n -> new NoopJob(), identity()));
         }
 
         /** {@inheritDoc} */
@@ -350,7 +349,7 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
         ) throws IgniteException {
             doneOnMapFut.onDone();
 
-            return subgrid.stream().collect(toMap(n -> new NoopComputeJob() {
+            return subgrid.stream().collect(toMap(n -> new NoopJob() {
                 /** {@inheritDoc} */
                 @Override public Object execute() throws IgniteException {
                     try {
@@ -367,14 +366,6 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
-            return null;
-        }
-    }
-
-    /** */
-    private static class NoopComputeJob extends ComputeJobAdapter {
-        /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteException {
             return null;
         }
     }

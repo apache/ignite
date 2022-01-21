@@ -15,31 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.job;
+package org.apache.ignite.internal.processors.compute;
 
-import java.util.EventListener;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobAdapter;
 
 /**
- * Job event listener.
+ *
  */
-interface GridJobEventListener extends EventListener {
-    /**
-     * @param worker Job worker.
-     */
-    void onJobQueued(GridJobWorker worker);
-
-    /**
-     * @param worker Started job worker.
-     */
-    void onJobStarted(GridJobWorker worker);
-
-    /**
-     * @param worker Job worker.
-     */
-    void onBeforeJobResponseSent(GridJobWorker worker);
-
-    /**
-     * @param worker Finished job worker.
-     */
-    void onJobFinished(GridJobWorker worker);
+class NoopJob extends ComputeJobAdapter {
+    /** {@inheritDoc} */
+    @Override public Object execute() throws IgniteException {
+        return null;
+    }
 }
