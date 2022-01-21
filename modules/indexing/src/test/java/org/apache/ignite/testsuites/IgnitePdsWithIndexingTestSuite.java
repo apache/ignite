@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultit
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.MultipleParallelCacheDeleteDeadlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckWithIndexesTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreWithIndexingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
@@ -73,6 +74,7 @@ import org.junit.runners.Suite;
     StopRebuildIndexTest.class,
     ForceRebuildIndexTest.class,
     IgniteClusterSnapshotRestoreWithIndexingTest.class,
+    IgniteClusterSnapshotRestoreMetricsTest.class,
     ResumeRebuildIndexTest.class,
     ResumeCreateIndexTest.class,
     RenameIndexTreeTest.class,

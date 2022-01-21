@@ -442,6 +442,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
+        restoreCacheGrpProc.registerMetrics();
+
         cctx.exchange().registerExchangeAwareComponent(this);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
