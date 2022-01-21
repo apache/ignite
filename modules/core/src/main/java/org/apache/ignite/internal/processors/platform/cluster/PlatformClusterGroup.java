@@ -415,7 +415,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
                 ClusterNode node = prj.node(nodeId);
 
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx) prj.forHost(node));
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forHost(node));
             }
 
             default:
@@ -429,7 +429,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_OTHERS: {
-                PlatformClusterGroup exclude = (PlatformClusterGroup) arg;
+                PlatformClusterGroup exclude = (PlatformClusterGroup)arg;
 
                 assert exclude != null;
 

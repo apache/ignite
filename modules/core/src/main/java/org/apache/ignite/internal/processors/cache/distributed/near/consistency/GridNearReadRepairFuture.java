@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.transactions.TransactionState;
 
 /**
@@ -73,36 +75,60 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, T2<EntryGetResult, Object>> newestMap = new HashMap<>();
-        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(keys.size()); // Newest entries (by version).
+        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be re-committed.
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult candidateRes = fut.result().get(key);
 
-                EntryGetResult candidateRes = entry.getValue();
+                if (!newestMap.containsKey(key)) {
+                    newestMap.put(key, candidateRes);
 
-                Object candidateVal = ctx.unwrapBinaryIfNeeded(candidateRes.value(), !deserializeBinary, false, null);
-
-                newestMap.putIfAbsent(key, new T2<>(candidateRes, candidateVal));
-
-                T2<EntryGetResult, Object> newest = newestMap.get(key);
-
-                EntryGetResult newestRes = newest.get1();
-                Object newestVal = newest.get2();
-
-                int verCompareRes = newestRes.version().compareTo(candidateRes.version());
-
-                if (verCompareRes < 0) {
-                    newestMap.put(key, new T2<>(candidateRes, candidateVal));
-                    fixedMap.put(key, candidateRes);
+                    continue;
                 }
-                else if (verCompareRes > 0)
-                    fixedMap.put(key, newestRes);
-                else if (!newestVal.equals(candidateVal)) // Same version.
-                    fixedMap.put(key, /*random from entries with same version*/ candidateRes); // Fixing values inconsistency.
+
+                EntryGetResult newestRes = newestMap.get(key);
+
+                if (candidateRes != null) {
+                    if (newestRes == null) { // Existing data wins.
+                        newestMap.put(key, candidateRes);
+                        fixedMap.put(key, candidateRes);
+                    }
+                    else {
+                        int compareRes = candidateRes.version().compareTo(newestRes.version());
+
+                        if (compareRes > 0) { // Newest data wins.
+                            newestMap.put(key, candidateRes);
+                            fixedMap.put(key, candidateRes);
+                        }
+                        else if (compareRes < 0)
+                            fixedMap.put(key, newestRes);
+                        else if (compareRes == 0) {
+                            CacheObjectAdapter candidateVal = candidateRes.value();
+                            CacheObjectAdapter newestVal = newestRes.value();
+
+                            try {
+                                byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
+                                byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
+
+                                if (!Arrays.equals(candidateBytes, newestBytes))
+                                    fixedMap.put(key, newestRes); // Same version, fixing values inconsistency.
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
+
+                                return;
+                            }
+                        }
+                    }
+                }
+                else if (newestRes != null)
+                    fixedMap.put(key, newestRes); // Existing data wins.
             }
         }
+
+        assert !fixedMap.containsValue(null) : "null should never be considered as a fix";
 
         if (!fixedMap.isEmpty()) {
             tx.finishFuture().listen(future -> {

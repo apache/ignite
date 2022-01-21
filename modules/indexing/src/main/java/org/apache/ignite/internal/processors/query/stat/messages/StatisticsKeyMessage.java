@@ -180,7 +180,7 @@ public class StatisticsKeyMessage implements Message {
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        StatisticsKeyMessage that = (StatisticsKeyMessage) o;
+        StatisticsKeyMessage that = (StatisticsKeyMessage)o;
         return Objects.equals(schema, that.schema) &&
             Objects.equals(obj, that.obj) &&
             Objects.equals(colNames, that.colNames);

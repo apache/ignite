@@ -64,6 +64,8 @@ import org.apache.ignite.internal.processors.security.sandbox.PrivilegedProxyTes
 import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
+import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
@@ -128,7 +130,9 @@ import org.junit.runners.Suite;
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
     MaintenanceModeNodeSecurityTest.class,
-    DaemonNodeBasicSecurityTest.class
+    DaemonNodeBasicSecurityTest.class,
+    ServiceAuthorizationTest.class,
+    ServiceStaticConfigTest.class
 })
 public class SecurityTestSuite {
     /** */

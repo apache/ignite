@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
+    using System.Reflection;
 
     /// <summary>
     /// Does type casts without extra boxing. 
@@ -87,9 +89,39 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
 
                 var paramExpr = Expression.Parameter(typeof(TFrom));
-                var convertExpr = Expression.Convert(paramExpr, typeof(T));
+
+                var convertExpr = typeof(TFrom) == typeof(Enum)
+                    ? TryConvertRawEnum(typeof(T), paramExpr)
+                    : Expression.Convert(paramExpr, typeof(T));
 
                 return Expression.Lambda<Func<TFrom, T>>(convertExpr, paramExpr).Compile();
+            }
+
+            private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
+            {
+                var mtdName = "";
+
+                if (toType == typeof(byte))
+                    mtdName = "ToByte";
+                else if (toType == typeof(sbyte))
+                    mtdName = "ToSByte";
+                else if (toType == typeof(short))
+                    mtdName = "ToInt16";
+                else if (toType == typeof(ushort))
+                    mtdName = "ToUInt16";
+                else if (toType == typeof(int))
+                    mtdName = "ToInt32";
+                else if (toType == typeof(uint))
+                    mtdName = "ToUInt32";
+
+                var toIntMtd = typeof(Convert).GetMethod(mtdName, new[] {typeof(object)});
+
+                if (toIntMtd == null)
+                {
+                    throw new InvalidCastException($"Unable to convert 'System.Enum' to '{toType}': no converter found.");
+                }
+
+                return Expression.Call(null, toIntMtd, fromParamExpr);
             }
         }
     }

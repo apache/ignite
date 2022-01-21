@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
@@ -46,14 +46,14 @@ public class EncryptedFileIO implements FileIO {
     private final int pageSize;
 
     /**
-     * Size of file header in bytes.
+     * Size of file header in bytes which is never encrypted.
      */
-    private final int headerSize;
+    private final int plainHeaderSize;
 
     /**
-     * Shared database manager.
+     * Encryption keys provider.
      */
-    private final GridEncryptionManager encMgr;
+    private final EncryptionCacheKeyProvider keyProvider;
 
     /**
      * Shared database manager.
@@ -67,16 +67,16 @@ public class EncryptedFileIO implements FileIO {
      * @param plainFileIO Underlying file.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
-     * @param headerSize Size of file header in bytes.
-     * @param encMgr Encryption manager.
+     * @param plainHeaderSize Size of file header in bytes which is never encrypted.
+     * @param keyProvider Encryption keys provider.
      */
-    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize,
-        GridEncryptionManager encMgr, EncryptionSpi encSpi) {
+    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int plainHeaderSize, EncryptionCacheKeyProvider keyProvider,
+        EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
-        this.headerSize = headerSize;
-        this.encMgr = encMgr;
+        this.plainHeaderSize = plainHeaderSize;
+        this.keyProvider = keyProvider;
         this.encSpi = encSpi;
 
         this.encUtil = new EncryptionUtil(encSpi, pageSize);
@@ -109,7 +109,7 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf) throws IOException {
-        assert position() == 0;
+        assert position() == 0 && plainHeaderSize > 0;
 
         return plainFileIO.read(destBuf);
     }
@@ -146,7 +146,7 @@ public class EncryptedFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
-        assert position() != 0;
+        assert position() >= plainHeaderSize;
 
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
@@ -179,10 +179,14 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        assert position() == 0;
-        assert headerSize == srcBuf.capacity();
+        if (plainHeaderSize > 0) {
+            assert position() == 0;
+            assert plainHeaderSize == srcBuf.capacity();
 
-        return plainFileIO.write(srcBuf);
+            return plainFileIO.write(srcBuf);
+        }
+        else
+            return plainFileIO.writeFully(encrypt(srcBuf));
     }
 
     /** {@inheritDoc} */
@@ -192,37 +196,31 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
-
-        encrypt(srcBuf, encrypted);
-
-        encrypted.rewind();
-
-        return plainFileIO.write(encrypted, position);
+        return plainFileIO.write(encrypt(srcBuf), position);
     }
 
     /** {@inheritDoc} */
     @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
-
-        encrypt(srcBuf, encrypted);
-
-        encrypted.rewind();
-
-        return plainFileIO.writeFully(encrypted, position);
+        return plainFileIO.writeFully(encrypt(srcBuf), position);
     }
 
     /**
-     * @param srcBuf Source buffer.
-     * @param res Destination buffer.
-     * @throws IOException If failed.
+     * @return Encrypted data.
      */
-    private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
-        assert position() != 0;
+    private ByteBuffer encrypt(ByteBuffer srcBuf) throws IOException {
+        assert position() >= plainHeaderSize;
 
-        GroupKey grpKey = encMgr.getActiveKey(groupId);
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
-        encUtil.encrypt(srcBuf, res, grpKey);
+        GroupKey key = keyProvider.getActiveKey(groupId);
+
+        assert key != null : "No active encryption key found for cache group " + groupId;
+
+        encUtil.encrypt(srcBuf, encrypted, key);
+
+        encrypted.rewind();
+
+        return encrypted;
     }
 
     /**
@@ -232,11 +230,11 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        GroupKey grpKey = encMgr.groupKey(groupId, keyId);
+        GroupKey key = keyProvider.groupKey(groupId, keyId);
 
-        assert grpKey != null : keyId;
+        assert key != null : "No encryption key found for cache group " + groupId + " by key id " + keyId;
 
-        encUtil.decrypt(encrypted, destBuf, grpKey);
+        encUtil.decrypt(encrypted, destBuf, key);
     }
 
     /**

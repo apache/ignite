@@ -596,7 +596,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                cntrMap.clear();
+                if (exchFut.exchangeType() == ALL && !exchFut.rebalanced())
+                    cntrMap.clear();
 
                 initializeFullMap(updateSeq);
 
@@ -702,7 +703,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!(topReadyFut instanceof GridDhtPartitionsExchangeFuture))
             return;
 
-        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture) topReadyFut;
+        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture)topReadyFut;
 
         boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
@@ -781,7 +782,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
-
             lock.writeLock().lock();
 
             try {

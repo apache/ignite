@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.security.thread.SecurityAwareThread
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -71,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -198,9 +200,21 @@ public class PoolProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private ThreadPoolExecutor rebalanceExecSvc;
 
+    /** Snapshot task executor service. */
+    @GridToStringExclude
+    private ThreadPoolExecutor snpExecSvc;
+
+    /** Executor service for thin clients. */
+    @GridToStringExclude
+    private ExecutorService thinClientExec;
+
     /** Rebalance striped executor service. */
     @GridToStringExclude
     private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
+
+    /** Executor to perform a data pages scanning during cache group re-encryption. */
+    @GridToStringExclude
+    private ThreadPoolExecutor reencryptExecSvc;
 
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
@@ -498,6 +512,44 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
+        if (CU.isPersistenceEnabled(ctx.config())) {
+            snpExecSvc = createExecutorService(
+                SNAPSHOT_RUNNER_THREAD_PREFIX,
+                cfg.getIgniteInstanceName(),
+                cfg.getSnapshotThreadPoolSize(),
+                cfg.getSnapshotThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                excHnd);
+
+            snpExecSvc.allowCoreThreadTimeOut(true);
+
+            reencryptExecSvc = createExecutorService(
+                "reencrypt",
+                ctx.igniteInstanceName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+
+            reencryptExecSvc.allowCoreThreadTimeOut(true);
+        }
+
+        if (cfg.getClientConnectorConfiguration() != null) {
+            thinClientExec = new IgniteThreadPoolExecutor(
+                "client-connector",
+                cfg.getIgniteInstanceName(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+        }
+
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
             cfg.getIgniteInstanceName(),
@@ -562,6 +614,15 @@ public class PoolProcessor extends GridProcessorAdapter {
             // Striped executor uses a custom adapter.
             monitorStripedPool("StripedExecutor", stripedExecSvc);
         }
+
+        if (snpExecSvc != null)
+            monitorExecutor("GridSnapshotExecutor", snpExecSvc);
+
+        if (thinClientExec != null)
+            monitorExecutor("GridThinClientExecutor", thinClientExec);
+
+        if (reencryptExecSvc != null)
+            monitorExecutor("GridReencryptionExecutor", reencryptExecSvc);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -820,6 +881,22 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Executor service that is used for processing snapshot tasks (taking, sending, restoring).
+     */
+    public ExecutorService getSnapshotExecutorService() {
+        return snpExecSvc;
+    }
+
+    /**
+     * Executor service for thin clients.
+     *
+     * @return Executor service for thin clients.
+     */
+    public ExecutorService getThinClientExecutorService() {
+        return thinClientExec;
+    }
+
+    /**
      * Executor service that is in charge of processing unorderable rebalance messages.
      *
      * @return Executor service that is in charge of processing unorderable rebalance messages.
@@ -835,6 +912,13 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     public ExecutorService buildIndexExecutorService() {
         return buildIdxExecSvc;
+    }
+
+    /**
+     * @return Executor to perform a data pages scanning during cache group re-encryption.
+     */
+    public ExecutorService getReencryptionExecutorService() {
+        return reencryptExecSvc;
     }
 
     /**
@@ -976,6 +1060,12 @@ public class PoolProcessor extends GridProcessorAdapter {
             registerStripedExecutorMBean(mbMgr, "StripedExecutor", stripedExecSvc);
         }
 
+        if (snpExecSvc != null)
+            registerExecutorMBean(mbMgr, "GridSnapshotExecutor", snpExecSvc);
+
+        if (thinClientExec != null)
+            registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
+
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
                 registerExecutorMBean(mbMgr, entry.getKey(), entry.getValue());
@@ -1028,6 +1118,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     private void stopExecutors0(IgniteLogger log) {
         assert log != null;
+        U.shutdownNow(getClass(), snpExecSvc, log);
+
+        snpExecSvc = null;
 
         U.shutdownNow(getClass(), execSvc, log);
 
@@ -1097,6 +1190,15 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), callbackExecSvc, log);
 
         callbackExecSvc = null;
+
+        if (thinClientExec != null)
+            U.shutdownNow(getClass(), thinClientExec, log);
+
+        thinClientExec = null;
+
+        U.shutdownNow(getClass(), reencryptExecSvc, log);
+
+        reencryptExecSvc = null;
 
         if (!F.isEmpty(customExecs)) {
             for (ThreadPoolExecutor exec : customExecs.values())

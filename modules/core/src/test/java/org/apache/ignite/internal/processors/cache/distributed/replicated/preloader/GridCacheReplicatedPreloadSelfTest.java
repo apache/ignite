@@ -226,7 +226,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME);
 
             // Cache rebalancing events should not be fired for this cache.
-            CacheConfiguration ccfg = cacheConfiguration(((IgniteKernal)g1).getInstanceName())
+            CacheConfiguration ccfg = cacheConfiguration(g1.name())
                 .setName(DEFAULT_CACHE_NAME + "_evts_disabled")
                 .setEventsDisabled(true);
 
@@ -387,9 +387,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Object> cache2 = g2.cache(DEFAULT_CACHE_NAME);
             IgniteCache<Integer, Object> cache3 = g3.cache(DEFAULT_CACHE_NAME);
 
-            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>) getExternalClassLoader().
+            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryListener");
-            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>) getExternalClassLoader().
+            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
 
             CacheEntryListenerConfiguration<Integer, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(

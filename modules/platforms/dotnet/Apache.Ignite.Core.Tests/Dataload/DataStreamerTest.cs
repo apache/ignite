@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Datastream;
     using NUnit.Framework;
 
@@ -807,6 +809,66 @@ namespace Apache.Ignite.Core.Tests.Dataload
 #pragma warning restore 618 // Type or member is obsolete
         }
 
+
+        /// <summary>
+        /// Tests that streaming binary objects with a thin client results in those objects being
+        /// available through SQL in the cache's table.
+        /// </summary>
+        [Test]
+        public void TestBinaryStreamerCreatesSqlRecord()
+        {
+            var cacheCfg = new CacheConfiguration
+            {
+                Name = "TestBinaryStreamerCreatesSqlRecord",
+                SqlSchema = "persons",
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        ValueTypeName = "Person",
+                        Fields = new List<QueryField>
+                        {
+                            new QueryField
+                            {
+                                Name = "Name",
+                                FieldType = typeof(string),
+                            },
+                            new QueryField
+                            {
+                                Name = "Age",
+                                FieldType = typeof(int)
+                            }
+                        }
+                    }
+                }
+            };
+
+            var cacheClientBinary = _grid.GetOrCreateCache<int, IBinaryObject>(cacheCfg)
+                .WithKeepBinary<int, IBinaryObject>();
+
+            // Prepare a binary object.
+            var jane = _grid.GetBinary().GetBuilder("Person")
+                .SetStringField("Name", "Jane")
+                .SetIntField("Age", 43)
+                .Build();
+
+            const int key = 1;
+
+            // Stream the binary object to the server.
+            using (var streamer = _grid.GetDataStreamer<int, IBinaryObject>(cacheCfg.Name))
+            {
+                streamer.Add(key, jane);
+                streamer.Flush();
+            }
+
+            // Check that SQL works.
+            var query = new SqlFieldsQuery("SELECT Name, Age FROM \"PERSONS\".PERSON");
+            var fullResultAfterClientStreamer = cacheClientBinary.Query(query).GetAll();
+            Assert.IsNotNull(fullResultAfterClientStreamer);
+            Assert.AreEqual(1, fullResultAfterClientStreamer.Count);
+            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][0]);
+            Assert.AreEqual(43, fullResultAfterClientStreamer[0][1]);
+        }
 
 #if NETCOREAPP
         /// <summary>

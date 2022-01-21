@@ -78,6 +78,7 @@ public class PagesListMetaIO extends PageIO {
      */
     private void setCount(long pageAddr, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
+        assertPageType(pageAddr);
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
     }
@@ -95,6 +96,8 @@ public class PagesListMetaIO extends PageIO {
      * @param metaPageId Next meta page ID.
      */
     public void setNextMetaPageId(long pageAddr, long metaPageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, NEXT_META_PAGE_OFF, metaPageId);
     }
 
@@ -115,6 +118,7 @@ public class PagesListMetaIO extends PageIO {
      */
     public int addTails(int pageSize, long pageAddr, int bucket, PagesList.Stripe[] tails, int tailsOff) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
+        assertPageType(pageAddr);
 
         int cnt = getCount(pageAddr);
         int cap = getCapacity(pageSize, pageAddr);

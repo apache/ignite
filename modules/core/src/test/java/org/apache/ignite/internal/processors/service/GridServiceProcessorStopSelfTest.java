@@ -39,11 +39,10 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 /**
- * Tests that {@link GridServiceProcessor} completes deploy/undeploy futures during node stop.
+ * Tests that {@link IgniteServiceProcessor} completes deploy/undeploy futures during node stop.
  */
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -175,8 +174,6 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void disconnectingDuringNodeStoppingIsNotHangTest() throws Exception {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
-
         runServiceProcessorStoppingTest(
             new IgniteInClosure<IgniteServiceProcessor>() {
                 @Override public void apply(IgniteServiceProcessor srvcProc) {
@@ -196,8 +193,6 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void stoppingDuringDisconnectingIsNotHangTest() throws Exception {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
-
         runServiceProcessorStoppingTest(
             new IgniteInClosure<IgniteServiceProcessor>() {
                 @Override public void apply(IgniteServiceProcessor srvcProc) {

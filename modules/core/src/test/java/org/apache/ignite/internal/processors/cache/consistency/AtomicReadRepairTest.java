@@ -88,8 +88,12 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
                         cache.withReadRepair().getEntriesAsync(keys).get() :
                         cache.withReadRepair().getEntries(keys);
 
-                for (CacheEntry<Integer, Integer> entry : res)
-                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+                for (CacheEntry<Integer, Integer> entry : res) {
+                    Integer latest = data.data.get(entry.getKey()).latest;
+
+                    if (latest != null)
+                        assertEquals(latest, entry.getValue());
+                }
             }
             else {
                 Map<Integer, Integer> res =
@@ -97,8 +101,12 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
                         cache.withReadRepair().getAllAsync(keys).get() :
                         cache.withReadRepair().getAll(keys);
 
-                for (Map.Entry<Integer, Integer> entry : res.entrySet())
-                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+                for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
+                    Integer latest = data.data.get(entry.getKey()).latest;
+
+                    if (latest != null)
+                        assertEquals(latest, entry.getValue());
+                }
             }
 
             fail("Should not happen.");
@@ -166,6 +174,8 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
             cnt,
             raw,
             async,
+            misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     GETALL_CHECK_AND_FAIL.accept(data);
@@ -183,6 +193,8 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
             cnt,
             raw,
             async,
+            misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     CONTAINS_ALL_CHECK_AND_FAIL.accept(data);

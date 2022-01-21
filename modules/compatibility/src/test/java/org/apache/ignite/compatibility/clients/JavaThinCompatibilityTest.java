@@ -38,6 +38,8 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
@@ -53,7 +55,10 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
@@ -61,6 +66,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
@@ -83,6 +92,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** {@inheritDoc} */
     @Override protected void initNode(Ignite ignite) {
         ignite.services().deployNodeSingleton("test_service", new EchoService());
+
+        if (ver.compareTo(VER_2_13_0) >= 0)
+            ignite.services().deployNodeSingleton("ctx_service", new CtxService());
 
         super.initNode(ignite);
     }
@@ -318,6 +330,34 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
+    private void testServicesWithCallerContext() {
+        X.println(">>>> Testing services with caller context");
+
+        ServiceCallContext callCtx = ServiceCallContext.builder().put("key", "value").build();
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            assertEquals("value", client.services().serviceProxy("ctx_service", CtxServiceInterface.class, callCtx)
+                .attribute("key"));
+        }
+    }
+
+    /** */
+    private void testServicesWithCallerContextThrows() {
+        X.println(">>>> Testing services with caller context throws");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            ServiceCallContext callCtx = ServiceCallContext.builder().put("key", "value").build();
+
+            EchoServiceInterface svc =
+                client.services().serviceProxy("test_service", EchoServiceInterface.class, callCtx);
+
+            Throwable err = assertThrowsWithCause(() -> svc.echo(1), ClientFeatureNotSupportedByServerException.class);
+
+            assertEquals("Feature " + SERVICE_INVOKE_CALLCTX.name() + " is not supported by the server", err.getMessage());
+        }
+    }
+
+    /** */
     private void testContinuousQueries() throws Exception {
         X.println(">>>> Testing continuous queries");
 
@@ -371,6 +411,59 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         if (clientVer.compareTo(VER_2_11_0) >= 0 && serverVer.compareTo(VER_2_10_0) >= 0)
             testContinuousQueries();
+
+        if (clientVer.compareTo(VER_2_13_0) >= 0) {
+            if (serverVer.compareTo(VER_2_13_0) >= 0) {
+                testServiceDescriptors();
+                testServicesWithCallerContext();
+            }
+            else {
+                testServiceDescriptorsThrows();
+                testServicesWithCallerContextThrows();
+            }
+        }
+    }
+
+    /** */
+    private void testServiceDescriptors() {
+        X.println(">>>> Testing services descriptors");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            assertEquals(2, client.services().serviceDescriptors().size());
+
+            ClientServiceDescriptor svc = client.services().serviceDescriptor("test_service");
+
+            assertEquals("test_service", svc.name());
+            assertEquals(EchoService.class.getName(), svc.serviceClass());
+            assertEquals(0, svc.totalCount());
+            assertEquals(1, svc.maxPerNodeCount());
+            assertNull(svc.cacheName());
+            assertEquals(grid(0).localNode().id(), svc.originNodeId());
+            assertEquals(PlatformType.JAVA, svc.platformType());
+        }
+    }
+
+    /** */
+    private void testServiceDescriptorsThrows() {
+        X.println(">>>> Testing services descriptors queries throws");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            String errMsg = "Feature " + GET_SERVICE_DESCRIPTORS.name() + " is not supported by the server";
+
+            Throwable err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptors(),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+
+            err = assertThrowsWithCause(
+                () -> client.services().serviceDescriptor("test_service"),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+        }
     }
 
     /** */
@@ -399,6 +492,26 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         /** {@inheritDoc} */
         @Override public int echo(int val) {
             return val;
+        }
+    }
+
+    /** Service for testing the attributes of a service call context. */
+    public static interface CtxServiceInterface {
+        /** */
+        public String attribute(String name);
+    }
+
+    /** */
+    public static class CtxService implements Service, CtxServiceInterface {
+        /** Service context. */
+        @ServiceContextResource
+        private ServiceContext svcCtx;
+
+        /** {@inheritDoc} */
+        @Override public String attribute(String name) {
+            ServiceCallContext callCtx = svcCtx.currentCallContext();
+
+            return svcCtx == null ? null : callCtx.attribute(name);
         }
     }
 

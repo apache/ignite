@@ -15,7 +15,7 @@
 = SQL Transactions
 :javaSourceFile: {javaCodeDir}/SqlTransactions.java
 
-IMPORTANT: Support for SQL transactions is currently in the beta stage. For production use, consider key-value transactions.
+CAUTION: `TRANSACTIONAL_SNAPSHOT` is deprecated since 2.12 and will be removed in the next releases.
 
 == Overview
 SQL Transactions are supported for caches that use the `TRANSACTIONAL_SNAPSHOT` atomicity mode. The `TRANSACTIONAL_SNAPSHOT` mode is the implementation of multiversion concurrency control (MVCC) for Ignite caches. For more information about MVCC and current limitations, visit the link:transactions/mvcc[Multiversion Concurrency Control] page.

@@ -39,6 +39,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -77,6 +78,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -659,6 +661,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Used to set a version from {@link PartitionClearingStartRecord} when need to repeat a clearing after node restart.
+     * @param clearVer Clear version.
+     */
+    public void updateClearVersion(long clearVer) {
+        this.clearVer = clearVer;
+    }
+
+    /**
      * @return {@code True} if partition state changed.
      */
     public boolean markLost() {
@@ -983,7 +993,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
+        boolean recoveryMode = ctx.kernalContext().recoveryMode();
+
         try {
+            // If a partition was not checkpointed after clearing on a rebalance and a node was stopped,
+            // then it's need to repeat clearing on node start. So need to write a partition clearing start record
+            // and repeat clearing on applying updates from WAL if the record was read.
+            // It's need for atomic cache only. Transactional cache start a rebalance due to outdated counter in this case,
+            // because atomic and transactional caches use different partition counters implementation.
+            if (state() == MOVING && !recoveryMode && grp.walEnabled() &&
+                grp.config().getAtomicityMode() == ATOMIC)
+                ctx.wal().log(new PartitionClearingStartRecord(id, grp.groupId(), order));
+
             GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
             while (it0.hasNext()) {
@@ -1002,7 +1023,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     // Partition state can be switched from RENTING to MOVING and vice versa during clearing.
                     long order0 = row.version().order();
 
-                    if (state() == MOVING && (order0 == 0 /** Inserted by isolated updater. */ || order0 > order))
+                    if ((state() == MOVING || recoveryMode) && (order0 == 0 /** Inserted by isolated updater. */ || order0 > order))
                         continue;
 
                     if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
@@ -1023,7 +1044,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     if (cached.deleted())
                         continue;
 
-                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry) cached).clearInternal(clearVer, extras)) {
+                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                         removeEntry(cached);
 
                         if (rec && !hld.cctx.config().isEventsDisabled()) {
@@ -1067,7 +1088,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
 
             // Attempt to destroy.
-            ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
+            if (!recoveryMode)
+                ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
         }
         catch (NodeStoppingException e) {
             if (log.isDebugEnabled())

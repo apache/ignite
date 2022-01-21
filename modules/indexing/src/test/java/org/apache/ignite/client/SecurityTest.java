@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class SecurityTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
@@ -152,7 +152,7 @@ public class SecurityTest {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
-                throw (IgniteClientException) e.getCause();
+                throw (IgniteClientException)e.getCause();
             }
         });
     }

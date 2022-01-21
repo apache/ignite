@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
@@ -268,7 +268,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Service processor.
      */
-    public ServiceProcessorAdapter service();
+    public IgniteServiceProcessor service();
 
     /**
      * Gets port processor.

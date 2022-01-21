@@ -98,7 +98,7 @@ public class TransactionValidationTest extends GridCommonAbstractTest {
         try (Transaction tx = txCrd.transactions().txStart()) {
             cache0.put(1, 1);
 
-            boolean isNearCache = ((GatewayProtectedCacheProxy) cache1).context().cache() instanceof GridNearTransactionalCache;
+            boolean isNearCache = ((GatewayProtectedCacheProxy)cache1).context().cache() instanceof GridNearTransactionalCache;
 
             if (nearCache)
                 assertTrue("Must be near cache", isNearCache);

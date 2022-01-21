@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
 /**
@@ -156,6 +158,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      */
     @Test
     public void testDropStatistics() throws IgniteInterruptedCheckedException {
+        Logger.getLogger(StatisticsProcessor.class).setLevel(Level.TRACE);
         sql("ANALYZE PUBLIC.TEST, test2");
 
         testStatistics(SCHEMA, "TEST", false);
@@ -254,11 +257,13 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      *
      * @param schema Schema name.
      * @param obj Object name.
+     * @param isNull If {@code true} - test that statistics is null, if {@code false} - test that they are not null.
      */
     private void testStatistics(String schema, String obj, boolean isNull) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(() -> {
+        assertTrue("Unable to wait statistics by " + schema + "." + obj + " if null=" + isNull,
+            GridTestUtils.waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx) node).context().query().getIndexing();
+                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 
                 ObjectStatistics localStat = indexing.statsManager().getLocalStatistics(new StatisticsKey(schema, obj));
 
@@ -278,7 +283,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     private void testStatisticsVersion(String schema, String obj, Predicate<Long> verChecker) throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx) node).context().query().getIndexing();
+                IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 
                 ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(
                     new StatisticsKey(schema, obj)

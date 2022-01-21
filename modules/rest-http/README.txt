@@ -8,6 +8,9 @@ To enable REST-HTTP module when starting a standalone node, move 'optional/ignit
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
+The module depends on third-party libraries that use the slf4j facade for logging.
+You can set up an underlying logging framework yourself.
+
 Importing REST-HTTP Module In Maven Project
 -------------------------------------------
 

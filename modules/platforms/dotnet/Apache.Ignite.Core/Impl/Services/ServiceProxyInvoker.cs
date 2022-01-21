@@ -107,6 +107,13 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 1)
                 return (obj, args) => methods[0].Invoke(obj, args);
 
+            if (methods.Length > 1)
+                // Try to search applicable without equality of all arguments.
+                methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters(), true)).ToArray();
+
+            if (methods.Length == 1)
+                return (obj, args) => methods[0].Invoke(obj, args);
+
             // 3) 0 or more than 1 matching method - throw.
             var argsString = argsLength == 0
                 ? "0"
@@ -146,8 +153,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="methodArgs">Method argument types.</param>
         /// <param name="targetParameters">Target method parameter definitions.</param>
+        /// <param name="strictTypeCheck">If true check argument type for equality.</param>
         /// <returns>True if a target method can be called with specified set of arguments; otherwise, false.</returns>
-        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters)
+        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters,
+            bool strictTypeCheck = false)
         {
             if (methodArgs == null || methodArgs.Length == 0)
                 return targetParameters.Length == 0;
@@ -155,8 +164,18 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methodArgs.Length != targetParameters.Length)
                 return false;
 
+            Func<object, ParameterInfo, bool> checker;
+            if (strictTypeCheck)
+            {
+                checker = (arg, param) => arg == null || param.ParameterType == arg.GetType();
+            }
+            else
+            {
+                checker = (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg);
+            }
+
             return methodArgs
-                .Zip(targetParameters, (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg))
+                .Zip(targetParameters, checker)
                 .All(x => x);
         }
     }

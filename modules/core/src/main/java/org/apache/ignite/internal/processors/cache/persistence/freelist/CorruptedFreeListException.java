@@ -17,47 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.persistence.AbstractCorruptedPersistenceException;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception to distinguish {@link AbstractFreeList} broken invariants.
  */
-public class CorruptedFreeListException extends AbstractCorruptedPersistenceException {
-    /** */
+public class CorruptedFreeListException extends CorruptedDataStructureException {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**
+     * Constructor.
+     *
      * @param msg Message.
      * @param cause Cause.
-     * @param grpId Group id.
-     * @param pageIds Ids of pages that are possibly corrupted.
-     */
-    public CorruptedFreeListException(String msg, @Nullable Throwable cause, int grpId, Collection<Long> pageIds) {
-        this(msg, cause, grpId, pageIds.stream().mapToLong(Long::longValue).toArray());
-    }
-
-    /**
-     * @param msg Message.
-     * @param cause Cause.
-     * @param grpId Group id.
-     * @param pageIds Ids of pages that are possibly corrupted.
+     * @param grpId Cache group id.
+     * @param pageIds PageId's that can be corrupted.
      */
     public CorruptedFreeListException(String msg, @Nullable Throwable cause, int grpId, long... pageIds) {
-        this(msg, cause, toPagesArray(grpId, pageIds));
-    }
-
-    /**
-     * @param msg Message.
-     * @param cause Cause.
-     * @param pages (groupId, pageId) pairs for pages that might be corrupted.
-     */
-    public CorruptedFreeListException(String msg,
-        @Nullable Throwable cause,
-        T2<Integer, Long>[] pages
-    ) {
-        super(msg, cause, pages);
+        super(msg, cause, grpId, pageIds);
     }
 }

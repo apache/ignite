@@ -57,15 +57,15 @@ public class TxKey {
         if (this == o) return true;
         if (o == null || o.getClass() != TxKey.class) return false;
 
-        TxKey txKey = (TxKey) o;
+        TxKey txKey = (TxKey)o;
 
         return major == txKey.major && minor == txKey.minor;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int) (major ^ (major >>> 32));
-        result = 31 * result + (int) (minor ^ (minor >>> 32));
+        int result = (int)(major ^ (major >>> 32));
+        result = 31 * result + (int)(minor ^ (minor >>> 32));
         return result;
     }
 

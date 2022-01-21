@@ -140,6 +140,6 @@ public class RandomForestClassificationExportImportExample {
             }
         }
 
-        return 1 - amountOfErrors / (double) totalAmount;
+        return 1 - amountOfErrors / (double)totalAmount;
     }
 }

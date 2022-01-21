@@ -148,10 +148,6 @@ public class IgniteBenchmarkArguments {
     private boolean collocated;
 
     /** */
-    @Parameter(names = {"-stripe", "--singleStripe"}, description = "Generate keys belonging to single stripe per node")
-    private boolean singleStripe;
-
-    /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
@@ -252,6 +248,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-cc", "--cachesCnt"}, description = "Number of caches to create")
     private int cachesCnt = 1;
+
+    /** */
+    @Parameter(names = {"-opc", "--operationsPerCache"}, description = "Number of cache operations")
+    private int opsPerCache = 1;
 
     /** */
     @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
@@ -558,13 +558,6 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Generate keys for single stripe per node.
-     */
-    public boolean singleStripe() {
-        return singleStripe;
-    }
-
-    /**
      * @return Delay in second which used in nodes restart algorithm.
      */
     public int restartDelay() {
@@ -816,6 +809,13 @@ public class IgniteBenchmarkArguments {
      */
     public Map<String, String> systemProperties() {
         return sysProps;
+    }
+
+    /**
+     * @return Operations per cache.
+     */
+    public int opsPerCache() {
+        return opsPerCache;
     }
 
     /** {@inheritDoc} */

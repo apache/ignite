@@ -72,11 +72,8 @@ All optional modules can be imported just like the core module, but with differe
 
 The following modules are available:
 - ignite-aop (for AOP-based grid-enabling)
-- ignite-aws (for seemless cluster discovery on AWS S3)
-- ignite-azure (for automatic cluster discovery on Azure Blob Storage)
 - ignite-cassandra (for Apache Cassandra integration)
 - ignite-cloud (for Apache JClouds integration) 
-- ignite-gce (for automatic cluster discovery on Google Compute Engine)
 - ignite-hibernate (for Hibernate integration)
 - ignite-hibernate5 (for Hibernate5 integration)
 - ignite-indexing (for SQL querying and indexing)

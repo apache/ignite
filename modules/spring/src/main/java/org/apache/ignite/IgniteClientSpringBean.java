@@ -229,7 +229,7 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         cli.close();
     }
 

@@ -60,7 +60,7 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            y[ptr] = (double) preprocessor.apply(entry.getKey(), entry.getValue()).label();
+            y[ptr] = (double)preprocessor.apply(entry.getKey(), entry.getValue()).label();
 
             ptr++;
         }

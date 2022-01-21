@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -316,12 +317,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldName);
+        return (F)reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldId);
+        return (F)reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -890,8 +891,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         else {
             if (secondBinary)
                 return -1; // Go to the left part.
-            else
+            else {
+                if (F.isArray(first) && F.isArray(second))
+                    return F.compareArrays(first, second);
+
                 return ((Comparable)first).compareTo(second);
+            }
         }
     }
 

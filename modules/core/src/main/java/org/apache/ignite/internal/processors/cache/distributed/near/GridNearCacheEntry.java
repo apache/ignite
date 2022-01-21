@@ -265,7 +265,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     if (!markObsolete(cctx.cache().nextVersion())) {
                         value(val);
 
-                        ttlAndExpireTimeExtras((int) ttl, expireTime);
+                        ttlAndExpireTimeExtras((int)ttl, expireTime);
 
                         primaryNode(primaryNodeId, topVer);
                     }

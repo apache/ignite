@@ -66,12 +66,15 @@ class ClientDataStreamerReader {
         if (obj == null)
             return null;
 
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
         int pos1 = in.position();
 
         in.position(pos0);
 
         byte[] objBytes = in.readByteArray(pos1 - pos0);
 
-        return isKey ? (T) new KeyCacheObjectImpl(obj, objBytes, -1) : (T) new CacheObjectImpl(obj, objBytes);
+        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
     }
 }

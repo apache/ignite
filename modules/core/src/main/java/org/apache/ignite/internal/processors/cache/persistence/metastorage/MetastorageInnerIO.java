@@ -39,6 +39,8 @@ public class MetastorageInnerIO extends BPlusInnerIO<MetastorageRow> implements 
         int off,
         MetastorageRow row
     ) {
+        assertPageType(pageAddr);
+
         // All update operations should use new IO version.
         setVersion(pageAddr, 2);
 
@@ -47,6 +49,8 @@ public class MetastorageInnerIO extends BPlusInnerIO<MetastorageRow> implements 
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
+        assertPageType(dstPageAddr);
+
         // All update operations should use new IO version.
         setVersion(dstPageAddr, 2);
 

@@ -139,7 +139,7 @@ public class GridSqlColumn extends GridSqlElement {
      * @return Precision.
      */
     public int precision() {
-        return (int) col.getPrecision();
+        return (int)col.getPrecision();
     }
 
     /**

@@ -71,6 +71,7 @@ ipch/
 [Rr]elease*/
 packages
 *.nupkg
+CMakeSettings.json
 
 #CMake temp files
 /modules/platforms/cpp/**/cmake-build**

@@ -39,7 +39,6 @@ UPDATE_USER = 'updateuser'
 REMOVE_USER = 'removeuser'
 
 
-# pylint: disable=W0223
 class AuthenticationTests(IgniteTest):
     """
     Tests Ignite Authentication
@@ -89,7 +88,6 @@ class AuthenticationTests(IgniteTest):
         self.run_with_creds(client_cfg, REMOVE_USER, TEST_USERNAME, free=False)
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2, True)
 
-    # pylint: disable=R0913
     def run_with_creds(self, client_configuration, rest_key: str, name: str, password: str = None, clean=False,
                        free=True):
         """
