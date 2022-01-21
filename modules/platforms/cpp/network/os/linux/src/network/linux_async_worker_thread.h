@@ -135,13 +135,6 @@ namespace ignite
              */
             bool ShouldInitiateNewConnection() const;
 
-            /**
-             * Throw window specific error with error code.
-             *
-             * @param msg Error message.
-             */
-            void ThrowSystemError(const std::string &msg);
-
             /** Client pool. */
             LinuxAsyncClientPool& clientPool;
 

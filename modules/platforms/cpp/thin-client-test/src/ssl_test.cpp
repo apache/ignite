@@ -42,6 +42,11 @@ public:
         return ignite_test::StartCrossPlatformServerNode("non-ssl.xml", name.c_str());
     }
 
+    ignite::Ignite StartSslNoClientAuthNode(const std::string& name = "ServerNode")
+    {
+        return ignite_test::StartCrossPlatformServerNode("ssl-no-client-auth.xml", name.c_str());
+    }
+
     SslTestSuiteFixture()
     {
         // No-op.
@@ -194,6 +199,129 @@ BOOST_AUTO_TEST_CASE(SslCacheClientPutGet)
 
         BOOST_REQUIRE_EQUAL(value, retrieved);
     }
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionNoCerts)
+{
+    StartSslNoClientAuthNode();
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCaFile(GetConfigFile("ca.pem"));
+
+    IgniteClient client = IgniteClient::Start(cfg);
+}
+
+/**
+ * Check whether error is "file not exists".
+ *
+ * @param err Error to check
+ * @return @true is Error is of expected kind.
+ */
+bool IsNonExisting(const ignite::IgniteError& err)
+{
+    if (err.GetCode() != ignite::IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE)
+        return false;
+
+    std::string msg(err.GetText());
+
+    if (msg.find("error:02001002") == std::string::npos &&
+        msg.find("error:2006D080") == std::string::npos)
+        return false;
+
+    if (msg.find("No such file or directory") == std::string::npos &&
+        msg.find("no such file") == std::string::npos)
+        return false;
+
+    return true;
+}
+
+/**
+ * Check whether error is "CA file not exists".
+ *
+ * @param err Error to check
+ * @return @true is Error is of expected kind.
+ */
+bool IsNonExistingCa(const ignite::IgniteError& err)
+{
+    if (!IsNonExisting(err))
+        return false;
+
+    std::string msg(err.GetText());
+    return msg.find("Can not set Certificate Authority path for secure connection") != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionErrorNonExistingCa)
+{
+    StartSslNoClientAuthNode();
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCaFile(GetConfigFile("non_existing_ca.pem"));
+
+    BOOST_CHECK_EXCEPTION(IgniteClient::Start(cfg), ignite::IgniteError, IsNonExistingCa);
+}
+
+/**
+ * Check whether error is "private key file not exists".
+ *
+ * @param err Error to check
+ * @return @true is Error is of expected kind.
+ */
+bool IsNonExistingKey(const ignite::IgniteError& err)
+{
+    std::cout << err.GetText() << std::endl;
+    if (!IsNonExisting(err))
+        return false;
+
+    std::string msg(err.GetText());
+    return msg.find("Can not set private key file for secure connection") != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionErrorNonExistingKey)
+{
+    StartSslNoClientAuthNode();
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslKeyFile(GetConfigFile("non_existing_key.pem"));
+
+    BOOST_CHECK_EXCEPTION(IgniteClient::Start(cfg), ignite::IgniteError, IsNonExistingKey);
+}
+
+
+/**
+ * Check whether error is "certificate file not exists".
+ *
+ * @param err Error to check
+ * @return @true is Error is of expected kind.
+ */
+bool IsNonExistingCert(const ignite::IgniteError& err)
+{
+    if (!IsNonExisting(err))
+        return false;
+
+    std::string msg(err.GetText());
+    return msg.find("Can not set client certificate file for secure connection") != std::string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionErrorNonExistingCert)
+{
+    StartSslNoClientAuthNode();
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCertFile(GetConfigFile("non_existing_Cert.pem"));
+
+    BOOST_CHECK_EXCEPTION(IgniteClient::Start(cfg), ignite::IgniteError, IsNonExistingCert);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

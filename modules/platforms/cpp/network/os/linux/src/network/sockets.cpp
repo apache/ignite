@@ -60,10 +60,11 @@ namespace ignite
                 if (error == 0)
                     return res.str();
 
-                char buffer[1024] = "";
+                char errBuf[1024] = { 0 };
 
-                if (!strerror_r(error, buffer, sizeof(buffer)))
-                    res << ", msg=" << buffer;
+                const char* errStr = strerror_r(error, errBuf, sizeof(errBuf));
+                if (errStr)
+                    res << ", msg=" << errStr;
 
                 return res.str();
             }
