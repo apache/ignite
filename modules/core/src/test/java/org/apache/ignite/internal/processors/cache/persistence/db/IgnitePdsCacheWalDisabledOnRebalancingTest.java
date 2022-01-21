@@ -187,11 +187,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cleanPersistenceDir(ig1Name);
 
-        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
+        int groupId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
 
         blockMessagePredicate = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == groupId;
 
             return false;
         };
@@ -207,7 +207,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         assertTrue("Unexpected moving partitions count: " + metrics.getLocalNodeMovingPartitionsCount(),
             metrics.getLocalNodeMovingPartitionsCount() == CACHE3_PARTS_NUM);
 
-        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
+        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi)ig1
             .configuration().getCommunicationSpi();
 
         commSpi.stopBlock();
@@ -247,11 +247,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffinityKeysSet, GENERATING_FUNC);
 
-        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
+        int groupId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
 
         blockMessagePredicate = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == groupId;
 
             return false;
         };
@@ -260,7 +260,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         CacheGroupMetricsImpl metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
 
-        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
+        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi)ig1
             .configuration().getCommunicationSpi();
 
         startGrid(2);
@@ -306,7 +306,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         try {
             IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
-            TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+            TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)cfg1.getCommunicationSpi();
             spi1.blockMessages(blockDemandMessageForGroup(CU.cacheId(CACHE3_NAME)));
 
             IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(new Callable<IgniteEx>() {
@@ -385,11 +385,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
         IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
-        TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)cfg1.getCommunicationSpi();
         spi1.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionDemandMessage) {
-                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(CACHE3_NAME);
                 }
@@ -514,7 +514,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         String cacheName = cache.getName();
 
         for (int i = 0; i < size; i++) {
-            String value = (String) cache.get(i);
+            String value = (String)cache.get(i);
 
             assertEquals(generatingFunc.apply(cacheName, i), value);
         }

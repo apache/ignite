@@ -432,7 +432,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @param encrypted If {@code true}, created encrypted cache.
      * @return CacheConfiguration of the created cache.
      */
-    private CacheConfiguration<?, ?> addCache(boolean encrypted) throws InterruptedException {
+    private CacheConfiguration<?, ?> addCache(boolean encrypted) throws IgniteCheckedException {
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2).
             setEncryptionEnabled(encrypted);
 
@@ -447,7 +447,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         streamer.flush();
 
-        awaitPartitionMapExchange();
+        forceCheckpoint();
 
         return cacheCfg;
     }

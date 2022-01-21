@@ -125,7 +125,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private GridCheckpointManager checkpoints(Ignite ignite) {
         assert ignite != null;
 
-        return ((IgniteKernal) ignite).context().checkpoint();
+        return ((IgniteKernal)ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */
@@ -190,7 +190,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CheckpointEvent;
 
-                    CheckpointEvent e = (CheckpointEvent) evt;
+                    CheckpointEvent e = (CheckpointEvent)evt;
 
                     info("Checkpoint event: " + e);
 

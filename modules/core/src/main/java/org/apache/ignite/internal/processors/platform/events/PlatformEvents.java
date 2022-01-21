@@ -253,7 +253,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         int[] eventTypes = readEventTypes(reader);
 
-        return (EventAdapter) events.waitForLocal(filter, eventTypes);
+        return (EventAdapter)events.waitForLocal(filter, eventTypes);
     }
 
     /**

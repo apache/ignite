@@ -77,7 +77,7 @@ public class ProductOrder {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj instanceof ProductOrder && id == ((ProductOrder) obj).id;
+        return obj instanceof ProductOrder && id == ((ProductOrder)obj).id;
     }
 
     /** {@inheritDoc} */

@@ -90,7 +90,7 @@ public class StatisticsUtils {
         StatisticsObjectData data;
 
         if (stat instanceof ObjectPartitionStatisticsImpl) {
-            ObjectPartitionStatisticsImpl partStats = (ObjectPartitionStatisticsImpl) stat;
+            ObjectPartitionStatisticsImpl partStats = (ObjectPartitionStatisticsImpl)stat;
 
             data = new StatisticsObjectData(keyMsg, stat.rowCount(), type, partStats.partId(),
                 partStats.updCnt(), colData);

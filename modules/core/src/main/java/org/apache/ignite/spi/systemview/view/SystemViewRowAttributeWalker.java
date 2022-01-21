@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.Collections;
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class for quick iteration over row properties.
@@ -73,7 +74,7 @@ public interface SystemViewRowAttributeWalker<R> {
          * @param val Value.
          * @param <T> Value type.
          */
-        public <T> void accept(int idx, String name, Class<T> clazz, T val);
+        public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val);
 
         /**
          * Visit attribute. Attribute value is {@code boolean} primitive.

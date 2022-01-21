@@ -377,6 +377,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_INVOKE_JAVA = 98;
 
+    /** */
+    public static final int OP_PERSISTENCE_ENABLED = 99;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -1265,6 +1268,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return FALSE;
             }
+
+            case OP_PERSISTENCE_ENABLED:
+                return cache.context().group().persistenceEnabled() ? TRUE : FALSE;
         }
         return super.processInLongOutLong(type, val);
     }
@@ -1382,7 +1388,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private PlatformQueryCursor runQuery(Query qry) throws IgniteCheckedException {
 
         try {
-            QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
+            QueryCursorEx cursor = (QueryCursorEx)cache.query(qry);
 
             return new PlatformQueryCursor(platformCtx, cursor,
                 qry.getPageSize() > 0 ? qry.getPageSize() : Query.DFLT_PAGE_SIZE);
@@ -1402,7 +1408,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private PlatformFieldsQueryCursor runFieldsQuery(Query qry)
         throws IgniteCheckedException {
         try {
-            QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
+            QueryCursorEx cursor = (QueryCursorEx)cache.query(qry);
 
             return new PlatformFieldsQueryCursor(platformCtx, cursor,
                 qry.getPageSize() > 0 ? qry.getPageSize() : Query.DFLT_PAGE_SIZE);
@@ -1727,7 +1733,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             assert obj instanceof Map;
 
-            PlatformUtils.writeNullableMap(writer, (Map) obj);
+            PlatformUtils.writeNullableMap(writer, (Map)obj);
         }
 
         /** <inheritDoc /> */

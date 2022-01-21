@@ -65,8 +65,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -4243,9 +4245,12 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
-            sock.shutdownOutput();
-            sock.shutdownInput();
+            // Closing output and input first to avoid tls 1.3 incompatibility
+            // https://bugs.openjdk.java.net/browse/JDK-8208526
+            if (!sock.isOutputShutdown())
+                sock.shutdownOutput();
+            if (!sock.isInputShutdown())
+                sock.shutdownInput();
         }
         catch (ClosedChannelException | SocketException ex) {
             LT.warn(log, "Failed to shutdown socket", ex);
@@ -6112,6 +6117,25 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Provides all interfaces of {@code cls} including inherited ones. Excludes duplicated ones in case of multiple
+     * inheritance.
+     *
+     * @param cls Class to search for interfaces.
+     * @return Collection of interfaces of {@code cls}.
+     */
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        while (cls != null) {
+            interfaces.addAll(Arrays.asList(cls.getInterfaces()));
+
+            cls = cls.getSuperclass();
+        }
+
+        return interfaces;
+    }
+
+    /**
      * Gets simple class name taking care of empty names.
      *
      * @param cls Class to get the name for.
@@ -6262,7 +6286,7 @@ public abstract class IgniteUtils {
             return -1;
         }
 
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return (attr instanceof Long) ? (Long)attr : -1;
     }
 
     /**
@@ -12253,4 +12277,24 @@ public abstract class IgniteUtils {
         return safeAbs(hash % size);
     }
 
+    /**
+     * Invokes {@link ServerSocket#accept()} method on the passed server socked, working around the
+     * https://bugs.openjdk.java.net/browse/JDK-8247750 in the process.
+     *
+     * @param srvrSock Server socket.
+     * @return New socket.
+     * @throws IOException If an I/O error occurs when waiting for a connection.
+     * @see ServerSocket#accept()
+     */
+    public static Socket acceptServerSocket(ServerSocket srvrSock) throws IOException {
+        while (true) {
+            try {
+                return srvrSock.accept();
+            }
+            catch (SocketTimeoutException e) {
+                if (srvrSock.getSoTimeout() > 0)
+                    throw e;
+            }
+        }
+    }
 }

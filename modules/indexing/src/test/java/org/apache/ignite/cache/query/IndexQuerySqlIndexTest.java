@@ -252,7 +252,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         tblCache = crd.cache(CACHE_TABLE);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), qryDescIdxName)
-            .setCriteria(eq("_KEY", (long) pivot), lte("descId", pivot));
+            .setCriteria(eq("_KEY", (long)pivot), lte("descId", pivot));
 
         check(qry, pivot, pivot + 1);
     }
@@ -292,8 +292,8 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             Cache.Entry<Long, BinaryObject> entry = all.get(i);
 
             assertEquals(right - 1 - i, entry.getKey().intValue());
-            assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("id"));
-            assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("descId"));
+            assertEquals(entry.getKey().intValue(), (int)entry.getValue().field("id"));
+            assertEquals(entry.getKey().intValue(), (int)entry.getValue().field("descId"));
         }
     }
 

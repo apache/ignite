@@ -48,6 +48,9 @@ namespace Apache.Ignite.Core.Tests.Services
             "org.apache.ignite.platform.PlatformServiceCallCollectionsThinTask";
 
         /** */
+        private readonly bool _useBinaryArray;
+
+        /** */
         protected IIgnite Grid1;
 
         /** */
@@ -55,6 +58,18 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
+
+        /** */
+        public CallPlatformServiceTest(bool useBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
+        /** */
+        public CallPlatformServiceTest() : this(false)
+        {
+            // No-op.
+        }
 
         /// <summary>
         /// Start grids and deploy test service.
@@ -133,7 +148,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                },
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 
@@ -163,6 +179,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             BinarizableTestValue AddOne(BinarizableTestValue val);
+
+            /** */
+            // ReSharper disable once InconsistentNaming
+            string contextAttribute(string name);
         }
 
         #pragma warning disable 649
@@ -173,6 +193,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             [InstanceResource]
             private IIgnite _grid;
+
+            /** */
+            private IServiceContext _ctx;
 
             /** <inheritdoc /> */
             public Guid NodeId
@@ -247,10 +270,17 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
+            public string contextAttribute(string name)
+            {
+                IServiceCallContext callCtx = _ctx.CurrentCallContext;
+
+                return callCtx == null ? null : callCtx.GetAttribute(name);
+            }
+
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                // No-op.
+                _ctx = context;
             }
 
             /** <inheritdoc /> */
@@ -328,6 +358,16 @@ namespace Apache.Ignite.Core.Tests.Services
                 Id = reader.ReadInt("id");
                 Name = reader.ReadString("name");
             }
+        }
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class CallPlatformServiceTestBinaryArrays : CallPlatformServiceTest
+    {
+        /** */
+        public CallPlatformServiceTestBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }

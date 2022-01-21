@@ -221,7 +221,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             boolean client = i > 3;
 
-            assertEquals((Object) client, ignite(i).configuration().isClientMode());
+            assertEquals((Object)client, ignite(i).configuration().isClientMode());
 
             binaries = ignite(i).binary();
 

@@ -37,6 +37,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
@@ -59,6 +61,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
@@ -90,6 +93,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -112,6 +116,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
+
+    /** Number of partitions within a snapshot cache group. */
+    protected static final int CACHE_PARTITIONS_COUNT = GridTestUtils.SF.apply(DFLT_PARTITION_COUNT);
 
     /** Timeout in milliseconds to await for snapshot operation being completed. */
     protected static final long TIMEOUT = 15_000;
@@ -296,6 +303,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT))
             .setEncryptionEnabled(encryption);
     }
 
@@ -377,9 +385,32 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         Function<Integer, V> factory,
         CacheConfiguration<Integer, V>... ccfgs
     ) throws Exception {
-        for (int g = 0; g < grids; g++)
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
-                .setCacheConfiguration(ccfgs)));
+        return startGridsWithCache(grids, keys, factory, (id, cfg) -> cfg.getWorkDirectory(), ccfgs);
+    }
+
+    /**
+     * @param grids Number of ignite instances to start.
+     * @param keys Number of keys to create.
+     * @param factory Factory which produces values.
+     * @param <V> Cache value type.
+     * @return Ignite coordinator instance.
+     * @throws Exception If fails.
+     */
+    protected <V> IgniteEx startGridsWithCache(
+        int grids,
+        int keys,
+        Function<Integer, V> factory,
+        BiFunction<Integer, IgniteConfiguration, String> newWorkDir,
+        CacheConfiguration<Integer, V>... ccfgs
+    ) throws Exception {
+        for (int g = 0; g < grids; g++) {
+            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(g))
+                .setCacheConfiguration(ccfgs));
+
+            cfg.setWorkDirectory(newWorkDir.apply(g, cfg));
+
+            startGrid(cfg);
+        }
 
         IgniteEx ig = grid(0);
 
@@ -499,32 +530,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
-     * @param snpSndr Sender which used for snapshot sub-task processing.
-     * @return Future which will be completed when snapshot is done.
-     */
-    protected static SnapshotFutureTask startLocalSnapshotTask(
-        GridCacheSharedContext<?, ?> cctx,
-        String snpName,
-        Map<Integer, Set<Integer>> parts,
-        SnapshotSender snpSndr
-    ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, true, snpSndr);
-
-        snpFutTask.start();
-
-        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
-        // due to checkpoint already running and we need to schedule the next one
-        // right after current will be completed.
-        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
-
-        snpFutTask.started().get();
-
-        return snpFutTask;
-    }
-
-    /**
      * @param ignite Ignite instance.
      * @return Snapshot manager related to given ignite instance.
      */
@@ -622,6 +627,39 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             "Execution of snapshot tasks has been cancelled by external process");
 
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
+    }
+
+    /**
+     * @param snpName Unique snapshot name.
+     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param snpSndr Sender which used for snapshot sub-task processing.
+     * @return Future which will be completed when snapshot is done.
+     */
+    protected static IgniteInternalFuture<?> startLocalSnapshotTask(
+        GridCacheSharedContext<?, ?> cctx,
+        String snpName,
+        Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
+        SnapshotSender snpSndr
+    ) throws IgniteCheckedException {
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts,
+            withMetaStorage, snpSndr);
+
+        if (!(task instanceof SnapshotFutureTask))
+            throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);
+
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)task;
+
+        snpFutTask.start();
+
+        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
+        // due to checkpoint already running and we need to schedule the next one
+        // right after current will be completed.
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+
+        snpFutTask.started().get();
+
+        return snpFutTask;
     }
 
     /**

@@ -177,6 +177,7 @@ import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
+import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
@@ -216,6 +217,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlGroupConcatNotColloc
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlNotNullConstraintTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlQueryDecimalArgumentsWithTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlQueryParallelismTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
@@ -496,6 +498,7 @@ import org.junit.runners.Suite;
     GridCacheQueryIndexingDisabledSelfTest.class,
     GridOrderedMessageCancelSelfTest.class,
     CacheQueryEvictDataLostTest.class,
+    IgniteSqlQueryDecimalArgumentsWithTest.class,
 
     // Full text queries.
     GridCacheFullTextQueryFailoverTest.class,
@@ -653,6 +656,7 @@ import org.junit.runners.Suite;
 
     BasicSqlTypesIndexTest.class,
     BasicJavaTypesIndexTest.class,
+    PojoIndexLocalQueryTest.class,
 
     //Cancellation of queries.
     KillQueryTest.class,

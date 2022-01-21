@@ -69,9 +69,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -1871,6 +1873,8 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
+            BinaryArray.initUseBinaryArrays();
+
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
             String ggHome = cfg.getIgniteHome();
@@ -2695,8 +2699,12 @@ public class IgnitionEx {
 
         dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
         dsCfg.setPageSize(memCfg.getPageSize());
-        dsCfg.setSystemRegionInitialSize(memCfg.getSystemCacheInitialSize());
-        dsCfg.setSystemRegionMaxSize(memCfg.getSystemCacheMaxSize());
+
+        dsCfg.setSystemDataRegionConfiguration(
+                new SystemDataRegionConfiguration()
+                        .setInitialSize(memCfg.getSystemCacheInitialSize())
+                        .setMaxSize(memCfg.getSystemCacheMaxSize())
+        );
 
         List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
 

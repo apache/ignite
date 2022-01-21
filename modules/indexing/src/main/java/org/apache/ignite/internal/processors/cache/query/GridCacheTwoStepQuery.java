@@ -86,6 +86,7 @@ public class GridCacheTwoStepQuery {
      * @param cacheIds Cache ids.
      * @param mvccEnabled Mvcc flag.
      * @param locSplit Local split flag.
+     * @param treatReplicatedAsPartitioned Treat replicated as partitioned flag.
      */
     public GridCacheTwoStepQuery(
         String originalSql,

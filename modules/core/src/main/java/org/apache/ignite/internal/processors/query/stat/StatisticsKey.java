@@ -63,7 +63,7 @@ public class StatisticsKey implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        StatisticsKey statsKey = (StatisticsKey) o;
+        StatisticsKey statsKey = (StatisticsKey)o;
         return Objects.equals(schema, statsKey.schema) &&
             Objects.equals(obj, statsKey.obj);
     }

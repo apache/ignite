@@ -27,9 +27,16 @@ namespace ignite
         namespace interop
         {
             /**
+             * Helper class.
+             */
+            class OutputStreamHelper;
+
+            /**
              * Interop output stream.
              */
-            class IGNITE_IMPORT_EXPORT InteropOutputStream {
+            class IGNITE_IMPORT_EXPORT InteropOutputStream
+            {
+                friend class OutputStreamHelper;
             public:
                 /**
                  * Create new output stream with the given capacity.
@@ -43,14 +50,14 @@ namespace ignite
                  *
                  * @param val Value.
                  */
-                void WriteInt8(const int8_t val);
+                void WriteInt8(int8_t val);
 
                 /**
                  * Write signed 8-byte integer at the given position.
                  *
                  * @param val Value.
                  */
-                void WriteInt8(const int8_t val, const int32_t pos);
+                void WriteInt8(int8_t val, int32_t pos);
 
                 /**
                  * Write signed 8-byte integer array.
@@ -58,14 +65,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteInt8Array(const int8_t* val, const int32_t len);
+                void WriteInt8Array(const int8_t* val, int32_t len);
 
                 /**
                  * Write bool.
                  *
                  * @param val Value.
                  */
-                void WriteBool(const bool val);
+                void WriteBool(bool val);
 
                 /**
                  * Write bool array.
@@ -73,14 +80,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteBoolArray(const bool* val, const int32_t len);
+                void WriteBoolArray(const bool* val, int32_t len);
 
                 /**
                  * Write signed 16-byte integer.
                  *
                  * @param val Value.
                  */
-                void WriteInt16(const int16_t val);
+                void WriteInt16(int16_t val);
 
                 /**
                  * Write signed 16-byte integer at the given position.
@@ -88,7 +95,7 @@ namespace ignite
                  * @param pos Position.
                  * @param val Value.
                  */
-                void WriteInt16(const int32_t pos, const int16_t val);
+                void WriteInt16(int32_t pos, int16_t val);
 
                 /**
                  * Write signed 16-byte integer array.
@@ -96,14 +103,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteInt16Array(const int16_t* val, const int32_t len);
+                void WriteInt16Array(const int16_t* val, int32_t len);
 
                 /**
                  * Write unsigned 16-byte integer.
                  *
                  * @param val Value.
                  */
-                void WriteUInt16(const uint16_t val);
+                void WriteUInt16(uint16_t val);
 
                 /**
                  * Write unsigned 16-byte integer array.
@@ -111,14 +118,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteUInt16Array(const uint16_t* val, const int32_t len);
+                void WriteUInt16Array(const uint16_t* val, int32_t len);
 
                 /**
                  * Write signed 32-byte integer.
                  *
                  * @param val Value.
                  */
-                void WriteInt32(const int32_t val);
+                void WriteInt32(int32_t val);
 
                 /**
                  * Write signed 32-byte integer at the given position.
@@ -126,7 +133,7 @@ namespace ignite
                  * @param pos Position.
                  * @param val Value.
                  */
-                void WriteInt32(const int32_t pos, const int32_t val);
+                void WriteInt32(int32_t pos, int32_t val);
 
                 /**
                  * Write signed 32-byte integer array.
@@ -134,14 +141,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteInt32Array(const int32_t* val, const int32_t len);
+                void WriteInt32Array(const int32_t* val, int32_t len);
 
                 /**
                  * Write signed 64-byte integer.
                  *
                  * @param val Value.
                  */
-                void WriteInt64(const int64_t val);
+                void WriteInt64(int64_t val);
 
                 /**
                  * Write signed 64-byte integer.
@@ -149,7 +156,7 @@ namespace ignite
                  * @param pos Position.
                  * @param val Value.
                  */
-                void WriteInt64(const int32_t pos, const int64_t val);
+                void WriteInt64(int32_t pos, int64_t val);
 
                 /**
                  * Write signed 64-byte integer array.
@@ -157,14 +164,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteInt64Array(const int64_t* val, const int32_t len);
+                void WriteInt64Array(const int64_t* val, int32_t len);
 
                 /**
                  * Write float.
                  *
                  * @param val Value.
                  */
-                void WriteFloat(const float val);
+                void WriteFloat(float val);
 
                 /**
                  * Write float array.
@@ -172,14 +179,14 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteFloatArray(const float* val, const int32_t len);
+                void WriteFloatArray(const float* val, int32_t len);
 
                 /**
                  * Write double.
                  *
                  * @param val Value.
                  */
-                void WriteDouble(const double val);
+                void WriteDouble(double val);
 
                 /**
                  * Write double array.
@@ -187,7 +194,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                void WriteDoubleArray(const double* val, const int32_t len);
+                void WriteDoubleArray(const double* val, int32_t len);
 
                 /**
                  * Get current stream position.
@@ -199,7 +206,7 @@ namespace ignite
                  *
                  * @param val Position (absolute).
                  */
-                void Position(const int32_t val);
+                void Position(int32_t val);
 
                 /**
                  * Reserve specified number of bytes in stream.
@@ -257,7 +264,7 @@ namespace ignite
                  * @param off Offset.
                  * @param len Length.
                  */
-                void CopyAndShift(const int8_t* src, int32_t off, int32_t len);
+                void CopyAndShift(const void* src, int32_t off, int32_t len);
             };
         }
     }

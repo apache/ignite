@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.DefragIndexFactory.DefragIndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
@@ -38,13 +38,11 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -148,7 +146,7 @@ public class IndexingDefragmentation {
             for (InlineIndex oldIdx : indexes.idxs) {
                 InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.indexDefinition(oldIdx.id());
+                SortedIndexDefinition idxDef = (SortedIndexDefinition)indexing.indexDefinition(oldIdx.id());
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -176,8 +174,8 @@ public class IndexingDefragmentation {
 
                         IndexRow row = theTree.getRow(h2IO, pageAddr, idx);
 
-                        if (!row.indexSearchRow()) {
-                            IndexRowImpl r = (IndexRowImpl) row;
+                        if (row instanceof DefragIndexRowImpl) {
+                            DefragIndexRowImpl r = (DefragIndexRowImpl)row;
 
                             CacheDataRow cacheDataRow = r.cacheDataRow();
 
@@ -189,16 +187,13 @@ public class IndexingDefragmentation {
 
                             long newLink = map.get(link);
 
-                            CacheDataRow newDataRow;
-
-                             if (((MvccIO) io).storeMvccInfo()) {
-                                 newDataRow = new MvccDataRow(newLink);
-                                 newDataRow.mvccVersion(row);
-                             } else
-                                 newDataRow = new CacheDataRowAdapter(newLink);
-
                             // Use old row handler, as MetaInfo is copied from old tree.
-                            IndexRowImpl newRow = new IndexRowImpl(oldRowHnd, newDataRow, r.keys());
+                            DefragIndexRowImpl newRow = DefragIndexRowImpl.create(
+                                oldRowHnd,
+                                newLink,
+                                r,
+                                ((MvccIO)io).storeMvccInfo()
+                            );
 
                             newIdx.putIndexRow(newRow);
                         }

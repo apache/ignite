@@ -997,6 +997,8 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
+        assert exchangeActions != null;
+
         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
         IgniteCheckedException err = null;
@@ -1040,7 +1042,7 @@ public class ClusterCachesInfo {
         if (err == null && req.restartId() == null) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
-            if (snapshotMgr.isRestoring(cacheName, ccfg.getGroupName())) {
+            if (snapshotMgr.isRestoring(ccfg)) {
                 err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +
                     "currently being restored from a snapshot [cache=" + cacheName +
                     (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
@@ -1408,7 +1410,7 @@ public class ClusterCachesInfo {
      * @param clusterWideCacheData Cluster wide cache data.
      */
     public void validateNoNewCachesWithNewFormat(CacheNodeCommonDiscoveryData clusterWideCacheData) {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
         boolean allowSplitCacheConfigurations = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 

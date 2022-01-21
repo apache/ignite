@@ -23,6 +23,7 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -71,6 +71,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
@@ -91,6 +92,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -100,7 +104,6 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -159,7 +162,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -312,8 +314,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (int k = 0; k < 1000; k++)
             dfltCache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -1248,17 +1250,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
         }
 
-        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
             return configuration;
         });
 
-        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
             return configuration;
         });
 
-        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>) configuration -> {
+        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>)configuration -> {
             configuration.setCommunicationSpi(new KillNode3CommunicationSpi(true));
             return configuration;
         });
@@ -3191,13 +3193,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotRestoreCancelAndStatus() throws Exception {
-        int keysCnt = 10_000;
+        int keysCnt = 2048;
         String snpName = "snapshot_25052021";
         String missingSnpName = "snapshot_MISSING";
 
-        IgniteEx ig = startGrids(2);
-
-        ig.cluster().state(ACTIVE);
+        IgniteEx ig = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setSnapshotThreadPoolSize(1));
+        startGrid(1).cluster().state(ACTIVE);
 
         injectTestSystemOut();
 
@@ -3205,54 +3206,58 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
 
-        IgniteCache<Integer, Integer> cache1 = ig.cache(DEFAULT_CACHE_NAME);
+        int locPartsCnt = ig.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitions().size();
 
-        cache1.destroy();
+        ig.destroyCache(DEFAULT_CACHE_NAME);
+        awaitPartitionMapExchange();
 
         CommandHandler h = new CommandHandler();
+        CountDownLatch ioStartLatch = new CountDownLatch(1);
+        IgniteSnapshotManager snpMgr = ig.context().cache().context().snapshotMgr();
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
-
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
-            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+        // Replace the IO factory in the snapshot manager so we have enough time to test the status command.
+        snpMgr.ioFactory(new SlowDownFileIoFactory(snpMgr.ioFactory(), getTestTimeout() / locPartsCnt, ioStartLatch));
 
         // Restore single cache group.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", DEFAULT_CACHE_NAME));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + DEFAULT_CACHE_NAME + ']');
+        IgniteFuture<Void> restoreFut = snpMgr.restoreSnapshot(snpName, Collections.singleton(DEFAULT_CACHE_NAME));
 
+        ioStartLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+        assertFalse(restoreFut.isDone());
+
+        // Check the status with a control command.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
 
-        // Check wrong snapshot name.
+        // Check "status" with the wrong snapshot name.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
 
+        // Check "cancel" with the wrong snapshot name.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--cancel"));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is not in progress [snapshot=" + missingSnpName + ']');
+            "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
 
-        GridTestUtils.runAsync(() -> {
-            // Wait for the process to be interrupted.
-            AtomicReference<?> errRef = U.field((Object)U.field((Object)U.field(
-                grid(0).context().cache().context().snapshotMgr(), "restoreCacheGrpProc"), "opCtx"), "err");
-
-            waitForCondition(() -> errRef.get() != null, getTestTimeout());
-
-            spi.stopBlock();
-
-            return null;
-        });
-
+        // Cancel operation using control command.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
 
+        GridTestUtils.assertThrowsAnyCause(log, () -> restoreFut.get(getTestTimeout()), IgniteCheckedException.class,
+            "Operation has been canceled by the user.");
+
+        // Make sure the context disappeared at node 1.
+        boolean ctxDisposed =
+            waitForCondition(() -> !grid(1).context().cache().context().snapshotMgr().isRestoring(), getTestTimeout());
+
+        assertTrue(ctxDisposed);
+
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is NOT running [snapshot=" + snpName + ']');
+
+        assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -3353,5 +3358,58 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ++cnt;
 
         return cnt;
+    }
+
+    /** Test IO factory that slows down file creation. */
+    private static class SlowDownFileIoFactory implements FileIOFactory {
+        /** Delegated factory. */
+        private final FileIOFactory delegate;
+
+        /** Max slowdown interval. */
+        private final long maxTimeout;
+
+        /** Latch to notify when the first file will be created. */
+        private final CountDownLatch ioStartLatch;
+
+        /** Next file slowdown interval. */
+        private long timeout = 10;
+
+        /**
+         * @param delegate Delegated factory.
+         * @param maxTimeout Max slowdown interval.
+         * @param ioStartLatch Latch to notify when the first file will be created.
+         */
+        private SlowDownFileIoFactory(FileIOFactory delegate, long maxTimeout, CountDownLatch ioStartLatch) {
+            this.delegate = delegate;
+            this.maxTimeout = maxTimeout;
+            this.ioStartLatch = ioStartLatch;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            try {
+                if (ioStartLatch.getCount() > 0)
+                    ioStartLatch.countDown();
+
+                long currTimeout = maxTimeout;
+
+                synchronized (this) {
+                    if (timeout < maxTimeout) {
+                        currTimeout = timeout;
+
+                        timeout += timeout;
+                    }
+                }
+
+                U.sleep(currTimeout);
+
+                return delegate.create(file, modes);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

@@ -1358,11 +1358,11 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
             ClusterNode locNode = node.cluster().localNode();
 
             if (crdNode == null || locNode.order() < crdNode.localNode().order())
-                crdNode = (IgniteEx) node;
+                crdNode = (IgniteEx)node;
         }
 
         for (Ignite node : nodes) {
-            IgniteEx node0 = (IgniteEx) node;
+            IgniteEx node0 = (IgniteEx)node;
 
             if (node0.localNode().id().equals(crdNode.localNode().id()))
                 continue;

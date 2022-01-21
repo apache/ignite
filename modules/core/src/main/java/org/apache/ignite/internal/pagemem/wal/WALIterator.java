@@ -20,7 +20,9 @@ package org.apache.ignite.internal.pagemem.wal;
 import java.util.Optional;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -28,7 +30,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
  */
 public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
     /**
-     * @return Pointer of last read valid record. Empty if no records were read.
+     * @return Pointer to the last record returned by the {@link #next()} method.
+     * If records are filtered by the {@link IteratorParametersBuilder#filter(IgniteBiPredicate)} then
+     * pointer to the last valid record returned.
      */
     public Optional<WALPointer> lastRead();
 }

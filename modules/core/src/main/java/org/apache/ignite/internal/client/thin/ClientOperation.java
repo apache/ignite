@@ -19,10 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.client.ClientOperationType;
 import org.jetbrains.annotations.Nullable;
 
 /** Operation codes. */
-enum ClientOperation {
+public enum ClientOperation {
     /** Resource close. */
     RESOURCE_CLOSE(0),
 
@@ -180,7 +181,13 @@ enum ClientOperation {
     COMPUTE_TASK_FINISHED(6001, ClientNotificationType.COMPUTE_TASK_FINISHED),
 
     /** Invoke service. */
-    SERVICE_INVOKE(7000);
+    SERVICE_INVOKE(7000),
+
+    /** Get service descriptors. */
+    SERVICE_GET_DESCRIPTORS(7001),
+
+    /** Get service descriptors. */
+    SERVICE_GET_DESCRIPTOR(7002);
 
     /** Code. */
     private final int code;
@@ -211,6 +218,136 @@ enum ClientOperation {
      */
     public ClientNotificationType notificationType() {
         return notificationType;
+    }
+
+    /**
+     * Converts this internal operation code to public {@link ClientOperationType}.
+     *
+     * @return Corresponding {@link ClientOperationType}, or {@code null} if there is no match.
+     * Some operations, such as {@link #RESOURCE_CLOSE}, do not have a public counterpart.
+     */
+    @Nullable public ClientOperationType toPublicOperationType() {
+        switch (this) {
+            case CACHE_GET_OR_CREATE_WITH_NAME:
+            case CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
+                return ClientOperationType.CACHE_GET_OR_CREATE;
+
+            case CACHE_CREATE_WITH_CONFIGURATION:
+            case CACHE_CREATE_WITH_NAME:
+                return ClientOperationType.CACHE_CREATE;
+
+            case CACHE_PUT:
+                return ClientOperationType.CACHE_PUT;
+
+            case CACHE_GET:
+                return ClientOperationType.CACHE_GET;
+
+            case CACHE_GET_NAMES:
+                return ClientOperationType.CACHE_GET_NAMES;
+
+            case CACHE_DESTROY:
+                return ClientOperationType.CACHE_DESTROY;
+
+            case CACHE_CONTAINS_KEY:
+                return ClientOperationType.CACHE_CONTAINS_KEY;
+
+            case CACHE_CONTAINS_KEYS:
+                return ClientOperationType.CACHE_CONTAINS_KEYS;
+
+            case CACHE_GET_CONFIGURATION:
+                return ClientOperationType.CACHE_GET_CONFIGURATION;
+
+            case CACHE_GET_SIZE:
+                return ClientOperationType.CACHE_GET_SIZE;
+
+            case CACHE_PUT_ALL:
+                return ClientOperationType.CACHE_PUT_ALL;
+
+            case CACHE_GET_ALL:
+                return ClientOperationType.CACHE_GET_ALL;
+
+            case CACHE_REPLACE_IF_EQUALS:
+            case CACHE_REPLACE:
+                return ClientOperationType.CACHE_REPLACE;
+
+            case CACHE_REMOVE_KEY:
+            case CACHE_REMOVE_IF_EQUALS:
+                return ClientOperationType.CACHE_REMOVE_ONE;
+
+            case CACHE_REMOVE_KEYS:
+                return ClientOperationType.CACHE_REMOVE_MULTIPLE;
+
+            case CACHE_REMOVE_ALL:
+                return ClientOperationType.CACHE_REMOVE_EVERYTHING;
+
+            case CACHE_GET_AND_PUT:
+                return ClientOperationType.CACHE_GET_AND_PUT;
+
+            case CACHE_GET_AND_REMOVE:
+                return ClientOperationType.CACHE_GET_AND_REMOVE;
+
+            case CACHE_GET_AND_REPLACE:
+                return ClientOperationType.CACHE_GET_AND_REPLACE;
+
+            case CACHE_PUT_IF_ABSENT:
+                return ClientOperationType.CACHE_PUT_IF_ABSENT;
+
+            case CACHE_GET_AND_PUT_IF_ABSENT:
+                return ClientOperationType.CACHE_GET_AND_PUT_IF_ABSENT;
+
+            case CACHE_CLEAR:
+                return ClientOperationType.CACHE_CLEAR_EVERYTHING;
+
+            case CACHE_CLEAR_KEY:
+                return ClientOperationType.CACHE_CLEAR_ONE;
+
+            case CACHE_CLEAR_KEYS:
+                return ClientOperationType.CACHE_CLEAR_MULTIPLE;
+
+            case QUERY_SCAN:
+                return ClientOperationType.QUERY_SCAN;
+
+            case QUERY_SQL:
+            case QUERY_SQL_FIELDS:
+                return ClientOperationType.QUERY_SQL;
+
+            case QUERY_CONTINUOUS:
+                return ClientOperationType.QUERY_CONTINUOUS;
+
+            case TX_START:
+                return ClientOperationType.TRANSACTION_START;
+
+            case CLUSTER_GET_STATE:
+                return ClientOperationType.CLUSTER_GET_STATE;
+
+            case CLUSTER_CHANGE_STATE:
+                return ClientOperationType.CLUSTER_CHANGE_STATE;
+
+            case CLUSTER_GET_WAL_STATE:
+                return ClientOperationType.CLUSTER_GET_WAL_STATE;
+
+            case CLUSTER_CHANGE_WAL_STATE:
+                return ClientOperationType.CLUSTER_CHANGE_WAL_STATE;
+
+            case CLUSTER_GROUP_GET_NODE_IDS:
+            case CLUSTER_GROUP_GET_NODE_INFO:
+                return ClientOperationType.CLUSTER_GROUP_GET_NODES;
+
+            case COMPUTE_TASK_EXECUTE:
+                return ClientOperationType.COMPUTE_TASK_EXECUTE;
+
+            case SERVICE_INVOKE:
+                return ClientOperationType.SERVICE_INVOKE;
+
+            case SERVICE_GET_DESCRIPTORS:
+                return ClientOperationType.SERVICE_GET_DESCRIPTORS;
+
+            case SERVICE_GET_DESCRIPTOR:
+                return ClientOperationType.SERVICE_GET_DESCRIPTOR;
+
+            default:
+                return null;
+        }
     }
 
     /** Enum mapping from code to values. */

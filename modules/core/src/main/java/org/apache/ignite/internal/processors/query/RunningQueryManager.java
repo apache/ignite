@@ -67,6 +67,9 @@ public class RunningQueryManager {
     /** */
     public static final String SQL_QRY_HIST_VIEW_DESC = "SQL queries history.";
 
+    /** Undefined query ID value. */
+    public static final long UNDEFINED_QUERY_ID = 0L;
+
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
@@ -137,16 +140,16 @@ public class RunningQueryManager {
     }
 
     /**
-     * Register running query.
+     * Registers running query and returns an id associated with the query.
      *
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
-     * @return Id of registered query.
+     * @return Id of registered query. Id is a positive number.
      */
-    public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
+    public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
         String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
@@ -185,8 +188,8 @@ public class RunningQueryManager {
      * @param qryId id of the query, which is given by {@link #register register} method.
      * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
-    public void unregister(Long qryId, @Nullable Throwable failReason) {
-        if (qryId == null)
+    public void unregister(long qryId, @Nullable Throwable failReason) {
+        if (qryId <= 0)
             return;
 
         boolean failed = failReason != null;
@@ -297,7 +300,7 @@ public class RunningQueryManager {
      *
      * @param qryId Query id.
      */
-    public void cancel(Long qryId) {
+    public void cancel(long qryId) {
         GridRunningQueryInfo run = runs.get(qryId);
 
         if (run != null)
@@ -336,10 +339,11 @@ public class RunningQueryManager {
 
     /**
      * Gets info about running query by their id.
-     * @param qryId
+     *
+     * @param qryId Query Id.
      * @return Running query info or {@code null} in case no running query for given id.
      */
-    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
+    public @Nullable GridRunningQueryInfo runningQueryInfo(long qryId) {
         return runs.get(qryId);
     }
 

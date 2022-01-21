@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -390,6 +392,102 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         check(resSql, 1);
     }
+    
+    /**
+     * Select result of boolean operation with constant in subquery. For this case optimization is disabled.
+     */
+    @Test
+    public void testExistsClause6() {
+        String outerSqlTemplate = "SELECT (EXISTS  (%s) )";
+        String subSql1 = "SELECT 1 FROM emp WHERE id = 1";
+        String subSql2 = "SELECT 1";
+    
+        check(String.format(outerSqlTemplate, subSql1), 2);
+        check(String.format(outerSqlTemplate, subSql2), 2);
+    }
+    
+    /**
+     * This case is similar to EXISTS case. Optimization is disabled.
+     */
+    @Test
+    public void testInCause() {
+        String outerSqlTemplate = "SELECT e.id, 1 IN (%s) from emp e";
+        String subSql = "SELECT 1 FROM emp WHERE id = 1";
+        
+        String resSql = String.format(outerSqlTemplate, subSql);
+        
+        check(resSql, 2);
+    }
+    
+    /**
+     * This case is similar to EXISTS case. Optimization is disabled.
+     */
+    @Test
+    public void testNotInClause() {
+        String outerSqlTemplate = "SELECT 1 NOT IN (%s)";
+        String subSql = "SELECT 1 FROM emp WHERE id = 1";
+        
+        String resSql = String.format(outerSqlTemplate, subSql);
+        
+        check(resSql, 2);
+    }
+    
+    /**
+     * Test boolean expression with AND operation. Optimization is disabled.
+     */
+    @Test
+    public void testAndClause() {
+        String outerSqlTemplate = "SELECT TRUE AND (%s)";
+        String subSql = "SELECT TRUE FROM emp WHERE id = 1";
+        
+        String resSql = String.format(outerSqlTemplate, subSql);
+        
+        check(resSql, 2);
+    }
+    
+    /**
+     * Test subquery with constant. Optimization is disabled.
+     */
+    @Test
+    public void testConstantSubQuery() {
+        String outerSqlTemplate = "SELECT (%s)";
+        String subSql = "SELECT 1 FROM emp WHERE id = 1";
+        
+        String resSql = String.format(outerSqlTemplate, subSql);
+        
+        check(resSql, 2);
+    }
+    
+    /**
+     * Test different operations with subquery. Optimization is disabled.
+     */
+    @Test
+    public void testOperationWithSubQuery() {
+        String outerSqlTemplate1 = "SELECT 1 = (%s)";
+        String outerSqlTemplate2 = "SELECT 1 || (%s)";
+        String outerSqlTemplate3 = "SELECT 1 + (%s)";
+        String outerSqlTemplate4 = "SELECT (%s) IS NULL";
+    
+        String subSql = "SELECT 1 FROM emp WHERE id = 1";
+        
+        check(String.format(outerSqlTemplate1, subSql), 2);
+        check(String.format(outerSqlTemplate2, subSql), 2);
+        check(String.format(outerSqlTemplate3, subSql), 2);
+        check(String.format(outerSqlTemplate4, subSql), 2);
+    }
+    
+    /**
+     * Case with IN condition.
+     */
+    @Test
+    public void testWhereInClause() {
+        String outerSqlTemplate = "select id, name from emp e where 1 IN (%s) order by 1";
+        String subSql = "select 1 from emp where id = e.id";
+        
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
 
     /**
      * Simple case, but inner table has coumpound PK.
@@ -400,7 +498,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         String subSql = "select 1 from dep2 where id = e.id and id2 = 12";
 
         String resSql = String.format(outerSqlTemplate, subSql);
-
+        
         check(resSql, 1);
     }
 
@@ -509,7 +607,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         check(resSql, 1);
     }
-
+    
     /**
      * Simple case, but inner table has coumpound PK.
      */
@@ -795,6 +893,51 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         String resSql = String.format(outerSqlTemplate, subSql);
 
         check(resSql, 2);
+    }
+
+    /**
+     * Case when select subquery is under EXISTS operator.
+     */
+    @Test
+    public void testExistsOperatorWithSubqueryUnderSelect() {
+        String outerSqlTemplate = "SELECT (EXISTS (%s));";
+        String subSql1 = "SELECT id FROM dep WHERE id = 1";
+        String subSql2 = "SELECT 1 FROM dep WHERE id = 1";
+
+        check(String.format(outerSqlTemplate, subSql1), 2);
+
+        check(String.format(outerSqlTemplate, subSql2), 2);
+    }
+
+    /**
+     * Case when select subquery is under different possible operators.
+     */
+    @Test
+    public void testDifferentOperatorsWithSubqueryUnderSelect() {
+        String outerSqlTemplate = "SELECT (%s);";
+
+        List<String> subSelects = new ArrayList<>();
+
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IN (1,-1)");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IS NOT NULL");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) IS 1");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) < 0");
+        subSelects.add("-(SELECT %s FROM dep WHERE id = 1)");
+        subSelects.add("(SELECT %s FROM dep WHERE id = 1) = 2");
+
+        for (String param : Arrays.asList("1", "2")) {
+            for (String subSelect : subSelects) {
+                String formattedSubSelect = String.format(subSelect, param);
+
+                check(String.format(outerSqlTemplate, formattedSubSelect), 2);
+            }
+        }
+
+        for (String subSelect : subSelects) {
+            String formattedSubSelect = String.format(subSelect, "id");
+
+             check(String.format(outerSqlTemplate, formattedSubSelect), 1);
+        }
     }
 
     /**

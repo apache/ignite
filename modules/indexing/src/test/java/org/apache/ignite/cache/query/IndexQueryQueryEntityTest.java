@@ -229,7 +229,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
     private void insertData(IgniteCache<Long, Person> cache) {
         for (int i = 0; i < CNT; i++)
-            cache.put((long) i, new Person(i));
+            cache.put((long)i, new Person(i));
     }
 
     /** */
@@ -253,7 +253,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id) && Objects.equals(descId, person.descId);
         }

@@ -499,8 +499,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
-        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(storageCfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(storageCfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -1434,7 +1434,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cctx.database().checkpointReadLock();
 
                     try {
-                        cacheGroup.offheap().restorePartitionStates(Collections.emptyMap());
+                        cacheGroup.offheap().restorePartitionStates();
 
                         if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
                             cacheGroup.topology().afterStateRestored(fut.initialVersion());
@@ -1588,7 +1588,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.onCacheGroupStop(gctx, destroy);
 
-            PageMemoryEx pageMem = (PageMemoryEx) dataRegion.pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
             Collection<Integer> grpIds = destroyed.computeIfAbsent(pageMem, k -> new HashSet<>());
 
@@ -1940,7 +1940,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (mntcTask != null) {
             log.warning("Maintenance task found, stop restoring memory");
 
-            File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
+            File workDir = ((FilePageStoreManager)cctx.pageStore()).workDir();
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                 new CorruptedPdsMaintenanceCallback(workDir,
@@ -2583,7 +2583,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         try {
                             DataRecord dataRec = (DataRecord)rec;
 
-                            for (DataEntry dataEntry : dataRec.writeEntries()) {
+                            int entryCnt = dataRec.entryCount();
+
+                            for (int i = 0; i < entryCnt; i++) {
+                                DataEntry dataEntry = dataRec.get(i);
+
                                 if (entryPredicate.apply(dataEntry)) {
                                     checkpointReadLock();
 
@@ -2733,7 +2737,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case ENCRYPTED_DATA_RECORD_V3:
                         DataRecord dataRec = (DataRecord)rec;
 
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
+                        int entryCnt = dataRec.entryCount();
+
+                        for (int i = 0; i < entryCnt; i++) {
+                            DataEntry dataEntry = dataRec.get(i);
+
                             if (!restoreMeta && txManager.uncommitedTx(dataEntry))
                                 continue;
 
@@ -2841,7 +2849,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PARTITION_CLEARING_START_RECORD:
-                        PartitionClearingStartRecord rec0 = (PartitionClearingStartRecord) rec;
+                        PartitionClearingStartRecord rec0 = (PartitionClearingStartRecord)rec;
 
                         CacheGroupContext grp = this.ctx.cache().cacheGroup(rec0.groupId());
 
