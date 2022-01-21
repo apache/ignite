@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckWithIndexesTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreMetricsTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreWithIndexingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -26,7 +28,9 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     IgniteClusterSnapshotWithIndexesTest.class,
-    IgniteClusterSnapshotCheckWithIndexesTest.class
+    IgniteClusterSnapshotCheckWithIndexesTest.class,
+    IgniteClusterSnapshotRestoreWithIndexingTest.class,
+    IgniteClusterSnapshotRestoreMetricsTest.class
 })
 public class IgniteSnapshotWithIndexingTestSuite {
 }
