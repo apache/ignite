@@ -33,10 +33,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class IgniteCliRunnerTest {
     /** TODO: Replace this test by full integration test on the cli side IGNITE-15097. */
     @Test
-    public void runnerArgsSmokeTest(@WorkDirectory Path workDir) {
+    public void runnerArgsSmokeTest(@WorkDirectory Path workDir) throws Exception {
+        Path configPath = Path.of(IgniteCliRunnerTest.class.getResource("/ignite-config.json").toURI());
+
         assertNotNull(IgniteCliRunner.start(
                 new String[]{
-                        "--config", IgniteCliRunnerTest.class.getResource("/ignite-config.json").getPath(),
+                        "--config", configPath.toAbsolutePath().toString(),
                         "--work-dir", workDir.resolve("node1").toAbsolutePath().toString(),
                         "node1"
                 }
