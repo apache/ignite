@@ -67,7 +67,7 @@ class SnapshotTest(IgniteTest):
             params={
                 "backups": 1,
                 "cacheCount": 1,
-                "entrySize": 1,
+                "entrySize": 1024,
                 "from": 0,
                 "to": 500_000
             }
@@ -87,7 +87,7 @@ class SnapshotTest(IgniteTest):
         loader.params = {
             "backups": 1,
             "cacheCount": 1,
-            "entrySize": 1,
+            "entrySize": 1024,
             "from": 500_000,
             "to": 600_000
         }
