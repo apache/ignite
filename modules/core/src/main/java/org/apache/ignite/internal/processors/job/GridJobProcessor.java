@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
+import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -90,6 +91,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState;
@@ -166,7 +169,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private final Marshaller marsh;
 
-    /** */
+    /** Collision SPI is not available: {@link GridCollisionManager#enabled()} {@code == false}. */
     private final boolean jobAlwaysActivate;
 
     /** */
@@ -298,6 +301,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final ThreadLocal<GridJobSessionImpl> currSess = new ThreadLocal<>();
 
     /**
+     * {@link PriorityQueueCollisionSpi#getPriorityAttributeKey} or
+     * {@link null} if the {@link PriorityQueueCollisionSpi} is not configured.
+     */
+    @Nullable private final String taskPriAttrKey;
+
+    /**
+     * {@link PriorityQueueCollisionSpi#getJobPriorityAttributeKey} or
+     * {@link null} if the {@link PriorityQueueCollisionSpi} is not configured.
+     */
+    @Nullable private final String jobPriAttrKey;
+
+    /**
      * @param ctx Kernal context.
      */
     public GridJobProcessor(GridKernalContext ctx) {
@@ -352,6 +367,17 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 return new ComputeJobView(e.getKey(), e.getValue(), state);
             });
+
+        CollisionSpi collisionSpi = ctx.config().getCollisionSpi();
+
+        if (!jobAlwaysActivate && collisionSpi instanceof PriorityQueueCollisionSpi) {
+            taskPriAttrKey = ((PriorityQueueCollisionSpi)collisionSpi).getPriorityAttributeKey();
+            jobPriAttrKey = ((PriorityQueueCollisionSpi)collisionSpi).getJobPriorityAttributeKey();
+        }
+        else {
+            taskPriAttrKey = null;
+            jobPriAttrKey = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -872,24 +898,29 @@ public class GridJobProcessor extends GridProcessorAdapter {
             ctx.collision().onCollision(
                 // Passive jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = passiveJobs.values().iterator();
 
                         return new Iterator<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return iter.hasNext();
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 return new CollisionJobContext(iter.next(), true);
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         return passiveJobs.size();
                     }
@@ -897,6 +928,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Active jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
@@ -926,10 +958,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 }
                             }
 
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return w != null;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
@@ -943,21 +977,24 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return ret;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         int ret = activeJobs.size() - heldJobs.size();
 
-                        return ret > 0 ? ret : 0;
+                        return Math.max(ret, 0);
                     }
                 },
 
                 // Held jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
+                    /** {@inheritDoc} */
                     @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
@@ -987,10 +1024,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 }
                             }
 
+                            /** {@inheritDoc} */
                             @Override public boolean hasNext() {
                                 return w != null;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public org.apache.ignite.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
@@ -1005,12 +1044,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return ret;
                             }
 
+                            /** {@inheritDoc} */
                             @Override public void remove() {
                                 throw new UnsupportedOperationException();
                             }
                         };
                     }
 
+                    /** {@inheritDoc} */
                     @Override public int size() {
                         return heldJobs.size();
                     }
@@ -1688,6 +1729,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
             synchronized (ses) {
                 ses.setInternal(attrs);
             }
+
+            onChangeTaskAttributes(req.getSessionId(), req.getJobId(), attrs);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session attributes.", e);
@@ -1944,6 +1987,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
         private final GridMessageListener sesLsnr = new JobSessionListener();
 
         /** {@inheritDoc} */
+        @Override public void onJobQueued(GridJobWorker worker) {
+            if (worker.getSession().isFullSupport()) {
+                // Register session request listener for this job.
+                ctx.io().addMessageListener(worker.getJobTopic(), sesLsnr);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public void onJobStarted(GridJobWorker worker) {
             if (log.isDebugEnabled())
                 log.debug("Received onJobStarted() callback: " + worker);
@@ -1954,10 +2005,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // Register for timeout notifications.
             if (worker.endTime() < Long.MAX_VALUE)
                 ctx.timeout().addTimeoutObject(worker);
-
-            if (worker.getSession().isFullSupport())
-                // Register session request listener for this job.
-                ctx.io().addMessageListener(worker.getJobTopic(), sesLsnr);
         }
 
         /** {@inheritDoc} */
@@ -2290,6 +2337,51 @@ public class GridJobProcessor extends GridProcessorAdapter {
          */
         @Override public int size() {
             return sizex();
+        }
+    }
+
+    /**
+     * Callback on changing task attributes.
+     *
+     * @param sesId Session ID.
+     * @param jobId Job ID.
+     * @param attrs Changed attributes.
+     */
+    public void onChangeTaskAttributes(IgniteUuid sesId, IgniteUuid jobId, Map<?, ?> attrs) {
+        if (!rwLock.tryReadLock()) {
+            if (log.isDebugEnabled())
+                log.debug("Callback on changing the task attributes will be ignored " +
+                    "(node is in the process of stopping): " + sesId);
+
+            return;
+        }
+
+        try {
+            if (jobAlwaysActivate || (taskPriAttrKey == null && jobPriAttrKey == null))
+                return;
+
+            GridJobWorker jobWorker = passiveJobs.get(jobId);
+
+            if (jobWorker == null || jobWorker.isInternal())
+                return;
+
+            boolean handleCollisions = false;
+
+            if (taskPriAttrKey != null && attrs.containsKey(taskPriAttrKey)) {
+                // See PriorityQueueCollisionSpi#bumpPriority.
+                jobWorker.getSession().setAttribute(jobPriAttrKey, attrs.get(taskPriAttrKey));
+
+                handleCollisions = true;
+            }
+
+            if (!handleCollisions && jobPriAttrKey != null && attrs.containsKey(jobPriAttrKey))
+                handleCollisions = true;
+
+            if (handleCollisions)
+                handleCollisions();
+        }
+        finally {
+            rwLock.readUnlock();
         }
     }
 

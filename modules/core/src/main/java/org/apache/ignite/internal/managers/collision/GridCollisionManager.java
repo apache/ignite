@@ -104,27 +104,33 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     }
 
     /**
-     * @param waitJobs List of waiting jobs.
-     * @param activeJobs List of active jobs.
-     * @param heldJobs List of held jobs.
+     * Invoke collision SPI.
+     *
+     * @param waitJobs Collection of waiting jobs.
+     * @param activeJobs Collection of active jobs.
+     * @param heldJobs Collection of held jobs.
      */
     public void onCollision(
         final Collection<CollisionJobContext> waitJobs,
         final Collection<CollisionJobContext> activeJobs,
-        final Collection<CollisionJobContext> heldJobs) {
+        final Collection<CollisionJobContext> heldJobs
+    ) {
         if (enabled()) {
             if (log.isDebugEnabled())
                 log.debug("Resolving job collisions [waitJobs=" + waitJobs + ", activeJobs=" + activeJobs + ']');
 
             getSpi().onCollision(new CollisionContext() {
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> activeJobs() {
                     return activeJobs;
                 }
 
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> waitingJobs() {
                     return waitJobs;
                 }
 
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> heldJobs() {
                     return heldJobs;
                 }
