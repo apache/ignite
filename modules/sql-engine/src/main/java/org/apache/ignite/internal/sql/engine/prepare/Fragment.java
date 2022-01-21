@@ -22,6 +22,7 @@ import static org.apache.ignite.internal.sql.engine.externalize.RelJsonWriter.to
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.sql.engine.metadata.ColocationMappingException;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.sql.engine.rel.IgniteReceiver;
 import org.apache.ignite.internal.sql.engine.rel.IgniteRel;
 import org.apache.ignite.internal.sql.engine.rel.IgniteSender;
 import org.apache.ignite.internal.sql.engine.trait.IgniteDistributions;
-import org.apache.ignite.internal.sql.engine.util.Commons;
 import org.apache.ignite.internal.tostring.IgniteToStringExclude;
 import org.apache.ignite.internal.tostring.S;
 import org.jetbrains.annotations.NotNull;
@@ -141,8 +141,8 @@ public class Fragment {
         return !(root instanceof IgniteSender);
     }
 
-    public Fragment copy() {
-        return new Cloner(Commons.cluster()).go(this);
+    public Fragment copy(RelOptCluster cluster) {
+        return new Cloner(cluster).go(this);
     }
 
     /**

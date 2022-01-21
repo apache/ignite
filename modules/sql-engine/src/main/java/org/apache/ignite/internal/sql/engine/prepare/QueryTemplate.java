@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.sql.engine.metadata.FragmentMappingException;
 import org.apache.ignite.internal.sql.engine.metadata.MappingService;
@@ -48,10 +49,12 @@ public class QueryTemplate {
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public QueryTemplate(List<Fragment> fragments) {
-
         List<Fragment> frgs = new ArrayList<>(fragments.size());
+
+        RelOptCluster cluster = Commons.createCluster();
+
         for (Fragment fragment : fragments) {
-            frgs.add(fragment.copy());
+            frgs.add(fragment.copy(cluster));
         }
 
         this.fragments = List.copyOf(frgs);
@@ -67,7 +70,9 @@ public class QueryTemplate {
             return executionPlan;
         }
 
-        List<Fragment> fragments = Commons.transform(this.fragments, Fragment::copy);
+        RelOptCluster cluster = Commons.createCluster();
+
+        List<Fragment> fragments = Commons.transform(this.fragments, fragment -> fragment.copy(cluster));
 
         Exception ex = null;
         RelMetadataQuery mq = first(fragments).root().getCluster().getMetadataQuery();

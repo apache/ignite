@@ -32,6 +32,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -59,13 +60,13 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
     public static final RelOptCluster CLUSTER;
 
-    public static final IgniteTypeFactory TYPE_FACTORY;
+    private static final IgniteTypeFactory TYPE_FACTORY;
 
     private static final IgniteCostFactory COST_FACTORY = new IgniteCostFactory();
 
     private static final BaseQueryContext EMPTY_CONTEXT;
 
-    private static final VolcanoPlanner EMPTY_PLANNER;
+    private static final VolcanoPlanner DUMMY_PLANNER;
 
     private static final RexBuilder DFLT_REX_BUILDER;
 
@@ -83,17 +84,38 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         EMPTY_CONTEXT = builder().build();
 
-        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
+        DUMMY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT) {
+            @Override
+            public void registerSchema(RelOptSchema schema) {
+                throw new UnsupportedOperationException("Dummy planer. Please use a specific instance.");
+            }
+        };
 
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
         DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
 
-        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+        RelOptCluster cluster = RelOptCluster.create(DUMMY_PLANNER, DFLT_REX_BUILDER);
 
-        CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
-        CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+        cluster.setMetadataProvider(IgniteMetadata.METADATA_PROVIDER);
+
+        CLUSTER = cluster;
+    }
+
+    /**
+     * Creates a new cluster.
+     *
+     * @return New cluster.
+     */
+    public static RelOptCluster createCluster() {
+        RelOptCluster cluster = RelOptCluster.create(new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT), DFLT_REX_BUILDER);
+
+        cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER,
+                cluster.getPlanner()));
+        cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+
+        return cluster;
     }
 
     private final FrameworkConfig cfg;
