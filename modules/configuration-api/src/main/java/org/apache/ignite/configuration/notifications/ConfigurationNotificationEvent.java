@@ -32,6 +32,8 @@ public interface ConfigurationNotificationEvent<VIEWT> {
     /**
      * Returns the previous value of the updated configuration.
      *
+     * <p>NOTE: For a new configuration/property will be {@code null}.
+     *
      * @return Previous value of the updated configuration.
      */
     @Nullable VIEWT oldValue();

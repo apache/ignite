@@ -193,7 +193,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     @Override
     public void start() {
         tablesCfg.tables()
-                .listenElements(new ConfigurationNamedListListener<TableView>() {
+                .listenElements(new ConfigurationNamedListListener<>() {
                     @Override
                     public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<TableView> ctx) {
                         if (!busyLock.enterBusy()) {
@@ -202,7 +202,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
                             fireEvent(TableEvent.CREATE,
                                     new TableEventParameters(tblId, tblName),
-                                    new NodeStoppingException());
+                                    new NodeStoppingException()
+                            );
 
                             return CompletableFuture.completedFuture(new NodeStoppingException());
                         }
@@ -235,46 +236,35 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                 .listenElements(new ConfigurationNamedListListener<>() {
                                     @Override
                                     public @NotNull CompletableFuture<?> onCreate(
-                                            @NotNull ConfigurationNotificationEvent<SchemaView> schemasCtx) {
+                                            @NotNull ConfigurationNotificationEvent<SchemaView> schemasCtx
+                                    ) {
                                         if (!busyLock.enterBusy()) {
-                                            fireEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName),
-                                                    new NodeStoppingException());
+                                            fireEvent(
+                                                    TableEvent.ALTER,
+                                                    new TableEventParameters(tblId, tblName),
+                                                    new NodeStoppingException()
+                                            );
 
                                             return CompletableFuture.completedFuture(new NodeStoppingException());
                                         }
 
                                         try {
-                                            ((SchemaRegistryImpl) tables.get(tblName).schemaView())
-                                                    .onSchemaRegistered(
-                                                            SchemaSerializerImpl.INSTANCE.deserialize((schemasCtx.newValue().schema()))
-                                                    );
+                                            // Avoid calling listener immediately after the listener completes to create the current table.
+                                            // FIXME: https://issues.apache.org/jira/browse/IGNITE-16231
+                                            if (ctx.storageRevision() != schemasCtx.storageRevision()) {
+                                                ((SchemaRegistryImpl) tables.get(tblName).schemaView())
+                                                        .onSchemaRegistered(
+                                                                SchemaSerializerImpl.INSTANCE.deserialize((schemasCtx.newValue().schema()))
+                                                        );
 
-                                            fireEvent(TableEvent.ALTER, new TableEventParameters(tablesById.get(tblId)), null);
+                                                fireEvent(TableEvent.ALTER, new TableEventParameters(tablesById.get(tblId)), null);
+                                            }
                                         } catch (Exception e) {
                                             fireEvent(TableEvent.ALTER, new TableEventParameters(tblId, tblName), e);
                                         } finally {
                                             busyLock.leaveBusy();
                                         }
 
-                                        return CompletableFuture.completedFuture(null);
-                                    }
-
-                                    @Override
-                                    public @NotNull CompletableFuture<?> onRename(@NotNull String oldName,
-                                            @NotNull String newName,
-                                            @NotNull ConfigurationNotificationEvent<SchemaView> ctx) {
-                                        return CompletableFuture.completedFuture(null);
-                                    }
-
-                                    @Override
-                                    public @NotNull CompletableFuture<?> onDelete(
-                                            @NotNull ConfigurationNotificationEvent<SchemaView> ctx) {
-                                        return CompletableFuture.completedFuture(null);
-                                    }
-
-                                    @Override
-                                    public @NotNull CompletableFuture<?> onUpdate(
-                                            @NotNull ConfigurationNotificationEvent<SchemaView> ctx) {
                                         return CompletableFuture.completedFuture(null);
                                     }
                                 });
@@ -286,7 +276,13 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                     }
 
                                     try {
-                                        return updateAssignmentInternal(tblId, assignmentsCtx);
+                                        // Avoid calling listener immediately after the listener completes to create the current table.
+                                        // FIXME: https://issues.apache.org/jira/browse/IGNITE-16231
+                                        if (ctx.storageRevision() == assignmentsCtx.storageRevision()) {
+                                            return CompletableFuture.completedFuture(null);
+                                        } else {
+                                            return updateAssignmentInternal(tblId, assignmentsCtx);
+                                        }
                                     } finally {
                                         busyLock.leaveBusy();
                                     }
@@ -302,8 +298,10 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     }
 
                     @NotNull
-                    private CompletableFuture<?> updateAssignmentInternal(IgniteUuid tblId,
-                            @NotNull ConfigurationNotificationEvent<byte[]> assignmentsCtx) {
+                    private CompletableFuture<?> updateAssignmentInternal(
+                            IgniteUuid tblId,
+                            @NotNull ConfigurationNotificationEvent<byte[]> assignmentsCtx
+                    ) {
                         List<List<ClusterNode>> oldAssignments =
                                 (List<List<ClusterNode>>) ByteUtils.fromBytes(assignmentsCtx.oldValue());
 
@@ -368,8 +366,11 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                             String tblName = ctx.oldValue().name();
                             IgniteUuid tblId = IgniteUuid.fromString(((ExtendedTableView) ctx.oldValue()).id());
 
-                            fireEvent(TableEvent.DROP, new TableEventParameters(tblId, tblName),
-                                    new NodeStoppingException());
+                            fireEvent(
+                                    TableEvent.DROP,
+                                    new TableEventParameters(tblId, tblName),
+                                    new NodeStoppingException()
+                            );
 
                             return CompletableFuture.completedFuture(new NodeStoppingException());
                         }
@@ -384,11 +385,6 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                             busyLock.leaveBusy();
                         }
 
-                        return CompletableFuture.completedFuture(null);
-                    }
-
-                    @Override
-                    public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<TableView> ctx) {
                         return CompletableFuture.completedFuture(null);
                     }
                 });
@@ -580,13 +576,13 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 return getSchemaDescriptorLocally(schemaVer, tblCfg);
             }
 
-            CompletableFuture<SchemaDescriptor> fur = new CompletableFuture<>();
+            CompletableFuture<SchemaDescriptor> fut = new CompletableFuture<>();
 
             var clo = new EventListener<TableEventParameters>() {
                 @Override
                 public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
                     if (tblId.equals(parameters.tableId()) && schemaVer <= parameters.table().schemaView().lastSchemaVersion()) {
-                        fur.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
+                        fut.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
 
                         return true;
                     }
@@ -596,21 +592,21 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
                 @Override
                 public void remove(@NotNull Throwable exception) {
-                    fur.completeExceptionally(exception);
+                    fut.completeExceptionally(exception);
                 }
             };
 
             listen(TableEvent.ALTER, clo);
 
             if (schemaVer <= table.schemaView().lastSchemaVersion()) {
-                fur.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
+                fut.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
             }
 
-            if (!isSchemaExists(tblId, schemaVer) && fur.complete(null)) {
+            if (!isSchemaExists(tblId, schemaVer) && fut.complete(null)) {
                 removeListener(TableEvent.ALTER, clo);
             }
 
-            return fur.get();
+            return fut.get();
         } catch (InterruptedException | ExecutionException e) {
             throw new SchemaException("Can't read schema from vault: ver=" + schemaVer, e);
         }
