@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.Disabled;
@@ -50,7 +51,11 @@ public class ConnectionTest extends AbstractClientTest {
         var ex = assertThrows(IgniteClientConnectionException.class,
                 () -> testConnection("127.0.0.1:47500"));
 
-        assertEquals("Connection refused: /127.0.0.1:47500", ex.getCause().getMessage());
+        String errMsg = ex.getCause().getMessage();
+
+        assertTrue(
+                errMsg.startsWith("Connection refused"),
+                "Error message should start with 'Connection refused' [actual=" + errMsg + ']');
     }
 
     @Test
