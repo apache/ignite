@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -66,7 +67,10 @@ public class Query<RowT> implements RunningQuery {
     protected final int totalFragmentsCnt;
 
     /** */
-    protected final AtomicInteger finishedFragments = new AtomicInteger();
+    protected final AtomicInteger finishedFragmentsCnt = new AtomicInteger();
+
+    /** */
+    protected final Set<Long> initNodeStartedExchanges = new HashSet<>();
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -185,6 +189,13 @@ public class Query<RowT> implements RunningQuery {
     }
 
     /**
+     * Callback after the first batch of the query fragment from the node is received.
+     */
+    public void onInboundExchangeStarted(UUID nodeId, long exchangeId) {
+        // No-op.
+    }
+
+    /**
      * Callback after the last batch of the query fragment from the node is processed.
      */
     public void onInboundExchangeFinished(UUID nodeId, long exchangeId) {
@@ -192,10 +203,18 @@ public class Query<RowT> implements RunningQuery {
     }
 
     /**
-     * Callback after the last batch of the query fragment is sent.
+     * Callback after the first batch of the query fragment from the node is sent.
+     */
+    public void onOutboundExchangeStarted(UUID nodeId, long exchangeId) {
+        if (initNodeId.equals(nodeId))
+            initNodeStartedExchanges.add(exchangeId);
+    }
+
+    /**
+     * Callback after the last batch of the query fragment is sent to all nodes.
      */
     public void onOutboundExchangeFinished(long exchangeId) {
-        if (finishedFragments.incrementAndGet() == totalFragmentsCnt) {
+        if (finishedFragmentsCnt.incrementAndGet() == totalFragmentsCnt) {
             QueryState state0;
 
             synchronized (mux) {
@@ -208,6 +227,12 @@ public class Query<RowT> implements RunningQuery {
             if (state0 == QueryState.EXECUTING)
                 tryClose();
         }
+    }
+
+    /** */
+    public boolean isExchangeWithInitNodeStarted(long fragmentId) {
+        // On remote node exchange ID is the same as fragment ID.
+        return initNodeStartedExchanges.contains(fragmentId);
     }
 
     /** {@inheritDoc} */

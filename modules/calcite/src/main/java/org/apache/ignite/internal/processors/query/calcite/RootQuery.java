@@ -355,12 +355,22 @@ public class RootQuery<RowT> extends Query<RowT> {
     }
 
     /** {@inheritDoc} */
+    @Override public void onInboundExchangeStarted(UUID nodeId, long exchangeId) {
+        onResponse(nodeId, exchangeId, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onInboundExchangeFinished(UUID nodeId, long exchangeId) {
         AtomicInteger cnt = remoteFragments.get(nodeId);
 
         assert cnt != null : nodeId;
 
         cnt.decrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onOutboundExchangeStarted(UUID nodeId, long exchangeId) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

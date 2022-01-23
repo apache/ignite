@@ -613,13 +613,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         node.init();
 
-        try {
-            messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
-        }
-        catch (IgniteCheckedException e) {
-            IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
+        if (!qry.isExchangeWithInitNodeStarted(ectx.fragmentId())) {
+            try {
+                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
+            }
+            catch (IgniteCheckedException e) {
+                IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
 
-            throw wrpEx;
+                throw wrpEx;
+            }
         }
     }
 

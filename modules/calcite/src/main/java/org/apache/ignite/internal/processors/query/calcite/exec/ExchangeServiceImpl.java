@@ -124,6 +124,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     @Override public <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId,
         boolean last, List<Row> rows) throws IgniteCheckedException {
         messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
+
+        if (batchId == 0) {
+            Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+
+            if (qry != null)
+                qry.onOutboundExchangeStarted(nodeId, exchangeId);
+        }
     }
 
     /** {@inheritDoc} */
@@ -260,6 +267,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
         if (inbox != null) {
             try {
+                if (msg.batchId() == 0) {
+                    Query<?> qry = (Query<?>)qryRegistry.query(msg.queryId());
+
+                    if (qry != null)
+                        qry.onInboundExchangeStarted(nodeId, msg.exchangeId());
+                }
+
                 inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
             }
             catch (Throwable e) {
