@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.FrameworkInfo;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.mesos.scheduler.Protos.OfferConstraints;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -506,9 +508,15 @@ public class IgniteSchedulerSelfTest {
         }
 
         /** {@inheritDoc} */
+        @Override public Protos.Status reviveOffers(Collection<String> collection) { return null; }
+
+        /** {@inheritDoc} */
         @Override public Protos.Status suppressOffers() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public Protos.Status suppressOffers(Collection<String> collection) { return null; }
 
         /** {@inheritDoc} */
         @Override public Protos.Status acknowledgeStatusUpdate(Protos.TaskStatus status) {
@@ -525,5 +533,14 @@ public class IgniteSchedulerSelfTest {
         @Override public Protos.Status reconcileTasks(Collection<Protos.TaskStatus> statuses) {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public Protos.Status updateFramework(FrameworkInfo frameworkInfo, Collection<String> collection,
+                                                       OfferConstraints offerConstraints) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Protos.Status updateFramework(Protos.FrameworkInfo frameworkInfo, Collection<String> collection) { return null; }
     }
 }
