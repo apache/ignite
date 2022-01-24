@@ -99,7 +99,10 @@ public interface IgniteSpringHelper {
      *       map value is {@code null}.
      * @throws IgniteCheckedException If failed to load configuration.
      */
-    public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException;
+    public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException;
 
     /**
      * Loads bean instance by name.
@@ -110,18 +113,6 @@ public interface IgniteSpringHelper {
      * @throws IgniteCheckedException In case of error.
      */
     public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException;
-
-    /**
-     * Loads bean instances that match the given types from given configuration input stream.
-     *
-     * @param cfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
-     *       map value is {@code null}.
-     * @throws IgniteCheckedException If failed to load configuration.
-     */
-    public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
-        throws IgniteCheckedException;
 
     /**
      * Loads bean instance by name.
