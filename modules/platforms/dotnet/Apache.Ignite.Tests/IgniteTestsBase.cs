@@ -21,6 +21,7 @@ namespace Apache.Ignite.Tests
     using System.Threading.Tasks;
     using Ignite.Table;
     using NUnit.Framework;
+    using Table;
 
     /// <summary>
     /// Base class for client tests.
@@ -41,7 +42,11 @@ namespace Apache.Ignite.Tests
 
         protected IIgniteClient Client { get; private set; } = null!;
 
-        protected IRecordView<IIgniteTuple> Table { get; private set; } = null!;
+        protected ITable Table { get; private set; } = null!;
+
+        protected IRecordView<IIgniteTuple> TupleView { get; private set; } = null!;
+
+        protected IRecordView<Poco> PocoView { get; private set; } = null!;
 
         [OneTimeSetUp]
         public async Task OneTimeSetUp()
@@ -50,7 +55,10 @@ namespace Apache.Ignite.Tests
 
             _serverNode = await JavaServer.StartAsync();
             Client = await IgniteClient.StartAsync(GetConfig());
-            Table = (await Client.Tables.GetTableAsync(TableName))!.RecordView;
+
+            Table = (await Client.Tables.GetTableAsync(TableName))!;
+            TupleView = Table.RecordBinaryView;
+            PocoView = Table.GetRecordView<Poco>();
         }
 
         [OneTimeTearDown]
@@ -68,13 +76,15 @@ namespace Apache.Ignite.Tests
         [TearDown]
         public async Task TearDown()
         {
-            await Table.DeleteAllAsync(null, Enumerable.Range(1, 10).Select(x => GetTuple(x)));
+            await TupleView.DeleteAllAsync(null, Enumerable.Range(1, 10).Select(x => GetTuple(x)));
 
             Assert.AreEqual(_eventListener.BuffersReturned, _eventListener.BuffersRented);
         }
 
         protected static IIgniteTuple GetTuple(long id, string? val = null) =>
             new IgniteTuple { [KeyCol] = id, [ValCol] = val };
+
+        protected static Poco GetPoco(long id, string? val = null) => new() {Key = id, Val = val};
 
         protected IgniteClientConfiguration GetConfig() => new()
         {

@@ -28,7 +28,7 @@ namespace Apache.Ignite.Internal.Table
     /// <summary>
     /// Tables API.
     /// </summary>
-    internal class Tables : ITables
+    internal sealed class Tables : ITables
     {
         /** Socket. */
         private readonly ClientFailoverSocket _socket;

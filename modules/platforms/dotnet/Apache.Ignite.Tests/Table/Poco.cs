@@ -15,29 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Table
+namespace Apache.Ignite.Tests.Table
 {
+    using System;
+
     /// <summary>
-    /// Table view.
+    /// Test user object.
     /// </summary>
-    public interface ITable
+    public class Poco
     {
-        /// <summary>
-        /// Gets the table name.
-        /// </summary>
-        public string Name { get; }
+        public long Key { get; set; }
 
-        /// <summary>
-        /// Gets the record binary view.
-        /// </summary>
-        public IRecordView<IIgniteTuple> RecordBinaryView { get; }
+        public string? Val { get; set; }
 
-        /// <summary>
-        /// Gets the record view mapped to specified type <typeparamref name="T"/>.
-        /// </summary>
-        /// <typeparam name="T">Record type.</typeparam>
-        /// <returns>Record view.</returns>
-        public IRecordView<T> GetRecordView<T>() // TODO: Custom mapping (IGNITE-16356)
-            where T : class;
+        public Guid UnmappedId { get; set; }
+
+        public string? UnmappedStr { get; set; }
     }
 }

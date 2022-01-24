@@ -26,17 +26,17 @@ namespace Apache.Ignite.Tests.Table
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="ITable"/>.
+    /// Tests for tuple view.
     /// </summary>
-    public class TableTests : IgniteTestsBase
+    public class RecordViewBinaryTests : IgniteTestsBase
     {
         [Test]
         public async Task TestUpsertGet()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "foo"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "foo"));
 
             var keyTuple = GetTuple(1);
-            var resTuple = (await Table.GetAsync(null, keyTuple))!;
+            var resTuple = (await TupleView.GetAsync(null, keyTuple))!;
 
             Assert.IsNotNull(resTuple);
             Assert.AreEqual(2, resTuple.FieldCount);
@@ -49,19 +49,19 @@ namespace Apache.Ignite.Tests.Table
         {
             var key = GetTuple(1);
 
-            await Table.UpsertAsync(null, GetTuple(1, "foo"));
-            Assert.AreEqual("foo", (await Table.GetAsync(null, key))![1]);
+            await TupleView.UpsertAsync(null, GetTuple(1, "foo"));
+            Assert.AreEqual("foo", (await TupleView.GetAsync(null, key))![1]);
 
-            await Table.UpsertAsync(null, GetTuple(1, "bar"));
-            Assert.AreEqual("bar", (await Table.GetAsync(null, key))![1]);
+            await TupleView.UpsertAsync(null, GetTuple(1, "bar"));
+            Assert.AreEqual("bar", (await TupleView.GetAsync(null, key))![1]);
         }
 
         [Test]
         public async Task TestUpsertAllowsCustomTupleImplementation()
         {
-            await Table.UpsertAsync(null, new CustomTestIgniteTuple());
+            await TupleView.UpsertAsync(null, new CustomTestIgniteTuple());
 
-            var res = await Table.GetAsync(null, GetTuple(CustomTestIgniteTuple.Key));
+            var res = await TupleView.GetAsync(null, GetTuple(CustomTestIgniteTuple.Key));
 
             Assert.IsNotNull(res);
             Assert.AreEqual(CustomTestIgniteTuple.Value, res![1]);
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public void TestUpsertEmptyTupleThrowsException()
         {
-            var ex = Assert.ThrowsAsync<IgniteClientException>(async () => await Table.UpsertAsync(null, new IgniteTuple()));
+            var ex = Assert.ThrowsAsync<IgniteClientException>(async () => await TupleView.UpsertAsync(null, new IgniteTuple()));
 
             Assert.AreEqual(
                 "Missed key column: key",
@@ -80,170 +80,170 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestGetAndUpsertNonExistentRecordReturnsNull()
         {
-            IIgniteTuple? res = await Table.GetAndUpsertAsync(null, GetTuple(2, "2"));
+            IIgniteTuple? res = await TupleView.GetAndUpsertAsync(null, GetTuple(2, "2"));
 
             Assert.IsNull(res);
-            Assert.AreEqual("2", (await Table.GetAsync(null, GetTuple(2)))![1]);
+            Assert.AreEqual("2", (await TupleView.GetAsync(null, GetTuple(2)))![1]);
         }
 
         [Test]
         public async Task TestGetAndUpsertExistingRecordOverwritesAndReturns()
         {
-            await Table.UpsertAsync(null, GetTuple(2, "2"));
-            IIgniteTuple? res = await Table.GetAndUpsertAsync(null, GetTuple(2, "22"));
+            await TupleView.UpsertAsync(null, GetTuple(2, "2"));
+            IIgniteTuple? res = await TupleView.GetAndUpsertAsync(null, GetTuple(2, "22"));
 
             Assert.IsNotNull(res);
             Assert.AreEqual(2, res![0]);
             Assert.AreEqual("2", res[1]);
-            Assert.AreEqual("22", (await Table.GetAsync(null, GetTuple(2)))![1]);
+            Assert.AreEqual("22", (await TupleView.GetAsync(null, GetTuple(2)))![1]);
         }
 
         [Test]
         public async Task TestGetAndDeleteNonExistentRecordReturnsNull()
         {
-            IIgniteTuple? res = await Table.GetAndDeleteAsync(null, GetTuple(2, "2"));
+            IIgniteTuple? res = await TupleView.GetAndDeleteAsync(null, GetTuple(2, "2"));
 
             Assert.IsNull(res);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(2)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(2)));
         }
 
         [Test]
         public async Task TestGetAndDeleteExistingRecordRemovesAndReturns()
         {
-            await Table.UpsertAsync(null, GetTuple(2, "2"));
-            IIgniteTuple? res = await Table.GetAndDeleteAsync(null, GetTuple(2));
+            await TupleView.UpsertAsync(null, GetTuple(2, "2"));
+            IIgniteTuple? res = await TupleView.GetAndDeleteAsync(null, GetTuple(2));
 
             Assert.IsNotNull(res);
             Assert.AreEqual(2, res![0]);
             Assert.AreEqual("2", res[1]);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(2)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(2)));
         }
 
         [Test]
         public async Task TestInsertNonExistentKeyCreatesRecordReturnsTrue()
         {
-            var res = await Table.InsertAsync(null, GetTuple(1, "1"));
+            var res = await TupleView.InsertAsync(null, GetTuple(1, "1"));
 
             Assert.IsTrue(res);
-            Assert.IsTrue(await Table.GetAsync(null, GetTuple(1)) != null);
+            Assert.IsTrue(await TupleView.GetAsync(null, GetTuple(1)) != null);
         }
 
         [Test]
         public async Task TestInsertExistingKeyDoesNotOverwriteReturnsFalse()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
-            var res = await Table.InsertAsync(null, GetTuple(1, "2"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
+            var res = await TupleView.InsertAsync(null, GetTuple(1, "2"));
 
             Assert.IsFalse(res);
-            Assert.AreEqual("1", (await Table.GetAsync(null, GetTuple(1)))![1]);
+            Assert.AreEqual("1", (await TupleView.GetAsync(null, GetTuple(1)))![1]);
         }
 
         [Test]
         public async Task TestDeleteNonExistentRecordReturnFalse()
         {
-            Assert.IsFalse(await Table.DeleteAsync(null, GetTuple(-1)));
+            Assert.IsFalse(await TupleView.DeleteAsync(null, GetTuple(-1)));
         }
 
         [Test]
         public async Task TestDeleteExistingRecordReturnsTrue()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
 
-            Assert.IsTrue(await Table.DeleteAsync(null, GetTuple(1)));
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsTrue(await TupleView.DeleteAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestDeleteExactNonExistentRecordReturnsFalse()
         {
-            Assert.IsFalse(await Table.DeleteExactAsync(null, GetTuple(-1)));
+            Assert.IsFalse(await TupleView.DeleteExactAsync(null, GetTuple(-1)));
         }
 
         [Test]
         public async Task TestDeleteExactExistingKeyDifferentValueReturnsFalseDoesNotDelete()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
 
-            Assert.IsFalse(await Table.DeleteExactAsync(null, GetTuple(1)));
-            Assert.IsFalse(await Table.DeleteExactAsync(null, GetTuple(1, "2")));
-            Assert.IsNotNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsFalse(await TupleView.DeleteExactAsync(null, GetTuple(1)));
+            Assert.IsFalse(await TupleView.DeleteExactAsync(null, GetTuple(1, "2")));
+            Assert.IsNotNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestDeleteExactSameKeyAndValueReturnsTrueDeletesRecord()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
 
-            Assert.IsTrue(await Table.DeleteExactAsync(null, GetTuple(1, "1")));
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsTrue(await TupleView.DeleteExactAsync(null, GetTuple(1, "1")));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestReplaceNonExistentRecordReturnsFalseDoesNotCreateRecord()
         {
-            bool res = await Table.ReplaceAsync(null, GetTuple(1, "1"));
+            bool res = await TupleView.ReplaceAsync(null, GetTuple(1, "1"));
 
             Assert.IsFalse(res);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestReplaceExistingRecordReturnsTrueOverwrites()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
-            bool res = await Table.ReplaceAsync(null, GetTuple(1, "2"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
+            bool res = await TupleView.ReplaceAsync(null, GetTuple(1, "2"));
 
             Assert.IsTrue(res);
-            Assert.AreEqual("2", (await Table.GetAsync(null, GetTuple(1)))![1]);
+            Assert.AreEqual("2", (await TupleView.GetAsync(null, GetTuple(1)))![1]);
         }
 
         [Test]
         public async Task TestGetAndReplaceNonExistentRecordReturnsNullDoesNotCreateRecord()
         {
-            IIgniteTuple? res = await Table.GetAndReplaceAsync(null, GetTuple(1, "1"));
+            IIgniteTuple? res = await TupleView.GetAndReplaceAsync(null, GetTuple(1, "1"));
 
             Assert.IsNull(res);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestGetAndReplaceExistingRecordReturnsOldOverwrites()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
-            IIgniteTuple? res = await Table.GetAndReplaceAsync(null, GetTuple(1, "2"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
+            IIgniteTuple? res = await TupleView.GetAndReplaceAsync(null, GetTuple(1, "2"));
 
             Assert.IsNotNull(res);
             Assert.AreEqual("1", res![1]);
-            Assert.AreEqual("2", (await Table.GetAsync(null, GetTuple(1)))![1]);
+            Assert.AreEqual("2", (await TupleView.GetAsync(null, GetTuple(1)))![1]);
         }
 
         [Test]
         public async Task TestReplaceExactNonExistentRecordReturnsFalseDoesNotCreateRecord()
         {
-            bool res = await Table.ReplaceAsync(null, GetTuple(1, "1"), GetTuple(1, "2"));
+            bool res = await TupleView.ReplaceAsync(null, GetTuple(1, "1"), GetTuple(1, "2"));
 
             Assert.IsFalse(res);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
         }
 
         [Test]
         public async Task TestReplaceExactExistingRecordWithDifferentValueReturnsFalseDoesNotReplace()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
-            bool res = await Table.ReplaceAsync(null, GetTuple(1, "11"), GetTuple(1, "22"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
+            bool res = await TupleView.ReplaceAsync(null, GetTuple(1, "11"), GetTuple(1, "22"));
 
             Assert.IsFalse(res);
-            Assert.AreEqual("1", (await Table.GetAsync(null, GetTuple(1)))![1]);
+            Assert.AreEqual("1", (await TupleView.GetAsync(null, GetTuple(1)))![1]);
         }
 
         [Test]
         public async Task TestReplaceExactExistingRecordWithSameValueReturnsTrueReplacesOld()
         {
-            await Table.UpsertAsync(null, GetTuple(1, "1"));
-            bool res = await Table.ReplaceAsync(null, GetTuple(1, "1"), GetTuple(1, "22"));
+            await TupleView.UpsertAsync(null, GetTuple(1, "1"));
+            bool res = await TupleView.ReplaceAsync(null, GetTuple(1, "1"), GetTuple(1, "22"));
 
             Assert.IsTrue(res);
-            Assert.AreEqual("22", (await Table.GetAsync(null, GetTuple(1)))![1]);
+            Assert.AreEqual("22", (await TupleView.GetAsync(null, GetTuple(1)))![1]);
         }
 
         [Test]
@@ -252,11 +252,11 @@ namespace Apache.Ignite.Tests.Table
             var ids = Enumerable.Range(1, 10).ToList();
             var records = ids.Select(x => GetTuple(x, x.ToString(CultureInfo.InvariantCulture)));
 
-            await Table.UpsertAllAsync(null, records);
+            await TupleView.UpsertAllAsync(null, records);
 
             foreach (var id in ids)
             {
-                var res = await Table.GetAsync(null, GetTuple(id));
+                var res = await TupleView.GetAsync(null, GetTuple(id));
                 Assert.AreEqual(id.ToString(CultureInfo.InvariantCulture), res![1]);
             }
         }
@@ -264,17 +264,17 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestUpsertAllOverwritesExistingData()
         {
-            await Table.InsertAsync(null, GetTuple(2, "x"));
-            await Table.InsertAsync(null, GetTuple(4, "y"));
+            await TupleView.InsertAsync(null, GetTuple(2, "x"));
+            await TupleView.InsertAsync(null, GetTuple(4, "y"));
 
             var ids = Enumerable.Range(1, 10).ToList();
             var records = ids.Select(x => GetTuple(x, x.ToString(CultureInfo.InvariantCulture)));
 
-            await Table.UpsertAllAsync(null, records);
+            await TupleView.UpsertAllAsync(null, records);
 
             foreach (var id in ids)
             {
-                var res = await Table.GetAsync(null, GetTuple(id));
+                var res = await TupleView.GetAsync(null, GetTuple(id));
                 Assert.AreEqual(id.ToString(CultureInfo.InvariantCulture), res![1]);
             }
         }
@@ -285,13 +285,13 @@ namespace Apache.Ignite.Tests.Table
             var ids = Enumerable.Range(1, 10).ToList();
             var records = ids.Select(x => GetTuple(x, x.ToString(CultureInfo.InvariantCulture)));
 
-            IList<IIgniteTuple> skipped = await Table.InsertAllAsync(null, records);
+            IList<IIgniteTuple> skipped = await TupleView.InsertAllAsync(null, records);
 
             CollectionAssert.IsEmpty(skipped);
 
             foreach (var id in ids)
             {
-                var res = await Table.GetAsync(null, GetTuple(id));
+                var res = await TupleView.GetAsync(null, GetTuple(id));
                 Assert.AreEqual(id.ToString(CultureInfo.InvariantCulture), res![1]);
             }
         }
@@ -300,12 +300,12 @@ namespace Apache.Ignite.Tests.Table
         public async Task TestInsertAllDoesNotOverwriteExistingDataReturnsSkippedTuples()
         {
             var existing = new[] { GetTuple(2, "x"), GetTuple(4, "y") }.ToDictionary(x => x[0]);
-            await Table.InsertAllAsync(null, existing.Values);
+            await TupleView.InsertAllAsync(null, existing.Values);
 
             var ids = Enumerable.Range(1, 10).ToList();
             var records = ids.Select(x => GetTuple(x, x.ToString(CultureInfo.InvariantCulture)));
 
-            IList<IIgniteTuple> skipped = await Table.InsertAllAsync(null, records);
+            IList<IIgniteTuple> skipped = await TupleView.InsertAllAsync(null, records);
             var skippedArr = skipped.OrderBy(x => x[0]).ToArray();
 
             Assert.AreEqual(2, skippedArr.Length);
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Tests.Table
 
             foreach (var id in ids)
             {
-                var res = await Table.GetAsync(null, GetTuple(id));
+                var res = await TupleView.GetAsync(null, GetTuple(id));
 
                 if (existing.TryGetValue(res![0], out var old))
                 {
@@ -333,14 +333,14 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestInsertAllEmptyCollectionDoesNothingReturnsEmptyList()
         {
-            var res = await Table.InsertAllAsync(null, Array.Empty<IIgniteTuple>());
+            var res = await TupleView.InsertAllAsync(null, Array.Empty<IIgniteTuple>());
             CollectionAssert.IsEmpty(res);
         }
 
         [Test]
         public async Task TestUpsertAllEmptyCollectionDoesNothing()
         {
-            await Table.UpsertAllAsync(null, Array.Empty<IIgniteTuple>());
+            await TupleView.UpsertAllAsync(null, Array.Empty<IIgniteTuple>());
         }
 
         [Test]
@@ -350,10 +350,10 @@ namespace Apache.Ignite.Tests.Table
                 .Range(1, 10)
                 .Select(x => GetTuple(x, x.ToString(CultureInfo.InvariantCulture)));
 
-            await Table.UpsertAllAsync(null, records);
+            await TupleView.UpsertAllAsync(null, records);
 
             // TODO: Key order should be preserved by the server (IGNITE-16004).
-            var res = await Table.GetAllAsync(null, Enumerable.Range(9, 4).Select(x => GetTuple(x)));
+            var res = await TupleView.GetAllAsync(null, Enumerable.Range(9, 4).Select(x => GetTuple(x)));
             var resArr = res.OrderBy(x => x?[0]).ToArray();
 
             Assert.AreEqual(2, res.Count);
@@ -368,7 +368,7 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestGetAllNonExistentKeysReturnsEmptyList()
         {
-            var res = await Table.GetAllAsync(null, new[] { GetTuple(-100) });
+            var res = await TupleView.GetAllAsync(null, new[] { GetTuple(-100) });
 
             Assert.AreEqual(0, res.Count);
         }
@@ -376,7 +376,7 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestGetAllEmptyKeysReturnsEmptyList()
         {
-            var res = await Table.GetAllAsync(null, Array.Empty<IIgniteTuple>());
+            var res = await TupleView.GetAllAsync(null, Array.Empty<IIgniteTuple>());
 
             Assert.AreEqual(0, res.Count);
         }
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestDeleteAllEmptyKeysReturnsEmptyList()
         {
-            var skipped = await Table.DeleteAllAsync(null, Array.Empty<IIgniteTuple>());
+            var skipped = await TupleView.DeleteAllAsync(null, Array.Empty<IIgniteTuple>());
 
             Assert.AreEqual(0, skipped.Count);
         }
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestDeleteAllNonExistentKeysReturnsAllKeys()
         {
-            var skipped = await Table.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2) });
+            var skipped = await TupleView.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2) });
 
             Assert.AreEqual(2, skipped.Count);
         }
@@ -400,31 +400,31 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestDeleteAllExistingKeysReturnsEmptyListRemovesRecords()
         {
-            await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
-            var skipped = await Table.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2) });
+            await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
+            var skipped = await TupleView.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2) });
 
             Assert.AreEqual(0, skipped.Count);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(2)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(2)));
         }
 
         [Test]
         public async Task TestDeleteAllRemovesExistingRecordsReturnsNonExistentKeys()
         {
-            await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2"), GetTuple(3, "3") });
-            var skipped = await Table.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2), GetTuple(4) });
+            await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2"), GetTuple(3, "3") });
+            var skipped = await TupleView.DeleteAllAsync(null, new[] { GetTuple(1), GetTuple(2), GetTuple(4) });
 
             Assert.AreEqual(1, skipped.Count);
             Assert.AreEqual(4, skipped[0][0]);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(2)));
-            Assert.IsNotNull(await Table.GetAsync(null, GetTuple(3)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(2)));
+            Assert.IsNotNull(await TupleView.GetAsync(null, GetTuple(3)));
         }
 
         [Test]
         public async Task TestDeleteAllExactNonExistentKeysReturnsAllKeys()
         {
-            var skipped = await Table.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
+            var skipped = await TupleView.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
 
             Assert.AreEqual(2, skipped.Count);
             CollectionAssert.AreEquivalent(new long[] { 1, 2 }, skipped.Select(x => (long)x[0]!).ToArray());
@@ -433,8 +433,8 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestDeleteAllExactExistingKeysDifferentValuesReturnsAllKeysDoesNotRemove()
         {
-            await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
-            var skipped = await Table.DeleteAllExactAsync(null, new[] { GetTuple(1, "11"), GetTuple(2, "x") });
+            await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
+            var skipped = await TupleView.DeleteAllExactAsync(null, new[] { GetTuple(1, "11"), GetTuple(2, "x") });
 
             Assert.AreEqual(2, skipped.Count);
         }
@@ -442,51 +442,51 @@ namespace Apache.Ignite.Tests.Table
         [Test]
         public async Task TestDeleteAllExactExistingKeysReturnsEmptyListRemovesRecords()
         {
-            await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
-            var skipped = await Table.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
+            await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
+            var skipped = await TupleView.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2") });
 
             Assert.AreEqual(0, skipped.Count);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(2)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(2)));
         }
 
         [Test]
         public async Task TestDeleteAllExactRemovesExistingRecordsReturnsNonExistentKeys()
         {
-            await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2"), GetTuple(3, "3") });
-            var skipped = await Table.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "22") });
+            await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "2"), GetTuple(3, "3") });
+            var skipped = await TupleView.DeleteAllExactAsync(null, new[] { GetTuple(1, "1"), GetTuple(2, "22") });
 
             Assert.AreEqual(1, skipped.Count);
-            Assert.IsNull(await Table.GetAsync(null, GetTuple(1)));
-            Assert.IsNotNull(await Table.GetAsync(null, GetTuple(2)));
-            Assert.IsNotNull(await Table.GetAsync(null, GetTuple(3)));
+            Assert.IsNull(await TupleView.GetAsync(null, GetTuple(1)));
+            Assert.IsNotNull(await TupleView.GetAsync(null, GetTuple(2)));
+            Assert.IsNotNull(await TupleView.GetAsync(null, GetTuple(3)));
         }
 
         [Test]
         public void TestUpsertAllThrowsArgumentExceptionOnNullCollectionElement()
         {
             var ex = Assert.ThrowsAsync<ArgumentException>(
-                async () => await Table.UpsertAllAsync(null, new[] { GetTuple(1, "1"), null! }));
+                async () => await TupleView.UpsertAllAsync(null, new[] { GetTuple(1, "1"), null! }));
 
-            Assert.AreEqual("Tuple collection can't contain null elements.", ex!.Message);
+            Assert.AreEqual("Record collection can't contain null elements.", ex!.Message);
         }
 
         [Test]
         public void TestGetAllThrowsArgumentExceptionOnNullCollectionElement()
         {
             var ex = Assert.ThrowsAsync<ArgumentException>(
-                async () => await Table.GetAllAsync(null, new[] { GetTuple(1, "1"), null! }));
+                async () => await TupleView.GetAllAsync(null, new[] { GetTuple(1, "1"), null! }));
 
-            Assert.AreEqual("Tuple collection can't contain null elements.", ex!.Message);
+            Assert.AreEqual("Record collection can't contain null elements.", ex!.Message);
         }
 
         [Test]
         public void TestDeleteAllThrowsArgumentExceptionOnNullCollectionElement()
         {
             var ex = Assert.ThrowsAsync<ArgumentException>(
-                async () => await Table.DeleteAllAsync(null, new[] { GetTuple(1, "1"), null! }));
+                async () => await TupleView.DeleteAllAsync(null, new[] { GetTuple(1, "1"), null! }));
 
-            Assert.AreEqual("Tuple collection can't contain null elements.", ex!.Message);
+            Assert.AreEqual("Record collection can't contain null elements.", ex!.Message);
         }
 
         [Test]
@@ -519,10 +519,10 @@ namespace Apache.Ignite.Tests.Table
         {
             var val = key.ToString(CultureInfo.InvariantCulture);
             var tuple = new IgniteTuple { [KeyCol] = key, [ValCol] = val };
-            await Table.UpsertAsync(null, tuple);
+            await TupleView.UpsertAsync(null, tuple);
 
             var keyTuple = new IgniteTuple { [KeyCol] = key };
-            var resTuple = (await Table.GetAsync(null, keyTuple))!;
+            var resTuple = (await TupleView.GetAsync(null, keyTuple))!;
 
             Assert.IsNotNull(resTuple);
             Assert.AreEqual(2, resTuple.FieldCount);

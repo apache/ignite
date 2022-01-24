@@ -15,29 +15,35 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Table
+namespace Apache.Ignite.Internal.Transactions
 {
+    using System.Transactions;
+    using Ignite.Transactions;
+
     /// <summary>
-    /// Table view.
+    /// Transaction extension methods.
     /// </summary>
-    public interface ITable
+    internal static class TransactionExtensions
     {
         /// <summary>
-        /// Gets the table name.
+        /// Gets transaction as internal <see cref="Transaction"/> class.
         /// </summary>
-        public string Name { get; }
+        /// <param name="tx">Transaction.</param>
+        /// <returns>Internal transaction.</returns>
+        /// <exception cref="TransactionException">When provided transaction is not supported.</exception>
+        public static Transaction? ToInternal(this ITransaction? tx)
+        {
+            if (tx == null)
+            {
+                return null;
+            }
 
-        /// <summary>
-        /// Gets the record binary view.
-        /// </summary>
-        public IRecordView<IIgniteTuple> RecordBinaryView { get; }
+            if (tx is Transaction t)
+            {
+                return t;
+            }
 
-        /// <summary>
-        /// Gets the record view mapped to specified type <typeparamref name="T"/>.
-        /// </summary>
-        /// <typeparam name="T">Record type.</typeparam>
-        /// <returns>Record view.</returns>
-        public IRecordView<T> GetRecordView<T>() // TODO: Custom mapping (IGNITE-16356)
-            where T : class;
+            throw new TransactionException("Unsupported transaction implementation: " + tx.GetType());
+        }
     }
 }

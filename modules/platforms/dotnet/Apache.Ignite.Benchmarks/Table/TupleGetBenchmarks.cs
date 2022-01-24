@@ -40,7 +40,7 @@ namespace Apache.Ignite.Benchmarks.Table
         {
             _javaServer = await JavaServer.StartAsync();
             _client = await IgniteClient.StartAsync(new IgniteClientConfiguration("127.0.0.1:" + _javaServer.Port));
-            _table = (await _client.Tables.GetTableAsync("PUB.tbl1"))!.RecordView;
+            _table = (await _client.Tables.GetTableAsync("PUB.tbl1"))!.RecordBinaryView;
 
             var tuple = new IgniteTuple
             {

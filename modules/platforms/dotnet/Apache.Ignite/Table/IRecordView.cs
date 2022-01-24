@@ -26,7 +26,7 @@ namespace Apache.Ignite.Table
     /// </summary>
     /// <typeparam name="T">Record type.</typeparam>
     public interface IRecordView<T>
-        where T : class
+        where T : class // TODO: Remove class constraint (IGNITE-16355)
     {
         /// <summary>
         /// Gets a record by key.
