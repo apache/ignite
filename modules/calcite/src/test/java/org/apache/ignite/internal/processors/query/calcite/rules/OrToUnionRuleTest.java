@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -155,7 +155,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testNonDistinctOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
@@ -190,6 +189,31 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
+            .check();
+    }
+
+    /**
+     * Check 'OR -> UNION' rule is NOT applied if no acceptable index was found.
+     */
+    @Test
+    public void testUnionRuleNotApplicable() {
+        checkQuery("SELECT * FROM products WHERE name = 'Canon' OR subcat_id = 22")
+            .matches(CoreMatchers.not(containsUnion(true)))
+            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .returns(7, "Video", 1, null, 0, "Canon")
+            .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
+            .check();
+    }
+
+    /**
+     * Check request with hidden keys.
+     */
+    @Test
+    public void testWithHiddenKeys() {
+        checkQuery("SELECT _key, _val FROM products WHERE category = 'Photo' OR subcat_id = 22")
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
             .check();
     }
 

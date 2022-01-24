@@ -28,17 +28,18 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.immutables.value.Value;
 
 /**
  *
  */
+@Value.Enclosing
 public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     /** */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
@@ -85,14 +86,13 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
     /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
+    @Value.Immutable
     public interface Config extends RelRule.Config {
         /** */
-        Config DEFAULT = EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        Config DEFAULT = ImmutableExposeIndexRule.Config.of()
             .withOperandSupplier(b ->
                 b.operand(IgniteLogicalTableScan.class)
-                    .anyInputs())
-            .as(Config.class);
+                    .anyInputs());
 
         /** {@inheritDoc} */
         @Override default ExposeIndexRule toRule() {

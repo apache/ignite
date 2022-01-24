@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -28,8 +27,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
  * TODO use {@link StripedExecutor}, registered in core pols.
@@ -98,8 +95,8 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
             ctx.igniteInstanceName(),
             "calciteQry",
             this,
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
+            false,
+            0
         ));
     }
 

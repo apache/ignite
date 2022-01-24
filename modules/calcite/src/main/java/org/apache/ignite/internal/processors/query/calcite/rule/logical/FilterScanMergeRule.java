@@ -17,11 +17,11 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
@@ -33,23 +33,22 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.immutables.value.Value;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
+@Value.Enclosing
 public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableScan>
     extends RelRule<FilterScanMergeRule.Config> {
     /** Instance. */
-    public static final FilterScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new FilterIndexScanMergeRule(Config.INDEX_SCAN);
+    public static final RelOptRule INDEX_SCAN = Config.INDEX_SCAN.toRule();
 
     /** Instance. */
-    public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new FilterTableScanMergeRule(Config.TABLE_SCAN);
+    public static final RelOptRule TABLE_SCAN = Config.TABLE_SCAN.toRule();
 
     /** Instance. */
-    public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN_SKIP_CORRELATED =
-        new FilterTableScanMergeRule(Config.TABLE_SCAN_SKIP_CORRELATED);
+    public static final RelOptRule TABLE_SCAN_SKIP_CORRELATED = Config.TABLE_SCAN_SKIP_CORRELATED.toRule();
 
     /**
      * Constructor.
@@ -144,9 +143,12 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
     /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
-    public interface Config extends RelRule.Config {
+    @Value.Immutable(singleton = false)
+    public interface Config extends RuleFactoryConfig<Config> {
         /** */
-        Config DEFAULT = EMPTY.withRelBuilderFactory(RelFactories.LOGICAL_BUILDER).as(Config.class);
+        Config DEFAULT = ImmutableFilterScanMergeRule.Config.builder()
+            .withRuleFactory(FilterTableScanMergeRule::new)
+            .build();
 
         /** */
         Config TABLE_SCAN = DEFAULT
@@ -158,6 +160,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         /** */
         Config INDEX_SCAN = DEFAULT
+            .withRuleFactory(FilterIndexScanMergeRule::new)
             .withScanRuleConfig(IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule", false);
 
         /** */

@@ -17,11 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalCorrelate;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -74,6 +85,156 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             fieldAccess.getReferenceExpr().getType(),
             join.getLeft().getRowType()
         );
+    }
+
+    /**
+     * Test verifies resolving of collisions in the left hand of correlates.
+     */
+    @Test
+    public void testCorrelatesCollisionsLeftHand() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "A", Integer.class,
+                "B", Integer.class, "C", Integer.class, "D", Integer.class)
+        );
+
+        String sql = "SELECT * FROM t1 as cor WHERE " +
+            "EXISTS (SELECT 1 FROM t1 WHERE t1.b = cor.a) AND " +
+            "EXISTS (SELECT 1 FROM t1 WHERE t1.c = cor.a) AND " +
+            "EXISTS (SELECT 1 FROM t1 WHERE t1.d = cor.a)";
+
+        PlanningContext ctx = plannerCtx(sql, schema);
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            RelNode rel = convertSubQueries(planner, ctx);
+
+            List<LogicalCorrelate> correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(3, correlates.size());
+
+            // There are collisions by correlation id.
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(1).getCorrelationId());
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(2).getCorrelationId());
+
+            rel = planner.replaceCorrelatesCollisions(rel);
+
+            correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(3, correlates.size());
+
+            // There are no collisions by correlation id.
+            assertFalse(correlates.get(0).getCorrelationId().equals(correlates.get(1).getCorrelationId()));
+            assertFalse(correlates.get(0).getCorrelationId().equals(correlates.get(2).getCorrelationId()));
+            assertFalse(correlates.get(1).getCorrelationId().equals(correlates.get(2).getCorrelationId()));
+
+            List<LogicalFilter> filters = findNodes(rel, byClass(LogicalFilter.class)
+                .and(f -> RexUtils.hasCorrelation(((Filter)f).getCondition())));
+
+            assertEquals(3, filters.size());
+
+            // Filters match correlates in reverse order (we find outer correlate first, but inner filter first).
+            assertEquals(Collections.singleton(correlates.get(0).getCorrelationId()),
+                RexUtils.extractCorrelationIds(filters.get(2).getCondition()));
+
+            assertEquals(Collections.singleton(correlates.get(1).getCorrelationId()),
+                RexUtils.extractCorrelationIds(filters.get(1).getCondition()));
+
+            assertEquals(Collections.singleton(correlates.get(2).getCorrelationId()),
+                RexUtils.extractCorrelationIds(filters.get(0).getCondition()));
+        }
+    }
+
+    /**
+     * Test verifies resolving of collisions in the right hand of correlates.
+     */
+    @Test
+    public void testCorrelatesCollisionsRightHand() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "A", Integer.class)
+        );
+
+        String sql = "SELECT (SELECT (SELECT (SELECT cor.a))) FROM t1 as cor";
+
+        PlanningContext ctx = plannerCtx(sql, schema);
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            RelNode rel = convertSubQueries(planner, ctx);
+
+            List<LogicalCorrelate> correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(3, correlates.size());
+
+            // There are collisions by correlation id.
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(1).getCorrelationId());
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(2).getCorrelationId());
+
+            rel = planner.replaceCorrelatesCollisions(rel);
+
+            correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(1, correlates.size());
+        }
+    }
+
+    /**
+     * Test verifies resolving of collisions in right and left hands of correlates.
+     */
+    @Test
+    public void testCorrelatesCollisionsMixed() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "A", Integer.class,
+                "B", Integer.class, "C", Integer.class)
+        );
+
+        String sql = "SELECT * FROM t1 as cor WHERE " +
+            "EXISTS (SELECT 1 FROM t1 WHERE t1.b = (SELECT cor.a)) AND " +
+            "EXISTS (SELECT 1 FROM t1 WHERE t1.c = (SELECT cor.a))";
+
+        PlanningContext ctx = plannerCtx(sql, schema);
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            RelNode rel = convertSubQueries(planner, ctx);
+
+            List<LogicalCorrelate> correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(4, correlates.size());
+
+            // There are collisions by correlation id.
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(1).getCorrelationId());
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(2).getCorrelationId());
+            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(3).getCorrelationId());
+
+            rel = planner.replaceCorrelatesCollisions(rel);
+
+            correlates = findNodes(rel, byClass(LogicalCorrelate.class));
+
+            assertEquals(2, correlates.size());
+
+            // There are no collisions by correlation id.
+            assertFalse(correlates.get(0).getCorrelationId().equals(correlates.get(1).getCorrelationId()));
+
+            List<LogicalProject> projects = findNodes(rel, byClass(LogicalProject.class)
+                .and(f -> RexUtils.hasCorrelation(((Project)f).getProjects())));
+
+            assertEquals(2, projects.size());
+
+            assertEquals(Collections.singleton(correlates.get(0).getCorrelationId()),
+                RexUtils.extractCorrelationIds(projects.get(1).getProjects()));
+
+            assertEquals(Collections.singleton(correlates.get(1).getCorrelationId()),
+                RexUtils.extractCorrelationIds(projects.get(0).getProjects()));
+        }
+    }
+
+    /** */
+    private RelNode convertSubQueries(IgnitePlanner planner, PlanningContext ctx) throws Exception {
+        // Parse and validate.
+        SqlNode sqlNode = planner.validate(planner.parse(ctx.query()));
+
+        // Create original logical plan.
+        RelNode rel = planner.rel(sqlNode).rel;
+
+        // Convert sub-queries to correlates.
+        return planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
     }
 
     /**

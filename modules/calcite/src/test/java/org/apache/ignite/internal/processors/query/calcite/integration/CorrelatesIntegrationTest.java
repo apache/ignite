@@ -51,4 +51,29 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(4)
             .check();
     }
+
+    /**
+     * Tests resolving of collisions in correlates.
+     */
+    @Test
+    public void testCorrelatesCollision() {
+        sql("CREATE TABLE test1 (a INTEGER, b INTEGER)");
+        sql("INSERT INTO test1 VALUES (11, 1), (12, 2), (13, 3)");
+        sql("CREATE TABLE test2 (a INTEGER, c INTEGER)");
+        sql("INSERT INTO test2 VALUES (11, 1), (12, 1), (13, 4)");
+
+        // Collision by correlate variables in the left hand.
+        assertQuery("SELECT * FROM test1 WHERE " +
+            "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
+            "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
+            .returns(12, 2)
+            .check();
+
+        // Collision by correlate variables in both, left and right hands.
+        assertQuery("SELECT * FROM test1 WHERE " +
+            "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
+            "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
+            .returns(12, 2)
+            .check();
+    }
 }

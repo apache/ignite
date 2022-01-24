@@ -18,24 +18,24 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.immutables.value.Value;
 
 /**
  *
  */
+@Value.Enclosing
 public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
@@ -71,12 +71,11 @@ public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
     /**
      *
      */
+    @Value.Immutable
     public interface Config extends RelRule.Config {
         /** */
-        UnionConverterRule.Config DEFAULT = RelRule.Config.EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        UnionConverterRule.Config DEFAULT = ImmutableUnionConverterRule.Config.of()
             .withDescription("UnionConverterRule")
-            .as(UnionConverterRule.Config.class)
             .withOperandFor(LogicalUnion.class);
 
         /** Defines an operand tree for the given classes. */
