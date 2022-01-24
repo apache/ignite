@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.IgniteStringBuilder;
 import org.apache.ignite.lang.IgniteStringFormatter;
 import org.jetbrains.annotations.Nullable;
 
@@ -259,6 +260,28 @@ public class IgniteUtils {
      */
     private static void addByteAsHex(StringBuilder sb, byte b) {
         sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Returns a hex string representation of the given long value.
+     *
+     * @param val Value to convert to string.
+     * @return Hex string.
+     */
+    //TODO IGNITE-16350 Consider renaming or moving into other class.
+    public static String hexLong(long val) {
+        return new IgniteStringBuilder(16).appendHex(val).toString();
+    }
+
+    /**
+     * Returns a hex string representation of the given integer value.
+     *
+     * @param val Value to convert to string.
+     * @return Hex string.
+     */
+    //TODO IGNITE-16350 Consider renaming or moving into other class.
+    public static String hexInt(int val) {
+        return new IgniteStringBuilder(8).appendHex(val).toString();
     }
 
     /**
