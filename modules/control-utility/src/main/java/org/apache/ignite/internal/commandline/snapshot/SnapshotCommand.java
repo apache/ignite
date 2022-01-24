@@ -161,7 +161,8 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
         Map<String, String> createParams = new LinkedHashMap<>(commonParams);
 
-        createParams.put("wait", "Wait for the entire operation to complete. Otherwise, the operation will run in the background and the command will return immediately.");
+        createParams.put("wait", "Wait for the entire operation to complete. " +
+            "Otherwise, the operation will run in the background and the command will return immediately.");
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, createParams, CREATE.toString(), "snapshot_name", optional("--wait"));
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
@@ -170,7 +171,6 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Map<String, String> restoreParams = new LinkedHashMap<>(createParams);
 
         restoreParams.put("group1,...groupN", "Cache group names.");
-
 
         usage(log, "Restore snapshot:", SNAPSHOT, restoreParams, RESTORE.toString(),
             "snapshot_name", optional("--wait"), optional("--groups", "group1,...groupN"));
