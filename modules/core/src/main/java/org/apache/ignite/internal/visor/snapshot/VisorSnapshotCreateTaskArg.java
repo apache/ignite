@@ -20,74 +20,61 @@ package org.apache.ignite.internal.visor.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Argument for the task to manage snapshot restore operation.
+ * Argument for the task to create snapshot.
  */
-public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
+public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache group names. */
-    private Collection<String> grpNames;
+    /** Snapshot name. */
+    private String snpName;
 
-    /** Snapshot restore operation management action. */
-    private VisorSnapshotRestoreTaskAction action;
+    /** Operation completion wait flag. */
+    private boolean waitComplete;
 
     /** Default constructor. */
-    public VisorSnapshotRestoreTaskArg() {
+    public VisorSnapshotCreateTaskArg() {
         // No-op.
     }
 
     /**
      * @param snpName Snapshot name.
      * @param waitComplete Operation completion wait flag.
-     * @param action Snapshot restore operation management action.
-     * @param grpNames Cache group names.
      */
-    public VisorSnapshotRestoreTaskArg(
-        String snpName,
-        boolean waitComplete,
-        VisorSnapshotRestoreTaskAction action,
-        @Nullable Collection<String> grpNames
-    ) {
-        super(snpName, waitComplete);
-
-        this.action = action;
-        this.grpNames = grpNames;
+    public VisorSnapshotCreateTaskArg(String snpName, boolean waitComplete) {
+        this.snpName = snpName;
+        this.waitComplete = waitComplete;
     }
 
-    /** @return Cache group names. */
-    public Collection<String> groupNames() {
-        return grpNames;
+    /** @return Snapshot name. */
+    public String snapshotName() {
+        return snpName;
     }
 
-    /** @return Snapshot restore operation management action. */
-    public VisorSnapshotRestoreTaskAction jobAction() {
-        return action;
+    /** @return Operation completion wait flag. */
+    public boolean waitComplete() {
+        return waitComplete;
     }
-
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-        U.writeEnum(out, action);
-        U.writeCollection(out, grpNames);
+        U.writeString(out, snpName);
+        out.writeBoolean(waitComplete);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(ver, in);
-        action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
-        grpNames = U.readCollection(in);
+        snpName = U.readString(in);
+        waitComplete = in.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSnapshotRestoreTaskArg.class, this);
+        return S.toString(VisorSnapshotCreateTaskArg.class, this);
     }
 }

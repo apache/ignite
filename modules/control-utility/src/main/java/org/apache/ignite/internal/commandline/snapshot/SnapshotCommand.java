@@ -31,6 +31,7 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -99,13 +100,24 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Set<String> grpNames = null;
         boolean sync = false;
 
-        if (argIter.hasNextSubArg() && cmd != RESTORE && cmd != CREATE)
-            throw new IllegalArgumentException("Command \"" + cmd + "\" executes synchronously by default.");
+        if (cmd == CANCEL || cmd == CHECK) {
+            if (argIter.hasNextSubArg()) {
+                throw new IllegalArgumentException(
+                    "Argument \"" + argIter.nextArg("") + "\" is not expected for the \"" + cmd + "\" command.");
+            }
+
+            cmdArg = snpName;
+
+            return;
+        }
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("");
 
             if ("--sync".equals(arg)) {
+                if (cmdAction != VisorSnapshotRestoreTaskAction.START)
+                    throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
+
                 sync = true;
 
                 continue;
@@ -127,6 +139,9 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 case "--status":
                     cmdAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
 
+                    if (sync)
+                        throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
+
                     break;
                 case "--start":
                     throw new IllegalArgumentException("Option \"" + arg + "\" is deprecated, " +
@@ -136,7 +151,9 @@ public class SnapshotCommand extends AbstractCommand<Object> {
             }
         }
 
-        cmdArg = cmd == RESTORE ? new VisorSnapshotRestoreTaskArg(cmdAction, snpName, grpNames, sync) : snpName;
+        cmdArg = cmd == CREATE ?
+            new VisorSnapshotCreateTaskArg(snpName, sync) :
+            new VisorSnapshotRestoreTaskArg(snpName, sync, cmdAction, grpNames);
     }
 
     /** {@inheritDoc} */

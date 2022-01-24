@@ -45,4 +45,9 @@ public enum VisorSnapshotRestoreTaskAction {
     public String cmdName() {
         return "--" + name().toLowerCase();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name().toLowerCase();
+    }
 }
