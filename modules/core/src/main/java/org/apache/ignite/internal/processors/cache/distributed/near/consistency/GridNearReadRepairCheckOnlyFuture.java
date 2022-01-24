@@ -109,7 +109,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                         ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
                 }
                 else // Should be fixed by concurrent tx(s).
-                    onDone(new IgniteConsistencyViolationException(inconsistentKeys));
+                    onDone(e);
             }
             else
                 remap(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
