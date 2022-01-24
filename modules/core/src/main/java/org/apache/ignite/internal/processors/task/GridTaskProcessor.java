@@ -1057,7 +1057,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 UUID nodeId = sib.nodeId();
 
-                if (!nodeId.equals(locNodeId) && !sib.isJobDone() && !rcvrs.contains(nodeId))
+                if (!nodeId.equals(locNodeId) && !sib.isJobDone())
                     rcvrs.add(nodeId);
             }
         }
@@ -1086,8 +1086,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             UUID nodeId = sib.nodeId();
 
-            // Pair can be null if job is finished.
-            if (rcvrs.remove(nodeId)) {
+            if (locNodeId.equals(nodeId)) {
+                // Local job notification.
+                ctx.job().onChangeTaskAttributes(ses.getId(), s.getJobId(), attrs);
+            }
+            else if (rcvrs.remove(nodeId)) {
+                // Pair can be null if job is finished.
                 ClusterNode node = ctx.discovery().node(nodeId);
 
                 // Check that node didn't change (it could happen in case of failover).
@@ -1096,9 +1100,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
-                        null,
+                        s.getJobId(),
                         loc ? null : U.marshal(marsh, attrs),
-                        attrs);
+                        attrs
+                    );
 
                     // Make sure to go through IO manager always, since order
                     // should be preserved here.

@@ -490,6 +490,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
+            // Event notification.
+            evtLsnr.onJobQueued(this);
+
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
 
