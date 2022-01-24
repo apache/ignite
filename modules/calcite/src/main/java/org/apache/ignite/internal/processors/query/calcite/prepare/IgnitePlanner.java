@@ -357,7 +357,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * of rows, and execution nodes in some cases can get unexpected values for correlated variables.
      *
      * This method replaces collisions by variables in correlates. For the left hand of LogicalCorrelate duplicated
-     * correlated variable and it's usages repleced to the new one. For example:
+     * correlated variable and it's usages replaced with the new one. For example:
      *
      * LogicalCorrelate(correlation=[$cor0])                       LogicalCorrelate(correlation=[$cor0])
      *   LogicalCorrelate(correlation=[$cor0])    transforms to      LogicalCorrelate(correlation=[$cor1])
