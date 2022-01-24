@@ -20,9 +20,10 @@ from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance.util import preload_data, start_ignite, get_result, TriggerEvent, NUM_NODES, \
+from ignitetest.tests.rebalance.util import start_ignite, get_result, TriggerEvent, NUM_NODES, \
     await_rebalance_start, RebalanceParams
 from ignitetest.utils import cluster, ignite_versions
+from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
@@ -80,19 +81,23 @@ class RebalanceInMemoryTest(IgniteTest):
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        reb_params = RebalanceParams(trigger_event=trigger_event, backups=backups, cache_count=cache_count,
-                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
+                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+                                          persistent=False)
+
+        loader = DataLoader(self.test_context, data_load_params)
+
+        reb_params = RebalanceParams(trigger_event=trigger_event,
                                      thread_pool_size=thread_pool_size, batch_size=batch_size,
                                      batches_prefetch_count=batches_prefetch_count, throttle=throttle)
 
-        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+        ignites = start_ignite(self.test_context, ignite_version,
+                               reb_params,
+                               loader)
 
-        preload_time = preload_data(
-            self.test_context,
-            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+        preload_time = loader.load_data(ignites)
 
-        if trigger_event:
+        if trigger_event == TriggerEvent.NODE_LEFT:
             ignites.stop_node(ignites.nodes[-1])
             rebalance_nodes = ignites.nodes[:-1]
         else:

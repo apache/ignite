@@ -16,16 +16,13 @@
 """
 Module contains snapshot test.
 """
-
+from ducktape.mark import defaults
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
-from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
+from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 
@@ -40,40 +37,28 @@ class SnapshotTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    def snapshot_test(self, ignite_version):
+    @defaults(backups=[1], cache_count=[1], entry_count=[600_000], entry_size=[1024], preloaders=[1])
+    def snapshot_test(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders):
         """
         Basic snapshot test.
         """
+        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
+                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+        loader = DataLoader(self.test_context, data_load_params)
+
         version = IgniteVersion(ignite_version)
 
         ignite_config = IgniteConfiguration(
             version=version,
-            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
-        nodes.start()
+        nodes = loader.start_ignite(ignite_config)
 
         control_utility = ControlUtility(nodes)
         control_utility.activate()
 
-        loader_config = IgniteConfiguration(client_mode=True, version=version, discovery_spi=from_ignite_cluster(nodes))
-
-        loader = IgniteApplicationService(
-            self.test_context,
-            loader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.data_generation.DataGenerationApplication",
-            params={
-                "backups": 1,
-                "cacheCount": 1,
-                "entrySize": 1024,
-                "from": 0,
-                "to": 500_000
-            }
-        )
-
-        loader.run()
+        loader.load_data(nodes, from_key=0, to_key=entry_count / 6 * 5)
 
         control_utility.validate_indexes()
         control_utility.idle_verify()
@@ -84,15 +69,7 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        loader.params = {
-            "backups": 1,
-            "cacheCount": 1,
-            "entrySize": 1024,
-            "from": 500_000,
-            "to": 600_000
-        }
-
-        loader.run()
+        loader.load_data(nodes, from_key=entry_count / 6 * 5, to_key=entry_count)
 
         dump_2 = control_utility.idle_verify_dump(node)
 
