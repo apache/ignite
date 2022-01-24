@@ -15,39 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.model;
+package org.apache.ignite.internal.processors.job;
 
-/** Test value object. */
-public class Role {
+/**
+ * Compute job status.
+ */
+public enum ComputeJobStatusEnum {
     /** */
-    String name;
-
-    /** */
-    AccessLevel accessLevel;
-
-    /** */
-    public Role(String name, AccessLevel accessLevel) {
-        this.name = name;
-        this.accessLevel = accessLevel;
-    }
+    QUEUED,
 
     /** */
-    public String getName() {
-        return name;
-    }
+    RUNNING,
 
     /** */
-    public void setName(String name) {
-        this.name = name;
-    }
+    SUSPENDED,
 
     /** */
-    public AccessLevel getAccessLevel() {
-        return accessLevel;
-    }
+    FAILED,
 
     /** */
-    public void setAccessLevel(AccessLevel accessLevel) {
-        this.accessLevel = accessLevel;
-    }
+    CANCELLED,
+
+    /** */
+    FINISHED;
 }

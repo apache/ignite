@@ -261,6 +261,33 @@ Use the following procedure to redeploy the service:
 
 In this way, you don't have to stop the server nodes, so you don't interrupt the operation of your cluster.
 
+== Service Statistics
+
+You can measure durations of your service's methods. If you want this analytics, enable service statistics in the
+service configuration. Service statistics are collected under name "Services" in
+link:monitoring-metrics/new-metrics-system.adoc[metrics], in
+link:monitoring-metrics/system-views.adoc[system views], and in JMX.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=start-with-statistics, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+[NOTE]
+====
+You should be aware:
+
+1. Overloaded service methods have the same metric by the method name.
+2. Service statistics do not take in account serialization and network issues.
+3. Service statistics slows down the invocations of service methods. Probably it's not
+an issue for slow-by-nature jobs like working with a DB.
+====
 
 // TODO: add how to  call java services from .NET
 

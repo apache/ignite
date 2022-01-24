@@ -87,7 +87,7 @@ public class ServiceExample {
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
 
-        //making sure the cache exists
+        // Making sure the cache exists.
         ignite.getOrCreateCache("orgCache");
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
@@ -152,6 +152,28 @@ public class ServiceExample {
 
         ignite.services().deploy(serviceCfg);
         //end::start-with-service-config[]
+
+        ignite.close();
+    }
+
+    @Test
+    void startWithStatistics() {
+        //tag::start-with-statistics[]
+        Ignite ignite = Ignition.start();
+
+        ServiceConfiguration serviceCfg = new ServiceConfiguration();
+
+        serviceCfg.setName("myService");
+        serviceCfg.setMaxPerNodeCount(1);
+        serviceCfg.setService(new MyCounterServiceImpl());
+
+        // Enable service statistics.
+        serviceCfg.setStatisticsEnabled(true);
+
+        ignite.services().deploy(serviceCfg);
+
+        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
+        //end::start-with-statistics[]
 
         ignite.close();
     }

@@ -15,39 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.model;
+package org.apache.ignite.internal.processors.task.monitor;
 
-/** Test value object. */
-public class Role {
-    /** */
-    String name;
+/**
+ * Task status.
+ */
+public enum ComputeTaskStatusEnum {
+    /** Task is in progress. */
+    RUNNING,
 
-    /** */
-    AccessLevel accessLevel;
+    /** Task is finished. */
+    FINISHED,
 
-    /** */
-    public Role(String name, AccessLevel accessLevel) {
-        this.name = name;
-        this.accessLevel = accessLevel;
-    }
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /** */
-    public AccessLevel getAccessLevel() {
-        return accessLevel;
-    }
-
-    /** */
-    public void setAccessLevel(AccessLevel accessLevel) {
-        this.accessLevel = accessLevel;
-    }
+    /** Task has failed. */
+    FAILED;
 }

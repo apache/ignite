@@ -15,39 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.model;
+package org.apache.ignite.internal.processors.task.monitor;
 
-/** Test value object. */
-public class Role {
-    /** */
-    String name;
+import java.util.Collection;
 
-    /** */
-    AccessLevel accessLevel;
+/**
+ * Monitor for updating task statuses.
+ */
+public interface ComputeGridMonitor {
+    /**
+     * Processing task snapshots.
+     *
+     * @param snapshots Snapshots of tasks.
+     */
+    void processStatusSnapshots(Collection<ComputeTaskStatusSnapshot> snapshots);
 
-    /** */
-    public Role(String name, AccessLevel accessLevel) {
-        this.name = name;
-        this.accessLevel = accessLevel;
-    }
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /** */
-    public AccessLevel getAccessLevel() {
-        return accessLevel;
-    }
-
-    /** */
-    public void setAccessLevel(AccessLevel accessLevel) {
-        this.accessLevel = accessLevel;
-    }
+    /**
+     * Processing a change in a task.
+     *
+     * @param snapshot Snapshot of the task.
+     */
+    void processStatusChange(ComputeTaskStatusSnapshot snapshot);
 }
