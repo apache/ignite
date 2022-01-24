@@ -3081,6 +3081,52 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
+    public void testSnapshotRestoreSynchronously() throws Exception {
+        String snpName = "snapshot_02052020";
+        int keysCnt = 100;
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        String cacheName = "test-cache";
+
+        createCacheAndPreload(ig, cacheName, keysCnt, 32, null);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        CommandHandler h = new CommandHandler();
+
+        // Deprecated option.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start"));
+        assertContains(log, testOut.toString(), "Option \"--start\" is deprecated");
+
+        // Invalid command syntax.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--caches", "--sync"));
+        assertContains(log, testOut.toString(), "A comma-separated list of cache group names is expected.");
+
+        // Cache exists.
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--sync"));
+        assertContains(log, testOut.toString(), "Unable to restore cache group, directory is not empty");
+
+        ig.cache(cacheName).destroy();
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--sync"));
+        assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
+
+        IgniteCache<Object, Object> cache = ig.cache(cacheName);
+
+        assertNotNull(cache);
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals("key=" + i, i, cache.get(i));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testSnapshotRestore() throws Exception {
         int keysCnt = 100;
         String snpName = "snapshot_02052020";

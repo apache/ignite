@@ -42,6 +42,9 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /** Snapshot restore operation management action. */
     private VisorSnapshotRestoreTaskAction action;
 
+    /** Operation completion wait flag. */
+    private boolean waitComplete;
+
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
         // No-op.
@@ -51,15 +54,18 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
      * @param action Snapshot restore operation management action.
      * @param snpName Snapshot name.
      * @param grpNames Cache group names.
+     * @param waitComplete Operation completion wait flag.
      */
     public VisorSnapshotRestoreTaskArg(
         VisorSnapshotRestoreTaskAction action,
         String snpName,
-        @Nullable Collection<String> grpNames
+        @Nullable Collection<String> grpNames,
+        boolean waitComplete
     ) {
         this.snpName = snpName;
         this.grpNames = grpNames;
         this.action = action;
+        this.waitComplete = waitComplete;
     }
 
     /** @return Snapshot name. */
@@ -77,11 +83,17 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
         return action;
     }
 
+    /** @return Operation completion wait flag. */
+    public boolean waitComplete() {
+        return waitComplete;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, action);
         U.writeString(out, snpName);
         U.writeCollection(out, grpNames);
+        out.writeBoolean(waitComplete);
     }
 
     /** {@inheritDoc} */
@@ -89,6 +101,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
         snpName = U.readString(in);
         grpNames = U.readCollection(in);
+        waitComplete = in.readBoolean();
     }
 
     /** {@inheritDoc} */
