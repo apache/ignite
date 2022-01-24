@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -85,13 +86,17 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule",
-            "LogicalTableScanConverterRule"
+            "NestedLoopJoinConverter",
+            "CorrelatedNestedLoopJoin",
+            "CorrelateToNestedLoopRule",
+            "HashSingleAggregateConverterRule",
+            "HashMapReduceAggregateConverterRule"
         );
 
-        assertNull(
+        assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
-            findFirstNode(phys, byClass(IgniteSort.class))
+            findFirstNode(phys, byClass(IgniteSort.class)) == null &&
+            findFirstNode(phys, byClass(IgniteTableScan.class)) == null
         );
     }
 
