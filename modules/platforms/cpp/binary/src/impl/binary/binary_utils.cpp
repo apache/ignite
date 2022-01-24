@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <time.h>
+#include <cstring>
 
 #include "ignite/ignite_error.h"
 
@@ -59,7 +59,9 @@ namespace
     {
         CheckEnoughData(mem, pos, sizeof(T));
 
-        return *reinterpret_cast<const T*>(mem.Data() + pos);
+        T res;
+        std::memcpy(&res, mem.Data() + pos, sizeof(res));
+        return res;
     }
 
     /**
@@ -73,7 +75,9 @@ namespace
     template<typename T>
     inline T UnsafeReadPrimitive(const InteropMemory& mem, int32_t pos)
     {
-        return *reinterpret_cast<const T*>(mem.Data() + pos);
+        T res;
+        std::memcpy(&res, mem.Data() + pos, sizeof(res));
+        return res;
     }
 }
 
@@ -83,6 +87,7 @@ namespace ignite
     {
         namespace binary
         {
+            IGNORE_SIGNED_OVERFLOW
             int32_t BinaryUtils::GetDataHashCode(const void * data, size_t size)
             {
                 if (data)

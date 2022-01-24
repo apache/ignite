@@ -25,14 +25,17 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -1517,6 +1520,71 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             .rowDescriptor().tableDescriptor();
 
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
+    }
+    
+    /**
+     * Checks that part of the composite key assembled in BinaryObjectBuilder can pass the validation correctly
+     * if you specify Object type when creating the index.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheSecondaryCompositeIndex() throws Exception {
+        inlineSize = 70;
+        
+        startGrid();
+        
+        String cacheName = "TEST";
+
+        List<QueryIndex> indexes = Collections.singletonList(
+            new QueryIndex("val_obj", QueryIndexType.SORTED).setInlineSize(inlineSize)
+        );
+
+        grid().createCache(new CacheConfiguration<>()
+            .setName(cacheName)
+            .setSqlSchema(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(cacheName)
+                .setKeyType(Integer.class.getName())
+                .setKeyFieldName("id")
+                .setValueType("TEST_VAL_SECONDARY_COMPOSITE")
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("val_obj", Object.class.getName(), null)
+                .setIndexes(indexes)
+            ))
+        );
+        
+        BinaryObjectBuilder bob = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder bobInner = grid().binary().builder("inner");
+        
+        bobInner.setField("inner_k", 0);
+        bobInner.setField("inner_uuid", UUID.randomUUID());
+        
+        bob.setField("val_obj", bobInner.build());
+        
+        IgniteCache<Object, Object> cache = grid().cache(cacheName);
+
+        cache.put(0, bob.build());
+
+        BinaryObjectBuilder alice = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder aliceInner = grid().binary().builder("inner2");
+
+        aliceInner.setField("inner_k2", 0);
+        aliceInner.setField("inner_uuid2", UUID.randomUUID());
+
+        alice.setField("val_obj", aliceInner.build());
+
+        cache.put(1, alice.build());
+
+        List<List<?>> rows = execSql(cache.withKeepBinary(), "SELECT id, val_obj FROM " + cacheName);
+
+        assertEquals(2, rows.size());
+
+        for (List<?> row : rows) {
+            assertNotNull(row.get(0));
+            assertNotNull("id = " + row.get(0), row.get(1));
+        }
     }
 
     /** */
