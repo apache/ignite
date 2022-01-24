@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
@@ -37,21 +37,20 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.immutables.value.Value;
 
 /** */
+@Value.Enclosing
 public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableScan>
     extends RelRule<ProjectScanMergeRule.Config> {
     /** Instance. */
-    public static final ProjectScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new ProjectIndexScanMergeRule(Config.INDEX_SCAN);
+    public static final RelOptRule INDEX_SCAN = Config.INDEX_SCAN.toRule();
 
     /** Instance. */
-    public static final ProjectScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new ProjectTableScanMergeRule(Config.TABLE_SCAN);
+    public static final RelOptRule TABLE_SCAN = Config.TABLE_SCAN.toRule();
 
     /** Instance. */
-    public static final ProjectScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN_SKIP_CORRELATED =
-            new ProjectTableScanMergeRule(Config.TABLE_SCAN_SKIP_CORRELATED);
+    public static final RelOptRule TABLE_SCAN_SKIP_CORRELATED = Config.TABLE_SCAN_SKIP_CORRELATED.toRule();
 
     /** */
     protected abstract T createNode(
@@ -210,9 +209,12 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
     /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
-    public interface Config extends RelRule.Config {
+    @Value.Immutable(singleton = false)
+    public interface Config extends RuleFactoryConfig<Config> {
         /** */
-        Config DEFAULT = EMPTY.withRelBuilderFactory(RelFactories.LOGICAL_BUILDER).as(Config.class);
+        Config DEFAULT = ImmutableProjectScanMergeRule.Config.builder()
+            .withRuleFactory(ProjectTableScanMergeRule::new)
+            .build();
 
         /** */
         Config TABLE_SCAN = DEFAULT.withScanRuleConfig(
@@ -223,8 +225,9 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             IgniteLogicalTableScan.class, "ProjectTableScanMergeSkipCorrelatedRule", true);
 
         /** */
-        Config INDEX_SCAN = DEFAULT.withScanRuleConfig(
-            IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule", false);
+        Config INDEX_SCAN = DEFAULT
+            .withRuleFactory(ProjectIndexScanMergeRule::new)
+            .withScanRuleConfig(IgniteLogicalIndexScan.class, "ProjectIndexScanMergeRule", false);
 
         /** */
         default Config withScanRuleConfig(

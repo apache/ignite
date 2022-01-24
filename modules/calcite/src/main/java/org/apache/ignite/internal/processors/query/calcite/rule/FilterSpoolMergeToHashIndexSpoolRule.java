@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -27,7 +26,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -39,12 +37,14 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.immutables.value.Value;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isBinaryComparison;
 
 /**
  * Rule that pushes filter into the spool.
  */
+@Value.Enclosing
 public class FilterSpoolMergeToHashIndexSpoolRule extends RelRule<FilterSpoolMergeToHashIndexSpoolRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
@@ -105,12 +105,11 @@ public class FilterSpoolMergeToHashIndexSpoolRule extends RelRule<FilterSpoolMer
 
     /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
+    @Value.Immutable
     public interface Config extends RelRule.Config {
         /** */
-        Config DEFAULT = RelRule.Config.EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        Config DEFAULT = ImmutableFilterSpoolMergeToHashIndexSpoolRule.Config.of()
             .withDescription("FilterSpoolMergeToHashIndexSpoolRule")
-            .as(FilterSpoolMergeToHashIndexSpoolRule.Config.class)
             .withOperandFor(IgniteFilter.class, IgniteTableSpool.class);
 
         /** Defines an operand tree for the given classes. */

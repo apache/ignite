@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIn
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.patch.AggregateExpandDistinctAggregatesRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -152,11 +152,11 @@ public enum PlannerPhase {
                     JoinPushExpressionsRule.Config.DEFAULT
                         .withOperandFor(LogicalJoin.class).toRule(),
 
-                    JoinConditionPushRule.Config.DEFAULT
+                    JoinConditionPushRule.JoinConditionPushRuleConfig.DEFAULT
                         .withOperandSupplier(b -> b.operand(LogicalJoin.class)
                             .anyInputs()).toRule(),
 
-                    FilterIntoJoinRule.Config.DEFAULT
+                    FilterIntoJoinRule.FilterIntoJoinRuleConfig.DEFAULT
                         .withOperandSupplier(b0 ->
                             b0.operand(LogicalFilter.class).oneInput(b1 ->
                                 b1.operand(LogicalJoin.class).anyInputs())).toRule(),
@@ -184,7 +184,7 @@ public enum PlannerPhase {
                                         .predicate(Aggregate::isSimple)
                                         .anyInputs())).toRule(),
 
-                    AggregateExpandDistinctAggregatesRule.Config.JOIN.toRule(),
+                    CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
 
                     SortRemoveRule.Config.DEFAULT
                         .withOperandSupplier(b ->
@@ -202,11 +202,9 @@ public enum PlannerPhase {
                     // Useful of this rule is not clear now.
                     // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
 
-                    PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
+                    ((RelRule<?>)PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE).config
                         .withOperandSupplier(b ->
                             b.operand(LogicalSort.class).anyInputs())
-                        .withDescription("PruneSortLimit0")
-                        .as(PruneEmptyRules.SortFetchZeroRuleConfig.class)
                         .toRule(),
 
                     ExposeIndexRule.INSTANCE,
