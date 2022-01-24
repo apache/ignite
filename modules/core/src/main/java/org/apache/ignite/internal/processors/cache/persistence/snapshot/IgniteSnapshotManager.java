@@ -257,6 +257,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
+    /** Snapshot system view name. */
+    public static final String SNAPSHOTS_SYS_VIEW = "snapshots";
+
+    /** Snapshot system view description. */
+    public static final String SNAPSHOTS_SYS_VIEW_DESC = "Snapshots";
+
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
 
@@ -283,12 +289,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
-
-    /** */
-    public static final String SNAPSHOTS_SYS_VIEW = "snapshots";
-
-    /** */
-    public static final String SNAPSHOTS_SYS_VIEW_DESC = "Snapshots";
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
