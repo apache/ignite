@@ -1060,7 +1060,6 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * @param schemaVer Schema version.
      * @return True when the schema configured, false otherwise.
      */
-    // TODO: IGNITE-15412 Configuration manager will be used to retrieve distributed values
     private boolean isSchemaExists(IgniteUuid tblId, int schemaVer) {
         return latestSchemaVersion(tblId) >= schemaVer;
     }
