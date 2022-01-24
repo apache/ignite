@@ -575,6 +575,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
         }
 
+        /// <summary>
+        /// Tests the duck typing: proxy interface can be different from actual service interface,
+        /// only called method signature should be compatible.
+        /// </summary>
         [Test]
         public void TestDuckTyping([Values(true, false)] bool local)
         {

@@ -70,8 +70,8 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -97,6 +97,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -1302,7 +1303,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
         }
 
-        MetricRegistry invocationMetrics = null;
+        ReadOnlyMetricRegistry invocationMetrics = null;
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
@@ -1332,7 +1333,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             if (cfg.isStatisticsEnabled()) {
                 if (invocationMetrics == null)
-                    invocationMetrics = createServiceMetrics(srvcCtx);
+                    invocationMetrics = createServiceMetrics(srvcCtx, cfg);
 
                 srvcCtx.metrics(invocationMetrics);
             }
@@ -2012,27 +2013,33 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * Creates metrics registry for the invocation histograms.
      *
      * @param srvcCtx ServiceContext.
+     * @param cfg Service configuration.
      * @return Created metric registry.
      */
-    private MetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
-            for (Method mtd : itf.getMethods()) {
-                if (metricIgnored(mtd.getDeclaringClass()))
-                    continue;
+        if (cfg instanceof PlatformServiceConfiguration) {
+            assert srvcCtx.service() instanceof PlatformService;
 
-                addInvocationMetric(metricRegistry, mtd.getName());
+            for (String definedMtdName : ((PlatformServiceConfiguration)cfg).mtdNames()) {
+                metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
+                    DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
+            }
+        }
+        else {
+            for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
+                for (Method mtd : itf.getMethods()) {
+                    if (metricIgnored(mtd.getDeclaringClass()))
+                        continue;
+
+                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS,
+                        DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + mtd.getName() + "()'");
+                }
             }
         }
 
         return metricRegistry;
-    }
-
-    /** */
-    static HistogramMetricImpl addInvocationMetric(MetricRegistry metricRegistry, String mtdName) {
-        return metricRegistry.histogram(mtdName, DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
-                '\'' + mtdName + "()'");
     }
 
     /**

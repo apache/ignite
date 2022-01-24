@@ -22,13 +22,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,7 +62,7 @@ public class ServiceContextImpl implements ServiceContext {
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
     /** Invocation metrics. */
-    private MetricRegistry metrics;
+    private ReadOnlyMetricRegistry metrics;
 
     /** Service. */
     @GridToStringExclude
@@ -145,7 +145,7 @@ public class ServiceContextImpl implements ServiceContext {
     /**
      * @return Invocation metrics.
      */
-    @Nullable MetricRegistry metrics() {
+    @Nullable ReadOnlyMetricRegistry metrics() {
         return metrics;
     }
 
@@ -154,7 +154,7 @@ public class ServiceContextImpl implements ServiceContext {
      *
      * @return {@code this}.
      */
-    ServiceContextImpl metrics(MetricRegistry metrics) {
+    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
         this.metrics = metrics;
 
         return this;

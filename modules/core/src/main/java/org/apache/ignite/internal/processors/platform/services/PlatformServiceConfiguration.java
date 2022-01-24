@@ -20,39 +20,28 @@ package org.apache.ignite.internal.processors.platform.services;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
- * TODO
+ * Extended service configuration. Keeps knows service method names to build statistics.
  */
-public class PlatformServiceConfiguration {
-    /**
-     * TODO
-     */
-    private String[] mtdNames = new String[0];
-
-    private final ServiceConfiguration svcCfg;
+public class PlatformServiceConfiguration extends ServiceConfiguration {
+    /** Known method names of platform service. */
+    private String[] mtdNames;
 
     /**
-     * TODO
+     * Constr.
      */
-    PlatformServiceConfiguration(ServiceConfiguration svcCfg) {
-        this.svcCfg = svcCfg;
+    PlatformServiceConfiguration() {
+        setMtdNames(null);
     }
 
     /**
-     * TODO
-     */
-    public ServiceConfiguration serviceConfiguration() {
-        return svcCfg;
-    }
-
-    /**
-     * TODO
+     * @return Known method names of platform service.
      */
     public String[] mtdNames() {
         return mtdNames;
     }
 
     /**
-     * TODO
+     * Sets known method names of platform service
      */
     void setMtdNames(String[] mtdNames) {
         this.mtdNames = mtdNames == null ? new String[0] : mtdNames;

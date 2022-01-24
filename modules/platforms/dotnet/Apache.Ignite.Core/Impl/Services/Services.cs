@@ -243,12 +243,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             ValidateConfiguration(configuration, "configuration");
 
-            DoOutInOp(OpDeploy, w =>
-            {
-                configuration.Write(w);
-                configuration.Write(w);
-            },
-                ReadDeploymentResult);
+            DoOutInOp(OpDeploy, w => configuration.Write(w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
