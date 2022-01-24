@@ -95,20 +95,21 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
             onDone(Collections.emptyMap()); // Everything is fine.
         }
-        catch (IgniteConsistencyViolationException ec) { // Inconsistent entries found.
+        catch (IgniteConsistencyViolationException e) { // Inconsistent entries found.
             try {
                 Map<KeyCacheObject, EntryGetResult> fixedMap; // Entries required to be re-committed.
 
                 if (strategy == ReadRepairStrategy.LWW)
-                    fixedMap = fixWithLww(ec.keys());
+                    fixedMap = fixWithLww(e.keys());
                 else if (strategy == ReadRepairStrategy.PRIMARY)
-                    fixedMap = fixWithPrimary(ec.keys());
+                    fixedMap = fixWithPrimary(e.keys());
                 else if (strategy == ReadRepairStrategy.RELATIVE_MAJORITY)
-                    fixedMap = fixWithMajority(ec.keys());
+                    fixedMap = fixWithMajority(e.keys());
                 else if (strategy == ReadRepairStrategy.REMOVE)
-                    fixedMap = fixWithRemove(ec.keys());
+                    fixedMap = fixWithRemove(e.keys());
                 else if (strategy == ReadRepairStrategy.CHECK_ONLY)
-                    throw ec;
+                    throw new IgniteIrreparableConsistencyViolationException(null,
+                        ctx.unwrapBinariesIfNeeded(e.keys(), !deserializeBinary));
                 else
                     throw new UnsupportedOperationException("Unsupported strategy: " + strategy);
 
@@ -123,20 +124,13 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
                 onDone(fixedMap);
             }
-            catch (IgniteConsistencyViolationException er) { // Unable to repair all entries.
-                recordConsistencyViolation(ec.keys(), /*nothing fixed*/ null, strategy);
+            catch (IgniteIrreparableConsistencyViolationException ie) { // Unable to repair all entries.
+                recordConsistencyViolation(e.keys(), /*nothing fixed*/ null, strategy);
 
-                Set<KeyCacheObject> irreparableSet = er.keys();
-                Set<KeyCacheObject> repairableSet = new HashSet<>(ec.keys());
-
-                repairableSet.removeAll(irreparableSet);
-
-                onDone(new IgniteIrreparableConsistencyViolationException(
-                    ctx.unwrapBinariesIfNeeded(repairableSet, !deserializeBinary),
-                    ctx.unwrapBinariesIfNeeded(irreparableSet, !deserializeBinary)));
+                onDone(ie);
             }
-            catch (IgniteCheckedException e) {
-                onDone(e);
+            catch (IgniteCheckedException ce) {
+                onDone(ce);
             }
         }
         catch (IgniteCheckedException e) {
@@ -208,7 +202,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         assert !fixedMap.containsValue(null) : "null should never be considered as a fix";
 
         if (!irreparableSet.isEmpty())
-            throw new IgniteConsistencyViolationException(irreparableSet);
+            throwIrreparable(inconsistentKeys, irreparableSet);
 
         return fixedMap;
     }
@@ -327,8 +321,21 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         }
 
         if (!irreparableSet.isEmpty())
-            throw new IgniteConsistencyViolationException(irreparableSet);
+            throwIrreparable(inconsistentKeys, irreparableSet);
 
         return fixedMap;
+    }
+
+    /**
+     *
+     */
+    private void throwIrreparable(Collection<KeyCacheObject> inconsistentKeys, Set<KeyCacheObject> irreparableSet)
+        throws IgniteIrreparableConsistencyViolationException {
+        Set<KeyCacheObject> repairableKeys = new HashSet<>(inconsistentKeys);
+
+        repairableKeys.removeAll(irreparableSet);
+
+        throw new IgniteIrreparableConsistencyViolationException(ctx.unwrapBinariesIfNeeded(repairableKeys, !deserializeBinary),
+            ctx.unwrapBinariesIfNeeded(irreparableSet, !deserializeBinary));
     }
 }
