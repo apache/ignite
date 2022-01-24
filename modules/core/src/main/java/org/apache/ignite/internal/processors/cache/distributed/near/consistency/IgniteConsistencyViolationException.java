@@ -43,7 +43,7 @@ public class IgniteConsistencyViolationException extends IgniteCheckedException 
     }
 
     /**
-     * Found but unrepaired (because of chosen strategy) inconsistent entries keys.
+     * Inconsistent entries keys.
      */
     public Set<KeyCacheObject> keys() {
         return keys;
