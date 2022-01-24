@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.definition.TableDefinitionImpl;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
@@ -62,8 +63,8 @@ public class TableDefinitionBuilderImpl implements TableDefinitionBuilder {
      * @param tableName  Table name.
      */
     public TableDefinitionBuilderImpl(String schemaName, String tableName) {
-        this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.schemaName = IgniteObjectName.parse(schemaName);
+        this.tableName = IgniteObjectName.parse(tableName);
     }
 
     /** {@inheritDoc} */
@@ -97,7 +98,7 @@ public class TableDefinitionBuilderImpl implements TableDefinitionBuilder {
     /** {@inheritDoc} */
     @Override
     public TableDefinitionBuilder withPrimaryKey(String colName) {
-        primaryKeyDefinition = SchemaBuilders.primaryKey().withColumns(colName).build();
+        primaryKeyDefinition = SchemaBuilders.primaryKey().withColumns(IgniteObjectName.parse(colName)).build();
 
         return this;
     }

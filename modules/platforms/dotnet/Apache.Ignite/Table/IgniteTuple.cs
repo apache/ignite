@@ -55,9 +55,11 @@ namespace Apache.Ignite.Table
         /// <inheritdoc/>
         public object? this[string name]
         {
-            get => _pairs[_indexes[name]].Value;
+            get => _pairs[_indexes[ParseName(name)]].Value;
             set
             {
+                name = ParseName(name);
+
                 var pair = (name, value);
 
                 if (_indexes.TryGetValue(name, out var index))
@@ -77,7 +79,7 @@ namespace Apache.Ignite.Table
         public string GetName(int ordinal) => _pairs[ordinal].Key;
 
         /// <inheritdoc/>
-        public int GetOrdinal(string name) => _indexes.TryGetValue(name, out var index) ? index : -1;
+        public int GetOrdinal(string name) => _indexes.TryGetValue(ParseName(name), out var index) ? index : -1;
 
         /// <inheritdoc />
         public override string ToString()
@@ -117,6 +119,21 @@ namespace Apache.Ignite.Table
         public override int GetHashCode()
         {
             return IIgniteTuple.GetHashCode(this);
+        }
+
+        private static string ParseName(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                throw new IgniteClientException("Column name can not be null or empty.");
+            }
+
+            if (str.Length > 2 && str.StartsWith('"') && str.EndsWith('"'))
+            {
+                return str.Substring(1, str.Length - 2);
+            }
+
+            return str.ToUpperInvariant();
         }
     }
 }

@@ -80,6 +80,7 @@ import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
 import org.apache.ignite.internal.tx.TxManager;
 import org.apache.ignite.internal.util.ByteUtils;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.internal.util.IgniteSpinBusyLock;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -683,7 +684,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             throw new IgniteException(new NodeStoppingException());
         }
         try {
-            return createTableAsyncInternal(name, tableInitChange);
+            return createTableAsyncInternal(IgniteObjectName.parseCanonicalName(name), tableInitChange);
         } finally {
             busyLock.leaveBusy();
         }
@@ -783,7 +784,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             throw new IgniteException(new NodeStoppingException());
         }
         try {
-            return alterTableAsyncInternal(name, tableChange);
+            return alterTableAsyncInternal(IgniteObjectName.parseCanonicalName(name), tableChange);
         } finally {
             busyLock.leaveBusy();
         }
@@ -912,7 +913,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             throw new IgniteException(new NodeStoppingException());
         }
         try {
-            return dropTableAsyncInternal(name);
+            return dropTableAsyncInternal(IgniteObjectName.parseCanonicalName(name));
         } finally {
             busyLock.leaveBusy();
         }
@@ -1125,7 +1126,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             throw new IgniteException(new NodeStoppingException());
         }
         try {
-            IgniteUuid tableId = directTableId(name);
+            IgniteUuid tableId = directTableId(IgniteObjectName.parseCanonicalName(name));
 
             if (tableId == null) {
                 return CompletableFuture.completedFuture(null);

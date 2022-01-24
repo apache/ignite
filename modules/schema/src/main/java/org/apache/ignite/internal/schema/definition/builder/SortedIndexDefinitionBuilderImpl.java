@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.definition.index.SortedIndexColumnDefinitionImpl;
 import org.apache.ignite.internal.schema.definition.index.SortedIndexDefinitionImpl;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.definition.builder.SortedIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.index.SortOrder;
 import org.apache.ignite.schema.definition.index.SortedIndexColumnDefinition;
@@ -134,7 +135,7 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
         /** {@inheritDoc} */
         @Override
         public SortedIndexColumnBuilderImpl withName(String name) {
-            this.name = name;
+            this.name = IgniteObjectName.parse(name);
 
             return this;
         }

@@ -174,7 +174,7 @@ public class SchemaConfigurationConverterTest {
         SortedIndexDefinition idx2 = (SortedIndexDefinition) getIdx(idx.name(), tbl.indices());
 
         assertNotNull(idx2);
-        assertEquals("pk_sorted", idx2.name());
+        assertEquals("PK_SORTED", idx2.name());
         assertEquals("SORTED", idx2.type());
         assertEquals(idx.columns().stream().map(IndexColumnDefinition::name).collect(Collectors.toList()),
                 idx2.columns().stream().map(IndexColumnDefinition::name).collect(Collectors.toList()));

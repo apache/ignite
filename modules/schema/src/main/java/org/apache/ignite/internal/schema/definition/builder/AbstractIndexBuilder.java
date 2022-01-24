@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema.definition.builder;
 
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.definition.builder.SchemaObjectBuilder;
 
 /**
@@ -50,7 +51,7 @@ public abstract class AbstractIndexBuilder implements SchemaObjectBuilder {
      * @param unique Unique flag.
      */
     AbstractIndexBuilder(String name, boolean unique) {
-        this.name = name;
+        this.name = IgniteObjectName.parse(name);
         this.unique = unique;
     }
 

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,7 +42,7 @@ public class TestTupleBuilder implements Tuple {
     /** {@inheritDoc} */
     @Override
     public TestTupleBuilder set(@NotNull String columnName, Object value) {
-        map.put(columnName, value);
+        map.put(IgniteObjectName.parse(columnName), value);
 
         return this;
     }
@@ -49,13 +50,13 @@ public class TestTupleBuilder implements Tuple {
     /** {@inheritDoc} */
     @Override
     public <T> T valueOrDefault(@NotNull String columnName, T def) {
-        return (T) map.getOrDefault(columnName, def);
+        return (T) map.getOrDefault(IgniteObjectName.parse(columnName), def);
     }
 
     /** {@inheritDoc} */
     @Override
     public <T> T value(@NotNull String columnName) {
-        return (T) map.get(columnName);
+        return (T) map.get(IgniteObjectName.parse(columnName));
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -78,7 +79,7 @@ public final class ClientTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public Tuple set(@NotNull String columnName, Object value) {
-        var col = schema.column(columnName);
+        var col = schema.column(IgniteObjectName.parse(columnName));
 
         vals[col.schemaIndex() - minColumnIndex] = value == null ? NULL_OBJ : value;
 
@@ -88,7 +89,7 @@ public final class ClientTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public <T> T valueOrDefault(@NotNull String columnName, T def) {
-        var col = schema.columnSafe(columnName);
+        var col = schema.columnSafe(IgniteObjectName.parse(columnName));
 
         if (col == null) {
             return def;
@@ -102,7 +103,7 @@ public final class ClientTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public <T> T value(@NotNull String columnName) {
-        var col = schema.column(columnName);
+        var col = schema.column(IgniteObjectName.parse(columnName));
 
         return getValue(col.schemaIndex() - minColumnIndex);
     }
@@ -132,7 +133,7 @@ public final class ClientTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public int columnIndex(@NotNull String columnName) {
-        var col = schema.columnSafe(columnName);
+        var col = schema.columnSafe(IgniteObjectName.parse(columnName));
 
         if (col == null || col.schemaIndex() < minColumnIndex || col.schemaIndex() > maxColumnIndex) {
             return -1;

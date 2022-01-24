@@ -73,7 +73,7 @@ namespace Apache.Ignite.Tests.Table
             var ex = Assert.ThrowsAsync<IgniteClientException>(async () => await TupleView.UpsertAsync(null, new IgniteTuple()));
 
             Assert.AreEqual(
-                "Missed key column: key",
+                "Missed key column: KEY",
                 ex!.Message);
         }
 

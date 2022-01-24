@@ -191,7 +191,7 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
 
         IgniteClientException e = assertThrows(IgniteClientException.class, () -> recordView.get(null, new NamePojo()));
 
-        assertEquals("No field found for column id", e.getMessage());
+        assertEquals("No field found for column ID", e.getMessage());
     }
 
     @Test
@@ -219,7 +219,7 @@ public class ClientRecordViewTest extends AbstractClientTableTest {
         assertNull(res.zdouble);
 
         for (int i = 0; i < binRes.columnCount(); i++) {
-            if (binRes.columnName(i).endsWith("id")) {
+            if (binRes.columnName(i).endsWith("ID")) {
                 continue;
             }
 

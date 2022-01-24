@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.schema.definition.builder;
 
-import static java.util.Arrays.asList;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.definition.index.PrimaryKeyDefinitionImpl;
 import org.apache.ignite.internal.tostring.IgniteToStringInclude;
 import org.apache.ignite.internal.util.CollectionUtils;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
 import org.apache.ignite.schema.definition.builder.PrimaryKeyDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.SchemaObjectBuilder;
@@ -47,7 +48,7 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     /** {@inheritDoc} */
     @Override
     public PrimaryKeyDefinitionBuilderImpl withColumns(String... columns) {
-        this.columns = asList(columns);
+        this.columns = Arrays.stream(columns).map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }
@@ -55,7 +56,7 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     /** {@inheritDoc} */
     @Override
     public PrimaryKeyDefinitionBuilderImpl withColumns(List<String> columns) {
-        this.columns = columns;
+        this.columns = columns.stream().map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }
@@ -63,7 +64,9 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     /** {@inheritDoc} */
     @Override
     public PrimaryKeyDefinitionBuilderImpl withAffinityColumns(String... affinityColumns) {
-        this.affinityColumns = asList(affinityColumns);
+        this.affinityColumns = affinityColumns == null
+                ? null
+                : Arrays.stream(affinityColumns).map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }
@@ -71,7 +74,9 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     /** {@inheritDoc} */
     @Override
     public PrimaryKeyDefinitionBuilderImpl withAffinityColumns(List<String> affinityColumns) {
-        this.affinityColumns = affinityColumns;
+        this.affinityColumns = affinityColumns == null
+                ? null
+                : affinityColumns.stream().map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }

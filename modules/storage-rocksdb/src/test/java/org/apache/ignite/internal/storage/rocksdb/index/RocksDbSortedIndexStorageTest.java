@@ -326,7 +326,7 @@ public class RocksDbSortedIndexStorageTest {
 
         StorageException ex = assertThrows(StorageException.class, () -> createIndex(definition));
 
-        assertThat(ex.getMessage(), is(equalTo("Index \"wrong type\" is not configured as a Sorted Index. Actual type: HASH")));
+        assertThat(ex.getMessage(), is(equalTo("Index \"WRONG TYPE\" is not configured as a Sorted Index. Actual type: HASH")));
     }
 
     /**

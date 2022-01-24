@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.schema.definition.builder;
 
-import static java.util.Arrays.asList;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.definition.index.HashIndexDefinitionImpl;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.definition.builder.HashIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.index.HashIndexDefinition;
 
@@ -44,7 +45,7 @@ public class HashIndexDefinitionBuilderImpl extends AbstractIndexBuilder impleme
     /** {@inheritDoc} */
     @Override
     public HashIndexDefinitionBuilder withColumns(List<String> columns) {
-        this.columns = columns;
+        this.columns = columns.stream().map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }
@@ -52,7 +53,7 @@ public class HashIndexDefinitionBuilderImpl extends AbstractIndexBuilder impleme
     /** {@inheritDoc} */
     @Override
     public HashIndexDefinitionBuilder withColumns(String... columns) {
-        this.columns = asList(columns);
+        this.columns = Arrays.stream(columns).map(IgniteObjectName::parse).collect(Collectors.toList());
 
         return this;
     }

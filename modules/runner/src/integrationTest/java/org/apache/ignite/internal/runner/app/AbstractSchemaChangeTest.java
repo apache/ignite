@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.schemas.table.ColumnChange;
 import org.apache.ignite.internal.ItUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.schema.SchemaBuilders;
@@ -225,7 +226,7 @@ abstract class AbstractSchemaChangeTest {
      */
     protected static void dropColumn(List<Ignite> nodes, String colName) {
         nodes.get(0).tables()
-                .alterTable(TABLE, chng -> chng.changeColumns(cols -> cols.delete(colName)));
+                .alterTable(TABLE, chng -> chng.changeColumns(cols -> cols.delete(IgniteObjectName.parse(colName))));
     }
 
     /**
@@ -239,8 +240,11 @@ abstract class AbstractSchemaChangeTest {
         nodes.get(0).tables().alterTable(TABLE,
                 tblChanger -> tblChanger.changeColumns(
                         colListChanger -> colListChanger
-                                .rename(oldName, newName)
-                                .update(newName, colChanger -> colChanger.changeName(newName))
+                                .rename(IgniteObjectName.parse(oldName), IgniteObjectName.parse(newName))
+                                .update(
+                                        IgniteObjectName.parse(newName),
+                                        colChanger -> colChanger.changeName(IgniteObjectName.parse(newName))
+                                )
                 )
         );
     }
@@ -256,7 +260,10 @@ abstract class AbstractSchemaChangeTest {
         nodes.get(0).tables().alterTable(TABLE,
                 tblChanger -> tblChanger.changeColumns(
                         colListChanger -> colListChanger
-                                .update(colName, colChanger -> colChanger.changeDefaultValue(defSup.get().toString()))
+                                .update(
+                                        IgniteObjectName.parse(colName),
+                                        colChanger -> colChanger.changeDefaultValue(defSup.get().toString())
+                                )
                 )
         );
     }
@@ -271,7 +278,9 @@ abstract class AbstractSchemaChangeTest {
     private static void assertColumnChangeFailed(List<Ignite> grid, String colName, Consumer<ColumnChange> colChanger) {
         assertThrows(IgniteException.class, () ->
                 grid.get(0).tables().alterTable(TABLE,
-                        tblChanger -> tblChanger.changeColumns(listChanger -> listChanger.update(colName, colChanger))
+                        tblChanger -> tblChanger.changeColumns(
+                                listChanger -> listChanger.update(IgniteObjectName.parse(colName), colChanger)
+                        )
                 )
         );
     }

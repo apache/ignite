@@ -54,7 +54,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public abstract class ItAbstractThinClientTest extends IgniteAbstractTest {
     protected static final String SCHEMA_NAME = "PUB";
 
-    protected static final String TABLE_NAME = "tbl1";
+    protected static final String TABLE_NAME = "TBL1";
 
     protected static final String COLUMN_KEY = "key";
 

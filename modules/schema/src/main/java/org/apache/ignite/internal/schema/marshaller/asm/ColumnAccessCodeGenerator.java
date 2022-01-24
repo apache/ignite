@@ -39,52 +39,52 @@ public class ColumnAccessCodeGenerator {
      * @param colIdx Column index in the schema.
      * @return Row column access code generator.
      */
-    public static ColumnAccessCodeGenerator createAccessor(BinaryMode mode, int colIdx) {
+    public static ColumnAccessCodeGenerator createAccessor(BinaryMode mode, String fieldName, int colIdx) {
         switch (mode) {
             case P_BYTE:
-                return new ColumnAccessCodeGenerator("byteValue", "appendByte", byte.class, colIdx);
+                return new ColumnAccessCodeGenerator("byteValue", "appendByte", byte.class, fieldName, colIdx);
             case P_SHORT:
-                return new ColumnAccessCodeGenerator("shortValue", "appendShort", short.class, colIdx);
+                return new ColumnAccessCodeGenerator("shortValue", "appendShort", short.class, fieldName, colIdx);
             case P_INT:
-                return new ColumnAccessCodeGenerator("intValue", "appendInt", int.class, colIdx);
+                return new ColumnAccessCodeGenerator("intValue", "appendInt", int.class, fieldName, colIdx);
             case P_LONG:
-                return new ColumnAccessCodeGenerator("longValue", "appendLong", long.class, colIdx);
+                return new ColumnAccessCodeGenerator("longValue", "appendLong", long.class, fieldName, colIdx);
             case P_FLOAT:
-                return new ColumnAccessCodeGenerator("floatValue", "appendFloat", float.class, colIdx);
+                return new ColumnAccessCodeGenerator("floatValue", "appendFloat", float.class, fieldName, colIdx);
             case P_DOUBLE:
-                return new ColumnAccessCodeGenerator("doubleValue", "appendDouble", double.class, colIdx);
+                return new ColumnAccessCodeGenerator("doubleValue", "appendDouble", double.class, fieldName, colIdx);
             case BYTE:
-                return new ColumnAccessCodeGenerator("byteValueBoxed", "appendByte", Byte.class, byte.class, colIdx);
+                return new ColumnAccessCodeGenerator("byteValueBoxed", "appendByte", Byte.class, byte.class, fieldName, colIdx);
             case SHORT:
-                return new ColumnAccessCodeGenerator("shortValueBoxed", "appendShort", Short.class, short.class, colIdx);
+                return new ColumnAccessCodeGenerator("shortValueBoxed", "appendShort", Short.class, short.class, fieldName, colIdx);
             case INT:
-                return new ColumnAccessCodeGenerator("intValueBoxed", "appendInt", Integer.class, int.class, colIdx);
+                return new ColumnAccessCodeGenerator("intValueBoxed", "appendInt", Integer.class, int.class, fieldName, colIdx);
             case LONG:
-                return new ColumnAccessCodeGenerator("longValueBoxed", "appendLong", Long.class, long.class, colIdx);
+                return new ColumnAccessCodeGenerator("longValueBoxed", "appendLong", Long.class, long.class, fieldName, colIdx);
             case FLOAT:
-                return new ColumnAccessCodeGenerator("floatValueBoxed", "appendFloat", Float.class, float.class, colIdx);
+                return new ColumnAccessCodeGenerator("floatValueBoxed", "appendFloat", Float.class, float.class, fieldName, colIdx);
             case DOUBLE:
-                return new ColumnAccessCodeGenerator("doubleValueBoxed", "appendDouble", Double.class, double.class, colIdx);
+                return new ColumnAccessCodeGenerator("doubleValueBoxed", "appendDouble", Double.class, double.class,  fieldName, colIdx);
             case STRING:
-                return new ColumnAccessCodeGenerator("stringValue", "appendString", String.class, colIdx);
+                return new ColumnAccessCodeGenerator("stringValue", "appendString", String.class, fieldName, colIdx);
             case UUID:
-                return new ColumnAccessCodeGenerator("uuidValue", "appendUuid", UUID.class, colIdx);
+                return new ColumnAccessCodeGenerator("uuidValue", "appendUuid", UUID.class, fieldName, colIdx);
             case BYTE_ARR:
-                return new ColumnAccessCodeGenerator("bytesValue", "appendBytes", byte[].class, colIdx);
+                return new ColumnAccessCodeGenerator("bytesValue", "appendBytes", byte[].class, fieldName, colIdx);
             case BITSET:
-                return new ColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, colIdx);
+                return new ColumnAccessCodeGenerator("bitmaskValue", "appendBitmask", BitSet.class, fieldName, colIdx);
             case NUMBER:
-                return new ColumnAccessCodeGenerator("numberValue", "appendNumber", BigInteger.class, colIdx);
+                return new ColumnAccessCodeGenerator("numberValue", "appendNumber", BigInteger.class, fieldName, colIdx);
             case DECIMAL:
-                return new ColumnAccessCodeGenerator("decimalValue", "appendDecimal", BigDecimal.class, colIdx);
+                return new ColumnAccessCodeGenerator("decimalValue", "appendDecimal", BigDecimal.class, fieldName, colIdx);
             case DATE:
-                return new ColumnAccessCodeGenerator("dateValue", "appendDate", LocalDate.class, colIdx);
+                return new ColumnAccessCodeGenerator("dateValue", "appendDate", LocalDate.class, fieldName, colIdx);
             case TIME:
-                return new ColumnAccessCodeGenerator("timeValue", "appendTime", LocalTime.class, colIdx);
+                return new ColumnAccessCodeGenerator("timeValue", "appendTime", LocalTime.class, fieldName, colIdx);
             case DATETIME:
-                return new ColumnAccessCodeGenerator("dateTimeValue", "appendDateTime", LocalDateTime.class, colIdx);
+                return new ColumnAccessCodeGenerator("dateTimeValue", "appendDateTime", LocalDateTime.class, fieldName, colIdx);
             case TIMESTAMP:
-                return new ColumnAccessCodeGenerator("timestampValue", "appendTimestamp", Instant.class, colIdx);
+                return new ColumnAccessCodeGenerator("timestampValue", "appendTimestamp", Instant.class, fieldName, colIdx);
             default:
                 throw new IgniteInternalException("Unsupported binary mode: " + mode);
         }
@@ -105,6 +105,9 @@ public class ColumnAccessCodeGenerator {
     /** Column index in the schema. */
     private final int colIdx;
 
+    /** Field name. */
+    private final String filedName;
+
     /**
      * Constructor.
      *
@@ -113,8 +116,8 @@ public class ColumnAccessCodeGenerator {
      * @param mappedType      Mapped value type.
      * @param colIdx          Column index in the schema.
      */
-    ColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType, int colIdx) {
-        this(readMethodName, writeMethodName, mappedType, mappedType, colIdx);
+    ColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType, String fieldName, int colIdx) {
+        this(readMethodName, writeMethodName, mappedType, mappedType, fieldName, colIdx);
     }
 
     /**
@@ -127,12 +130,13 @@ public class ColumnAccessCodeGenerator {
      * @param colIdx          Column index in the schema.
      */
     ColumnAccessCodeGenerator(String readMethodName, String writeMethodName, Class<?> mappedType,
-            Class<?> writeArgType, int colIdx) {
+            Class<?> writeArgType, String fieldName, int colIdx) {
         this.readMethodName = readMethodName;
         this.writeMethodName = writeMethodName;
         this.colIdx = colIdx;
         this.mappedType = mappedType;
         this.writeArgType = writeArgType;
+        this.filedName = fieldName;
     }
 
     /**
@@ -168,5 +172,12 @@ public class ColumnAccessCodeGenerator {
      */
     public Class<?> mappedType() {
         return mappedType;
+    }
+
+    /**
+     * Gets field name.
+     */
+    public String fieldName() {
+        return filedName;
     }
 }

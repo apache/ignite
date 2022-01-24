@@ -38,12 +38,12 @@ namespace Apache.Ignite.Tests.Table
 
         public object? this[string name]
         {
-            get => name switch { "key" => Key, _ => Value };
+            get => name switch { "KEY" => Key, _ => Value };
             set => throw new System.NotImplementedException();
         }
 
-        public string GetName(int ordinal) => ordinal switch { 0 => "key", _ => "val" };
+        public string GetName(int ordinal) => ordinal switch { 0 => "KEY", _ => "VAL" };
 
-        public int GetOrdinal(string name) => name switch { "key" => 0, _ => 1 };
+        public int GetOrdinal(string name) => name switch { "KEY" => 0, _ => 1 };
     }
 }

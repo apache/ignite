@@ -73,29 +73,29 @@ public class MutableRowTupleAdapterTest {
     /** Schema descriptor. */
     private SchemaDescriptor schema = new SchemaDescriptor(
             42,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("name", NativeTypes.STRING, true)}
+            new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+            new Column[]{new Column("name".toUpperCase(), NativeTypes.STRING, true)}
     );
 
     /** Schema descriptor. */
     private SchemaDescriptor fullSchema = new SchemaDescriptor(42,
-            new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
+            new Column[]{new Column("keyUuidCol".toUpperCase(), NativeTypes.UUID, true)},
             new Column[]{
-                    new Column("valByteCol", INT8, true),
-                    new Column("valShortCol", INT16, true),
-                    new Column("valIntCol", INT32, true),
-                    new Column("valLongCol", INT64, true),
-                    new Column("valFloatCol", FLOAT, true),
-                    new Column("valDoubleCol", DOUBLE, true),
-                    new Column("valDateCol", DATE, true),
-                    new Column("valTimeCol", time(), true),
-                    new Column("valDateTimeCol", datetime(), true),
-                    new Column("valTimeStampCol", timestamp(), true),
-                    new Column("valBitmask1Col", NativeTypes.bitmaskOf(22), true),
-                    new Column("valBytesCol", BYTES, false),
-                    new Column("valStringCol", STRING, false),
-                    new Column("valNumberCol", NativeTypes.numberOf(20), false),
-                    new Column("valDecimalCol", NativeTypes.decimalOf(25, 5), false),
+                    new Column("valByteCol".toUpperCase(), INT8, true),
+                    new Column("valShortCol".toUpperCase(), INT16, true),
+                    new Column("valIntCol".toUpperCase(), INT32, true),
+                    new Column("valLongCol".toUpperCase(), INT64, true),
+                    new Column("valFloatCol".toUpperCase(), FLOAT, true),
+                    new Column("valDoubleCol".toUpperCase(), DOUBLE, true),
+                    new Column("valDateCol".toUpperCase(), DATE, true),
+                    new Column("valTimeCol".toUpperCase(), time(), true),
+                    new Column("valDateTimeCol".toUpperCase(), datetime(), true),
+                    new Column("valTimeStampCol".toUpperCase(), timestamp(), true),
+                    new Column("valBitmask1Col".toUpperCase(), NativeTypes.bitmaskOf(22), true),
+                    new Column("valBytesCol".toUpperCase(), BYTES, false),
+                    new Column("valStringCol".toUpperCase(), STRING, false),
+                    new Column("valNumberCol".toUpperCase(), NativeTypes.numberOf(20), false),
+                    new Column("valDecimalCol".toUpperCase(), NativeTypes.decimalOf(25, 5), false),
             }
     );
 
@@ -171,8 +171,8 @@ public class MutableRowTupleAdapterTest {
 
     @Test
     public void testColumnNameReturnsNameByIndex() {
-        assertEquals("id", getTuple().columnName(0));
-        assertEquals("name", getTuple().columnName(1));
+        assertEquals("ID", getTuple().columnName(0));
+        assertEquals("NAME", getTuple().columnName(1));
     }
 
     @Test
@@ -199,10 +199,10 @@ public class MutableRowTupleAdapterTest {
     public void testKeyValueChunks() throws TupleMarshallerException {
         SchemaDescriptor schema = new SchemaDescriptor(
                 42,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
                 new Column[]{
-                        new Column("name", NativeTypes.STRING, true),
-                        new Column("price", NativeTypes.DOUBLE, true)
+                        new Column("name".toUpperCase(), NativeTypes.STRING, true),
+                        new Column("price".toUpperCase(), NativeTypes.DOUBLE, true)
                 }
         );
 
@@ -345,7 +345,7 @@ public class MutableRowTupleAdapterTest {
 
         TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(fullSchema));
 
-        Tuple tuple = Tuple.create()
+        Tuple  tuple = Tuple.create()
                 .set("valByteCol", (byte) 1)
                 .set("valShortCol", (short) 2)
                 .set("valIntCol", 3)

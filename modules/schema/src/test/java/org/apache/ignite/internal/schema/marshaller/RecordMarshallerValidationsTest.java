@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class RecordMarshallerValidationsTest {
     /** Key columns for test. */
-    private static Column[] KEY_COLS = new Column[]{new Column("id", INT32, false)};
+    private static Column[] KEY_COLS = new Column[]{new Column("id".toUpperCase(), INT32, false)};
 
     /**
      * Returns list of marshaller factories for the test.
@@ -53,8 +53,8 @@ public class RecordMarshallerValidationsTest {
     @MethodSource("marshallerFactoryProvider")
     public void testColsWithDefaultValue(MarshallerFactory factory) throws MarshallerException {
         Column[] valCols = new Column[] {
-                new Column("fbyte1", INT32, false),
-                new Column("fbyte2", INT32, false, () -> 0x42)
+                new Column("fbyte1".toUpperCase(), INT32, false),
+                new Column("fbyte2".toUpperCase(), INT32, false, () -> 0x42)
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, KEY_COLS, valCols);
@@ -79,8 +79,8 @@ public class RecordMarshallerValidationsTest {
     @MethodSource("marshallerFactoryProvider")
     public void testColsWithNullable(MarshallerFactory factory) throws MarshallerException {
         Column[] valCols = new Column[] {
-                new Column("fbyte1", INT32, false),
-                new Column("fbyte2", INT32, true)
+                new Column("fbyte1".toUpperCase(), INT32, false),
+                new Column("fbyte2".toUpperCase(), INT32, true)
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, KEY_COLS, valCols);
@@ -106,8 +106,8 @@ public class RecordMarshallerValidationsTest {
     @MethodSource("marshallerFactoryProvider")
     public void testReadOnly(MarshallerFactory factory) throws MarshallerException {
         Column[] valCols = new Column[] {
-                new Column("fbyte1", INT32, false),
-                new Column("fbyte2", INT32, false)
+                new Column("fbyte1".toUpperCase(), INT32, false),
+                new Column("fbyte2".toUpperCase(), INT32, false)
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, KEY_COLS, valCols);
@@ -132,9 +132,9 @@ public class RecordMarshallerValidationsTest {
     @MethodSource("marshallerFactoryProvider")
     public void truncatedKey(MarshallerFactory factory) throws MarshallerException {
         SchemaDescriptor schema = new SchemaDescriptor(1, new Column[]{
-                new Column("k1", INT32, false),
-                new Column("k2", INT32, false)},
-                new Column[]{new Column("v1", STRING, false)}
+                new Column("k1".toUpperCase(), INT32, false),
+                new Column("k2".toUpperCase(), INT32, false)},
+                new Column[]{new Column("v1".toUpperCase(), STRING, false)}
         );
         RecordMarshaller<TestK1K2V1> marshallerFull = factory.create(schema, TestK1K2V1.class);
 

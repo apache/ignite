@@ -361,38 +361,38 @@ public class KeyValueViewOperationsTest {
         Mapper<TestObjectWithAllTypes> valMapper = Mapper.of(TestObjectWithAllTypes.class);
 
         Column[] valCols = {
-                new Column("primitiveByteCol", INT8, false),
-                new Column("primitiveShortCol", INT16, false),
-                new Column("primitiveIntCol", INT32, false),
-                new Column("primitiveLongCol", INT64, false),
-                new Column("primitiveFloatCol", FLOAT, false),
-                new Column("primitiveDoubleCol", DOUBLE, false),
+                new Column("primitiveByteCol".toUpperCase(), INT8, false),
+                new Column("primitiveShortCol".toUpperCase(), INT16, false),
+                new Column("primitiveIntCol".toUpperCase(), INT32, false),
+                new Column("primitiveLongCol".toUpperCase(), INT64, false),
+                new Column("primitiveFloatCol".toUpperCase(), FLOAT, false),
+                new Column("primitiveDoubleCol".toUpperCase(), DOUBLE, false),
 
-                new Column("byteCol", INT8, true),
-                new Column("shortCol", INT16, true),
-                new Column("intCol", INT32, true),
-                new Column("longCol", INT64, true),
-                new Column("nullLongCol", INT64, true),
-                new Column("floatCol", FLOAT, true),
-                new Column("doubleCol", DOUBLE, true),
+                new Column("byteCol".toUpperCase(), INT8, true),
+                new Column("shortCol".toUpperCase(), INT16, true),
+                new Column("intCol".toUpperCase(), INT32, true),
+                new Column("longCol".toUpperCase(), INT64, true),
+                new Column("nullLongCol".toUpperCase(), INT64, true),
+                new Column("floatCol".toUpperCase(), FLOAT, true),
+                new Column("doubleCol".toUpperCase(), DOUBLE, true),
 
-                new Column("dateCol", DATE, true),
-                new Column("timeCol", time(), true),
-                new Column("dateTimeCol", datetime(), true),
-                new Column("timestampCol", timestamp(), true),
+                new Column("dateCol".toUpperCase(), DATE, true),
+                new Column("timeCol".toUpperCase(), time(), true),
+                new Column("dateTimeCol".toUpperCase(), datetime(), true),
+                new Column("timestampCol".toUpperCase(), timestamp(), true),
 
-                new Column("uuidCol", NativeTypes.UUID, true),
-                new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
-                new Column("stringCol", STRING, true),
-                new Column("nullBytesCol", BYTES, true),
-                new Column("bytesCol", BYTES, true),
-                new Column("numberCol", NativeTypes.numberOf(12), true),
-                new Column("decimalCol", NativeTypes.decimalOf(19, 3), true),
+                new Column("uuidCol".toUpperCase(), NativeTypes.UUID, true),
+                new Column("bitmaskCol".toUpperCase(), NativeTypes.bitmaskOf(42), true),
+                new Column("stringCol".toUpperCase(), STRING, true),
+                new Column("nullBytesCol".toUpperCase(), BYTES, true),
+                new Column("bytesCol".toUpperCase(), BYTES, true),
+                new Column("numberCol".toUpperCase(), NativeTypes.numberOf(12), true),
+                new Column("decimalCol".toUpperCase(), NativeTypes.decimalOf(19, 3), true),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
                 valCols
         );
 

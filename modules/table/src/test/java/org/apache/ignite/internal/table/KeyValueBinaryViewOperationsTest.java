@@ -53,11 +53,7 @@ import org.mockito.Mockito;
 public class KeyValueBinaryViewOperationsTest {
     @Test
     public void put() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -92,11 +88,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void putIfAbsent() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -121,11 +113,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void getAndPut() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -186,11 +174,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void remove() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -225,11 +209,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void removeExact() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         final KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -276,11 +256,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void replace() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -310,11 +286,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void replaceExact() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -336,11 +308,7 @@ public class KeyValueBinaryViewOperationsTest {
 
     @Test
     public void getAll() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-                1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
-        );
+        SchemaDescriptor schema = schemaDescriptor();
 
         KeyValueView<Tuple, Tuple> tbl = createTable(schema).keyValueView();
 
@@ -361,6 +329,15 @@ public class KeyValueBinaryViewOperationsTest {
         assertEquals(Tuple.create().set("val", 11L), res.get(key1));
         assertEquals(Tuple.create().set("val", 33L), res.get(key3));
         assertNull(res.get(key2));
+    }
+
+    @NotNull
+    private SchemaDescriptor schemaDescriptor() {
+        return new SchemaDescriptor(
+                    1,
+                    new Column[]{new Column("ID", NativeTypes.INT64, false)},
+                    new Column[]{new Column("VAL", NativeTypes.INT64, false)}
+            );
     }
 
     @NotNull

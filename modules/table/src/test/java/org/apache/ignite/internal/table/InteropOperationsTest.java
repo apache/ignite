@@ -99,14 +99,14 @@ public class InteropOperationsTest {
         List<Column> valueCols = new ArrayList<>(types.length * 2);
 
         for (NativeType type : types) {
-            String colName = "f" + type.spec().name().toLowerCase();
+            String colName = "F" + type.spec().name().toUpperCase();
 
             valueCols.add(new Column(colName, type, false));
             valueCols.add(new Column(colName + "N", type, true));
         }
 
         SCHEMA = new SchemaDescriptor(1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("ID", NativeTypes.INT64, false)},
                 valueCols.toArray(Column[]::new)
         );
 

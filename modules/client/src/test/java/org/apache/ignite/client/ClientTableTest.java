@@ -46,7 +46,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
         var ex = assertThrows(IgniteClientException.class, () -> table.get(null, key));
 
-        assertTrue(ex.getMessage().contains("Missed key column: id"),
+        assertTrue(ex.getMessage().contains("Missed key column: ID"),
                 ex.getMessage());
     }
 
@@ -68,8 +68,8 @@ public class ClientTableTest extends AbstractClientTableTest {
         assertEquals(DEFAULT_ID, resTuple.value(0));
 
         assertEquals(2, resTuple.columnCount());
-        assertEquals("id", resTuple.columnName(0));
-        assertEquals("name", resTuple.columnName(1));
+        assertEquals("ID", resTuple.columnName(0));
+        assertEquals("NAME", resTuple.columnName(1));
 
         var iter = tuple.iterator();
 
@@ -379,6 +379,6 @@ public class ClientTableTest extends AbstractClientTableTest {
 
         var ex = assertThrows(IgniteClientException.class, () -> defaultTable().recordView().upsert(null, tuple));
 
-        assertTrue(ex.getMessage().contains("Incorrect value type for column 'id': Expected Integer, but got String"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("Incorrect value type for column 'ID': Expected Integer, but got String"), ex.getMessage());
     }
 }

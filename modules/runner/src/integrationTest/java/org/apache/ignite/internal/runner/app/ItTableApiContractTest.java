@@ -106,7 +106,7 @@ public class ItTableApiContractTest extends AbstractBasicIntegrationTest {
     /**
      * Checks a contract for asynchronous dropping table.
      *
-     * @throws Exception If fialed.
+     * @throws Exception If failed.
      */
     @Test
     public void testDropTableAsync() throws Exception {
@@ -148,7 +148,7 @@ public class ItTableApiContractTest extends AbstractBasicIntegrationTest {
 
         ignite.tables().alterTable(TABLE_NAME,
                 chng -> chng.changeColumns(cols -> {
-                    cols.create("name", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
+                    cols.create("NAME", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
                             .withDefaultValueExpression("default").build(), colChg));
                 }));
 
@@ -158,7 +158,7 @@ public class ItTableApiContractTest extends AbstractBasicIntegrationTest {
 
         assertThrows(TableNotFoundException.class, () -> ignite.tables().alterTable(TABLE_NAME + "_not_exist",
                 chng -> chng.changeColumns(cols -> {
-                    cols.create("name", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
+                    cols.create("NAME", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
                             .withDefaultValueExpression("default").build(), colChg));
                 })));
     }
@@ -181,13 +181,13 @@ public class ItTableApiContractTest extends AbstractBasicIntegrationTest {
 
         CompletableFuture<Void> altTblFut1 = ignite.tables().alterTableAsync(TABLE_NAME,
                 chng -> chng.changeColumns(cols -> {
-                    cols.create("name", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
+                    cols.create("NAME", colChg -> convert(SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true)
                             .withDefaultValueExpression("default").build(), colChg));
                 }));
 
         CompletableFuture<Void> altTblFut2 = ignite.tables().alterTableAsync(TABLE_NAME + "_not_exist",
                 chng -> chng.changeColumns(cols -> {
-                    cols.create("name", colChg -> convert(SchemaBuilders.column("name", ColumnType.string()).asNullable(true)
+                    cols.create("NAME", colChg -> convert(SchemaBuilders.column("NAME", ColumnType.string()).asNullable(true)
                             .withDefaultValueExpression("default").build(), colChg));
                 }));
 

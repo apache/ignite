@@ -61,8 +61,8 @@ public class RecordBinaryViewOperationsTest {
     public void insert() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -90,8 +90,8 @@ public class RecordBinaryViewOperationsTest {
     public void upsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -119,8 +119,8 @@ public class RecordBinaryViewOperationsTest {
     public void getAndUpsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -145,8 +145,8 @@ public class RecordBinaryViewOperationsTest {
     public void remove() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -170,8 +170,8 @@ public class RecordBinaryViewOperationsTest {
     public void removeExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -218,8 +218,8 @@ public class RecordBinaryViewOperationsTest {
     public void replace() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -248,8 +248,8 @@ public class RecordBinaryViewOperationsTest {
     public void replaceExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
@@ -279,11 +279,11 @@ public class RecordBinaryViewOperationsTest {
     public void validateSchema() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
                 new Column[]{
-                        new Column("val", NativeTypes.INT64, true),
-                        new Column("str", NativeTypes.stringOf(3), true),
-                        new Column("blob", NativeTypes.blobOf(3), true)
+                        new Column("val".toUpperCase(), NativeTypes.INT64, true),
+                        new Column("str".toUpperCase(), NativeTypes.stringOf(3), true),
+                        new Column("blob".toUpperCase(), NativeTypes.blobOf(3), true)
                 }
         );
 
@@ -311,11 +311,11 @@ public class RecordBinaryViewOperationsTest {
     public void defaultValues() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
                 new Column[]{
-                        new Column("val", NativeTypes.INT64, true, () -> 28L),
-                        new Column("str", NativeTypes.stringOf(3), true, () -> "ABC"),
-                        new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[]{0, 1, 2})
+                        new Column("val".toUpperCase(), NativeTypes.INT64, true, () -> 28L),
+                        new Column("str".toUpperCase(), NativeTypes.stringOf(3), true, () -> "ABC"),
+                        new Column("blob".toUpperCase(), NativeTypes.blobOf(3), true, () -> new byte[]{0, 1, 2})
                 }
         );
 
@@ -339,8 +339,8 @@ public class RecordBinaryViewOperationsTest {
     public void getAll() {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("id", NativeTypes.INT64, false)},
-                new Column[]{new Column("val", NativeTypes.INT64, false)}
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                new Column[]{new Column("val".toUpperCase(), NativeTypes.INT64, false)}
         );
 
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();

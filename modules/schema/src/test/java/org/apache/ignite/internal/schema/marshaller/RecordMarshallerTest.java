@@ -142,8 +142,8 @@ public class RecordMarshallerTest {
                 1,
                 keyColumns(),
                 new Column[]{
-                        new Column("primitiveDoubleCol", DOUBLE, false),
-                        new Column("stringCol", STRING, true),
+                        new Column("primitiveDoubleCol".toUpperCase(), DOUBLE, false),
+                        new Column("stringCol".toUpperCase(), STRING, true),
                 }
         );
 
@@ -175,11 +175,11 @@ public class RecordMarshallerTest {
     @MethodSource("marshallerFactoryProvider")
     public void mapping(MarshallerFactory factory) throws MarshallerException {
         SchemaDescriptor schema = new SchemaDescriptor(1,
-                new Column[]{new Column("key", INT64, false)},
+                new Column[]{new Column("key".toUpperCase(), INT64, false)},
                 new Column[]{
-                        new Column("col1", INT32, false),
-                        new Column("col2", INT64, true),
-                        new Column("col3", STRING, false)
+                        new Column("col1".toUpperCase(), INT32, false),
+                        new Column("col2".toUpperCase(), INT64, true),
+                        new Column("col3".toUpperCase(), STRING, false)
                 });
 
         Mapper<TestObject> mapper = Mapper.builder(TestObject.class)
@@ -210,8 +210,8 @@ public class RecordMarshallerTest {
                 1,
                 keyColumns(),
                 new Column[]{
-                        new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
-                        new Column("shortCol", UUID, true)
+                        new Column("bitmaskCol".toUpperCase(), NativeTypes.bitmaskOf(42), true),
+                        new Column("shortCol".toUpperCase(), UUID, true)
                 }
         );
 
@@ -233,8 +233,8 @@ public class RecordMarshallerTest {
                 1,
                 keyColumns(),
                 new Column[]{
-                        new Column("primitiveLongCol", INT64, false),
-                        new Column("bitmaskCol", NativeTypes.bitmaskOf(9), true),
+                        new Column("primitiveLongCol".toUpperCase(), INT64, false),
+                        new Column("bitmaskCol".toUpperCase(), NativeTypes.bitmaskOf(9), true),
                 }
         );
 
@@ -254,8 +254,8 @@ public class RecordMarshallerTest {
     public void classWithPrivateConstructor(MarshallerFactory factory) throws MarshallerException, IllegalAccessException {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("primLongCol", INT64, false)},
-                new Column[]{new Column("primIntCol", INT32, false)}
+                new Column[]{new Column("primLongCol".toUpperCase(), INT64, false)},
+                new Column[]{new Column("primIntCol".toUpperCase(), INT32, false)}
         );
 
         RecordMarshaller<TestObjectWithPrivateConstructor> marshaller = factory.create(schema, TestObjectWithPrivateConstructor.class);
@@ -274,8 +274,8 @@ public class RecordMarshallerTest {
     public void classWithNoDefaultConstructor(MarshallerFactory factory) {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("primLongCol", INT64, false)},
-                new Column[]{new Column("primIntCol", INT32, false)}
+                new Column[]{new Column("primLongCol".toUpperCase(), INT64, false)},
+                new Column[]{new Column("primIntCol".toUpperCase(), INT32, false)}
         );
 
         final Object rec = TestObjectWithNoDefaultConstructor.randomObject(rnd);
@@ -288,8 +288,8 @@ public class RecordMarshallerTest {
     public void privateClass(MarshallerFactory factory) throws MarshallerException {
         SchemaDescriptor schema = new SchemaDescriptor(
                 1,
-                new Column[]{new Column("primLongCol", INT64, false)},
-                new Column[]{new Column("primIntCol", INT32, false)}
+                new Column[]{new Column("primLongCol".toUpperCase(), INT64, false)},
+                new Column[]{new Column("primIntCol".toUpperCase(), INT32, false)}
         );
 
         final ObjectFactory<PrivateTestObject> objFactory = new ObjectFactory<>(PrivateTestObject.class);
@@ -313,13 +313,13 @@ public class RecordMarshallerTest {
             Thread.currentThread().setContextClassLoader(new DynamicClassLoader(getClass().getClassLoader()));
 
             Column[] keyCols = new Column[]{
-                    new Column("key", INT64, false)
+                    new Column("key".toUpperCase(), INT64, false)
             };
 
             Column[] valCols = new Column[]{
-                    new Column("col0", INT64, false),
-                    new Column("col1", INT64, false),
-                    new Column("col2", INT64, false),
+                    new Column("col0".toUpperCase(), INT64, false),
+                    new Column("col1".toUpperCase(), INT64, false),
+                    new Column("col2".toUpperCase(), INT64, false),
             };
 
             SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
@@ -421,38 +421,38 @@ public class RecordMarshallerTest {
 
     private Column[] keyColumns() {
         return new Column[]{
-                new Column("primitiveLongCol", INT64, false),
-                new Column("intCol", INT32, true)
+                new Column("primitiveLongCol".toUpperCase(), INT64, false),
+                new Column("intCol".toUpperCase(), INT32, true)
         };
     }
 
     private Column[] valueColumnsAllTypes() {
         return new Column[]{
-                new Column("primitiveByteCol", INT8, false, () -> (byte) 0x42),
-                new Column("primitiveShortCol", INT16, false, () -> (short) 0x4242),
-                new Column("primitiveIntCol", INT32, false, () -> 0x42424242),
-                new Column("primitiveFloatCol", FLOAT, false),
-                new Column("primitiveDoubleCol", DOUBLE, false),
+                new Column("primitiveByteCol".toUpperCase(), INT8, false, () -> (byte) 0x42),
+                new Column("primitiveShortCol".toUpperCase(), INT16, false, () -> (short) 0x4242),
+                new Column("primitiveIntCol".toUpperCase(), INT32, false, () -> 0x42424242),
+                new Column("primitiveFloatCol".toUpperCase(), FLOAT, false),
+                new Column("primitiveDoubleCol".toUpperCase(), DOUBLE, false),
 
-                new Column("byteCol", INT8, true),
-                new Column("shortCol", INT16, true),
-                new Column("longCol", INT64, true),
-                new Column("nullLongCol", INT64, true),
-                new Column("floatCol", FLOAT, true),
-                new Column("doubleCol", DOUBLE, true),
+                new Column("byteCol".toUpperCase(), INT8, true),
+                new Column("shortCol".toUpperCase(), INT16, true),
+                new Column("longCol".toUpperCase(), INT64, true),
+                new Column("nullLongCol".toUpperCase(), INT64, true),
+                new Column("floatCol".toUpperCase(), FLOAT, true),
+                new Column("doubleCol".toUpperCase(), DOUBLE, true),
 
-                new Column("dateCol", DATE, true),
-                new Column("timeCol", time(), true),
-                new Column("dateTimeCol", datetime(), true),
-                new Column("timestampCol", timestamp(), true),
+                new Column("dateCol".toUpperCase(), DATE, true),
+                new Column("timeCol".toUpperCase(), time(), true),
+                new Column("dateTimeCol".toUpperCase(), datetime(), true),
+                new Column("timestampCol".toUpperCase(), timestamp(), true),
 
-                new Column("uuidCol", UUID, true),
-                new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
-                new Column("stringCol", STRING, true),
-                new Column("nullBytesCol", BYTES, true),
-                new Column("bytesCol", BYTES, true),
-                new Column("numberCol", NativeTypes.numberOf(12), true),
-                new Column("decimalCol", NativeTypes.decimalOf(19, 3), true),
+                new Column("uuidCol".toUpperCase(), UUID, true),
+                new Column("bitmaskCol".toUpperCase(), NativeTypes.bitmaskOf(42), true),
+                new Column("stringCol".toUpperCase(), STRING, true),
+                new Column("nullBytesCol".toUpperCase(), BYTES, true),
+                new Column("bytesCol".toUpperCase(), BYTES, true),
+                new Column("numberCol".toUpperCase(), NativeTypes.numberOf(12), true),
+                new Column("decimalCol".toUpperCase(), NativeTypes.decimalOf(19, 3), true),
         };
     }
 

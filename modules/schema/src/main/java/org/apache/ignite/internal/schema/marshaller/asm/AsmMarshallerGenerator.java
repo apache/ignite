@@ -210,7 +210,7 @@ public class AsmMarshallerGenerator implements MarshallerFactory {
         if (mode == BinaryMode.POJO) {
             return new ObjectMarshallerCodeGenerator(columns, cls, firstColIdx);
         } else {
-            return new IdentityMarshallerCodeGenerator(ColumnAccessCodeGenerator.createAccessor(mode, firstColIdx));
+            return new IdentityMarshallerCodeGenerator(ColumnAccessCodeGenerator.createAccessor(mode, null, firstColIdx));
         }
     }
 

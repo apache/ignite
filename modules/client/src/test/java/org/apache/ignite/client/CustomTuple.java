@@ -25,6 +25,7 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,9 +68,9 @@ public class CustomTuple implements Tuple {
     public String columnName(int columnIndex) {
         switch (columnIndex) {
             case 0:
-                return "id";
+                return "ID";
             case 1:
-                return "name";
+                return "NAME";
             default:
                 break;
         }
@@ -80,10 +81,10 @@ public class CustomTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public int columnIndex(@NotNull String columnName) {
-        switch (columnName) {
-            case "id":
+        switch (IgniteObjectName.parse(columnName)) {
+            case "ID":
                 return 0;
-            case "name":
+            case "NAME":
                 return 1;
             default:
                 break;
@@ -95,10 +96,10 @@ public class CustomTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public <T> T valueOrDefault(@NotNull String columnName, T def) {
-        switch (columnName) {
-            case "id":
+        switch (IgniteObjectName.parse(columnName)) {
+            case "ID":
                 return (T) id;
-            case "name":
+            case "NAME":
                 return (T) name;
             default:
                 break;

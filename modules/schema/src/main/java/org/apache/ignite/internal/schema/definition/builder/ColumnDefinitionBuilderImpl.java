@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema.definition.builder;
 
 import java.util.Map;
 import org.apache.ignite.internal.schema.definition.ColumnDefinitionImpl;
+import org.apache.ignite.internal.util.IgniteObjectName;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.builder.ColumnDefinitionBuilder;
@@ -46,7 +47,7 @@ public class ColumnDefinitionBuilderImpl implements ColumnDefinitionBuilder {
      * @param colType Column type.
      */
     public ColumnDefinitionBuilderImpl(String colName, ColumnType colType) {
-        this.colName = colName;
+        this.colName = IgniteObjectName.parse(colName);
         this.colType = colType;
     }
 

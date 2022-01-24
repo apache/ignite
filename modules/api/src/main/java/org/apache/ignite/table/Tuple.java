@@ -30,6 +30,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Tuple represents arbitrary set of columns whose values is accessible by column name.
+ * Attention: column name arguments passed to the methods of the tuple must use  SQL-parser style quotation, e.g.
+ * "myColumn" - means name "MYCOLUMN", "\"MyColumn\"" - "MyColumn", etc.
  *
  * <p>Provides specialized method for some value-types to avoid boxing/unboxing.
  */
@@ -189,7 +191,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets column value when a column with specified name is present in this tuple; returns default value otherwise.
      *
-     * @param columnName   Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @param defaultValue Default value.
      * @param <T>          Column default value type.
      * @return Column value if this tuple contains a column with the specified name. Otherwise returns {@code defaultValue}.
@@ -199,7 +203,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Sets column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - sets the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @param value      Value to set.
      * @return {@code this} for chaining.
      */
@@ -208,7 +214,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets column value for given column name.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @param <T>        Value type.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
@@ -264,7 +272,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code short} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -282,7 +292,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code int} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -300,7 +312,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code long} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -318,7 +332,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code float} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -336,7 +352,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code double} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -354,7 +372,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code String} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -372,7 +392,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code UUID} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -390,7 +412,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code BitSet} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -408,7 +432,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code LocalDate} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -426,7 +452,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code LocalTime} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -444,7 +472,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code LocalDateTime} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */
@@ -462,7 +492,9 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Gets {@code Instant} column value.
      *
-     * @param columnName Column name.
+     * @param columnName Column name with SQL-parser style quotation, e.g.
+     *                   "myColumn" - returns the value of the column with name "MYCOLUMN",
+     *                   "\"MyColumn\"" - "MyColumn", etc.
      * @return Column value.
      * @throws IllegalArgumentException If column with given name doesn't exists.
      */

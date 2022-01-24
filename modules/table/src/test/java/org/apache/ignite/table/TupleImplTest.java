@@ -124,8 +124,8 @@ public class TupleImplTest {
 
     @Test
     public void testColumnNameReturnsNameByIndex() {
-        assertEquals("id", getTuple().columnName(0));
-        assertEquals("name", getTuple().columnName(1));
+        assertEquals("ID", getTuple().columnName(0));
+        assertEquals("NAME", getTuple().columnName(1));
     }
 
     @Test

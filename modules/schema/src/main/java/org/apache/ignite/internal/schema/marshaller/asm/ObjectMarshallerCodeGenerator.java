@@ -31,8 +31,12 @@ import com.facebook.presto.bytecode.expression.BytecodeExpressions;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.row.RowAssembler;
@@ -60,14 +64,18 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
         this.targetClass = targetClass;
         columnAccessors = new ColumnAccessCodeGenerator[columns.length()];
 
-        try {
-            for (int i = 0; i < columns.length(); i++) {
-                final Field field = targetClass.getDeclaredField(columns.column(i).name());
+        Map<String, Field> flds = Arrays.stream(targetClass.getDeclaredFields())
+                .collect(Collectors.toMap(f -> f.getName().toUpperCase(), Function.identity()));
 
-                columnAccessors[i] = ColumnAccessCodeGenerator.createAccessor(MarshallerUtil.mode(field.getType()), i + firstColIdx);
+        for (int i = 0; i < columns.length(); i++) {
+            final Field field = flds.get(columns.column(i).name());
+
+            if (field == null) {
+                throw new IgniteInternalException("Field not found for column [col=" + columns.column(i) + ']');
             }
-        } catch (NoSuchFieldException ex) {
-            throw new IgniteInternalException(ex);
+
+            columnAccessors[i] = ColumnAccessCodeGenerator.createAccessor(MarshallerUtil.mode(field.getType()), field.getName(),
+                    i + firstColIdx);
         }
     }
 
@@ -171,7 +179,7 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
                             "findVarHandle",
                             VarHandle.class,
                             BytecodeExpressions.getStatic(targetClassField),
-                            BytecodeExpressions.constantString(columns.column(i).name()),
+                            BytecodeExpressions.constantString(columnAccessors[i].fieldName()),
                             BytecodeExpressions.constantClass(columnAccessors[i].mappedType())
                     ))
             );

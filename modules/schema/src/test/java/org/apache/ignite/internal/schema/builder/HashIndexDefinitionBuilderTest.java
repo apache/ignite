@@ -40,7 +40,7 @@ public class HashIndexDefinitionBuilderTest {
                 .withHints(Collections.singletonMap("param", "value"));
         HashIndexDefinition idx = builder.build();
 
-        assertEquals("testHI", idx.name());
+        assertEquals("TESTHI", idx.name());
         assertEquals(3, idx.columns().size());
     }
 

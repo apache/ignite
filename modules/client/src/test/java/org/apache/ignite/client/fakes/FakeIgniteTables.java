@@ -178,16 +178,16 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
             case 1:
                 return new SchemaDescriptor(
                         1,
-                        new Column[]{new Column("id", NativeTypes.INT64, false)},
-                        new Column[]{new Column("name", NativeTypes.STRING, true)});
+                        new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
+                        new Column[]{new Column("name".toUpperCase(), NativeTypes.STRING, true)});
 
             case 2:
                 return new SchemaDescriptor(
                         2,
-                        new Column[]{new Column("id", NativeTypes.INT64, false)},
+                        new Column[]{new Column("id".toUpperCase(), NativeTypes.INT64, false)},
                         new Column[]{
-                                new Column("name", NativeTypes.STRING, true),
-                                new Column("xyz", NativeTypes.STRING, true)
+                                new Column("name".toUpperCase(), NativeTypes.STRING, true),
+                                new Column("xyz".toUpperCase(), NativeTypes.STRING, true)
                         });
             default:
                 return null;
@@ -204,25 +204,25 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
         return new SchemaDescriptor(
                 v,
                 new Column[]{
-                        new Column("gid", NativeTypes.INT32, false),
-                        new Column("id", NativeTypes.STRING, false)
+                        new Column("gid".toUpperCase(), NativeTypes.INT32, false),
+                        new Column("id".toUpperCase(), NativeTypes.STRING, false)
                 },
                 new Column[]{
-                        new Column("zbyte", NativeTypes.INT8, true),
-                        new Column("zshort", NativeTypes.INT16, true),
-                        new Column("zint", NativeTypes.INT32, true),
-                        new Column("zlong", NativeTypes.INT64, true),
-                        new Column("zfloat", NativeTypes.FLOAT, true),
-                        new Column("zdouble", NativeTypes.DOUBLE, true),
-                        new Column("zdate", NativeTypes.DATE, true),
-                        new Column("ztime", NativeTypes.time(), true),
-                        new Column("ztimestamp", NativeTypes.timestamp(), true),
-                        new Column("zstring", NativeTypes.STRING, true),
-                        new Column("zbytes", NativeTypes.BYTES, true),
-                        new Column("zuuid", NativeTypes.UUID, true),
-                        new Column("zbitmask", NativeTypes.bitmaskOf(16), true),
-                        new Column("zdecimal", NativeTypes.decimalOf(20, 3), true),
-                        new Column("znumber", NativeTypes.numberOf(24), true),
+                        new Column("zbyte".toUpperCase(), NativeTypes.INT8, true),
+                        new Column("zshort".toUpperCase(), NativeTypes.INT16, true),
+                        new Column("zint".toUpperCase(), NativeTypes.INT32, true),
+                        new Column("zlong".toUpperCase(), NativeTypes.INT64, true),
+                        new Column("zfloat".toUpperCase(), NativeTypes.FLOAT, true),
+                        new Column("zdouble".toUpperCase(), NativeTypes.DOUBLE, true),
+                        new Column("zdate".toUpperCase(), NativeTypes.DATE, true),
+                        new Column("ztime".toUpperCase(), NativeTypes.time(), true),
+                        new Column("ztimestamp".toUpperCase(), NativeTypes.timestamp(), true),
+                        new Column("zstring".toUpperCase(), NativeTypes.STRING, true),
+                        new Column("zbytes".toUpperCase(), NativeTypes.BYTES, true),
+                        new Column("zuuid".toUpperCase(), NativeTypes.UUID, true),
+                        new Column("zbitmask".toUpperCase(), NativeTypes.bitmaskOf(16), true),
+                        new Column("zdecimal".toUpperCase(), NativeTypes.decimalOf(20, 3), true),
+                        new Column("znumber".toUpperCase(), NativeTypes.numberOf(24), true),
                 });
     }
 
@@ -236,12 +236,12 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
         return new SchemaDescriptor(
                 v,
                 new Column[]{
-                        new Column("id", NativeTypes.INT32, false)
+                        new Column("id".toUpperCase(), NativeTypes.INT32, false)
                 },
                 new Column[]{
-                        new Column("num", NativeTypes.INT8, true, () -> (byte) 42),
-                        new Column("str", NativeTypes.STRING, true, () -> "def_str"),
-                        new Column("str_non_null", NativeTypes.STRING, false, () -> "def_str2"),
+                        new Column("num".toUpperCase(), NativeTypes.INT8, true, () -> (byte) 42),
+                        new Column("str".toUpperCase(), NativeTypes.STRING, true, () -> "def_str"),
+                        new Column("str_non_null".toUpperCase(), NativeTypes.STRING, false, () -> "def_str2"),
                 });
     }
 
@@ -255,7 +255,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     private SchemaDescriptor getOneColumnSchema(Integer v) {
         return new SchemaDescriptor(
                 v,
-                new Column[]{new Column("id", NativeTypes.STRING, false)},
+                new Column[]{new Column("id".toUpperCase(), NativeTypes.STRING, false)},
                 new Column[0]);
     }
 }
