@@ -98,7 +98,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         VisorSnapshotRestoreTaskAction cmdAction = VisorSnapshotRestoreTaskAction.START;
 
         Set<String> grpNames = null;
-        boolean sync = false;
+        boolean waitComplete = false;
 
         if (cmd == CANCEL || cmd == CHECK) {
             if (argIter.hasNextSubArg()) {
@@ -114,11 +114,11 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("");
 
-            if ("--sync".equals(arg)) {
+            if ("--wait".equals(arg)) {
                 if (cmdAction != VisorSnapshotRestoreTaskAction.START)
                     throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
 
-                sync = true;
+                waitComplete = true;
 
                 continue;
             }
@@ -126,7 +126,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 throw new IllegalArgumentException("Command \"" + cmd + "\" doesn't support option \"" + arg + "\".");
 
             switch (arg) {
-                case "--caches":
+                case "--groups":
                     String argDesc = "comma-separated list of cache group names";
 
                     grpNames = argIter.nextStringSet(argDesc);
@@ -139,37 +139,41 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 case "--status":
                     cmdAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
 
-                    if (sync)
+                    if (waitComplete)
                         throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
 
                     break;
                 case "--start":
                     throw new IllegalArgumentException("Option \"" + arg + "\" is deprecated, " +
-                        "use \"--caches\" instead. Check the command syntax for more details.");
+                        "use \"--groups\" instead. Check the command syntax for more details.");
                 default:
                     throw new IllegalArgumentException("Command \"" + cmd + "\" doesn't support option \"" + arg + "\".");
             }
         }
 
         cmdArg = cmd == CREATE ?
-            new VisorSnapshotCreateTaskArg(snpName, sync) :
-            new VisorSnapshotRestoreTaskArg(snpName, sync, cmdAction, grpNames);
+            new VisorSnapshotCreateTaskArg(snpName, waitComplete) :
+            new VisorSnapshotRestoreTaskArg(snpName, waitComplete, cmdAction, grpNames);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
+        Map<String, String> createParams = new LinkedHashMap<>(commonParams);
 
-        usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
+        createParams.put("wait", "Wait for the entire operation to complete. Otherwise, the operation will run in the background and the command will return immediately.");
+
+        usage(log, "Create cluster snapshot:", SNAPSHOT, createParams, CREATE.toString(), "snapshot_name", optional("--wait"));
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
         usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
 
-        Map<String, String> startParams = new LinkedHashMap<>(commonParams);
+        Map<String, String> restoreParams = new LinkedHashMap<>(createParams);
 
-        startParams.put("group1,...groupN", "Cache group names.");
+        restoreParams.put("group1,...groupN", "Cache group names.");
 
-        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
+
+        usage(log, "Restore snapshot:", SNAPSHOT, restoreParams, RESTORE.toString(),
+            "snapshot_name", optional("--wait"), optional("--groups", "group1,...groupN"));
 
         usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());

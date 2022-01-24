@@ -140,10 +140,11 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Create cluster snapshot:
-    control.(sh|bat) --snapshot create snapshot_name
+    control.(sh|bat) --snapshot create snapshot_name [--wait]
 
     Parameters:
       snapshot_name  - Snapshot name.
+      wait           - Wait for the entire operation to complete. Otherwise, the operation will run in the background and the command will return immediately.
 
   Cancel running snapshot:
     control.(sh|bat) --snapshot cancel snapshot_name
@@ -158,10 +159,11 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
+    control.(sh|bat) --snapshot restore snapshot_name [--wait] [--groups group1,...groupN]
 
     Parameters:
       snapshot_name     - Snapshot name.
+      wait              - Wait for the entire operation to complete. Otherwise, the operation will run in the background and the command will return immediately.
       group1,...groupN  - Cache group names.
 
   Snapshot restore operation status:
