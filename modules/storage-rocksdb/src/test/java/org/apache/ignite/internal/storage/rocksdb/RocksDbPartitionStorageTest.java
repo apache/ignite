@@ -29,6 +29,7 @@ import org.apache.ignite.internal.configuration.testframework.ConfigurationExten
 import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
 import org.apache.ignite.internal.storage.AbstractPartitionStorageTest;
 import org.apache.ignite.internal.storage.engine.DataRegion;
+import org.apache.ignite.internal.storage.engine.StorageEngine;
 import org.apache.ignite.internal.storage.engine.TableStorage;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -42,7 +43,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 @ExtendWith(ConfigurationExtension.class)
-public class RocksDbStorageTest extends AbstractPartitionStorageTest {
+public class RocksDbPartitionStorageTest extends AbstractPartitionStorageTest {
+    private final StorageEngine engine = new RocksDbStorageEngine();
+
     private TableStorage table;
 
     private DataRegion dataRegion;
@@ -57,8 +60,6 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
             @InjectConfiguration(polymorphicExtensions = HashIndexConfigurationSchema.class) TableConfiguration tableCfg
     ) throws Exception {
         dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)).get();
-
-        RocksDbStorageEngine engine = new RocksDbStorageEngine();
 
         dataRegion = engine.createDataRegion(dataRegionCfg);
 
@@ -85,7 +86,8 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
         IgniteUtils.closeAll(
                 storage,
                 table == null ? null : table::stop,
-                dataRegion == null ? null : dataRegion::stop
+                dataRegion == null ? null : dataRegion::stop,
+                engine::stop
         );
     }
 }

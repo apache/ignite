@@ -70,18 +70,18 @@ public class ByteUtils {
     }
 
     /**
-     * Converts primitive {@code long} type to byte array.
+     * Converts a primitive {@code long} value to a byte array.
      *
      * @param l Long value.
      * @return Array of bytes.
      */
     public static byte[] longToBytes(long l) {
-        return toBytes(l, new byte[8], 0, 8);
+        return longToBytes(l, new byte[8], 0, 8);
     }
 
     /**
-     * Converts primitive {@code long} type to byte array and stores it in specified byte array. The highest byte in the value is the first
-     * byte in result array.
+     * Converts a primitive {@code long} value to a byte array and stores it in the specified byte array.
+     * The highest byte in the value will be the first byte in the result array.
      *
      * @param l     Unsigned long value.
      * @param bytes Bytes array to write result to.
@@ -89,13 +89,13 @@ public class ByteUtils {
      * @param limit Limit of bytes to write into output.
      * @return Number of bytes overwritten in {@code bytes} array.
      */
-    private static byte[] toBytes(long l, byte[] bytes, int off, int limit) {
+    private static byte[] longToBytes(long l, byte[] bytes, int off, int limit) {
         assert bytes != null;
-        assert limit <= 8;
+        assert limit <= Long.BYTES;
         assert bytes.length >= off + limit;
 
         for (int i = limit - 1; i >= 0; i--) {
-            bytes[off + i] = (byte) (l & 0xFF);
+            bytes[off + i] = (byte) l;
             l >>>= 8;
         }
 

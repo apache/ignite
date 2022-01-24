@@ -21,6 +21,8 @@ import static java.util.Collections.nCopies;
 import static org.apache.ignite.internal.rocksdb.RocksUtils.createSstFile;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,9 +48,11 @@ import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.rocksdb.IngestExternalFileOptions;
+import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
@@ -56,14 +60,23 @@ import org.rocksdb.WriteOptions;
 /**
  * Storage implementation based on a single RocksDB instance.
  */
-public class RocksDbPartitionStorage implements PartitionStorage {
+class RocksDbPartitionStorage implements PartitionStorage {
     /** Suffix for the temporary snapshot folder. */
     private static final String TMP_SUFFIX = ".tmp";
+
+    /**
+     * Size of the overhead for all keys in the storage: partition ID (unsigned {@code short}) + key hash ({@code int}).
+     */
+    private static final int PARTITION_KEY_PREFIX_SIZE = Short.BYTES + Integer.BYTES;
 
     /** Thread pool for async operations. */
     private final Executor threadPool;
 
-    /** Partition id. */
+    /**
+     * Partition ID (should be treated as an unsigned short).
+     *
+     * <p>Partition IDs are always stored in the big endian order, since they need to be compared lexicographically.
+     */
     private final int partId;
 
     /** RocksDb instance. */
@@ -78,28 +91,22 @@ public class RocksDbPartitionStorage implements PartitionStorage {
      * @param threadPool   Thread pool for async operations.
      * @param partId       Partition id.
      * @param db           Rocks DB instance.
-     * @param columnFamily Column family to be used for all storage operations.
+     * @param columnFamily Column family to be used for all storage operations. This class does not own the column family handler
+     *                     as it is shared between multiple storages and will not close it.
      * @throws StorageException If failed to create RocksDB instance.
      */
-    public RocksDbPartitionStorage(
+    RocksDbPartitionStorage(
             Executor threadPool,
             int partId,
             RocksDB db,
             ColumnFamily columnFamily
     ) throws StorageException {
+        assert partId >= 0 && partId < 0xFFFF : partId;
+
         this.threadPool = threadPool;
         this.partId = partId;
         this.db = db;
         this.data = columnFamily;
-    }
-
-    /**
-     * Returns the ColumnFamily instance associated with the partition.
-     *
-     * @return ColumnFamily instance associated with the partition.
-     */
-    public ColumnFamily columnFamily() {
-        return data;
     }
 
     /** {@inheritDoc} */
@@ -115,7 +122,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
         try {
             byte[] keyBytes = key.keyBytes();
 
-            byte[] valueBytes = data.get(keyBytes);
+            byte[] valueBytes = data.get(partitionKey(keyBytes));
 
             return valueBytes == null ? null : new SimpleDataRow(keyBytes, valueBytes);
         } catch (RocksDBException e) {
@@ -126,28 +133,29 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     /** {@inheritDoc} */
     @Override
     public Collection<DataRow> readAll(List<? extends SearchRow> keys) throws StorageException {
-        List<DataRow> res = new ArrayList<>(keys.size());
+        int resultSize = keys.size();
+
+        List<byte[]> values;
 
         try {
-            List<byte[]> keysList = getKeys(keys);
-            List<byte[]> valuesList = db.multiGetAsList(nCopies(keys.size(), data.handle()), keysList);
-
-            assert keys.size() == valuesList.size();
-
-            for (int i = 0; i < keysList.size(); i++) {
-                byte[] key = keysList.get(i);
-
-                byte[] value = valuesList.get(i);
-
-                if (value != null) {
-                    res.add(new SimpleDataRow(key, value));
-                }
-            }
-
-            return res;
+            values = db.multiGetAsList(nCopies(resultSize, data.handle()), getKeys(keys));
         } catch (RocksDBException e) {
             throw new StorageException("Failed to read data from the storage", e);
         }
+
+        assert resultSize == values.size();
+
+        List<DataRow> res = new ArrayList<>(resultSize);
+
+        for (int i = 0; i < resultSize; i++) {
+            byte[] value = values.get(i);
+
+            if (value != null) {
+                res.add(new SimpleDataRow(keys.get(i).keyBytes(), value));
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -158,7 +166,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
             assert value != null;
 
-            data.put(row.keyBytes(), value);
+            data.put(partitionKey(row.keyBytes()), value);
         } catch (RocksDBException e) {
             throw new StorageException("Filed to write data to the storage", e);
         }
@@ -174,7 +182,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
                 assert value != null;
 
-                data.put(batch, row.keyBytes(), value);
+                data.put(batch, partitionKey(row.keyBytes()), value);
             }
 
             db.write(opts, batch);
@@ -188,16 +196,18 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     public Collection<DataRow> insertAll(List<? extends DataRow> rows) throws StorageException {
         List<DataRow> cantInsert = new ArrayList<>();
 
-        try (WriteBatch batch = new WriteBatch();
-                WriteOptions opts = new WriteOptions()) {
+        try (var batch = new WriteBatch();
+                var opts = new WriteOptions()) {
 
             for (DataRow row : rows) {
-                if (data.get(row.keyBytes()) == null) {
+                byte[] partitionKey = partitionKey(row.keyBytes());
+
+                if (data.get(partitionKey) == null) {
                     byte[] value = row.valueBytes();
 
                     assert value != null;
 
-                    data.put(batch, row.keyBytes(), value);
+                    data.put(batch, partitionKey, value);
                 } else {
                     cantInsert.add(row);
                 }
@@ -215,7 +225,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     @Override
     public void remove(SearchRow key) throws StorageException {
         try {
-            data.delete(key.keyBytes());
+            data.delete(partitionKey(key.keyBytes()));
         } catch (RocksDBException e) {
             throw new StorageException("Failed to remove data from the storage", e);
         }
@@ -226,16 +236,16 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     public Collection<SearchRow> removeAll(List<? extends SearchRow> keys) {
         List<SearchRow> skippedRows = new ArrayList<>();
 
-        try (WriteBatch batch = new WriteBatch();
-                WriteOptions opts = new WriteOptions()) {
+        try (var batch = new WriteBatch();
+                var opts = new WriteOptions()) {
 
             for (SearchRow key : keys) {
-                byte[] keyBytes = key.keyBytes();
+                byte[] partitionKey = partitionKey(key.keyBytes());
 
-                byte[] value = data.get(keyBytes);
+                byte[] value = data.get(partitionKey);
 
                 if (value != null) {
-                    data.delete(batch, keyBytes);
+                    data.delete(batch, partitionKey);
                 } else {
                     skippedRows.add(key);
                 }
@@ -260,7 +270,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
             List<byte[]> keys = getKeys(keyValues);
             List<byte[]> values = db.multiGetAsList(nCopies(keys.size(), data.handle()), keys);
 
-            assert values.size() == keyValues.size();
+            assert values.size() == keys.size();
 
             for (int i = 0; i < keys.size(); i++) {
                 byte[] key = keys.get(i);
@@ -289,7 +299,9 @@ public class RocksDbPartitionStorage implements PartitionStorage {
         try {
             byte[] keyBytes = key.keyBytes();
 
-            byte[] existingDataBytes = data.get(keyBytes);
+            byte[] partitionKey = partitionKey(keyBytes);
+
+            byte[] existingDataBytes = data.get(partitionKey);
 
             clo.call(existingDataBytes == null ? null : new SimpleDataRow(keyBytes, existingDataBytes));
 
@@ -303,12 +315,12 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
                     assert value != null;
 
-                    data.put(keyBytes, value);
+                    data.put(partitionKey, value);
 
                     break;
 
                 case REMOVE:
-                    data.delete(keyBytes);
+                    data.delete(partitionKey);
 
                     break;
 
@@ -328,7 +340,22 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     /** {@inheritDoc} */
     @Override
     public Cursor<DataRow> scan(Predicate<SearchRow> filter) throws StorageException {
-        return new ScanCursor(data.newIterator(), filter);
+        var upperBound = new Slice(partitionEndPrefix());
+
+        var options = new ReadOptions().setIterateUpperBound(upperBound);
+
+        RocksIterator it = data.newIterator(options);
+
+        it.seek(partitionStartPrefix());
+
+        return new ScanCursor(it, filter) {
+            @Override
+            public void close() throws Exception {
+                super.close();
+
+                IgniteUtils.closeAll(options, upperBound);
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -393,16 +420,39 @@ public class RocksDbPartitionStorage implements PartitionStorage {
     /** {@inheritDoc} */
     @Override
     public void close() throws Exception {
-        data.close();
+        // nothing to do
     }
 
     @Override
     public void destroy() {
         try {
-            data.destroy();
-        } catch (Exception e) {
-            throw new StorageException("Failed to stop a partition: partition ID = " + partId, e);
+            data.deleteRange(partitionStartPrefix(), partitionEndPrefix());
+        } catch (RocksDBException e) {
+            throw new StorageException("Unable to delete partition " + partId, e);
         }
+    }
+
+    /**
+     * Creates a prefix of all keys in the given partition.
+     */
+    private byte[] partitionStartPrefix() {
+        return unsignedShortAsBytes(partId);
+    }
+
+    /**
+     * Creates a prefix of all keys in the next partition, used as an exclusive bound.
+     */
+    private byte[] partitionEndPrefix() {
+        return unsignedShortAsBytes(partId + 1);
+    }
+
+    private static byte[] unsignedShortAsBytes(int value) {
+        byte[] result = new byte[Short.BYTES];
+
+        result[0] = (byte) (value >>> 8);
+        result[1] = (byte) value;
+
+        return result;
     }
 
     /** Cursor wrapper over the RocksIterator object with custom filter. */
@@ -419,15 +469,13 @@ public class RocksDbPartitionStorage implements PartitionStorage {
         private ScanCursor(RocksIterator iter, Predicate<SearchRow> filter) {
             super(iter);
 
-            iter.seekToFirst();
-
             this.filter = filter;
         }
 
         /** {@inheritDoc} */
         @Override
         public boolean hasNext() {
-            while (super.hasNext() && !filter.test(new SimpleDataRow(it.key(), it.value()))) {
+            while (super.hasNext() && !filter.test(decodeEntry(it.key(), it.value()))) {
                 it.next();
             }
 
@@ -436,8 +484,24 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
         @Override
         protected DataRow decodeEntry(byte[] key, byte[] value) {
-            return new SimpleDataRow(key, value);
+            byte[] rowKey = Arrays.copyOfRange(key, PARTITION_KEY_PREFIX_SIZE, key.length);
+
+            return new SimpleDataRow(rowKey, value);
         }
+    }
+
+    /**
+     * Creates a key used in this partition storage by prepending a partition ID (to distinguish between different partition data)
+     * and the key's hash (an optimisation).
+     */
+    private byte[] partitionKey(byte[] key) {
+        return ByteBuffer.allocate(PARTITION_KEY_PREFIX_SIZE + key.length)
+                .order(ByteOrder.BIG_ENDIAN)
+                .putShort((short) partId)
+                // TODO: use precomputed hash, see https://issues.apache.org/jira/browse/IGNITE-16370
+                .putInt(Arrays.hashCode(key))
+                .put(key)
+                .array();
     }
 
     /**
@@ -446,11 +510,11 @@ public class RocksDbPartitionStorage implements PartitionStorage {
      * @param keyValues Key rows.
      * @return List of keys as byte arrays.
      */
-    private static List<byte[]> getKeys(List<? extends SearchRow> keyValues) {
+    private List<byte[]> getKeys(List<? extends SearchRow> keyValues) {
         List<byte[]> keys = new ArrayList<>(keyValues.size());
 
         for (SearchRow keyValue : keyValues) {
-            keys.add(keyValue.keyBytes());
+            keys.add(partitionKey(keyValue.keyBytes()));
         }
 
         return keys;

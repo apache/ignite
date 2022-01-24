@@ -27,12 +27,12 @@ class ColumnFamilyUtils {
     /**
      * Name of the meta column family matches default columns family, meaning that it always exist when new table is created.
      */
-    static final String CF_META = new String(RocksDB.DEFAULT_COLUMN_FAMILY, StandardCharsets.UTF_8);
+    static final String META_CF_NAME = new String(RocksDB.DEFAULT_COLUMN_FAMILY, StandardCharsets.UTF_8);
 
     /**
-     * Prefix for partitions column families names.
+     * Name of the Column Family that stores partition data.
      */
-    private static final String CF_PARTITION_PREFIX = "cf-part-";
+    static final String PARTITION_CF_NAME = "cf-part";
 
     /**
      * Prefix for SQL indexes column family names.
@@ -71,41 +71,17 @@ class ColumnFamilyUtils {
     }
 
     /**
-     * Creates column family name by partition id.
-     *
-     * @param partId Partition id.
-     * @return Column family name.
-     *
-     * @see #partitionId
-     */
-    static String partitionCfName(int partId) {
-        return CF_PARTITION_PREFIX + partId;
-    }
-
-    /**
-     * Gets partition id from column family name.
-     *
-     * @param cfName Column family name.
-     * @return Partition id.
-     *
-     * @see #partitionCfName
-     */
-    static int partitionId(String cfName) {
-        return Integer.parseInt(cfName.substring(CF_PARTITION_PREFIX.length()));
-    }
-
-    /**
      * Determines column family type by its name.
      *
      * @param cfName Column family name.
      * @return Column family type.
      */
     static ColumnFamilyType columnFamilyType(String cfName) {
-        if (CF_META.equals(cfName)) {
+        if (META_CF_NAME.equals(cfName)) {
             return ColumnFamilyType.META;
         }
 
-        if (cfName.startsWith(CF_PARTITION_PREFIX)) {
+        if (PARTITION_CF_NAME.equals(cfName)) {
             return ColumnFamilyType.PARTITION;
         }
 

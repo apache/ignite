@@ -19,6 +19,7 @@ package org.apache.ignite.internal.storage;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,11 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -468,15 +467,7 @@ public abstract class AbstractPartitionStorageTest {
     public void testReadAll() {
         List<DataRow> rows = insertBulk(100);
 
-        List<DataRow> rowsFromStorage = new ArrayList<>(storage.readAll(rows));
-
-        Comparator<DataRow> comparator = Comparator.comparing(DataRow::keyBytes, Arrays::compare)
-                .thenComparing(DataRow::valueBytes, Arrays::compare);
-
-        rows.sort(comparator);
-        rowsFromStorage.sort(comparator);
-
-        assertEquals(rows, rowsFromStorage);
+        assertThat(storage.readAll(rows), containsInAnyOrder(rows.toArray()));
     }
 
     /**

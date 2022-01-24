@@ -154,6 +154,17 @@ public class ColumnFamily implements AutoCloseable {
     }
 
     /**
+     * Removes all data between {@code start} (inclusive) and {@code end} (exclusive) keys.
+     *
+     * @param start start of the range (inclusive)
+     * @param end end of the range (exclusive)
+     * @throws RocksDBException if RocksDB fails to perform the operation
+     */
+    public void deleteRange(byte[] start, byte[] end) throws RocksDBException {
+        db.deleteRange(cfHandle, start, end);
+    }
+
+    /**
      * Creates a new iterator over this column family.
      *
      * @return Iterator.
