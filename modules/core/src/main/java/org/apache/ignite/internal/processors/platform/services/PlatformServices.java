@@ -515,9 +515,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
 
-        for (int i = 0; i < numServices; i++) {
+        for (int i = 0; i < numServices; i++)
             cfgs.add(dotnetConfiguration(reader));
-        }
 
         return cfgs;
     }
@@ -824,5 +823,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (svcCfg.getNodeFilter() instanceof PlatformClusterNodeFilterImpl)
             dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
         w.writeObjectDetached(dotnetFilter);
+
+        w.writeBoolean(svcCfg.isStatisticsEnabled());
     }
 }

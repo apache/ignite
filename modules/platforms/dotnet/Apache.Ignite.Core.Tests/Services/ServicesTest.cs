@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Services
             StartGrids();
 
             _thinClient = Ignition.StartClient(GetClientConfiguration());
-            
+
             Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
 
             _javaSvcName = TestUtils.DeployJavaService(Grid1);
@@ -495,86 +495,33 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName);
             Assert.AreSame(prx, svcInst);
         }
-        
+
         /// <summary>
-        /// Tests metrics are enabled/disabled.
+        /// Tests statistics of a platform service from client/remote node.
         /// </summary>
         [Test]
-        public void TestMetricsEnabled()
+        public void TestRemoteStatistics()
         {
-            var cfg = new ServiceConfiguration
-            {
-                Name = "TestMetricsSrv",
-                MaxPerNodeCount = 1,
-                TotalCount = 3,
-                Service = new PlatformTestService(),
-            };
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), () => new PlatformTestService());
 
-            Services.Deploy(cfg);
-
-            // Target service to test.
-            var platformTestSvc = _client.GetServices().GetServiceProxy<IJavaService>(cfg.Name, false);
-            
-            // Subject service, calculates invocations.
-            var helperSvc = _client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false);
-
-            // Do some invocations.
-            Assert.AreEqual(3, platformTestSvc.testOverload(1, 2));
-            Assert.AreEqual(2, platformTestSvc.test(1));
-            Assert.AreEqual(true, platformTestSvc.test(false));
-            Assert.AreEqual(null, platformTestSvc.testNull(null));
-            
-            // Service stats. is not enabled.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
-
-            Services.Cancel(cfg.Name);
-
-            AssertNoService(cfg.Name);
-            
-            // Redeploy service with enabled stats.
-            cfg.StatisticsEnabled = true;
-            cfg.Service = new PlatformTestService();
-            Grid1.GetServices().Deploy(cfg);
-            
-            // Service metrics exists but holds no values.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
-            
-            // One invocation.
-            Assert.AreEqual(2, platformTestSvc.test(1));
-            
-            // There should be just one certain and one total invocation.
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name));
-            
-            // 5 more invocations.
-            Assert.AreEqual(3, platformTestSvc.testOverload(1, 2));
-            Assert.AreEqual(2, platformTestSvc.test(1));
-            Assert.AreEqual(true, platformTestSvc.test(false));
-            Assert.AreEqual(null, platformTestSvc.testNull(null));
-            Assert.AreEqual(3, platformTestSvc.testParams(1, 2, 3));
-            
-            // We did 3 invocations of method named 'test(...)' in total.
-            Assert.AreEqual(3, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
-            
-            // We did 1 invocations of method named 'testOverload(...)' in total.
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "testOverload"));
-            
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "testNull"));
-            
-            // We did 6 total invocations.
-            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
-            
-            // We did 6 total invocations.
-            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
-
-            // Undeploy again.
-            Services.Cancel(cfg.Name);
-            AssertNoService(cfg.Name);
-
-            // All the metrics should be removed.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), () => new PlatformTestService());
         }
 
+        /// <summary>
+        /// Tests statistics of a platform service from server/local node.
+        /// </summary>
+        [Test]
+        public void TestLocalStatistics()
+        {
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), () => new PlatformTestService());
+
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), () => new PlatformTestService());
+        }
+
+        /// <summary>
+        /// Tests the duck typing: proxy interface can be different from actual service interface,
+        /// only called method signature should be compatible.
+        /// </summary>
         [Test]
         public void TestDuckTyping([Values(true, false)] bool local)
         {
@@ -1172,10 +1119,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(5.8, svc.testWrapper(3.3));
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
-            
+
             // Arrays
             var bytes = svc.testArray(new byte[] {1, 2, 3});
-            
+
             Assert.AreEqual(bytes.GetType(), typeof(byte[]));
             Assert.AreEqual(new byte[] {2, 3, 4}, bytes);
 
@@ -1362,7 +1309,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tets binary methods in services.
+        /// Tests binary methods in services.
         /// </summary>
         private void DoTestBinary(IJavaService svc, IJavaService binSvc, bool isPlatform)
         {
@@ -1403,6 +1350,92 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
+        }
+
+        /// <summary>
+        /// Tests platform service statistics.
+        /// </summary>
+        private void DoTestMetrics<T>(IServices producer, IServices consumer, Func<T> factory) where T : IService, IJavaService
+        {
+            var cfg = new ServiceConfiguration
+            {
+                Name = "TestMetricsSrv",
+                MaxPerNodeCount = 1,
+                TotalCount = 3,
+                Service = factory(),
+            };
+
+            producer.Deploy(cfg);
+
+            // Target service to test.
+            var testPlatformSvc = consumer.GetServiceProxy<IJavaService>(cfg.Name, false);
+
+            // Subject service, calculates invocations.
+            var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
+
+            // Do some invocations.
+            Assert.AreEqual(3, testPlatformSvc.testOverload(1, 2));
+            Assert.AreEqual(2, testPlatformSvc.test(1));
+            Assert.AreEqual(true, testPlatformSvc.test(false));
+            Assert.AreEqual(null, testPlatformSvc.testNull(null));
+
+            // Service stats. is not enabled.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
+
+            producer.Cancel(cfg.Name);
+
+            AssertNoService(cfg.Name);
+
+            // Redeploy service with enabled stats.
+            cfg.StatisticsEnabled = true;
+            cfg.Service = factory();
+            producer.Deploy(cfg);
+
+            testPlatformSvc = consumer.GetServiceProxy<IJavaService>(cfg.Name, false);
+
+            // Service metrics exists but holds no values.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
+
+            // One invocation.
+            Assert.AreEqual(2, testPlatformSvc.test(1));
+
+            // There should be just one certain and one total invocation.
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name));
+
+            // 5 more invocations.
+            Assert.AreEqual(3, testPlatformSvc.testOverload(1, 2));
+            Assert.AreEqual(2, testPlatformSvc.test(1));
+            Assert.AreEqual(true, testPlatformSvc.test(false));
+            Assert.AreEqual(null, testPlatformSvc.testNull(null));
+            Assert.AreEqual(3, testPlatformSvc.testParams(1, 2, 3));
+
+            // We did 3 invocations of method named 'test(...)' in total.
+            Assert.AreEqual(3, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
+
+            // We did 1 invocations of method named 'testOverload(...)' in total.
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "testOverload"));
+
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "testNull"));
+
+            // We did 6 total invocations.
+            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
+
+            // We did 6 total invocations.
+            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
+
+            // Check side methods are not measured. We still have only 6 invocations.
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Services.PlatformTestService", testPlatformSvc.ToString());
+            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
+            // 'ToString' must not be measured. Like Java service metrics, it's not declared as a service interface.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name, "ToString"));
+
+            // Undeploy again.
+            producer.Cancel(cfg.Name);
+            AssertNoService(cfg.Name);
+
+            // All the metrics should be removed.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
         }
 
         /// <summary>
@@ -2038,15 +2071,5 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 #endif
-    }
-
-    /// <summary> Tests with UseBinaryArray = true. </summary>
-    public class ServicesTestBinaryArrays : ServicesTest
-    {
-        /** */
-        public ServicesTestBinaryArrays() : base(true)
-        {
-            // No-op.
-        }
     }
 }

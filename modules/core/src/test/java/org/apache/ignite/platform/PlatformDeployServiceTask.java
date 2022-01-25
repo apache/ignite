@@ -68,7 +68,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumHistogramEntries;
+import static org.apache.ignite.internal.processors.service.GridServiceMetricsTest.sumHistogramEntries;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.serviceMetricRegistryName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

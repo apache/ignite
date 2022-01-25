@@ -209,14 +209,23 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         object testRoundtrip(object x);
-        
-        /// <summary> Returns number of measured methods (or certain method) of this service in its metrics. </summary>
-        int testNumberOfInvocations(string svcName, string histName = null);
 
         /** */
         void sleep(long delayMs);
 
         /** */
         object contextAttribute(string name);
+    }
+
+    /// <summary>
+    /// Interface for the methods that are available only on Java side.
+    /// </summary>
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public interface IJavaOnlyService : IJavaService
+    {
+        /// <summary>
+        /// Returns number of measured by service metrics invocations of all service's methods or of its certain method.
+        /// </summary>
+        int testNumberOfInvocations(string svcName, string histName = null);
     }
 }

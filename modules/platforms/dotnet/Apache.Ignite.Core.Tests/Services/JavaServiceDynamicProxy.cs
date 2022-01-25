@@ -402,12 +402,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public int testNumberOfInvocations(string svcName, string histName = null)
-        {
-            return _svc.testNumberOfInvocations(svcName, histName);
-        }
-
-        /** <inheritDoc /> */
         public object contextAttribute(string name)
         {
             return _svc.contextAttribute(name);
