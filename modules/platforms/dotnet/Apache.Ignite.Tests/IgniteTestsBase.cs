@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Tests
 {
+    using System;
     using System.Linq;
     using System.Threading.Tasks;
     using Ignite.Table;
@@ -34,11 +35,18 @@ namespace Apache.Ignite.Tests
 
         protected const string ValCol = "val";
 
-        private JavaServer? _serverNode;
+        private static readonly JavaServer ServerNode;
 
         private TestEventListener _eventListener = null!;
 
-        protected int ServerPort => _serverNode?.Port ?? 0;
+        static IgniteTestsBase()
+        {
+            ServerNode = JavaServer.StartAsync().GetAwaiter().GetResult();
+
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => ServerNode.Dispose();
+        }
+
+        protected static int ServerPort => ServerNode.Port;
 
         protected IIgniteClient Client { get; private set; } = null!;
 
@@ -53,7 +61,6 @@ namespace Apache.Ignite.Tests
         {
             _eventListener = new TestEventListener();
 
-            _serverNode = await JavaServer.StartAsync();
             Client = await IgniteClient.StartAsync(GetConfig());
 
             Table = (await Client.Tables.GetTableAsync(TableName))!;
@@ -66,7 +73,6 @@ namespace Apache.Ignite.Tests
         {
             // ReSharper disable once ConstantConditionalAccessQualifier
             Client?.Dispose();
-            _serverNode?.Dispose();
 
             Assert.Greater(_eventListener.BuffersRented, 0);
             Assert.AreEqual(_eventListener.BuffersReturned, _eventListener.BuffersRented);
@@ -76,7 +82,7 @@ namespace Apache.Ignite.Tests
         [TearDown]
         public async Task TearDown()
         {
-            await TupleView.DeleteAllAsync(null, Enumerable.Range(1, 10).Select(x => GetTuple(x)));
+            await TupleView.DeleteAllAsync(null, Enumerable.Range(-5, 20).Select(x => GetTuple(x)));
 
             Assert.AreEqual(_eventListener.BuffersReturned, _eventListener.BuffersRented);
         }
@@ -86,9 +92,9 @@ namespace Apache.Ignite.Tests
 
         protected static Poco GetPoco(long id, string? val = null) => new() {Key = id, Val = val};
 
-        protected IgniteClientConfiguration GetConfig() => new()
+        protected static IgniteClientConfiguration GetConfig() => new()
         {
-            Endpoints = { "127.0.0.1:" + _serverNode?.Port }
+            Endpoints = { "127.0.0.1:" + ServerNode.Port }
         };
     }
 }

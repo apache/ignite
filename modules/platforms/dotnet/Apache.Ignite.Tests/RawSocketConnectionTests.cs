@@ -120,7 +120,7 @@ namespace Apache.Ignite.Tests
             stream.Write(bufferWriter.WrittenSpan);
         }
 
-        private async Task<NetworkStream> Connect()
+        private static async Task<NetworkStream> Connect()
         {
             Socket socket = new(SocketType.Stream, ProtocolType.Tcp)
             {

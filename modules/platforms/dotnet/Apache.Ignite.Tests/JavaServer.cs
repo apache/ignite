@@ -121,6 +121,7 @@ namespace Apache.Ignite.Tests
         {
             _process?.Kill();
             _process?.Dispose();
+            Log(">>> Java server stopped.");
         }
 
         /// <summary>

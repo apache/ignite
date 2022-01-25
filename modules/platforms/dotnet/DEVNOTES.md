@@ -10,7 +10,8 @@ In repo root: `mvn clean install -DskipTests`
 In this dir: `dotnet build`
 
 ## Run Tests
-In this dir: `dotnet test`
+In this dir: `dotnet test --logger "console;verbosity=normal"`
+Specific test: `dotnet test --logger "console;verbosity=normal" --filter ClientSocketTests`
 
 ## Start a Test Node
 * cd `modules/runner`
