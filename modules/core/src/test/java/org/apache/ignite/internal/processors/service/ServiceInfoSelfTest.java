@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class ServiceInfoSelfTest {
     private IgniteUuid srvcId = IgniteUuid.randomUuid();
 
     /** Service configuration. */
-    private ServiceConfiguration cfg = configuration();
+    private LazyServiceConfiguration cfg = configuration();
 
     /** Subject under test. */
     private ServiceInfo sut = new ServiceInfo(nodeId, srvcId, cfg);
@@ -124,8 +123,8 @@ public class ServiceInfoSelfTest {
     /**
      * @return Service configuration.
      */
-    private ServiceConfiguration configuration() {
-        ServiceConfiguration cfg = new ServiceConfiguration();
+    private LazyServiceConfiguration configuration() {
+        LazyServiceConfiguration cfg = new LazyServiceConfiguration();
 
         cfg.setName("testConfig");
         cfg.setTotalCount(10);

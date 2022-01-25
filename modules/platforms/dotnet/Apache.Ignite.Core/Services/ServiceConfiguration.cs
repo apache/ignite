@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -110,10 +109,10 @@ namespace Apache.Ignite.Core.Services
                 var mtdNames = Service.GetType().GetInterfaces()
                     // No need to measure methods of these interface.
                     .Where(t => t != typeof(IService))
-                    .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                        .Select(mtd => mtd.Name)).Distinct();
+                    .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly |
+                                                  BindingFlags.Public ).Select(mtd => mtd.Name)).Distinct();
 
-                writer.WriteArray(mtdNames.ToArray());
+                writer.WriteStringArray(mtdNames.ToArray());
             }
         }
 

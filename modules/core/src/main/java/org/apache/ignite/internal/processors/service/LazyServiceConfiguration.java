@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,6 +40,9 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
 
     /** */
     private byte[] srvcBytes;
+
+    /** Known service methods to build service statistics. */
+    private String[] knownMtdNames;
 
     /**
      * Default constructor.
@@ -65,6 +69,8 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
         isStatisticsEnabled = cfg.isStatisticsEnabled();
+        knownMtdNames = cfg instanceof PlatformServiceConfiguration ? ((PlatformServiceConfiguration)cfg).mtdNames() :
+            null;
     }
 
     /**
@@ -118,6 +124,11 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
             return false;
 
         return true;
+    }
+
+    /** */
+    String[] knownMtdNames() {
+        return knownMtdNames;
     }
 
     /** {@inheritDoc} */

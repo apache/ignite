@@ -500,7 +500,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests metrics are enabled/disabled.
         /// </summary>
         [Test]
-        public void TestMetricsEnabled()
+        public void TestMetrics()
         {
             var cfg = new ServiceConfiguration
             {
@@ -513,16 +513,16 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.Deploy(cfg);
 
             // Target service to test.
-            var platformTestSvc = _client.GetServices().GetServiceProxy<IJavaService>(cfg.Name, false);
+            var testPlatformSvc = _client.GetServices().GetServiceProxy<IJavaService>(cfg.Name, false);
             
             // Subject service, calculates invocations.
             var helperSvc = _client.GetServices().GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
 
             // Do some invocations.
-            Assert.AreEqual(3, platformTestSvc.testOverload(1, 2));
-            Assert.AreEqual(2, platformTestSvc.test(1));
-            Assert.AreEqual(true, platformTestSvc.test(false));
-            Assert.AreEqual(null, platformTestSvc.testNull(null));
+            Assert.AreEqual(3, testPlatformSvc.testOverload(1, 2));
+            Assert.AreEqual(2, testPlatformSvc.test(1));
+            Assert.AreEqual(true, testPlatformSvc.test(false));
+            Assert.AreEqual(null, testPlatformSvc.testNull(null));
             
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
@@ -540,18 +540,18 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
             
             // One invocation.
-            Assert.AreEqual(2, platformTestSvc.test(1));
+            Assert.AreEqual(2, testPlatformSvc.test(1));
             
             // There should be just one certain and one total invocation.
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name));
             
             // 5 more invocations.
-            Assert.AreEqual(3, platformTestSvc.testOverload(1, 2));
-            Assert.AreEqual(2, platformTestSvc.test(1));
-            Assert.AreEqual(true, platformTestSvc.test(false));
-            Assert.AreEqual(null, platformTestSvc.testNull(null));
-            Assert.AreEqual(3, platformTestSvc.testParams(1, 2, 3));
+            Assert.AreEqual(3, testPlatformSvc.testOverload(1, 2));
+            Assert.AreEqual(2, testPlatformSvc.test(1));
+            Assert.AreEqual(true, testPlatformSvc.test(false));
+            Assert.AreEqual(null, testPlatformSvc.testNull(null));
+            Assert.AreEqual(3, testPlatformSvc.testParams(1, 2, 3));
             
             // We did 3 invocations of method named 'test(...)' in total.
             Assert.AreEqual(3, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
@@ -566,6 +566,12 @@ namespace Apache.Ignite.Core.Tests.Services
             
             // We did 6 total invocations.
             Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
+            
+            // Check side methods are not measured. We still have only 6 invocations.
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Services.PlatformTestService", testPlatformSvc.ToString());
+            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
+            // 'ToString' must not be measured. Like Java service metrics, it's not declared as a service interface.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name, "ToString"));
 
             // Undeploy again.
             Services.Cancel(cfg.Name);

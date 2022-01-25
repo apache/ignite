@@ -23,6 +23,9 @@ import org.apache.ignite.services.ServiceConfiguration;
  * Extended service configuration. Keeps knows service method names to build statistics.
  */
 public class PlatformServiceConfiguration extends ServiceConfiguration {
+    /** */
+    private static final long serialVersionUID = 1L;
+
     /** Known method names of platform service. */
     private String[] mtdNames;
 
