@@ -85,16 +85,11 @@ public enum IgniteReleasedVersion {
     /** @return Ignite versions since provided version. */
     public static Collection<String> since(IgniteReleasedVersion ver) {
         return F.transform(F.view(F.asList(values()), v -> v.version().compareTo(ver.version()) >= 0),
-            released -> onlyVersion(released.ver));
-    }
-
-    /** @return Released Ignite versions. */
-    public static Collection<String> all() {
-        return F.transform(F.asList(values()), released -> onlyVersion(released.ver));
+            IgniteReleasedVersion::toString);
     }
 
     /** @return String representation of three-part version number. */
-    private static String onlyVersion(IgniteProductVersion ver) {
+    @Override public String toString() {
         return ver.major() + "." + ver.minor() + "." + ver.maintenance();
     }
 }
