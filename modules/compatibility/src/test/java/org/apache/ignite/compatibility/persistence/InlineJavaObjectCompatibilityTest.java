@@ -70,6 +70,7 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     /** Test run configurations: Ignite version, Inline size configuration. */
     @Parameterized.Parameters(name = "ver={0}, cfgInlineSize={1}")
     public static Collection<Object[]> runConfig() {
+        /** 2.6.0 is a last version where POJO inlining isn't enabled. */
         return cartesianProduct(since(VER_2_6_0), F.asList(false, true));
     }
 
