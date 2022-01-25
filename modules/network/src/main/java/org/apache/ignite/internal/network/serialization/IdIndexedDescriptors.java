@@ -57,4 +57,22 @@ public interface IdIndexedDescriptors {
     default boolean hasDescriptor(int descriptorId) {
         return getDescriptor(descriptorId) != null;
     }
+
+    /**
+     * Returns a descriptor for a built-in type.
+     *
+     * @param builtinType   built-in type for lookup
+     */
+    default ClassDescriptor getBuiltInDescriptor(BuiltInType builtinType) {
+        return getRequiredDescriptor(builtinType.descriptorId());
+    }
+
+    /**
+     * Returns a descriptor for {@link java.lang.reflect.Proxy} built-in type.
+     *
+     * @return a descriptor for {@link java.lang.reflect.Proxy} built-in type
+     */
+    default ClassDescriptor getProxyDescriptor() {
+        return getBuiltInDescriptor(BuiltInType.PROXY);
+    }
 }

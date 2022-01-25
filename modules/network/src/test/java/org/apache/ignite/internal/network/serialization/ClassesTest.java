@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,6 +27,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ClassesTest {
     @Test
@@ -103,6 +107,101 @@ class ClassesTest {
         assertTrue(Classes.isExternalizable(EmptyExternalizable.class));
     }
 
+    @Test
+    void isRuntimeEnumReturnsFalseForNonEnum() {
+        assertFalse(Classes.isRuntimeEnum(Object.class));
+    }
+
+    @Test
+    void isRuntimeEnumReturnsTrueForSimpleEnums() {
+        assertTrue(Classes.isRuntimeEnum(SimpleEnum.class));
+    }
+
+    @Test
+    void isRuntimeEnumReturnsTrueForAnonClassesForMembersOfEnum() {
+        assertTrue(Classes.isRuntimeEnum(EnumWithAnonClassMember.class));
+    }
+
+    @Test
+    void isRuntimeEnumReturnsFalseForAbstractEnumClass() {
+        assertFalse(Classes.isRuntimeEnum(Enum.class));
+    }
+
+    @Test
+    void enumClassAsInSourceCodeReturnsTheClassItselfForSimpleEnums() {
+        assertThat(Classes.enumClassAsInSourceCode(SimpleEnum.MEMBER.getClass()), is(SimpleEnum.class));
+    }
+
+    @Test
+    void enumClassAsInSourceCodeReturnsTheClassItselfForAnonymousEnumSubclasses() {
+        assertThat(Classes.enumClassAsInSourceCode(EnumWithAnonClassMember.MEMBER.getClass()), is(EnumWithAnonClassMember.class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForFinalNonArrayClasses() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(FinalClass.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = {byte.class, short.class, int.class, long.class, float.class, double.class, char.class, boolean.class})
+    void isValueTypeKnownUpfrontReturnsTrueForPrimitiveClasses(Class<?> primitiveClass) {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(primitiveClass));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsFalseForNonFinalNonArrayClasses() {
+        assertFalse(Classes.isRuntimeTypeKnownUpfront(NonFinalClass.class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForSimpleEnumClasses() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(SimpleEnum.class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForEnumClassesWithAnonMembers() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(EnumWithAnonClassMember.class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsFalseForAbstractEnum() {
+        assertFalse(Classes.isRuntimeTypeKnownUpfront(Enum.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = {
+            byte[].class, short[].class, int[].class, long[].class,
+            float[].class, double[].class, char[].class, boolean[].class
+    })
+    void isValueTypeKnownUpfrontReturnsTrueForPrimitiveArrayClasses(Class<?> primitiveArrayClass) {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(primitiveArrayClass));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForArraysOfFinalClasses() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(FinalClass[].class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsFalseForArraysOfNonFinalClasses() {
+        assertFalse(Classes.isRuntimeTypeKnownUpfront(NonFinalClass[].class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForArraysOfSimpleEnumClasses() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(SimpleEnum[].class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsTrueForArraysOfEnumClassesWithAnonMembers() {
+        assertTrue(Classes.isRuntimeTypeKnownUpfront(EnumWithAnonClassMember[].class));
+    }
+
+    @Test
+    void isValueTypeKnownUpfrontReturnsFalseForArraysOfAbstractEnum() {
+        assertFalse(Classes.isRuntimeTypeKnownUpfront(Enum[].class));
+    }
+
     private static class EmptySerializable implements Serializable {
     }
 
@@ -122,5 +221,20 @@ class ClassesTest {
         public void readExternal(ObjectInput in) {
             // no-op
         }
+    }
+
+    private enum SimpleEnum {
+        MEMBER
+    }
+
+    private enum EnumWithAnonClassMember {
+        MEMBER {
+        }
+    }
+
+    private static final class FinalClass {
+    }
+
+    private static class NonFinalClass {
     }
 }

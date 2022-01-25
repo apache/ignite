@@ -40,7 +40,6 @@ import java.util.Set;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
-import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -49,7 +48,6 @@ import org.junit.jupiter.api.Test;
 class DefaultUserObjectMarshallerWithSerializableTest {
     private final ClassDescriptorRegistry descriptorRegistry = new ClassDescriptorRegistry();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
-    private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
@@ -80,7 +78,7 @@ class DefaultUserObjectMarshallerWithSerializableTest {
     }
 
     private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
-        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(notNullValue()));
 
@@ -123,7 +121,7 @@ class DefaultUserObjectMarshallerWithSerializableTest {
     void marshalsSerializableWithReplaceWithNull() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new SerializableWithReplaceWithNull(42));
 
-        SimpleSerializable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
+        SimpleSerializable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(nullValue()));
     }
@@ -140,7 +138,7 @@ class DefaultUserObjectMarshallerWithSerializableTest {
     void unmarshalsSerializableWithResolveWithNull() throws Exception {
         MarshalledObject marshalled = marshaller.marshal(new SerializableWithResolveWithNull(42));
 
-        SimpleSerializable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
+        SimpleSerializable unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(nullValue()));
     }

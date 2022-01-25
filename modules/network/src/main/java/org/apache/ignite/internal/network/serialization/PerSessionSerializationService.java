@@ -24,6 +24,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +58,12 @@ public class PerSessionSerializationService {
      * Map with merged class descriptors. They are the result of the merging of a local and a remote descriptor.
      * The key in this map is a <b>remote</b> descriptor id.
      */
-    private final Int2ObjectMap<ClassDescriptor> mergedDescriptorMap = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectMap<ClassDescriptor> mergedIdToDescriptorMap = new Int2ObjectOpenHashMap<>();
+    /**
+     * Map with merged class descriptors. They are the result of the merging of a local and a remote descriptor.
+     * The key in this map is the class.
+     */
+    private final Map<Class<?>, ClassDescriptor> mergedClassToDescriptorMap = new HashMap<>();
 
     /**
      * A collection of the descriptors that were sent to the remote node.
@@ -67,7 +73,7 @@ public class PerSessionSerializationService {
     /**
      * Descriptors provider.
      */
-    private final CompositeIdIndexedDescriptors descriptors;
+    private final CompositeDescriptorRegistry descriptors;
 
     /**
      * Constructor.
@@ -76,8 +82,11 @@ public class PerSessionSerializationService {
      */
     public PerSessionSerializationService(@NotNull SerializationService serializationService) {
         this.serializationService = serializationService;
-        this.descriptors = new CompositeIdIndexedDescriptors(new MapBackedIdIndexedDescriptors(mergedDescriptorMap),
-                serializationService.getDescriptorRegistry());
+        this.descriptors = new CompositeDescriptorRegistry(
+                new MapBackedIdIndexedDescriptors(mergedIdToDescriptorMap),
+                new MapBackedClassIndexedDescriptors(mergedClassToDescriptorMap),
+                serializationService.getDescriptorRegistry()
+        );
     }
 
     /**
@@ -118,7 +127,7 @@ public class PerSessionSerializationService {
      * @param array Byte array that contains a serialized object.
      * @param <T> Object's type.
      * @throws UserObjectSerializationException If failed to deserialize an object.
-     * @see SerializationService#readMarshallable(IdIndexedDescriptors, byte[])
+     * @see SerializationService#readMarshallable(DescriptorRegistry, byte[])
      */
     public <T> T readMarshallable(List<ClassDescriptorMessage> missingDescriptors, byte[] array)
             throws UserObjectSerializationException {
@@ -194,11 +203,13 @@ public class PerSessionSerializationService {
                 continue;
             }
 
-            if (mergedDescriptorMap.containsKey(clsDescriptorId)) {
+            if (mergedIdToDescriptorMap.containsKey(clsDescriptorId)) {
                 continue;
             }
 
-            mergedDescriptorMap.put(clsDescriptorId, messageToMergedClassDescriptor(clsMsg));
+            ClassDescriptor mergedDescriptor = messageToMergedClassDescriptor(clsMsg);
+            mergedIdToDescriptorMap.put(clsDescriptorId, mergedDescriptor);
+            mergedClassToDescriptorMap.put(mergedDescriptor.clazz(), mergedDescriptor);
         }
     }
 
@@ -277,6 +288,6 @@ public class PerSessionSerializationService {
 
     @TestOnly
     Map<Integer, ClassDescriptor> getDescriptorMapView() {
-        return mergedDescriptorMap;
+        return mergedIdToDescriptorMap;
     }
 }

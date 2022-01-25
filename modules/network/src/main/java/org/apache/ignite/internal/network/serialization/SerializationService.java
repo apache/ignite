@@ -83,7 +83,7 @@ public class SerializationService {
      * @param object Object to serialize.
      * @param <T> Object's type.
      * @throws UserObjectSerializationException If failed to serialize an object.
-     * @see UserObjectMarshaller#marshal(Object, Class)
+     * @see UserObjectMarshaller#marshal(Object)
      */
     public <T> MarshalledObject writeMarshallable(T object) throws UserObjectSerializationException {
         try {
@@ -100,10 +100,10 @@ public class SerializationService {
      * @param array Byte array that contains a serialized object.
      * @param <T> Object's type.
      * @throws UserObjectSerializationException If failed to deserialize an object.
-     * @see UserObjectMarshaller#unmarshal(byte[], IdIndexedDescriptors)
+     * @see UserObjectMarshaller#unmarshal(byte[], DescriptorRegistry)
      */
     @Nullable
-    public <T> T readMarshallable(IdIndexedDescriptors descriptors, byte[] array)
+    public <T> T readMarshallable(DescriptorRegistry descriptors, byte[] array)
             throws UserObjectSerializationException {
         try {
             return marshaller.unmarshal(array, descriptors);

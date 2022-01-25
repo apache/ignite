@@ -62,11 +62,7 @@ class BuiltInNonContainerMarshallers {
         addSingle(map, double[].class, BuiltInMarshalling::writeDoubleArray, BuiltInMarshalling::readDoubleArray);
         addSingle(map, boolean[].class, BuiltInMarshalling::writeBooleanArray, BuiltInMarshalling::readBooleanArray);
         addSingle(map, char[].class, BuiltInMarshalling::writeCharArray, BuiltInMarshalling::readCharArray);
-        addSingle(map, String[].class, BuiltInMarshalling::writeStringArray, BuiltInMarshalling::readStringArray);
         addSingle(map, BigDecimal.class, BuiltInMarshalling::writeBigDecimal, BuiltInMarshalling::readBigDecimal);
-        addSingle(map, BigDecimal[].class, BuiltInMarshalling::writeBigDecimalArray, BuiltInMarshalling::readBigDecimalArray);
-        addSingle(map, Enum.class, (obj, out, ctx) -> BuiltInMarshalling.writeEnum(obj, out), BuiltInMarshalling::readEnum);
-        addSingle(map, Enum[].class, BuiltInMarshalling::writeEnumArray, BuiltInMarshalling::readEnumArray);
         addSingle(map, BitSet.class, BuiltInMarshalling::writeBitSet, BuiltInMarshalling::readBitSet);
         addSingle(map, Null.class, (obj, output) -> {}, input -> null);
         addSingle(map, Class.class, (obj, out, ctx) -> BuiltInMarshalling.writeClass(obj, out), BuiltInMarshalling::readClass);
@@ -122,15 +118,20 @@ class BuiltInNonContainerMarshallers {
     /**
      * Returns {@code true} if the given descriptor is a built-in we can handle.
      *
-     * @param classToCheck the class to check
+     * @param descriptor class descriptor to check
      * @return {@code true} if we the given descriptor is a built-in we can handle
      */
-    boolean supports(Class<?> classToCheck) {
-        return builtInMarshallers.containsKey(classToCheck);
+    boolean supports(ClassDescriptor descriptor) {
+        return descriptor.isEnum() || builtInMarshallers.containsKey(descriptor.clazz());
     }
 
     void writeBuiltIn(Object object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
             throws IOException, MarshalException {
+        if (descriptor.isEnum()) {
+            writeEnum((Enum<?>) object, descriptor, output, context);
+            return;
+        }
+
         BuiltInMarshaller<?> builtInMarshaller = findBuiltInMarshaller(descriptor);
 
         builtInMarshaller.marshal(object, output, context);
@@ -138,10 +139,26 @@ class BuiltInNonContainerMarshallers {
         context.addUsedDescriptor(descriptor);
     }
 
+    private void writeEnum(Enum<?> object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
+            throws IOException {
+        BuiltInMarshalling.writeEnum(object, output);
+
+        context.addUsedDescriptor(descriptor);
+    }
+
     Object readBuiltIn(ClassDescriptor descriptor, DataInputStream input, UnmarshallingContext context)
             throws IOException, UnmarshalException {
+        if (descriptor.isEnum()) {
+            return readEnum(descriptor, input);
+        }
+
         BuiltInMarshaller<?> builtinMarshaller = findBuiltInMarshaller(descriptor);
         return builtinMarshaller.unmarshal(input, context);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Object readEnum(ClassDescriptor descriptor, DataInputStream input) throws IOException {
+        return BuiltInMarshalling.readEnum(input, (Class<? extends Enum>) descriptor.clazz());
     }
 
     private BuiltInMarshaller<?> findBuiltInMarshaller(ClassDescriptor descriptor) {

@@ -17,23 +17,8 @@
 
 package org.apache.ignite.internal.network.serialization;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import org.jetbrains.annotations.Nullable;
-
 /**
- * A map-backed implementation of {@link IdIndexedDescriptors}.
+ * A class descriptor registry.
  */
-public class MapBackedIdIndexedDescriptors implements IdIndexedDescriptors {
-    private final Int2ObjectMap<ClassDescriptor> descriptorsById;
-
-    public MapBackedIdIndexedDescriptors(Int2ObjectMap<ClassDescriptor> descriptorsById) {
-        this.descriptorsById = descriptorsById;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    @Nullable
-    public ClassDescriptor getDescriptor(int descriptorId) {
-        return descriptorsById.get(descriptorId);
-    }
+public interface DescriptorRegistry extends IdIndexedDescriptors, ClassIndexedDescriptors {
 }

@@ -17,29 +17,23 @@
 
 package org.apache.ignite.internal.network.serialization;
 
+import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Descriptor provider that uses {@link ClassDescriptorRegistry} for built-in descriptor ids and
- * delegates to another {@link IdIndexedDescriptors} for other ids.
+ * A map-backed implementation of {@link ClassIndexedDescriptors}.
  */
-public class CompositeIdIndexedDescriptors implements IdIndexedDescriptors {
-    private final IdIndexedDescriptors descriptors;
-    private final ClassDescriptorRegistry ctx;
+public class MapBackedClassIndexedDescriptors implements ClassIndexedDescriptors {
+    private final Map<Class<?>, ClassDescriptor> descriptorsByClass;
 
-    public CompositeIdIndexedDescriptors(IdIndexedDescriptors descriptors,
-            ClassDescriptorRegistry ctx) {
-        this.descriptors = descriptors;
-        this.ctx = ctx;
+    public MapBackedClassIndexedDescriptors(Map<Class<?>, ClassDescriptor> descriptorsByClass) {
+        this.descriptorsByClass = descriptorsByClass;
     }
 
     /** {@inheritDoc} */
     @Override
-    public @Nullable ClassDescriptor getDescriptor(int descriptorId) {
-        if (ClassDescriptorRegistry.shouldBeBuiltIn(descriptorId)) {
-            return ctx.getDescriptor(descriptorId);
-        }
-
-        return descriptors.getDescriptor(descriptorId);
+    @Nullable
+    public ClassDescriptor getDescriptor(Class<?> clazz) {
+        return descriptorsByClass.get(clazz);
     }
 }

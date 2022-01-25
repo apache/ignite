@@ -43,7 +43,6 @@ import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.netty.InboundDecoder;
 import org.apache.ignite.internal.network.serialization.marshal.MarshalException;
 import org.apache.ignite.internal.network.serialization.marshal.MarshalledObject;
-import org.apache.ignite.internal.network.serialization.marshal.UnmarshalException;
 import org.apache.ignite.internal.network.serialization.marshal.UserObjectMarshaller;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -189,7 +188,7 @@ public class MarshallableTest {
         }
 
         @Override
-        public MarshalledObject marshal(@Nullable Object object, Class<?> declaredClass) throws MarshalException {
+        public MarshalledObject marshal(@Nullable Object object) throws MarshalException {
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
                 oos.writeObject(object);
                 oos.close();
@@ -199,13 +198,9 @@ public class MarshallableTest {
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
-        public MarshalledObject marshal(@Nullable Object object) throws MarshalException {
-            return marshal(object, object != null ? object.getClass() : null);
-        }
-
-        @Override
-        public <T> @Nullable T unmarshal(byte[] bytes, IdIndexedDescriptors mergedDescriptors) throws UnmarshalException {
+        public <T> @Nullable T unmarshal(byte[] bytes, DescriptorRegistry mergedDescriptors) {
             try (var bais = new ByteArrayInputStream(bytes); var ois = new ObjectInputStream(bais)) {
                 return (T) ois.readObject();
             } catch (Exception e) {

@@ -64,25 +64,19 @@ public enum BuiltInType {
     DOUBLE_ARRAY(26, double[].class),
     BOOLEAN_ARRAY(27, boolean[].class),
     CHAR_ARRAY(28, char[].class),
-    /** An arbitrary array of objects (references) except for the cases supported specifically (like String[], Enum{} and so on). */
-    OBJECT_ARRAY(29, Object[].class),
-    STRING_ARRAY(30, String[].class),
-    DECIMAL(31, BigDecimal.class),
-    DECIMAL_ARRAY(32, BigDecimal[].class),
-    ENUM(33, Enum.class),
-    ENUM_ARRAY(34, Enum[].class),
-    ARRAY_LIST(35, ArrayList.class),
-    LINKED_LIST(36, LinkedList.class),
-    HASH_SET(37, HashSet.class),
-    LINKED_HASH_SET(38, LinkedHashSet.class),
-    SINGLETON_LIST(39, Collections.singletonList(null).getClass()),
-    HASH_MAP(40, HashMap.class),
-    LINKED_HASH_MAP(41, LinkedHashMap.class),
-    BIT_SET(42, BitSet.class),
-    NULL(43, Null.class),
-    REFERENCE(44, DummyPlaceholder.class),
-    CLASS(45, Class.class),
-    PROXY(46, Proxy.class)
+    DECIMAL(29, BigDecimal.class),
+    ARRAY_LIST(30, ArrayList.class),
+    LINKED_LIST(31, LinkedList.class),
+    HASH_SET(32, HashSet.class),
+    LINKED_HASH_SET(33, LinkedHashSet.class),
+    SINGLETON_LIST(34, Collections.singletonList(null).getClass()),
+    HASH_MAP(35, HashMap.class),
+    LINKED_HASH_MAP(36, LinkedHashMap.class),
+    BIT_SET(37, BitSet.class),
+    NULL(38, Null.class),
+    REFERENCE(39, ReferencePlaceholder.class),
+    CLASS(40, Class.class),
+    PROXY(41, Proxy.class)
     ;
 
     /**
@@ -139,6 +133,9 @@ public enum BuiltInType {
         );
     }
 
-    private static class DummyPlaceholder {
+    private static class ReferencePlaceholder {
+    }
+
+    private static class NotNullPlaceholder {
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.network.serialization;
 
 import java.io.Externalizable;
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
 
 /**
  * Utilities to work with classes.
@@ -64,6 +65,50 @@ public class Classes {
      */
     public static boolean isExternalizable(Class<?> objectClass) {
         return Externalizable.class.isAssignableFrom(objectClass);
+    }
+
+    /**
+     * Returns {@code true} if the given class is an enum or represents an anonymous enum constant, but is not exactly {@link Enum}.
+     *
+     * @param objectClass class to check
+     * @return {@code true} if the given class is an enum or represents an anonymous enum constant
+     */
+    public static boolean isRuntimeEnum(Class<?> objectClass) {
+        return Enum.class.isAssignableFrom(objectClass) && objectClass != Enum.class;
+    }
+
+    /**
+     * Returns enum class as it appears in the source code. If the class is an anonymous subclass os an enum, we return its superclass,
+     * otherwise we just return its class.
+     *
+     * @param enumClass enum class
+     * @return enum class as it appears in the source code
+     */
+    public static Class<?> enumClassAsInSourceCode(Class<?> enumClass) {
+        assert enumClass != null;
+        assert Enum.class.isAssignableFrom(enumClass);
+
+        if (!enumClass.isEnum()) {
+            // this is needed for enums where members are represented with anonymous classes
+            enumClass = enumClass.getSuperclass();
+        }
+        return enumClass;
+    }
+
+    /**
+     * Returns {@code true} if a field (or array item) of the described class can only host (at runtime) instances of this type
+     * (and not subtypes), so the runtime type is known upfront. This is also true for enums, even though technically their values
+     * might have subtypes; but we serialize them using their names, so we still treat the type as known upfront.
+     *
+     * @return {@code true} if a field (or array item) of the described class can only host (at runtime) instances of the concrete type
+     *     that is known upfront
+     */
+    public static boolean isRuntimeTypeKnownUpfront(Class<?> clazz) {
+        if (clazz.isArray()) {
+            return isRuntimeTypeKnownUpfront(clazz.getComponentType());
+        }
+
+        return clazz.isPrimitive() || Modifier.isFinal(clazz.getModifiers()) || isRuntimeEnum(clazz);
     }
 
     private Classes() {

@@ -57,7 +57,7 @@ class ProxyMarshaller {
         this.valueReader = valueReader;
     }
 
-    boolean isProxyClass(Class<?> classToCheck) {
+    static boolean isProxyClass(Class<?> classToCheck) {
         return Proxy.isProxyClass(classToCheck);
     }
 

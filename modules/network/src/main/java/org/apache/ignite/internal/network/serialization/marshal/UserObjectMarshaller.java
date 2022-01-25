@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.lang.reflect.Field;
-import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
+import org.apache.ignite.internal.network.serialization.DescriptorRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,17 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * @see <a href="https://github.com/gridgain/gridgain-9-ce/blob/iep-67/modules/network/README.md">IEP-67</a>
  */
 public interface UserObjectMarshaller {
-    /**
-     * Marshals the provided object.
-     *
-     * @param object        object to marshal
-     * @param declaredClass class of the object as it is perceived externally, usually in {@link Field#getType()} from which the value
-     *                      is extracted; it may differ from object.getClass() only when it is for a primitive type (i.e. byte.class)
-     * @return marshalled representation
-     * @throws MarshalException if marshalling fails
-     */
-    MarshalledObject marshal(@Nullable Object object, Class<?> declaredClass) throws MarshalException;
-
     /**
      * Marshals an object detecting its type from the value.
      *
@@ -58,5 +46,5 @@ public interface UserObjectMarshaller {
      * @throws UnmarshalException if unmarshalling fails
      */
     @Nullable
-    <T> T unmarshal(byte[] bytes, IdIndexedDescriptors mergedDescriptors) throws UnmarshalException;
+    <T> T unmarshal(byte[] bytes, DescriptorRegistry mergedDescriptors) throws UnmarshalException;
 }

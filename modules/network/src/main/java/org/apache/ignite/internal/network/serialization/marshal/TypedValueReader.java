@@ -17,26 +17,26 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
-import java.io.DataOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Writes objects to a {@link DataOutputStream} taking their declared types into consideration (if any).
- * The type might come from a field or be an array component type.
+ * Knows how to read a value from a {@link DataInputStream} and, optionally, knows the expected type (might be taken from
+ * a field or be an array component type).
  */
-interface TypedValueWriter {
+interface TypedValueReader {
     /**
-     * Writes the given object to the {@link DataOutputStream}.
+     * Reads the next value from a {@link DataInputStream}.
      *
-     * @param object        object to write
+     * @param input     from where to read
      * @param declaredClass the original class of the object (i.e. {@code byte.class} for {@code byte}); might be {@code null}
      *                      if the type information is not available
-     * @param output        where to write to
-     * @param context       marshalling context
-     * @throws IOException      if an I/O problem occurs
-     * @throws MarshalException if another problem occurs
+     * @param context   unmarshalling context
+     * @return the value that was read
+     * @throws IOException          if an I/O problem occurs
+     * @throws UnmarshalException   if another problem (like {@link ClassNotFoundException}) occurs
      */
-    void write(Object object, @Nullable Class<?> declaredClass, DataOutputStream output, MarshallingContext context)
-            throws IOException, MarshalException;
+    Object read(DataInputStream input, @Nullable Class<?> declaredClass, UnmarshallingContext context)
+            throws IOException, UnmarshalException;
 }

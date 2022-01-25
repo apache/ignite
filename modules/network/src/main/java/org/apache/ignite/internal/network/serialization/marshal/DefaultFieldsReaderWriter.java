@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.network.serialization.marshal;
 
+import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.BitSet;
 import org.apache.ignite.internal.network.serialization.ClassDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Knows how to read/write fields in the 'default way' (that is, the way that is default for User Object Serialization,
@@ -40,6 +43,9 @@ interface DefaultFieldsReaderWriter {
     void defaultWriteFields(Object object, ClassDescriptor descriptor, DataOutputStream output, MarshallingContext context)
             throws MarshalException, IOException;
 
+    @Nullable
+    BitSet writeNullsBitSet(Object object, ClassDescriptor descriptor, DataOutputStream output) throws IOException;
+
     /**
      * Reads object fields from the input stream and stores them in the object using default marshalling.
      *
@@ -52,4 +58,7 @@ interface DefaultFieldsReaderWriter {
      */
     void defaultFillFieldsFrom(DataInputStream input, Object object, ClassDescriptor descriptor, UnmarshallingContext context)
             throws IOException, UnmarshalException;
+
+    @Nullable
+    BitSet readNullsBitSet(DataInput input, ClassDescriptor descriptor) throws IOException;
 }

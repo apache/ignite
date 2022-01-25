@@ -21,42 +21,35 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class MapBackedIdIndexedDescriptorsTest {
+class MapBackedClassIndexedDescriptorsTest {
     private final ClassDescriptorRegistry unrelatedRegistry = new ClassDescriptorRegistry();
 
     @Test
     void retrievesKnownDescriptorByClass() {
         ClassDescriptor descriptor = unrelatedRegistry.getRequiredDescriptor(String.class);
-        var descriptors = new MapBackedIdIndexedDescriptors(int2ObjectMap(Map.of(descriptor.descriptorId(), descriptor)));
+        var descriptors = new MapBackedClassIndexedDescriptors(Map.of(String.class, descriptor));
 
-        assertThat(descriptors.getDescriptor(descriptor.descriptorId()), is(descriptor));
-    }
-
-    private Int2ObjectMap<ClassDescriptor> int2ObjectMap(Map<Integer, ClassDescriptor> map) {
-        Int2ObjectMap<ClassDescriptor> result = new Int2ObjectOpenHashMap<>();
-        result.putAll(map);
-        return result;
+        assertThat(descriptors.getDescriptor(String.class), is(descriptor));
     }
 
     @Test
     void doesNotFindAnythingByClassWhenMapDoesNotContainTheClassDescriptor() {
-        var descriptors = new MapBackedIdIndexedDescriptors(int2ObjectMap(emptyMap()));
+        var descriptors = new MapBackedClassIndexedDescriptors(emptyMap());
 
-        assertThat(descriptors.getDescriptor(42), is(nullValue()));
+        assertThat(descriptors.getDescriptor(String.class), is(nullValue()));
     }
 
     @Test
     void throwsWhenQueriedAboutUnknownDescriptorByClass() {
-        var descriptors = new MapBackedIdIndexedDescriptors(int2ObjectMap(emptyMap()));
+        var descriptors = new MapBackedClassIndexedDescriptors(emptyMap());
 
-        Throwable thrownEx = assertThrows(IllegalStateException.class, () -> descriptors.getRequiredDescriptor(42));
-        assertThat(thrownEx.getMessage(), is("Did not find a descriptor with ID=42"));
+        Throwable thrownEx = assertThrows(IllegalStateException.class, () -> descriptors.getRequiredDescriptor(String.class));
+        assertThat(thrownEx.getMessage(), startsWith("Did not find a descriptor by class"));
     }
 }

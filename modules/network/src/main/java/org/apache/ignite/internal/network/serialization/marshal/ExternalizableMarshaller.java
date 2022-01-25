@@ -27,8 +27,8 @@ import org.apache.ignite.internal.network.serialization.ClassDescriptor;
  * (Um)marshalling specific to EXTERNALIZABLE serialization type.
  */
 class ExternalizableMarshaller {
-    private final ValueReader<Object> valueReader;
-    private final ValueReader<Object> unsharedReader;
+    private final TypedValueReader valueReader;
+    private final TypedValueReader unsharedReader;
     private final TypedValueWriter valueWriter;
     private final TypedValueWriter unsharedWriter;
     private final DefaultFieldsReaderWriter defaultFieldsReaderWriter;
@@ -38,8 +38,8 @@ class ExternalizableMarshaller {
     ExternalizableMarshaller(
             TypedValueWriter typedValueWriter,
             TypedValueWriter unsharedWriter,
-            ValueReader<Object> valueReader,
-            ValueReader<Object> unsharedReader,
+            TypedValueReader valueReader,
+            TypedValueReader unsharedReader,
             DefaultFieldsReaderWriter defaultFieldsReaderWriter
     ) {
         this.valueWriter = typedValueWriter;

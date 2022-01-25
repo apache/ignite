@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import org.apache.ignite.internal.network.serialization.Classes;
 
 /**
  * Instantiates {@link Serializable} classes using the mechanism defined by Java Serialization. That is,
@@ -48,7 +49,7 @@ class SerializableInstantiation implements Instantiation {
     /** {@inheritDoc} */
     @Override
     public boolean supports(Class<?> objectClass) {
-        return Serializable.class.isAssignableFrom(objectClass);
+        return Classes.isSerializable(objectClass);
     }
 
     /** {@inheritDoc} */

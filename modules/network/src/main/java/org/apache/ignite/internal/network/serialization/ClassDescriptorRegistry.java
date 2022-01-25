@@ -25,12 +25,16 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class descriptor registry.
  */
-public class ClassDescriptorRegistry implements IdIndexedDescriptors, ClassIndexedDescriptors {
-    /** Quantity of descriptor ids reserved for the default descriptors. */
-    private static final int DEFAULT_DESCRIPTORS_OFFSET_COUNT = 1000;
+public class ClassDescriptorRegistry implements DescriptorRegistry {
+    /**
+     * Quantity of descriptor ids reserved for the built-in descriptors.
+     * 200 seems to leave enough space for future additions but at the same time it allows 55 custom descriptor IDs
+     * to be lower than 255 and be encoded using 1 byte in our varint encoding.
+     */
+    private static final int BUILTIN_DESCRIPTORS_OFFSET_COUNT = 200;
 
     /** Sequential id generator for class descriptors. */
-    private final AtomicInteger idGenerator = new AtomicInteger(DEFAULT_DESCRIPTORS_OFFSET_COUNT);
+    private final AtomicInteger idGenerator = new AtomicInteger(BUILTIN_DESCRIPTORS_OFFSET_COUNT);
 
     /** Map class -> descriptor id. */
     private final ConcurrentMap<Class<?>, Integer> idMap = new ConcurrentHashMap<>();
@@ -106,30 +110,12 @@ public class ClassDescriptorRegistry implements IdIndexedDescriptors, ClassIndex
     }
 
     /**
-     * Returns a descriptor for a built-in type.
-     *
-     * @param builtinType   built-in type for lookup
-     */
-    public ClassDescriptor getBuiltInDescriptor(BuiltInType builtinType) {
-        return getRequiredDescriptor(builtinType.descriptorId());
-    }
-
-    /**
      * Returns a descriptor for {@code null} value.
      *
      * @return a descriptor for {@code null} value
      */
     public ClassDescriptor getNullDescriptor() {
         return getRequiredDescriptor(Null.class);
-    }
-
-    /**
-     * Returns a descriptor for {@link Enum} built-in type.
-     *
-     * @return a descriptor for {@link Enum} built-in type
-     */
-    public ClassDescriptor getEnumDescriptor() {
-        return getRequiredDescriptor(Enum.class);
     }
 
     /**
@@ -159,6 +145,6 @@ public class ClassDescriptorRegistry implements IdIndexedDescriptors, ClassIndex
      * @return Whether descriptor should be a built-in.
      */
     public static boolean shouldBeBuiltIn(int descriptorId) {
-        return descriptorId < DEFAULT_DESCRIPTORS_OFFSET_COUNT;
+        return descriptorId < BUILTIN_DESCRIPTORS_OFFSET_COUNT;
     }
 }

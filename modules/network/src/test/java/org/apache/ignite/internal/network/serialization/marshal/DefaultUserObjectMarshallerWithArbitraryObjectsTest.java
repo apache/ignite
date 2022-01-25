@@ -50,7 +50,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.internal.network.serialization.BuiltInType;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorFactory;
 import org.apache.ignite.internal.network.serialization.ClassDescriptorRegistry;
-import org.apache.ignite.internal.network.serialization.IdIndexedDescriptors;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +60,6 @@ import org.junit.jupiter.api.Test;
 class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
     private final ClassDescriptorRegistry descriptorRegistry = new ClassDescriptorRegistry();
     private final ClassDescriptorFactory descriptorFactory = new ClassDescriptorFactory(descriptorRegistry);
-    private final IdIndexedDescriptors descriptors = new ContextBasedIdIndexedDescriptors(descriptorRegistry);
 
     private final DefaultUserObjectMarshaller marshaller = new DefaultUserObjectMarshaller(descriptorRegistry, descriptorFactory);
 
@@ -85,7 +83,7 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
 
     @NotNull
     private <T> T unmarshalNonNull(MarshalledObject marshalled) throws UnmarshalException {
-        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptors);
+        T unmarshalled = marshaller.unmarshal(marshalled.bytes(), descriptorRegistry);
 
         assertThat(unmarshalled, is(notNullValue()));
 
@@ -113,6 +111,13 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         try (var dis = new DataInputStream(new ByteArrayInputStream(marshalled.bytes()))) {
             return ProtocolMarshalling.readDescriptorOrCommandId(dis);
         }
+    }
+
+    @Test
+    void marshalsAndUnmarshalsNullDeclaredInFieldOfTypeThrowable() throws Exception {
+        WithThrowable unmarshalled = marshalAndUnmarshalNonNull(new WithThrowable());
+
+        assertThat(unmarshalled.throwable, is(nullValue()));
     }
 
     @Test
@@ -556,6 +561,11 @@ class DefaultUserObjectMarshallerWithArbitraryObjectsTest {
         String parentValue() {
             return value;
         }
+    }
+
+    private static class WithThrowable {
+        @SuppressWarnings("unused")
+        private Throwable throwable;
     }
 
     private static class Child extends Parent {

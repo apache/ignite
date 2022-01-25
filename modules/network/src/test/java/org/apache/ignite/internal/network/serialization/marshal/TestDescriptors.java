@@ -15,25 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.network.serialization;
+package org.apache.ignite.internal.network.serialization.marshal;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import org.jetbrains.annotations.Nullable;
+class TestDescriptors {
+    static final int MIN_CUSTOM_DESCRIPTOR_ID = 200;
 
-/**
- * A map-backed implementation of {@link IdIndexedDescriptors}.
- */
-public class MapBackedIdIndexedDescriptors implements IdIndexedDescriptors {
-    private final Int2ObjectMap<ClassDescriptor> descriptorsById;
-
-    public MapBackedIdIndexedDescriptors(Int2ObjectMap<ClassDescriptor> descriptorsById) {
-        this.descriptorsById = descriptorsById;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    @Nullable
-    public ClassDescriptor getDescriptor(int descriptorId) {
-        return descriptorsById.get(descriptorId);
+    private TestDescriptors() {
     }
 }

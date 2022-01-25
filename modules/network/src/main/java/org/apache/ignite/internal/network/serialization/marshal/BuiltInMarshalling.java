@@ -42,17 +42,6 @@ import org.jetbrains.annotations.NotNull;
  * Built-in types marshalling.
  */
 class BuiltInMarshalling {
-    private static final ValueWriter<String> stringWriter = (obj, out, ctx) -> writeString(obj, out);
-    private static final IntFunction<String[]> stringArrayFactory = String[]::new;
-    private static final ValueReader<String> stringReader = (in, ctx) -> readString(in);
-
-    private static final ValueWriter<BigDecimal> bigDecimalWriter = (obj, out, ctx) -> writeBigDecimal(obj, out);
-    private static final IntFunction<BigDecimal[]> bigDecimalArrayFactory = BigDecimal[]::new;
-    private static final ValueReader<BigDecimal> bigDecimalReader = (in, ctx) -> readBigDecimal(in);
-
-    private static final ValueWriter<Enum<?>> enumWriter = (obj, out, ctx) -> writeEnum(obj, out);
-    private static final ValueReader<Enum<?>> enumReader = BuiltInMarshalling::readEnum;
-
     private static final ValueWriter<Class<?>> classWriter = (obj, out, ctx) -> writeClass(obj, out);
     private static final IntFunction<Class<?>[]> classArrayFactory = Class[]::new;
     private static final ValueReader<Class<?>> classReader = BuiltInMarshalling::readClass;
@@ -241,28 +230,16 @@ class BuiltInMarshalling {
     }
 
     static void writeEnum(Enum<?> object, DataOutput output) throws IOException {
-        Class<?> enumClass = object.getClass();
-        if (!enumClass.isEnum()) {
-            // this is needed for enums where members are represented with anonymous classes
-            enumClass = enumClass.getSuperclass();
-        }
-
-        assert enumClass.getSuperclass() == Enum.class;
-
-        writeClass(enumClass, output);
         writeString(object.name(), output);
     }
 
-    @SuppressWarnings("unchecked")
-    static <T extends Enum<T>> Enum<?> readEnum(DataInput input, UnmarshallingContext context) throws IOException, UnmarshalException {
-        Class<T> enumClass = (Class<T>) readClass(input, context);
-        return Enum.valueOf(enumClass, input.readUTF());
+    static <T extends Enum<T>> Enum<T> readEnum(DataInput input, Class<T> enumClass) throws IOException {
+        return Enum.valueOf(enumClass, readString(input));
     }
 
     @NotNull
     private static <T> Class<T> classByName(String className, ClassLoader classLoader) throws UnmarshalException {
         try {
-            // TODO: what classloader to use?
             @SuppressWarnings("unchecked") Class<T> castedClass = (Class<T>) Class.forName(className, true, classLoader);
             return castedClass;
         } catch (ClassNotFoundException e) {
@@ -328,39 +305,6 @@ class BuiltInMarshalling {
         IntFunction<T[]> arrayFactory = readTypeAndCreateArrayFactory(input, context);
         int length = readLength(input);
         return arrayFactory.apply(length);
-    }
-
-    static <T> void fillGenericRefArrayFrom(DataInputStream input, T[] array, ValueReader<T> elementReader, UnmarshallingContext context)
-            throws IOException, UnmarshalException {
-        fillRefArrayFrom(input, array, elementReader, context);
-    }
-
-    static void writeStringArray(String[] array, DataOutputStream output, MarshallingContext context) throws IOException, MarshalException {
-        writeRefArray(array, output, stringWriter, context);
-    }
-
-    static String[] readStringArray(DataInputStream input, UnmarshallingContext context) throws IOException, UnmarshalException {
-        return readRefArray(input, stringArrayFactory, stringReader, context);
-    }
-
-    static void writeBigDecimalArray(BigDecimal[] array, DataOutputStream output, MarshallingContext context)
-            throws IOException, MarshalException {
-        writeRefArray(array, output, bigDecimalWriter, context);
-    }
-
-    static BigDecimal[] readBigDecimalArray(DataInputStream input, UnmarshallingContext context) throws IOException, UnmarshalException {
-        return readRefArray(input, bigDecimalArrayFactory, bigDecimalReader, context);
-    }
-
-    static void writeEnumArray(Enum<?>[] array, DataOutputStream output, MarshallingContext context) throws IOException, MarshalException {
-        writeClass(array.getClass().getComponentType(), output);
-        writeRefArray(array, output, enumWriter, context);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Enum<?>[] readEnumArray(DataInputStream input, UnmarshallingContext context) throws IOException, UnmarshalException {
-        Class<? extends Enum<?>> enumClass = (Class<? extends Enum<?>>) readClass(input, context);
-        return readRefArray(input, len -> (Enum<?>[]) Array.newInstance(enumClass, len), enumReader, context);
     }
 
     static <T> void writeCollection(

@@ -47,4 +47,14 @@ public interface ClassIndexedDescriptors {
 
         return descriptor;
     }
+
+    /**
+     * Returns {@code true} if there is a descriptor for the given class.
+     *
+     * @param clazz  for lookup
+     * @return {@code true} if there is a descriptor for the given class
+     */
+    default boolean hasDescriptor(Class<?> clazz) {
+        return getDescriptor(clazz) != null;
+    }
 }
