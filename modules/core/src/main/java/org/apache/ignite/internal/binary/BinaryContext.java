@@ -896,13 +896,14 @@ public class BinaryContext {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        Integer id = predefinedTypeNames.get(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(typeName));
+        if (marshCtx.isSystemType(typeName)) {
+            Integer id = predefinedTypeNames.get(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(typeName));
 
-        if (id != null)
-            return id;
+            if (id != null)
+                return id;
 
-        if (marshCtx.isSystemType(typeName))
             return typeName.hashCode();
+        }
 
         BinaryInternalMapper mapper = userTypeMapper(typeName);
 

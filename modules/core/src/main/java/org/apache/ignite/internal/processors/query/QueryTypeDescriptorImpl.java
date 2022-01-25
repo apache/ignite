@@ -602,14 +602,28 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
-        if (keyTypeName != null && key instanceof BinaryObject) {
-            BinaryType keyType = ((BinaryObject)key).type();
+        if (keyTypeName != null) {
+            if (key instanceof BinaryObject) {
+                BinaryType keyType = ((BinaryObject)key).type();
 
-            if (keyTypeId != keyType.typeId()) {
-                throw new IgniteSQLException("Key type not is allowed for table ["
+                if (keyTypeId != keyType.typeId()) {
+                    throw new IgniteSQLException("Key type not is allowed for table ["
                         + "table=" + tblName + ", "
                         + "expectedKeyType=" + keyTypeName + ", "
-                        + "actualType=" + keyType.typeName() + ']');
+                        + "actualKeyType=" + keyType.typeName()
+                        + "expectedKeyTypeId=" + keyTypeId
+                        + "actualKeyTYpeId=" + keyType.typeId() + ']');
+                }
+            }
+            else if (key instanceof KeyCacheObject) {
+                String keyTypeName0  = ((KeyCacheObject)key).value(coCtx, false).getClass().getName();
+
+                if (!keyTypeName.equals(keyTypeName0)) {
+                    throw new IgniteSQLException("Key type not is allowed for table ["
+                        + "table=" + tblName + ", "
+                        + "expectedKeyType=" + keyTypeName + ", "
+                        + "actualKeyType=" + keyTypeName0 + ']');
+                }
             }
         }
 

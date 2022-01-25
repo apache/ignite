@@ -599,7 +599,7 @@ public class QueryUtils {
         desc.typeId(valTypeId);
 
         if (qryEntity.getKeyType() != null)
-            desc.keyTypeId(ctx.cacheObjects().typeId(qryEntity.getKeyType()));
+            desc.keyTypeId(ctx.cacheObjects().binary().typeId(qryEntity.getKeyType()));
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

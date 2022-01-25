@@ -138,9 +138,9 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
     public void testUseKeyField_Allow() {
         GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        execSql("CREATE TABLE test (id0 integer, id1 integer, val varchar, primary key (id0, id1))");
+        execSql("CREATE TABLE test (id0 integer, id1 integer, val varchar, primary key (id0, id1)) WITH\"KEY_TYPE=keyType\"");
 
-        final BinaryObjectBuilder bob = grid().binary().builder("val");
+        final BinaryObjectBuilder bob = grid().binary().builder("keyType");
         bob.setField("id0", 0);
         bob.setField("id1", 0);
 
