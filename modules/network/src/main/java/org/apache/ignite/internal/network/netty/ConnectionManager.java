@@ -30,8 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -138,17 +136,15 @@ public class ConnectionManager {
                 throw new IgniteInternalException("Attempted to start an already stopped connection manager");
             }
 
-            //TODO: timeout value should be extracted into common configuration
-            // https://issues.apache.org/jira/browse/IGNITE-14538
-            server.start().get(3, TimeUnit.SECONDS);
+            server.start().get();
 
             LOG.info("Connection created [address=" + server.address() + ']');
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             throw new IgniteInternalException("Failed to start the connection manager: " + cause.getMessage(), cause);
-        } catch (TimeoutException e) {
-            throw new IgniteInternalException("Timeout while waiting for the connection manager to start", e);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
             throw new IgniteInternalException("Interrupted while starting the connection manager", e);
         }
     }

@@ -26,6 +26,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.schemas.network.InboundView;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
+import org.apache.ignite.configuration.schemas.network.NetworkView;
 import org.apache.ignite.configuration.schemas.network.OutboundView;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.network.netty.NamedNioEventLoopGroup;
@@ -141,9 +142,12 @@ public class NettyBootstrapFactory implements IgniteComponent {
     /** {@inheritDoc} */
     @Override
     public void stop() throws Exception {
-        // TODO: IGNITE-14538 quietPeriod and timeout should be configurable.
-        clientWorkerGroup.shutdownGracefully(0L, 15, TimeUnit.SECONDS).sync();
-        workerGroup.shutdownGracefully(0L, 15, TimeUnit.SECONDS).sync();
-        bossGroup.shutdownGracefully(0L, 15, TimeUnit.SECONDS).sync();
+        NetworkView configurationView = networkConfiguration.value();
+        long quietPeriod = configurationView.shutdownQuietPeriod();
+        long shutdownTimeout = configurationView.shutdownTimeout();
+
+        clientWorkerGroup.shutdownGracefully(quietPeriod, shutdownTimeout, TimeUnit.MILLISECONDS).sync();
+        workerGroup.shutdownGracefully(quietPeriod, shutdownTimeout, TimeUnit.MILLISECONDS).sync();
+        bossGroup.shutdownGracefully(quietPeriod, shutdownTimeout, TimeUnit.MILLISECONDS).sync();
     }
 }
