@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.platform.services;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
- * Extended service configuration. Keeps knows service method names to build statistics.
+ * Extended service configuration. Keeps known method names of service to build proper service statistics.
  */
 public class PlatformServiceConfiguration extends ServiceConfiguration {
+    /** */
+    private static final long serialVersionUID = 1L;
+
     /** Known method names of platform service. */
     private String[] mtdNames;
 
@@ -41,7 +44,7 @@ public class PlatformServiceConfiguration extends ServiceConfiguration {
     }
 
     /**
-     * Sets known method names of platform service
+     * Sets known method names of platform service.
      */
     void setMtdNames(String[] mtdNames) {
         this.mtdNames = mtdNames == null ? new String[0] : mtdNames;

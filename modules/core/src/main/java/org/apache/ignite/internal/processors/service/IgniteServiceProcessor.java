@@ -555,6 +555,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ensure(c.getService() != null, "getService() != null", c.getService());
         ensure(c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0,
             "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
+        ensure(!c.isStatisticsEnabled() || !(c.getService() instanceof PlatformService) ||
+            c instanceof PlatformServiceConfiguration, "The service is a platform service and has statistics" +
+            "enabled. Service configuration must be PlatformServiceConfiguration.", null);
     }
 
     /**
@@ -639,7 +642,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
-        List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
+        List<LazyServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
@@ -752,7 +755,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             PreparedConfigurations<IgniteUuid> srvcCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
-            List<ServiceConfiguration> cfgsCp = srvcCfg.cfgs;
+            List<LazyServiceConfiguration> cfgsCp = srvcCfg.cfgs;
 
             List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
@@ -762,7 +765,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     Collection<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
-                    for (ServiceConfiguration cfg : cfgsCp) {
+                    for (LazyServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
                         GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
@@ -1101,6 +1104,19 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Services by specified service name.
      */
     public <T> Collection<T> services(String name) {
+        return services(name, true);
+    }
+
+    /**
+     * Tries to get direct references to local services. If {@code force} is {@code true}, returns {@code null} even
+     * if local services are available but usage of them is not recommended (can corrupt the statistics etc.).
+     *
+     * @param name  Service name.
+     * @param <T>   Service type.
+     * @param force If {@code true}, ignores limitations of local references.
+     * @return Services by specified service name.
+     */
+    public <T> Collection<T> services(String name, boolean force) {
         if (!enterBusy())
             return null;
 
@@ -1120,6 +1136,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
+
+                    if (ctx.isStatisticsEnabled() && !force)
+                        return null;
 
                     if (srvc != null)
                         res.add((T)srvc);
@@ -1267,7 +1286,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param top Service topology.
      * @throws IgniteCheckedException In case of deployment errors.
      */
-    void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
+    void redeploy(IgniteUuid srvcId, LazyServiceConfiguration cfg,
         Map<UUID, Integer> top) throws IgniteCheckedException {
         String name = cfg.getName();
         String cacheName = cfg.getCacheName();
@@ -1705,7 +1724,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+            for (LazyServiceConfiguration srvcCfg : prepCfgs.cfgs) {
                 ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
                 serviceInfo.context(ctx);
@@ -1757,7 +1776,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
+                    LazyServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     if (ctx.security().enabled())
                         err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
@@ -2016,13 +2035,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param cfg Service configuration.
      * @return Created metric registry.
      */
-    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, LazyServiceConfiguration cfg) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        if (cfg instanceof PlatformServiceConfiguration) {
-            assert srvcCtx.service() instanceof PlatformService;
-
-            for (String definedMtdName : ((PlatformServiceConfiguration)cfg).mtdNames()) {
+        if (cfg.knownMtdNames() != null) {
+            for (String definedMtdName : cfg.knownMtdNames()) {
                 metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
                     DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
             }

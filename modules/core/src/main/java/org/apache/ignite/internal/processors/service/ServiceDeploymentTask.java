@@ -302,7 +302,7 @@ class ServiceDeploymentTask {
 
             depActions.servicesToDeploy().forEach((srvcId, desc) -> {
                 try {
-                    ServiceConfiguration cfg = desc.configuration();
+                    LazyServiceConfiguration cfg = desc.configuration();
 
                     TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
 
@@ -482,7 +482,7 @@ class ServiceDeploymentTask {
 
                             assert desc != null;
 
-                            ServiceConfiguration cfg = desc.configuration();
+                            LazyServiceConfiguration cfg = desc.configuration();
 
                             try {
                                 srvcProc.redeploy(srvcId, cfg, top);

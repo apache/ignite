@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -98,9 +97,8 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// To avoid on-demand creation statistics on each callable method like 'ToString' or 'Init'/'Cancel',
-        /// we provide this description. This matches strict metrics of the service in Java for declared-by-user
-        /// methods only.
+        /// Provides extra intel about platform service to avoid on-demand creation of service statistics on any
+        /// out-of-interface calls or things like 'ToString()'.
         /// </summary>
         private void WriteExtraDescription(IBinaryRawWriter writer)
         {
@@ -110,10 +108,10 @@ namespace Apache.Ignite.Core.Services
                 var mtdNames = Service.GetType().GetInterfaces()
                     // No need to measure methods of these interface.
                     .Where(t => t != typeof(IService))
-                    .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                        .Select(mtd => mtd.Name)).Distinct();
+                    .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly |
+                                                  BindingFlags.Public ).Select(mtd => mtd.Name)).Distinct();
 
-                writer.WriteArray(mtdNames.ToArray());
+                writer.WriteStringArray(mtdNames.ToArray());
             }
         }
 
