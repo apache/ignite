@@ -60,10 +60,19 @@ namespace ignite
 
     int64_t Guid::Compare(const Guid& other) const
     {
-        if (most != other.most)
-            return most - other.most;
+        if (most < other.most)
+            return -1;
 
-        return least - other.least;
+        if (most > other.most)
+            return 1;
+
+        if (least < other.least)
+            return -1;
+
+        if (least > other.least)
+            return 1;
+
+        return 0;
     }
     
     bool operator==(const Guid& val1, const Guid& val2)

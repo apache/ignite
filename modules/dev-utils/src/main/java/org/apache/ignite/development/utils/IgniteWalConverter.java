@@ -194,10 +194,12 @@ public class IgniteWalConverter {
         if (walRecord instanceof DataRecord) {
             final DataRecord dataRecord = (DataRecord)walRecord;
 
-            final List<DataEntry> entryWrappers = new ArrayList<>(dataRecord.writeEntries().size());
+            int entryCnt = dataRecord.entryCount();
 
-            for (DataEntry dataEntry : dataRecord.writeEntries())
-                entryWrappers.add(new DataEntryWrapper(dataEntry, sensitiveData));
+            final List<DataEntry> entryWrappers = new ArrayList<>(entryCnt);
+
+            for (int i = 0; i < entryCnt; i++)
+                entryWrappers.add(new DataEntryWrapper(dataRecord.get(i), sensitiveData));
 
             dataRecord.setWriteEntries(entryWrappers);
         }

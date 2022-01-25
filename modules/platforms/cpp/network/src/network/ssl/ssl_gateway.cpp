@@ -66,34 +66,25 @@ namespace ignite
                 memset(&functions, 0, sizeof(functions));
             }
 
-            common::dynamic::Module SslGateway::LoadSslLibrary(const char* name)
+            common::dynamic::Module SslGateway::LoadSslLibrary(const std::string& name, const std::string& homeDir)
             {
                 using namespace common;
                 using namespace dynamic;
 
-                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
-
-                if (home.empty())
-                    home = GetEnv("OPENSSL_HOME");
-
                 std::string fullName = GetDynamicLibraryName(name);
 
-                if (!home.empty())
+                if (!homeDir.empty())
                 {
-                    const char* paths[] = {"bin", "lib"};
+#ifdef _WIN32
+                    const char* binSubDir = "bin";
+#else
+                    const char* binSubDir = "lib";
+#endif
+                    std::ostringstream oss;
 
-                    for (size_t i = 0; i < 2; i++) {
-                        std::stringstream constructor;
+                    oss << homeDir << Fs << binSubDir << Fs << fullName;
 
-                        constructor << home << Fs << paths[i] << Fs << fullName;
-
-                        std::string fullPath = constructor.str();
-
-                        Module mod = LoadModule(fullPath);
-
-                        if (mod.IsLoaded())
-                            return mod;
-                    }
+                    return LoadModule(oss.str());
                 }
 
                 return LoadModule(fullName);
@@ -101,40 +92,85 @@ namespace ignite
 
             void SslGateway::LoadSslLibraries()
             {
-                libssl = LoadSslLibrary("libssl");
+                using namespace common;
 
-                if (!libssl.IsLoaded())
+                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
+                if (home.empty())
+                    home = GetEnv("OPENSSL_HOME");
+
+                bool isLoaded = false;
+
+                if (!home.empty())
+                    isLoaded = TryLoadSslLibraries(home);
+
+                // Try load from system path.
+                if (!isLoaded)
+                    isLoaded = TryLoadSslLibraries("");
+
+                if (!isLoaded)
                 {
-                    libcrypto = LoadSslLibrary("libcrypto-1_1-x64");
-                    libssl = LoadSslLibrary("libssl-1_1-x64");
-                }
-
-                if (!libssl.IsLoaded())
-                {
-                    libeay32 = LoadSslLibrary("libeay32");
-                    ssleay32 = LoadSslLibrary("ssleay32");
-                }
-
-                if (!libssl.IsLoaded() && (!libeay32.IsLoaded() || !ssleay32.IsLoaded()))
-                {
-                    if (!libssl.IsLoaded())
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Can not load neccessary OpenSSL library: libssl");
-
+#ifdef _WIN32
                     std::stringstream ss;
 
-                    ss << "Can not load neccessary OpenSSL libraries:";
+                    ss << "Can not load necessary OpenSSL libraries:";
 
-                    if (!libeay32.IsLoaded())
-                        ss << " libeay32";
+                    if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                    {
+                        if (!libssl.IsLoaded())
+                            ss << " libssl";
 
-                    if (!ssleay32.IsLoaded())
-                        ss << " ssleay32";
+                        if (!libcrypto.IsLoaded())
+                            ss << " libcrypto";
+                    }
+                    else
+                    {
+                        if (!libeay32.IsLoaded())
+                            ss << " libeay32";
+
+                        if (!ssleay32.IsLoaded())
+                            ss << " ssleay32";
+                    }
 
                     std::string res = ss.str();
 
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, res.c_str());
+#else
+                    if (!libssl.IsLoaded())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Can not load necessary OpenSSL library: libssl");
+#endif
                 }
+            }
+
+            bool SslGateway::TryLoadSslLibraries(const std::string& homeDir)
+            {
+#ifdef _WIN32
+#ifdef _WIN64
+#define SSL_LIB_PLATFORM_POSTFIX "-x64"
+#else
+#define SSL_LIB_PLATFORM_POSTFIX ""
+#endif
+                libcrypto = LoadSslLibrary("libcrypto-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                libssl = LoadSslLibrary("libssl-3" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
+                    libcrypto = LoadSslLibrary("libcrypto-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                    libssl = LoadSslLibrary("libssl-1_1" SSL_LIB_PLATFORM_POSTFIX, homeDir);
+                }
+
+                if (!libssl.IsLoaded() || !libcrypto.IsLoaded())
+                {
+                    libeay32 = LoadSslLibrary("libeay32", homeDir);
+                    ssleay32 = LoadSslLibrary("ssleay32", homeDir);
+                }
+
+                return (libssl.IsLoaded() && libcrypto.IsLoaded()) || (libeay32.IsLoaded() && ssleay32.IsLoaded());
+#else
+                libssl = LoadSslLibrary("libssl", homeDir);
+
+                return libssl.IsLoaded();
+#endif
             }
 
             void SslGateway::LoadMandatoryMethods()
@@ -166,20 +202,35 @@ namespace ignite
 
                 functions.fpSSL_get_verify_result = LoadSslMethod("SSL_get_verify_result");
 
-                functions.fpSSL_get_peer_certificate = LoadSslMethod("SSL_get_peer_certificate");
+                functions.fpSSL_get_peer_certificate = TryLoadSslMethod("SSL_get_peer_certificate");
+                // OpenSSL >= 3.0.0
+                if (!functions.fpSSL_get_peer_certificate)
+                    functions.fpSSL_get_peer_certificate = LoadSslMethod("SSL_get1_peer_certificate");
+
                 functions.fpSSL_ctrl = LoadSslMethod("SSL_ctrl");
                 functions.fpSSL_CTX_ctrl = LoadSslMethod("SSL_CTX_ctrl");
 
                 functions.fpSSL_set_connect_state = LoadSslMethod("SSL_set_connect_state");
                 functions.fpSSL_connect = LoadSslMethod("SSL_connect");
+                functions.fpSSL_set_bio = LoadSslMethod("SSL_set_bio");
                 functions.fpSSL_get_error = LoadSslMethod("SSL_get_error");
                 functions.fpSSL_want = LoadSslMethod("SSL_want");
                 functions.fpSSL_write = LoadSslMethod("SSL_write");
                 functions.fpSSL_read = LoadSslMethod("SSL_read");
                 functions.fpSSL_pending = LoadSslMethod("SSL_pending");
+                functions.fpSSL_get_state = TryLoadSslMethod("SSL_get_state");
+                if (!functions.fpSSL_get_state)
+                    functions.fpSSL_get_state = LoadSslMethod("SSL_state");
+
                 functions.fpSSL_get_fd = LoadSslMethod("SSL_get_fd");
+                functions.fpSSL_new = LoadSslMethod("SSL_new");
                 functions.fpSSL_free = LoadSslMethod("SSL_free");
+                functions.fpBIO_new = LoadSslMethod("BIO_new");
                 functions.fpBIO_new_ssl_connect = LoadSslMethod("BIO_new_ssl_connect");
+                functions.fpBIO_s_mem = LoadSslMethod("BIO_s_mem");
+                functions.fpBIO_read = LoadSslMethod("BIO_read");
+                functions.fpBIO_write = LoadSslMethod("BIO_write");
+
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
                 functions.fpX509_free = LoadSslMethod("X509_free");
@@ -264,7 +315,7 @@ namespace ignite
                 return fp;
             }
 
-            char* SslGateway::SSLeay_version_(int type)
+            char* SslGateway::OpenSSL_version_(int type)
             {
                 typedef char* (FuncType)(int);
 
@@ -495,6 +546,17 @@ namespace ignite
                 return fp(s);
             }
 
+            void SslGateway::SSL_set_bio_(SSL* s, BIO* rbio, BIO* wbio)
+            {
+                assert(functions.fpSSL_set_bio != 0);
+
+                typedef void (FuncType)(SSL*, BIO*, BIO*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_set_bio);
+
+                fp(s, rbio, wbio);
+            }
+
             int SslGateway::SSL_get_error_(const SSL* s, int ret)
             {
                 assert(functions.fpSSL_get_error != 0);
@@ -550,6 +612,26 @@ namespace ignite
                 return fp(ssl);
             }
 
+            int SslGateway::SSL_is_init_finished_(const SSL* ssl)
+            {
+                assert(functions.fpSSL_get_state != 0);
+
+                typedef int (FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_get_state);
+
+                enum {
+                    IGNITE_SSL_STATE_OK =
+#ifdef SSL_ST_OK
+                    SSL_ST_OK
+#else
+                    TLS_ST_OK
+#endif
+                };
+
+                return fp(ssl) == IGNITE_SSL_STATE_OK ? 1 : 0;
+            }
+
             int SslGateway::SSL_get_fd_(const SSL* ssl)
             {
                 assert(functions.fpSSL_get_fd != 0);
@@ -559,6 +641,17 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_get_fd);
 
                 return fp(ssl);
+            }
+
+            SSL* SslGateway::SSL_new_(SSL_CTX* ctx)
+            {
+                assert(functions.fpSSL_new != 0);
+
+                typedef SSL* (FuncType)(SSL_CTX*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_new);
+
+                return fp(ctx);
             }
 
             void SslGateway::SSL_free_(SSL* ssl)
@@ -619,6 +712,17 @@ namespace ignite
                 fp(a);
             }
 
+            BIO* SslGateway::BIO_new_(const BIO_METHOD* method)
+            {
+                assert(functions.fpBIO_new != 0);
+
+                typedef BIO*(FuncType)(const BIO_METHOD*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_new);
+
+                return fp(method);
+            }
+
             BIO* SslGateway::BIO_new_ssl_connect_(SSL_CTX* ctx)
             {
                 assert(functions.fpBIO_new_ssl_connect != 0);
@@ -639,6 +743,44 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_free_all);
 
                 fp(a);
+            }
+
+            const BIO_METHOD* SslGateway::BIO_s_mem_()
+            {
+                assert(functions.fpBIO_s_mem != 0);
+
+                typedef const BIO_METHOD* (FuncType)();
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_s_mem);
+
+                return fp();
+            }
+
+            int SslGateway::BIO_read_(BIO* b, void* data, int len)
+            {
+                assert(functions.fpBIO_read != 0);
+
+                typedef int (FuncType)(BIO*, void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_read);
+
+                return fp(b, data, len);
+            }
+
+            int SslGateway::BIO_write_(BIO* b, const void *data, int len)
+            {
+                assert(functions.fpBIO_write != 0);
+
+                typedef int (FuncType)(BIO*, const void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpBIO_write);
+
+                return fp(b, data, len);
+            }
+
+            int SslGateway::BIO_pending_(BIO* b)
+            {
+                return BIO_ctrl_(b, BIO_CTRL_PENDING, 0, NULL);
             }
 
             long SslGateway::BIO_ctrl_(BIO* bp, int cmd, long larg, void* parg)

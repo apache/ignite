@@ -86,7 +86,7 @@ public class IgniteWalConverterArguments {
     private static final String PAGES = "pages";
 
     /** Record pattern for {@link #PAGES}. */
-    private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(\\d+):(\\d+)");
+    private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(-?\\d+):(-?\\d+)");
 
     /** Path to dir with wal files. */
     private final File walDir;

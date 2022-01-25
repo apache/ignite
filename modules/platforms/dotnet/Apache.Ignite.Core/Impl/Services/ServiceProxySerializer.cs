@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -41,9 +41,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
         /// <param name="platformType">The platform.</param>
-        /// <param name="callCtx">Service call context.</param>
+        /// <param name="callAttrs">Service call context attributes.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, PlatformType platformType, IServiceCallContext callCtx)
+            object[] arguments, PlatformType platformType, IDictionary callAttrs)
         {
             Debug.Assert(writer != null);
 
@@ -52,6 +52,24 @@ namespace Apache.Ignite.Core.Impl.Services
             if (arguments != null)
             {
                 writer.WriteBoolean(true);
+
+                WriteMethodArguments(writer, method, arguments, platformType);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            writer.WriteDictionary(callAttrs);
+        }
+
+        /// <summary>
+        /// Writes method arguments like required for specific platform.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="method">Method (optional, can be null).</param>
+        /// <param name="arguments">Arguments.</param>
+        /// <param name="platformType">The platform.</param>
+        public static void WriteMethodArguments(BinaryWriter writer, MethodBase method, object[] arguments, PlatformType platformType)
+        {
                 writer.WriteInt(arguments.Length);
 
                 if (platformType == PlatformType.DotNet)
@@ -74,11 +92,6 @@ namespace Apache.Ignite.Core.Impl.Services
                             arguments[i]);
                     }
                 }
-            }
-            else
-                writer.WriteBoolean(false);
-
-            writer.WriteDictionary(callCtx == null ? null : ((ServiceCallContext) callCtx).Values());
         }
 
         /// <summary>

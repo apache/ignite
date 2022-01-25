@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Services;
@@ -546,9 +548,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestNonExistentServiceNameCausesClientException()
         {
-            var svc = Client.GetServices().GetServiceProxy<ITestService>(ServiceName);
-
-            var ex = Assert.Throws<IgniteClientException>(() => svc.VoidMethod());
+            var ex = Assert.Throws<IgniteClientException>(() => Client.GetServices().GetServiceProxy<ITestService>(ServiceName));
             Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
         }
 
@@ -566,6 +566,64 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             Assert.AreEqual(1, task.Result);
         }
+        
+        /// <summary>
+        /// Tests custom caller context.
+        /// </summary>
+        [Test]
+        public void TestServiceCallContext()
+        {
+            string attrName = "attr";
+            string binAttrName = "binAttr";
+            string attrValue = "value";
+            byte[] binAttrValue = Encoding.UTF8.GetBytes(attrValue);
+            
+            IServiceCallContext callCtx = new ServiceCallContextBuilder()
+                .Set(attrName, attrValue)
+                .Set(binAttrName, binAttrValue)
+                .Build();
+
+            var svc = DeployAndGetTestService<ITestService>(null, callCtx);
+
+            Assert.AreEqual(attrValue, svc.ContextAttribute(attrName));
+            Assert.AreEqual(binAttrValue, svc.ContextBinaryAttribute(binAttrName));
+
+            Assert.Throws<ArgumentException>(() =>
+                DeployAndGetTestService<ITestService>(null, new CustomServiceCallContext()));
+        }           
+
+        [Test]
+        public void TestGetServiceDescriptors()
+        {
+            DeployAndGetTestService();
+
+            var svcs = Client.GetServices().GetServiceDescriptors();
+
+            Assert.AreEqual(1, svcs.Count);
+
+            var svc = svcs.First();
+
+            Assert.AreEqual(ServiceName, svc.Name);
+            Assert.AreEqual(
+                "org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl",
+                svc.ServiceClass
+            );
+            Assert.AreEqual(1, svc.TotalCount);
+            Assert.AreEqual(1, svc.MaxPerNodeCount);
+            Assert.IsNull(svc.CacheName);
+            Assert.AreEqual(Ignition.GetIgnite().GetCluster().GetLocalNode().Id, svc.OriginNodeId);
+            Assert.AreEqual(PlatformType.DotNet, svc.PlatformType);
+
+            var svc1 = Client.GetServices().GetServiceDescriptor(ServiceName);
+
+            Assert.AreEqual(svc.Name, svc1.Name);
+            Assert.AreEqual(svc.ServiceClass, svc1.ServiceClass);
+            Assert.AreEqual(svc.TotalCount, svc1.TotalCount);
+            Assert.AreEqual(svc.MaxPerNodeCount, svc1.MaxPerNodeCount);
+            Assert.AreEqual(svc.CacheName, svc1.CacheName);
+            Assert.AreEqual(svc.OriginNodeId, svc1.OriginNodeId);
+            Assert.AreEqual(svc.PlatformType, svc1.PlatformType);
+        }
 
         /// <summary>
         /// Deploys test service and returns client-side proxy.
@@ -578,7 +636,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Deploys test service and returns client-side proxy.
         /// </summary>
-        private T DeployAndGetTestService<T>(Func<IServicesClient, IServicesClient> transform = null) where T : class
+        private T DeployAndGetTestService<T>(Func<IServicesClient, IServicesClient> transform = null, 
+            IServiceCallContext callCtx = null) where T : class
         {
             ServerServices.DeployClusterSingleton(ServiceName, new TestService());
 
@@ -589,7 +648,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 services = transform(services);
             }
 
-            return services.GetServiceProxy<T>(ServiceName);
+            return services.GetServiceProxy<T>(ServiceName, callCtx);
         }
 
         /// <summary>
@@ -598,6 +657,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         private static IServices ServerServices
         {
             get { return Ignition.GetIgnite().GetServices(); }
+        }
+        
+        /// <summary>
+        /// Custom implementation of the service call context.
+        /// </summary>
+        private class CustomServiceCallContext : IServiceCallContext
+        {
+            /** <inheritdoc /> */
+            public string GetAttribute(string name)
+            {
+                return null;
+            }
+
+            /** <inheritdoc /> */
+            public byte[] GetBinaryAttribute(string name)
+            {
+                return null;
+            }
         }
     }
 

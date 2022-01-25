@@ -165,18 +165,22 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 int entryCnt = in.readInt();
                 long timeStamp = in.readLong();
 
-                List<DataEntry> entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    return new DataRecord(readPlainDataEntry(in, type), timeStamp);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readPlainDataEntry(in, type));
 
-                return new DataRecord(entries, timeStamp);
+                    return new DataRecord(entries, timeStamp);
+                }
 
             case MVCC_DATA_RECORD:
                 entryCnt = in.readInt();
                 timeStamp = in.readLong();
 
-                entries = new ArrayList<>(entryCnt);
+                List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readMvccDataEntry(in));
@@ -189,12 +193,16 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 entryCnt = in.readInt();
                 timeStamp = in.readLong();
 
-                entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    return new DataRecord(readEncryptedDataEntry(in, type), timeStamp);
+                else {
+                    entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readEncryptedDataEntry(in, type));
 
-                return new DataRecord(entries, timeStamp);
+                    return new DataRecord(entries, timeStamp);
+                }
 
             case SNAPSHOT:
                 long snpId = in.readLong();
@@ -266,12 +274,16 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
-                buf.putInt(dataRec.writeEntries().size());
+                int entryCnt = dataRec.entryCount();
+
+                buf.putInt(entryCnt);
                 buf.putLong(dataRec.timestamp());
 
                 boolean encrypted = isDataRecordEncrypted(dataRec);
 
-                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                for (int i = 0; i < entryCnt; i++) {
+                    DataEntry dataEntry = dataRec.get(i);
+
                     if (encrypted)
                         putEncryptedDataEntry(buf, dataEntry);
                     else

@@ -23,6 +23,7 @@
 #include <ignite/common/utils.h>
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
+#include <ignite/network/utils.h>
 
 #include "network/ssl/secure_socket_client.h"
 #include "network/ssl/ssl_gateway.h"
@@ -120,8 +121,8 @@ namespace ignite
                 else
                     ThrowSecureError("Remote host did not provide certificate: " + GetSslError(ssl0, res));
 
-                // Verify the result of chain verification
-                // Verification performed according to RFC 4158
+                // Verify the result of chain verification.
+                // Verification performed according to RFC 4158.
                 res = sslGateway.SSL_get_verify_result_(ssl0);
                 if (X509_V_OK != res)
                     ThrowSecureError("Certificate chain verification failed: " + GetSslError(ssl0, res));
@@ -143,7 +144,7 @@ namespace ignite
                 assert(sslGateway.Loaded());
 
                 if (!ssl)
-                    ThrowNetworkError("Trying to send data using closed connection");
+                    utils::ThrowNetworkError("Trying to send data using closed connection");
 
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
@@ -157,7 +158,7 @@ namespace ignite
                 assert(sslGateway.Loaded());
 
                 if (!ssl)
-                    ThrowNetworkError("Trying to receive data using closed connection");
+                    utils::ThrowNetworkError("Trying to receive data using closed connection");
 
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
@@ -392,7 +393,7 @@ namespace ignite
 
                     ss << "Can not get file descriptor from the SSL socket: " << fd << ", " << GetSslError(ssl, fd);
 
-                    ThrowNetworkError(ss.str());
+                    utils::ThrowNetworkError(ss.str());
                 }
 
                 return sockets::WaitOnSocket(fd, timeout, rd);

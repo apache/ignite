@@ -40,6 +40,7 @@ import java.util.Set;
 import org.apache.ignite.compute.gridify.GridifyInput;
 import org.apache.ignite.compute.gridify.GridifySetToSet;
 import org.apache.ignite.compute.gridify.GridifySetToValue;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -324,7 +325,7 @@ public final class GridifyUtils {
 
             return res;
         }
-        else if (arg != null && arg.getClass().isArray()) {
+        else if (F.isArray(arg)) {
             Collection res = new ArrayList();
 
             for (int i = 0; i < Array.getLength(arg); i++)

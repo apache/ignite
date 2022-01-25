@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.services.ServiceCallContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +36,7 @@ public interface IgniteServicesEx extends IgniteServices {
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
-     * @param callCtxProvider Caller context provider.
+     * @param callAttrsProvider Service call context attributes provider.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
      * @param <T> Service type.
@@ -48,7 +48,7 @@ public interface IgniteServicesEx extends IgniteServices {
         String name,
         Class<? super T> svcItf,
         boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
         long timeout
     ) throws IgniteException;
 }

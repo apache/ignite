@@ -25,15 +25,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectContainer;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.client.FunctionalTest.assertEqualsArraysAware;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL1;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL2;
+import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL3;
 import static org.junit.Assert.assertArrayEquals;
 
 /** */
@@ -45,10 +55,10 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     private static Ignite client;
 
     /** */
-    private static IgniteCache<Object, Object> srvCache;
+    private static CacheAdapter<Object, Object> srvCache;
 
     /** */
-    private static IgniteCache<Object, Object> cliCache;
+    private static CacheAdapter<Object, Object> cliCache;
 
     /** */
     private static final Function<Object, Object> TO_TEST_CLS = arr -> arr instanceof TestClass1[][]
@@ -62,8 +72,8 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         server = startGrid(0);
         client = startClientGrid(1);
 
-        srvCache = server.createCache("my-cache");
-        cliCache = client.getOrCreateCache("my-cache");
+        srvCache = new IgniteCacheAdapter<>(server.createCache(DEFAULT_CACHE_NAME));
+        cliCache = new IgniteCacheAdapter<>(client.getOrCreateCache(DEFAULT_CACHE_NAME));
     }
 
     /** */
@@ -71,6 +81,27 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     public void testArrayKey() {
         doTestKeys(srvCache, arr -> arr);
         doTestKeys(cliCache, arr -> arr);
+        try (IgniteClient thinClient = thinClient()) {
+            // Using other cache because
+            // 1. Removed entry store in `GridCacheAdapter#map`
+            // 2. Bytes representation of multidimensional BinaryArray from thin client and Ignite node differ.
+            // 2a. Thin client reads array from byte stream and preserve pointer equality (look at #dataToTest() -> arr6).
+            // 2b. Client node invoke `CacheObjectBinaryProcessorImpl#marshallToBinary` before storing
+            // which breaks link equality of array
+            // 3. During invocation of `put` node inserts key representation from previous invocation of methods from client node.
+            // 4. This lead to `ClientCache#containsKey` can't find key because
+            // it invokes search based equality on `byte[]` key representaion.
+            //
+            // This doesn't happen in `useBinaryArrays=false` becuase Ignite node obtain `Object[]`
+            // from byte stream and invoke marshallToBinary for it which also breaks pointer equality
+            // therefore during serialization handle will NOT be used.
+            // In `useBinaryArrays=true` node read `BinaryArray` from stream which mean no need to marshall to binary
+            // therefore link equality preserved which mean during serialization handle will be used.
+            doTestKeys(
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME + (useBinaryArrays ? "2" : ""))),
+                arr -> arr
+            );
+        }
     }
 
     /** */
@@ -78,6 +109,9 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     public void testArrayFieldInKey() {
         doTestKeys(srvCache, TO_TEST_CLS);
         doTestKeys(cliCache, TO_TEST_CLS);
+        try (IgniteClient thinClient = thinClient()) {
+            doTestKeys(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)), TO_TEST_CLS);
+        }
     }
 
     /** */
@@ -87,6 +121,14 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(cliCache, arr -> arr, false, false);
         doTestValue(srvCache, arr -> arr, true, false);
         doTestValue(cliCache, arr -> arr, true, false);
+
+        try (IgniteClient thinClient = thinClient()) {
+            ClientCacheAdapter<Object, Object> c =
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestValue(c, arr -> arr, false, false);
+            doTestValue(c, arr -> arr, true, false);
+        }
     }
 
     /** */
@@ -96,6 +138,13 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         doTestValue(cliCache, TO_TEST_CLS, false, true);
         doTestValue(srvCache, TO_TEST_CLS, true, true);
         doTestValue(cliCache, TO_TEST_CLS, true, true);
+        try (IgniteClient thinClient = thinClient()) {
+            ClientCacheAdapter<Object, Object> c =
+                new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestValue(c, TO_TEST_CLS, false, true);
+            doTestValue(c, TO_TEST_CLS, true, true);
+        }
     }
 
     /** */
@@ -125,13 +174,27 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     public void testBinaryModeArray() {
         putInBinaryGetRegular(srvCache);
         putInBinaryGetRegular(cliCache);
+        try (IgniteClient thinClient = thinClient()) {
+            putInBinaryGetRegular(new ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME)));
+        }
     }
 
     /** */
     @Test
-    public void testBoxedPrimitivesArrays() {
+    public void testPrimitivesArrays() {
         doTestBoxedPrimitivesArrays(srvCache);
         doTestBoxedPrimitivesArrays(cliCache);
+
+        doTestPrimitivesArrays(srvCache);
+        doTestPrimitivesArrays(cliCache);
+
+        try (IgniteClient thinClient = thinClient()) {
+            ClientCacheAdapter<Object, Object> c = new
+                ClientCacheAdapter<>(thinClient.getOrCreateCache(DEFAULT_CACHE_NAME));
+
+            doTestBoxedPrimitivesArrays(c);
+            doTestPrimitivesArrays(c);
+        }
     }
 
     /** */
@@ -227,25 +290,27 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void doTestKeys(IgniteCache<Object, Object> c, Function<Object, Object> wrap) {
+    private void doTestKeys(CacheAdapter<Object, Object> c, Function<Object, Object> wrap) {
         List<?> keys = dataToTest();
 
-        for (int i = 0; i < keys.size(); i++)
-            c.put(wrap.apply(keys.get(i)), i);
+        for (int i = 0; i < keys.size(); i++) {
+            Object key = wrap.apply(keys.get(i));
 
-        for (int i = 0; i < keys.size(); i++)
-            assertEquals(i, c.get(wrap.apply(keys.get(i))));
+            assertFalse(c.containsKey(key));
 
-        for (int i = 0; i < keys.size(); i++)
-            assertTrue(c.replace(wrap.apply(keys.get(i)), i, i + 1));
+            c.put(key, i);
 
-        for (int i = 0; i < keys.size(); i++)
-            assertTrue(c.remove(wrap.apply(keys.get(i))));
+            assertTrue(c.containsKey(key));
+            assertEquals(i, c.get(key));
+            assertTrue(c.replace(key, i, i + 1));
+            assertEquals(i + 1, c.get(key));
+            assertTrue(c.remove(key));
+        }
     }
 
     /** */
     private void doTestValue(
-        IgniteCache<Object, Object> c,
+        CacheAdapter<Object, Object> c,
         Function<Object, Object> wrap,
         boolean keepBinary,
         boolean alwaysSameType
@@ -276,12 +341,10 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             return cached.arr != null ? cached.arr : cached.arr2;
         }, alwaysSameType);
 
-        if (useBinaryArrays) {
-            List<?> vals = dataToTest();
+        List<?> vals = dataToTest();
 
-            for (int i = 0; i < vals.size(); i++)
-                assertTrue(c.replace(i, wrap.apply(vals.get(i)), wrap.apply(vals.get((i + 1) % vals.size()))));
-        }
+        for (int i = 0; i < vals.size(); i++)
+            assertTrue(c.replace(i, wrap.apply(vals.get(i)), wrap.apply(vals.get((i + 1) % vals.size()))));
 
         for (int i = 0; i < cntr.get(); i++)
             assertTrue(c.remove(i));
@@ -292,18 +355,17 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         TestClass1[][] arr5 = new TestClass1[3][2];
         TestClass1[][] arr6 = new TestClass1[2][2];
 
-        arr5[0] = new TestClass1[] {new TestClass1() {}};
-        arr5[1] = new TestClass1[] {new TestClass1() {}};
+        arr5[0] = new TestClass1[] {new TestClass1()};
+        arr5[1] = new TestClass1[] {new TestClass1()};
 
         // arr6[0] == arr6[1]
-        arr6[0] = new TestClass1[] {new TestClass1() {}};
+        arr6[0] = new TestClass1[] {new TestClass1()};
         arr6[1] = arr6[0];
 
         return F.asList(
             new TestClass1[0],
             new TestClass1[1][2],
             new TestClass1[] {new TestClass1(), new TestClass1()},
-            new TestClass1[] {new TestClass1() {}},
             arr5,
             arr6
         );
@@ -328,7 +390,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void putInBinaryGetRegular(IgniteCache<Object, Object> c) {
+    private void putInBinaryGetRegular(CacheAdapter<Object, Object> c) {
         Runnable checker = () -> {
             Object[] arr = (Object[])c.get(1);
 
@@ -369,7 +431,39 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void doTestBoxedPrimitivesArrays(IgniteCache<Object, Object> c) {
+    private void doTestPrimitivesArrays(CacheAdapter<Object, Object> c) {
+        Object[] data = new Object[] {
+            new byte[] {1, 2, 3},
+            new short[] {1, 2, 3},
+            new int[] {1, 2, 3},
+            new long[] {1L, 2L, 3L},
+            new float[] {1f, 2f, 3f},
+            new double[] {1d, 2d, 3d},
+            new char[] {'a', 'b', 'c'},
+            new boolean[] {true, false}
+        };
+
+        for (Object item : data) {
+            c.put(1, item);
+
+            Object item0 = c.get(1);
+
+            assertTrue(c.replace(1, item, item));
+            assertTrue(c.remove(1));
+            assertEquals(item.getClass(), item0.getClass());
+            assertEqualsArraysAware(item, item0);
+
+            c.put(item, 1);
+
+            assertTrue(c.containsKey(item));
+            assertEquals(1, c.get(item));
+            assertTrue(c.replace(item, 1, 2));
+            assertTrue(c.remove(item));
+        }
+    }
+
+    /** */
+    private void doTestBoxedPrimitivesArrays(CacheAdapter<Object, Object> c) {
         Object[] data = new Object[] {
             new Byte[] {1, 2, 3},
             new Short[] {1, 2, 3},
@@ -379,7 +473,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
             new Double[] {1d, 2d, 3d},
             new Character[] {'a', 'b', 'c'},
             new Boolean[] {true, false},
-            new CacheAtomicityMode[] { CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC }
+            new TestEnum[] {VAL1, VAL2, VAL3}
         };
 
         for (Object item : data) {
@@ -387,9 +481,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             Object item0 = c.get(1);
 
-            if (useBinaryArrays)
-                assertTrue(c.replace(1, item, item));
-
+            assertTrue(c.replace(1, item, item));
             assertTrue(c.remove(1));
 
             if (useBinaryArrays)
@@ -399,12 +491,11 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
 
             c.put(item, 1);
 
+            assertTrue(c.containsKey(item));
             assertEquals(1, c.get(item));
-
-            if (useBinaryArrays)
-                assertTrue(c.replace(item, 1, 2));
-
+            assertTrue(c.replace(item, 1, 2));
             assertTrue(c.remove(item));
+
         }
     }
 
@@ -430,6 +521,14 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
+    private IgniteClient thinClient() {
+        return Ignition.startClient(new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true))
+        );
+    }
+
+    /** */
     public static class TestClass2 {
         /** */
         final TestClass1[] arr;
@@ -441,6 +540,111 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         public TestClass2(TestClass1[] arr, TestClass1[][] arr2) {
             this.arr = arr;
             this.arr2 = arr2;
+        }
+    }
+
+    /** */
+    public interface CacheAdapter<K, V> {
+        /** */
+        public V get(K key);
+
+        /** */
+        public void put(K key, V val);
+
+        /** */
+        public boolean replace(K key, V oldVal, V newVal);
+
+        /** */
+        public boolean remove(K key);
+
+        /** */
+        public boolean containsKey(K key);
+
+        /** */
+        public <K1, V1> CacheAdapter<K1, V1> withKeepBinary();
+    }
+
+    /** */
+    private static class IgniteCacheAdapter<K, V> implements CacheAdapter<K, V> {
+        /** */
+        private final IgniteCache<K, V> c;
+
+        /** */
+        public IgniteCacheAdapter(IgniteCache<K, V> c) {
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V get(K key) {
+            return c.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(K key, V val) {
+            c.put(key, val);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(K key, V oldVal, V newVal) {
+            return c.replace(key, oldVal, newVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(K key) {
+            return c.remove(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsKey(K key) {
+            return c.containsKey(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K1, V1> CacheAdapter<K1, V1> withKeepBinary() {
+            return new IgniteCacheAdapter<>(c.withKeepBinary());
+        }
+    }
+
+    /** */
+    private static class ClientCacheAdapter<K, V> implements CacheAdapter<K, V> {
+        /** */
+        private final ClientCache<K, V> c;
+
+        /** */
+        public ClientCacheAdapter(ClientCache<K, V> c) {
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V get(K key) {
+            return c.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(K key, V val) {
+            c.put(key, val);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(K key, V oldVal, V newVal) {
+            return c.replace(key, oldVal, newVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(K key) {
+            return c.remove(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsKey(K key) {
+            return c.containsKey(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K1, V1> CacheAdapter<K1, V1> withKeepBinary() {
+            return new ClientCacheAdapter<>(c.withKeepBinary());
         }
     }
 }

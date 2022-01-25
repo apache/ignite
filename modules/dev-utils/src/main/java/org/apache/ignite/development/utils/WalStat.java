@@ -205,11 +205,14 @@ public class WalStat {
      * @param record data record to handle.
      */
     private void registerDataRecord(DataRecord record) {
-        final List<DataEntry> dataEntries = record.writeEntries();
-        if (!dataEntries.isEmpty()) {
+        int entryCnt = record.entryCount();
+
+        if (entryCnt != 0) {
             boolean underTx = false;
-            for (DataEntry next : dataEntries) {
-                final int size = dataEntries.size() > 1 ? -1 : record.size();
+            for (int i = 0; i < entryCnt; i++) {
+                DataEntry next = record.get(i);
+
+                final int size = entryCnt > 1 ? -1 : record.size();
                 incrementStat(next.op().toString(), dataEntryOperation, size);
 
                 incrementStat(next.cacheId(), dataEntryCacheId, size);
@@ -222,7 +225,7 @@ public class WalStat {
             incrementStat(underTx, record, dataRecordUnderTx);
         }
 
-        incrementStat(dataEntries.size(), record, dataRecordEntriesCnt);
+        incrementStat(entryCnt, record, dataRecordEntriesCnt);
     }
 
     /**

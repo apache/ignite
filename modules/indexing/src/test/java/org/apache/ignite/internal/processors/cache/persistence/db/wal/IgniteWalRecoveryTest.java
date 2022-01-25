@@ -1530,7 +1530,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                             int realPageSize = data.length;
 
                             pageIO.compactPage(GridUnsafe.wrapPointer(bufPtr, realPageSize), buf, realPageSize);
-                            pageIO.compactPage(ByteBuffer.wrap(data), bufWal, realPageSize);
+                            pageIO.compactPage(ByteBuffer.wrap(data).order(ByteOrder.nativeOrder()),
+                                bufWal, realPageSize);
 
                             bufPtr = GridUnsafe.bufferAddress(buf);
                             data = new byte[bufWal.limit()];
@@ -1726,7 +1727,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 else if (rec instanceof DataRecord) {
                     DataRecord dataRecord = (DataRecord)rec;
 
-                    for (DataEntry entry : dataRecord.writeEntries()) {
+                    for (int i = 0; i < dataRecord.entryCount(); i++) {
+                        DataEntry entry = dataRecord.get(i);
+
                         GridCacheVersion txId = entry.nearXidVersion();
 
                         assert activeTransactions.contains(txId) : "No transaction for entry " + entry;

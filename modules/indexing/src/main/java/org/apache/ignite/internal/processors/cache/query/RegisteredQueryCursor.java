@@ -50,7 +50,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     private RunningQueryManager runningQryMgr;
 
     /** */
-    private Long qryId;
+    private long qryId;
 
     /** Exception caused query failed or {@code null} if it succeded. */
     private Exception failReason;
@@ -70,11 +70,11 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param tracing Tracing processor.
      */
     public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        boolean lazy, Long qryId, Tracing tracing) {
+        boolean lazy, long qryId, Tracing tracing) {
         super(iterExec, cancel, true, lazy);
 
         assert runningQryMgr != null;
-        assert qryId != null;
+        assert qryId != RunningQueryManager.UNDEFINED_QUERY_ID;
 
         this.runningQryMgr = runningQryMgr;
         this.qryId = qryId;

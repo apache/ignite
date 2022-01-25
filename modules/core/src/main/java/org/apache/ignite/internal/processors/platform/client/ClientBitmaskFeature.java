@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.ThinProtocolFeature;
 
 /**
@@ -49,7 +50,13 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     QRY_PARTITIONS_BATCH_SIZE(7),
 
     /** Binary configuration retrieval. */
-    BINARY_CONFIGURATION(8);
+    BINARY_CONFIGURATION(8),
+
+    /** Handle of {@link ClientServices#serviceDescriptors()}. */
+    GET_SERVICE_DESCRIPTORS(9),
+
+    /** Invoke service methods with caller context. */
+    SERVICE_INVOKE_CALLCTX(10);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

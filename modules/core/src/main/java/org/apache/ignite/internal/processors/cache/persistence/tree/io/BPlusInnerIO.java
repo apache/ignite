@@ -68,6 +68,8 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param pageId Page ID.
      */
     public final void setLeft(long pageAddr, int idx, long pageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset0(idx, SHIFT_LEFT), pageId);
 
         assert pageId == getLeft(pageAddr, idx);
@@ -88,6 +90,8 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param pageId Page ID.
      */
     private void setRight(long pageAddr, int idx, long pageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset0(idx, SHIFT_RIGHT), pageId);
 
         assert pageId == getRight(pageAddr, idx);
@@ -96,6 +100,8 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     /** {@inheritDoc} */
     @Override public final void copyItems(long srcPageAddr, long dstPageAddr, int srcIdx, int dstIdx, int cnt,
         boolean cpLeft) throws IgniteCheckedException {
+        assertPageType(dstPageAddr);
+
         assert srcIdx != dstIdx || srcPageAddr != dstPageAddr;
 
         cnt *= getItemSize() + 8; // From items to bytes.
@@ -139,6 +145,8 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         long rightId,
         boolean needRowBytes
     ) throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         rowBytes = super.insert(pageAddr, idx, row, rowBytes, rightId, needRowBytes);
 
         // Setup reference to the right page on split.

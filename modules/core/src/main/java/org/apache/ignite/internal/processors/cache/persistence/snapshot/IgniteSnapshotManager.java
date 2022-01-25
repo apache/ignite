@@ -442,6 +442,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
+        restoreCacheGrpProc.registerMetrics();
+
         cctx.exchange().registerExchangeAwareComponent(this);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
@@ -1241,9 +1243,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!(snpDir.exists() && snpDir.isDirectory()))
+            return Collections.emptyList();
+
         List<File> smfs = new ArrayList<>();
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snapshotLocalDir(snpName).toPath())) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
             for (Path d : ds) {
                 if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
                     smfs.add(d.toFile());
@@ -1254,7 +1261,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (smfs.isEmpty())
-            throw new IgniteException("Snapshot metadata files not found: " + snpName);
+            return Collections.emptyList();
 
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
@@ -1787,14 +1794,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param ioFactory Factory to create IO interface over a page stores.
      */
-    void ioFactory(FileIOFactory ioFactory) {
+    public void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }
 
     /**
      * @return Factory to create IO interface over a page stores.
      */
-    FileIOFactory ioFactory() {
+    public FileIOFactory ioFactory() {
         return ioFactory;
     }
 

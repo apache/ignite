@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Da
 public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** */
     public static final int MVCC_INFO_SIZE = 40;
-    
+
     /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
         new DataPageIO(1)
@@ -60,6 +60,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected void writeRowData(long pageAddr, int dataOff, int payloadSize, CacheDataRow row,
         boolean newRow) throws IgniteCheckedException {
+        assertPageType(pageAddr);
+
         long addr = pageAddr + dataOff;
 
         int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
@@ -115,6 +117,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected void writeFragmentData(CacheDataRow row, ByteBuffer buf, int rowOff,
         int payloadSize) throws IgniteCheckedException {
+        assertPageType(buf);
+
         final int keySize = row.key().valueBytesLength(null);
 
         final int valSize = row.value().valueBytesLength(null);
@@ -251,6 +255,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param txState Tx state hint.
      */
     public void updateNewVersion(long pageAddr, int dataOff, long mvccCrd, long mvccCntr, int mvccOpCntr, byte txState) {
+        assertPageType(pageAddr);
+
         long addr = pageAddr + dataOff;
 
         updateNewVersion(addr, mvccCrd, mvccCntr,
@@ -266,6 +272,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param mvccOpCntr Operation counter.
      */
     public void updateNewVersion(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+        assertPageType(pageAddr);
+
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
@@ -280,6 +288,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param txState Tx state hint.
      */
     public void updateTxState(long pageAddr, int itemId, int pageSize, byte txState) {
+        assertPageType(pageAddr);
+
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
@@ -296,6 +306,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param txState Tx state hint.
      */
     public void updateNewTxState(long pageAddr, int itemId, int pageSize, byte txState) {
+        assertPageType(pageAddr);
+
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
@@ -368,6 +380,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param opCntr MVCC counter value.
      */
     public void rawMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+        assertPageType(pageAddr);
+
         long addr = pageAddr + dataOff;
 
         PageUtils.putInt(addr, 16, opCntr);
@@ -429,6 +443,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param opCntr MVCC operation counter value.
      */
     public void rawNewMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+        assertPageType(pageAddr);
+
         long addr = pageAddr + dataOff;
 
         // Skip xid_min.

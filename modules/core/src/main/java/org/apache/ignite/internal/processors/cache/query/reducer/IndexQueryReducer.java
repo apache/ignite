@@ -96,7 +96,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         private final IndexQueryResultMeta meta;
 
         /** Every node will return the same key types for the same index, then it's possible to use simple comparator. */
-        private final IndexRowComparator idxRowComp = new IndexRowCompartorImpl();
+        private final IndexRowComparator idxRowComp = new IndexRowCompartorImpl(null);
 
         /** */
         IndexedNodePageComparator(
