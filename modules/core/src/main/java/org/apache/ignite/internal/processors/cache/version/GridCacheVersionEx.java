@@ -168,6 +168,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return "GridCacheVersionEx [topVer=" + topologyVersion() +
             ", order=" + order() +
             ", nodeOrder=" + nodeOrder() +
+            ", dataCenterId=" + dataCenterId() +
             ", drVer=" + drVer + ']';
     }
 }

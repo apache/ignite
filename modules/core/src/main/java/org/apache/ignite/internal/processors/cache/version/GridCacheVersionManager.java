@@ -49,6 +49,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** Last data version metric name. */
     public static final String LAST_DATA_VER = "LastDataVersion";
 
+    /** Data center ID metric name. */
+    public static final String DATA_CENTER_ID = "DataCenterId";
+
     /** Last version metric. */
     protected AtomicLongMetric lastDataVer;
 
@@ -98,6 +101,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
 
         lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
+
+        sysreg.register(DATA_CENTER_ID, () -> dataCenterId, "Data center id");
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
