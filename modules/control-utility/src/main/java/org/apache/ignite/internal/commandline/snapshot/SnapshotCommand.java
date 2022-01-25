@@ -162,7 +162,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Map<String, String> createParams = new LinkedHashMap<>(commonParams);
 
         createParams.put("wait", "Wait for the entire operation to complete. " +
-            "Otherwise, the operation will run in the background and the command will return immediately.");
+            "Otherwise, the operation will be performed in the background, and the command will immediately return control.");
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, createParams, CREATE.toString(), "snapshot_name", optional("--wait"));
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
