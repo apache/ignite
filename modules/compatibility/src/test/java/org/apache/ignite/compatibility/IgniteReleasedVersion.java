@@ -82,7 +82,10 @@ public enum IgniteReleasedVersion {
         return ver;
     }
 
-    /** @return Ignite versions since provided version. */
+    /**
+     * @return Ignite versions since provided version.
+     * @param ver Version.
+     */
     public static Collection<String> since(IgniteReleasedVersion ver) {
         return F.transform(F.view(F.asList(values()), v -> v.version().compareTo(ver.version()) >= 0),
             IgniteReleasedVersion::toString);
