@@ -20,7 +20,6 @@ package org.apache.ignite.configuration.notifications;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Configuration property change listener for named list configurations.
@@ -34,8 +33,7 @@ public interface ConfigurationNamedListListener<VIEWT> extends ConfigurationList
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull
-    default CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
+    default CompletableFuture<?> onCreate(ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 
@@ -49,12 +47,7 @@ public interface ConfigurationNamedListListener<VIEWT> extends ConfigurationList
      * @param ctx     Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull
-    default CompletableFuture<?> onRename(
-            @NotNull String oldName,
-            @NotNull String newName,
-            @NotNull ConfigurationNotificationEvent<VIEWT> ctx
-    ) {
+    default CompletableFuture<?> onRename(String oldName, String newName, ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 
@@ -64,15 +57,13 @@ public interface ConfigurationNamedListListener<VIEWT> extends ConfigurationList
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull
-    default CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
+    default CompletableFuture<?> onDelete(ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 
     /** {@inheritDoc} */
     @Override
-    @NotNull
-    default CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
+    default CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 }

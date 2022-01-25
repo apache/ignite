@@ -18,7 +18,6 @@
 package org.apache.ignite.configuration.notifications;
 
 import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Configuration property change listener.
@@ -33,5 +32,5 @@ public interface ConfigurationListener<VIEWT> {
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx);
+    CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<VIEWT> ctx);
 }

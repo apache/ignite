@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.configuration.notifications;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.checkContainsListeners;
@@ -26,13 +27,16 @@ import static org.apache.ignite.internal.configuration.notifications.Configurati
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnDelete;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnRename;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configNamedListenerOnUpdate;
+import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.configStorageRevisionListener;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.doNothingConsumer;
+import static org.apache.ignite.internal.configuration.notifications.ConfigurationListenerTestUtils.randomUuid;
 import static org.apache.ignite.internal.configuration.notifications.ConfigurationNotifier.notifyListeners;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.hasCause;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -44,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -66,9 +69,9 @@ import org.apache.ignite.configuration.notifications.ConfigurationNamedListListe
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.DynamicConfiguration;
+import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,6 +149,8 @@ public class ConfigurationListenerTest {
         public long specificVal = 12;
     }
 
+    private ConfigurationStorage storage;
+
     private ConfigurationRegistry registry;
 
     private ParentConfiguration config;
@@ -155,12 +160,12 @@ public class ConfigurationListenerTest {
      */
     @BeforeEach
     public void before() {
-        var testConfigurationStorage = new TestConfigurationStorage(LOCAL);
+        storage = new TestConfigurationStorage(LOCAL);
 
         registry = new ConfigurationRegistry(
                 List.of(ParentConfiguration.KEY),
                 Map.of(),
-                testConfigurationStorage,
+                storage,
                 List.of(InternalChildConfigurationSchema.class),
                 List.of(StringPolyConfigurationSchema.class, LongPolyConfigurationSchema.class)
         );
@@ -767,7 +772,7 @@ public class ConfigurationListenerTest {
         config.children().change(c -> c.create("0", doNothingConsumer())).get(1, SECONDS);
 
         checkContainsListeners(
-                () -> config.children().get("0").str().update(UUID.randomUUID().toString()),
+                () -> config.children().get("0").str().update(randomUuid()),
                 events,
                 List.of("0", "1", "2", "3"),
                 List.of()
@@ -777,7 +782,7 @@ public class ConfigurationListenerTest {
         config.children().stopListenElements(listener2);
 
         checkContainsListeners(
-                () -> config.children().get("0").str().update(UUID.randomUUID().toString()),
+                () -> config.children().get("0").str().update(randomUuid()),
                 events,
                 List.of("1", "3"),
                 List.of("0", "2")
@@ -787,7 +792,7 @@ public class ConfigurationListenerTest {
         config.children().stopListenElements(listener3);
 
         checkContainsListeners(
-                () -> config.children().get("0").str().update(UUID.randomUUID().toString()),
+                () -> config.children().get("0").str().update(randomUuid()),
                 events,
                 List.of(),
                 List.of("0", "1", "2", "3")
@@ -796,7 +801,7 @@ public class ConfigurationListenerTest {
 
     @Test
     void testGetConfigFromNotificationEvent() throws Exception {
-        String newVal = UUID.randomUUID().toString();
+        String newVal = randomUuid();
 
         config.listen(configListener(ctx -> {
             ParentConfiguration parent = ctx.config(ParentConfiguration.class);
@@ -834,8 +839,8 @@ public class ConfigurationListenerTest {
 
     @Test
     void testGetConfigFromNotificationEventOnCreate() throws Exception {
-        String newVal = UUID.randomUUID().toString();
-        String key = UUID.randomUUID().toString();
+        String newVal = randomUuid();
+        String key = randomUuid();
 
         config.children().listen(configListener(ctx -> {
             ParentConfiguration parent = ctx.config(ParentConfiguration.class);
@@ -867,8 +872,8 @@ public class ConfigurationListenerTest {
     @Test
     void testGetConfigFromNotificationEventOnRename() throws Exception {
         String val = "default";
-        String oldKey = UUID.randomUUID().toString();
-        String newKey = UUID.randomUUID().toString();
+        String oldKey = randomUuid();
+        String newKey = randomUuid();
 
         config.children().change(c -> c.create(oldKey, doNothingConsumer())).get(1, SECONDS);
 
@@ -902,7 +907,7 @@ public class ConfigurationListenerTest {
 
     @Test
     void testGetConfigFromNotificationEventOnDelete() throws Exception {
-        String key = UUID.randomUUID().toString();
+        String key = randomUuid();
 
         config.children().change(c -> c.create(key, doNothingConsumer())).get(1, SECONDS);
 
@@ -939,8 +944,8 @@ public class ConfigurationListenerTest {
 
     @Test
     void testGetConfigFromNotificationEventOnUpdate() throws Exception {
-        String newVal = UUID.randomUUID().toString();
-        String key = UUID.randomUUID().toString();
+        String newVal = randomUuid();
+        String key = randomUuid();
 
         config.children().change(c -> c.create(key, doNothingConsumer())).get(1, SECONDS);
 
@@ -1009,7 +1014,7 @@ public class ConfigurationListenerTest {
             return CompletableFuture.completedFuture(null);
         });
 
-        config.child().str().update(UUID.randomUUID().toString()).get(1, SECONDS);
+        config.child().str().update(randomUuid()).get(1, SECONDS);
     }
 
     @Test
@@ -1017,7 +1022,7 @@ public class ConfigurationListenerTest {
         config.children().listenElements(new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<ChildView> ctx) {
+            public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<ChildView> ctx) {
                 assertInstanceOf(ChildConfiguration.class, ctx.config(ChildConfiguration.class));
                 assertInstanceOf(InternalChildConfiguration.class, ctx.config(InternalChildConfiguration.class));
 
@@ -1029,11 +1034,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onRename(
-                    @NotNull String oldName,
-                    @NotNull String newName,
-                    @NotNull ConfigurationNotificationEvent<ChildView> ctx
-            ) {
+            public CompletableFuture<?> onRename(String oldName, String newName, ConfigurationNotificationEvent<ChildView> ctx) {
                 assertInstanceOf(ChildConfiguration.class, ctx.config(ChildConfiguration.class));
                 assertInstanceOf(InternalChildConfiguration.class, ctx.config(InternalChildConfiguration.class));
 
@@ -1045,7 +1046,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<ChildView> ctx) {
+            public CompletableFuture<?> onDelete(ConfigurationNotificationEvent<ChildView> ctx) {
                 assertNull(ctx.config(ChildConfiguration.class));
                 assertNull(ctx.config(InternalChildConfiguration.class));
 
@@ -1057,7 +1058,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<ChildView> ctx) {
+            public CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<ChildView> ctx) {
                 assertInstanceOf(ChildConfiguration.class, ctx.config(ChildConfiguration.class));
                 assertInstanceOf(InternalChildConfiguration.class, ctx.config(InternalChildConfiguration.class));
 
@@ -1070,7 +1071,7 @@ public class ConfigurationListenerTest {
 
         config.children().change(c -> c.create("0", c1 -> {})).get(1, SECONDS);
         config.children().change(c -> c.rename("0", "1")).get(1, SECONDS);
-        config.children().change(c -> c.update("1", c1 -> c1.changeStr(UUID.randomUUID().toString()))).get(1, SECONDS);
+        config.children().change(c -> c.update("1", c1 -> c1.changeStr(randomUuid()))).get(1, SECONDS);
         config.children().change(c -> c.delete("1")).get(1, SECONDS);
     }
 
@@ -1097,7 +1098,7 @@ public class ConfigurationListenerTest {
         config.polyChildren().listenElements(new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<PolyView> ctx) {
+            public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<PolyView> ctx) {
                 assertInstanceOf(PolyConfiguration.class, ctx.config(PolyConfiguration.class));
                 assertInstanceOf(StringPolyConfiguration.class, ctx.config(StringPolyConfiguration.class));
 
@@ -1113,11 +1114,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onRename(
-                    @NotNull String oldName,
-                    @NotNull String newName,
-                    @NotNull ConfigurationNotificationEvent<PolyView> ctx
-            ) {
+            public CompletableFuture<?> onRename(String oldName, String newName, ConfigurationNotificationEvent<PolyView> ctx) {
                 assertInstanceOf(PolyConfiguration.class, ctx.config(PolyConfiguration.class));
                 assertInstanceOf(StringPolyConfiguration.class, ctx.config(StringPolyConfiguration.class));
 
@@ -1133,7 +1130,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<PolyView> ctx) {
+            public CompletableFuture<?> onDelete(ConfigurationNotificationEvent<PolyView> ctx) {
                 assertNull(ctx.config(PolyConfiguration.class));
                 assertNull(ctx.config(StringPolyConfiguration.class));
                 assertNull(ctx.config(LongPolyConfiguration.class));
@@ -1148,7 +1145,7 @@ public class ConfigurationListenerTest {
 
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<PolyView> ctx) {
+            public CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<PolyView> ctx) {
                 assertInstanceOf(PolyConfiguration.class, ctx.config(PolyConfiguration.class));
                 assertInstanceOf(StringPolyConfiguration.class, ctx.config(StringPolyConfiguration.class));
 
@@ -1338,7 +1335,7 @@ public class ConfigurationListenerTest {
 
         config.child().listen(configListener(eventRef::set));
 
-        config.child().str().update(UUID.randomUUID().toString()).get(1, SECONDS);
+        config.child().str().update(randomUuid()).get(1, SECONDS);
 
         ConfigurationNotificationEvent<?> event = eventRef.get();
 
@@ -1393,7 +1390,7 @@ public class ConfigurationListenerTest {
 
         ExecutionException ex = assertThrows(
                 ExecutionException.class,
-                () -> config.child().str().update(UUID.randomUUID().toString()).get(1, SECONDS)
+                () -> config.child().str().update(randomUuid()).get(1, SECONDS)
         );
 
         assertTrue(hasCause(ex, RuntimeException.class, "from test"));
@@ -1401,11 +1398,11 @@ public class ConfigurationListenerTest {
 
     @Test
     void testGetErrorFromListenerFuture() {
-        config.child().listen(ctx -> CompletableFuture.failedFuture(new RuntimeException("from test")));
+        config.child().listen(ctx -> failedFuture(new RuntimeException("from test")));
 
         ExecutionException ex = assertThrows(
                 ExecutionException.class,
-                () -> config.child().str().update(UUID.randomUUID().toString()).get(1, SECONDS)
+                () -> config.child().str().update(randomUuid()).get(1, SECONDS)
         );
 
         assertTrue(hasCause(ex, RuntimeException.class, "from test"));
@@ -1491,6 +1488,104 @@ public class ConfigurationListenerTest {
             assertNull(ctx.oldValue());
             assertNotNull(ctx.newValue());
         }));
+
+        registry.notifyCurrentConfigurationListeners().get(1, SECONDS);
+
+        assertTrue(invokeListener.get());
+    }
+
+    @Test
+    void testNotifyStorageRevisionListener() throws Exception {
+        List<String> events = new ArrayList<>();
+
+        long currentStorageRevision = storage.lastRevision().get(1, SECONDS);
+
+        config.listen(configListener(ctx -> events.add("root")));
+
+        registry.listenUpdateStorageRevision((newStorageRevision) -> {
+            assertNotEquals(currentStorageRevision, newStorageRevision);
+            assertTrue(newStorageRevision > currentStorageRevision);
+
+            events.add("0");
+
+            return completedFuture(null);
+        });
+
+        registry.listenUpdateStorageRevision((newStorageRevision) -> {
+            assertNotEquals(currentStorageRevision, newStorageRevision);
+            assertTrue(newStorageRevision > currentStorageRevision);
+
+            events.add("1");
+
+            return completedFuture(null);
+        });
+
+        config.child().str().update(randomUuid()).get(1, SECONDS);
+
+        // Order of subscriptions must match the order of notifications.
+        // Storage revision listener must be the last one.
+        assertEquals(List.of("root", "0", "1"), events);
+    }
+
+    @Test
+    void testRemoveStorageRevisionListener() throws Exception {
+        List<String> events = new ArrayList<>();
+
+        ConfigurationStorageRevisionListener listener0 = configStorageRevisionListener((newRevision) -> events.add("0"));
+        ConfigurationStorageRevisionListener listener1 = configStorageRevisionListener((newRevision) -> events.add("1"));
+
+        registry.listenUpdateStorageRevision(listener0);
+        registry.listenUpdateStorageRevision(listener1);
+
+        config.child().str().update(randomUuid()).get(1, SECONDS);
+
+        // Order of subscriptions must match the order of notifications.
+        assertEquals(List.of("0", "1"), events);
+
+        registry.stopListenUpdateStorageRevision(listener0);
+
+        events.clear();
+
+        config.child().str().update(randomUuid()).get(1, SECONDS);
+
+        assertEquals(List.of("1"), events);
+    }
+
+    @Test
+    void testNotifyStorageRevisionListenerWithError() {
+        ConfigurationStorageRevisionListener listener0 = (newStorageRevision) -> {
+            throw new RuntimeException("from listener 0");
+        };
+
+        registry.listenUpdateStorageRevision(listener0);
+
+        ExecutionException ex0 = assertThrows(
+                ExecutionException.class,
+                () -> config.child().str().update(randomUuid()).get(1, SECONDS)
+        );
+
+        assertTrue(hasCause(ex0, RuntimeException.class, "from listener 0"));
+
+        registry.stopListenUpdateStorageRevision(listener0);
+
+        ConfigurationStorageRevisionListener listener1 =
+                (newStorageRevision) -> failedFuture(new RuntimeException("from listener 1"));
+
+        registry.listenUpdateStorageRevision(listener1);
+
+        ExecutionException ex1 = assertThrows(
+                ExecutionException.class,
+                () -> config.child().str().update(randomUuid()).get(1, SECONDS)
+        );
+
+        assertTrue(hasCause(ex1, RuntimeException.class, "from listener 1"));
+    }
+
+    @Test
+    void testNotifyStorageRevisionListenerForCurrentConfig() throws Exception {
+        AtomicBoolean invokeListener = new AtomicBoolean();
+
+        registry.listenUpdateStorageRevision(configStorageRevisionListener((newRevision) -> invokeListener.set(true)));
 
         registry.notifyCurrentConfigurationListeners().get(1, SECONDS);
 

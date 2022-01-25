@@ -15,41 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.configuration.notifications;
 
-import org.apache.ignite.configuration.notifications.ConfigurationListener;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Base interface for configuration.
+ * Configuration storage revision change listener.
  *
- * @param <VIEWT> Type of the value.
+ * <p>Storage revision - monotonously increasing counter, linked to the specific storage for current configuration values.
  */
-public interface ConfigurationProperty<VIEWT> {
+@FunctionalInterface
+public interface ConfigurationStorageRevisionListener {
     /**
-     * Get key of this node.
+     * Called on update the storage version.
      *
-     * @return Key.
+     * @param newStorageRevision Updated configuration storage revision.
+     * @return Future that signifies the end of the listener execution.
      */
-    String key();
-
-    /**
-     * Get value of this property.
-     *
-     * @return Value of this property.
-     */
-    VIEWT value();
-
-    /**
-     * Adds configuration values listener.
-     *
-     * @param listener Listener.
-     */
-    void listen(ConfigurationListener<VIEWT> listener);
-
-    /**
-     * Removes configuration values listener.
-     *
-     * @param listener Listener.
-     */
-    void stopListen(ConfigurationListener<VIEWT> listener);
+    CompletableFuture<?> onUpdate(long newStorageRevision);
 }

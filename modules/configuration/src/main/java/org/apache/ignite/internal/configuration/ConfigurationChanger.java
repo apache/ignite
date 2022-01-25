@@ -109,7 +109,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
          * @param oldRoot Old roots values. All these roots always belong to a single storage.
          * @param newRoot New values for the same roots as in {@code oldRoot}.
          * @param storageRevision Revision of the storage.
-         * @return Not-null future that must signify when processing is completed. Exceptional completion is not expected.
+         * @return Future that must signify when processing is completed. Exceptional completion is not expected.
          */
         CompletableFuture<Void> notify(@Nullable SuperRoot oldRoot, SuperRoot newRoot, long storageRevision);
     }

@@ -25,13 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility class for testing configuration listeners.
@@ -45,8 +46,6 @@ class ConfigurationListenerTestUtils {
 
     /**
      * Returns consumer who does nothing.
-     *
-     * @return Consumer who does nothing.
      */
     static <T> Consumer<T> doNothingConsumer() {
         return t -> {
@@ -57,7 +56,6 @@ class ConfigurationListenerTestUtils {
      * Returns config value change listener.
      *
      * @param consumer Consumer of the notification context.
-     * @return Config value change listener.
      */
     static <T> ConfigurationListener<T> configListener(Consumer<ConfigurationNotificationEvent<T>> consumer) {
         return ctx -> {
@@ -74,9 +72,9 @@ class ConfigurationListenerTestUtils {
     /**
      * Helper method for testing listeners.
      *
-     * @param changeFun      Configuration change function.
-     * @param events         Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
-     * @param expContains    Listeners that are expected are contained in the {@code events}.
+     * @param changeFun Configuration change function.
+     * @param events Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
+     * @param expContains Listeners that are expected are contained in the {@code events}.
      * @param expNotContains Listeners that are expected are not contained in the {@code events}.
      * @throws Exception If failed.
      */
@@ -103,8 +101,8 @@ class ConfigurationListenerTestUtils {
      * Helper method for testing listeners.
      *
      * @param changeFun Configuration change function.
-     * @param exp       Expected list of executing listeners.
-     * @param act       Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
+     * @param exp Expected list of executing listeners.
+     * @param act Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
      * @throws Exception If failed.
      */
     static void checkEqualsListeners(
@@ -123,7 +121,6 @@ class ConfigurationListenerTestUtils {
      * Returns named config value change listener.
      *
      * @param consumer Consumer of the notification context.
-     * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnDelete(
             Consumer<ConfigurationNotificationEvent<T>> consumer
@@ -131,7 +128,7 @@ class ConfigurationListenerTestUtils {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            public CompletableFuture<?> onDelete(ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
                 } catch (Throwable t) {
@@ -147,7 +144,6 @@ class ConfigurationListenerTestUtils {
      * Returns named config value change listener.
      *
      * @param consumer Consumer of the notification context.
-     * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnRename(
             Consumer<ConfigurationNotificationEvent<T>> consumer
@@ -155,11 +151,7 @@ class ConfigurationListenerTestUtils {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onRename(
-                    @NotNull String oldName,
-                    @NotNull String newName,
-                    @NotNull ConfigurationNotificationEvent<T> ctx
-            ) {
+            public CompletableFuture<?> onRename(String oldName, String newName, ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
                 } catch (Throwable t) {
@@ -175,7 +167,6 @@ class ConfigurationListenerTestUtils {
      * Returns named config value change listener.
      *
      * @param consumer Consumer of the notification context.
-     * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnCreate(
             Consumer<ConfigurationNotificationEvent<T>> consumer
@@ -183,7 +174,7 @@ class ConfigurationListenerTestUtils {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
                 } catch (Throwable t) {
@@ -199,7 +190,6 @@ class ConfigurationListenerTestUtils {
      * Returns named config value change listener.
      *
      * @param consumer Consumer of the notification context.
-     * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnUpdate(
             Consumer<ConfigurationNotificationEvent<T>> consumer
@@ -207,7 +197,7 @@ class ConfigurationListenerTestUtils {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
             @Override
-            public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            public CompletableFuture<?> onUpdate(ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
                 } catch (Throwable t) {
@@ -217,5 +207,25 @@ class ConfigurationListenerTestUtils {
                 return completedFuture(null);
             }
         };
+    }
+
+    /**
+     * Returns configuration storage revision change listener.
+     *
+     * @param consumer Consumer of storage revision change.
+     */
+    static ConfigurationStorageRevisionListener configStorageRevisionListener(LongConsumer consumer) {
+        return (newStorageRevision) -> {
+            consumer.accept(newStorageRevision);
+
+            return completedFuture(null);
+        };
+    }
+
+    /**
+     * Returns a string representation of a random {@link UUID}.
+     */
+    static String randomUuid() {
+        return UUID.randomUUID().toString();
     }
 }

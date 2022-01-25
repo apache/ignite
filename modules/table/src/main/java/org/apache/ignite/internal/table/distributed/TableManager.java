@@ -196,7 +196,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         tablesCfg.tables()
                 .listenElements(new ConfigurationNamedListListener<>() {
                     @Override
-                    public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<TableView> ctx) {
+                    public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<TableView> ctx) {
                         if (!busyLock.enterBusy()) {
                             String tblName = ctx.newValue().name();
                             IgniteUuid tblId = IgniteUuid.fromString(((ExtendedTableView) ctx.newValue()).id());
@@ -223,7 +223,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                      *
                      * @param ctx Configuration event.
                      */
-                    private void onTableCreateInternal(@NotNull ConfigurationNotificationEvent<TableView> ctx) {
+                    private void onTableCreateInternal(ConfigurationNotificationEvent<TableView> ctx) {
                         String tblName = ctx.newValue().name();
                         IgniteUuid tblId = IgniteUuid.fromString(((ExtendedTableView) ctx.newValue()).id());
 
@@ -236,9 +236,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         ((ExtendedTableConfiguration) tablesCfg.tables().get(tblName)).schemas()
                                 .listenElements(new ConfigurationNamedListListener<>() {
                                     @Override
-                                    public @NotNull CompletableFuture<?> onCreate(
-                                            @NotNull ConfigurationNotificationEvent<SchemaView> schemasCtx
-                                    ) {
+                                    public CompletableFuture<?> onCreate(ConfigurationNotificationEvent<SchemaView> schemasCtx) {
                                         if (!busyLock.enterBusy()) {
                                             fireEvent(
                                                     TableEvent.ALTER,
@@ -298,10 +296,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         );
                     }
 
-                    @NotNull
                     private CompletableFuture<?> updateAssignmentInternal(
                             IgniteUuid tblId,
-                            @NotNull ConfigurationNotificationEvent<byte[]> assignmentsCtx
+                            ConfigurationNotificationEvent<byte[]> assignmentsCtx
                     ) {
                         List<List<ClusterNode>> oldAssignments =
                                 (List<List<ClusterNode>>) ByteUtils.fromBytes(assignmentsCtx.oldValue());
@@ -352,17 +349,14 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     }
 
                     @Override
-                    public @NotNull CompletableFuture<?> onRename(@NotNull String oldName, @NotNull String newName,
-                            @NotNull ConfigurationNotificationEvent<TableView> ctx) {
+                    public CompletableFuture<?> onRename(String oldName, String newName, ConfigurationNotificationEvent<TableView> ctx) {
                         // TODO: IGNITE-15485 Support table rename operation.
 
                         return CompletableFuture.completedFuture(null);
                     }
 
                     @Override
-                    public @NotNull CompletableFuture<?> onDelete(
-                            @NotNull ConfigurationNotificationEvent<TableView> ctx
-                    ) {
+                    public CompletableFuture<?> onDelete(ConfigurationNotificationEvent<TableView> ctx) {
                         if (!busyLock.enterBusy()) {
                             String tblName = ctx.oldValue().name();
                             IgniteUuid tblId = IgniteUuid.fromString(((ExtendedTableView) ctx.oldValue()).id());
