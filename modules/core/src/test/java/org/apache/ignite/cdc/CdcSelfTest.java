@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -90,7 +92,6 @@ public class CdcSelfTest extends AbstractCdcTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-/*
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
                 for (boolean persistenceEnabled : new boolean[] {true, false}) {
@@ -99,9 +100,6 @@ public class CdcSelfTest extends AbstractCdcTest {
                     params.add(new Object[] {specificConsistentId, mode, null, persistenceEnabled, 0});
                     params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled, 8192});
                 }
-
-        params.removeIf(p -> (boolean)p[3]);
-*/
 
         params.add(new Object[] {false, WALMode.FSYNC, null, false, 0});
         params.add(new Object[] {false, WALMode.FSYNC, null, true, 0});
@@ -211,7 +209,11 @@ public class CdcSelfTest extends AbstractCdcTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         addData(cache, 0, KEYS_CNT / 2);
-        Thread.sleep(WAL_ARCHIVE_TIMEOUT * 2); // TODO: refactor to wait for next segment index from WAL.
+
+        long segIdx = ign.context().cache().context().wal().lastArchivedSegment();
+
+        waitForCondition(() -> ign.context().cache().context().wal().lastArchivedSegment() > segIdx, getTestTimeout());
+
         addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
         AtomicInteger expKey = new AtomicInteger();
