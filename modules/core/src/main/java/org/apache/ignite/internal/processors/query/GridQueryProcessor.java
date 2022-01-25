@@ -3081,16 +3081,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Collect queries that already running more than specified duration.
+     * Collect local queries that already running more than specified duration.
      *
      * @param duration Duration to check.
      * @return Collection of long running queries.
      */
-    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+    public Collection<GridRunningQueryInfo> runningLocalQueries(long duration) {
         if (moduleEnabled())
-            return idx.runningQueries(duration);
+            return idx.runningLocalQueries(duration);
 
         return Collections.emptyList();
+    }
+
+    /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        if (moduleEnabled())
+            idx.cancelQuery(queryId, nodeId, async);
     }
 
     /**
@@ -3098,9 +3110,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param queries Queries ID's to cancel.
      */
-    public void cancelQueries(Collection<Long> queries) {
+    public void cancelLocalQueries(Collection<Long> queries) {
         if (moduleEnabled())
-            idx.cancelQueries(queries);
+            idx.cancelLocalQueries(queries);
     }
 
     /**

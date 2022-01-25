@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
@@ -2080,7 +2081,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @return Running query manager.
      */
-    public RunningQueryManager runningQueryManager() {
+    public GridRunningQueryManager runningQueryManager() {
         return runningQryMgr;
     }
 
@@ -2134,10 +2135,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
 
         runningQryMgr = new RunningQueryManager(ctx);
+        runningQryMgr.start(busyLock);
+
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
         cmdProc = new CommandProcessor(ctx, schemaMgr, this);
-        cmdProc.start();
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2336,8 +2338,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         longRunningQryMgr.stop();
         connMgr.stop();
 
-        cmdProc.stop();
-
         statsMgr.stop();
 
         if (log.isDebugEnabled())
@@ -2459,7 +2459,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
 
-        cmdProc.onDisconnected();
+        runningQryMgr.onDisconnected();
     }
 
     /**
@@ -2472,12 +2472,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+    @Override public Collection<GridRunningQueryInfo> runningLocalQueries(long duration) {
         return runningQryMgr.longRunningQueries(duration);
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelQueries(Collection<Long> queries) {
+    @Override public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        runningQryMgr.cancelQuery(queryId, nodeId, async);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelLocalQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
             for (Long qryId : queries)
                 runningQryMgr.cancel(qryId);

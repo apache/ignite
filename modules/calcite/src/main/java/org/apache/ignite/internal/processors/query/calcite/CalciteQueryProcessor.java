@@ -188,7 +188,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
-        qryReg = new QueryRegistryImpl(ctx.log(QueryRegistry.class));
+        qryReg = new QueryRegistryImpl(ctx);
     }
 
     /**
@@ -311,12 +311,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> qryReg.unregister(q.id()),
+                (q) -> qryReg.unregister(q.id(), null),
                 log
             );
 
-            qryReg.register(qry);
+            qryReg.register(sql, schema.getName(), qry);
 
+            IgniteSQLException err = null;
             try {
                 return Collections.singletonList(executionSvc.executePlan(
                     qry,
@@ -328,7 +329,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 qry.cancel();
 
-                qryReg.unregister(qry.id());
+                qryReg.unregister(qry.id(), null);
 
                 if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
@@ -350,13 +351,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> qryReg.unregister(q.id()),
+                (q) -> qryReg.unregister(q.id(), null),
                 log
             );
 
             qrys.add(qry);
 
-            qryReg.register(qry);
+            qryReg.register(sql, schema.getName(), qry);
 
             try {
                 if (qryList.size() == 1) {
@@ -374,7 +375,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 qrys.forEach(RootQuery::cancel);
 
-                qryReg.unregister(qry.id());
+                qryReg.unregister(qry.id(), null);
 
                 if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);

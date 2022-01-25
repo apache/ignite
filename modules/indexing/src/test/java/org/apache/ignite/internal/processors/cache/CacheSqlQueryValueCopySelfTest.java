@@ -227,13 +227,13 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         GridQueryProcessor qryProc = grid(0).context().query();
 
-        Collection<GridRunningQueryInfo> queries = qryProc.runningQueries(0);
+        Collection<GridRunningQueryInfo> queries = qryProc.runningLocalQueries(0);
 
         assertEquals(1, queries.size());
 
         fut.get();
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(0, queries.size());
 
@@ -244,13 +244,13 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(500);
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(1, queries.size());
 
         fut.get();
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(0, queries.size());
     }
@@ -268,13 +268,13 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         GridQueryProcessor qryProc = grid(0).context().query();
 
-        Collection<GridRunningQueryInfo> queries = qryProc.runningQueries(0);
+        Collection<GridRunningQueryInfo> queries = qryProc.runningLocalQueries(0);
 
         assertEquals(1, queries.size());
 
         fut.get();
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(0, queries.size());
 
@@ -285,13 +285,13 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(500);
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(1, queries.size());
 
         fut.get();
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(0, queries.size());
     }
@@ -309,14 +309,14 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         final GridQueryProcessor qryProc = grid(0).context().query();
 
-        Collection<GridRunningQueryInfo> queries = qryProc.runningQueries(0);
+        Collection<GridRunningQueryInfo> queries = qryProc.runningLocalQueries(0);
 
         assertEquals(1, queries.size());
 
         final Collection<GridRunningQueryInfo> finalQueries = queries;
 
         for (GridRunningQueryInfo query : finalQueries)
-            qryProc.cancelQueries(Collections.singleton(query.id()));
+            qryProc.cancelLocalQueries(Collections.singleton(query.id()));
 
         int n = 100;
 
@@ -324,7 +324,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         while (n > 0) {
             Thread.sleep(100);
 
-            queries = qryProc.runningQueries(0);
+            queries = qryProc.runningLocalQueries(0);
 
             if (queries.isEmpty())
                 break;
@@ -334,7 +334,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
             n--;
         }
 
-        queries = qryProc.runningQueries(0);
+        queries = qryProc.runningLocalQueries(0);
 
         assertEquals(0, queries.size());
     }

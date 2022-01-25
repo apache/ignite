@@ -461,22 +461,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
+        IgniteSQLException err = null;
         try {
             ddlCmdHnd.handle(qry.id(), plan.command());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
+            err = new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
                 ", err=" + e.getMessage() + ']', e);
+            throw err;
         }
         finally {
-            qryReg.unregister(qry.id());
+            qryReg.unregister(qry.id(), err);
         }
 
         if (plan.command() instanceof CreateTableCommand
             && ((CreateTableCommand)plan.command()).insertStatement() != null) {
             RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()));
 
-            qryReg.register(insQry);
+            qryReg.register(qry.sql(), qry.schema().getName(), insQry);
 
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
@@ -591,7 +593,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
-        qryReg.unregister(qry.id());
+        qryReg.unregister(qry.id(), null);
 
         return cur;
     }
@@ -639,12 +641,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         try {
             Query<Row> qry = (Query<Row>)qryReg.register(
+                msg.root(), msg.schema(),
                 new Query<>(
                     msg.queryId(),
                     nodeId,
                     null,
                     exchangeSvc,
-                    (q) -> qryReg.unregister(q.id()),
+                    (q) -> qryReg.unregister(q.id(), null),
                     log,
                     msg.totalFragmentsCount()
                 )

@@ -33,6 +33,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -91,7 +92,8 @@ public class DdlCommandHandler {
         this.security = security;
         this.schemaSupp = schemaSupp;
         schemaMgr = new SchemaManager(schemaSupp);
-        nativeCmdHnd = new NativeCommandHandler(cacheProcessor.context().kernalContext(), schemaMgr);
+        GridKernalContext ctx = cacheProcessor.context().kernalContext();
+        nativeCmdHnd = new NativeCommandHandler(ctx, schemaMgr, new RunningQueryManagerWrapper(ctx));
     }
 
     /** */

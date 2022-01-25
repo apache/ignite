@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
@@ -35,6 +36,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
@@ -703,6 +705,34 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("kill continuous '1233415' 1000", SqlParseException.class);
         assertParserThrows("kill continuous '123' '123'", SqlParseException.class);
         assertParserThrows("kill continuous", SqlParseException.class);
+    }
+
+    /**
+     * Test kill continuous query parsing.
+     */
+    @Test
+    public void killSqlQuery() throws Exception {
+        IgniteSqlKill killTask;
+
+        UUID nodeId = UUID.randomUUID();
+        long queryId = ThreadLocalRandom.current().nextLong();
+
+        killTask = parse("kill query '" + nodeId + "_" + queryId + "'");
+        assertTrue(killTask instanceof IgniteSqlKillQuery);
+        assertEquals(nodeId, ((IgniteSqlKillQuery)killTask).nodeId());
+        assertEquals(queryId, ((IgniteSqlKillQuery)killTask).queryId());
+        assertFalse(((IgniteSqlKillQuery)killTask).isAsync());
+
+        killTask = parse("kill query async '" + nodeId + "_" + queryId + "'");
+        assertTrue(killTask instanceof IgniteSqlKillQuery);
+        assertEquals(nodeId, ((IgniteSqlKillQuery)killTask).nodeId());
+        assertEquals(queryId, ((IgniteSqlKillQuery)killTask).queryId());
+        assertTrue(((IgniteSqlKillQuery)killTask).isAsync());
+
+        assertParserThrows("kill query '1233415'", SqlParseException.class);
+        assertParserThrows("kill query '" + UUID.randomUUID() + "'_a1233415'", SqlParseException.class);
+        assertParserThrows("kill query '123' '123'", SqlParseException.class);
+        assertParserThrows("kill query", SqlParseException.class);
     }
 
     /** */

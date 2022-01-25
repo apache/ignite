@@ -32,12 +32,14 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -217,7 +219,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCancelUnknownSQLQuery() {
-        qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42");
+        GridTestUtils.assertThrowsWithCause(
+            () -> qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42"),
+            IgniteSQLException.class);
     }
 
     /** */

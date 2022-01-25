@@ -364,7 +364,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         conn.close();
 
-        assertTrue(ignite.context().query().runningQueries(-1).isEmpty());
+        assertTrue(ignite.context().query().runningLocalQueries(-1).isEmpty());
     }
 
     /**
@@ -447,7 +447,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * @param node server node that runs the reduce query.
      */
     private List<GridRunningQueryInfo> findQueriesOnNode(String query, IgniteEx node) {
-        List<GridRunningQueryInfo> allQrs = (List<GridRunningQueryInfo>)node.context().query().runningQueries(-1);
+        List<GridRunningQueryInfo> allQrs = (List<GridRunningQueryInfo>)node.context().query().runningLocalQueries(-1);
 
         return allQrs.stream()
             .filter(q -> q.query().equals(query))
@@ -572,7 +572,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("select * from Integer where awaitLatchCancelled() = 0"));
 
-        List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
+        List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningLocalQueries(-1);
 
         GridRunningQueryInfo runQryInfo = runningQueries.get(0);
 
@@ -639,13 +639,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
         FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -658,13 +658,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         cur.iterator();
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -679,13 +679,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         it.next();
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -696,13 +696,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
         FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -715,13 +715,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         cur.iterator();
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -736,13 +736,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         it.next();
 
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = ignite.context().query().runningLocalQueries(-1).iterator().next().id();
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
 
         if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningLocalQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -1083,7 +1083,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
                 GridTestUtils.waitForCondition(() -> {
                     List<GridRunningQueryInfo> r = (List<GridRunningQueryInfo>)ignite.context().query()
-                        .runningQueries(-1);
+                        .runningLocalQueries(-1);
 
                     runningQueries.addAll(r.stream().filter(q -> q.query().equals(qry)).collect(Collectors.toList()));
 
@@ -1126,7 +1126,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
             try {
                 TestSQLFunctions.cancelLatch.await();
 
-                List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
+                List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningLocalQueries(-1);
 
                 List<IgniteInternalFuture> res = new ArrayList<>();
 

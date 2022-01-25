@@ -124,7 +124,7 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
 
         it.next();
 
-        Long qryId = node.context().query().runningQueries(-1).iterator().next().id();
+        Long qryId = node.context().query().runningLocalQueries(-1).iterator().next().id();
 
         GridTestUtils.assertThrows(log,
             () -> node.context().query()
@@ -133,7 +133,7 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
             IgniteException.class, "Fake network error");
 
         List<GridRunningQueryInfo> runningQueries =
-            (List<GridRunningQueryInfo>)node.context().query().runningQueries(-1);
+            (List<GridRunningQueryInfo>)node.context().query().runningLocalQueries(-1);
 
         assertTrue("runningQueries=" + runningQueries, runningQueries.isEmpty());
         ensureMapQueriesHasFinished(grid(0));

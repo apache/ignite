@@ -430,7 +430,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         spi(qryInitiator).waitForBlocked(mapNodesCount());
 
-        qryInitiator.context().query().runningQueries(-1).iterator().next().cancel();
+        qryInitiator.context().query().runningLocalQueries(-1).iterator().next().cancel();
 
         spi(qryInitiator).stopBlock();
 
