@@ -81,12 +81,13 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         client.cluster().state(ClusterState.ACTIVE);
 
-        executeSql("CREATE TABLE tbl (id INT PRIMARY KEY, val VARCHAR) WITH CACHE_NAME=\"test\"");
+        executeSql("CREATE TABLE tbl (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH CACHE_NAME=\"test\"");
         executeSql("CREATE INDEX idx_id_val ON tbl (id DESC, val)");
+        executeSql("CREATE INDEX idx_id_val2 ON tbl (id, val2 DESC)");
         executeSql("CREATE INDEX idx_val ON tbl (val DESC)");
 
         for (int i = 0; i < 100; i++)
-            executeSql("INSERT INTO tbl VALUES (?, ?)", i, "val" + i);
+            executeSql("INSERT INTO tbl VALUES (?, ?, ?)", i, "val" + i, "val" + i);
 
         executeSql("CREATE TABLE tbl2 (id INT PRIMARY KEY, val VARCHAR)");
 
@@ -101,11 +102,11 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryChecker validChecker = assertQuery(grid(0), sql)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
-            .returns(0, "val0");
+            .returns(0, "val0", "val0");
 
         QueryChecker rebuildingChecker = assertQuery(grid(0), sql)
             .matches(QueryChecker.containsTableScan("PUBLIC", "TBL"))
-            .returns(0, "val0");
+            .returns(0, "val0", "val0");
 
         checkRebuildIndexQuery(grid(0), validChecker, rebuildingChecker);
     }
@@ -121,7 +122,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
                 .withParams(i, "val" + i)
                 .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IgniteSort")))
                 .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
-                .returns(i, "val" + i);
+                .returns(i, "val" + i, "val" + i);
 
             checkRebuildIndexQuery(grid(1), checker, checker);
         }
@@ -144,14 +145,14 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Order by part of index collation, without projection.
-        String sql = "SELECT * FROM tbl WHERE id >= 10 and id < 20 ORDER BY id DESC";
+        String sql = "SELECT * FROM tbl WHERE id >= 10 and id <= 15 ORDER BY id DESC";
 
         QueryChecker checker = assertQuery(initNode, sql)
             .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IndexSpool")))
             .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IgniteSort")))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
-            .returns(19, "val19").returns(18, "val18").returns(17, "val17").returns(16, "val16").returns(15, "val15")
-            .returns(14, "val14").returns(13, "val13").returns(12, "val12").returns(11, "val11").returns(10, "val10")
+            .returns(15, "val15", "val15").returns(14, "val14", "val14").returns(13, "val13", "val13")
+            .returns(12, "val12", "val12").returns(11, "val11", "val11").returns(10, "val10", "val10")
             .ordered();
 
         checkRebuildIndexQuery(grid(1), checker, checker);
@@ -183,13 +184,13 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Order by another collation.
-        sql = "SELECT * FROM tbl WHERE val BETWEEN 'val10' AND 'val19' ORDER BY val";
+        sql = "SELECT * FROM tbl WHERE val BETWEEN 'val10' AND 'val15' ORDER BY val";
 
         checker = assertQuery(initNode, sql)
             .matches(QueryChecker.containsSubPlan("IgniteSort"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_VAL"))
-            .returns(10, "val10").returns(11, "val11").returns(12, "val12").returns(13, "val13").returns(14, "val14")
-            .returns(15, "val15").returns(16, "val16").returns(17, "val17").returns(18, "val18").returns(19, "val19")
+            .returns(10, "val10", "val10").returns(11, "val11", "val11").returns(12, "val12", "val12")
+            .returns(13, "val13", "val13").returns(14, "val14", "val14").returns(15, "val15", "val15")
             .ordered();
 
         checkRebuildIndexQuery(grid(1), checker, checker);
@@ -223,6 +224,38 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
             .returns(10, "val10-").returns(11, "val11-").returns(12, "val12-");
+
+        checkRebuildIndexQuery(grid(1), checker, checker);
+    }
+
+    /** */
+    @Test
+    public void testRebuildOnRemoteNodeCollationRestore() throws Exception {
+        IgniteEx initNode = grid(0);
+
+        // Correlated join with correlation in filter, with project as a subset of collation.
+        String sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.id1 " +
+            "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val >= 'val') AS tbl " +
+            "ON tbl.id = tbl2.id " +
+            "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";
+
+        QueryChecker checker = assertQuery(initNode, sql)
+            .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
+            .returns(10, 11).returns(11, 12).returns(12, 13);
+
+        checkRebuildIndexQuery(grid(1), checker, checker);
+
+        // Correlated join with correlation in filter, with a project as a subset of collation with DESC ordering.
+        sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.id1 " +
+            "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val2 >= 'val') AS tbl " +
+            "ON tbl.id = tbl2.id " +
+            "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";
+
+        checker = assertQuery(initNode, sql)
+            .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL2"))
+            .returns(10, 11).returns(11, 12).returns(12, 13);
 
         checkRebuildIndexQuery(grid(1), checker, checker);
     }

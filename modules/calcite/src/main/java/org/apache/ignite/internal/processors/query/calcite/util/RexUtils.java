@@ -237,10 +237,6 @@ public class RexUtils {
             if (bestLower == null && bestUpper == null)
                 break; // No bounds, so break the loop.
 
-            if (i > 0 && bestLower != bestUpper)
-                // Go behind the first index field only in the case of multiple "=" conditions on index fields.
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
-
             if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
                 upper.add(bestUpper);
                 lower.add(bestLower);
@@ -339,7 +335,7 @@ public class RexUtils {
     }
 
     /** */
-    private static Map<Integer, List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
+    public static Map<Integer, List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
         List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
 
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
@@ -450,8 +446,23 @@ public class RexUtils {
 
     /** */
     public static Mappings.TargetMapping inversePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
+        return remap(nodes, inputRowType, local, MappingType.INVERSE_FUNCTION);
+    }
+
+    /** */
+    public static Mappings.TargetMapping permutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
+        return remap(nodes, inputRowType, local, MappingType.PARTIAL_FUNCTION);
+    }
+
+    /** */
+    private static Mappings.TargetMapping remap(
+        List<RexNode> nodes,
+        RelDataType inputRowType,
+        boolean local,
+        MappingType mappingType
+    ) {
         final Mappings.TargetMapping mapping =
-            Mappings.create(MappingType.INVERSE_FUNCTION, nodes.size(), inputRowType.getFieldCount());
+            Mappings.create(mappingType, nodes.size(), inputRowType.getFieldCount());
 
         Class<? extends RexSlot> clazz = local ? RexLocalRef.class : RexInputRef.class;
 
@@ -459,6 +470,7 @@ public class RexUtils {
             if (clazz.isInstance(node.e))
                 mapping.set(node.i, ((RexSlot)node.e).getIndex());
         }
+
         return mapping;
     }
 

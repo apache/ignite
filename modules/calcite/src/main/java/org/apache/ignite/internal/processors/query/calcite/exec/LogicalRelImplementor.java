@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiPredicate;
@@ -27,14 +29,18 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -314,11 +320,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
             RelCollation collation = TraitUtils.collation(rel);
 
+            // If there are correlates in filter or project, spool node is required to provide ability to rewind input.
+            // Sort node is required if output should be sorted or if spool node required (to provide search by
+            // index conditions).
+            // Additionally, project node is required in case of spool inserted, since spool requires unmodified
+            // original input for filtering by index conditions.
             boolean filterHasCorrelation = condition != null && RexUtils.hasCorrelation(condition);
             boolean projectHasCorrelation = projects != null && RexUtils.hasCorrelation(projects);
             boolean spoolNodeRequired = projectHasCorrelation || filterHasCorrelation;
             boolean projNodeRequired = projects != null && spoolNodeRequired;
-            boolean hasCollation = collation != null && !collation.getFieldCollations().isEmpty();
+            boolean sortNodeRequired = collation != null && !collation.getFieldCollations().isEmpty();
 
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
@@ -330,20 +341,96 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             Node<Row> node = new ScanNode<>(ctx, rowType, rowsIter);
 
-            if (hasCollation || spoolNodeRequired) {
-                if (spoolNodeRequired) {
-                    // Use original index collation, since rel collation can be already modified by projects.
-                    Mappings.TargetMapping targetMapping = Commons.mapping(requiredColumns,
-                        tbl.getRowType(typeFactory).getFieldCount());
+            if (spoolNodeRequired) {
+                if (lowerCond != null || upperCond != null) {
+                    List<RexNode> remappedLowerCond = lowerCond;
+                    List<RexNode> remappedUpperCond = upperCond;
 
-                    collation = rel.indexCollation().apply(targetMapping);
-                }
-                else {
-                    assert hasCollation;
+                    if (requiredColumns != null) {
+                        // Remap index find predicate according to rowType of the spool.
+                        int cardinality = requiredColumns.cardinality();
+                        remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
+                        remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
 
-                    if (projects != null)
-                        rowType = rel.getRowType();
+                        for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
+                            if (remappedLowerCond != null)
+                                remappedLowerCond.add(lowerCond.get(i));
+
+                            if (remappedUpperCond != null)
+                                remappedUpperCond.add(upperCond.get(i));
+                        }
+
+                        lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);
+                        upper = remappedUpperCond == null ? null : expressionFactory.rowSource(remappedUpperCond);
+                    }
+
+                    // Rel collation can be already modified by projects, restore saved prefix of the original collation.
+                    if (projects != null && collation != null) {
+                        Mappings.TargetMapping mapping = RexUtils.permutation(projects, rowType, true);
+
+                        collation = collation.apply(mapping);
+                    }
+
+                    // If spool required, we should ensure that the collation satisfies index condition, since the
+                    // collation can be trimmed by projects.
+                    if (projects != null) {
+                        List<RelFieldCollation> collationFields = collation == null ? new ArrayList<>() :
+                            new ArrayList<>(collation.getFieldCollations());
+
+                        List<Integer> collationKeys = collation == null ? new ArrayList<>() :
+                            new ArrayList<>(collation.getKeys());
+
+                        int cardinality = remappedLowerCond != null ? remappedLowerCond.size() : remappedUpperCond.size();
+
+                        // First, add all equality filters to collation.
+                        for (int i = 0; i < cardinality; i++) {
+                            RexNode lowerNode = remappedLowerCond != null ? remappedLowerCond.get(i) : null;
+                            RexNode upperNode = remappedUpperCond != null ? remappedUpperCond.get(i) : null;
+
+                            if (RexUtils.isNotNull(lowerNode) && F.eq(lowerNode, upperNode) && !collationKeys.contains(i)) {
+                                collationFields.add(new RelFieldCollation(i));
+                                collationKeys.add(i);
+                            }
+                        }
+
+                        // Then, add all other fields to collation.
+                        Map<Integer, List<RexCall>> fieldsToPredicates = null;
+
+                        for (int i = 0; i < cardinality; i++) {
+                            RexNode lowerNode = remappedLowerCond != null ? remappedLowerCond.get(i) : null;
+                            RexNode upperNode = remappedUpperCond != null ? remappedUpperCond.get(i) : null;
+
+                            if ((RexUtils.isNotNull(lowerNode) || RexUtils.isNotNull(upperNode)) && !collationKeys.contains(i)) {
+                                if (fieldsToPredicates == null)
+                                    fieldsToPredicates = RexUtils.mapPredicatesToFields(condition, rel.getCluster());
+
+                                SqlKind lowerBoundOperator = findBoundOperator(fieldsToPredicates.get(i), lowerNode);
+                                SqlKind upperBoundOperator = findBoundOperator(fieldsToPredicates.get(i), upperNode);
+
+                                RelFieldCollation.Direction direction =
+                                    lowerBoundOperator == SqlKind.LESS_THAN ||
+                                    lowerBoundOperator == SqlKind.LESS_THAN_OR_EQUAL ||
+                                    upperBoundOperator == SqlKind.GREATER_THAN ||
+                                    upperBoundOperator == SqlKind.GREATER_THAN_OR_EQUAL ?
+                                        RelFieldCollation.Direction.DESCENDING :
+                                        RelFieldCollation.Direction.ASCENDING;
+
+                                collationFields.add(new RelFieldCollation(i, direction));
+                                collationKeys.add(i);
+                            }
+                        }
+
+                        if (collation == null || collation.getFieldCollations().size() != collationFields.size())
+                            collation = RelCollations.of(collationFields);
+
+                        sortNodeRequired = !collation.getFieldCollations().isEmpty();
+                    }
                 }
+            }
+
+            if (sortNodeRequired) {
+                if (!spoolNodeRequired && projects != null)
+                    rowType = rel.getRowType();
 
                 SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
 
@@ -353,24 +440,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             }
 
             if (spoolNodeRequired) {
-                if (requiredColumns != null && (lowerCond != null || upperCond != null)) {
-                    // Remap index find predicate according to rowType on the current phase.
-                    int cardinality = requiredColumns.cardinality();
-                    List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
-                    List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
-
-                    for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
-                        if (remappedLowerCond != null)
-                            remappedLowerCond.add(lowerCond.get(i));
-
-                        if (remappedUpperCond != null)
-                            remappedUpperCond.add(upperCond.get(i));
-                    }
-
-                    lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);
-                    upper = remappedUpperCond == null ? null : expressionFactory.rowSource(remappedUpperCond);
-                }
-
                 IndexSpoolNode<Row> spoolNode = IndexSpoolNode.createTreeSpool(
                     ctx,
                     rowType,
@@ -396,6 +465,27 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             return node;
         }
+    }
+
+    /** */
+    private SqlKind findBoundOperator(List<RexCall> fieldConditions, RexNode bound) {
+        if (bound == null)
+            return null;
+
+        EnumSet<SqlKind> operators = EnumSet.noneOf(SqlKind.class);
+
+        for (RexCall fieldContition : fieldConditions) {
+            assert fieldContition.getOperands().size() == 2;
+
+            // Bound should be on the left side of the condition.
+            if (bound.equals(fieldContition.getOperands().get(1)))
+                operators.add(fieldContition.getOperator().getKind());
+        }
+
+        if (operators != null && operators.size() == 1)
+            return F.first(operators);
+        else
+            return null;
     }
 
     /** {@inheritDoc} */

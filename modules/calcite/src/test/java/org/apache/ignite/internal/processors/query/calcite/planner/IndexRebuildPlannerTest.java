@@ -175,7 +175,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         ImmutableBitSet requiredColumns = templateScan.requiredColumns();
 
         // Collations.
-        RelCollation idxCollation = templateScan.indexCollation();
+        RelCollation idxCollation = tbl.getIndex(templateScan.indexName()).collation();
 
         RelCollation colCollation = idxCollation.apply(Mappings.target(requiredColumns.asList(),
             tbl.getRowType(TYPE_FACTORY).getFieldCount()));
@@ -294,8 +294,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
             projects,
             filters,
             templateScan.indexConditions(),
-            requiredColumns,
-            templateScan.indexCollation()
+            requiredColumns
         );
     }
 
