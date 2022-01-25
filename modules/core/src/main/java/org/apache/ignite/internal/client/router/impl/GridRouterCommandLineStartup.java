@@ -51,20 +51,20 @@ public class GridRouterCommandLineStartup {
      * @param beans Beans loaded from spring configuration file.
      */
     public void start(Map<Class<?>, Collection> beans) {
-        if (F.isEmpty(beans.get(IgniteLogger.class))) {
+        log = F.<IgniteLogger>first(beans.get(IgniteLogger.class));
+
+        if (log == null) {
             U.error(log, "Failed to find logger definition in application context. Stopping the router.");
 
             return;
         }
 
-        log = F.<IgniteLogger>first(beans.get(IgniteLogger.class));
+        GridTcpRouterConfiguration tcpCfg =
+            F.<GridTcpRouterConfiguration>first(beans.get(GridTcpRouterConfiguration.class));
 
-        if (F.isEmpty(beans.get(GridTcpRouterConfiguration.class)))
+        if (tcpCfg == null)
             U.warn(log, "TCP router startup skipped (configuration not found).");
         else {
-            GridTcpRouterConfiguration tcpCfg =
-                F.<GridTcpRouterConfiguration>first(beans.get(GridTcpRouterConfiguration.class));
-
             tcpRouter = new GridTcpRouterImpl(tcpCfg);
 
             try {
