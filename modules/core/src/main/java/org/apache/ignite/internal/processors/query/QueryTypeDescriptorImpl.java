@@ -616,7 +616,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
             }
             else if (key instanceof KeyCacheObject) {
-                String keyTypeName0  = ((KeyCacheObject)key).value(coCtx, false).getClass().getName();
+                String keyTypeName0 = ((KeyCacheObject)key).value(coCtx, false).getClass().getName();
 
                 if (!keyTypeName.equals(keyTypeName0)) {
                     throw new IgniteSQLException("Key type not is allowed for table ["
