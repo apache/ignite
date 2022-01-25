@@ -27,10 +27,13 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -39,13 +42,18 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
  */
 public class CacheView {
     /** Cache descriptor. */
-    private DynamicCacheDescriptor cache;
+    private final DynamicCacheDescriptor cache;
+
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
 
     /**
      * @param cache Cache descriptor.
      */
-    public CacheView(DynamicCacheDescriptor cache) {
+    public CacheView(DynamicCacheDescriptor cache, GridKernalContext ctx) {
         this.cache = cache;
+        this.ctx = ctx;
     }
 
     /** @see DynamicCacheDescriptor#groupId() */
@@ -324,6 +332,16 @@ public class CacheView {
     /** @see CacheConfiguration#getExpiryPolicyFactory() */
     public String expiryPolicyFactory() {
         return toStringSafe(cache.cacheConfiguration().getExpiryPolicyFactory());
+    }
+
+    /** @see CacheVersionConflictResolver */
+    public String conflictResolver() {
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(this.cache.cacheName());
+
+        if (cache == null || !cache.context().conflictNeedResolve())
+            return null;
+
+        return toStringSafe(cache.context().conflictResolver());
     }
 
     /** @see CacheConfiguration#isSqlEscapeAll() */

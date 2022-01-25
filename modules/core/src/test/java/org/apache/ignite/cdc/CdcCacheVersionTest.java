@@ -49,12 +49,15 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.*;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -128,8 +131,24 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         assertEquals(
             DFLT_CLUSTER_ID,
-            ign.context().metric().registry(CACHE_METRICS).<LongMetric>findMetric(DATA_CENTER_ID)
+            ign.context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_CENTER_ID).value()
         );
+
+        boolean found = false;
+
+        SystemView<CacheView> caches = ign.context().systemView().view(CACHES_VIEW);
+
+        for (CacheView v : caches) {
+            if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
+                assertTrue(v.conflictResolver().startsWith(CacheVersionConflictResolverImpl.class.getName()));
+
+                found = true;
+            }
+            else
+                assertNull(v.conflictResolver());
+        }
+
+        assertTrue(found);
     }
 
     /** */
@@ -217,21 +236,26 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public CacheVersionConflictResolver conflictResolver() {
-            return new CacheVersionConflictResolver() {
-                @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
-                    CacheObjectValueContext ctx,
-                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
-                    GridCacheVersionedEntryEx<K1, V1> newEntry,
-                    boolean atomicVerComparator
-                ) {
-                    GridCacheVersionConflictContext<K1, V1> res =
-                        new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+            return new CacheVersionConflictResolverImpl();
+        }
 
-                    res.useNew();
+    }
 
-                    return res;
-                }
-            };
+    /** */
+    public static class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
+        /** {@inheritDoc} */
+        @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
+            CacheObjectValueContext ctx,
+            GridCacheVersionedEntryEx<K1, V1> oldEntry,
+            GridCacheVersionedEntryEx<K1, V1> newEntry,
+            boolean atomicVerComparator
+        ) {
+            GridCacheVersionConflictContext<K1, V1> res =
+                new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+
+            res.useNew();
+
+            return res;
         }
     }
 }
