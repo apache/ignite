@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-public class AffinityKey {
+public class TestAffinityKey {
     /** Key. */
     private int key;
 
@@ -35,7 +35,7 @@ public class AffinityKey {
      * @param key Key.
      * @param aff Affinity key.
      */
-    public AffinityKey(int key, int aff) {
+    public TestAffinityKey(int key, int aff) {
         this.key = key;
         this.aff = aff;
     }
@@ -48,7 +48,7 @@ public class AffinityKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AffinityKey that = (AffinityKey)o;
+        TestAffinityKey that = (TestAffinityKey)o;
 
         return key == that.key && aff == that.aff;
     }
@@ -64,6 +64,6 @@ public class AffinityKey {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(AffinityKey.class, this);
+        return S.toString(TestAffinityKey.class, this);
     }
 }

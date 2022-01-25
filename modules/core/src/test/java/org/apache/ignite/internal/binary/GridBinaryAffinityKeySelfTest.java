@@ -128,7 +128,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(i, aff.affinityKey(ignite.binary().toBinary(new TestObject(i))));
 
-            assertEquals(i, aff.affinityKey(new AffinityKey(0, i)));
+            assertEquals(i, aff.affinityKey(new TestAffinityKey(0, i)));
 
             BinaryObjectBuilder bldr = ignite.binary().builder("TestObject2");
 
@@ -154,7 +154,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, cacheObj));
 
-            assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, new AffinityKey(0, i)), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i));
+            assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, new TestAffinityKey(0, i)), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i));
         }
     }
 
@@ -179,7 +179,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
 
-            grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new AffinityKey(0, i), new IgniteRunnable() {
+            grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new TestAffinityKey(0, i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
