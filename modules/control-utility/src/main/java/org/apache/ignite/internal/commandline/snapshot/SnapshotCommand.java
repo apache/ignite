@@ -93,7 +93,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
     @Override public void parseArguments(CommandArgIterator argIter) {
         cmd = of(argIter.nextArg("Expected snapshot action."));
 
-        // Visor task paramters.
+        // Visor task parameters.
         String snpName = argIter.nextArg("Expected snapshot name.");
         VisorSnapshotRestoreTaskAction restoreAction = VisorSnapshotRestoreTaskAction.START;
         boolean waitComplete = false;
