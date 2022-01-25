@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
+import org.apache.ignite.platform.model.AccessLevel;
 import org.apache.ignite.platform.model.Account;
 import org.apache.ignite.platform.model.Address;
 import org.apache.ignite.platform.model.Department;
@@ -601,8 +602,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         public User[] testUsers() {
             return new User[] {
-                new User(1, ACL.ALLOW, new Role("admin")),
-                new User(2, ACL.DENY, new Role("user"))
+                new User(1, ACL.ALLOW, new Role("admin", AccessLevel.SUPER)),
+                new User(2, ACL.DENY, new Role("user", AccessLevel.USER))
             };
         }
 
