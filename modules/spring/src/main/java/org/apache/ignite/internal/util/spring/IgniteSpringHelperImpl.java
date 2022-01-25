@@ -37,10 +37,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValue;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -145,17 +143,24 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException {
         assert beanClasses.length > 0;
 
         ApplicationContext springCtx = initContext(cfgUrl);
 
-        Map<Class<?>, Object> beans = new HashMap<>();
+        Map<Class<?>, Collection> beans = new HashMap<>();
 
-        for (Class<?> cls : beanClasses)
-            beans.put(cls, bean(springCtx, cls));
+        for (Class<?> cls : beanClasses) {
+            Map<String, ?> clsBeans = springCtx.getBeansOfType(cls);
 
-        return beans;
+            if (clsBeans != null)
+                beans.put(cls, clsBeans.values());
+        }
+
+        return F.t(beans, new GridSpringResourceContextImpl(springCtx));
     }
 
     /** {@inheritDoc} */
@@ -174,21 +179,6 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
             throw new IgniteCheckedException("Failed to load Spring bean with provided name [url=" + url +
                 ", beanName=" + beanName + ']', e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
-        throws IgniteCheckedException {
-        assert beanClasses.length > 0;
-
-        ApplicationContext springCtx = initContext(cfgStream);
-
-        Map<Class<?>, Object> beans = new HashMap<>();
-
-        for (Class<?> cls : beanClasses)
-            beans.put(cls, bean(springCtx, cls));
-
-        return beans;
     }
 
     /** {@inheritDoc} */
@@ -345,19 +335,6 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
             SYS_LDR_VER.compareAndSet(null, usrVer);
 
         return usrVer;
-    }
-
-    /**
-     * Gets bean configuration.
-     *
-     * @param ctx Spring context.
-     * @param beanCls Bean class.
-     * @return Spring bean.
-     */
-    @Nullable private static <T> T bean(ListableBeanFactory ctx, Class<T> beanCls) {
-        Map.Entry<String, T> entry = F.firstEntry(ctx.getBeansOfType(beanCls));
-
-        return entry == null ? null : entry.getValue();
     }
 
     /**
