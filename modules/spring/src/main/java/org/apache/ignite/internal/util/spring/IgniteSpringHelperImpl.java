@@ -154,10 +154,10 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         Map<Class<?>, Collection> beans = new HashMap<>();
 
         for (Class<?> cls : beanClasses) {
-            Map<String, ?> b = springCtx.getBeansOfType(cls);
+            Map<String, ?> clsBeans = springCtx.getBeansOfType(cls);
 
-            if (b != null)
-                beans.put(cls, b.values());
+            if (clsBeans != null)
+                beans.put(cls, clsBeans.values());
         }
 
         return F.t(beans, new GridSpringResourceContextImpl(springCtx));

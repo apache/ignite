@@ -95,8 +95,7 @@ public interface IgniteSpringHelper {
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
      * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
-     *       map value is {@code null}.
+     * @return Tuple containing all loaded beans and Spring context used to load them.
      * @throws IgniteCheckedException If failed to load configuration.
      */
     public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(

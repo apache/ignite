@@ -57,13 +57,13 @@ public class GridRouterCommandLineStartup {
             return;
         }
 
-        log = (IgniteLogger)F.first(beans.get(IgniteLogger.class));
+        log = F.<IgniteLogger>first(beans.get(IgniteLogger.class));
 
         if (F.isEmpty(beans.get(GridTcpRouterConfiguration.class)))
             U.warn(log, "TCP router startup skipped (configuration not found).");
         else {
             GridTcpRouterConfiguration tcpCfg =
-                (GridTcpRouterConfiguration)F.first(beans.get(GridTcpRouterConfiguration.class));
+                F.<GridTcpRouterConfiguration>first(beans.get(GridTcpRouterConfiguration.class));
 
             tcpRouter = new GridTcpRouterImpl(tcpCfg);
 
