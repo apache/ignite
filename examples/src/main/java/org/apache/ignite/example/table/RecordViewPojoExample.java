@@ -22,10 +22,9 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.Tuple;
 
 /**
- * This example demonstrates the usage of the {@link RecordView} API.
+ * This example demonstrates the usage of the {@link RecordView} API with user-defined POJOs.
  *
  * <p>To run the example, do the following:
  * <ol>
@@ -37,7 +36,7 @@ import org.apache.ignite.table.Tuple;
  *     <li>Run the example in the IDE.</li>
  * </ol>
  */
-public class RecordViewExample {
+public class RecordViewPojoExample {
     /**
      * Main method of the example.
      *
@@ -82,7 +81,9 @@ public class RecordViewExample {
             //
             //--------------------------------------------------------------------------------------
 
-            RecordView<Tuple> accounts = client.tables().table("PUBLIC.accounts").recordView();
+            RecordView<Account> accounts = client.tables()
+                    .table("PUBLIC.accounts")
+                    .recordView(Account.class);
 
             //--------------------------------------------------------------------------------------
             //
@@ -92,13 +93,14 @@ public class RecordViewExample {
 
             System.out.println("\nInserting a record into the 'accounts' table...");
 
-            Tuple newAccountTuple = Tuple.create()
-                    .set("accountNumber", 123456)
-                    .set("firstName", "Val")
-                    .set("lastName", "Kulichenko")
-                    .set("balance", 100.00d);
+            Account newAccount = new Account(
+                    123456,
+                    "Val",
+                    "Kulichenko",
+                    100.00d
+            );
 
-            accounts.insert(null, newAccountTuple);
+            accounts.insert(null, newAccount);
 
             //--------------------------------------------------------------------------------------
             //
@@ -108,15 +110,13 @@ public class RecordViewExample {
 
             System.out.println("\nRetrieving a record using RecordView API...");
 
-            Tuple accountNumberTuple = Tuple.create().set("accountNumber", 123456);
-
-            Tuple accountTuple = accounts.get(null, accountNumberTuple);
+            Account account = accounts.get(null, new Account(123456));
 
             System.out.println(
                     "\nRetrieved record:\n"
-                            + "    Account Number: " + accountTuple.intValue("accountNumber") + '\n'
-                            + "    Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n'
-                            + "    Balance: $" + accountTuple.doubleValue("balance"));
+                        + "    Account Number: " + account.accountNumber + '\n'
+                        + "    Owner: " + account.firstName + " " + account.lastName + '\n'
+                        + "    Balance: $" + account.balance);
         } finally {
             System.out.println("\nDropping the table...");
 
@@ -126,6 +126,38 @@ public class RecordViewExample {
             ) {
                 stmt.executeUpdate("DROP TABLE accounts");
             }
+        }
+    }
+
+    /**
+     * POJO class that represents record.
+     */
+    static class Account {
+        int accountNumber;
+        String firstName;
+        String lastName;
+        double balance;
+
+        /**
+         * Default constructor (required for deserialization).
+         */
+        @SuppressWarnings("unused")
+        public Account() {
+        }
+
+        public Account(int accountNumber) {
+            this.accountNumber = accountNumber;
+
+            firstName = null;
+            lastName = null;
+            balance = 0.0d;
+        }
+
+        public Account(int accountNumber, String firstName, String lastName, double balance) {
+            this.accountNumber = accountNumber;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.balance = balance;
         }
     }
 }

@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.example.table;
+package org.apache.ignite.example.tx;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.Tuple;
+import org.apache.ignite.table.KeyValueView;
+import org.apache.ignite.tx.IgniteTransactions;
 
 /**
- * This example demonstrates the usage of the {@link RecordView} API.
+ * This example demonstrates the usage of the {@link IgniteTransactions} API.
  *
  * <p>To run the example, do the following:
  * <ol>
@@ -37,7 +38,7 @@ import org.apache.ignite.table.Tuple;
  *     <li>Run the example in the IDE.</li>
  * </ol>
  */
-public class RecordViewExample {
+public class TransactionsExample {
     /**
      * Main method of the example.
      *
@@ -78,45 +79,57 @@ public class RecordViewExample {
         ) {
             //--------------------------------------------------------------------------------------
             //
-            // Creating a record view for the 'accounts' table.
+            // Creating an account.
             //
             //--------------------------------------------------------------------------------------
 
-            RecordView<Tuple> accounts = client.tables().table("PUBLIC.accounts").recordView();
+            KeyValueView<AccountKey, Account> accounts = client.tables()
+                    .table("PUBLIC.accounts")
+                    .keyValueView(AccountKey.class, Account.class);
+
+            final AccountKey key = new AccountKey(123);
+
+            accounts.put(null, key, new Account("John", "Doe", 1000.0d));
+
+            System.out.println("\nInitial balance: " + accounts.get(null, key).balance);
 
             //--------------------------------------------------------------------------------------
             //
-            // Performing the 'insert' operation.
+            // Using synchronous transactional API to update the balance.
             //
             //--------------------------------------------------------------------------------------
 
-            System.out.println("\nInserting a record into the 'accounts' table...");
+            client.transactions().runInTransaction(tx -> {
+                Account account = accounts.get(tx, key);
 
-            Tuple newAccountTuple = Tuple.create()
-                    .set("accountNumber", 123456)
-                    .set("firstName", "Val")
-                    .set("lastName", "Kulichenko")
-                    .set("balance", 100.00d);
+                account.balance += 200.0d;
 
-            accounts.insert(null, newAccountTuple);
+                accounts.put(tx, key, account);
+            });
+
+            System.out.println("\nBalance after the sync transaction: " + accounts.get(null, key).balance);
 
             //--------------------------------------------------------------------------------------
             //
-            // Performing the 'get' operation.
+            // Using asynchronous transactional API to update the balance.
             //
             //--------------------------------------------------------------------------------------
 
-            System.out.println("\nRetrieving a record using RecordView API...");
+            CompletableFuture<Void> fut = client.transactions().beginAsync().thenCompose(tx ->
+                    accounts
+                        .getAsync(tx, key)
+                        .thenCompose(account -> {
+                            account.balance += 300.0d;
 
-            Tuple accountNumberTuple = Tuple.create().set("accountNumber", 123456);
+                            return accounts.putAsync(tx, key, account);
+                        })
+                        .thenCompose(ignored -> tx.commitAsync())
+            );
 
-            Tuple accountTuple = accounts.get(null, accountNumberTuple);
+            // Wait for completion.
+            fut.join();
 
-            System.out.println(
-                    "\nRetrieved record:\n"
-                            + "    Account Number: " + accountTuple.intValue("accountNumber") + '\n'
-                            + "    Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n'
-                            + "    Balance: $" + accountTuple.doubleValue("balance"));
+            System.out.println("\nBalance after the async transaction: " + accounts.get(null, key).balance);
         } finally {
             System.out.println("\nDropping the table...");
 
@@ -126,6 +139,46 @@ public class RecordViewExample {
             ) {
                 stmt.executeUpdate("DROP TABLE accounts");
             }
+        }
+    }
+
+    /**
+     * POJO class that represents key.
+     */
+    static class AccountKey {
+        int accountNumber;
+
+        /**
+         * Default constructor (required for deserialization).
+         */
+        @SuppressWarnings("unused")
+        public AccountKey() {
+        }
+
+        public AccountKey(int accountNumber) {
+            this.accountNumber = accountNumber;
+        }
+    }
+
+    /**
+     * POJO class that represents value.
+     */
+    static class Account {
+        String firstName;
+        String lastName;
+        double balance;
+
+        /**
+         * Default constructor (required for deserialization).
+         */
+        @SuppressWarnings("unused")
+        public Account() {
+        }
+
+        public Account(String firstName, String lastName, double balance) {
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.balance = balance;
         }
     }
 }

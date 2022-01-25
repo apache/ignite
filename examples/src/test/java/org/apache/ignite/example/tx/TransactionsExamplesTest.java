@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.example.table;
+package org.apache.ignite.example.tx;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,67 +31,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * These tests check that all table examples pass correctly.
+ * Tests for transactional examples.
  */
 @ExtendWith(WorkDirectoryExtension.class)
-public class TableExamplesTest {
+public class TransactionsExamplesTest {
     /** Empty argument to invoke an example. */
     protected static final String[] EMPTY_ARGS = new String[0];
 
     /**
-     * Runs RecordViewExample.
-     *
-     * @throws Exception If failed and checks its output.
-     */
-    @Test
-    public void testRecordViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutputContains(RecordViewExample::main, EMPTY_ARGS,
-                "\nRetrieved record:\n"
-                        + "    Account Number: 123456\n"
-                        + "    Owner: Val Kulichenko\n"
-                        + "    Balance: $100.0\n");
-    }
-
-    /**
-     * Runs RecordViewPojoExample.
-     *
-     * @throws Exception If failed and checks its output.
-     */
-    @Test
-    public void testRecordViewPojoExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutputContains(RecordViewPojoExample::main, EMPTY_ARGS,
-                "\nRetrieved record:\n"
-                        + "    Account Number: 123456\n"
-                        + "    Owner: Val Kulichenko\n"
-                        + "    Balance: $100.0\n");
-    }
-
-    /**
-     * Runs KeyValueViewExample and checks its output.
+     * Runs TransactionsExample and checks its output.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testKeyValueViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutputContains(KeyValueViewExample::main, EMPTY_ARGS,
-                "\nRetrieved value:\n"
-                        + "    Account Number: 123456\n"
-                        + "    Owner: Val Kulichenko\n"
-                        + "    Balance: $100.0\n");
-    }
-
-    /**
-     * Runs KeyValueViewPojoExample and checks its output.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testKeyValueViewPojoExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutputContains(KeyValueViewPojoExample::main, EMPTY_ARGS,
-                "\nRetrieved value:\n"
-                        + "    Account Number: 123456\n"
-                        + "    Owner: Val Kulichenko\n"
-                        + "    Balance: $100.0\n");
+    public void testTransactionsExample() throws Exception {
+        ExampleTestUtils.assertConsoleOutputContains(TransactionsExample::main, EMPTY_ARGS,
+                "Initial balance: 1000.0",
+                "Balance after the sync transaction: 1200.0",
+                "Balance after the async transaction: 1500.0");
     }
 
     /**

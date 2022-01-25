@@ -21,11 +21,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.Tuple;
+import org.apache.ignite.table.KeyValueView;
 
 /**
- * This example demonstrates the usage of the {@link RecordView} API.
+ * This example demonstrates the usage of the {@link KeyValueView} API with user-defined POJOs.
  *
  * <p>To run the example, do the following:
  * <ol>
@@ -37,7 +36,7 @@ import org.apache.ignite.table.Tuple;
  *     <li>Run the example in the IDE.</li>
  * </ol>
  */
-public class RecordViewExample {
+public class KeyValueViewPojoExample {
     /**
      * Main method of the example.
      *
@@ -78,27 +77,31 @@ public class RecordViewExample {
         ) {
             //--------------------------------------------------------------------------------------
             //
-            // Creating a record view for the 'accounts' table.
+            // Creating a key-value view for the 'accounts' table.
             //
             //--------------------------------------------------------------------------------------
 
-            RecordView<Tuple> accounts = client.tables().table("PUBLIC.accounts").recordView();
+            KeyValueView<AccountKey, Account> kvView = client.tables()
+                    .table("PUBLIC.accounts")
+                    .keyValueView(AccountKey.class, Account.class);
 
             //--------------------------------------------------------------------------------------
             //
-            // Performing the 'insert' operation.
+            // Performing the 'put' operation.
             //
             //--------------------------------------------------------------------------------------
 
-            System.out.println("\nInserting a record into the 'accounts' table...");
+            System.out.println("\nInserting a key-value pair into the 'accounts' table...");
 
-            Tuple newAccountTuple = Tuple.create()
-                    .set("accountNumber", 123456)
-                    .set("firstName", "Val")
-                    .set("lastName", "Kulichenko")
-                    .set("balance", 100.00d);
+            AccountKey key = new AccountKey(123456);
 
-            accounts.insert(null, newAccountTuple);
+            Account value = new Account(
+                    "Val",
+                    "Kulichenko",
+                    100.00d
+            );
+
+            kvView.put(null, key, value);
 
             //--------------------------------------------------------------------------------------
             //
@@ -106,17 +109,15 @@ public class RecordViewExample {
             //
             //--------------------------------------------------------------------------------------
 
-            System.out.println("\nRetrieving a record using RecordView API...");
+            System.out.println("\nRetrieving a value using KeyValueView API...");
 
-            Tuple accountNumberTuple = Tuple.create().set("accountNumber", 123456);
-
-            Tuple accountTuple = accounts.get(null, accountNumberTuple);
+            value = kvView.get(null, key);
 
             System.out.println(
-                    "\nRetrieved record:\n"
-                            + "    Account Number: " + accountTuple.intValue("accountNumber") + '\n'
-                            + "    Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n'
-                            + "    Balance: $" + accountTuple.doubleValue("balance"));
+                    "\nRetrieved value:\n"
+                        + "    Account Number: " + key.accountNumber + '\n'
+                        + "    Owner: " + value.firstName + " " + value.lastName + '\n'
+                        + "    Balance: $" + value.balance);
         } finally {
             System.out.println("\nDropping the table...");
 
@@ -126,6 +127,46 @@ public class RecordViewExample {
             ) {
                 stmt.executeUpdate("DROP TABLE accounts");
             }
+        }
+    }
+
+    /**
+     * POJO class that represents key.
+     */
+    static class AccountKey {
+        int accountNumber;
+
+        /**
+         * Default constructor (required for deserialization).
+         */
+        @SuppressWarnings("unused")
+        public AccountKey() {
+        }
+
+        public AccountKey(int accountNumber) {
+            this.accountNumber = accountNumber;
+        }
+    }
+
+    /**
+     * POJO class that represents value.
+     */
+    static class Account {
+        String firstName;
+        String lastName;
+        double balance;
+
+        /**
+         * Default constructor (required for deserialization).
+         */
+        @SuppressWarnings("unused")
+        public Account() {
+        }
+
+        public Account(String firstName, String lastName, double balance) {
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.balance = balance;
         }
     }
 }
