@@ -30,7 +30,6 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
@@ -93,18 +92,20 @@ public class SnapshotCommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         cmd = of(argIter.nextArg("Expected snapshot action."));
+
+        // Visor task paramters.
         String snpName = argIter.nextArg("Expected snapshot name.");
-
-        VisorSnapshotRestoreTaskAction cmdAction = VisorSnapshotRestoreTaskAction.START;
-
-        Set<String> grpNames = null;
+        VisorSnapshotRestoreTaskAction restoreAction = VisorSnapshotRestoreTaskAction.START;
         boolean waitComplete = false;
+        Set<String> grpNames = null;
+
+        // Error messages.
+        String invalidOptionMsg = "Command \"%s\" doesn't support option \"%s\".";
+        String invalidModeMsg = "Operation \"%s\" executes synchronously by default.";
 
         if (cmd == CANCEL || cmd == CHECK) {
-            if (argIter.hasNextSubArg()) {
-                throw new IllegalArgumentException(
-                    "Argument \"" + argIter.nextArg("") + "\" is not expected for the \"" + cmd + "\" command.");
-            }
+            if (argIter.hasNextSubArg())
+                throw new IllegalArgumentException(String.format(invalidOptionMsg, cmd, argIter.peekNextArg()));
 
             cmdArg = snpName;
 
@@ -115,45 +116,46 @@ public class SnapshotCommand extends AbstractCommand<Object> {
             String arg = argIter.nextArg("");
 
             if ("--wait".equals(arg)) {
-                if (cmdAction != VisorSnapshotRestoreTaskAction.START)
-                    throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
+                if (restoreAction != VisorSnapshotRestoreTaskAction.START)
+                    throw new IllegalArgumentException(String.format(invalidModeMsg, restoreAction));
 
                 waitComplete = true;
 
                 continue;
             }
-            else if (cmd != RESTORE)
-                throw new IllegalArgumentException("Command \"" + cmd + "\" doesn't support option \"" + arg + "\".");
+
+            if (cmd != RESTORE)
+                throw new IllegalArgumentException(String.format(invalidOptionMsg, cmd, arg));
 
             switch (arg) {
                 case "--groups":
-                    String argDesc = "comma-separated list of cache group names";
+                    String argDesc = "a comma-separated list of cache group names.";
 
                     grpNames = argIter.nextStringSet(argDesc);
 
-                    if (F.isEmpty(grpNames))
-                        throw new IllegalArgumentException("A " + argDesc + " is expected.");
+                    if (grpNames.isEmpty())
+                        throw new IllegalArgumentException("Expected " + argDesc);
 
                     break;
                 case "--cancel":
                 case "--status":
-                    cmdAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
+                    restoreAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
 
                     if (waitComplete)
-                        throw new IllegalArgumentException("Operation \"" + cmdAction + "\" executes synchronously by default.");
+                        throw new IllegalArgumentException(String.format(invalidModeMsg, restoreAction));
 
                     break;
                 case "--start":
                     throw new IllegalArgumentException("Option \"" + arg + "\" is deprecated, " +
                         "use \"--groups\" instead. Check the command syntax for more details.");
                 default:
-                    throw new IllegalArgumentException("Command \"" + cmd + "\" doesn't support option \"" + arg + "\".");
+                    throw new IllegalArgumentException(String.format(invalidOptionMsg, cmd, arg));
             }
         }
 
         cmdArg = cmd == CREATE ?
             new VisorSnapshotCreateTaskArg(snpName, waitComplete) :
-            new VisorSnapshotRestoreTaskArg(snpName, waitComplete, cmdAction, grpNames);
+            new VisorSnapshotRestoreTaskArg(snpName, waitComplete, restoreAction, grpNames);
     }
 
     /** {@inheritDoc} */

@@ -3014,7 +3014,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, keysCnt);
 
+        injectTestSystemOut();
+
         CommandHandler h = new CommandHandler();
+
+        // Invalid command syntax check.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
+        assertContains(log, testOut.toString(), "Command \"create\" doesn't support option \"blah\".");
 
         List<String> args = new ArrayList<>(Arrays.asList("--snapshot", "create", snpName));
 
@@ -3125,12 +3131,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start"));
         assertContains(log, testOut.toString(), "Option \"--start\" is deprecated");
 
-        // Invalid command syntax.
+        // Invalid command syntax checks.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--groups", "--wait"));
-        assertContains(log, testOut.toString(), "A comma-separated list of cache group names is expected.");
+        assertContains(log, testOut.toString(), "Expected a comma-separated list of cache group names.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--cancel", "--wait"));
         assertContains(log, testOut.toString(), "Operation \"cancel\" executes synchronously by default.");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
+        assertContains(log, testOut.toString(), "Command \"restore\" doesn't support option \"blah\".");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "blah"));
+        assertContains(log, testOut.toString(), "Command \"restore\" doesn't support option \"blah\".");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--wait", "--status"));
         assertContains(log, testOut.toString(), "Operation \"status\" executes synchronously by default.");
