@@ -116,7 +116,7 @@ namespace ignite
                     throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Can not get SSL method");
 
                 SSL_CTX* sslContext0 = sslGateway.SSL_CTX_new_(method);
-                if (!sslContext)
+                if (!sslContext0)
                     throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
                         "Can not create new SSL context");
 

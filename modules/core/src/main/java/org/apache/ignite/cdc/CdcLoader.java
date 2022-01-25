@@ -19,11 +19,13 @@ package org.apache.ignite.cdc;
 
 import java.net.URL;
 import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -47,29 +49,25 @@ public class CdcLoader {
 
         IgniteSpringHelper spring = SPRING.create(false);
 
-        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgTuple =
-            spring.loadConfigurations(cfgUrl);
+        IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> cfgs =
+            spring.loadBeans(cfgUrl, IgniteConfiguration.class, CdcConfiguration.class);
 
-        if (cfgTuple.get1().size() > 1) {
+        Collection<IgniteConfiguration> igniteCfgs = cfgs.get1().get(IgniteConfiguration.class);
+
+        if (F.size(igniteCfgs) != 1) {
             throw new IgniteCheckedException(
-                "Exact 1 IgniteConfiguration should be defined. Found " + cfgTuple.get1().size()
+                "Exact 1 IgniteConfiguration should be defined. Found " + F.size(igniteCfgs)
             );
         }
 
-        IgniteBiTuple<Collection<CdcConfiguration>, ? extends GridSpringResourceContext> cdcCfgs =
-            spring.loadConfigurations(cfgUrl, CdcConfiguration.class);
+        Collection<CdcConfiguration> cdcCfgs = cfgs.get1().get(CdcConfiguration.class);
 
-        if (cdcCfgs.get1().size() > 1) {
+        if (F.size(cdcCfgs) != 1) {
             throw new IgniteCheckedException(
-                "Exact 1 CaptureDataChangeConfiguration configuration should be defined. " +
-                    "Found " + cdcCfgs.get1().size()
+                "Exact 1 CaptureDataChangeConfiguration configuration should be defined. Found " + F.size(cdcCfgs)
             );
         }
 
-        return new CdcMain(
-            cfgTuple.get1().iterator().next(),
-            cfgTuple.get2(),
-            cdcCfgs.get1().iterator().next()
-        );
+        return new CdcMain(F.first(igniteCfgs), cfgs.get2(), F.first(cdcCfgs));
     }
 }

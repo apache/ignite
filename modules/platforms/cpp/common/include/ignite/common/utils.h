@@ -654,7 +654,7 @@ namespace ignite
          * @param name Name without extension.
          * @return Full name.
          */
-        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const std::string& name);
 
         /**
          * Get hex dump of binary data in string form.

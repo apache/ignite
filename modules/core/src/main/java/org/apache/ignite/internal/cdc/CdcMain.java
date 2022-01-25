@@ -480,6 +480,9 @@ public class CdcMain implements Runnable {
 
                     WALPointer ptr = it.lastRead().get().next();
 
+                    if (log.isDebugEnabled())
+                        log.debug("Saving state [ptr=" + ptr + ']');
+
                     state.save(ptr);
 
                     committedSegmentIdx.value(ptr.index());
