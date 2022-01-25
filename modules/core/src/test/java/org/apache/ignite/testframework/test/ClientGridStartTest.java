@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.util;
+package org.apache.ignite.testframework.test;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
