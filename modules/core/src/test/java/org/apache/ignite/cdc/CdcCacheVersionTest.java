@@ -140,7 +140,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         for (CacheView v : caches) {
             if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
-                assertTrue(v.conflictResolver().startsWith(CacheVersionConflictResolverImpl.class.getName()));
+                assertEquals(v.conflictResolver(), CacheVersionConflictResolverImpl.class.getName());
 
                 found = true;
             }
@@ -256,6 +256,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             res.useNew();
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getName();
         }
     }
 }
