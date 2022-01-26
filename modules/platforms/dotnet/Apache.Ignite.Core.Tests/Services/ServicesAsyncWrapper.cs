@@ -170,6 +170,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+#pragma warning disable 618
         public T GetService<T>(string name)
         {
             return _services.GetService<T>(name);
@@ -180,6 +181,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return _services.GetServices<T>(name);
         }
+#pragma warning restore 618
 
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name) where T : class

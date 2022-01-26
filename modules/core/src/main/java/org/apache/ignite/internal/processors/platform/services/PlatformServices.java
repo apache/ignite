@@ -28,7 +28,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.IgniteServicesEx;
 import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -121,7 +120,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
 
     /** */
-    private final IgniteServicesEx services;
+    private final IgniteServices services;
 
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
@@ -133,7 +132,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param services Services facade.
      * @param srvKeepBinary Server keep binary flag.
      */
-    public PlatformServices(PlatformContext platformCtx, IgniteServicesEx services, boolean srvKeepBinary) {
+    public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepBinary) {
         super(platformCtx);
 
         assert services != null;
@@ -206,7 +205,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
-                Collection<Service> svcs = services.services(reader.readString(), reader.readBoolean());
+                Collection<Service> svcs = services.services(reader.readString());
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
@@ -354,7 +353,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (services.isAsync())
                     return this;
 
-                return new PlatformServices(platformCtx, (IgniteServicesEx)services.withAsync(), srvKeepBinary);
+                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
 
             case OP_WITH_SERVER_KEEP_BINARY:
                 return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);

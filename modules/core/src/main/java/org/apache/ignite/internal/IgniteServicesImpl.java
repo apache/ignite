@@ -464,15 +464,10 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
     /** {@inheritDoc} */
     @Override public <T> Collection<T> services(String name) {
-        return services(name, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> Collection<T> services(String name, boolean force) {
         guard();
 
         try {
-            return ctx.service().services(name, force);
+            return ctx.service().services(name);
         }
         finally {
             unguard();
