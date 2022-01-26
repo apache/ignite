@@ -47,7 +47,6 @@ public class CacheView {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-
     /**
      * @param cache Cache descriptor.
      */
