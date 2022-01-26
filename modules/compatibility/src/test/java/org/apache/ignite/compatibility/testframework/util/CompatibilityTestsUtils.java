@@ -21,12 +21,6 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,12 +101,5 @@ public class CompatibilityTestsUtils {
     @SuppressWarnings("ConstantConditions")
     public static boolean isDirectoryEmpty(File dir) {
         return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
-    }
-
-    /** @return Cartesian product of collections. See {@link Lists#cartesianProduct(List)}. */
-    public static Collection<Object[]> cartesianProduct(Collection<?>... c) {
-        List<List<?>> lists = F.asList(c).stream().map(ArrayList::new).collect(Collectors.toList());
-
-        return F.transform(Lists.cartesianProduct(lists), List::toArray);
     }
 }

@@ -78,7 +78,7 @@ public enum IgniteReleasedVersion {
     }
 
     /** @return Ignite version. */
-    private IgniteProductVersion version() {
+    public IgniteProductVersion version() {
         return ver;
     }
 

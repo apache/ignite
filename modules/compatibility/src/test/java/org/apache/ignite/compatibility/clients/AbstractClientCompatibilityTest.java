@@ -40,7 +40,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_4_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
-import static org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils.cartesianProduct;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Tests that current client version can connect to the server with specified version and
@@ -75,7 +75,7 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Parameters. */
     @Parameterized.Parameters(name = "Version {0}")
     public static Iterable<Object[]> versions() {
-        return cartesianProduct(F.asList(since(VER_2_4_0), IgniteVersionUtils.VER_STR));
+        return cartesianProduct(F.concat(true, IgniteVersionUtils.VER_STR, since(VER_2_4_0)));
     }
 
     /** Old Ignite version. */

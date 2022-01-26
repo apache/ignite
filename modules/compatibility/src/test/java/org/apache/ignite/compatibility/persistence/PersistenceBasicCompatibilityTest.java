@@ -45,7 +45,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_1_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
-import static org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils.cartesianProduct;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version.
