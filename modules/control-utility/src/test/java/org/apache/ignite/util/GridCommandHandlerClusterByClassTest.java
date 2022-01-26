@@ -129,7 +129,7 @@ import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
  * {@link GridCommandHandlerTest}
  */
 public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClusterByClassAbstractTest {
-    /** Special word for defining any char sequence in golden copy of help output. */
+    /** Special word for defining any char sequence from special word to the end of line in golden copy of help output */
     private static final String ANY = "<!any!>";
 
     /** Special word for defining copyright message in golden copy of help output. */
@@ -406,16 +406,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 String line = outputLines.get(i).replaceAll("\\s+$", "");
 
                 if (cLine.contains(ANY)) {
-                    assertTrue("Expected one special word per line.", cLine.split(ANY).length <= 2);
+                    String cuttedCLine = cLine.substring(0, cLine.length() - ANY.length());
 
-                    String expStartWith = cLine.substring(0, cLine.indexOf(ANY));
-                    String expEndsWith = cLine.substring(cLine.indexOf(ANY) + ANY.length());
-
-                    assertTrue("Wroung output [line=" + i + ", expStartWith=" + expStartWith + ", actual=" + line + ']',
-                        line.startsWith(expStartWith));
-
-                    assertTrue("Wroung output [line=" + i + ", expEndsWith=" + expEndsWith + ", actual=" + line + ']',
-                        line.endsWith(expEndsWith));
+                    assertTrue("line: " + i, line.startsWith(cuttedCLine));
                 }
                 else
                     assertEquals("line: " + i, cLine, line);
