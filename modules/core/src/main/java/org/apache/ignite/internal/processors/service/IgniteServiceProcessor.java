@@ -1100,19 +1100,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Services by specified service name.
      */
     public <T> Collection<T> services(String name) {
-        return services(name, true);
-    }
-
-    /**
-     * Tries to get direct references to local services. If {@code force} is {@code true}, returns {@code null} even
-     * if local services are available but usage of them is not recommended (can corrupt the statistics etc.).
-     *
-     * @param name  Service name.
-     * @param <T>   Service type.
-     * @param force If {@code true}, ignores limitations of local references.
-     * @return Services by specified service name.
-     */
-    public <T> Collection<T> services(String name, boolean force) {
         if (!enterBusy())
             return null;
 
@@ -1132,9 +1119,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
-
-                    if (ctx.isStatisticsEnabled() && !force)
-                        return null;
 
                     if (srvc != null)
                         res.add((T)srvc);

@@ -325,21 +325,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetService<T>(string name)
         {
-            return TryGetService<T>(name);
-        }
-
-        /// <summary>
-        /// Attempts to get local service.
-        /// </summary>
-        /// <returns>
-        /// Local service if available and its usage is safe or if is forced to give.
-        /// Null if there is no local service or if direct usage is not recommended (better to get proxy).
-        /// </returns>
-        private T TryGetService<T>(string name, bool force = true)
-        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var services = TryGetServices<T>(name, force);
+            var services = GetServices<T>(name);
 
             if (services == null)
                 return default(T);
@@ -350,25 +338,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public ICollection<T> GetServices<T>(string name)
         {
-            return TryGetServices<T>(name);
-        }
-
-        /// <summary>
-        /// Tries to get local services.
-        /// </summary>
-        /// <returns>
-        /// Local services if available and their usage is safe or if is forced to give.
-        /// Null if there are no local services or if direct usage is not recommended (better to get proxies).
-        /// </returns>
-        private ICollection<T> TryGetServices<T>(string name, bool force = true)
-        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return DoOutInOp<ICollection<T>>(OpDotnetServices, w =>
-                {
-                    w.WriteString(name);
-                    w.WriteBoolean(force);
-                },
+            return DoOutInOp<ICollection<T>>(OpDotnetServices, w => w.WriteString(name),
                 r =>
                 {
                     bool hasVal = r.ReadBool();
@@ -406,13 +378,6 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
-            T locInst;
-
-            // In local scenario try to get local service instance instead of a proxy if safe.
-            // Get as object because proxy interface may be different from real interface
-            if (callCtx == null && (locInst = TryGetService<object>(name, false) as T) != null)
-                return locInst;
-
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
                 w.WriteString(name);
@@ -442,15 +407,6 @@ namespace Apache.Ignite.Core.Impl.Services
         public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            // In local scenario try to return service instance itself instead of a proxy
-            if (callCtx == null)
-            {
-                var locInst = GetService<object>(name);
-
-                if (locInst != null)
-                    return locInst;
-            }
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
