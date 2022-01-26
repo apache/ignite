@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -50,7 +53,12 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -467,7 +475,7 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx, ctx.query().moduleEnabled() ? ctx.query().getIndexing() : null);
 
         desc.schemaName(schemaName);
 
@@ -598,10 +606,81 @@ public class QueryUtils {
 
         desc.typeId(valTypeId);
 
-        if (qryEntity.getKeyType() != null)
+        if (qryEntity.getKeyType() != null) {
             desc.keyTypeId(ctx.cacheObjects().binary().typeId(qryEntity.getKeyType()));
 
+            if (!ctx.marshallerContext().isSystemType(qryEntity.getKeyType())
+                && !ctx.query().getIndexing().isDisableCheckKeySchema()
+            ) {
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.cacheObjects().binary().type(qryEntity.getKeyType());
+
+                boolean schemaFound = false;
+                if (type != null) {
+                    desc.keyTypeId(type.typeId());
+
+                    if (type.metadata().schemas() != null) {
+                        for (BinarySchema schema : type.metadata().schemas()) {
+                            final Map<Integer, String> fldIdToName = type.metadata().fieldsMap().entrySet().stream()
+                                .collect(Collectors.toMap(e -> e.getValue().fieldId(), e -> e.getKey()));
+
+                            Set<String> fields = Arrays.stream(schema.fieldIds()).mapToObj(fldIdToName::get).collect(Collectors.toSet());
+
+                            if (qryEntity.getKeyFields().equals(fields)) {
+                                // found schema
+                                if (!schemaFound) {
+                                    schemaFound = true;
+                                    desc.keySchemaId(schema.schemaId());
+                                }
+                                else {
+                                    // TODO: LOG WARNING
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if ((type == null || !schemaFound) && qryEntity.getKeyFieldName() != null || !F.isEmpty(qryEntity.getKeyFields())) {
+                    BinaryMetadata meta = createKeyMetadata(ctx, qryEntity);
+                    ctx.cacheObjects().addMetaLocally(meta.typeId(), new BinaryTypeImpl(null, meta));
+
+                    desc.keySchemaId(F.first(meta.schemas()).schemaId());
+                }
+            }
+        }
+
         return new QueryTypeCandidate(typeId, altTypeId, desc);
+    }
+
+    /** */
+    private static BinaryMetadata createKeyMetadata(GridKernalContext ctx, QueryEntity qryEntity) {
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
+        IgniteBinary bin = ctx.cacheObjects().binary();
+        BinarySchema.Builder schemaBuiler = BinarySchema.Builder.newBuilder();
+
+        Collection<String> keyFileds = !F.isEmpty(qryEntity.getKeyFields())
+            ? qryEntity.getKeyFields()
+            : Collections.singleton(qryEntity.getKeyFieldName());
+
+        Map<String, BinaryFieldMetadata> fields = new HashMap<>();
+
+        for (String fld : keyFileds) {
+            int fldTypeId = bin.typeId(qryEntity.getFields().get(fld));
+            int fldId = binCtx.fieldId(fldTypeId, fld);
+
+            fields.put(fld, new BinaryFieldMetadata(fldTypeId, fldId));
+
+            schemaBuiler.addField(fldId);
+        }
+
+        return new BinaryMetadata(
+            bin.typeId(qryEntity.getKeyType()),
+            qryEntity.getKeyType(),
+            fields,
+            null,
+            Collections.singleton(schemaBuiler.build()),
+            false,
+            Collections.emptyMap()
+        );
     }
 
     /**

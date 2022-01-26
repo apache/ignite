@@ -3146,4 +3146,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public IgniteStatisticsManager statsManager() {
         return statsMgr;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isDisableCheckKeySchema() {
+        return distrCfg.isDisableCheckKeySchema();
+    }
 }

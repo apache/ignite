@@ -81,6 +81,13 @@ public class DistributedSqlConfiguration {
         DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType");
 
     /**
+     * Disable creation Lucene index for String value type by default.
+     * See: 'H2TableDescriptor#luceneIdx'.
+     */
+    private final DistributedBooleanProperty disableCheckKeySchema =
+        DistributedBooleanProperty.detachedBooleanProperty("sql.disableCheckKeySchema");
+
+    /**
      * @param ctx Kernal context
      * @param log Logger.
      */
@@ -97,6 +104,7 @@ public class DistributedSqlConfiguration {
                     dispatcher.registerProperties(disabledSqlFuncs);
                     dispatcher.registerProperties(dfltQueryTimeout);
                     dispatcher.registerProperties(disableCreateLuceneIndexForStringValueType);
+                    dispatcher.registerProperties(disableCheckKeySchema);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -115,6 +123,11 @@ public class DistributedSqlConfiguration {
                             disableCreateLuceneIndexForStringValueType,
                             false,
                             log);
+
+                        setDefaultValue(
+                            disableCheckKeySchema,
+                            false,
+                            log);
                     }
                     else {
                         log.warning("Distributed metastorage is not supported. " +
@@ -124,6 +137,7 @@ public class DistributedSqlConfiguration {
                         disabledSqlFuncs.localUpdate(null);
                         dfltQueryTimeout.localUpdate((int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout());
                         disableCreateLuceneIndexForStringValueType.localUpdate(false);
+                        disableCheckKeySchema.localUpdate(false);
                     }
                 }
             }
@@ -181,6 +195,13 @@ public class DistributedSqlConfiguration {
     /** */
     public boolean isDisableCreateLuceneIndexForStringValueType() {
         Boolean ret = disableCreateLuceneIndexForStringValueType.get();
+
+        return ret != null && ret;
+    }
+
+    /** */
+    public boolean isDisableCheckKeySchema() {
+        Boolean ret = disableCheckKeySchema.get();
 
         return ret != null && ret;
     }

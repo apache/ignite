@@ -77,7 +77,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
                     return null;
                 },
                 IgniteSQLException.class,
-                "Key type not is allowed for table [table=TEST, expectedKeyType=TestType, actualType=key0]"
+                "Key type not is allowed for table [table=TEST, expectedKeyType=TestType, actualKeyType=key0"
         );
 
         bobKey0 = grid(0).binary().builder("TestType");
@@ -86,6 +86,83 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
 
         // Put proper key.
         grid(0).cache("test").put(bobKey0.build(), bobVal0.build());
+    }
+
+    /**
+     */
+    @Test
+    public void validateKeySchema() throws Exception {
+        sql("CREATE TABLE TEST (ID0 INT, ID1 INT, VAL0 INT, VAL1 INT, PRIMARY KEY(ID0, ID1)) "
+            + "WITH \"CACHE_NAME=test,KEY_TYPE=TestType,VALUE_TYPE=VAL_TYPE\"");
+
+        {
+            BinaryObjectBuilder bobKey0 = grid(0).binary().builder("TestType");
+            bobKey0.setField("ID0", 0);
+            bobKey0.setField("ID1", 0);
+            bobKey0.setField("ID_hidden", 0);
+
+            final BinaryObject key0 = bobKey0.build();
+
+            BinaryObjectBuilder bobVal0 = grid(0).binary().builder("VAL_TYPE");
+            bobVal0.setField("VAL0", 0);
+            bobVal0.setField("VAL1", 0);
+
+            // Put key with invalid type.
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> {
+                    grid(0).cache("test").put(key0, bobVal0.build());
+                    return null;
+                },
+                IgniteSQLException.class,
+                "Key schema not is allowed for table"
+            );
+        }
+
+        {
+            BinaryObjectBuilder bobKey0 = grid(0).binary().builder("TestType");
+            bobKey0.setField("ID0", 0);
+
+            final BinaryObject key0 = bobKey0.build();
+
+            BinaryObjectBuilder bobVal0 = grid(0).binary().builder("VAL_TYPE");
+            bobVal0.setField("VAL0", 0);
+            bobVal0.setField("VAL1", 0);
+
+            // Put key with invalid type.
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> {
+                    grid(0).cache("test").put(key0, bobVal0.build());
+                    return null;
+                },
+                IgniteSQLException.class,
+                "Key schema not is allowed for table"
+            );
+        }
+
+        {
+            BinaryObjectBuilder bobKey0 = grid(0).binary().builder("TestType");
+            bobKey0.setField("ID1", 0);
+            bobKey0.setField("ID0", 0);
+
+            final BinaryObject key0 = bobKey0.build();
+
+            BinaryObjectBuilder bobVal0 = grid(0).binary().builder("VAL_TYPE");
+            bobVal0.setField("VAL0", 0);
+            bobVal0.setField("VAL1", 0);
+
+            // Put key with invalid type.
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> {
+                    grid(0).cache("test").put(key0, bobVal0.build());
+                    return null;
+                },
+                IgniteSQLException.class,
+                "Key schema not is allowed for table"
+            );
+        }
     }
 
     /**

@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -116,6 +117,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private int keyTypeId;
 
     /** */
+    private Integer keySchemaId;
+
+    /** */
     private String affKey;
 
     /** */
@@ -139,6 +143,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private final CacheObjectContext coCtx;
 
+    /** */
+    private final GridQueryIndexing idx;
+
     /** Primary key fields. */
     private Set<String> pkFields;
 
@@ -151,9 +158,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param cacheName Cache name.
      * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
+    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx, GridQueryIndexing idx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.idx = idx;
         this.log = coCtx.kernalContext().log(getClass());
     }
 
@@ -267,6 +275,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     public void keyTypeId(int keyTypeId) {
         this.keyTypeId = keyTypeId;
+    }
+
+    /** */
+    public void keySchemaId(int keySchema) {
+        this.keySchemaId = keySchema;
     }
 
     /** {@inheritDoc} */
@@ -603,16 +616,26 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
         if (keyTypeName != null) {
-            if (key instanceof BinaryObject) {
-                BinaryType keyType = ((BinaryObject)key).type();
+            if (key instanceof BinaryObjectExImpl) {
+                BinaryObjectExImpl binKey = (BinaryObjectExImpl)key;
+                BinaryType keyType = binKey.type();
 
                 if (keyTypeId != keyType.typeId()) {
                     throw new IgniteSQLException("Key type not is allowed for table ["
                         + "table=" + tblName + ", "
                         + "expectedKeyType=" + keyTypeName + ", "
-                        + "actualKeyType=" + keyType.typeName()
-                        + "expectedKeyTypeId=" + keyTypeId
+                        + "actualKeyType=" + keyType.typeName() + ", "
+                        + "expectedKeyTypeId=" + keyTypeId + ", "
                         + "actualKeyTYpeId=" + keyType.typeId() + ']');
+                }
+
+                if (keySchemaId != null && !idx.isDisableCheckKeySchema() && binKey.schemaId() != keySchemaId) {
+                    throw new IgniteSQLException("Key schema not is allowed for table ["
+                        + "table=" + tblName + ", "
+                        + "keyType=" + keyTypeName + ", "
+                        + "expectedKeySchema=" + keySchemaId + ", "
+                        + "actualKeySchema=" + binKey.schemaId()
+                        + ']');
                 }
             }
             else if (key instanceof KeyCacheObject) {
@@ -626,6 +649,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
             }
         }
+
 
         if (F.isEmpty(validateProps) && F.isEmpty(idxs))
             return;

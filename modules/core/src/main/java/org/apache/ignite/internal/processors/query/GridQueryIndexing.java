@@ -447,4 +447,13 @@ public interface GridQueryIndexing {
     default Map<String, Integer> secondaryIndexesInlineSize() {
         return Collections.emptyMap();
     }
+
+    /**
+     * Return flag to check key object binary schema.
+     *
+     * @return {@code true} is the check schema of a key object is disbled, otherwise, returns {@code false}.
+     */
+    default boolean isDisableCheckKeySchema(){
+        return false;
+    }
 }
