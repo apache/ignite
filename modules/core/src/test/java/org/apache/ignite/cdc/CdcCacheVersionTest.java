@@ -140,7 +140,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         for (CacheView v : caches) {
             if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
-                assertEquals(v.conflictResolver(), CacheVersionConflictResolverImpl.class.getName());
+                assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
 
                 found = true;
             }
@@ -236,31 +236,25 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public CacheVersionConflictResolver conflictResolver() {
-            return new CacheVersionConflictResolverImpl();
-        }
+            return new CacheVersionConflictResolver() {
+                @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
+                    CacheObjectValueContext ctx,
+                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                    GridCacheVersionedEntryEx<K1, V1> newEntry,
+                    boolean atomicVerComparator
+                ) {
+                    GridCacheVersionConflictContext<K1, V1> res =
+                        new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-    }
+                    res.useNew();
 
-    /** */
-    public static class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
-        /** {@inheritDoc} */
-        @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
-            CacheObjectValueContext ctx,
-            GridCacheVersionedEntryEx<K1, V1> oldEntry,
-            GridCacheVersionedEntryEx<K1, V1> newEntry,
-            boolean atomicVerComparator
-        ) {
-            GridCacheVersionConflictContext<K1, V1> res =
-                new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+                    return res;
+                }
 
-            res.useNew();
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return getClass().getName();
+                @Override public String toString() {
+                    return "TestCacheConflictResolutionManager";
+                }
+            };
         }
     }
 }

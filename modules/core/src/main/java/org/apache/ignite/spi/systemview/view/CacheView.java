@@ -334,16 +334,6 @@ public class CacheView {
         return toStringSafe(cache.cacheConfiguration().getExpiryPolicyFactory());
     }
 
-    /** @see CacheVersionConflictResolver */
-    public String conflictResolver() {
-        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(this.cache.cacheName());
-
-        if (cache == null || !cache.context().conflictNeedResolve())
-            return null;
-
-        return toStringSafe(cache.context().conflictResolver());
-    }
-
     /** @see CacheConfiguration#isSqlEscapeAll() */
     public boolean isSqlEscapeAll() {
         return cache.cacheConfiguration().isSqlEscapeAll();
@@ -387,5 +377,15 @@ public class CacheView {
     /** @see CacheConfiguration#getDataRegionName() */
     public String dataRegionName() {
         return cache.cacheConfiguration().getDataRegionName();
+    }
+
+    /** @see CacheVersionConflictResolver */
+    public String conflictResolver() {
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(this.cache.cacheName());
+
+        if (cache == null || !cache.context().conflictNeedResolve())
+            return null;
+
+        return toStringSafe(cache.context().conflictResolver());
     }
 }
