@@ -475,7 +475,11 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx, ctx.query().moduleEnabled() ? ctx.query().getIndexing() : null);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(
+            cacheName,
+            coCtx,
+            ctx.query().getIndexing()
+        );
 
         desc.schemaName(schemaName);
 

@@ -453,7 +453,7 @@ public interface GridQueryIndexing {
      *
      * @return {@code true} is the check schema of a key object is disbled, otherwise, returns {@code false}.
      */
-    default boolean isDisableCheckKeySchema(){
+    default boolean isDisableCheckKeySchema() {
         return false;
     }
 }

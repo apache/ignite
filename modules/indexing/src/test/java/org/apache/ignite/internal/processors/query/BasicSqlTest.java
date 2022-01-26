@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -42,6 +43,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
         super.beforeTestsStarted();
 
         startGrids(2);
+        startClientGrid("cli");
     }
 
     /** {@inheritDoc} */
@@ -111,7 +113,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> {
-                    grid(0).cache("test").put(key0, bobVal0.build());
+                    grid("cli").cache("test").put(key0, bobVal0.build());
                     return null;
                 },
                 IgniteSQLException.class,
@@ -133,7 +135,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> {
-                    grid(0).cache("test").put(key0, bobVal0.build());
+                    grid("cli").cache("test").put(key0, bobVal0.build());
                     return null;
                 },
                 IgniteSQLException.class,
@@ -156,7 +158,7 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> {
-                    grid(0).cache("test").put(key0, bobVal0.build());
+                    grid("cli").cache("test").put(key0, bobVal0.build());
                     return null;
                 },
                 IgniteSQLException.class,
@@ -172,6 +174,16 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
      */
     private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid(0).context().query().querySqlFields(new SqlFieldsQuery(sql)
+            .setArgs(args), false);
+    }
+
+    /**
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setArgs(args), false);
     }
 

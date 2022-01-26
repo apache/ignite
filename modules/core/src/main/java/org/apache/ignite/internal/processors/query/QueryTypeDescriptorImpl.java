@@ -650,7 +650,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             }
         }
 
-
         if (F.isEmpty(validateProps) && F.isEmpty(idxs))
             return;
 
