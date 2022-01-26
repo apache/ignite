@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.junit.Test;
 
@@ -124,7 +125,7 @@ public class ServiceInfoSelfTest {
      * @return Service configuration.
      */
     private LazyServiceConfiguration configuration() {
-        LazyServiceConfiguration cfg = new LazyServiceConfiguration();
+        ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName("testConfig");
         cfg.setTotalCount(10);
@@ -134,7 +135,7 @@ public class ServiceInfoSelfTest {
         cfg.setService(new TestService());
         cfg.setNodeFilter(ClusterNode::isLocal);
 
-        return cfg;
+        return new LazyServiceConfiguration(cfg, new byte[0]);
     }
 
     /**
