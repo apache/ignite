@@ -400,7 +400,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             for (int i = 0; i < correctOutputLines.size(); i++) {
                 String cLine = correctOutputLines.get(i);
 
-                cLine = cLine.replaceAll(COPYRIGHT, IgniteVersionUtils.COPYRIGHT);
+                cLine = cLine.replace(COPYRIGHT, IgniteVersionUtils.COPYRIGHT);
 
                 // Remove all spaces from end of line.
                 String line = outputLines.get(i).replaceAll("\\s+$", "");
