@@ -3278,7 +3278,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             Map<String, Serializable> params,
             TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
-            send(file, 0, file.length(), params, plc);
+            send(file, 0, file.length(), params, plc, fileIoFactory);
         }
 
         /**
@@ -3290,7 +3290,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             File file,
             TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
-            send(file, 0, file.length(), new HashMap<>(), plc);
+            send(file, 0, file.length(), new HashMap<>(), plc, fileIoFactory);
         }
 
         /**
@@ -3299,6 +3299,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param cnt Number of bytes to transfer.
          * @param params Additional file params.
          * @param plc The policy of handling data on remote.
+         * @param fileIoFactory File I/O factory.
          * @throws IgniteCheckedException If fails.
          */
         public void send(
@@ -3306,7 +3307,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             long offset,
             long cnt,
             Map<String, Serializable> params,
-            TransmissionPolicy plc
+            TransmissionPolicy plc,
+            FileIOFactory fileIoFactory
         ) throws IgniteCheckedException, InterruptedException, IOException {
             long startTime = U.currentTimeMillis();
             int retries = 0;

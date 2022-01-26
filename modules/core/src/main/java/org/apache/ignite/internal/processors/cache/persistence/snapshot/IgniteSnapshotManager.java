@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.LimitedFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -426,6 +427,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+
+        if (ctx.config().getSnapshotMaxTransferRate() > 0)
+            ioFactory(new LimitedFileIOFactory(ioFactory, ctx.config().getSnapshotMaxTransferRate()));
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
@@ -1761,7 +1765,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             cctx.kernalContext().pools().getSnapshotExecutorService(),
             databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
-            rqId);
+            rqId,
+            ioFactory());
     }
 
     /** Snapshot finished successfully or already restored. Key can be removed. */
@@ -2796,26 +2801,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Local node persistent directory with consistent id. */
         private final String relativeNodePath;
 
+        /** File I/O factory. */
+        private final FileIOFactory fileIOFactory;
+
         /** The number of cache partition files expected to be processed. */
         private int partsCnt;
+
+
 
         /**
          * @param log Ignite logger.
          * @param sndr File sender instance.
          * @param rqId Snapshot name.
+         * @param fileIOFactory File I/O factory.
          */
         public RemoteSnapshotSender(
             IgniteLogger log,
             Executor exec,
             String relativeNodePath,
             GridIoManager.TransmissionSender sndr,
-            String rqId
+            String rqId,
+            FileIOFactory fileIOFactory
         ) {
             super(log, new SequentialExecutorWrapper(log, exec));
 
             this.sndr = sndr;
             this.rqId = rqId;
             this.relativeNodePath = relativeNodePath;
+            this.fileIOFactory = fileIOFactory;
         }
 
         /** {@inheritDoc} */
@@ -2833,7 +2846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + cacheDirName + ']';
 
-                sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE);
+                sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE, fileIOFactory);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been send [part=" + part.getName() + ", pair=" + pair +
