@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -65,7 +66,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         FragmentDescription fragmentDesc,
         int totalFragmentsCnt,
         Object[] params,
-        byte[] paramsBytes
+        @Nullable byte[] paramsBytes
     ) {
         this.qryId = qryId;
         this.schema = schema;
@@ -74,7 +75,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.fragmentDesc = fragmentDesc;
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
-        this.paramsBytes = paramsBytes;
+        this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
     }
 
     /** */

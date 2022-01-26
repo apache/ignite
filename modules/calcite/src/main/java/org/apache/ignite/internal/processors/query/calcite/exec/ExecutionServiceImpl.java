@@ -572,7 +572,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                         messageService().send(nodeId, req);
 
-                        // Avoid double marshaling.
+                        // Avoid marshaling of the same parameters for other nodes.
                         if (parametersMarshalled == null)
                             parametersMarshalled = req.parametersMarshalled();
                     }
