@@ -502,9 +502,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestRemoteStatistics()
         {
-            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), () => new PlatformTestService());
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices());
 
-            DoTestMetrics(_client.GetServices(), _client.GetServices(), () => new PlatformTestService());
+            DoTestMetrics(_client.GetServices(), _client.GetServices());
         }
         
         /// <summary>
@@ -513,9 +513,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestLocalStatistics()
         {
-            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), () => new PlatformTestService());
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices());
 
-            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), () => new PlatformTestService());
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices());
         }
 
         /// <summary>
@@ -1355,14 +1355,14 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests platform service statistics.
         /// </summary>
-        private void DoTestMetrics<T>(IServices producer, IServices consumer, Func<T> factory) where T : IService, IJavaService
+        private void DoTestMetrics(IServices producer, IServices consumer)
         {
             var cfg = new ServiceConfiguration
             {
                 Name = "TestMetricsSrv",
                 MaxPerNodeCount = 1,
                 TotalCount = 3,
-                Service = factory(),
+                Service = new PlatformTestService(),
             };
 
             producer.Deploy(cfg);
@@ -1388,7 +1388,7 @@ namespace Apache.Ignite.Core.Tests.Services
             
             // Redeploy service with enabled stats.
             cfg.StatisticsEnabled = true;
-            cfg.Service = factory();
+            cfg.Service = new PlatformTestService();
             producer.Deploy(cfg);
             
             testPlatformSvc = consumer.GetServiceProxy<IJavaService>(cfg.Name, false);
