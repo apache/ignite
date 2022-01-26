@@ -493,44 +493,88 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests statistics of a platform service from client/remote node.
         /// </summary>
         [Test]
-        public void TestRemoteStatistics()
+        public void TestStatisticsRemote()
         {
-            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), false);
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), null, false);
 
-            DoTestMetrics(_client.GetServices(), _client.GetServices(), false);
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), null, false);
         }
         
+        /// <summary>
+        /// Tests statistics of a platform service from client/remote node using a call context.
+        /// </summary>
+        [Test]
+        public void TestStatisticsRemoteWithCallCtx()
+        {
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), callContext(), false);
+
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), callContext(), false);
+        }
+
         /// <summary>
         /// Tests statistics of a dynamically-proxied platform service from client/remote node.
         /// </summary>
         [Test]
-        public void TestDynamicRemoteStatistics()
+        public void TestStatisticsRemoteDynamically()
         {
-            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), true);
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), null, true);
 
-            DoTestMetrics(_client.GetServices(), _client.GetServices(), true);
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), null, true);
         }
         
+        /// <summary>
+        /// Tests statistics of a dynamically-proxied platform service from client/remote node using a call context.
+        /// </summary>
+        [Test]
+        public void TestStatisticsRemoteDynamicallyWithCallContext()
+        {
+            DoTestMetrics(Grid1.GetServices(), _client.GetServices(), callContext(), true);
+
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), callContext(), true);
+        }
+
         /// <summary>
         /// Tests statistics of a platform service from server/local node.
         /// </summary>
         [Test]
-        public void TestLocalStatistics()
+        public void TestStatisticsLocal()
         {
-            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), false);
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), null, false);
 
-            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), false);
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), null, false);
         }
         
+        /// <summary>
+        /// Tests statistics of a platform service from server/local node using the call context.
+        /// </summary>
+        [Test]
+        public void TestStatisticsLocalWithCallContext()
+        {
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), callContext(), false);
+
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), callContext(), false);
+        }
+
         /// <summary>
         /// Tests statistics of a dynamically-proxied platform service from server/local node.
         /// </summary>
         [Test]
-        public void TestDynamicLocalStatistics()
+        public void TestStatisticsLocalDynamic()
         {
-            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), true);
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), null, true);
 
-            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), true);
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), null, true);
+        }
+        
+        /// <summary>
+        /// Tests statistics of a dynamically-proxied platform service from server/local node using a call context.
+        /// </summary>
+        [Test]
+        public void TestStatisticsLocalDynamicWithCallContext()
+        {
+            DoTestMetrics(Grid1.GetServices(), Grid1.GetServices(), callContext(), true);
+
+            DoTestMetrics(_client.GetServices(), Grid1.GetServices(), callContext(), true);
         }
 
         /// <summary>
@@ -1370,7 +1414,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests platform service statistics.
         /// </summary>
-        private void DoTestMetrics(IServices producer, IServices consumer, bool dyn)
+        private void DoTestMetrics(IServices producer, IServices consumer, IServiceCallContext callCtx, bool dyn)
         {
             var cfg = new ServiceConfiguration
             {
@@ -1383,17 +1427,17 @@ namespace Apache.Ignite.Core.Tests.Services
             producer.Deploy(cfg);
 
             var svc = dyn
-                ? consumer.GetDynamicServiceProxy(cfg.Name, false)
-                : consumer.GetServiceProxy<IJavaService>(cfg.Name, false);
+                ? consumer.GetDynamicServiceProxy(cfg.Name, false, callCtx)
+                : consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx);
 
             // Subject service, calculates invocations.
             var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
 
             // Do 4 invocations.
-            Assert.AreEqual(3, dyn ? ((dynamic)svc).testOverload(1, 2) : ((IJavaService)svc).testOverload(1, 2));
-            Assert.AreEqual(2, dyn ? ((dynamic)svc).test(1) : ((IJavaService)svc).test(1));
-            Assert.AreEqual(true, dyn ? ((dynamic)svc).test(false) : ((IJavaService)svc).test(false));
-            Assert.AreEqual(null, dyn ? ((dynamic)svc).testNull(null) : ((IJavaService)svc).testNull(null));
+            Assert.AreEqual(3, dyn ? svc.testOverload(1, 2) : ((IJavaService)svc).testOverload(1, 2));
+            Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
+            Assert.AreEqual(true, dyn ? svc.test(false) : ((IJavaService)svc).test(false));
+            Assert.AreEqual(null, dyn ? svc.testNull(null) : ((IJavaService)svc).testNull(null));
   
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
@@ -1408,24 +1452,24 @@ namespace Apache.Ignite.Core.Tests.Services
             producer.Deploy(cfg);
             
             svc = dyn
-                ? consumer.GetDynamicServiceProxy(cfg.Name, false)
-                : consumer.GetServiceProxy<IJavaService>(cfg.Name, false);
+                ? consumer.GetDynamicServiceProxy(cfg.Name, false, callCtx)
+                : consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx);
             
             // Service metrics exists but holds no values.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
             
             // One invocation.
-            Assert.AreEqual(2, dyn ? ((dynamic)svc).test(1) : ((IJavaService)svc).test(1));
+            Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
             
             // There should be just one certain and one total invocation.
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name));
             
             // Do 4 more invocations.
-            Assert.AreEqual(3, dyn ? ((dynamic)svc).testOverload(1, 2) : ((IJavaService)svc).testOverload(1, 2));
-            Assert.AreEqual(2, dyn ? ((dynamic)svc).test(1) : ((IJavaService)svc).test(1));
-            Assert.AreEqual(true, dyn ? ((dynamic)svc).test(false) : ((IJavaService)svc).test(false));
-            Assert.AreEqual(null, dyn ? ((dynamic)svc).testNull(null) : ((IJavaService)svc).testNull(null));
+            Assert.AreEqual(3, dyn ? svc.testOverload(1, 2) : ((IJavaService)svc).testOverload(1, 2));
+            Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
+            Assert.AreEqual(true, dyn ? svc.test(false) : ((IJavaService)svc).test(false));
+            Assert.AreEqual(null, dyn ? svc.testNull(null) : ((IJavaService)svc).testNull(null));
             
             // We did 3 invocations of method named 'test(...)' in total.
             Assert.AreEqual(3, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
