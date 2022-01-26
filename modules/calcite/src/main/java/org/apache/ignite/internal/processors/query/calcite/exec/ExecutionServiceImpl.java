@@ -538,7 +538,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         qry.run(ectx, plan, node);
 
         Map<UUID, Long> fragmentsPerNode = fragments.stream()
-            .filter(f -> f != F.first(fragments))
+            .skip(1)
             .flatMap(f -> f.mapping().nodeIds().stream())
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 

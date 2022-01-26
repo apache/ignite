@@ -60,7 +60,7 @@ public class ColocationGroup implements MarshalableMessage {
     private List<List<UUID>> assignments;
 
     /** Marshalled assignments. */
-    private int[] assignments0;
+    private int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -257,7 +257,7 @@ public class ColocationGroup implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIntArray("assignments0", assignments0))
+                if (!writer.writeIntArray("marshalledAssignments", marshalledAssignments))
                     return false;
 
                 writer.incrementState();
@@ -288,7 +288,7 @@ public class ColocationGroup implements MarshalableMessage {
 
         switch (reader.state()) {
             case 0:
-                assignments0 = reader.readIntArray("assignments0");
+                marshalledAssignments = reader.readIntArray("marshalledAssignments");
 
                 if (!reader.isLastRead())
                     return false;
@@ -323,7 +323,7 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(MarshallingContext ctx) {
-        if (assignments != null && assignments0 == null) {
+        if (assignments != null && marshalledAssignments == null) {
             Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
             for (int i = 0; i < nodeIds.size(); i++)
@@ -345,16 +345,16 @@ public class ColocationGroup implements MarshalableMessage {
                 }
             }
 
-            assignments0 = builder.build().buffer();
+            marshalledAssignments = builder.build().buffer();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(MarshallingContext ctx) {
-        if (assignments0 != null && assignments == null) {
+        if (marshalledAssignments != null && assignments == null) {
             int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 
-            CompactedIntArray compactedArr = CompactedIntArray.of(bitsPerPart, assignments0);
+            CompactedIntArray compactedArr = CompactedIntArray.of(bitsPerPart, marshalledAssignments);
 
             assignments = new ArrayList<>(compactedArr.size());
 
