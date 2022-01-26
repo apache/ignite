@@ -137,7 +137,7 @@ public class ServiceInfo implements ServiceDescriptor {
             if (srvcCls != null)
                 return srvcCls;
 
-            String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
+            String clsName = cfg.serviceClassName();
 
             try {
                 srvcCls = (Class<? extends Service>)Class.forName(clsName);

@@ -68,6 +68,7 @@ namespace Apache.Ignite.Core.Services
         
         /// <summary>
         /// Enables or disables service statistics.
+        /// NOTE: Service statistics works only via the proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>/>
         /// </summary>
         public bool StatisticsEnabled { get; set; }
 
