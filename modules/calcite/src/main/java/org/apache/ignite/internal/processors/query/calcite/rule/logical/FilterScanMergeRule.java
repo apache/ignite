@@ -31,9 +31,11 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -91,17 +93,14 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         RelNode res = createNode(cluster, scan, trait, condition);
 
-        if (res == null) {
-            cluster.getPlanner().prune(scan);
-
+        if (res == null)
             return;
-        }
 
         call.transformTo(res);
     }
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, RexNode cond);
+    protected abstract @Nullable T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, RexNode cond);
 
     /** */
     private static class FilterIndexScanMergeRule extends FilterScanMergeRule<IgniteLogicalIndexScan> {
@@ -111,12 +110,18 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteLogicalIndexScan createNode(
+        @Override protected @Nullable IgniteLogicalIndexScan createNode(
             RelOptCluster cluster,
             IgniteLogicalIndexScan scan,
             RelTraitSet traits,
             RexNode cond
         ) {
+            if (scan.getTable().unwrap(IgniteTable.class).isIndexRebuildInProgress()) {
+                cluster.getPlanner().prune(scan);
+
+                return null;
+            }
+
             return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
                 scan.projects(), cond, scan.requiredColumns());
         }

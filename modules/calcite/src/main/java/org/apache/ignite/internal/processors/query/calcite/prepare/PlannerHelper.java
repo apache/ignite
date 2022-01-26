@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -216,12 +215,8 @@ public class PlannerHelper {
             if (scan instanceof IgniteTableScan)
                 return (IgniteRel)scan;
 
-            IgniteIndex idx = tbl.getIndex(((AbstractIndexScan)scan).indexName());
-
-            if (idx == null) // Index was invalidated during planning, table scan will be used.
-                return (IgniteRel)scan;
-
-            ImmutableSet<Integer> indexedCols = ImmutableSet.copyOf(idx.collation().getKeys());
+            ImmutableSet<Integer> indexedCols = ImmutableSet.copyOf(
+                tbl.getIndex(((AbstractIndexScan)scan).indexName()).collation().getKeys());
 
             spoolNeeded = modifyNode.getUpdateColumnList().stream()
                 .map(tbl.descriptor()::columnDescriptor)

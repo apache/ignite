@@ -311,7 +311,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
-        if (idx != null) {
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);

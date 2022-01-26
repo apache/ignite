@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -53,6 +52,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         super(config);
     }
 
+    /** */
+    private static boolean preMatch(IgniteLogicalTableScan scan) {
+        return !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose
+    }
+
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         IgniteLogicalTableScan scan = call.rel(0);
@@ -60,22 +64,18 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         RelOptTable optTable = scan.getTable();
         IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
-
-        if (igniteTable.indexes().isEmpty()) // Has no indexes to expose.
-            return;
-
         List<RexNode> proj = scan.projects();
         RexNode condition = scan.condition();
         ImmutableBitSet requiredCols = scan.requiredColumns();
+
+        if (igniteTable.isIndexRebuildInProgress())
+            return;
 
         List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().values().stream()
             .map(idx -> idx.toRel(cluster, optTable, proj, condition, requiredCols))
             .collect(Collectors.toList());
 
-        indexes.removeIf(Objects::isNull);
-
-        if (indexes.isEmpty()) // Indexes were concurrently invalidated.
-            return;
+        assert !indexes.isEmpty();
 
         Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
@@ -92,6 +92,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         Config DEFAULT = ImmutableExposeIndexRule.Config.of()
             .withOperandSupplier(b ->
                 b.operand(IgniteLogicalTableScan.class)
+                    .predicate(ExposeIndexRule::preMatch)
                     .anyInputs());
 
         /** {@inheritDoc} */

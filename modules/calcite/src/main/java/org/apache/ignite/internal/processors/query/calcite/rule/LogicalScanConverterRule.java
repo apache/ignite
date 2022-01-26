@@ -64,7 +64,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
                 IgniteIndex idx = table.getIndex(rel.indexName());
 
-                if (idx == null) {
+                if (table.isIndexRebuildInProgress()) {
                     cluster.getPlanner().prune(rel);
 
                     return null;

@@ -148,4 +148,11 @@ public interface IgniteTable extends TranslatableTable {
      * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
      */
     void markIndexRebuildInProgress(boolean mark);
+
+    /**
+     * Returns index rebuild flag.
+     *
+     * @param {@code True} if index rebuild in progress.
+     */
+    boolean isIndexRebuildInProgress();
 }

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 @Value.Enclosing
@@ -53,7 +54,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
     public static final RelOptRule TABLE_SCAN_SKIP_CORRELATED = Config.TABLE_SCAN_SKIP_CORRELATED.toRule();
 
     /** */
-    protected abstract T createNode(
+    protected abstract @Nullable T createNode(
         RelOptCluster cluster,
         T scan,
         RelTraitSet traits,
@@ -141,11 +142,8 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
         T res = createNode(cluster, scan, traits, projects, cond, requiredColumns);
 
-        if (res == null) {
-            cluster.getPlanner().prune(scan);
-
+        if (res == null)
             return;
-        }
 
         call.transformTo(res);
 
@@ -196,7 +194,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteLogicalIndexScan createNode(
+        @Override protected @Nullable IgniteLogicalIndexScan createNode(
             RelOptCluster cluster,
             IgniteLogicalIndexScan scan,
             RelTraitSet traits,
@@ -204,6 +202,12 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             RexNode cond,
             ImmutableBitSet requiredColumns
         ) {
+            if (scan.getTable().unwrap(IgniteTable.class).isIndexRebuildInProgress()) {
+                cluster.getPlanner().prune(scan);
+
+                return null;
+            }
+
             return IgniteLogicalIndexScan.create(
                 cluster,
                 traits,

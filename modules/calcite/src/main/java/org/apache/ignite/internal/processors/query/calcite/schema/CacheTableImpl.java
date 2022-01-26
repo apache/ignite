@@ -143,7 +143,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public Map<String, IgniteIndex> indexes() {
-        return idxRebuildInProgress ? Collections.emptyMap() : Collections.unmodifiableMap(indexes);
+        return Collections.unmodifiableMap(indexes);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +153,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public IgniteIndex getIndex(String idxName) {
-        return idxRebuildInProgress ? null : indexes.get(idxName);
+        return indexes.get(idxName);
     }
 
     /** {@inheritDoc} */
@@ -164,6 +164,11 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public void markIndexRebuildInProgress(boolean mark) {
         idxRebuildInProgress = mark;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return idxRebuildInProgress;
     }
 
     /** {@inheritDoc} */

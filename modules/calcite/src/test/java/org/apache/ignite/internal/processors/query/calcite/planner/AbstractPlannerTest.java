@@ -846,6 +846,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Override public void markIndexRebuildInProgress(boolean mark) {
             throw new AssertionError();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isIndexRebuildInProgress() {
+            return false;
+        }
     }
 
     /** */

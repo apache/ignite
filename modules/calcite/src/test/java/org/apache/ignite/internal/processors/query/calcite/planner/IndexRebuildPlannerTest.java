@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -361,13 +359,8 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, IgniteIndex> indexes() {
-            return idxRebuildInProgress ? Collections.emptyMap() : super.indexes();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteIndex getIndex(String idxName) {
-            return idxRebuildInProgress ? null : super.getIndex(idxName);
+        @Override public boolean isIndexRebuildInProgress() {
+            return idxRebuildInProgress;
         }
     }
 }
