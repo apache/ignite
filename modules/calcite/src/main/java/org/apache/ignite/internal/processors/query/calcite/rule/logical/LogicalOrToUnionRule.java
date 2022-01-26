@@ -42,11 +42,13 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Converts OR to UNION ALL.
  */
+@Value.Enclosing
 public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     /** Rule instance to replace table scans with condition. */
     public static final RelOptRule INSTANCE = new LogicalOrToUnionRule(Config.SCAN);
@@ -190,7 +192,8 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
     /** */
     @SuppressWarnings("ClassNameSameAsAncestorName")
-    public interface Config extends RelRule.Config {
+    @Value.Immutable(singleton = false)
+    public interface Config extends RuleFactoryConfig<Config> {
         /** */
         Config SCAN = ImmutableLogicalOrToUnionRule.Config.builder()
             .withRuleFactory(LogicalOrToUnionRule::new)
