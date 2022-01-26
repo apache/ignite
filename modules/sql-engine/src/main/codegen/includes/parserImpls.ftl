@@ -330,3 +330,9 @@ SqlNode SqlAlterTable() :
         }
     )
 }
+
+<DEFAULT, DQID, BTID> TOKEN :
+{
+< NEGATE: "!" >
+|   < TILDE: "~" >
+}

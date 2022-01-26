@@ -66,6 +66,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 false,
                 ImmutableIntList.of(1),
                 -1,
+                null,
                 RelCollations.EMPTY,
                 tf.createJavaType(double.class),
                 null);
@@ -447,6 +448,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 false,
                 ImmutableIntList.of(),
                 -1,
+                null,
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);

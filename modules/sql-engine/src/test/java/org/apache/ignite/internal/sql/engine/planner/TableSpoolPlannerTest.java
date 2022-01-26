@@ -28,7 +28,6 @@ import org.apache.ignite.internal.sql.engine.trait.IgniteDistribution;
 import org.apache.ignite.internal.sql.engine.trait.IgniteDistributions;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeFactory;
 import org.apache.ignite.internal.sql.engine.type.IgniteTypeSystem;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -82,65 +81,6 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
 
         RelNode phys = physicalPlan(sql, publicSchema,
                 "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
-
-        assertNotNull(phys);
-
-        IgniteTableSpool tblSpool = findFirstNode(phys, byClass(IgniteTableSpool.class));
-
-        assertNotNull(tblSpool, "Invalid plan:\n" + RelOptUtil.toString(phys));
-    }
-
-    /**
-     * TableSpoolBroadcastNotRewindable.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15235")
-    public void tableSpoolBroadcastNotRewindable() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                        .add("ID", f.createJavaType(Integer.class))
-                        .add("JID", f.createJavaType(Integer.class))
-                        .add("VAL", f.createJavaType(String.class))
-                        .build()
-                ) {
-
-            @Override
-            public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t1 = new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                        .add("ID", f.createJavaType(Integer.class))
-                        .add("JID", f.createJavaType(Integer.class))
-                        .add("VAL", f.createJavaType(String.class))
-                        .build()
-                ) {
-
-            @Override
-            public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        String sql = "select * "
-                + "from t0 "
-                + "join t1 on t0.jid = t1.jid";
-
-        RelNode phys = physicalPlan(sql, publicSchema,
-                "MergeJoinConverter", "NestedLoopJoinConverter",
-                "FilterSpoolMergeToHashIndexSpoolRule", "FilterSpoolMergeToSortIndexSpoolRule");
 
         assertNotNull(phys);
 

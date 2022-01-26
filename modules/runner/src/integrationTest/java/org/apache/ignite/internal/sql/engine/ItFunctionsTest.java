@@ -42,10 +42,12 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItFunctionsTest extends AbstractBasicIntegrationTest {
+    private static final Object[] NULL_RESULT = new Object[] { null };
+
     @Test
     public void testLength() {
         assertQuery("SELECT LENGTH('TEST')").returns(4).check();
-        assertQuery("SELECT LENGTH(NULL)").returns(new Object[]{null}).check();
+        assertQuery("SELECT LENGTH(NULL)").returns(NULL_RESULT).check();
     }
 
     @Test
@@ -203,21 +205,21 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
     public void testPercentRemainder() {
         assertQuery("SELECT 3 % 2").returns(1).check();
         assertQuery("SELECT 4 % 2").returns(0).check();
-        assertQuery("SELECT NULL % 2").returns(new Object[]{null}).check();
-        assertQuery("SELECT 3 % NULL::int").returns(new Object[]{null}).check();
-        assertQuery("SELECT 3 % NULL").returns(new Object[] { null }).check();
+        assertQuery("SELECT NULL % 2").returns(NULL_RESULT).check();
+        assertQuery("SELECT 3 % NULL::int").returns(NULL_RESULT).check();
+        assertQuery("SELECT 3 % NULL").returns(NULL_RESULT).check();
     }
 
     @Test
     public void testNullFunctionArguments() {
         // Don't infer result data type from arguments (result is always INTEGER_NULLABLE).
-        assertQuery("SELECT ASCII(NULL)").returns(new Object[] { null }).check();
+        assertQuery("SELECT ASCII(NULL)").returns(NULL_RESULT).check();
         // Inferring result data type from first STRING argument.
-        assertQuery("SELECT REPLACE(NULL, '1', '2')").returns(new Object[] { null }).check();
+        assertQuery("SELECT REPLACE(NULL, '1', '2')").returns(NULL_RESULT).check();
         // Inferring result data type from both arguments.
-        assertQuery("SELECT MOD(1, null)").returns(new Object[] { null }).check();
+        assertQuery("SELECT MOD(1, null)").returns(NULL_RESULT).check();
         // Inferring result data type from first NUMERIC argument.
-        assertQuery("SELECT TRUNCATE(NULL, 0)").returns(new Object[] { null }).check();
+        assertQuery("SELECT TRUNCATE(NULL, 0)").returns(NULL_RESULT).check();
         // Inferring arguments data types and then inferring result data type from all arguments.
         assertQuery("SELECT FALSE AND NULL").returns(false).check();
     }
@@ -225,9 +227,9 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testReplace() {
         assertQuery("SELECT REPLACE('12341234', '1', '55')").returns("5523455234").check();
-        assertQuery("SELECT REPLACE(NULL, '1', '5')").returns(new Object[] { null }).check();
-        assertQuery("SELECT REPLACE('1', NULL, '5')").returns(new Object[] { null }).check();
-        assertQuery("SELECT REPLACE('11', '1', NULL)").returns(new Object[] { null }).check();
+        assertQuery("SELECT REPLACE(NULL, '1', '5')").returns(NULL_RESULT).check();
+        assertQuery("SELECT REPLACE('1', NULL, '5')").returns(NULL_RESULT).check();
+        assertQuery("SELECT REPLACE('11', '1', NULL)").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', '')").returns("").check();
     }
 
@@ -235,5 +237,34 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
     public void testMonthnameDayname() {
         assertQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
         assertQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
+    }
+
+    @Test
+    public void testRegex() {
+        assertQuery("SELECT 'abcd' ~ 'ab[cd]'").returns(true).check();
+        assertQuery("SELECT 'abcd' ~ 'ab[cd]$'").returns(false).check();
+        assertQuery("SELECT 'abcd' ~ 'ab[CD]'").returns(false).check();
+        assertQuery("SELECT 'abcd' ~* 'ab[cd]'").returns(true).check();
+        assertQuery("SELECT 'abcd' ~* 'ab[cd]$'").returns(false).check();
+        assertQuery("SELECT 'abcd' ~* 'ab[CD]'").returns(true).check();
+        assertQuery("SELECT 'abcd' !~ 'ab[cd]'").returns(false).check();
+        assertQuery("SELECT 'abcd' !~ 'ab[cd]$'").returns(true).check();
+        assertQuery("SELECT 'abcd' !~ 'ab[CD]'").returns(true).check();
+        assertQuery("SELECT 'abcd' !~* 'ab[cd]'").returns(false).check();
+        assertQuery("SELECT 'abcd' !~* 'ab[cd]$'").returns(true).check();
+        assertQuery("SELECT 'abcd' !~* 'ab[CD]'").returns(false).check();
+        assertQuery("SELECT null ~ 'ab[cd]'").returns(NULL_RESULT).check();
+        assertQuery("SELECT 'abcd' ~ null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null ~ null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null ~* 'ab[cd]'").returns(NULL_RESULT).check();
+        assertQuery("SELECT 'abcd' ~* null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null ~* null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null !~ 'ab[cd]'").returns(NULL_RESULT).check();
+        assertQuery("SELECT 'abcd' !~ null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null !~ null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null !~* 'ab[cd]'").returns(NULL_RESULT).check();
+        assertQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
+        assertQuery("SELECT null !~* null").returns(NULL_RESULT).check();
+        assertThrows(IgniteException.class, () -> sql("SELECT 'abcd' ~ '[a-z'"));
     }
 }

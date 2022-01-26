@@ -18,8 +18,17 @@
 package org.apache.ignite.internal.sql.engine.exec.rel;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.type.RelDataType;
@@ -32,6 +41,9 @@ import org.apache.ignite.internal.sql.engine.metadata.FragmentDescription;
 import org.apache.ignite.internal.sql.engine.util.BaseQueryContext;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
+import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
+import org.apache.ignite.internal.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +56,8 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
     private Throwable lastE;
 
     private QueryTaskExecutorImpl taskExecutor;
+
+    private List<UUID> nodes;
 
     @BeforeEach
     public void beforeTest() {
@@ -65,6 +79,19 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
     }
 
     protected ExecutionContext<Object[]> executionContext() {
+        return executionContext(false);
+    }
+
+    protected ExecutionContext<Object[]> executionContext(boolean withDelays) {
+        if (withDelays) {
+            StripedThreadPoolExecutor testExecutor = new IgniteTestStripedThreadPoolExecutor(8,
+                    NamedThreadFactory.threadPrefix("fake-test-node", "sqlTestExec"),
+                    null,
+                    false,
+                    0);
+            IgniteTestUtils.setFieldValue(taskExecutor, "stripedThreadPoolExecutor", testExecutor);
+        }
+
         FragmentDescription fragmentDesc = new FragmentDescription(0, null, null, null);
         return new ExecutionContext<>(
                 BaseQueryContext.builder()
@@ -88,6 +115,80 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
 
     protected Object[] row(Object... fields) {
         return fields;
+    }
+
+    /** Task reordering executor. */
+    private static class IgniteTestStripedThreadPoolExecutor extends StripedThreadPoolExecutor {
+        final Deque<Pair<Runnable, Integer>> tasks = new ArrayDeque<>();
+
+        /** Internal stop flag. */
+        AtomicBoolean stop = new AtomicBoolean();
+
+        /** Inner execution service. */
+        ExecutorService exec = Executors.newWorkStealingPool();
+
+        CompletableFuture fut;
+
+        /** {@inheritDoc} */
+        public IgniteTestStripedThreadPoolExecutor(
+                int concurrentLvl,
+                String threadNamePrefix,
+                Thread.UncaughtExceptionHandler exHnd,
+                boolean allowCoreThreadTimeOut,
+                long keepAliveTime
+        ) {
+            super(concurrentLvl, threadNamePrefix, exHnd, allowCoreThreadTimeOut, keepAliveTime);
+
+            fut = IgniteTestUtils.runAsync(() -> {
+                while (!stop.get()) {
+                    synchronized (tasks) {
+                        while (tasks.isEmpty()) {
+                            try {
+                                tasks.wait();
+                            } catch (InterruptedException e) {
+                                // no op.
+                            }
+                        }
+
+                        Pair<Runnable, Integer> r = tasks.pollFirst();
+
+                        exec.execute(() -> {
+                            LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(0, 10_000));
+                            super.execute(r.getFirst(), r.getSecond());
+                        });
+
+                        tasks.notifyAll();
+                    }
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(Runnable task, int idx) {
+            synchronized (tasks) {
+                tasks.add(new Pair<>(task, idx));
+
+                tasks.notifyAll();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdown() {
+            stop.set(true);
+
+            fut.cancel(true);
+
+            super.shutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Runnable> shutdownNow() {
+            stop.set(true);
+
+            fut.cancel(true);
+
+            return super.shutdownNow();
+        }
     }
 
     /**
@@ -155,7 +256,7 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
         @NotNull
         @Override
         public Iterator<Object[]> iterator() {
-            return new Iterator<Object[]>() {
+            return new Iterator<>() {
                 private int curRow;
 
                 @Override

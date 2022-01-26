@@ -150,7 +150,7 @@ public class HashAggregateNode<RowT> extends AbstractNode<RowT> implements Singl
     protected void rewindInternal() {
         requested = 0;
         waiting = 0;
-        groupings.forEach(grouping -> grouping.groups.clear());
+        groupings.forEach(Grouping::reset);
     }
 
     /** {@inheritDoc} */
@@ -237,11 +237,21 @@ public class HashAggregateNode<RowT> extends AbstractNode<RowT> implements Singl
 
             handler = context().rowHandler();
 
+            init();
+        }
+
+        private void init() {
             // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
             // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
             if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE)) {
                 groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
             }
+        }
+
+        private void reset() {
+            groups.clear();
+
+            init();
         }
 
         private void add(RowT row) {

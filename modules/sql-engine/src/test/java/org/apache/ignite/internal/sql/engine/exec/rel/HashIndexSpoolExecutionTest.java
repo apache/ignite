@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
     @Test
     public void testIndexSpool() {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 

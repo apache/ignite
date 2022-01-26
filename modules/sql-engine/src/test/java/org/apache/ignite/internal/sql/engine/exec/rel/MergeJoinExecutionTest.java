@@ -306,7 +306,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
      * @param expRes   Expected result.
      */
     private void verifyJoin(Object[][] left, Object[][] right, JoinRelType joinType, Object[][] expRes) {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
 
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         ScanNode<Object[]> leftNode = new ScanNode<>(ctx, leftType, Arrays.asList(left));

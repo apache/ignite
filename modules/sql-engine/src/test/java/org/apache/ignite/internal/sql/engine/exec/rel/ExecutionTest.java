@@ -64,7 +64,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // ON P.ID = PR.RESP_ID
         // WHERE P.ID >= 2
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
 
@@ -119,7 +119,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
     @Test
     public void testUnionAll() {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
 
@@ -168,7 +168,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // left join dep d
         //        on e.depno = d.depno
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
 
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
@@ -227,7 +227,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // right join emp e
         //         on e.depno = d.depno
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
@@ -286,7 +286,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // full outer join dep d
         //              on e.depno = d.depno
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
@@ -346,7 +346,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // semi join emp e
         //        on e.depno = d.depno
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
@@ -402,7 +402,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // anti join emp e
         //        on e.depno = d.depno
 
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
@@ -457,7 +457,7 @@ public class ExecutionTest extends AbstractExecutionTest {
     @ParameterizedTest
     @MethodSource("provideArgumentsForCnlJtest")
     public void testCorrelatedNestedLoopJoin(int leftSize, int rightSize, int rightBufSize, JoinRelType joinType) {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
@@ -502,7 +502,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
     @Test
     public void testMergeJoin() {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 

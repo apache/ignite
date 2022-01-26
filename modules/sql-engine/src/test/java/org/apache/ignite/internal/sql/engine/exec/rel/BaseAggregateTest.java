@@ -59,7 +59,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     @ParameterizedTest
     @EnumSource
     public void count(TestAggregateType testAgg) {
-        ExecutionContext<Object[]> ctx = executionContext();
+        ExecutionContext<Object[]> ctx = executionContext(true);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
         ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
@@ -76,6 +76,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
                 false,
                 ImmutableIntList.of(),
                 -1,
+                null,
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
@@ -320,7 +321,12 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
      * @param mustFail  {@code true} If expression must throw exception.
      **/
     @SuppressWarnings("ThrowableNotThrown")
-    public void singleAggr(TestAggregateType testAgg, List<Object[]> scanInput, Object[] output, boolean mustFail) {
+    public void singleAggr(
+            TestAggregateType testAgg,
+            List<Object[]> scanInput,
+            Object[] output,
+            boolean mustFail
+    ) {
         ExecutionContext<Object[]> ctx = executionContext();
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
@@ -505,7 +511,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         }
     }
 
-    private SingleNode<Object[]> createAggregateNodesChain(
+    protected SingleNode<Object[]> createAggregateNodesChain(
             TestAggregateType testAgg,
             ExecutionContext<Object[]> ctx,
             List<ImmutableBitSet> grpSets,

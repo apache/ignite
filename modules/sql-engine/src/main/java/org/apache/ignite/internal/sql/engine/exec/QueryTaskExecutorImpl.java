@@ -49,7 +49,7 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.Uncaught
     public void start() {
         this.stripedThreadPoolExecutor = new StripedThreadPoolExecutor(
                 4,
-                NamedThreadFactory.threadPrefix(nodeName, "calciteQry"),
+                NamedThreadFactory.threadPrefix(nodeName, "sqlExec"),
                 null,
                 false,
                 0

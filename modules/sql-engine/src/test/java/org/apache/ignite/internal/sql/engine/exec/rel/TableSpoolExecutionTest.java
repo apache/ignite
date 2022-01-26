@@ -71,18 +71,14 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
 
             AtomicReference<Iterator<Object[]>> itRef = new AtomicReference<>();
 
-            ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new Iterable<Object[]>() {
-                @NotNull
-                @Override
-                public Iterator<Object[]> iterator() {
-                    if (itRef.get() != null) {
-                        throw new AssertionError();
-                    }
-
-                    itRef.set(IntStream.range(0, size).boxed().map(i -> new Object[]{i}).iterator());
-
-                    return itRef.get();
+            ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, () -> {
+                if (itRef.get() != null) {
+                    throw new AssertionError();
                 }
+
+                itRef.set(IntStream.range(0, size).boxed().map(i -> new Object[]{i}).iterator());
+
+                return itRef.get();
             });
 
             TableSpoolNode<Object[]> spool = new TableSpoolNode<>(ctx, rowType, false);
@@ -104,8 +100,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
      * CheckTableSpool.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public void checkTableSpool(
-            BiFunction<ExecutionContext<Object[]>, RelDataType, TableSpoolNode<Object[]>> spoolFactory) {
+    public void checkTableSpool(BiFunction<ExecutionContext<Object[]>, RelDataType, TableSpoolNode<Object[]>> spoolFactory) {
         ExecutionContext<Object[]> ctx = executionContext();
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
@@ -113,7 +108,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
         int inBufSize = Commons.IN_BUFFER_SIZE;
 
         int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-        //        int[] sizes = {inBufSize * 4};
+
         int rewindCnts = 32;
 
         for (int size : sizes) {
