@@ -49,6 +49,7 @@ public class CacheView {
 
     /**
      * @param cache Cache descriptor.
+     * @param ctx Kernal context.
      */
     public CacheView(DynamicCacheDescriptor cache, GridKernalContext ctx) {
         this.cache = cache;
