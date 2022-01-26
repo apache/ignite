@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from statistics import mean, median
 from typing import NamedTuple
 
 from ignitetest.services.ignite import IgniteService
@@ -33,15 +34,16 @@ class DataLoadParams(NamedTuple):
     entry_count: int = 15_000
     entry_size: int = 50_000
     preloaders: int = 1
+    threads: int = 1
     jvm_opts: list = None
     persistent: bool = True
 
-    @property
-    def data_region_max_size(self):
+    def data_region_max_size(self, node_count):
         """
         Max size for DataRegionConfiguration.
         """
-        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)
+        return int(max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1) / node_count * 1.2,
+                       DEFAULT_DATA_REGION_SZ))
 
 
 class DataLoader:
@@ -70,15 +72,16 @@ class DataLoader:
 
         if self.data_load_params.persistent:
             data_storage = DataStorageConfiguration(
-                max_wal_archive_size=2 * self.data_load_params.data_region_max_size,
+                max_wal_archive_size=2 * self.data_load_params.data_region_max_size(node_count),
                 default=DataRegionConfiguration(
                     persistent=True,
-                    max_size=self.data_load_params.data_region_max_size
+                    max_size=self.data_load_params.data_region_max_size(node_count),
+                    init_size=self.data_load_params.data_region_max_size(node_count)
                 )
             )
         else:
             data_storage = DataStorageConfiguration(
-                default=DataRegionConfiguration(max_size=self.data_load_params.data_region_max_size)
+                default=DataRegionConfiguration(max_size=self.data_load_params.data_region_max_size(node_count))
             )
 
         node_config = config._replace(data_storage=data_storage)
@@ -125,6 +128,35 @@ class DataLoader:
         return (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
                 min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds()
 
+    def get_summary_report(self):
+        assert len(self.apps) > 0
+        if len(self.apps) == 1:
+            return {
+                "duration": (self.apps[0].get_finish_time() - self.apps[0].get_init_time()).total_seconds(),
+                "heap": sizeof_fmt(int(self.apps[0].extract_result("PEAK_HEAP_MEMORY")))
+            }
+        else:
+            heap_values = list(map(lambda _app: int(_app.extract_result("PEAK_HEAP_MEMORY")), self.apps))
+            duration_values = list(map(lambda _app: (_app.get_finish_time() - _app.get_init_time()).total_seconds(),
+                                       self.apps))
+            return {
+                "duration": {
+                    "max": max(duration_values),
+                    "min": min(duration_values),
+                    "total": (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
+                              min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds(),
+                    "mean": mean(duration_values),
+                    "median": median(duration_values)
+
+                },
+                "heap": {
+                    "max": sizeof_fmt(max(heap_values)),
+                    "min": sizeof_fmt(min(heap_values)),
+                    "mean": sizeof_fmt(mean(heap_values)),
+                    "median": sizeof_fmt(median(heap_values))
+                }
+            }
+
     def __create_apps(self, config):
         for _ in range(self.data_load_params.preloaders):
             _app = IgniteApplicationService(
@@ -133,6 +165,7 @@ class DataLoader:
                 java_class_name="org.apache.ignite.internal.ducktest.tests.data_generation.DataGenerationApplication",
                 jvm_opts=self.data_load_params.jvm_opts
             )
+            _app.log_level = "DEBUG"
             self.apps.append(_app)
 
     def __start_app(self, _app, _from, _to, timeout):
@@ -140,6 +173,8 @@ class DataLoader:
             "backups": self.data_load_params.backups,
             "cacheCount": self.data_load_params.cache_count,
             "entrySize": self.data_load_params.entry_size,
+            "threads": self.data_load_params.threads,
+            "timeoutSecs": timeout,
             "from": _from,
             "to": _to
         }
@@ -147,3 +182,11 @@ class DataLoader:
         _app.jvm_opts = self.data_load_params.jvm_opts
 
         _app.start_async()
+
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"

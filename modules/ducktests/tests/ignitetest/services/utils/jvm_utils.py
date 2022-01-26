@@ -16,7 +16,7 @@
 """
 This module contains JVM utilities.
 """
-DEFAULT_HEAP = "768M"
+DEFAULT_HEAP = "2G"
 
 JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 " \
                    "-XX:ConcGCThreads=$(((`nproc`/3)>1?(`nproc`/3):1)) " \
@@ -35,7 +35,7 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, ge
     """
     gc_dump = ""
     if gc_dump_path:
-        gc_dump = "-verbose:gc -Xloggc:" + gc_dump_path
+        gc_dump = "-XX:+PrintGCDetails -verbose:gc -Xloggc:" + gc_dump_path
 
     out_of_mem_dump = ""
     if oom_path:

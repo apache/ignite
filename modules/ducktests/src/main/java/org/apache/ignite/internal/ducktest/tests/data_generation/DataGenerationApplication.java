@@ -17,7 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.tests.data_generation;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -25,6 +32,9 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+import org.apache.ignite.internal.ducktest.utils.metrics.MemoryUsageMetrics;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Application generates cache data by specified parameters.
@@ -40,37 +50,113 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int entrySize = jsonNode.get("entrySize").asInt();
         int from = jsonNode.get("from").asInt();
         int to = jsonNode.get("to").asInt();
+        int threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
+        int timeoutSecs = Optional.ofNullable(jsonNode.get("timeoutSecs")).map(JsonNode::asInt).orElse(3600);
 
         markInitialized();
+
+        List<IgniteDataStreamer<Integer, BinaryObject>> streamers = new LinkedList<>();
+
+        CountDownLatch streamersLatch = new CountDownLatch(cacheCnt);
+
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(threads);
 
         for (int i = 1; i <= cacheCnt; i++) {
             IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
                     .setBackups(backups));
 
-            generateCacheData(cache.getName(), entrySize, from, to);
+            IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cache.getName());
+            stmr.future().listen(new IgniteInClosure<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
+                    streamersLatch.countDown();
+                }
+            });
+
+            streamers.add(stmr);
+
+            int cnt = (to - from) / threads;
+            int end = from;
+
+            for (int j = 0; j < threads; j++) {
+                int start = end;
+                end += cnt;
+                if (end > to)
+                    end = to;
+                executorSrvc.submit(new GenerateCacheDataTask(stmr, entrySize, start, end));
+            }
         }
 
-        markFinished();
+        executorSrvc.shutdown();
+        try {
+            if (executorSrvc.awaitTermination(timeoutSecs, TimeUnit.SECONDS)) {
+                for (IgniteDataStreamer<Integer, BinaryObject> streamer: streamers)
+                    streamer.close(false);
+                streamersLatch.await(timeoutSecs, TimeUnit.SECONDS);
+                recordPeakMemory();
+                markFinished();
+            } else {
+                recordPeakMemory();
+                markBroken(new RuntimeException(String.format("timeout elapsed: %d secs", timeoutSecs)));
+            }
+        }
+        catch (Throwable ex) {
+            recordPeakMemory();
+            markBroken(new RuntimeException(String.format("error occured during execution: %s", ex.getMessage()), ex));
+        }
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param entrySize Entry size.
-     * @param from From key.
-     * @param to To key.
+     *
      */
-    private void generateCacheData(String cacheName, int entrySize, int from, int to) {
-        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
-        int logEach = (to - from) / 10;
+    private void recordPeakMemory() {
+        recordResult("PEAK_HEAP_MEMORY", MemoryUsageMetrics.getPeakHeapMemory());
+    }
 
-        BinaryObjectBuilder builder = ignite.binary().builder("org.apache.ignite.ducktest.DataBinary");
+    /**
+     * Task to load data to cache via the provided streamer object.
+     */
+    private class GenerateCacheDataTask implements Runnable {
+        /** Ignite Streamer. */
+        private final IgniteDataStreamer<Integer, BinaryObject> stmr;
+        /** Entry size. */
+        private final int entrySize;
+        /** Key value to start loading from. */
+        private final int from;
+        /** Key value (excluding) to stop loading. */
+        private final int to;
 
-        byte[] data = new byte[entrySize];
+        /**
+         * @param stmr Ignite streamer object.
+         * @param entrySize Entry size.
+         * @param from From key.
+         * @param to To key.
+         */
+        GenerateCacheDataTask(IgniteDataStreamer<Integer, BinaryObject> stmr, int entrySize, int from, int to) {
+            this.stmr = stmr;
+            this.entrySize = entrySize;
+            this.from = from;
+            this.to = to;
+        }
 
-        ThreadLocalRandom.current().nextBytes(data);
+        /** {@inheritDoc} */
+        @Override public void run() {
+            generateCacheData();
+        }
 
-        try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
+        /**
+         * Generate cache data
+         */
+        private void generateCacheData() {
+            int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+            int logEach = (to - from) / 10;
+
+            BinaryObjectBuilder builder = ignite.binary().builder("org.apache.ignite.ducktest.DataBinary");
+
+            byte[] data = new byte[entrySize];
+
+            ThreadLocalRandom.current().nextBytes(data);
+
             for (int i = from; i < to; i++) {
                 builder.setField("key", i);
                 builder.setField("data", data);
@@ -78,13 +164,14 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 stmr.addData(i, builder.build());
 
                 if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
-                    log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
+                    log.debug("Streamed " + (i - from + 1) + " entries into " + stmr.cacheName());
 
                 if (i % flushEach == 0)
                     stmr.flush();
             }
-        }
 
-        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
+            log.info(stmr.cacheName() + " data generated [entryCnt=" + (to - from) + ", from=" + from +
+                ", to=" + to + "]");
+        }
     }
 }

@@ -249,7 +249,7 @@ class IgniteApplicationSpec(IgniteSpec):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._add_jvm_opts(["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-                            "-Xmx1G",
+                            "-Xmx10G",
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
