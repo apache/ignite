@@ -5709,7 +5709,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
             if (txTopVer != null)
-                return op(tx, (AffinityTopologyVersion)null);
+                return runOp(tx, (AffinityTopologyVersion)null, opCtx);
 
             // Tx needs affinity for entry creation, wait when affinity is ready to avoid blocking inside async operation.
             final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
@@ -5717,7 +5717,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             IgniteInternalFuture<?> topFut = ctx.shared().exchange().affinityReadyFuture(topVer);
 
             if (topFut == null || topFut.isDone())
-                return op(tx, topVer);
+                return runOp(tx, topVer, opCtx);
             else
                 return waitTopologyFuture(topFut, topVer, tx, opCtx);
         }
