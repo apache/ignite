@@ -116,6 +116,7 @@ import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.SystemPropertyUtil;
 import org.apache.ignite.raft.jraft.util.ThreadHelper;
 import org.apache.ignite.raft.jraft.util.ThreadId;
+import org.apache.ignite.raft.jraft.util.TimeoutStrategy;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.concurrent.LongHeldDetectingReadWriteLock;
 
@@ -147,6 +148,10 @@ public class NodeImpl implements Node, RaftServerService {
     private final Ballot prevVoteCtx = new Ballot();
     private ConfigurationEntry conf;
     private StopTransferArg stopTransferArg;
+    private boolean electionAdjusted;
+    private long electionRound;
+    private int initialElectionTimeout;
+
     /**
      * Raft group and node options and identifier
      */
@@ -598,6 +603,7 @@ public class NodeImpl implements Node, RaftServerService {
             }
 
             doUnlock = false;
+            adjustElectionTimeout();
             preVote();
 
         }
@@ -605,6 +611,50 @@ public class NodeImpl implements Node, RaftServerService {
             if (doUnlock) {
                 this.writeLock.unlock();
             }
+        }
+    }
+
+    /**
+     * Method that adjusts election timeout after several consecutive unsuccessful leader elections according to {@link TimeoutStrategy}
+     * <p>
+     * Notes about general algorithm: The main idea is that in a stable cluster election timeout should be relatively small, but when
+     * something prevents elections from completion, like an unstable network or long GC pauses, we don't want to have a lot of
+     * elections, so election timeout is adjusted. Hence, the upper bound of the election timeout adjusting is the value, which is enough to
+     * elect a leader or handle problems that prevent a successful leader election.
+     * <p>
+     * Leader election timeout is set to an initial value after a successful election of a leader.
+     */
+    private void adjustElectionTimeout() {
+        electionRound++;
+
+        if (electionRound > 1)
+            LOG.info("Unsuccessful election round number {}", electionRound);
+
+        if (!electionAdjusted) {
+            initialElectionTimeout = options.getElectionTimeoutMs();
+        }
+
+        long timeout = options.getElectionTimeoutStrategy().nextTimeout(options.getElectionTimeoutMs(), electionRound);
+
+        if (timeout != options.getElectionTimeoutMs()) {
+            resetElectionTimeoutMs((int) timeout);
+            LOG.info("Election timeout was adjusted according to {} ", options.getElectionTimeoutStrategy());
+            electionAdjusted = true;
+        }
+    }
+
+    /**
+     * Method that resets election timeout to initial value after an adjusting.
+     *
+     * For more details see {@link NodeImpl#adjustElectionTimeout()}.
+     */
+    private void resetElectionTimeoutToInitial() {
+        electionRound = 0;
+
+        if (electionAdjusted) {
+            LOG.info("Election timeout was reset to initial value due to successful leader election.");
+            resetElectionTimeoutMs(initialElectionTimeout);
+            electionAdjusted = false;
         }
     }
 
@@ -1241,6 +1291,8 @@ public class NodeImpl implements Node, RaftServerService {
                 this.fsmCaller.onStartFollowing(new LeaderChangeContext(newLeaderId, this.currTerm, status));
             }
             this.leaderId = newLeaderId.copy();
+
+            resetElectionTimeoutToInitial();
         }
     }
 
@@ -1301,6 +1353,7 @@ public class NodeImpl implements Node, RaftServerService {
             throw new IllegalStateException();
         }
         this.confCtx.flush(this.conf.getConf(), this.conf.getOldConf());
+        resetElectionTimeoutToInitial();
         this.stepDownTimer.start();
     }
 
@@ -2799,6 +2852,10 @@ public class NodeImpl implements Node, RaftServerService {
             this.writeLock.unlock();
             return;
         }
+
+        // This is needed for the node, which won preVote in a previous iteration, but leader wasn't elected.
+        if (this.prevVoteCtx.isGranted())
+            adjustElectionTimeout();
 
         if (this.raftOptions.isStepDownWhenVoteTimedout()) {
             LOG.warn(

@@ -64,6 +64,7 @@ import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotReader;
 import org.apache.ignite.raft.jraft.storage.snapshot.SnapshotWriter;
 import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
+import org.apache.ignite.raft.jraft.util.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.raft.jraft.util.JDKMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,8 +122,20 @@ public class JraftServerImpl implements RaftServer {
         this.opts.setSharedPools(true);
 
         if (opts.getServerName() == null) {
-            opts.setServerName(service.localConfiguration().getName());
+            this.opts.setServerName(service.localConfiguration().getName());
         }
+
+        /*
+         Timeout increasing strategy for election timeout. Adjusting happens according to
+         {@link org.apache.ignite.raft.jraft.util.ExponentialBackoffTimeoutStrategy} when a leader is not elected, after several
+         consecutive unsuccessful leader elections, which could be controlled through {@code roundsWithoutAdjusting} parameter of
+         {@link org.apache.ignite.raft.jraft.util.ExponentialBackoffTimeoutStrategy}.
+         Max timeout value that {@link org.apache.ignite.raft.jraft.util.ExponentialBackoffTimeoutStrategy} could produce
+         must be more than timeout of a membership protocol to remove failed node from the cluster.
+         In our case, we may assume that 11s could be enough as far as 11s is greater
+         than suspicion timeout for the 1000 nodes cluster with ping interval equals 500ms.
+         */
+        this.opts.setElectionTimeoutStrategy(new ExponentialBackoffTimeoutStrategy(11_000, 3));
     }
 
     /** {@inheritDoc} */

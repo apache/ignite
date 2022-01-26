@@ -77,7 +77,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     private volatile long timeout;
 
     /** Timeout for network calls. */
-    private final long networkTimeout;
+    private final long rpcTimeout;
 
     /** */
     private final String groupId;
@@ -120,7 +120,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         ClusterService cluster,
         RaftMessagesFactory factory,
         int timeout,
-        int networkTimeout,
+        int rpcTimeout,
         List<Peer> peers,
         Peer leader,
         long retryDelay,
@@ -131,7 +131,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         this.learners = Collections.emptyList();
         this.factory = factory;
         this.timeout = timeout;
-        this.networkTimeout = networkTimeout;
+        this.rpcTimeout = rpcTimeout;
         this.groupId = groupId;
         this.retryDelay = retryDelay;
         this.leader = leader;
@@ -145,7 +145,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
      * @param cluster Cluster service.
      * @param factory Message factory.
      * @param timeout Timeout.
-     * @param netTimeout Network call timeout.
+     * @param rpcTimeout Network call timeout.
      * @param peers List of all peers.
      * @param getLeader {@code True} to get the group's leader upon service creation.
      * @param retryDelay Retry delay.
@@ -157,13 +157,13 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         ClusterService cluster,
         RaftMessagesFactory factory,
         int timeout,
-        int netTimeout,
+        int rpcTimeout,
         List<Peer> peers,
         boolean getLeader,
         long retryDelay,
         ScheduledExecutorService executor
     ) {
-        var service = new RaftGroupServiceImpl(groupId, cluster, factory, timeout, netTimeout, peers, null, retryDelay, executor);
+        var service = new RaftGroupServiceImpl(groupId, cluster, factory, timeout, rpcTimeout, peers, null, retryDelay, executor);
 
         if (!getLeader)
             return CompletableFuture.completedFuture(service);
@@ -424,7 +424,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         TransferLeaderRequest req = factory.transferLeaderRequest()
             .groupId(groupId).leaderId(PeerId.fromPeer(newLeader).toString()).build();
 
-        CompletableFuture<NetworkMessage> fut = cluster.messagingService().invoke(newLeader.address(), req, timeout);
+        CompletableFuture<NetworkMessage> fut = cluster.messagingService().invoke(newLeader.address(), req, rpcTimeout);
 
         return fut.thenCompose(resp -> {
             if (resp != null) {
@@ -466,7 +466,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     @Override public <R> CompletableFuture<R> run(Peer peer, ReadCommand cmd) {
         ActionRequest req = factory.actionRequest().command(cmd).groupId(groupId).readOnlySafe(false).build();
 
-        return cluster.messagingService().invoke(peer.address(), req, timeout)
+        return cluster.messagingService().invoke(peer.address(), req, rpcTimeout)
                 .thenApply(resp -> (R) ((ActionResponse) resp).result());
     }
 
@@ -497,14 +497,14 @@ public class RaftGroupServiceImpl implements RaftGroupService {
                     cluster.topologyService().localMember().address(),
                     peer.address());
         }
-        
+
         if (currentTimeMillis() >= stopTime) {
             fut.completeExceptionally(new TimeoutException());
 
             return;
         }
 
-        CompletableFuture<?> fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, networkTimeout);
+        CompletableFuture<?> fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, rpcTimeout);
 
         //TODO: IGNITE-15389 org.apache.ignite.internal.metastorage.client.CursorImpl has potential deadlock inside
         fut0.whenCompleteAsync(new BiConsumer<Object, Throwable>() {
@@ -516,7 +516,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
                             peer.address(),
                             err == null ? null : err.getMessage());
                 }
-                
+
                 if (err != null) {
                     if (recoverable(err)) {
                         executor.schedule(() -> {
@@ -534,7 +534,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
 
                     if (resp0.errorCode() == RaftError.SUCCESS.getNumber()) { // Handle OK response.
                         leader = peer; // The OK response was received from a leader.
-                        
+
                         fut.complete(null); // Void response.
                     }
                     else if (resp0.errorCode() == RaftError.EBUSY.getNumber() ||
@@ -559,7 +559,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
                         }
                         else {
                             leader = parsePeer(resp0.leaderId()); // Update a leader.
-                            
+
                             executor.schedule(() -> {
                                 sendWithRetry(leader, req, stopTime, fut);
 

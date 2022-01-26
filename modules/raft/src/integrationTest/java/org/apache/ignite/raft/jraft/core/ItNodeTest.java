@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.core;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.raft.jraft.core.TestCluster.ELECTION_TIMEOUT_MILLIS;
+import static org.apache.ignite.raft.jraft.test.TestUtils.sender;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -99,6 +101,7 @@ import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Bits;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
+import org.apache.ignite.raft.jraft.util.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.concurrent.FixedThreadsExecutorGroup;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
@@ -1488,20 +1491,15 @@ public class ItNodeTest {
 
         List<Node> followers = cluster.getFollowers();
 
-        for (Node follower : followers) {
-            NodeImpl follower0 = (NodeImpl) follower;
-            DefaultRaftClientService rpcService = (DefaultRaftClientService) follower0.getRpcClientService();
-            RpcClientEx rpcClientEx = (RpcClientEx) rpcService.getRpcClient();
-            rpcClientEx.blockMessages((msg, nodeId) -> {
-                if (msg instanceof RpcRequests.RequestVoteRequest) {
-                    RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest)msg;
+        blockMessagesOnFollowers(followers, (msg, nodeId) -> {
+            if (msg instanceof RpcRequests.RequestVoteRequest) {
+                RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest) msg;
 
-                    return !msg0.preVote();
-                }
+                return !msg0.preVote();
+            }
 
-                return false;
-            });
-        }
+            return false;
+        });
 
         // stop leader
         LOG.warn("Stop leader {}", leader.getNodeId().getPeerId());
@@ -1511,12 +1509,7 @@ public class ItNodeTest {
         assertFalse(followers.isEmpty());
         sendTestTaskAndWait("follower apply ", followers.get(0), -1); // Should fail, because no leader.
 
-        for (Node follower : followers) {
-            NodeImpl follower0 = (NodeImpl) follower;
-            DefaultRaftClientService rpcService = (DefaultRaftClientService) follower0.getRpcClientService();
-            RpcClientEx rpcClientEx = (RpcClientEx) rpcService.getRpcClient();
-            rpcClientEx.stopBlock();
-        }
+        stopBlockingMessagesOnFollowers(followers);
 
         // elect new leader
         cluster.waitLeader();
@@ -2747,7 +2740,7 @@ public class ItNodeTest {
 
         // Block only one vote message.
         for (NodeImpl node : nodes) {
-            RpcClientEx rpcClientEx = TestUtils.sender(node);
+            RpcClientEx rpcClientEx = sender(node);
             rpcClientEx.recordMessages((msg, nodeId) -> true);
             rpcClientEx.blockMessages((msg, nodeId) -> {
                 if (msg instanceof RpcRequests.RequestVoteRequest) {
@@ -2776,7 +2769,7 @@ public class ItNodeTest {
         Node leader = cluster.getLeader();
         cluster.ensureLeader(leader);
 
-        RpcClientEx client = TestUtils.sender(leader);
+        RpcClientEx client = sender(leader);
 
         client.stopBlock(1); // Unblock vote message.
 
@@ -3367,20 +3360,15 @@ public class ItNodeTest {
 
         List<Node> followers = cluster.getFollowers();
 
-        for (Node follower : followers) {
-            NodeImpl follower0 = (NodeImpl) follower;
-            DefaultRaftClientService rpcService = (DefaultRaftClientService) follower0.getRpcClientService();
-            RpcClientEx rpcClientEx = (RpcClientEx) rpcService.getRpcClient();
-            rpcClientEx.blockMessages((msg, nodeId) -> {
-                if (msg instanceof RpcRequests.RequestVoteRequest) {
-                    RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest)msg;
+        blockMessagesOnFollowers(followers, (msg, nodeId) -> {
+            if (msg instanceof RpcRequests.RequestVoteRequest) {
+                RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest) msg;
 
-                    return !msg0.preVote();
-                }
+                return !msg0.preVote();
+            }
 
-                return false;
-            });
-        }
+            return false;
+        });
 
         LOG.warn("Stop leader {}, curTerm={}", leader.getNodeId().getPeerId(), ((NodeImpl) leader).getCurrentTerm());
 
@@ -3392,17 +3380,84 @@ public class ItNodeTest {
 
         assertNull(cluster.getLeader());
 
-        for (Node follower : followers) {
-            NodeImpl follower0 = (NodeImpl) follower;
-            DefaultRaftClientService rpcService = (DefaultRaftClientService) follower0.getRpcClientService();
-            RpcClientEx rpcClientEx = (RpcClientEx) rpcService.getRpcClient();
-            rpcClientEx.stopBlock();
-        }
+        stopBlockingMessagesOnFollowers(followers);
 
         // elect new leader
         cluster.waitLeader();
         leader = cluster.getLeader();
         LOG.info("Elect new leader is {}, curTerm={}", leader.getLeaderId(), ((NodeImpl) leader).getCurrentTerm());
+    }
+
+    @Test
+    public void testElectionTimeoutAutoAdjustWhenBlockedAllMessages() throws Exception {
+        testElectionTimeoutAutoAdjustWhenBlockedMessages((msg, nodeId) -> true);
+    }
+
+    @Test
+    public void testElectionTimeoutAutoAdjustWhenBlockedRequestVoteMessages() throws Exception {
+        testElectionTimeoutAutoAdjustWhenBlockedMessages((msg, nodeId) -> {
+            if (msg instanceof RpcRequests.RequestVoteRequest) {
+                RpcRequests.RequestVoteRequest msg0 = (RpcRequests.RequestVoteRequest) msg;
+
+                return !msg0.preVote();
+            }
+
+            return false;
+        });
+    }
+
+    private void testElectionTimeoutAutoAdjustWhenBlockedMessages(BiPredicate<Object, String> blockingPredicate) throws Exception {
+        List<PeerId> peers = TestUtils.generatePeers(4);
+        int maxElectionRoundsWithoutAdjusting = 3;
+
+        cluster = new TestCluster("unittest", dataPath, peers, new LinkedHashSet<>(), ELECTION_TIMEOUT_MILLIS,
+                opts -> opts.setElectionTimeoutStrategy(new ExponentialBackoffTimeoutStrategy(11_000, maxElectionRoundsWithoutAdjusting)),
+                testInfo);
+
+        for (PeerId peer : peers) {
+            assertTrue(cluster.start(peer.getEndpoint()));
+        }
+
+        cluster.waitLeader();
+
+        Node leader = cluster.getLeader();
+
+        int initElectionTimeout = leader.getOptions().getElectionTimeoutMs();
+
+        LOG.warn("Current leader {}, electTimeout={}", leader.getNodeId().getPeerId(), leader.getOptions().getElectionTimeoutMs());
+
+        List<Node> followers = cluster.getFollowers();
+
+        for (Node follower : followers) {
+            NodeImpl follower0 = (NodeImpl) follower;
+
+            assertEquals(initElectionTimeout, follower0.getOptions().getElectionTimeoutMs());
+        }
+
+        blockMessagesOnFollowers(followers, blockingPredicate);
+
+        LOG.warn("Stop leader {}, curTerm={}", leader.getNodeId().getPeerId(), ((NodeImpl) leader).getCurrentTerm());
+
+        assertTrue(cluster.stop(leader.getNodeId().getPeerId().getEndpoint()));
+
+        assertNull(cluster.getLeader());
+
+        assertTrue(waitForCondition(() -> followers.stream().allMatch(f -> f.getOptions().getElectionTimeoutMs() > initElectionTimeout),
+                (long) maxElectionRoundsWithoutAdjusting
+                        // need to multiply to 2 because stepDown happens after voteTimer timeout
+                        * (initElectionTimeout + followers.get(0).getOptions().getRaftOptions().getMaxElectionDelayMs()) * 2));
+
+        stopBlockingMessagesOnFollowers(followers);
+
+        // elect new leader
+        cluster.waitLeader();
+        leader = cluster.getLeader();
+
+        LOG.info("Elected new leader is {}, curTerm={}", leader.getLeaderId(), ((NodeImpl) leader).getCurrentTerm());
+
+        assertTrue(
+                waitForCondition(() -> followers.stream().allMatch(f -> f.getOptions().getElectionTimeoutMs() == initElectionTimeout),
+                        3_000));
     }
 
     /**
@@ -3685,5 +3740,19 @@ public class ItNodeTest {
         });
         latch.await();
         return success.get();
+    }
+
+    private void blockMessagesOnFollowers(List<Node> followers, BiPredicate<Object, String> blockingPredicate) {
+        for (Node follower : followers) {
+            RpcClientEx rpcClientEx = sender(follower);
+            rpcClientEx.blockMessages(blockingPredicate);
+        }
+    }
+
+    private void stopBlockingMessagesOnFollowers(List<Node> followers) {
+        for (Node follower : followers) {
+            RpcClientEx rpcClientEx = sender(follower);
+            rpcClientEx.stopBlock();
+        }
     }
 }
