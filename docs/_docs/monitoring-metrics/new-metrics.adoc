@@ -453,7 +453,7 @@ Register name: `cluster`
 |TotalServerNodes| integer | Server nodes count.
 |===
 
-== Cache
+== Cache processor
 
 Cache processor metrics.
 
