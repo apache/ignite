@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
@@ -51,4 +52,15 @@ public interface IgniteServicesEx extends IgniteServices {
         @Nullable Supplier<Map<String, Object>> callAttrsProvider,
         long timeout
     ) throws IgniteException;
+
+    /**
+     * Tries to get direct references to local services. If {@code force} is {@code true}, returns {@code null} even
+     * if local services are available but usage of them is not recommended (can corrupt the statistics etc.).
+     *
+     * @param name  Service name.
+     * @param <T>   Service type.
+     * @param force If {@code true}, ignores limitations of local references.
+     * @return Services by specified service name.
+     */
+    public <T> Collection<T> services(String name, boolean force);
 }

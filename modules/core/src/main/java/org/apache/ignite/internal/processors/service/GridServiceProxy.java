@@ -210,7 +210,7 @@ public class GridServiceProxy<T> implements Serializable {
 
                             if (svc != null) {
                                 HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
-                                    svcCtx.metrics().findMetric(mtd.getName()) : null;
+                                    invocationHistogramm(svcCtx, mtd.getName(), args) : null;
 
                                 return hist == null ? callServiceLocally(svc, mtd, args, callAttrs) :
                                     measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
@@ -572,20 +572,6 @@ public class GridServiceProxy<T> implements Serializable {
             return U.marshal(ignite.configuration().getMarshaller(), res);
         }
 
-        /** TODO */
-        private HistogramMetricImpl invocationHistogramm(ServiceContextImpl ctx, String mtdName, Object[] args) {
-            if (ctx.service() instanceof PlatformService) {
-                assert args.length > 0 && args[0] instanceof String;
-                assert ctx.metrics() != null;
-
-                HistogramMetricImpl hist = ctx.metrics().findMetric((String)args[0]);
-
-                return hist == null ? addInvocationMetric(ctx.metrics(), (String)args[0]) : hist;
-            }
-            else
-                return ctx.metrics().findMetric(mtdName);
-        }
-
         /** */
         private Object callService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             if (svcCtx.service() instanceof PlatformService && mtd == null)
@@ -642,6 +628,22 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public String toString() {
             return S.toString(ServiceProxyCallable.class, this);
         }
+    }
+
+    /**
+     * @return Invocation histogramm for the method.
+     */
+    private static HistogramMetricImpl invocationHistogramm(ServiceContextImpl ctx, String mtdName, Object[] args) {
+        if (ctx.service() instanceof PlatformService) {
+            assert args.length > 0 && args[0] instanceof String;
+            assert ctx.metrics() != null;
+
+            HistogramMetricImpl hist = ctx.metrics().findMetric((String)args[0]);
+
+            return hist == null ? addInvocationMetric(ctx.metrics(), (String)args[0]) : hist;
+        }
+        else
+            return ctx.metrics().findMetric(mtdName);
     }
 
     /**

@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Services
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
 
@@ -67,6 +66,7 @@ namespace Apache.Ignite.Core.Services
         
         /// <summary>
         /// Enables or disables service statistics.
+        /// NOTE: Service statistics works only via the proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>/>
         /// </summary>
         public bool StatisticsEnabled { get; set; }
 
