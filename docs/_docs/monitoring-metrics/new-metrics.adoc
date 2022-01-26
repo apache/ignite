@@ -452,3 +452,17 @@ Register name: `cluster`
 |TotalClientNodes| integer | Client nodes count.
 |TotalServerNodes| integer | Server nodes count.
 |===
+
+== Cache
+
+Cache processor metrics.
+
+Register name: `cache`
+
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|LastDataVer| long | The latest data version on the node.
+|DataVersionClusterId| integer | Data version cluster id.
+|===

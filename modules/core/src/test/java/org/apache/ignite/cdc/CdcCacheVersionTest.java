@@ -58,7 +58,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
-import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_CENTER_ID;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_VER_CLUSTER_ID;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -131,7 +131,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         assertEquals(
             DFLT_CLUSTER_ID,
-            ign.context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_CENTER_ID).value()
+            ign.context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_VER_CLUSTER_ID).value()
         );
 
         boolean found = false;
