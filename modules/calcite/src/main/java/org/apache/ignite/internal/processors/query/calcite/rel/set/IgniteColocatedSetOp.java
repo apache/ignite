@@ -22,19 +22,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * Physical node for set op (MINUS, INTERSECT) operator which inputs satisfy SINGLE distribution.
+ * Physical node for set op (MINUS, INTERSECT) operator which inputs are colocated.
  */
-public interface IgniteSingleSetOp extends IgniteSetOp {
+public interface IgniteColocatedSetOp extends IgniteSetOp {
     /** {@inheritDoc} */
     @Override public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
         RelTraitSet nodeTraits,
@@ -65,14 +67,44 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        boolean single = inputTraits.stream()
-            .map(TraitUtils::distribution)
-            .allMatch(d -> d.satisfies(IgniteDistributions.single()));
+        boolean haveSingle = false;
+        IgniteDistribution hashDistribution = null;
 
-        if (!single)
-            return ImmutableList.of();
+        for (RelTraitSet traits : inputTraits) {
+            IgniteDistribution distribution = TraitUtils.distribution(traits);
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
+            if (distribution == IgniteDistributions.single()) {
+                if (hashDistribution != null) // Single incompatible with hash.
+                    return ImmutableList.of();
+
+                haveSingle = true;
+            }
+            else if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
+                if (haveSingle) // Hash incompatible with single.
+                    return ImmutableList.of();
+
+                if (hashDistribution == null)
+                    hashDistribution = distribution;
+                else if (!hashDistribution.satisfies(distribution))
+                    return ImmutableList.of();
+
+            }
+            else if (distribution != IgniteDistributions.broadcast())
+                return ImmutableList.of();
+        }
+
+        assert hashDistribution == null || !haveSingle;
+
+        if (haveSingle)
+            return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
+        else if (hashDistribution != null) {
+            IgniteDistribution distribution = hashDistribution;
+
+            return ImmutableList.of(Pair.of(nodeTraits.replace(distribution),
+                Commons.transform(inputTraits, t -> t.replace(distribution))));
+        }
+        else
+            return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.broadcast()), inputTraits));
     }
 
     /** {@inheritDoc} */

@@ -31,12 +31,12 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteColocatedIntersect;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteColocatedMinus;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapIntersect;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapMinus;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceIntersect;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceMinus;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleIntersect;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleMinus;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
@@ -44,10 +44,10 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public class SetOpConverterRule {
     /** */
-    public static final RelOptRule SINGLE_MINUS = new SingleMinusConverterRule();
+    public static final RelOptRule COLOCATED_MINUS = new ColocatedMinusConverterRule();
 
     /** */
-    public static final RelOptRule SINGLE_INTERSECT = new SingleIntersectConverterRule();
+    public static final RelOptRule COLOCATED_INTERSECT = new ColocatedIntersectConverterRule();
 
     /** */
     public static final RelOptRule MAP_REDUCE_MINUS = new MapReduceMinusConverterRule();
@@ -61,9 +61,9 @@ public class SetOpConverterRule {
     }
 
     /** */
-    private abstract static class SingleSetOpConverterRule<T extends SetOp> extends AbstractIgniteConverterRule<T> {
+    private abstract static class ColocatedSetOpConverterRule<T extends SetOp> extends AbstractIgniteConverterRule<T> {
         /** */
-        SingleSetOpConverterRule(Class<T> cls, String desc) {
+        ColocatedSetOpConverterRule(Class<T> cls, String desc) {
             super(cls, desc);
         }
 
@@ -82,30 +82,30 @@ public class SetOpConverterRule {
     }
 
     /** */
-    private static class SingleMinusConverterRule extends SingleSetOpConverterRule<LogicalMinus> {
+    private static class ColocatedMinusConverterRule extends ColocatedSetOpConverterRule<LogicalMinus> {
         /** */
-        SingleMinusConverterRule() {
-            super(LogicalMinus.class, "SingleMinusConverterRule");
+        ColocatedMinusConverterRule() {
+            super(LogicalMinus.class, "ColocatedMinusConverterRule");
         }
 
         /** {@inheritDoc} */
         @Override PhysicalNode createNode(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs,
             boolean all) {
-            return new IgniteSingleMinus(cluster, traits, inputs, all);
+            return new IgniteColocatedMinus(cluster, traits, inputs, all);
         }
     }
 
     /** */
-    private static class SingleIntersectConverterRule extends SingleSetOpConverterRule<LogicalIntersect> {
+    private static class ColocatedIntersectConverterRule extends ColocatedSetOpConverterRule<LogicalIntersect> {
         /** */
-        SingleIntersectConverterRule() {
-            super(LogicalIntersect.class, "SingleIntersectConverterRule");
+        ColocatedIntersectConverterRule() {
+            super(LogicalIntersect.class, "ColocatedIntersectConverterRule");
         }
 
         /** {@inheritDoc} */
         @Override PhysicalNode createNode(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs,
             boolean all) {
-            return new IgniteSingleIntersect(cluster, traits, inputs, all);
+            return new IgniteColocatedIntersect(cluster, traits, inputs, all);
         }
     }
 

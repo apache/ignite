@@ -27,9 +27,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class SortAggregateConverterRule {
     /** */
-    public static final RelOptRule SINGLE = new SortSingleAggregateConverterRule();
+    public static final RelOptRule COLOCATED = new SortColocatedAggregateConverterRule();
 
     /** */
     public static final RelOptRule MAP_REDUCE = new SortMapReduceAggregateConverterRule();
@@ -51,10 +51,10 @@ public class SortAggregateConverterRule {
     }
 
     /** */
-    private static class SortSingleAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class SortColocatedAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        SortSingleAggregateConverterRule() {
-            super(LogicalAggregate.class, "SortSingleAggregateConverterRule");
+        SortColocatedAggregateConverterRule() {
+            super(LogicalAggregate.class, "SortColocatedAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
@@ -80,13 +80,14 @@ public class SortAggregateConverterRule {
                 .replace(collation)
                 .replace(IgniteDistributions.single());
 
-            return new IgniteSingleSortAggregate(
+            return new IgniteColocatedSortAggregate(
                 cluster,
                 outTrait,
                 convert(input, inTrait),
                 agg.getGroupSet(),
                 agg.getGroupSets(),
-                agg.getAggCallList()
+                agg.getAggCallList(),
+                collation
             );
         }
     }

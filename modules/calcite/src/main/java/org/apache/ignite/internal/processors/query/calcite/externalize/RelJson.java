@@ -337,9 +337,11 @@ class RelJson {
 
         Map<String, Object> map = (Map<String, Object>)distribution;
         Number cacheId = (Number)map.get("cacheId");
-        if (cacheId != null)
+
+        if (cacheId != null) {
             return IgniteDistributions.hash((List<Integer>)map.get("keys"),
-                DistributionFunction.affinity(cacheId.intValue(), cacheId));
+                DistributionFunction.affinity(cacheId.intValue(), map.get("identity")));
+        }
 
         return IgniteDistributions.hash((List<Integer>)map.get("keys"), DistributionFunction.hash());
     }
@@ -873,8 +875,10 @@ class RelJson {
 
                 DistributionFunction function = distribution.function();
 
-                if (function.affinity())
+                if (function.affinity()) {
                     map.put("cacheId", function.cacheId());
+                    map.put("identity", function.identity().toString());
+                }
 
                 return map;
             default:

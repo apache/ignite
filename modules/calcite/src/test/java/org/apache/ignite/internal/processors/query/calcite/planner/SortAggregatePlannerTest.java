@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -65,7 +65,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
             () -> physicalPlan(
                 sqlMin,
                 publicSchema,
-                "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+                "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
             ),
             RelOptPlanner.CannotPlanException.class,
             "There are not enough rules to produce a node with desired properties"
@@ -91,7 +91,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
             "NestedLoopJoinConverter",
             "CorrelatedNestedLoopJoin",
             "CorrelateToNestedLoopRule",
-            "HashSingleAggregateConverterRule",
+            "HashColocatedAggregateConverterRule",
             "HashMapReduceAggregateConverterRule"
         );
 
@@ -133,10 +133,10 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
-        IgniteSingleSortAggregate agg = findFirstNode(phys, byClass(IgniteSingleSortAggregate.class));
+        IgniteColocatedSortAggregate agg = findFirstNode(phys, byClass(IgniteColocatedSortAggregate.class));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
@@ -187,7 +187,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         IgniteReduceSortAggregate agg = findFirstNode(phys, byClass(IgniteReduceSortAggregate.class));
@@ -225,7 +225,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
                     .and(input(isTableScan("TEST"))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         // Sort order equals to grouping set (permuted collation).
@@ -234,7 +234,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
                     .and(input(isTableScan("TEST"))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         // Sort order is a subset of grouping set.
@@ -243,7 +243,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
                     .and(input(isTableScan("TEST"))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         // Sort order is a subset of grouping set (permuted collation).
@@ -252,7 +252,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
                     .and(input(isTableScan("TEST"))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         // Sort order is a superset of grouping set (additional sorting required).
@@ -263,7 +263,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                     .and(input(isInstanceOf(IgniteSort.class)
                         .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
                         .and(input(isTableScan("TEST"))))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
 
         // Sort order is not equals to grouping set (additional sorting required).
@@ -274,7 +274,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                     .and(input(isInstanceOf(IgniteSort.class)
                         .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
                         .and(input(isTableScan("TEST"))))))),
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         );
     }
 }

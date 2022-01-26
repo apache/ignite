@@ -26,9 +26,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 
@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
  */
 public class HashAggregateConverterRule {
     /** */
-    public static final RelOptRule SINGLE = new HashSingleAggregateConverterRule();
+    public static final RelOptRule COLOCATED = new HashColocatedAggregateConverterRule();
 
     /** */
     public static final RelOptRule MAP_REDUCE = new HashMapReduceAggregateConverterRule();
@@ -48,10 +48,10 @@ public class HashAggregateConverterRule {
     }
 
     /** */
-    private static class HashSingleAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class HashColocatedAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        HashSingleAggregateConverterRule() {
-            super(LogicalAggregate.class, "HashSingleAggregateConverterRule");
+        HashColocatedAggregateConverterRule() {
+            super(LogicalAggregate.class, "HashColocatedAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
@@ -65,7 +65,7 @@ public class HashAggregateConverterRule {
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelNode input = convert(agg.getInput(), inTrait);
 
-            return new IgniteSingleHashAggregate(
+            return new IgniteColocatedHashAggregate(
                 cluster,
                 outTrait,
                 input,

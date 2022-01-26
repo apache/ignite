@@ -33,6 +33,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
@@ -346,6 +347,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             clearTraits(deserialized);
 
             if (!expected.deepEquals(deserialized)) {
+                // RelOptUtil.toString requires metadata, that can be obtained only from the real cluster.
+                deserialized = Cloner.clone((IgniteRel)deserialized, expected.getCluster());
+
                 assertTrue(
                     "Invalid serialization / deserialization.\n" +
                         "Expected:\n" + RelOptUtil.toString(expected) +
@@ -530,6 +534,19 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
                 return false;
             }
+        };
+    }
+
+    /**
+     * Predicate builder for "Operator has distribution" condition.
+     */
+    protected <T extends IgniteRel> Predicate<IgniteRel> hasDistribution(IgniteDistribution distribution) {
+        return node -> {
+            if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED &&
+                node.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED)
+                return distribution.satisfies(node.distribution());
+            else
+                return distribution.equals(node.distribution());
         };
     }
 
