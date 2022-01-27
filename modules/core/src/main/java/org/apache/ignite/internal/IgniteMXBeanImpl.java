@@ -330,8 +330,9 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
             ctx.state().changeGlobalState(newState, forceDeactivation, ctx.cluster().get()
                 .forServers().nodes(), false).get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            // Convert to deserializable one.
+            throw new RuntimeException("Unable to change cluster state to '" + state + "': " + e.getMessage());
         }
         finally {
             ctx.gateway().readUnlock();

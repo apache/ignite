@@ -1419,23 +1419,23 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (persistenceEnabled())
             ignite.cluster().state(ACTIVE);
 
-        checkDeactivation(ignite, () -> mxBean.active(false), false);
+        checMXBeanDeactivation(ignite, () -> mxBean.active(false), false);
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
+        checMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
+        checMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
+        checMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
     }
 
     /**
      * Checks that not forced deactivation fails only if cluster has in-memory caches.
      *
      * @param ignite Ignite instance.
-     * @param deactivator Deactivation call to check.
+     * @param deactivator Deactivation call to check. Assuming from the mx bean.
      * @param forceDeactivation {@code True} if {@code deactivator} is forced.
      */
-    private void checkDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation) {
+    private void checMXBeanDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation) {
         assertEquals(ACTIVE, ignite.cluster().state());
 
         if (persistenceEnabled() || forceDeactivation) {
@@ -1450,7 +1450,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 deactivator.run();
 
                 return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+            }, RuntimeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
         }
 
         assertEquals(ACTIVE, ignite.cluster().state());
