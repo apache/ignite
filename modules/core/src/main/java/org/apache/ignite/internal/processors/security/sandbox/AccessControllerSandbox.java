@@ -25,6 +25,8 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -38,9 +40,14 @@ public class AccessControllerSandbox implements IgniteSandbox {
     /** Instance of IgniteSecurity. */
     private final IgniteSecurity security;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Constructor. */
-    public AccessControllerSandbox(IgniteSecurity security) {
+    public AccessControllerSandbox(GridKernalContext ctx, IgniteSecurity security) {
         this.security = security;
+
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -58,6 +65,9 @@ public class AccessControllerSandbox implements IgniteSandbox {
             (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(AccessController.getContext(),
                 new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()))
         );
+
+        if (log.isDebugEnabled())
+            log.debug("Executing the action inside the sandbox [subjId=" + secCtx.subject().id() + ']');
 
         try {
             return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call, acc);

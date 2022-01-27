@@ -27,6 +27,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Argument for {@link VisorIgfsProfilerClearTask}.
  */
+@Deprecated
 public class VisorIgfsProfilerClearTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

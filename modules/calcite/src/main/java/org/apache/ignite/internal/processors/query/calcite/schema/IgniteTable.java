@@ -14,247 +14,131 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelReferentialConstraint;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable, DistributedTable, SortedTable {
-    /** */
-    private final String name;
-
-    /** */
-    private final TableDescriptor desc;
-
-    /** */
-    private final Statistic statistic;
-
+/**
+ * Ignite table.
+ */
+public interface IgniteTable extends TranslatableTable {
     /**
-     * @param name Table full name.
+     * @return Table description.
      */
-    public IgniteTable(String name, TableDescriptor desc) {
-        this.name = name;
-        this.desc = desc;
+    TableDescriptor<?> descriptor();
 
-        statistic = new StatisticsImpl();
+    /** {@inheritDoc} */
+    default @Override RelDataType getRowType(RelDataTypeFactory typeFactory) {
+        return getRowType(typeFactory, null);
     }
 
     /**
-     * @return Table name.
+     * Returns new type according {@code usedClumns} param.
+     *
+     * @param typeFactory Factory.
+     * @param requiredColumns Used columns enumeration.
      */
-    public String name() {
-        return name;
-    }
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns);
 
     /** {@inheritDoc} */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return desc.apply(typeFactory);
+    @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+        return toRel(context.getCluster(), relOptTable, null, null, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public Statistic getStatistic() {
-        return statistic;
-    }
+    /**
+     * Converts table into relational expression.
+     *
+     * @param cluster Custer.
+     * @param relOptTbl Table.
+     * @param proj List of required projections.
+     * @param cond Conditions to filter rows.
+     * @param requiredColumns Set of columns to extract from original row.
+     * @return Table relational expression.
+     */
+    IgniteLogicalTableScan toRel(
+        RelOptCluster cluster,
+        RelOptTable relOptTbl,
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    );
 
-    /** {@inheritDoc} */
-    @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
-            .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+    /**
+     * Creates rows iterator over the table.
+     *
+     * @param execCtx Execution context.
+     * @param group Colocation group.
+     * @param filter Row filter.
+     * @param rowTransformer Row transformer.
+     * @param usedColumns Used columns enumeration.
+     * @return Rows iterator.
+     */
+    public <Row> Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        ColocationGroup group,
+        Predicate<Row> filter,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTable);
-    }
+    /**
+     * Returns nodes mapping.
+     *
+     * @param ctx Planning context.
+     * @return Nodes mapping.
+     */
+    ColocationGroup colocationGroup(MappingQueryContext ctx);
 
-    /** {@inheritDoc} */
-    @Override public NodesMapping mapping(PlanningContext ctx) {
-        GridCacheContext<?, ?> cctx = desc.cacheContext();
+    /**
+     * @return Table distribution.
+     */
+    IgniteDistribution distribution();
 
-        assert cctx != null;
+    /**
+     * Returns all table indexes.
+     *
+     * @return Indexes for the current table.
+     */
+    Map<String, IgniteIndex> indexes();
 
-        if (!cctx.gate().enterIfNotStopped())
-            throw U.convertException(new CacheStoppedException(cctx.name()));
+    /**
+     * Adds index to table.
+     *
+     * @param idxTbl Index table.
+     */
+    void addIndex(IgniteIndex idxTbl);
 
-        try {
-            if (cctx.isReplicated())
-                return replicatedMapping(cctx, ctx.topologyVersion());
+    /**
+     * Returns index by its name.
+     *
+     * @param idxName Index name.
+     * @return Index.
+     */
+    IgniteIndex getIndex(String idxName);
 
-            return partitionedMapping(cctx, ctx.topologyVersion());
-        }
-        finally {
-            cctx.gate().leave();
-        }
-    }
+    /**
+     * @param idxName Index name.
+     */
+    void removeIndex(String idxName);
 
-    /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
-        return desc.distribution();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelCollation> collations() {
-        return desc.collations();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Enumerable<Object[]> scan(DataContext root) {
-        return Linq4j.asEnumerable(new TableScan((ExecutionContext) root, desc));
-    }
-
-    /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aClass) {
-        if (aClass.isInstance(desc))
-            return aClass.cast(desc);
-
-        return super.unwrap(aClass);
-    }
-
-    /** */
-    private NodesMapping partitionedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
-        byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
-
-        List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
-        List<List<UUID>> res;
-
-        if (cctx.config().getWriteSynchronizationMode() == CacheWriteSynchronizationMode.PRIMARY_SYNC) {
-            res = new ArrayList<>(assignments.size());
-
-            for (List<ClusterNode> partNodes : assignments)
-                res.add(F.isEmpty(partNodes) ? Collections.emptyList() : Collections.singletonList(F.first(partNodes).id()));
-        }
-        else if (!cctx.topology().rebalanceFinished(topVer)) {
-            res = new ArrayList<>(assignments.size());
-
-            flags |= NodesMapping.HAS_MOVING_PARTITIONS;
-
-            for (int part = 0; part < assignments.size(); part++) {
-                List<ClusterNode> partNodes = assignments.get(part);
-                List<UUID> partIds = new ArrayList<>(partNodes.size());
-
-                for (ClusterNode node : partNodes) {
-                    if (cctx.topology().partitionState(node.id(), part) == GridDhtPartitionState.OWNING)
-                        partIds.add(node.id());
-                }
-
-                res.add(partIds);
-            }
-        }
-        else
-            res = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
-
-        return new NodesMapping(null, res, flags);
-    }
-
-    /** */
-    private NodesMapping replicatedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
-        byte flags = NodesMapping.HAS_REPLICATED_CACHES;
-
-        if (cctx.config().getNodeFilter() != null)
-            flags |= NodesMapping.PARTIALLY_REPLICATED;
-
-        GridDhtPartitionTopology topology = cctx.topology();
-
-        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
-        List<UUID> res;
-
-        if (!topology.rebalanceFinished(topVer)) {
-            flags |= NodesMapping.PARTIALLY_REPLICATED;
-
-            res = new ArrayList<>(nodes.size());
-
-            int parts = topology.partitions();
-
-            for (ClusterNode node : nodes) {
-                if (isOwner(node.id(), topology, parts))
-                    res.add(node.id());
-            }
-        }
-        else
-            res = Commons.transform(nodes, ClusterNode::id);
-
-        return new NodesMapping(res, null, flags);
-    }
-
-    /** */
-    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology topology, int parts) {
-        for (int p = 0; p < parts; p++) {
-            if (topology.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
-                return false;
-        }
-        return true;
-    }
-
-    /** */
-    private class StatisticsImpl implements Statistic {
-        /** {@inheritDoc} */
-        @Override public Double getRowCount() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKey(ImmutableBitSet columns) {
-            return false; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<ImmutableBitSet> getKeys() {
-            return null; // TODO
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-            return ImmutableList.of();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelCollation> getCollations() {
-            return collations();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution getDistribution() {
-            return distribution();
-        }
-    }
+    /**
+     * Is table modifiable.
+     */
+    boolean isModifiable();
 }

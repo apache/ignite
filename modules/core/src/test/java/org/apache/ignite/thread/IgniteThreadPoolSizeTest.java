@@ -17,11 +17,13 @@
 
 package org.apache.ignite.thread;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
@@ -43,14 +45,6 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     @Test
     public void testAsyncCallbackPoolSize() throws Exception {
         testWrongPoolSize(configuration().setAsyncCallbackPoolSize(WRONG_VALUE));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgfsThreadPoolSize() throws Exception {
-        testWrongPoolSize(configuration().setIgfsThreadPoolSize(WRONG_VALUE));
     }
 
     /**
@@ -120,14 +114,6 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testWrongPoolSize(IgniteConfiguration cfg) throws Exception {
-        try {
-            Ignition.start(cfg);
-
-            fail();
-        }
-        catch (IgniteException ex) {
-            assertNotNull(ex.getMessage());
-            assertTrue(ex.getMessage().contains("thread pool size"));
-        }
+        assertThrowsAnyCause(log, () -> Ignition.start(cfg), IgniteCheckedException.class, "thread pool size");
     }
 }

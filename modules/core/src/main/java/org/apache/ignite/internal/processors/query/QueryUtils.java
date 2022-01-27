@@ -38,14 +38,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -77,10 +80,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Utility methods for queries.
@@ -98,8 +103,11 @@ public class QueryUtils {
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
+    /** Name of Primary Key index for every table. */
+    public static final String PRIMARY_KEY_INDEX = "_key_PK";
+
     /** Schema for system view. */
-    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
+    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
 
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
@@ -116,14 +124,41 @@ public class QueryUtils {
     /** Well-known template name for REPLICATED cache. */
     public static final String TEMPLATE_REPLICATED = "REPLICATED";
 
+    /** @see IgniteSystemProperties#IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE */
+    public static final int DFLT_INDEXING_DISCOVERY_HISTORY_SIZE = 1000;
+
     /** Discovery history size. */
-    private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
+    private static final int DISCO_HIST_SIZE =
+        getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
 
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
+    /** Default SQL delimeter. */
+    public static final char DEFAULT_DELIM = '\n';
+
+    /** Space SQL delimeter. */
+    public static final char SPACE_DELIM = ' ';
+
+    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
+    public static boolean INCLUDE_SENSITIVE =
+        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
+    /**
+     * Enables {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} mode for current thread.
+     * Note, setting {@code INCL_SENS_TL} to {@code false} will lead to generation of invalid SQL query.
+     * For example:<br>
+     * source query - "SELECT * FROM TBL WHERE name = 'Name'"<br>
+     * generated query - "SELECT * FROM TBL WHERE name = ?" - there is no parameter value in query.<br>
+     * It's a desired behaviour, because, when {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} {@code = false}
+     * we want to filter out all sensitive data and those data can be sitting in SQL constants.
+     * Please, see {@code GridSqlConst#getSQL()}, {@code IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)}.
+     */
+    public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
+        ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
     /**
      * Creates SQL types set.
@@ -525,7 +560,7 @@ public class QueryUtils {
                         String affField0 = field.name();
 
                         if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
-                            affField = affField0;
+                            affField = desc.aliases().getOrDefault(affField0, affField0);
 
                             if (!escape)
                                 affField = normalizeObjectName(affField, false);
@@ -548,6 +583,8 @@ public class QueryUtils {
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
+                    affField = desc.aliases().getOrDefault(affField, affField);
+
                     if (!escape)
                         affField = normalizeObjectName(affField, false);
 
@@ -624,6 +661,12 @@ public class QueryUtils {
 
             d.addProperty(prop, false);
         }
+
+        if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
+            d.primaryKeyFields(keyFields);
+
+        if (qryEntity instanceof QueryEntityEx)
+            d.implicitPk(((QueryEntityEx)qryEntity).implicitPk());
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         // Also if fields are not set then _KEY and _VAL will be created as visible,
@@ -815,9 +858,17 @@ public class QueryUtils {
      * @param scale Scale.
      * @return Binary property.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
-        Class<?> resType, Map<String, String> aliases, boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale) {
+    public static QueryBinaryProperty buildBinaryProperty(
+        GridKernalContext ctx,
+        String pathStr,
+        Class<?> resType,
+        Map<String, String> aliases,
+        boolean isKeyField,
+        boolean notNull,
+        Object dlftVal,
+        int precision,
+        int scale
+    ) {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -852,7 +903,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        Class<?> resType, Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
@@ -879,7 +930,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
-        String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
+        String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
@@ -924,7 +975,7 @@ public class QueryUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
+        Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -1103,6 +1154,11 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
+
+        if (genericStart >= 0)
+            clsName = clsName.substring(0, genericStart);
+
         int pkgEnd = clsName.lastIndexOf('.');
 
         if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
@@ -1162,14 +1218,14 @@ public class QueryUtils {
 
         long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 
-        return (int) tmp;
+        return (int)tmp;
     }
 
     /**
      * @param ccfg Cache configuration.
      * @return {@code true} If query index must be enabled for this cache.
      */
-    public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
+    public static boolean isEnabled(CacheConfiguration<?, ?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
             !F.isEmpty(ccfg.getQueryEntities());
     }
@@ -1209,7 +1265,7 @@ public class QueryUtils {
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
-        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+        String schema = normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
 
@@ -1219,7 +1275,7 @@ public class QueryUtils {
             if (F.eq(ccfg.getName(), desc.cacheName()))
                 continue;
 
-            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+            String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
             if (!F.eq(schema, descSchema))
@@ -1571,6 +1627,66 @@ public class QueryUtils {
     }
 
     /**
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    public static IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
+    }
+
+    /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    public static void isDdlOnSchemaSupported(String schemaName) {
+        if (F.eq(SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
      * Remove field by alias.
      *
      * @param entity Query entity.
@@ -1579,6 +1695,39 @@ public class QueryUtils {
      */
     public static boolean removeField(QueryEntity entity, String alias) {
         return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
+    }
+
+    /**
+     * @param qry Query.
+     * @param timeout Timeout.
+     * @param timeUnit Time units.
+     */
+    public static SqlFieldsQuery withQueryTimeout(SqlFieldsQuery qry, int timeout, TimeUnit timeUnit) {
+        if (timeout >= 0)
+            qry.setTimeout(timeout, timeUnit);
+
+        return qry;
+    }
+
+    /**
+     * @return {@code True} if output sensitive data allowed.
+     */
+    public static boolean includeSensitive() {
+        return INCLUDE_SENSITIVE || INCLUDE_SENSITIVE_TL.get();
+    }
+
+    /**
+     * Return space character as an SQL delimeter in case {@link #includeSensitive()} is {@code false}
+     * to make output SQL one line. Default multiline SQL output looks ugly in system view and other view tool.
+     * See, {@code GridSqlConst} and {@code IgniteH2Indexing#sqlWithoutConst()} for details.
+     *
+     * @return Delimeter to use.
+     */
+    public static char delimeter() {
+        if (!includeSensitive())
+            return SPACE_DELIM;
+
+        return DEFAULT_DELIM;
     }
 
     /**

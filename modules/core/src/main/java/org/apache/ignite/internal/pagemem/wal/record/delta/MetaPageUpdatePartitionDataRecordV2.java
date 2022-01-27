@@ -98,6 +98,13 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdatePartitionDataRecordV2.class, this, "partId", PageIdUtils.partId(pageId()), "super", super.toString());
+        return S.toString(
+            MetaPageUpdatePartitionDataRecordV2.class,
+            this,
+            "partId",
+            PageIdUtils.partId(pageId()),
+            "super",
+            super.toString()
+        );
     }
 }

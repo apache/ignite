@@ -38,16 +38,17 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.apache.ignite.resources.FileSystemResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.resources.FileSystemResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,7 +108,7 @@ public class GridResourceIoc {
      * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
-    boolean inject(Object target,
+    public boolean inject(Object target,
         Class<? extends Annotation> annCls,
         GridResourceInjector injector,
         @Nullable GridDeployment dep,
@@ -508,9 +509,12 @@ public class GridResourceIoc {
 
         /** */
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
+        
+        /** */
+        FILESYSTEM_RESOURCE(FileSystemResource.class),
 
         /** */
-        FILESYSTEM_RESOURCE(FileSystemResource.class);
+        SERVICE_CONTEXT(ServiceContextResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;

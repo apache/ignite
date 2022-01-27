@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
@@ -302,6 +303,12 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             this.cancel = cancel;
 
             final Collection<WeakReference<Object>> refs = call.call();
+
+            // Hack. Serializer can not be cleaned with the IndexProcessor stop callback due to concurrent tasks
+            // that depends on BPlusTree and then on serializer.
+            // This test worked without this hack when serializer was part of the indexing module.
+            // But actaully serializer never cleaned, so this test failed if runs within classpath of the indexing module.
+            IndexProcessor.serializer = null;
 
             GridTestUtils.retryAssert(log, 10, 1000, new CA() {
                 @Override public void apply() {

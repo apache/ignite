@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -279,22 +278,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        return new GridCacheProxyImpl<>(ctx, delegate,
-            opCtx != null ? opCtx.forSubjectId(subjId) :
-                new CacheOperationContext(
-                    false,
-                    subjId,
-                    false,
-                    null,
-                    false,
-                    null,
-                    false,
-                    false,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -306,7 +289,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 opCtx != null ? opCtx.setSkipStore(skipStore) :
                     new CacheOperationContext(
                         true,
-                        null,
                         false,
                         null,
                         false,
@@ -329,7 +311,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepBinary() :
                 new CacheOperationContext(false,
-                    null,
                     true,
                     null,
                     false,
@@ -482,30 +463,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.getAllOutTxAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isIgfsDataCache();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.igfsDataSpaceUsed();
         }
         finally {
             gate.leave(prev);
@@ -1604,7 +1561,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 opCtx != null ? opCtx.withExpiryPolicy(plc) :
                     new CacheOperationContext(
                         false,
-                        null,
                         false,
                         plc,
                         false,
@@ -1626,7 +1582,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             return new GridCacheProxyImpl<>(ctx, delegate,
                 new CacheOperationContext(
                     false,
-                    null,
                     false,
                     null,
                     true,
@@ -1685,5 +1640,30 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheProxyImpl.class, this);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean isIgfsDataCache() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.isIgfsDataCache();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long igfsDataSpaceUsed() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.igfsDataSpaceUsed();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 }

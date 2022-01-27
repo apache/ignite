@@ -29,9 +29,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +42,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
- * Tests of serialization and deserialization of all WAL record types {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
+ * Tests of serialization and deserialization of all WAL record types
+ * {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
  *
  * It checks that all records can be successfully deserialized from early serialized record included serialization via
  * compaction.
@@ -188,8 +188,8 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
             "archive",
             nodeFolderName
         ).toFile();
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(((FileWALPointer)lastPointer).index()));
-        File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(((FileWALPointer)lastPointer).index()) + ZIP_SUFFIX);
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()));
+        File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()) + ZIP_SUFFIX);
 
         // Spam WAL to move all data records to compressible WAL zone.
         for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)

@@ -1562,14 +1562,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> rebalance();
 
     /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Client ID.
-     * @return Internal projection.
-     */
-    public IgniteInternalCache<K, V> forSubjectId(UUID subjId);
-
-    /**
      * Store DR data.
      *
      * @param drMap DR map.
@@ -1642,6 +1634,20 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys);
 
     /**
+     * @param keepBinary Keep binary flag.
+     * @param p Optional key/value predicate.
+     * @return Scan query iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Cache.Entry<K, V>> scanIterator(boolean keepBinary, @Nullable IgniteBiPredicate<Object, Object> p)
+        throws IgniteCheckedException;
+
+    /**
+     * @return {@link ExpiryPolicy} associated with this projection.
+     */
+    @Nullable public ExpiryPolicy expiry();    
+    
+    /**
      * Checks whether this cache is IGFS data cache.
      *
      * @return {@code True} in case this cache is IGFS data cache.
@@ -1654,20 +1660,8 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Amount of used IGFS space in bytes.
      */
     public long igfsDataSpaceUsed();
-
-    /**
-     * @param keepBinary Keep binary flag.
-     * @param p Optional key/value predicate.
-     * @return Scan query iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Iterator<Cache.Entry<K, V>> scanIterator(boolean keepBinary, @Nullable IgniteBiPredicate<Object, Object> p)
-        throws IgniteCheckedException;
-
-    /**
-     * @return {@link ExpiryPolicy} associated with this projection.
-     */
-    @Nullable public ExpiryPolicy expiry();
+    
+    
 
     /**
      * @param plc {@link ExpiryPolicy} to associate with this projection.

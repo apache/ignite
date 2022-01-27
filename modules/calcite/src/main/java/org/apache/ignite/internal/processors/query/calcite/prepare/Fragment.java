@@ -17,81 +17,67 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.calcite.rel.RelDistribution;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodeMappingException;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
 /**
  * Fragment of distributed query
  */
-public class Fragment implements RelTargetAware {
-    /** */
-    private static final AtomicLong ID_GEN = new AtomicLong();
-
+public class Fragment {
     /** */
     private final long id;
 
     /** */
     private final IgniteRel root;
 
-    /** */
-    private NodesMapping mapping;
+    /** Serialized root representation. */
+    @GridToStringExclude
+    private final String rootSer;
 
-    /**
-     * @param root Root node of the fragment.
-     */
-    public Fragment(IgniteRel root) {
-        this(ID_GEN.getAndIncrement(), root);
-    }
+    /** */
+    private final FragmentMapping mapping;
+
+    /** */
+    private final ImmutableList<IgniteReceiver> remotes;
 
     /**
      * @param id Fragment id.
      * @param root Root node of the fragment.
+     * @param remotes Remote sources of the fragment.
      */
-    public Fragment(long id, IgniteRel root){
+    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes) {
+        this(id, root, remotes, null, null);
+    }
+
+    /** */
+    Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer, @Nullable FragmentMapping mapping) {
         this.id = id;
         this.root = root;
-    }
-
-    /**
-     * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
-     *
-     * @param mappingService Mapping service.
-     * @param ctx Planner context.
-     * @param mq Metadata query used for data location calculation.
-     */
-    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) throws OptimisticPlanningException {
-        FragmentInfo info = IgniteMdFragmentInfo._fragmentInfo(root, mq);
-
-        mapping = fragmentMapping(mappingService, ctx, info);
-
-        if (F.isEmpty(info.targetAwareList()))
-            return;
-
-        RelTargetImpl target = new RelTargetImpl(id, mapping);
-
-        for (RelTargetAware aware : info.targetAwareList())
-            aware.target(target);
-    }
-
-    /**
-     * @return Root node.
-     */
-    public IgniteRel root() {
-        return root;
+        this.remotes = ImmutableList.copyOf(remotes);
+        this.rootSer = rootSer != null ? rootSer : toJson(root);
+        this.mapping = mapping;
     }
 
     /**
@@ -102,51 +88,94 @@ public class Fragment implements RelTargetAware {
     }
 
     /**
-     * @return Fragment mapping.
+     * @return Root node.
      */
-    public NodesMapping mapping() {
-        return mapping;
+    public IgniteRel root() {
+        return root;
     }
 
-    /** {@inheritDoc} */
-    @Override public void target(RelTarget target) {
-        assert root instanceof RelTargetAware;
-
-        ((RelTargetAware) root).target(target);
+    /**
+     * Lazy serialized root representation.
+     *
+     * @return Serialized form.
+     */
+    public String serialized() {
+        return rootSer;
     }
 
     /** */
-    public boolean local() {
+    public FragmentMapping mapping() {
+        return mapping;
+    }
+
+    /**
+     * @return Fragment remote sources.
+     */
+    public List<IgniteReceiver> remotes() {
+        return remotes;
+    }
+
+    /** */
+    public boolean rootFragment() {
         return !(root instanceof IgniteSender);
     }
 
     /** */
-    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info) throws OptimisticPlanningException {
-        NodesMapping mapping;
+    public Fragment copy() {
+        return new Cloner(Commons.cluster()).go(this);
+    }
 
-        try {
-            if (info.mapped())
-                mapping = local() ? localMapping(ctx).mergeWith(info.mapping()) : info.mapping();
-            else if (local())
-                mapping = localMapping(ctx);
-            else {
-                RelDistribution.Type type = ((IgniteSender)root).sourceDistribution().getType();
+    /**
+     * Mapps the fragment to its data location.
+     * @param ctx Planner context.
+     * @param mq Metadata query.
+     */
+    Fragment map(MappingService mappingSrvc, MappingQueryContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
+        if (mapping != null)
+            return this;
 
-                boolean single = type == SINGLETON || type == BROADCAST_DISTRIBUTED;
-
-                // TODO selection strategy.
-                mapping = mappingService.mapBalanced(ctx.topologyVersion(), single ? 1 : 0, null);
-            }
-        }
-        catch (LocationMappingException e) {
-            throw new OptimisticPlanningException("Failed to calculate physical distribution", root, e);
-        }
-
-        return mapping.deduplicate();
+        return new Fragment(id, root, remotes, rootSer, mapping(ctx, mq, nodesSource(mappingSrvc, ctx)));
     }
 
     /** */
-    private NodesMapping localMapping(PlanningContext ctx) {
-        return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, NodesMapping.CLIENT);
+    private FragmentMapping mapping(MappingQueryContext ctx, RelMetadataQuery mq, Supplier<List<UUID>> nodesSource) {
+        try {
+            FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq, ctx);
+
+            if (rootFragment())
+                mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+
+            if (single() && mapping.nodeIds().size() > 1) {
+                // this is possible when the fragment contains scan of a replicated cache, which brings
+                // several nodes (actually all containing nodes) to the colocation group, but this fragment
+                // supposed to be executed on a single node, so let's choose one wisely
+                mapping = FragmentMapping.create(mapping.nodeIds()
+                    .get(ThreadLocalRandom.current().nextInt(mapping.nodeIds().size()))).colocate(mapping);
+            }
+
+            return mapping.finalize(nodesSource);
+        }
+        catch (NodeMappingException e) {
+            throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);
+        }
+        catch (ColocationMappingException e) {
+            throw new FragmentMappingException("Failed to calculate physical distribution", this, root, e);
+        }
+    }
+
+    /** */
+    @NotNull private Supplier<List<UUID>> nodesSource(MappingService mappingSrvc, MappingQueryContext ctx) {
+        return () -> mappingSrvc.executionNodes(ctx.topologyVersion(), single(), null);
+    }
+
+    /** */
+    private boolean single() {
+        return root instanceof IgniteSender
+            && ((IgniteSender)root).sourceDistribution().satisfies(IgniteDistributions.single());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Fragment.class, this, "root", RelOptUtil.toString(root));
     }
 }

@@ -1333,7 +1333,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
+        return readObjectDetached(false);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -1362,7 +1367,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
@@ -1409,7 +1419,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls);
+            return BinaryUtils.doReadEnum(in, cls, GridBinaryMarshaller.USE_CACHE.get());
         }
         else
             return null;
@@ -1470,7 +1480,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
-                return readHandleField();
+                Object arr = readHandleField();
+
+                if (arr instanceof BinaryArray)
+                    return ((BinaryArray)arr).deserialize(ldr);
+                else
+                    return (Object[])arr;
 
             default:
                 return null;
@@ -1930,7 +1945,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr),
+                    GridBinaryMarshaller.USE_CACHE.get());
 
                 break;
 
@@ -1975,7 +1991,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
@@ -1998,7 +2014,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
@@ -2345,7 +2361,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int) n);
+        return skipBytes((int)n);
     }
 
     /** {@inheritDoc} */

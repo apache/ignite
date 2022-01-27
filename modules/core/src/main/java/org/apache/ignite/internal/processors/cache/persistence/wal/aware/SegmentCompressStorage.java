@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  * Storage of actual information about current index of compressed segments.
  */
-public class SegmentCompressStorage {
+class SegmentCompressStorage {
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
-
-    /** Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedStorage segmentArchivedStorage;
 
     /** If WAL compaction enabled. */
     private final boolean compactionEnabled;
@@ -51,30 +52,15 @@ public class SegmentCompressStorage {
     /** Compressed segment with maximal index. */
     private long lastMaxCompressedIdx = -1L;
 
-    /** Min uncompressed index to keep. */
-    private volatile long minUncompressedIdxToKeep = -1L;
-
     /**
-     * @param segmentArchivedStorage Storage of last archived segment.
+     * Constructor.
+     *
+     * @param log Logger.
      * @param compactionEnabled If WAL compaction enabled.
      */
-    private SegmentCompressStorage(SegmentArchivedStorage segmentArchivedStorage, boolean compactionEnabled) {
-        this.segmentArchivedStorage = segmentArchivedStorage;
-
+    SegmentCompressStorage(IgniteLogger log, boolean compactionEnabled) {
+        this.log = log;
         this.compactionEnabled = compactionEnabled;
-    }
-
-    /**
-     * @param segmentArchivedStorage Storage of last archived segment.
-     * @param compactionEnabled If WAL compaction enabled.
-     */
-    static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage,
-                                                       boolean compactionEnabled) {
-        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage, compactionEnabled);
-
-        segmentArchivedStorage.addObserver(storage::onSegmentArchived);
-
-        return storage;
     }
 
     /**
@@ -83,6 +69,9 @@ public class SegmentCompressStorage {
      * @param compressedIdx Index of compressed segment.
      */
     synchronized void onSegmentCompressed(long compressedIdx) {
+        if (log.isInfoEnabled())
+            log.info("Segment compressed notification [idx=" + compressedIdx + ']');
+
         if (compressedIdx > lastMaxCompressedIdx)
             lastMaxCompressedIdx = compressedIdx;
 
@@ -148,25 +137,15 @@ public class SegmentCompressStorage {
     /**
      * Callback for waking up compressor when new segment is archived.
      */
-    private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
+    synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
+        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
+            if (log.isInfoEnabled())
+                log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
+
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
+        }
 
         notifyAll();
-    }
-
-    /**
-     * @param idx Minimum raw segment index that should be preserved from deletion.
-     */
-    void keepUncompressedIdxFrom(long idx) {
-        minUncompressedIdxToKeep = idx;
-    }
-
-    /**
-     * @return  Minimum raw segment index that should be preserved from deletion.
-     */
-    long keepUncompressedIdxFrom() {
-        return minUncompressedIdxToKeep;
     }
 
     /**

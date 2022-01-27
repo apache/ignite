@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
 
 /**
  * Index key.

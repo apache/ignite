@@ -106,7 +106,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     public void setCacheManager(org.apache.ignite.cache.CacheManager cacheMgr) {
         if (delegate instanceof IgniteCacheProxyImpl)
-            ((IgniteCacheProxyImpl) delegate).setCacheManager(cacheMgr);
+            ((IgniteCacheProxyImpl)delegate).setCacheManager(cacheMgr);
     }
 
     /** {@inheritDoc} */
@@ -279,7 +279,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>) delegate, opCtx.keepBinary(), lock);
+            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.keepBinary(), lock);
         }
         finally {
             onLeave(opGate);
@@ -316,7 +316,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    @Override public IgniteFuture<Void> loadCacheAsync(
+        @Nullable IgniteBiPredicate<K, V> p,
+        @Nullable Object... args
+    ) throws CacheException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -340,7 +343,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    @Override public IgniteFuture<Void> localLoadCacheAsync(
+        @Nullable IgniteBiPredicate<K, V> p,
+        @Nullable Object... args
+    ) throws CacheException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -645,7 +651,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -657,7 +666,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1245,7 +1257,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    @Override public <T> IgniteFuture<T> invokeAsync(
+        K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... arguments
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1269,7 +1285,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    @Override public <T> IgniteFuture<T> invokeAsync(
+        K key,
+        CacheEntryProcessor<K, V, T> entryProcessor,
+        Object... arguments
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1281,7 +1301,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1293,7 +1317,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1305,7 +1333,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Set<? extends K> keys,
+        CacheEntryProcessor<K, V, T> entryProcessor,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1317,7 +1349,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Set<? extends K> keys,
+        CacheEntryProcessor<K, V, T> entryProcessor,
+        Object... args
+    ) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1589,24 +1625,24 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
         if (isCacheProxy)
-            ((IgniteCacheProxyImpl) delegate).checkRestart();
+            ((IgniteCacheProxyImpl)delegate).checkRestart();
 
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
 
         if (isCacheProxy && tryRestart && gate.isStopped() &&
             context().kernalContext().gateway().getState() == GridKernalState.STARTED) {
-            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl) delegate;
+            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl)delegate;
 
             try {
-                IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().<K, V>publicJCache(context().name());
+                IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().publicJCache(context().name());
 
                 if (proxy != null) {
                     proxyImpl.opportunisticRestart(proxy.internalProxy());
 
                     return gate();
                 }
-            } catch (IgniteCheckedException ice) {
+            } catch (IgniteCheckedException ignore) {
                 // Opportunity didn't work out.
             }
         }
@@ -1628,7 +1664,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
             if (isCacheProxy)
-                ((IgniteCacheProxyImpl) delegate).checkRestart(true);
+                ((IgniteCacheProxyImpl)delegate).checkRestart(true);
 
             throw e; // If we reached this line.
         }
@@ -1705,16 +1741,16 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        delegate = (IgniteCacheProxy<K, V>) in.readObject();
+        delegate = (IgniteCacheProxy<K, V>)in.readObject();
 
         lock = in.readBoolean();
 
-        opCtx = (CacheOperationContext) in.readObject();
+        opCtx = (CacheOperationContext)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object another) {
-        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;
+        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy)another;
 
         return delegate.equals(anotherProxy.delegate);
     }

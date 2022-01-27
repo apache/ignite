@@ -48,13 +48,31 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
         serDes = new ClientUtils(marsh);
     }
 
+    /** Constructor. */
+    ClientQueryPager(
+        ReliableChannel ch,
+        ClientOperation qryOp,
+        ClientOperation pageQryOp,
+        Consumer<PayloadOutputChannel> qryWriter,
+        boolean keepBinary,
+        ClientBinaryMarshaller marsh,
+        int cacheId,
+        int part
+    ) {
+        super(ch, qryOp, pageQryOp, qryWriter, cacheId, part);
+
+        this.keepBinary = keepBinary;
+
+        serDes = new ClientUtils(marsh);
+    }
+
     /** {@inheritDoc} */
     @Override Collection<Cache.Entry<K, V>> readEntries(PayloadInputChannel paloadCh) {
         BinaryInputStream in = paloadCh.in();
 
         return ClientUtils.collection(
             in,
-            ignored -> new ClientCacheEntry<K, V>(serDes.readObject(in, keepBinary), serDes.readObject(in, keepBinary))
+            ignored -> new ClientCacheEntry<>(serDes.readObject(in, keepBinary), serDes.readObject(in, keepBinary))
         );
     }
 }

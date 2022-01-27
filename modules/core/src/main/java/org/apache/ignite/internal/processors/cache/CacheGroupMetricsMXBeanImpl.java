@@ -23,13 +23,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cacheGroups.{cache_group_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {

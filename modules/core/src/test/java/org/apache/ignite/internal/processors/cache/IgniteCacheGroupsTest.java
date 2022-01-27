@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,6 +99,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -729,7 +730,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cntr1 = new AtomicInteger();
         final AtomicInteger cntr2 = new AtomicInteger();
 
-        CacheEntryUpdatedListener<Integer, Integer> lsnr1 = new CacheEntryUpdatedListener<Integer, Integer>() {
+        CacheEntryUpdatedListener lsnr1 = new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
@@ -737,7 +738,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         };
 
-        CacheEntryUpdatedListener<Integer, Integer> lsnr2 = new CacheEntryUpdatedListener<Integer, Integer>() {
+        CacheEntryUpdatedListener lsnr2 = new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
@@ -745,8 +746,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         };
 
-        QueryCursor qry1 = ignite(loc ? 0 : 2).cache(CACHE1).query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr1));
-        QueryCursor qry2 = ignite(loc ? 0 : 3).cache(CACHE2).query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr2));
+        QueryCursor qry1 = ignite(loc ? 0 : 2).cache(CACHE1).query(new ContinuousQuery<>().setLocalListener(lsnr1));
+        QueryCursor qry2 = ignite(loc ? 0 : 3).cache(CACHE2).query(new ContinuousQuery<>().setLocalListener(lsnr2));
 
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(loc ? 0 : 1);
@@ -4106,10 +4107,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             cacheOperation(rnd, cache);
                                     }
                                     catch (Exception e) {
-                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                        if (X.hasCause(e, CacheStoppedException.class) ||
+                                            (X.hasCause(e, CacheInvalidStateException.class) &&
+                                                X.hasCause(e, TransactionRollbackException.class))
+                                        ) {
                                             // Cache operation can be blocked on
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
-
+                                            // Cache operation can failed
+                                            // if a node was stopped during transaction.
                                             continue;
                                         }
 
@@ -4223,7 +4228,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             if (key instanceof MapperTestKey1)
                 return ((MapperTestKey1)key).p1;
             else if (key instanceof BinaryObject)
-                ((BinaryObject) key).field("p1");
+                ((BinaryObject)key).field("p1");
 
             return key;
         }
@@ -4243,7 +4248,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             if (key instanceof MapperTestKey1)
                 return ((MapperTestKey1)key).p2;
             else if (key instanceof BinaryObject)
-                ((BinaryObject) key).field("p2");
+                ((BinaryObject)key).field("p2");
 
             return key;
         }
@@ -4629,7 +4634,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class MapBasedStore<K,V> implements CacheStore<K,V>, Serializable {
+    static class MapBasedStore<K, V> implements CacheStore<K, V>, Serializable {
         /** */
         private final Map<K, V> src;
 

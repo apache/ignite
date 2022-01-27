@@ -169,7 +169,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked when master node leaves topology normally.
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked
+     * when master node leaves topology normally.
      *
      * @throws Exception If failed.
      */

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A special FieldsQueryCursor subclass that is used as a sentinel to transfer data from bulk load

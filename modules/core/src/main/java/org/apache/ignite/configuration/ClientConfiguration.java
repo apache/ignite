@@ -18,9 +18,13 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -29,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * {@link TcpIgniteClient} configuration.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public final class ClientConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -36,11 +41,14 @@ public final class ClientConfiguration implements Serializable {
     /** @serial Server addresses. */
     private String[] addrs = null;
 
+    /** Server addresses finder. */
+    private transient ClientAddressFinder addrFinder;
+
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
 
     /** @serial Timeout. 0 means infinite. */
-    private int timeout = 0;
+    private int timeout;
 
     /** @serial Send buffer size. 0 means system default. */
     private int sndBufSize = 32 * 1024;
@@ -98,12 +106,8 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Whether partition awareness should be enabled.
-     *
-     * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * By default {@code false} only one connection is established at a given moment to a random server node.
      */
-    private boolean partitionAwarenessEnabled;
+    private boolean partitionAwarenessEnabled = true;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -115,18 +119,50 @@ public final class ClientConfiguration implements Serializable {
     /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
     private int reconnectThrottlingRetries = 3;
 
+    /** Retry limit. */
+    private int retryLimit = 0;
+
+    /** Executor for async operations continuations. */
+    private Executor asyncContinuationExecutor;
+
     /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        return addrs;
+        if (addrs != null)
+            return Arrays.copyOf(addrs, addrs.length);
+
+        return null;
     }
 
     /**
+     * Set addresses of Ignite server nodes within a cluster. An address can be IPv4 address or hostname, with or
+     * without port. If port is not set then Ignite will generate multiple addresses for default port range. See
+     * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
+     *
      * @param addrs Host addresses.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        this.addrs = addrs;
+        if (addrs != null)
+            this.addrs = Arrays.copyOf(addrs, addrs.length);
+
+        return this;
+    }
+
+    /**
+     * @return Finder that finds server node addresses.
+     */
+    public ClientAddressFinder getAddressesFinder() {
+        return addrFinder;
+    }
+
+    /**
+     * @param finder Finds server node addresses.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAddressesFinder(ClientAddressFinder finder) {
+        addrFinder = finder;
 
         return this;
     }
@@ -140,6 +176,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param tcpNoDelay whether Nagle's algorithm is enabled.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
@@ -156,6 +193,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param timeout Send/receive timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setTimeout(int timeout) {
         this.timeout = timeout;
@@ -172,6 +210,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param sndBufSize Send buffer size.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSendBufferSize(int sndBufSize) {
         this.sndBufSize = sndBufSize;
@@ -188,6 +227,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param rcvBufSize Send buffer size.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setReceiveBufferSize(int rcvBufSize) {
         this.rcvBufSize = rcvBufSize;
@@ -204,6 +244,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param binaryCfg Configuration for Ignite Binary objects.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -220,6 +261,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param sslMode SSL mode.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslMode(SslMode sslMode) {
         this.sslMode = sslMode;
@@ -236,6 +278,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store path.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStorePath(String newVal) {
         sslClientCertKeyStorePath = newVal;
@@ -252,6 +295,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStorePassword(String newVal) {
         sslClientCertKeyStorePwd = newVal;
@@ -268,6 +312,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl client certificate key store type.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslClientCertificateKeyStoreType(String newVal) {
         sslClientCertKeyStoreType = newVal;
@@ -284,6 +329,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store path.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStorePath(String newVal) {
         sslTrustCertKeyStorePath = newVal;
@@ -300,6 +346,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStorePassword(String newVal) {
         sslTrustCertKeyStorePwd = newVal;
@@ -316,6 +363,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl trust certificate key store type.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustCertificateKeyStoreType(String newVal) {
         sslTrustCertKeyStoreType = newVal;
@@ -332,6 +380,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl key algorithm.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslKeyAlgorithm(String newVal) {
         sslKeyAlgorithm = newVal;
@@ -348,6 +397,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Flag indicating if certificate validation errors should be ignored.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslTrustAll(boolean newVal) {
         sslTrustAll = newVal;
@@ -364,6 +414,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal Ssl protocol.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslProtocol(SslProtocol newVal) {
         sslProto = newVal;
@@ -380,6 +431,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal User name.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setUserName(String newVal) {
         userName = newVal;
@@ -396,6 +448,7 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal User password.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setUserPassword(String newVal) {
         userPwd = newVal;
@@ -412,9 +465,10 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @param newVal SSL Context Factory.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setSslContextFactory(Factory<SSLContext> newVal) {
-        this.sslCtxFactory = newVal;
+        sslCtxFactory = newVal;
 
         return this;
     }
@@ -431,6 +485,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets transactions configuration.
      *
+     * @param txCfg Transactions configuration.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setTransactionConfiguration(ClientTransactionConfiguration txCfg) {
@@ -440,15 +495,26 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether partition awareness should be enabled.
+     * @return A value indicating whether partition awareness should be enabled.
+     * <p>
+     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * <p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
      */
     public boolean isPartitionAwarenessEnabled() {
         return partitionAwarenessEnabled;
     }
 
     /**
-     * Enable or disable partition awareness.
+     * Sets a value indicating whether partition awareness should be enabled.
+     * <p>
+     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * <p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
      *
+     * @param partitionAwarenessEnabled Value indicating whether partition awareness should be enabled.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setPartitionAwarenessEnabled(boolean partitionAwarenessEnabled) {
@@ -458,7 +524,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets reconnect throttling period.
+     * @return reconnect throttling period.
      */
     public long getReconnectThrottlingPeriod() {
         return reconnectThrottlingPeriod;
@@ -467,6 +533,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets reconnect throttling period.
      *
+     * @param reconnectThrottlingPeriod Reconnect throttling period.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setReconnectThrottlingPeriod(long reconnectThrottlingPeriod) {
@@ -476,7 +543,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets reconnect throttling retries.
+     * @return Reconnect throttling retries.
      */
     public int getReconnectThrottlingRetries() {
         return reconnectThrottlingRetries;
@@ -485,10 +552,32 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets reconnect throttling retries.
      *
+     * @param reconnectThrottlingRetries Reconnect throttling retries.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
         this.reconnectThrottlingRetries = reconnectThrottlingRetries;
+
+        return this;
+    }
+
+    /**
+     * @return Retry limit.
+     */
+    public int getRetryLimit() {
+        return retryLimit;
+    }
+
+    /**
+     * Sets the retry limit. When a request fails due to a connection error, and multiple server connections
+     * are available, Ignite will retry the request on every connection. When this property is greater than zero,
+     * Ignite will limit the number of retries.
+     *
+     * @param retryLimit Retry limit.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setRetryLimit(int retryLimit) {
+        this.retryLimit = retryLimit;
 
         return this;
     }
@@ -520,6 +609,41 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
+
+        return this;
+    }
+
+    /**
+     * Gets the async continuation executor.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
+     * This thread should be free from any extra work, and should not be not be used to execute future listeners
+     * directly.
+     *
+     * @return Executor for async continuations.
+     */
+    public Executor getAsyncContinuationExecutor() {
+        return asyncContinuationExecutor;
+    }
+
+    /**
+     * Sets the async continuation executor.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
+     * This thread should be free from any extra work, and should not be not be used to execute future listeners
+     * directly.
+     *
+     * @param asyncContinuationExecutor Executor for async continuations.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
 
         return this;
     }

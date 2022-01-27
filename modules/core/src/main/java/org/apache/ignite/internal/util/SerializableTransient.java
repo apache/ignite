@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.lang.IgniteProductVersion;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * Marks class as it has transient fields that should be serialized.

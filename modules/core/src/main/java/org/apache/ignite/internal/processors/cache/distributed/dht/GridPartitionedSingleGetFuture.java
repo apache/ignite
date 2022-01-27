@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -69,6 +70,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -76,9 +78,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object>
     implements CacheGetFuture, IgniteDiagnosticAware {
-    /** Default max remap count value. */
-    public static final int DFLT_MAX_REMAP_CNT = 3;
-
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
@@ -113,9 +112,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Trackable flag. */
     private boolean trackable;
 
-    /** Subject ID. */
-    private final UUID subjId;
-
     /** Task name. */
     private final String taskName;
 
@@ -147,6 +143,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
 
@@ -165,7 +165,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -180,7 +179,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -208,7 +206,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.key = key;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
@@ -218,6 +215,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
 
@@ -298,7 +296,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     false,
                     readThrough,
                     topVer,
-                    subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc,
                     skipVals,
@@ -360,7 +357,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 key,
                 readThrough,
                 topVer,
-                subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
@@ -492,7 +488,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     null,
                                     txLbl,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }
@@ -515,7 +510,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -534,7 +528,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 /*read-through*/false,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -773,7 +766,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     postProcessingClos.apply(val, ver);
 
                 if (!keepCacheObjects) {
-                    Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
+                    Object res = cctx.unwrapBinaryIfNeeded(
+                        val,
+                        !deserializeBinary,
+                        true,
+                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                    );
 
                     onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }
@@ -909,7 +907,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void remap(final AffinityTopologyVersion topVer) {
-        cctx.closures().runLocalSafe(new Runnable() {
+        cctx.closures().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 // If topology changed reset collection of invalid nodes.
                 synchronized (this) {

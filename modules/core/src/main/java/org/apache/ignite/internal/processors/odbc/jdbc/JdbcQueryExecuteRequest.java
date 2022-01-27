@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.io.IOException;
+import java.sql.Statement;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -56,8 +57,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Flag, that signals, that query expects partition response in response. */
     private boolean partResReq;
 
-    /**
-     */
+    /** Explicit timeout. */
+    private boolean explicitTimeout;
+
+    /** */
     JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
 
@@ -74,7 +77,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, Object[] args) {
+        boolean autoCommit, boolean explicitTimeout, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -84,6 +87,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.args = args;
         this.stmtType = stmtType;
         this.autoCommit = autoCommit;
+        this.explicitTimeout = explicitTimeout;
     }
 
     /**
@@ -161,6 +165,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (protoCtx.isAffinityAwarenessSupported())
             writer.writeBoolean(partResReq);
+
+        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+            writer.writeBoolean(explicitTimeout);
     }
 
     /** {@inheritDoc} */
@@ -197,6 +204,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (protoCtx.isAffinityAwarenessSupported())
             partResReq = reader.readBoolean();
+
+        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+            explicitTimeout = reader.readBoolean();
     }
 
     /**
@@ -211,6 +221,14 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      */
     public void partitionResponseRequest(boolean partResReq) {
         this.partResReq = partResReq;
+    }
+
+    /**
+     * @return {@code true} if the query timeout is set explicitly by {@link Statement#setQueryTimeout(int)}.
+     * Otherwise returns {@code false}.
+     */
+    public boolean explicitTimeout() {
+        return explicitTimeout;
     }
 
     /** {@inheritDoc} */

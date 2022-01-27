@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  * A superinterface of all Ignite relational nodes.
  */
-public interface IgniteRel extends RelNode {
+public interface IgniteRel extends PhysicalNode {
     /**
      * Accepts a visit from a visitor.
      *
@@ -37,16 +41,49 @@ public interface IgniteRel extends RelNode {
     <T> T accept(IgniteRelVisitor<T> visitor);
 
     /**
+     * Clones this rel associating it with given cluster.
+     * @param cluster Cluster.
+     * @return New rel.
+     */
+    IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs);
+
+    /**
      * @return Node distribution.
      */
     default IgniteDistribution distribution() {
-        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+        return TraitUtils.distribution(getTraitSet());
     }
 
     /**
      * @return Node collations.
      */
-    default List<RelCollation> collations() {
-        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
+    default RelCollation collation() {
+        return TraitUtils.collation(getTraitSet());
+    }
+
+    /**
+     * @return Node rewindability.
+     */
+    default RewindabilityTrait rewindability() {
+        return TraitUtils.rewindability(getTraitSet());
+    }
+
+    /**
+     * @return Node correlation.
+     */
+    default CorrelationTrait correlation() {
+        return TraitUtils.correlation(getTraitSet());
+    }
+
+    /** {@inheritDoc} */
+    @Override default Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+        RelTraitSet required) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override default Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+        RelTraitSet childTraits, int childId) {
+        return null;
     }
 }

@@ -17,13 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -34,22 +50,34 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class AbstractExecutionTest extends GridCommonAbstractTest {
+    /** Last parameter number. */
+    protected static final int LAST_PARAM_NUM = 0;
+
+    /** Params string. */
+    protected static final String PARAMS_STRING = "Execution strategy = {0}";
+
     /** */
-    private Throwable lastException;
+    private Throwable lastE;
 
     /** */
     private Map<UUID, QueryTaskExecutorImpl> taskExecutors;
@@ -64,11 +92,59 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     private List<UUID> nodes;
 
     /** */
-    protected int nodesCount = 3;
+    protected int nodesCnt = 3;
 
+    /** */
+    enum ExecutionStrategy {
+        /** */
+        FIFO {
+            /** {@inheritDoc} */
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return tasks.pollFirst();
+            }
+        },
+
+        /** */
+        LIFO {
+            /** {@inheritDoc} */
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return tasks.pollLast();
+            }
+        },
+
+        /** */
+        RANDOM {
+            /** {@inheritDoc} */
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return ThreadLocalRandom.current().nextBoolean() ? tasks.pollLast() : tasks.pollFirst();
+            }
+        };
+
+        /**
+         * Returns a next task according to the strategy.
+         *
+         * @param tasks Task list.
+         * @return Next task.
+         */
+        public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /** */
+    @Parameterized.Parameters(name = PARAMS_STRING)
+    public static List<Object[]> parameters() {
+        return Stream.of(ExecutionStrategy.values()).map(s -> new Object[]{s}).collect(Collectors.toList());
+    }
+
+    /** Execution direction. */
+    @Parameterized.Parameter(LAST_PARAM_NUM)
+    public ExecutionStrategy execStgy;
+
+    /** */
     @Before
     public void setup() throws Exception {
-        nodes = IntStream.range(0, nodesCount)
+        nodes = IntStream.range(0, nodesCnt)
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
 
         taskExecutors = new HashMap<>(nodes.size());
@@ -81,14 +157,12 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal = newContext();
 
             QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+            taskExecutor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(
+                execStgy,
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
-                    log().error(ex.getMessage(), ex);
-                    lastException = ex;
-                },
+                this::handle,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
@@ -98,59 +172,138 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
             mailboxRegistries.put(uuid, mailboxRegistry);
 
-            MessageServiceImpl messageService = new TestMessageServiceImpl(kernal, mgr);
-            messageService.localNodeId(uuid);
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            MessageServiceImpl msgSvc = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc.localNodeId(uuid);
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            ExchangeServiceImpl exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            ExchangeServiceImpl exchangeSvc = new ExchangeServiceImpl(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.init();
 
-            exchangeServices.put(uuid, exchangeService);
+            exchangeServices.put(uuid, exchangeSvc);
         }
     }
 
+    /** Task reordering executor. */
+    private static class IgniteTestStripedThreadPoolExecutor extends org.apache.ignite.thread.IgniteStripedThreadPoolExecutor {
+        /** */
+        final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
+
+        /** Internal stop flag. */
+        AtomicBoolean stop = new AtomicBoolean();
+
+        /** Inner execution service. */
+        ExecutorService exec = Executors.newWorkStealingPool();
+
+        /** {@inheritDoc} */
+        public IgniteTestStripedThreadPoolExecutor(
+            final ExecutionStrategy execStgy,
+            int concurrentLvl,
+            String igniteInstanceName,
+            String threadNamePrefix,
+            Thread.UncaughtExceptionHandler eHnd,
+            boolean allowCoreThreadTimeOut,
+            long keepAliveTime
+        ) {
+            super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
+
+            GridTestUtils.runAsync(() -> {
+                while (!stop.get()) {
+                    synchronized (tasks) {
+                        while (!tasks.isEmpty()) {
+                            T2<Runnable, Integer> r = execStgy.nextTask(tasks);
+
+                            exec.execute(() -> super.execute(r.getKey(), r.getValue()));
+                        }
+                    }
+
+                    LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(1_000, 10_000));
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(Runnable task, int idx) {
+            synchronized (tasks) {
+                tasks.add(new T2<>(task, idx));
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdown() {
+            stop.set(true);
+
+            super.shutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Runnable> shutdownNow() {
+            stop.set(true);
+
+            return super.shutdownNow();
+        }
+    }
+
+    /** */
     @After
     public void tearDown() {
         taskExecutors.values().forEach(QueryTaskExecutorImpl::tearDown);
 
-        if (lastException != null)
-            throw new AssertionError(lastException);
+        if (lastE != null)
+            throw new AssertionError(lastE);
     }
 
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     protected List<UUID> nodes() {
         return nodes;
     }
 
+    /** */
     protected ExchangeService exchangeService(UUID nodeId) {
         return exchangeServices.get(nodeId);
     }
 
+    /** */
     protected MailboxRegistry mailboxRegistry(UUID nodeId) {
         return mailboxRegistries.get(nodeId);
     }
 
+    /** */
     protected QueryTaskExecutor taskExecutor(UUID nodeId) {
         return taskExecutors.get(nodeId);
     }
 
-    protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
-        return new ExecutionContext(
+    /** */
+    protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
+        FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
+        return new ExecutionContext<>(
+            BaseQueryContext.builder()
+                .logger(log)
+                .build(),
             taskExecutor(nodeId),
-            PlanningContext.builder().localNodeId(nodeId).logger(log()).build(),
-            queryId, fragmentId, null, ImmutableMap.of());
+            qryId,
+            nodeId,
+            nodeId,
+            AffinityTopologyVersion.NONE,
+            fragmentDesc,
+            ArrayRowHandler.INSTANCE,
+            ImmutableMap.of()
+        );
     }
 
     /** */
-    private Void handle(Throwable ex) {
+    private void handle(Thread t, Throwable ex) {
         log().error(ex.getMessage(), ex);
+        lastE = ex;
+    }
 
-        lastException = ex;
-
-        return null;
+    /** */
+    protected Object[] row(Object... fields) {
+        return fields;
     }
 
     /** */
@@ -159,7 +312,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         private final TestIoManager mgr;
 
         /** */
-        private TestMessageServiceImpl(GridTestKernalContext kernal, TestIoManager mgr) {
+        private TestMessageServiceImpl(GridKernalContext kernal, TestIoManager mgr) {
             super(kernal);
             this.mgr = mgr;
         }
@@ -170,6 +323,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean alive(UUID nodeId) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override protected void prepareMarshal(Message msg) {
             // No-op;
         }
@@ -177,6 +335,114 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void prepareUnmarshal(Message msg) {
             // No-op;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestTable implements Iterable<Object[]> {
+        /** */
+        private int rowsCnt;
+
+        /** */
+        private RelDataType rowType;
+
+        /** */
+        private Function<Integer, Object>[] fieldCreators;
+
+        /** */
+        TestTable(int rowsCnt, RelDataType rowType) {
+            this(
+                rowsCnt,
+                rowType,
+                rowType.getFieldList().stream()
+                    .map((Function<RelDataTypeField, Function<Integer, Object>>)(t) -> {
+                        switch (t.getType().getSqlTypeName().getFamily()) {
+                            case NUMERIC:
+                                return TestTable::intField;
+
+                            case CHARACTER:
+                                return TestTable::stringField;
+
+                            default:
+                                assert false : "Not supported type for test: " + t;
+                                return null;
+                        }
+                    })
+                    .collect(Collectors.toList()).toArray(new Function[rowType.getFieldCount()])
+            );
+        }
+
+        /** */
+        TestTable(int rowsCnt, RelDataType rowType, Function<Integer, Object>... fieldCreators) {
+            this.rowsCnt = rowsCnt;
+            this.rowType = rowType;
+            this.fieldCreators = fieldCreators;
+        }
+
+        /** */
+        private static Object field(Integer rowNum) {
+            return "val_" + rowNum;
+        }
+
+        /** */
+        private static Object stringField(Integer rowNum) {
+            return "val_" + rowNum;
+        }
+
+        /** */
+        private static Object intField(Integer rowNum) {
+            return rowNum;
+        }
+
+        /** */
+        private Object[] createRow(int rowNum) {
+            Object[] row = new Object[rowType.getFieldCount()];
+
+            for (int i = 0; i < fieldCreators.length; ++i)
+                row[i] = fieldCreators[i].apply(rowNum);
+
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Object[]> iterator() {
+            return new Iterator<Object[]>() {
+                private int curRow;
+
+                @Override public boolean hasNext() {
+                    return curRow < rowsCnt;
+                }
+
+                @Override public Object[] next() {
+                    return createRow(curRow++);
+                }
+            };
+        }
+    }
+
+    /** */
+    public static class RootRewindable<Row> extends RootNode<Row> {
+        /** */
+        public RootRewindable(ExecutionContext<Row> ctx, RelDataType rowType) {
+            super(ctx, rowType);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            GridTestUtils.setFieldValue(this, RootNode.class, "waiting", 0);
+            GridTestUtils.setFieldValue(this, RootNode.class, "closed", false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void closeInternal() {
+            // No-op
+        }
+
+        /** */
+        public void closeRewindableRoot() {
+            super.closeInternal();
         }
     }
 }

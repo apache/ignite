@@ -33,8 +33,20 @@ public class ClientReconnectedException extends ClientException {
 
     /**
      * Constructs a new exception with the specified message.
+     *
+     * @param msg Detailed exception message.
      */
     public ClientReconnectedException(String msg) {
         super(msg);
+    }
+
+    /**
+     * Constructs a new exception with the specified cause and detail message.
+     *
+     * @param msg the detail message.
+     * @param cause the cause.
+     */
+    public ClientReconnectedException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

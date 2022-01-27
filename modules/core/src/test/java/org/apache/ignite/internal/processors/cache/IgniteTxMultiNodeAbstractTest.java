@@ -176,7 +176,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             if (DEBUG)
                 info("Before " + kind + " put item [retry=" + retry + ", key=" + itemKey + ", cur=" + cntr +
                     ", new=" + newVal + ", nearEntry=" + nearEntry(locId, itemKey) +
-                    ", dhtEntry=" +  dhtEntry(itemPrimaryId, itemKey) + ']');
+                    ", dhtEntry=" + dhtEntry(itemPrimaryId, itemKey) + ']');
 
             cache.put(itemKey, newVal);
 
@@ -392,7 +392,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             onRemoveItemQueried(putCntr, ignite, i);
 
             if (i % 50 == 0)
-                ((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
+                ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
         }
     }
 

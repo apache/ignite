@@ -43,6 +43,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
             TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
             spi.setJoinTimeout(-1); // IGNITE-605, and further tests limitation bypass
+            spi.setIpFinder(sharedStaticIpFinder);
 
             cfg.setDiscoverySpi(spi);
 

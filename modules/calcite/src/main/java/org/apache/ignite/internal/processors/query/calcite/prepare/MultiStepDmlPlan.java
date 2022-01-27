@@ -17,27 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-
 /**
  * Distributed dml plan.
  */
 public class MultiStepDmlPlan extends AbstractMultiStepPlan {
     /**
-     * @param fragments Query fragments.
-     */
-    public MultiStepDmlPlan(List<Fragment> fragments) {
-        this(fragments, ImmutableList.of());
-    }
-
-    /**
-     * @param fragments Query fragments.
      * @param fieldsMeta Fields metadata.
      */
-    public MultiStepDmlPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
-        super(fragments, fieldsMeta);
+    public MultiStepDmlPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMeta) {
+        super(queryTemplate, fieldsMeta);
     }
 
     /** {@inheritDoc} */
@@ -45,9 +33,8 @@ public class MultiStepDmlPlan extends AbstractMultiStepPlan {
         return Type.DML;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public QueryPlan clone(PlanningContext ctx) {
-        return new MultiStepDmlPlan(new Cloner(ctx).go(fragments), fieldsMetadata());
+    /** {@inheritDoc} */
+    @Override public QueryPlan copy() {
+        return new MultiStepDmlPlan(queryTemplate, fieldsMetadata);
     }
 }

@@ -88,7 +88,10 @@ public class ClusterStateTestUtils {
                         log,
                         () -> crd.cache(cacheName),
                         IgniteException.class,
-                        "Can not perform the operation because the cluster is inactive. Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster. To activate the cluster call Ignite.active(true)."
+                        "Can not perform the operation because the cluster is inactive. " +
+                            "Note, that the cluster is considered inactive by default " +
+                            "if Ignite Persistent Store is used to let all the nodes join the cluster. " +
+                            "To activate the cluster call Ignite.active(true)."
                     ));
 
                     break;

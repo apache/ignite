@@ -345,7 +345,7 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
     private void removeStale() {
         PhantomReferenceElement<E> ref;
 
-        while ((ref = (PhantomReferenceElement<E>) refQ.poll()) != null) {
+        while ((ref = (PhantomReferenceElement<E>)refQ.poll()) != null) {
             store.remove(ref);
 
             onGc(ref.get());

@@ -694,7 +694,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
+        try (Connection conn =
+                 DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
 
 /**
  *
@@ -27,15 +26,14 @@ public interface MarshalableMessage extends CalciteMessage {
     /**
      * Prepares the message before sending.
      *
-     * @param marshaller Marchaller.
+     * @param ctx Marshaling context.
      */
-    void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException;
+    void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException;
 
     /**
      * Prepares the message before processing.
      *
-     * @param marshaller Marchaller.
-     * @param loader Class loader.
+     * @param ctx Marshaling context.
      */
-    void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException;
+    void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException;
 }

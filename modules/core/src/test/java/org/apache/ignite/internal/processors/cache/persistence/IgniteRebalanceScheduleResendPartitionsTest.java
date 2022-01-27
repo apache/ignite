@@ -236,6 +236,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      *
      */
     protected static class BlockTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** */
         private volatile IgniteInClosure<GridDhtPartitionsSingleMessage> cls;
 
         /** */

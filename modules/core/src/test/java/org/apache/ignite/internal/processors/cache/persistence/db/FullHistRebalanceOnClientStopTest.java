@@ -117,8 +117,9 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
         startClientGrid(5);
 
         final int entryCnt = PARTS_CNT * 1000;
+        final int preloadEntryCnt = PARTS_CNT * 1001;
 
-        for (int i = 0; i < entryCnt; i++)
+        for (int i = 0; i < preloadEntryCnt; i++)
             cache.put(i, i);
 
         forceCheckpoint();

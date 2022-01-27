@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.cache.Cache;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.Cache;
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -653,7 +653,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             while (!fut.isDone()) {
                 int nextKeys = keys + 10;
 
-                for (;keys < nextKeys; keys++)
+                for (; keys < nextKeys; keys++)
                     cache.put(keys, keys);
             }
 
@@ -668,7 +668,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
                     if (cntrs.containsKey(part.id()))
-                        assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
+                        assertEquals(String.valueOf(part.id()), (long)cntrs.get(part.id()), part.updateCounter());
                     else
                         cntrs.put(part.id(), part.updateCounter());
                 }
@@ -753,10 +753,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         /** Flag indicates that value has removed. */
         private final boolean removed;
 
+        /** */
         private TestValue(long order, int v1, int v2) {
             this(order, v1, v2, false);
         }
 
+        /** */
         private TestValue(long order, int v1, int v2, boolean removed) {
             this.order = order;
             this.v1 = v1;
@@ -770,7 +772,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestValue testValue = (TestValue) o;
+            TestValue testValue = (TestValue)o;
 
             return order == testValue.order &&
                 v1 == testValue.v1 &&

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -75,8 +76,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setCount(pageAddr, 0);
         setForward(pageAddr, 0);
@@ -287,9 +288,10 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         long fwdPageAddr,
         int mid,
         int cnt,
-        int pageSize
+        int pageSize,
+        PageMetrics metrics
     ) throws IgniteCheckedException {
-        initNewPage(fwdPageAddr, fwdId, pageSize);
+        initNewPage(fwdPageAddr, fwdId, pageSize, metrics);
 
         cnt -= mid;
 

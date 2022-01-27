@@ -237,7 +237,12 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      * @return Constructed binary object.
      * @throws CacheLoaderException If failed to construct binary object.
      */
-    protected Object buildBinaryObject(String typeName, JdbcTypeField[] fields, Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException {
+    protected Object buildBinaryObject(
+        String typeName,
+        JdbcTypeField[] fields,
+        Map<String, Integer> loadColIdxs,
+        ResultSet rs
+    ) throws CacheLoaderException {
         try {
             BinaryObjectBuilder builder = ignite.binary().builder(typeName);
 

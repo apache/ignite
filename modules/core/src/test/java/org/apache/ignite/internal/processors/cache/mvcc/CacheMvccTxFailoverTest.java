@@ -159,7 +159,8 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
             ((GridCacheDatabaseSharedManager)node.context().cache().context().database()).enableCheckpoints(false).get();
         }
 
-        GridTimeoutProcessor.CancelableTask flushTask = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
+        GridTimeoutProcessor.CancelableTask flushTask =
+            GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
         WalStateManager.WALDisableContext wctx = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "walDisableContext");
 
         // Disable checkpoint and WAL flusher.
@@ -198,9 +199,9 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
         assertEquals((Integer)1, cache.get(1));
 
         if (omitTxFinish || rollBack)
-            assertEquals((Integer) 1, cache.get(2)); // Commit\rollback marker were saved neither in WAL nor in checkpoint.
+            assertEquals((Integer)1, cache.get(2)); // Commit\rollback marker were saved neither in WAL nor in checkpoint.
         else
-            assertEquals((Integer) 2, cache.get(2));
+            assertEquals((Integer)2, cache.get(2));
 
         cache.put(2, 3);
 

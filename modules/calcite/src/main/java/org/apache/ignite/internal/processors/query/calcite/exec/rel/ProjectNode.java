@@ -18,70 +18,62 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Function;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
+public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private final Function<Object[], Object[]> projection;
+    private final Function<Row, Row> prj;
 
     /**
      * @param ctx Execution context.
-     * @param projection Projection.
+     * @param prj Projection.
      */
-    public ProjectNode(ExecutionContext ctx, Function<Object[], Object[]> projection) {
-        super(ctx);
+    public ProjectNode(ExecutionContext<Row> ctx, RelDataType rowType, Function<Row, Row> prj) {
+        super(ctx, rowType);
 
-        this.projection = projection;
+        this.prj = prj;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
-        checkThread();
-
-        assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCount > 0;
-
-        F.first(sources).request(rowsCount);
+    @Override protected void rewindInternal() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) {
-        checkThread();
+    @Override public void request(int rowsCnt) throws Exception {
+        assert !F.isEmpty(sources()) && sources().size() == 1;
+        assert rowsCnt > 0;
 
-        assert downstream != null;
+        checkState();
 
-        try {
-            downstream.push(projection.apply(row));
-        }
-        catch (Throwable e) {
-            downstream.onError(e);
-        }
+        source().request(rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
-        checkThread();
+    @Override public void push(Row row) throws Exception {
+        assert downstream() != null;
 
-        assert downstream != null;
+        checkState();
 
-        downstream.end();
+        downstream().push(prj.apply(row));
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
+    @Override public void end() throws Exception {
+        assert downstream() != null;
 
-        assert downstream != null;
+        checkState();
 
-        downstream.onError(e);
+        downstream().end();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 

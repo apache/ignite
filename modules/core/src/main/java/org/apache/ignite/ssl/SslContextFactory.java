@@ -60,14 +60,25 @@ public class SslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default key store type. */
-    public static final String DFLT_STORE_TYPE = "JKS";
+    /** Default key / trust store type. */
+    public static final String DFLT_STORE_TYPE = System.getProperty("javax.net.ssl.keyStoreType", "JKS");
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /** Default key manager algorithm. */
-    public static final String DFLT_KEY_ALGORITHM = "SunX509";
+    /**
+     * Property name to specify default key/trust manager algorithm.
+     *
+     * @deprecated Use {@code "ssl.KeyManagerFactory.algorithm"} instead as per JSSE standard.
+     *
+     * Should be considered for deletion in 9.0.
+     */
+    @Deprecated
+    public static final String IGNITE_KEY_ALGORITHM_PROPERTY = "ssl.key.algorithm";
+
+    /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
+    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm",
+        System.getProperty(IGNITE_KEY_ALGORITHM_PROPERTY, "SunX509"));
 
     /** SSL protocol. */
     private String proto = DFLT_SSL_PROTOCOL;
@@ -178,8 +189,7 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
-     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * Sets key manager algorithm that will be used to create a key manager.
      *
      * @param keyAlgorithm Key algorithm name.
      */

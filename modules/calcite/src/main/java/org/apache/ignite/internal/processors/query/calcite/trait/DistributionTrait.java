@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.Ordering;
+import java.util.List;
 import java.util.Objects;
+import com.google.common.collect.Ordering;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 
 import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
@@ -41,10 +46,10 @@ public final class DistributionTrait implements IgniteDistribution {
         Ordering.<Integer>natural().lexicographical();
 
     /** */
-    private DistributionFunction function;
+    private final DistributionFunction function;
 
     /** */
-    private ImmutableIntList keys;
+    private final ImmutableIntList keys;
 
     /**
      * @param function Distribution function.
@@ -77,6 +82,11 @@ public final class DistributionTrait implements IgniteDistribution {
     }
 
     /** {@inheritDoc} */
+    @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affSrvc, ColocationGroup target) {
+        return function.destination(ectx, affSrvc, target, keys);
+    }
+
+    /** {@inheritDoc} */
     @Override public ImmutableIntList getKeys() {
         return keys;
     }
@@ -90,7 +100,7 @@ public final class DistributionTrait implements IgniteDistribution {
             return true;
 
         if (o instanceof DistributionTrait) {
-            DistributionTrait that = (DistributionTrait) o;
+            DistributionTrait that = (DistributionTrait)o;
 
             return Objects.equals(function, that.function) && Objects.equals(keys, that.keys);
         }
@@ -121,7 +131,7 @@ public final class DistributionTrait implements IgniteDistribution {
         if (!(trait instanceof DistributionTrait))
             return false;
 
-        DistributionTrait other = (DistributionTrait) trait;
+        DistributionTrait other = (DistributionTrait)trait;
 
         if (other.getType() == ANY)
             return true;
@@ -129,7 +139,7 @@ public final class DistributionTrait implements IgniteDistribution {
         if (getType() == other.getType())
             return getType() != HASH_DISTRIBUTED
                 || (Objects.equals(keys, other.keys)
-                    && Objects.equals(function, other.function));
+                    && DistributionFunction.satisfy(function, other.function));
 
         if (other.getType() == RANDOM_DISTRIBUTED)
             return getType() == HASH_DISTRIBUTED;
@@ -139,14 +149,17 @@ public final class DistributionTrait implements IgniteDistribution {
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
-        if (keys.isEmpty())
+        if (getType() != HASH_DISTRIBUTED)
             return this;
 
-        assert getType() == HASH_DISTRIBUTED;
+        for (int key : keys) {
+            if (mapping.getTargetOpt(key) == -1)
+                return IgniteDistributions.random(); // Some distribution keys are not mapped => any.
+        }
 
-        ImmutableIntList newKeys = IgniteDistributions.projectDistributionKeys(mapping, keys);
+        List<Integer> res = Mappings.apply2((Mapping)mapping, keys);
 
-        return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, function);
+        return IgniteDistributions.hash(ImmutableIntList.copyOf(res), function);
     }
 
     /** {@inheritDoc} */
@@ -156,9 +169,7 @@ public final class DistributionTrait implements IgniteDistribution {
 
     /** {@inheritDoc} */
     @Override public int compareTo(RelMultipleTrait o) {
-        // TODO is this method really needed??
-
-        final IgniteDistribution distribution = (IgniteDistribution) o;
+        final IgniteDistribution distribution = (IgniteDistribution)o;
 
         if (getType() == distribution.getType() && getType() == Type.HASH_DISTRIBUTED) {
             int cmp = ORDERING.compare(getKeys(), distribution.getKeys());

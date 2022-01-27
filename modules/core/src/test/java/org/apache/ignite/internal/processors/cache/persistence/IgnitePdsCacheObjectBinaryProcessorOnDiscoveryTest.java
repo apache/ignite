@@ -110,7 +110,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
         BinaryObjectBuilder builder = ig.binary().builder(typeName);
 
         if (fields != null) {
-            for (IgniteBiTuple<String,Class<?>> field: fields)
+            for (IgniteBiTuple<String, Class<?>> field: fields)
                 builder.setField(field.get1(), field.get2());
         }
 

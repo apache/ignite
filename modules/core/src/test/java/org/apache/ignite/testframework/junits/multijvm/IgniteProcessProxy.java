@@ -81,7 +81,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
@@ -98,7 +97,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -503,13 +504,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-   
-
-    /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
         return new IgniteClusterProcessProxy(this);
     }
@@ -529,10 +523,12 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isRebalanceEnabled() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
@@ -698,6 +694,7 @@ public class IgniteProcessProxy implements IgniteEx {
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
+    
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
@@ -842,6 +839,11 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
         return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */

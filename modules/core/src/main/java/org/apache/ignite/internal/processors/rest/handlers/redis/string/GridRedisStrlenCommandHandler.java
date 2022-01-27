@@ -34,8 +34,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.STRLEN;
 
 /**
  * Redis STRLEN command handler.
@@ -43,7 +42,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        STRLEN,HLEN
+        STRLEN
     );
 
     /**
@@ -70,12 +69,8 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        if(msg.command()==HLEN) {        	
-        	restReq.command(CACHE_SIZE);
-        }
-        else {
-        	restReq.command(CACHE_GET);
-        }
+
+        restReq.command(CACHE_GET);
         restReq.cacheName(msg.cacheName());
 
         return restReq;
@@ -89,11 +84,6 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
         if (restRes.getResponse() instanceof String) {
             int len = String.valueOf(restRes.getResponse()).length();
 
-            return GridRedisProtocolParser.toInteger(String.valueOf(len));
-        }
-        else if (restRes.getResponse() instanceof Number) {
-            int len = ((Number)restRes.getResponse()).intValue();
-            
             return GridRedisProtocolParser.toInteger(String.valueOf(len));
         }
         else

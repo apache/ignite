@@ -45,8 +45,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -71,10 +73,12 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -369,6 +373,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_RELEASE_PARTITION = 97;
+
+    /** */
+    public static final int OP_INVOKE_JAVA = 98;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -786,6 +793,33 @@ public class PlatformCache extends PlatformAbstractTarget {
                     });
                 }
 
+                case OP_INVOKE_JAVA: {
+                    String procName = reader.readString();
+                    Object key = reader.readObjectDetached();
+                    Object arg = reader.readObjectDetached();
+
+                    GridDeployment dep = cache.context().kernalContext().deploy().getDeployment(procName);
+
+                    if (dep == null)
+                        throw new IgniteDeploymentCheckedException("Unknown CacheEntryProcessor name or failed to " +
+                                "auto-deploy entry processor (was entry processor (re|un)deployed?): " + procName);
+
+                    IgniteBiTuple<Class<?>, Throwable> procCls = dep.deployedClass(procName);
+
+                    if (procCls.get1() == null)
+                        throw new IgniteDeploymentCheckedException("Unknown CacheEntryProcessor name or failed to " +
+                                "auto-deploy entry processor (was entry processor (re|un)deployed?) [procName=" +
+                                procName + ", dep=" + dep + ']', procCls.get2());
+
+                    if (!CacheEntryProcessor.class.isAssignableFrom(procCls.get1()))
+                        throw new IgniteCheckedException("Failed to auto-deploy entry processor (deployed class is " +
+                                "not an entry processor) [procName=" + procName + ", depCls=" + procCls + ']');
+
+                    CacheEntryProcessor proc = PlatformUtils.createJavaObject(procName);
+
+                    return writeResult(mem, cache.invoke(key, proc, arg));
+                }
+
                 case OP_LOCK: {
                     long id = registerLock(cache.lock(reader.readObjectDetached()));
 
@@ -976,6 +1010,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_QRY_CONTINUOUS: {
                 long ptr = reader.readLong();
                 boolean loc = reader.readBoolean();
+                boolean includeExpired = reader.readBoolean();
                 boolean hasFilter = reader.readBoolean();
                 Object filter = reader.readObjectDetached();
                 int bufSize = reader.readInt();
@@ -985,7 +1020,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 PlatformContinuousQuery qry = platformCtx.createContinuousQuery(ptr, hasFilter, filter);
 
-                qry.start(cache, loc, bufSize, timeInterval, autoUnsubscribe, initQry);
+                qry.start(cache, loc, bufSize, timeInterval, autoUnsubscribe, initQry, includeExpired);
 
                 return new PlatformContinuousQueryProxy(platformCtx, qry);
             }
@@ -1347,7 +1382,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private PlatformQueryCursor runQuery(Query qry) throws IgniteCheckedException {
 
         try {
-            QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
+            QueryCursorEx cursor = (QueryCursorEx)cache.query(qry);
 
             return new PlatformQueryCursor(platformCtx, cursor,
                 qry.getPageSize() > 0 ? qry.getPageSize() : Query.DFLT_PAGE_SIZE);
@@ -1367,7 +1402,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private PlatformFieldsQueryCursor runFieldsQuery(Query qry)
         throws IgniteCheckedException {
         try {
-            QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
+            QueryCursorEx cursor = (QueryCursorEx)cache.query(qry);
 
             return new PlatformFieldsQueryCursor(platformCtx, cursor,
                 qry.getPageSize() > 0 ? qry.getPageSize() : Query.DFLT_PAGE_SIZE);
@@ -1454,18 +1489,23 @@ public class PlatformCache extends PlatformAbstractTarget {
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         String schema = reader.readString();
+        int[] partitions = reader.readIntArray();
+        int updateBatchSize = reader.readInt();
 
-        return new SqlFieldsQuery(sql)
+        SqlFieldsQuery qry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(sql), timeout, TimeUnit.MILLISECONDS)
                 .setPageSize(pageSize)
                 .setArgs(args)
                 .setLocal(loc)
                 .setDistributedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
                 .setLazy(lazy)
-                .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)
-                .setSchema(schema);
+                .setSchema(schema)
+                .setPartitions(partitions)
+                .setUpdateBatchSize(updateBatchSize);
+
+        return qry;
     }
 
     /**
@@ -1687,7 +1727,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             assert obj instanceof Map;
 
-            PlatformUtils.writeNullableMap(writer, (Map) obj);
+            PlatformUtils.writeNullableMap(writer, (Map)obj);
         }
 
         /** <inheritDoc /> */

@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import java.util.Arrays;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Cluster group get nodes details request.

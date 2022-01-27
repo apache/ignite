@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
@@ -48,18 +50,25 @@ public class IgniteValues extends Values implements IgniteRel {
         super(cluster, rowType, tuples, traits);
     }
 
+    /** */
+    public IgniteValues(RelInput input) {
+        super(changeTraits(input, IgniteConvention.INSTANCE));
+    }
+
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
-        RelTraitSet traits = getCluster().traitSetOf(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.values(rowType, tuples));
-
-        return new IgniteValues(getCluster(), rowType, tuples, traits);
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteValues(cluster, getRowType(), getTuples(), getTraitSet());
     }
 }

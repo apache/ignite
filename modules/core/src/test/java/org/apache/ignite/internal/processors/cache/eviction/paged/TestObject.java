@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  *
  */
-class TestObject {
+public class TestObject {
     /** */
     private int b;
 

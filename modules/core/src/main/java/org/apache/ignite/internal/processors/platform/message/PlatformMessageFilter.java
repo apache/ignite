@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.message;
 
+import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
-
-import java.util.UUID;
 
 /**
  * Platform message filter.

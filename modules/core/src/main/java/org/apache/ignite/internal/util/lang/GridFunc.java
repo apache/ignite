@@ -716,7 +716,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static IgniteClosure<ClusterNode, UUID> node2id() {
+    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 
@@ -1216,13 +1216,23 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
      * Tests if the given collection is either {@code null} or empty.
      *
      * @param c Collection to test.
      * @return Whether or not the given collection is {@code null} or empty.
      */
     public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>) c).isEmpty() : !c.iterator().hasNext());
+        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
     }
 
     /**
@@ -1487,7 +1497,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
     public static <T> IgnitePredicate<T> notNull() {
-        return (IgnitePredicate<T>) IS_NOT_NULL;
+        return (IgnitePredicate<T>)IS_NOT_NULL;
     }
 
     /**

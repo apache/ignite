@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.UUID;
 
 /** */
-public final class RandomNode implements Destination {
+public final class RandomNode<Row> implements Destination<Row> {
     /** */
     private final Random random;
 
@@ -38,7 +38,7 @@ public final class RandomNode implements Destination {
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> targets(Object row) {
+    @Override public List<UUID> targets(Row row) {
         return Collections.singletonList(nodes.get(random.nextInt(nodes.size())));
     }
 

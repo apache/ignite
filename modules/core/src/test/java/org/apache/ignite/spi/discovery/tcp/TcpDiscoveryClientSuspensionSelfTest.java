@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -116,9 +116,9 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
 
         ClientImpl impl = U.field(client.configuration().getDiscoverySpi(), "impl");
 
-        Timer timer = U.field(impl, "timer");
+        ScheduledExecutorService executorService = U.field(impl, "executorService");
 
-        timer.cancel();
+        executorService.shutdownNow();
 
         System.out.println("Metrics update message suspended");
     }

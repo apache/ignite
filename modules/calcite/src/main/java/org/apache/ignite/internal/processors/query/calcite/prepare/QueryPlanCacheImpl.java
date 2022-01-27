@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
+import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  *
@@ -39,7 +42,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
-    private volatile Map<CacheKey, List<QueryPlan>> cache;
+    private volatile Map<CacheKey, QueryPlan> cache;
 
     /**
      * @param ctx Kernal context.
@@ -71,47 +74,74 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
-        Map<CacheKey, List<QueryPlan>> cache = this.cache;
+    @Override public QueryPlan queryPlan(CacheKey key, Supplier<QueryPlan> planSupplier) {
+        Map<CacheKey, QueryPlan> cache = this.cache;
 
-        List<QueryPlan> template = cache.get(key);
+        QueryPlan plan = cache.computeIfAbsent(key, k -> planSupplier.get());
 
-        if (template != null)
-            return Commons.transform(template, t-> t.clone(ctx));
-        else {
-            List<QueryPlan> prepared = factory.create(ctx);
-
-            if (prepared.size() == 1) // do not cache multiline queries.
-                cache.putIfAbsent(key, Commons.transform(prepared, p -> p.clone(PlanningContext.empty())));
-
-            return prepared;
-        }
+        return plan.copy();
     }
 
-    /**
-     * Clear cached plans.
-     */
-    public void clear() {
+    /** {@inheritDoc} */
+    @Override public QueryPlan queryPlan(CacheKey key) {
+        Map<CacheKey, QueryPlan> cache = this.cache;
+        QueryPlan plan = cache.get(key);
+        return plan != null ? plan.copy() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSchemaDrop(String schemaName) {
+    @Override public void onSchemaDropped(String schemaName) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+    @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
         clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onSchemaCreate(String schemaName) {
+    @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
+        GridQueryIndexDescriptor idxDesc, Index idx) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSchemaCreated(String schemaName) {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+    @Override public void onSqlTypeCreated(
+        String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo
+    ) {
         // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSqlTypeUpdated(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
+        // No-op.
     }
 }

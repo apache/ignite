@@ -517,7 +517,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     private GridFutureAdapter<?> createSendFuture(TestRecordingCommunicationSpi wrapperSpi, Message msg) {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-        fut.listen(fut1 -> wrapperSpi.stopBlock(true, objects -> objects.get2().message() == msg, false, true));
+        fut.listen(fut1 -> wrapperSpi.stopBlock(true, blockedMsg ->
+            blockedMsg.ioMessage().message() == msg, false, true));
 
         return fut;
     }
@@ -1131,8 +1132,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /** */
     private enum TxState {
-        /** Prepare. */ PREPARE,
-        /** Assign. */ ASSIGN,
-        /** Commit. */COMMIT
+        /** Prepare. */
+        PREPARE,
+
+        /** Assign. */
+        ASSIGN,
+
+        /** Commit. */
+        COMMIT
     }
 }

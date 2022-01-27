@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.cache.Cache;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -26,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -137,7 +137,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         additionalArgs.add("-D" + "TEST_CHECKPOINT_ON_EVICTION=true");
         additionalArgs.add("-D" + "IGNITE_QUIET=false");
 
-        IgniteEx corruptedNode = (IgniteEx) startGrid(corruptedNodeName);
+        IgniteEx corruptedNode = (IgniteEx)startGrid(corruptedNodeName);
 
         additionalArgs.clear();
 
@@ -175,7 +175,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        corruptedNode = (IgniteEx) startGrid(corruptedNodeName);
+        corruptedNode = (IgniteEx)startGrid(corruptedNodeName);
 
         corruptedNode.cluster().active(true);
 
@@ -228,7 +228,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
          */
         private IndexedObject(int iVal) {
             this.iVal = iVal;
-            this.lVal = (long) iVal * iVal;
+            this.lVal = (long)iVal * iVal;
         }
 
         /** {@inheritDoc} */
@@ -287,7 +287,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
                 field.setAccessible(true);
 
-                checkpointedPart = (Integer) field.get(null);
+                checkpointedPart = (Integer)field.get(null);
             }
             catch (Exception e) {
                 e.printStackTrace();

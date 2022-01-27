@@ -801,6 +801,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         testReentrantLockReconnect(true);
     }
 
+    /** */
     private void testReentrantLockReconnect(final boolean fair) throws Exception {
         Ignite client = grid(serverCount());
 

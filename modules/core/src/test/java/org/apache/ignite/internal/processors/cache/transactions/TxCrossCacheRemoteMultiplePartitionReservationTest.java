@@ -122,9 +122,9 @@ public class TxCrossCacheRemoteMultiplePartitionReservationTest extends GridComm
             Map<Integer, AtomicInteger> reserveCntrs = new ConcurrentHashMap<>();
 
             GridDhtPartitionTopologyImpl.PartitionFactory factory = new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id) {
-                    return id != finalEvictingBackupPartId ? new GridDhtLocalPartition(ctx, grp, id, false) :
-                        new GridDhtLocalPartition(ctx, grp, id, false) {
+                @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx, CacheGroupContext grp, int id, boolean recovery) {
+                    return id != finalEvictingBackupPartId ? new GridDhtLocalPartition(ctx, grp, id, recovery) :
+                        new GridDhtLocalPartition(ctx, grp, id, recovery) {
                             @Override public boolean reserve() {
                                 reserveCntrs.computeIfAbsent(grp.groupId(), integer -> new AtomicInteger()).incrementAndGet();
 

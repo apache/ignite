@@ -90,7 +90,8 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
     /**
      * Job that collects rebalance metrics.
      */
-    private static class VisorCacheRebalanceCollectorJob extends VisorJob<VisorCacheRebalanceCollectorTaskArg, VisorCacheRebalanceCollectorJobResult> {
+    private static class VisorCacheRebalanceCollectorJob
+        extends VisorJob<VisorCacheRebalanceCollectorTaskArg, VisorCacheRebalanceCollectorJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 

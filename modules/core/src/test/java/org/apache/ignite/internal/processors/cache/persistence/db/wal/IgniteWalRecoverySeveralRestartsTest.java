@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,8 +44,6 @@ import org.junit.Test;
  *
  */
 public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest {
-    /** */
-    public static final int PAGE_SIZE = 1024;
 
     /** */
     private static final int KEYS_COUNT = 100_000;
@@ -81,8 +80,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(500L * 1024 * 1024).setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(PAGE_SIZE);
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -116,6 +114,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 
@@ -172,6 +173,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 
@@ -226,6 +230,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         try {
             IgniteEx ignite = startGrid(1);
 
@@ -242,6 +249,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
             dynCacheCfg.setReadFromBackup(true);
 
             ignite.getOrCreateCache(dynCacheCfg);
+
+            final int PAGE_SIZE = ignite.configuration().getDataStorageConfiguration().getPageSize();
 
             try (IgniteDataStreamer<Integer, IndexedObject> dataLdr = ignite.dataStreamer("dyncache")) {
                 for (int i = 0; i < LARGE_KEYS_COUNT; ++i) {

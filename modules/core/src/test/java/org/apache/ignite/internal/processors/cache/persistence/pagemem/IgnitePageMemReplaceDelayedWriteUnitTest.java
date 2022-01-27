@@ -38,13 +38,14 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -60,11 +61,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,7 +72,7 @@ import static org.mockito.Mockito.when;
 public class IgnitePageMemReplaceDelayedWriteUnitTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** CPU count. */
     private static final int CPUS = 32;
@@ -237,45 +235,26 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         when(kernalCtx.config()).thenReturn(cfg);
         when(kernalCtx.log(any(Class.class))).thenReturn(log);
-        when(kernalCtx.internalSubscriptionProcessor()).thenAnswer(new Answer<Object>() {
-            @Override public Object answer(InvocationOnMock mock) throws Throwable {
-                return new GridInternalSubscriptionProcessor(kernalCtx);
-            }
-        });
-        when(kernalCtx.encryption()).thenAnswer(new Answer<Object>() {
-            @Override public Object answer(InvocationOnMock mock) throws Throwable {
-                return new GridEncryptionManager(kernalCtx);
-            }
-        });
-        when(kernalCtx.metric()).thenAnswer(new Answer<Object>() {
-            @Override public Object answer(InvocationOnMock mock) throws Throwable {
-                return new GridMetricManager(kernalCtx);
-            }
-        });
+        when(kernalCtx.internalSubscriptionProcessor()).thenAnswer(mock -> new GridInternalSubscriptionProcessor(kernalCtx));
+        when(kernalCtx.encryption()).thenAnswer(mock -> new GridEncryptionManager(kernalCtx));
+        when(kernalCtx.metric()).thenAnswer(mock -> new GridMetricManager(kernalCtx));
+        when(kernalCtx.performanceStatistics()).thenAnswer(mock -> new PerformanceStatisticsProcessor(kernalCtx));
 
         when(sctx.kernalContext()).thenReturn(kernalCtx);
 
-        when(sctx.gridEvents()).thenAnswer(new Answer<Object>() {
-            @Override public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                return new GridEventStorageManager(kernalCtx);
-            }
-        });
+        when(sctx.gridEvents()).thenAnswer(invocationOnMock -> new GridEventStorageManager(kernalCtx));
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx.metric(), NO_OP_METRICS);
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx);
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
-        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
+        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, sctx.pageStore(), pageSize,
             pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo);
 

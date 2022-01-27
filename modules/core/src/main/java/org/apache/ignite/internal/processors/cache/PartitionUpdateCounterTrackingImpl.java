@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -68,16 +69,16 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     private static final byte VERSION = 1;
 
     /** Queue of applied out of order counter updates. */
-    private NavigableMap<Long, Item> queue = new TreeMap<>();
+    protected NavigableMap<Long, Item> queue = new TreeMap<>();
 
     /** LWM. */
-    private final AtomicLong cntr = new AtomicLong();
+    protected final AtomicLong cntr = new AtomicLong();
 
     /** HWM. */
     protected final AtomicLong reserveCntr = new AtomicLong();
 
     /** */
-    private boolean first = true;
+    protected boolean first = true;
 
     /** */
     protected final CacheGroupContext grp;
@@ -86,7 +87,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
-    @Deprecated private volatile long initCntr;
+    @Deprecated protected volatile long initCntr;
 
     /**
      * @param grp Group.
@@ -259,7 +260,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
         long reserved = reserveCntr.getAndAdd(delta);
 
-        assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved;
+        assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved + ", cntr=" + toString();
 
         return reserved;
     }
@@ -446,8 +447,32 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Counter [lwm=" + get() + ", holes=" + queue +
-            ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
+        String quequeStr;
+        long lwm;
+        long hwm;
+        long maxApplied;
+
+        synchronized (this) {
+            quequeStr = queue.toString();
+
+            lwm = get();
+
+            hwm = reserveCntr.get();
+
+            maxApplied = highestAppliedCounter();
+        }
+
+        return new SB()
+            .a("Counter [lwm=")
+            .a(lwm)
+            .a(", holes=")
+            .a(quequeStr)
+            .a(", maxApplied=")
+            .a(maxApplied)
+            .a(", hwm=")
+            .a(hwm)
+            .a(']')
+            .toString();
     }
 
     /** {@inheritDoc} */
@@ -457,7 +482,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public PartitionUpdateCounter copy() {
-        PartitionUpdateCounterTrackingImpl copy = new PartitionUpdateCounterTrackingImpl(grp);
+        PartitionUpdateCounterTrackingImpl copy = createInstance();
 
         copy.cntr.set(cntr.get());
         copy.first = first;
@@ -466,5 +491,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         copy.reserveCntr.set(reserveCntr.get());
 
         return copy;
+    }
+
+    /** */
+    protected PartitionUpdateCounterTrackingImpl createInstance() {
+        return new PartitionUpdateCounterTrackingImpl(grp);
     }
 }

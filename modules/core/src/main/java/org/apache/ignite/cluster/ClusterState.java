@@ -29,13 +29,28 @@ public enum ClusterState {
      * <b>NOTE:</b>
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      */
-    INACTIVE,
+    INACTIVE(false),
 
     /** Cluster activated. All cache operations are allowed. */
-    ACTIVE,
+    ACTIVE(true),
 
     /** Cluster activated. Cache read operation allowed, Cache data change operation aren't allowed. */
-    ACTIVE_READ_ONLY;
+    ACTIVE_READ_ONLY(true);
+
+    /** Cluster activated flag. */
+    private final boolean active;
+
+    /** */
+    ClusterState(boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * @return {@code True} if cluster activated in this state and {@code false} otherwise.
+     */
+    public boolean active() {
+        return active;
+    }
 
     /** Enumerated values. */
     private static final ClusterState[] VALS = values();
@@ -48,31 +63,5 @@ public enum ClusterState {
      */
     @Nullable public static ClusterState fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
-
-    /**
-     * @param state Cluster state
-     * @return {@code True} if cluster in given cluster {@code state} is activated and {@code False} otherwise.
-     */
-    public static boolean active(ClusterState state) {
-        return state != INACTIVE;
-    }
-
-    /**
-     * @param state1 First given state.
-     * @param state2 Second given state.
-     * @return Lesser of given states. The order: {@link #ACTIVE} > {@link #ACTIVE_READ_ONLY} > {@link #INACTIVE}.
-     */
-    public static ClusterState lesserOf(ClusterState state1, ClusterState state2) {
-        if (state1 == state2)
-            return state1;
-
-        if (state1 == INACTIVE || state2 == INACTIVE)
-            return INACTIVE;
-
-        if (state1 == ACTIVE_READ_ONLY || state2 == ACTIVE_READ_ONLY)
-            return ACTIVE_READ_ONLY;
-
-        throw new IllegalArgumentException("Unknown cluster states. state1: " + state1 + ", state2: " + state2);
     }
 }

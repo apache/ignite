@@ -19,15 +19,20 @@ package org.apache.ignite.internal.processors.query;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -36,6 +41,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
@@ -129,6 +135,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private final CacheObjectContext coCtx;
 
+    /** Primary key fields. */
+    private Set<String> pkFields;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** */
+    private boolean implicitPk;
+
     /**
      * Constructor.
      *
@@ -138,6 +153,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
     /**
@@ -198,10 +214,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /**
-     * @return Properties.
-     */
-    public Map<String, GridQueryProperty> properties() {
+    /** {@inheritDoc} */
+    @Override public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
@@ -420,13 +434,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        if (prop.notNull()) {
-            if (validateProps == null)
-                validateProps = new ArrayList<>();
-
-            validateProps.add(prop);
-        }
-        else if (prop.precision() != -1) {
+        if ((prop.notNull() && !prop.name().equals(KEY_FIELD_NAME) && !prop.name().equals(VAL_FIELD_NAME))
+            || prop.precision() != -1 || coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -580,8 +589,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps) && F.isEmpty(idxs))
+            return;
+
+        validateProps(key, val);
+
+        validateIndexes(key, val);
+    }
+
+    /** Validate properties. */
+    private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
             return;
+
+        final boolean validateTypes = coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled();
 
         for (int i = 0; i < validateProps.size(); ++i) {
             GridQueryProperty prop = validateProps.get(i);
@@ -590,31 +611,58 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+            if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
-            else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
+            else if (F.eq(prop.name(), valueFieldAlias()) ||
+                (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
                 propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
-            }
-            else {
+            else
                 propVal = prop.value(key, val);
-            }
 
             if (propVal == null && prop.notNull()) {
                 throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
+            if (validateTypes && propVal != null) {
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
+                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
+                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + prop.name() +
+                                "' is not compatible with table definition. Expected '" +
+                                prop.type().getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
+                        ((BinaryObject)propVal).type().typeId()) {
+                    throw new IgniteSQLException("Type for a column '" + prop.name() +
+                        "' is not compatible with table definition. Expected '" +
+                        prop.type().getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
+            }
+
             if (propVal == null || prop.precision() == -1)
                 continue;
 
-            if (String.class == propVal.getClass() &&
-                ((String)propVal).length() > prop.precision()) {
-                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
-                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
-                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+            if (String.class == propVal.getClass() || byte[].class == propVal.getClass()) {
+                int propValLen = String.class == propVal.getClass() ? ((String)propVal).length()
+                    : ((byte[])propVal).length;
+
+                if (propValLen > prop.precision()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " +
+                        "Maximum length: " + prop.precision() + ", actual length: " + propValLen,
+                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+                }
             }
             else if (BigDecimal.class == propVal.getClass()) {
                 BigDecimal dec = (BigDecimal)propVal;
@@ -634,6 +682,74 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
     }
 
+    /** Validate indexed values. */
+    private void validateIndexes(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(idxs))
+            return;
+
+        for (QueryIndexDescriptorImpl idx : idxs.values()) {
+            for (String idxField : idx.fields()) {
+                GridQueryProperty prop = props.get(idxField);
+
+                Object propVal;
+                Class<?> propType;
+
+                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
+                    propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else {
+                    propVal = prop.value(key, val);
+
+                    propType = prop.type();
+                }
+
+                if (propVal == null)
+                    continue;
+
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
+                    if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
+                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + idxField +
+                                "' is not compatible with index definition. Expected '" +
+                                propType.getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                    ((BinaryObject)propVal).type().typeId()) {
+                    // Check for classes/enums implementing indexed interfaces.
+                    String clsName = ((BinaryObject)propVal).type().typeName();
+                    try {
+                        final Class<?> cls = Class.forName(clsName);
+
+                        if (propType.isAssignableFrom(cls))
+                            continue;
+                    } catch (ClassNotFoundException e) {
+                        if (log.isDebugEnabled())
+                            U.error(log, "Failed to find child class: " + clsName, e);
+                    }
+
+                    throw new IgniteSQLException("Type for a column '" + idxField +
+                        "' is not compatible with index definition. Expected '" +
+                        propType.getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
@@ -645,5 +761,25 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             prop.setValue(key, val, prop.defaultValue());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> primaryKeyFields() {
+        return pkFields == null ? Collections.emptySet() : pkFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyFields(Set<String> keys) {
+        pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
     }
 }

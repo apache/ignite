@@ -17,30 +17,52 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
 /**
  * Runtime context allowing access to the tables in a database.
  */
-public class ExecutionContext implements DataContext {
+public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
     /** */
-    private final UUID queryId;
+    private final UUID qryId;
 
     /** */
-    private final long fragmentId;
+    private final UUID locNodeId;
 
     /** */
-    private final PlanningContext ctx;
+    private final UUID originatingNodeId;
 
     /** */
-    private final int[] parts;
+    private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final FragmentDescription fragmentDesc;
 
     /** */
     private final Map<String, Object> params;
@@ -49,50 +71,87 @@ public class ExecutionContext implements DataContext {
     private final QueryTaskExecutor executor;
 
     /** */
-    private volatile boolean cancelled;
+    private final RowHandler<Row> handler;
+
+    /** */
+    private final ExpressionFactory<Row> expressionFactory;
+
+    /** */
+    private final AtomicBoolean cancelFlag = new AtomicBoolean();
+
+    /** */
+    private final BaseDataContext baseDataContext;
+
+    /** */
+    private Object[] correlations = new Object[16];
 
     /**
-     * @param ctx Parent context.
-     * @param queryId Query ID.
-     * @param fragmentId Fragment ID.
-     * @param parts Partitions.
+     * @param qctx Parent base query context.
+     * @param qryId Query ID.
+     * @param fragmentDesc Partitions information.
      * @param params Parameters.
      */
-    public ExecutionContext(QueryTaskExecutor executor, PlanningContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
-        this.executor = executor;
-        this.queryId = queryId;
-        this.fragmentId = fragmentId;
-        this.parts = parts;
-        this.params = params;
-        this.ctx = ctx;
-    }
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public ExecutionContext(
+        BaseQueryContext qctx,
+        QueryTaskExecutor executor,
+        UUID qryId,
+        UUID locNodeId,
+        UUID originatingNodeId,
+        AffinityTopologyVersion topVer,
+        FragmentDescription fragmentDesc,
+        RowHandler<Row> handler,
+        Map<String, Object> params
+    ) {
+        super(qctx);
 
-    /**
-     * @return Parent context.
-     */
-    public PlanningContext parent() {
-        return ctx;
+        this.executor = executor;
+        this.qryId = qryId;
+        this.locNodeId = locNodeId;
+        this.originatingNodeId = originatingNodeId;
+        this.topVer = topVer;
+        this.fragmentDesc = fragmentDesc;
+        this.handler = handler;
+        this.params = params;
+
+        baseDataContext = new BaseDataContext(qctx.typeFactory());
+
+        expressionFactory = new ExpressionFactoryImpl<>(
+            this,
+            qctx.typeFactory(),
+            qctx.config().getParserConfig().conformance()
+        );
     }
 
     /**
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
      * @return Fragment ID.
      */
     public long fragmentId() {
-        return fragmentId;
+        return fragmentDesc.fragmentId();
     }
 
     /**
-     * @return Interested partitions.
+     * @return Target mapping.
      */
-    public int[] partitions() {
-        return parts;
+    public ColocationGroup target() {
+        return fragmentDesc.target();
+    }
+
+    /** */
+    public List<UUID> remotes(long exchangeId) {
+        return fragmentDesc.remotes().get(exchangeId);
+    }
+
+    /** */
+    public ColocationGroup group(long sourceId) {
+        return fragmentDesc.mapping().findGroup(sourceId);
     }
 
     /**
@@ -110,45 +169,92 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
-     * @return Cancelled flag.
+     * @return Handler to access row fields.
      */
-    public boolean cancelled() {
-        return cancelled;
+    public RowHandler<Row> rowHandler() {
+        return handler;
     }
 
     /**
-     * @return Originating node ID.
+     * @return Expression factory.
+     */
+    public ExpressionFactory<Row> expressionFactory() {
+        return expressionFactory;
+    }
+
+    /**
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return locNodeId;
+    }
+
+    /**
+     * @return Originating node ID (the node, who started the execution).
      */
     public UUID originatingNodeId() {
-        return parent().originatingNodeId();
+        return originatingNodeId;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /** */
+    public IgniteLogger logger() {
+        return unwrap(BaseQueryContext.class).logger();
     }
 
     /** {@inheritDoc} */
     @Override public SchemaPlus getRootSchema() {
-        return ctx.schema();
+        return baseDataContext.getRootSchema();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTypeFactory getTypeFactory() {
-        return ctx.typeFactory();
+        return baseDataContext.getTypeFactory();
     }
 
     /** {@inheritDoc} */
     @Override public QueryProvider getQueryProvider() {
-        return null; // TODO
+        return baseDataContext.getQueryProvider();
     }
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
-        return params.get(name);
+        if (Variable.CANCEL_FLAG.camelName.equals(name))
+            return cancelFlag;
+        if (name.startsWith("?"))
+            return TypeUtils.toInternal(this, params.get(name));
+
+        return baseDataContext.get(name);
     }
 
     /**
-     * Sets cancelled flag.
+     * Gets correlated value.
+     *
+     * @param id Correlation ID.
+     * @return Correlated value.
      */
-    public void markCancelled() {
-        if (!cancelled)
-            cancelled = true;
+    public @NotNull Object getCorrelated(int id) {
+        checkRange(correlations, id);
+
+        return correlations[id];
+    }
+
+    /**
+     * Sets correlated value.
+     *
+     * @param id Correlation ID.
+     * @param value Correlated value.
+     */
+    public void setCorrelated(@NotNull Object value, int id) {
+        correlations = Commons.ensureCapacity(correlations, id + 1);
+
+        correlations[id] = value;
     }
 
     /**
@@ -156,7 +262,81 @@ public class ExecutionContext implements DataContext {
      *
      * @param task Query task.
      */
-    public void execute(Runnable task) {
-        executor.execute(queryId, fragmentId, task);
+    public void execute(RunnableX task, Consumer<Throwable> onError) {
+        if (isCancelled())
+            return;
+
+        executor.execute(qryId, fragmentId(), () -> {
+            try {
+                if (!isCancelled())
+                    task.run();
+            }
+            catch (Throwable e) {
+                onError.accept(e);
+
+                throw new IgniteException("Unexpected exception", e);
+            }
+        });
+    }
+
+    /**
+     * Submits a Runnable task for execution and returns a Future
+     * representing that task. The Future's {@code get} method will
+     * return {@code null} upon <em>successful</em> completion.
+     *
+     * @param task the task to submit.
+     * @return a {@link CompletableFuture} representing pending task
+     */
+    public CompletableFuture<?> submit(RunnableX task, Consumer<Throwable> onError) {
+        assert !isCancelled() : "Call submit after execution was cancelled.";
+
+        return executor.submit(qryId, fragmentId(), () -> {
+            try {
+                task.run();
+            }
+            catch (Throwable e) {
+                onError.accept(e);
+
+                throw new IgniteException("Unexpected exception", e);
+            }
+        });
+    }
+
+    /** */
+    @FunctionalInterface
+    public interface RunnableX {
+        /** */
+        void run() throws Exception;
+    }
+
+    /**
+     * Sets cancel flag, returns {@code true} if flag was changed by this call.
+     *
+     * @return {@code True} if flag was changed by this call.
+     */
+    public boolean cancel() {
+        return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
+    }
+
+    /** */
+    public boolean isCancelled() {
+        return cancelFlag.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ExecutionContext<?> context = (ExecutionContext<?>)o;
+
+        return qryId.equals(context.qryId) && fragmentDesc.fragmentId() == context.fragmentDesc.fragmentId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(qryId, fragmentDesc.fragmentId());
     }
 }

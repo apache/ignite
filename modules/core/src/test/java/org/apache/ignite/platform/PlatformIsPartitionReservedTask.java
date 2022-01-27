@@ -17,6 +17,9 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -30,10 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Task to get Java thread names.
@@ -82,7 +81,7 @@ public class PlatformIsPartitionReservedTask extends ComputeTaskAdapter<Object[]
 
         /** {@inheritDoc} */
         @Nullable @Override public Boolean execute() {
-            GridKernalContext ctx = ((IgniteEx) ignite).context();
+            GridKernalContext ctx = ((IgniteEx)ignite).context();
 
             GridDhtPartitionTopology top = ctx.cache().cache(cacheName).context().topology();
 

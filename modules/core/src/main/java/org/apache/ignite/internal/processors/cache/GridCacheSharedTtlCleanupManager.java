@@ -21,10 +21,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -156,6 +159,14 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                 try {
                     cctx.discovery().localJoin();
+
+                    try {
+                        cctx.exchange().affinityReadyFuture(AffinityTopologyVersion.ZERO).get();
+                    }
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException("Failed to wait for initialization topology [err="
+                            + ex.getMessage() + ']', ex);
+                    }
                 }
                 finally {
                     blockingSectionEnd();
@@ -173,14 +184,21 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                         Integer processedCacheID = mgr.getKey();
 
-                        // Need to be sure that the cache to be processed will not be unregistered and,
-                        // therefore, stopped during the process of expiration is in progress.
-                        mgrs.computeIfPresent(processedCacheID, (id, m) -> {
-                            if (m.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                                expiredRemains.set(true);
+                        cctx.database().checkpointReadLock();
 
-                            return m;
-                        });
+                        try {
+                            // Need to be sure that the cache to be processed will not be unregistered and,
+                            // therefore, stopped during the process of expiration is in progress.
+                            mgrs.computeIfPresent(processedCacheID, (id, m) -> {
+                                if (m.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                                    expiredRemains.set(true);
+
+                                return m;
+                            });
+                        }
+                        finally {
+                            cctx.database().checkpointReadUnlock();
+                        }
 
                         if (isCancelled())
                             return;

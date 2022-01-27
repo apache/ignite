@@ -48,11 +48,11 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -126,7 +126,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         private volatile long currentOwnerThreadId;
 
         /** UUID of this node. */
-        private final UUID thisNode;
+        private volatile UUID thisNode;
 
         /** FailoverSafe flag. */
         private final boolean failoverSafe;
@@ -200,7 +200,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         /** */
         private Map<String, Integer> processSignal() {
-            Map<String,Integer> ret = new HashMap<>(outgoingSignals);
+            Map<String, Integer> ret = new HashMap<>(outgoingSignals);
 
             outgoingSignals.clear();
 
@@ -317,6 +317,13 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
          */
         protected void setCurrentOwnerThread(long newOwnerThreadId) {
             currentOwnerThreadId = newOwnerThreadId;
+        }
+
+        /**
+         * @param nodeId Node ID.
+         */
+        protected void setThisNode(UUID nodeId) {
+            thisNode = nodeId;
         }
 
         /**
@@ -488,10 +495,12 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         // Methods relayed from outer class
 
+        /** */
         final int getHoldCount() {
             return isHeldExclusively() ? getState() : 0;
         }
 
+        /** */
         final boolean isLocked() throws IgniteCheckedException {
             return getState() != 0 || cacheView.get(key).get() != 0;
         }
@@ -805,6 +814,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             }
         }
 
+        /** */
         synchronized boolean checkIncomingSignals(GridCacheLockState state) {
             if (state.getSignals() == null)
                 return false;
@@ -1137,6 +1147,11 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
     }
 
     /** {@inheritDoc} */
+    @Override public void onReconnected(UUID nodeId) {
+        sync.setThisNode(nodeId);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onStop() {
         if (sync == null) {
             interruptAll = true;
@@ -1269,6 +1284,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
     }
@@ -1388,6 +1404,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFailoverSafe() {
         try {
             initializeReentrantLock();
@@ -1399,6 +1416,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFair() {
         try {
             initializeReentrantLock();

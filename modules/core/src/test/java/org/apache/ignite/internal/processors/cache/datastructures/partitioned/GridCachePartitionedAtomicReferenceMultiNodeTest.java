@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheAtomicReferenceMultiNodeAbstractTest;
+import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *  AtomicReference and AtomicStamped multi node tests.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCachePartitionedAtomicReferenceMultiNodeTest extends GridCacheAtomicReferenceMultiNodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {

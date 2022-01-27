@@ -171,8 +171,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
         if (cache instanceof GatewayProtectedCacheProxy &&
-            ((GatewayProtectedCacheProxy) cache).internalProxy().delegate().equals(
-                ((GatewayProtectedCacheProxy) jcache()).internalProxy().delegate()))
+            ((GatewayProtectedCacheProxy)cache).internalProxy().delegate().equals(
+                ((GatewayProtectedCacheProxy)jcache()).internalProxy().delegate()))
             return super.primaryKeysForCache(fullCache(), cnt);
 
         return super.primaryKeysForCache(cache, cnt);

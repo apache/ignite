@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -29,69 +30,32 @@ import static org.junit.Assert.assertEquals;
  */
 public class DataStorageConfigurationValidationTest {
     /**
-     * Tests {@link DataStorageConfiguration#walSegmentSize} property assertion.
-     *
-     * @throws Exception If failed.
+     * Tests {@link DataStorageConfiguration#getWalSegmentSize} property assertion.
      */
     @Test
-    public void testWalSegmentSizeOverflow() throws Exception {
-        final DataStorageConfiguration cfg = new DataStorageConfiguration();
+    public void testWalSegmentSize() {
+        DataStorageConfiguration cfg = new DataStorageConfiguration();
 
-        GridTestUtils.assertThrows(null, new Callable<Void>() {
-            @Override public Void call() {
-                cfg.setWalSegmentSize(1 << 31);
+        for (int i : F.asList(1 << 31, 512 * 1024 - 1, 1))
+            assertThrows(null, () -> cfg.setWalSegmentSize(i), IllegalArgumentException.class, null);
 
-                return null;
-            }
-        }, IllegalArgumentException.class, null);
+        for (int i : F.asList(512 * 1024, Integer.MAX_VALUE))
+            assertEquals(i, cfg.setWalSegmentSize(i).getWalSegmentSize());
     }
 
     /**
-     * @throws Exception If failed.
+     * Tests {@link DataStorageConfiguration#getMinWalArchiveSize} property assertion.
      */
     @Test
-    public void testSetWalSegmentSizeShouldThrowExceptionWhenSizeLessThen512Kb() throws Exception {
-        final DataStorageConfiguration cfg = new DataStorageConfiguration();
+    public void testMinWalArchiveSize() {
+        DataStorageConfiguration cfg = new DataStorageConfiguration();
 
-        GridTestUtils.assertThrows(null, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                cfg.setWalSegmentSize(512 * 1024 - 1);
+        assertEquals(-1, HALF_MAX_WAL_ARCHIVE_SIZE);
 
-                return null;
-            }
-        }, IllegalArgumentException.class, null);
+        for (long i : F.asList(Long.MIN_VALUE, 0L))
+            assertThrows(null, () -> cfg.setMinWalArchiveSize(i), IllegalArgumentException.class, null);
+
+        for (long i : F.asList(1L, 100L, Long.MAX_VALUE, HALF_MAX_WAL_ARCHIVE_SIZE))
+            assertEquals(i, cfg.setMinWalArchiveSize(i).getMinWalArchiveSize());
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSetWalSegmentSizeShouldBeOkWhenSizeBetween512KbAnd2Gb() throws Exception {
-        final DataStorageConfiguration cfg = new DataStorageConfiguration();
-
-        cfg.setWalSegmentSize(512 * 1024);
-
-        assertEquals(512 * 1024, cfg.getWalSegmentSize());
-
-        cfg.setWalSegmentSize(Integer.MAX_VALUE);
-
-        assertEquals(Integer.MAX_VALUE, cfg.getWalSegmentSize());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSetWalSegmentsCountShouldThrowExceptionThenLessThan2() throws Exception {
-        final DataStorageConfiguration cfg = new DataStorageConfiguration();
-
-        GridTestUtils.assertThrows(null, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                cfg.setWalSegments(1);
-
-                return null;
-            }
-        }, IllegalArgumentException.class, null);
-    }
-
 }

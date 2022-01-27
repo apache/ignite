@@ -69,6 +69,9 @@ public final class IgniteNodeAttributes {
     /** Peer classloading enabled flag. */
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
+    /** Shutdown policy attribute name. */
+    public static final String ATTR_SHUTDOWN_POLICY = ATTR_PREFIX + ".shutdown.policy";
+
     /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
@@ -76,10 +79,10 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_CACHE = ATTR_PREFIX + ".cache";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
+    public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
+    public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
 
     /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
@@ -196,15 +199,8 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
-    /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
-    public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
-
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
-
-    /** Ignite services processor mode. */
-    public static final String ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = ATTR_PREFIX +
-        ".event.driven.service.processor.enabled";
 
     /**
      * Enforces singleton.

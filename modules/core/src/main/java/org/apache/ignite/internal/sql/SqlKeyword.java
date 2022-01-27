@@ -314,6 +314,12 @@ public class SqlKeyword {
     /** Keyword: REVOKE. */
     public static final String REVOKE = "REVOKE";
 
+    /** Keyword: ANALYZE. */
+    public static final String ANALYZE = "ANALYZE";
+
+    /** Keyword: REFRESH. */
+    public static final String REFRESH = "REFRESH";
+
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 
@@ -323,7 +329,7 @@ public class SqlKeyword {
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
                 if (F.eq(String.class, field.getType())) {
-                    String val = (String) field.get(null);
+                    String val = (String)field.get(null);
 
                     KEYWORDS.add(val);
                 }

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -70,27 +71,33 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(value = 3)
     public int clientIdx;
 
+    /** Possible values: true, false */
+    @Parameterized.Parameter(value = 4)
+    public boolean mvccEnabled;
+
     /** */
     @Parameterized.Parameters(name = "{0} {1} {2} {3}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
-        for (boolean persistent : new boolean[]{false, true}) {
-            params.add(new Object[]{-1, false, persistent, 3});
-            params.add(new Object[]{0, false, persistent, 3});
-            params.add(new Object[]{2, false, persistent, 3});
+        for (boolean mvcc : new boolean[]{false, true}) {
+            for (boolean persistent : new boolean[] {false, true}) {
+                params.add(new Object[] {-1, false, persistent, 3, mvcc});
+                params.add(new Object[] {0, false, persistent, 3, mvcc});
+                params.add(new Object[] {2, false, persistent, 3, mvcc});
 
-            params.add(new Object[]{-1, false, persistent, -1});
-            params.add(new Object[]{0, false, persistent, -1});
-            params.add(new Object[]{2, false, persistent, -1});
+                params.add(new Object[] {-1, false, persistent, -1, mvcc});
+                params.add(new Object[] {0, false, persistent, -1, mvcc});
+                params.add(new Object[] {2, false, persistent, -1, mvcc});
 
-            params.add(new Object[]{-1, true, persistent, 3});
-            params.add(new Object[]{0, true, persistent, 3});
-            params.add(new Object[]{2, true, persistent, 3});
+                params.add(new Object[] {-1, true, persistent, 3, mvcc});
+                params.add(new Object[] {0, true, persistent, 3, mvcc});
+                params.add(new Object[] {2, true, persistent, 3, mvcc});
 
-            params.add(new Object[]{-1, true, persistent, -1});
-            params.add(new Object[]{0, true, persistent, -1});
-            params.add(new Object[]{2, true, persistent, -1});
+                params.add(new Object[] {-1, true, persistent, -1, mvcc});
+                params.add(new Object[] {0, true, persistent, -1, mvcc});
+                params.add(new Object[] {2, true, persistent, -1, mvcc});
+            }
         }
 
         return params;
@@ -127,6 +134,9 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
                 setNodeFilter(new AttributeNodeFilter(START_CACHE_ATTR, Boolean.TRUE)).
                 setBackups(0).
                 setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+
+        if (mvccEnabled)
+            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         if (startClientCache)
             cfg.setCacheConfiguration(ccfg);

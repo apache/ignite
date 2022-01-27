@@ -27,10 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class RootPage {
     /** */
     @GridToStringInclude
-    private FullPageId pageId;
+    private final FullPageId pageId;
 
     /** */
-    private boolean allocated;
+    private final boolean allocated;
 
     /**
      * @param pageId Page ID.

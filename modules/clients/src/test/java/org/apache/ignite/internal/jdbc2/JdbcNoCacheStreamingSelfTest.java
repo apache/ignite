@@ -64,7 +64,7 @@ public class JdbcNoCacheStreamingSelfTest extends GridCommonAbstractTest {
     private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

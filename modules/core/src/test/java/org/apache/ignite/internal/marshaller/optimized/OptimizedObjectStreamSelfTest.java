@@ -1192,7 +1192,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = reg.in();
 
-            in.context(clsMap, CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader(), true);
 
             in.in().bytes(arr, arr.length);
 
@@ -2337,7 +2337,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             if (!(obj instanceof NestedReadWriteObject))
                 return false;
 
-            NestedReadWriteObject o = (NestedReadWriteObject) obj;
+            NestedReadWriteObject o = (NestedReadWriteObject)obj;
 
             return o.val == val && Objects.equals(o.str, str) && Objects.equals(o.obj1, obj1)
                 && Objects.equals(o.obj2, obj2);

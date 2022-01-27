@@ -283,7 +283,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         oldRow = row;
                 }
 
-                // TODO: IGNITE-9689: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
+                // TODO: IGNITE-9689: optimize filter usage here.
+                //  See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
                 if (filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
                     res = FILTERED;
 
@@ -392,7 +393,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         }
                     }
 
-                    // TODO: IGNITE-9689: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
+                    // TODO: IGNITE-9689: optimize filter usage here.
+                    //  See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
                     if (filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
                         res = FILTERED;
 

@@ -41,7 +41,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
-
+import sun.jvmstat.monitor.HostIdentifier;
+import sun.jvmstat.monitor.MonitoredHost;
+import sun.jvmstat.monitor.MonitoredVm;
+import sun.jvmstat.monitor.MonitoredVmUtil;
+import sun.jvmstat.monitor.VmIdentifier;
 
 /**
  * Run ignite node.
@@ -174,12 +178,12 @@ public class IgniteNodeRunner {
      * @throws Exception If exception.
      */
     public static List<Integer> killAll() throws Exception {
-        //MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+        MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
 
-        //Set<Integer> jvms = monitoredHost.activeVms();
+        Set<Integer> jvms = monitoredHost.activeVms();
 
         List<Integer> res = new ArrayList<>();
-        /**
+
         for (Integer jvmId : jvms) {
             try {
                 MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
@@ -199,7 +203,7 @@ public class IgniteNodeRunner {
                 X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
             }
         }
-		*/
+
         return res;
     }
 }

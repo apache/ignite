@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -44,9 +43,6 @@ public class AuthenticationContext {
 
     /** */
     private Map<String, Object> nodeAttrs;
-
-    /** Authorization context. */
-    private AuthorizationContext athrCtx;
 
     /** True if this is a client node context. */
     private boolean client;
@@ -145,23 +141,6 @@ public class AuthenticationContext {
     }
 
     /**
-     * @return Native Apache Ignite authorization context acquired after authentication or {@code null} if native
-     * Ignite authentication is not used.
-     */
-    public AuthorizationContext authorizationContext() {
-        return athrCtx;
-    }
-
-    /**
-     * Set authorization context acquired after native Apache Ignite authentication.
-     */
-    public AuthenticationContext authorizationContext(AuthorizationContext newVal) {
-        athrCtx = newVal;
-
-        return this;
-    }
-
-    /**
      * @return Client SSL certificates.
      */
     public Certificate[] certificates() {
@@ -171,6 +150,7 @@ public class AuthenticationContext {
     /**
      * Set client SSL certificates.
      * @param certs Client SSL certificates.
+     * @return {@code this} for chaining.
      */
     public AuthenticationContext certificates(Certificate[] certs) {
         this.certs = certs;
@@ -187,6 +167,9 @@ public class AuthenticationContext {
 
     /**
      * Sets flag indicating if this is client node context.
+     *
+     * @param newVal Whether current authentication context relates to client node connection.
+     * @return {@code this} for chaining.
      */
     public AuthenticationContext setClient(boolean newVal) {
         client = newVal;

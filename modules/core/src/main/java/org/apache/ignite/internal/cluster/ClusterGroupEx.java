@@ -17,21 +17,12 @@
 
 package org.apache.ignite.internal.cluster;
 
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 
 /**
  * Internal projection interface.
  */
 public interface ClusterGroupEx extends ClusterGroup {
-    /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Subject ID.
-     * @return Cluster group.
-     */
-    public ClusterGroupEx forSubjectId(UUID subjId);
-
     /**
      * @param cacheName Cache name.
      * @param affNodes Flag to include affinity nodes.
@@ -40,7 +31,7 @@ public interface ClusterGroupEx extends ClusterGroup {
      * @return Cluster group.
      */
     public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes, boolean clientNodes);
-
+    
     /**
      * Create projection for IGFS server nodes.
      *

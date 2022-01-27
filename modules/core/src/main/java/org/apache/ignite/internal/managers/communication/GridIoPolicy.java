@@ -41,7 +41,7 @@ public class GridIoPolicy {
     public static final byte AFFINITY_POOL = 4;
 
     /** Utility cache execution pool. */
-    public static final byte UTILITY_CACHE_POOL = 5;
+    public static final byte UTILITY_CACHE_POOL = 5;    
 
     /** IGFS pool. */
     public static final byte IGFS_POOL = 6;
@@ -60,6 +60,9 @@ public class GridIoPolicy {
 
     /** Schema pool.  */
     public static final byte SCHEMA_POOL = 12;
+
+    /** Caller thread.  */
+    public static final byte CALLER_THREAD = 13;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.

@@ -83,6 +83,9 @@ public final class IgniteQueryErrorCode {
     /** Query canceled. */
     public static final int QUERY_CANCELED = 3014;
 
+    /** Required schema not found. */
+    public static final int SCHEMA_NOT_FOUND = 3015;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -134,6 +137,9 @@ public final class IgniteQueryErrorCode {
 
     /** Transaction serialization error. */
     public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
+
+    /** Field type mismatch. e.g.: cause is {@link ClassCastException}. */
+    public static final int FIELD_TYPE_MISMATCH = 5006;
 
     /** */
     private IgniteQueryErrorCode() {

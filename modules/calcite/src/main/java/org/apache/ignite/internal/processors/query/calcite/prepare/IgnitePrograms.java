@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
@@ -41,23 +42,26 @@ public class IgnitePrograms {
      */
     public static Program hep(RuleSet rules) {
         return (planner, rel, traits, materializations, lattices) -> {
-                final HepProgramBuilder builder = new HepProgramBuilder();
+            final HepProgramBuilder builder = new HepProgramBuilder();
+            final List<RelOptRule> ruleList = new ArrayList<>();
 
-                for (RelOptRule rule : rules)
-                    builder.addRuleInstance(rule);
+            for (RelOptRule rule : rules)
+                ruleList.add(rule);
 
-                final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
-                    null, Commons.context(rel).config().getCostFactory());
+            builder.addRuleCollection(ruleList);
 
-                for (RelOptMaterialization materialization : materializations)
-                    hepPlanner.addMaterialization(materialization);
+            final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
+                null, Commons.context(rel).config().getCostFactory());
 
-                for (RelOptLattice lattice : lattices)
-                    hepPlanner.addLattice(lattice);
+            for (RelOptMaterialization materialization : materializations)
+                hepPlanner.addMaterialization(materialization);
 
-                hepPlanner.setRoot(rel);
+            for (RelOptLattice lattice : lattices)
+                hepPlanner.addLattice(lattice);
 
-                return hepPlanner.findBestExp();
+            hepPlanner.setRoot(rel);
+
+            return hepPlanner.findBestExp();
         };
     }
 
@@ -69,24 +73,5 @@ public class IgnitePrograms {
      */
     public static Program cbo(RuleSet rules) {
         return Programs.of(rules);
-    }
-
-    /**
-     * @return Query decorrelate program.
-     */
-    public static Program decorrelate() {
-        return (planner, rel, traits, materializations, lattices) -> {
-            if (Commons.context(rel).connectionConfig().forceDecorrelate())
-                return RelDecorrelator.decorrelateQuery(rel, RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null));
-
-            return rel;
-        };
-    }
-
-    /**
-     * @return A program that executes a sequence of programs.
-     */
-    public static Program sequence(Program... programs) {
-        return Programs.sequence(programs);
     }
 }

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.*;
 
 /**
  * Cluster group get nodes endpoints response.
@@ -126,7 +128,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             return false; // No client connector.
 
         writeUuid(writer, node.id());
-        writer.writeInt((int) port);
+        writer.writeInt((int)port);
 
         Collection<String> addrs = node.addresses();
         Collection<String> hosts = node.hostNames();

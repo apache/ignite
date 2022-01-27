@@ -19,30 +19,24 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
-
 /**
- * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
+ * TODO use {@link StripedExecutor}, registered in core pols.
  */
 public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskExecutor, Thread.UncaughtExceptionHandler {
     /** */
     private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
-    private FailureProcessor failureProcessor;
-
-    /** */
-    private Thread.UncaughtExceptionHandler exceptionHandler;
+    private Thread.UncaughtExceptionHandler eHnd;
 
     /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
@@ -57,22 +51,37 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     }
 
     /**
-     * @param exceptionHandler Uncaught exception handler.
+     * @param eHnd Uncaught exception handler.
      */
-    public void exceptionHandler(Thread.UncaughtExceptionHandler exceptionHandler) {
-        this.exceptionHandler = exceptionHandler;
-    }
-
-    /**
-     * @param failureProcessor Failure processor.
-     */
-    public void failureProcessor(FailureProcessor failureProcessor) {
-        this.failureProcessor = failureProcessor;
+    public void exceptionHandler(Thread.UncaughtExceptionHandler eHnd) {
+        this.eHnd = eHnd;
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(UUID queryId, long fragmentId, Runnable queryTask) {
-        stripedThreadPoolExecutor.execute(queryTask, hash(queryId, fragmentId));
+    @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
+        stripedThreadPoolExecutor.execute(
+            () -> {
+                try {
+                    qryTask.run();
+                }
+                catch (Throwable e) {
+                    U.warn(log, "Uncaught exception", e);
+
+                    /*
+                     * No exceptions are rethrown here to preserve the current thread from being destroyed,
+                     * because other queries may be pinned to the current thread id.
+                     * However, unrecoverable errors must be processed by FailureHandler.
+                     */
+                    uncaughtException(Thread.currentThread(), e);
+                }
+            },
+            hash(qryId, fragmentId)
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask) {
+        return stripedThreadPoolExecutor.submit(qryTask, hash(qryId, fragmentId));
     }
 
     /** {@inheritDoc} */
@@ -81,15 +90,13 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
-        failureProcessor(proc.failureProcessor());
-
         stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",
             this,
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
+            false,
+            0
         ));
     }
 
@@ -100,16 +107,13 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void uncaughtException(Thread t, Throwable e) {
-        if (failureProcessor != null)
-            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-        if (exceptionHandler != null)
-            exceptionHandler.uncaughtException(t, e);
+        if (eHnd != null)
+            eHnd.uncaughtException(t, e);
     }
 
     /** */
-    private static int hash(UUID queryId, long fragmentId) {
+    private static int hash(UUID qryId, long fragmentId) {
         // inlined Objects.hash(...)
-        return U.safeAbs(31 * (31 + (queryId != null ? queryId.hashCode() : 0)) + Long.hashCode(fragmentId));
+        return U.safeAbs(31 * (31 + (qryId != null ? qryId.hashCode() : 0)) + Long.hashCode(fragmentId));
     }
 }

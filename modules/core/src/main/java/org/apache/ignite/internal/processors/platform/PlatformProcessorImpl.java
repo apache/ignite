@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +52,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityManager;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
@@ -61,16 +71,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
@@ -194,6 +194,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_OR_CREATE_LOCK = 38;
 
+    /** */
+    private static final int OP_GET_AFFINITY_MANAGER = 39;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -299,6 +302,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Add Interop node attributes.
         ctx.addNodeAttribute(PlatformUtils.ATTR_PLATFORM, interopCfg.platform());
+
+        // Register query entity meta.
+        ctx.query().registerMetadataForRegisteredCaches(true);
     }
 
     /** {@inheritDoc} */
@@ -467,7 +473,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
-                return loggerIsLevelEnabled((int) val) ? TRUE : FALSE;
+                return loggerIsLevelEnabled((int)val) ? TRUE : FALSE;
             }
 
             case OP_RELEASE_START: {
@@ -570,7 +576,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(
+        int type,
+        BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer
+    ) throws IgniteCheckedException {
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
             CacheConfiguration cfg = ctx.cache().cacheDescriptor(cacheId).cacheConfiguration();
@@ -638,7 +648,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_GET_AFFINITY: {
-                return new PlatformAffinity(platformCtx, ctx, reader.readString());
+                return new PlatformAffinity(platformCtx, reader.readString());
             }
 
             case OP_GET_DATA_STREAMER: {
@@ -739,6 +749,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 IgniteLock lock = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
 
                 return lock == null ? null : new PlatformLock(platformCtx, lock);
+            }
+
+            case OP_GET_AFFINITY_MANAGER: {
+                int cacheId = reader.readInt();
+
+                return new PlatformAffinityManager(platformCtx, cacheId);
             }
         }
 

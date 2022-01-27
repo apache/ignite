@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,9 +82,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            )
-            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
     }
 
     /**
@@ -92,7 +90,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(QueryEntity qryEntity) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -427,6 +425,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SCHEMAS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
+                "SYS.BASELINE_NODE_ATTRIBUTES",
                 "SYS.INDEXES",
                 "SYS.LOCAL_CACHE_GROUPS_IO",
                 "SYS.SQL_QUERIES",
@@ -442,7 +441,22 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STRIPED_THREADPOOL_QUEUE",
                 "SYS.DATASTREAM_THREADPOOL_QUEUE",
                 "SYS.CACHE_GROUP_PAGE_LISTS",
-                "SYS.DATA_REGION_PAGE_LISTS"
+                "SYS.DATA_REGION_PAGE_LISTS",
+                "SYS.PARTITION_STATES",
+                "SYS.BINARY_METADATA",
+                "SYS.DISTRIBUTED_METASTORAGE",
+                "SYS.DS_QUEUES",
+                "SYS.DS_SETS",
+                "SYS.DS_ATOMICSEQUENCES",
+                "SYS.DS_ATOMICLONGS",
+                "SYS.DS_ATOMICREFERENCES",
+                "SYS.DS_ATOMICSTAMPED",
+                "SYS.DS_COUNTDOWNLATCHES",
+                "SYS.DS_SEMAPHORES",
+                "SYS.DS_REENTRANTLOCKS",
+                "SYS.STATISTICS_LOCAL_DATA",
+                "SYS.STATISTICS_PARTITION_DATA",
+                "SYS.STATISTICS_CONFIGURATION"
             ))
         );
     }
@@ -643,6 +657,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             expectedCols = new HashSet<>(Arrays.asList(
                 "SYS.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.BASELINE_NODES.ONLINE.null.1",
+                "SYS.BASELINE_NODE_ATTRIBUTES.NODE_CONSISTENT_ID.null.2147483647",
+                "SYS.BASELINE_NODE_ATTRIBUTES.NAME.null.2147483647",
+                "SYS.BASELINE_NODE_ATTRIBUTES.VALUE.null.2147483647",
                 "SYS.CACHES.CACHE_GROUP_ID.null.10",
                 "SYS.CACHES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.CACHES.CACHE_ID.null.10",
@@ -720,6 +737,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
                 "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
                 "SYS.CACHE_GROUPS.BACKUPS.null.10",
+                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
+                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.INDEXES.CACHE_ID.null.10",
                 "SYS.INDEXES.CACHE_NAME.null.2147483647",
                 "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
@@ -749,6 +768,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_QUERIES.START_TIME.null.26.6",
                 "SYS.SQL_QUERIES.DURATION.null.19",
                 "SYS.SQL_QUERIES.ORIGIN_NODE_ID.null.2147483647",
+                "SYS.SQL_QUERIES.INITIATOR_ID.null.2147483647",
                 "SYS.SCAN_QUERIES.START_TIME.null.19",
                 "SYS.SCAN_QUERIES.TRANSFORMER.null.2147483647",
                 "SYS.SCAN_QUERIES.LOCAL.null.1",
@@ -836,6 +856,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
+                "SYS.TABLES.CACHE_GROUP_ID.null.10",
+                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
                 "SYS.TABLES.CACHE_NAME.null.2147483647",
                 "SYS.TABLES.SCHEMA_NAME.null.2147483647",
@@ -920,7 +942,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
                 "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
                 "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
-                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
                 "SYS.SCHEMAS.PREDEFINED.null.1",
                 "SYS.VIEWS.NAME.null.2147483647",
                 "SYS.VIEWS.DESCRIPTION.null.2147483647",
@@ -982,8 +1004,119 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_NUMBER.null.10",
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_SIZE.null.19",
                 "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null.10",
-                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
-            ));
+                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10",
+                "SYS.PARTITION_STATES.CACHE_GROUP_ID.null.10",
+                "SYS.PARTITION_STATES.PARTITION_ID.null.10",
+                "SYS.PARTITION_STATES.NODE_ID.null.2147483647",
+                "SYS.PARTITION_STATES.STATE.null.2147483647",
+                "SYS.PARTITION_STATES.IS_PRIMARY.null.1",
+                "SYS.BINARY_METADATA.FIELDS.null.2147483647",
+                "SYS.BINARY_METADATA.AFF_KEY_FIELD_NAME.null.2147483647",
+                "SYS.BINARY_METADATA.SCHEMAS_IDS.null.2147483647",
+                "SYS.BINARY_METADATA.TYPE_ID.null.10",
+                "SYS.BINARY_METADATA.IS_ENUM.null.1",
+                "SYS.BINARY_METADATA.FIELDS_COUNT.null.10",
+                "SYS.BINARY_METADATA.TYPE_NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.NAME.null.2147483647",
+                "SYS.DISTRIBUTED_METASTORAGE.VALUE.null.2147483647",
+                "SYS.DS_ATOMICLONGS.GROUP_ID.null.10",
+                "SYS.DS_ATOMICLONGS.GROUP_NAME.null.2147483647",
+                "SYS.DS_ATOMICLONGS.NAME.null.2147483647",
+                "SYS.DS_ATOMICLONGS.REMOVED.null.1",
+                "SYS.DS_ATOMICLONGS.VALUE.null.19",
+                "SYS.DS_ATOMICREFERENCES.GROUP_ID.null.10",
+                "SYS.DS_ATOMICREFERENCES.GROUP_NAME.null.2147483647",
+                "SYS.DS_ATOMICREFERENCES.NAME.null.2147483647",
+                "SYS.DS_ATOMICREFERENCES.REMOVED.null.1",
+                "SYS.DS_ATOMICREFERENCES.VALUE.null.2147483647",
+                "SYS.DS_ATOMICSEQUENCES.BATCH_SIZE.null.19",
+                "SYS.DS_ATOMICSEQUENCES.GROUP_ID.null.10",
+                "SYS.DS_ATOMICSEQUENCES.GROUP_NAME.null.2147483647",
+                "SYS.DS_ATOMICSEQUENCES.NAME.null.2147483647",
+                "SYS.DS_ATOMICSEQUENCES.REMOVED.null.1",
+                "SYS.DS_ATOMICSEQUENCES.VALUE.null.19",
+                "SYS.DS_ATOMICSTAMPED.GROUP_ID.null.10",
+                "SYS.DS_ATOMICSTAMPED.GROUP_NAME.null.2147483647",
+                "SYS.DS_ATOMICSTAMPED.NAME.null.2147483647",
+                "SYS.DS_ATOMICSTAMPED.REMOVED.null.1",
+                "SYS.DS_ATOMICSTAMPED.STAMP.null.2147483647",
+                "SYS.DS_ATOMICSTAMPED.VALUE.null.2147483647",
+                "SYS.DS_COUNTDOWNLATCHES.AUTO_DELETE.null.1",
+                "SYS.DS_COUNTDOWNLATCHES.COUNT.null.10",
+                "SYS.DS_COUNTDOWNLATCHES.GROUP_ID.null.10",
+                "SYS.DS_COUNTDOWNLATCHES.GROUP_NAME.null.2147483647",
+                "SYS.DS_COUNTDOWNLATCHES.INITIAL_COUNT.null.10",
+                "SYS.DS_COUNTDOWNLATCHES.NAME.null.2147483647",
+                "SYS.DS_COUNTDOWNLATCHES.REMOVED.null.1",
+                "SYS.DS_QUEUES.BOUNDED.null.1",
+                "SYS.DS_QUEUES.CAPACITY.null.10",
+                "SYS.DS_QUEUES.SIZE.null.10",
+                "SYS.DS_QUEUES.COLLOCATED.null.1",
+                "SYS.DS_QUEUES.GROUP_ID.null.10",
+                "SYS.DS_QUEUES.GROUP_NAME.null.2147483647",
+                "SYS.DS_QUEUES.ID.null.2147483647",
+                "SYS.DS_QUEUES.NAME.null.2147483647",
+                "SYS.DS_QUEUES.REMOVED.null.1",
+                "SYS.DS_REENTRANTLOCKS.BROKEN.null.1",
+                "SYS.DS_REENTRANTLOCKS.FAILOVER_SAFE.null.1",
+                "SYS.DS_REENTRANTLOCKS.FAIR.null.1",
+                "SYS.DS_REENTRANTLOCKS.GROUP_ID.null.10",
+                "SYS.DS_REENTRANTLOCKS.GROUP_NAME.null.2147483647",
+                "SYS.DS_REENTRANTLOCKS.HAS_QUEUED_THREADS.null.1",
+                "SYS.DS_REENTRANTLOCKS.LOCKED.null.1",
+                "SYS.DS_REENTRANTLOCKS.NAME.null.2147483647",
+                "SYS.DS_REENTRANTLOCKS.REMOVED.null.1",
+                "SYS.DS_SEMAPHORES.AVAILABLE_PERMITS.null.19",
+                "SYS.DS_SEMAPHORES.BROKEN.null.1",
+                "SYS.DS_SEMAPHORES.FAILOVER_SAFE.null.1",
+                "SYS.DS_SEMAPHORES.GROUP_ID.null.10",
+                "SYS.DS_SEMAPHORES.GROUP_NAME.null.2147483647",
+                "SYS.DS_SEMAPHORES.HAS_QUEUED_THREADS.null.1",
+                "SYS.DS_SEMAPHORES.NAME.null.2147483647",
+                "SYS.DS_SEMAPHORES.QUEUE_LENGTH.null.10",
+                "SYS.DS_SEMAPHORES.REMOVED.null.1",
+                "SYS.DS_SETS.COLLOCATED.null.1",
+                "SYS.DS_SETS.GROUP_ID.null.10",
+                "SYS.DS_SETS.GROUP_NAME.null.2147483647",
+                "SYS.DS_SETS.ID.null.2147483647",
+                "SYS.DS_SETS.NAME.null.2147483647",
+                "SYS.DS_SETS.REMOVED.null.1",
+                "SYS.DS_SETS.SIZE.null.10",
+                "SYS.STATISTICS_LOCAL_DATA.LAST_UPDATE_TIME.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.NAME.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.TOTAL.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.VERSION.null.19",
+                "SYS.STATISTICS_CONFIGURATION.TYPE.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.NAME.null.2147483647",
+                "SYS.STATISTICS_CONFIGURATION.COLUMN.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.ROWS_COUNT.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.TYPE.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.DISTINCT.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.SIZE.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.LAST_UPDATE_TIME.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MAX_PARTITION_OBSOLESCENCE_PERCENT.null.3",
+                "SYS.STATISTICS_LOCAL_DATA.VERSION.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.COLUMN.null.2147483647",
+                "SYS.STATISTICS_CONFIGURATION.SCHEMA.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.TOTAL.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.PARTITION.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.SCHEMA.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.ROWS_COUNT.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.SIZE.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.UPDATE_COUNTER.null.19",
+                "SYS.STATISTICS_CONFIGURATION.NAME.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.DISTINCT.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.NULLS.null.19",
+                "SYS.STATISTICS_CONFIGURATION.VERSION.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_SIZE.null.10",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_DISTINCT.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_NULLS.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_TOTAL.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.TYPE.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.NULLS.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.COLUMN.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.SCHEMA.null.2147483647"
+                ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
@@ -1349,6 +1482,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
             assertEquals("Unexpected ignite driver version.",
                 conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 

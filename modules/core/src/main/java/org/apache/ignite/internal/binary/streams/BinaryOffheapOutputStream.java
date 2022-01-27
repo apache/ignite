@@ -59,7 +59,8 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void ensureCapacity(int cnt) {
-        if (cnt > cap) {
+        // overflow-conscious code
+        if (cnt - cap > 0) {
             int newCap = capacity(cap, cnt);
 
             ptr = reallocate(ptr, newCap);

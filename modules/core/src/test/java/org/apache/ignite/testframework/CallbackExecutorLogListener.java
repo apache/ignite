@@ -16,24 +16,36 @@
  */
 package org.apache.ignite.testframework;
 
+import org.apache.ignite.lang.IgniteInClosure;
+
 /**
  * Allows to listen a log and run the callback when the message that matches the regexp is detected.
  */
 public class CallbackExecutorLogListener extends LogListener {
-    /** */
-    private final String expectedMessage;
+    /** Regexp for message that triggers callback */
+    private final String expMsg;
 
-    /** */
-    private final Runnable cb;
+    /** Callback. */
+    private final IgniteInClosure<String> cb;
 
     /**
-     * Default constructor.
+     * Constructor.
      *
-     * @param expectedMessage regexp for message that triggers the callback
-     * @param cb callback
+     * @param expMsg Regexp for message that triggers callback.
+     * @param cb Callback.
      */
-    public CallbackExecutorLogListener(String expectedMessage, Runnable cb) {
-        this.expectedMessage = expectedMessage;
+    public CallbackExecutorLogListener(String expMsg, Runnable cb) {
+        this(expMsg, s -> cb.run());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param expMsg Regexp for message that triggers callback.
+     * @param cb Callback.
+     */
+    public CallbackExecutorLogListener(String expMsg, IgniteInClosure<String> cb) {
+        this.expMsg = expMsg;
         this.cb = cb;
     }
 
@@ -49,7 +61,7 @@ public class CallbackExecutorLogListener extends LogListener {
 
     /** {@inheritDoc} */
     @Override public void accept(String s) {
-        if (s.matches(expectedMessage))
-            cb.run();
+        if (s.matches(expMsg))
+            cb.apply(s);
     }
 }

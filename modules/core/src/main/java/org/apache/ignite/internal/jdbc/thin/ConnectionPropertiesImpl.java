@@ -138,7 +138,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
-        "SSL key algorithm name", "SunX509", null, false, null);
+        "SSL key algorithm name", null, null, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
@@ -226,7 +226,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
         "Sets the number of seconds the driver will wait for a <code>Statement</code> object to execute." +
             " Zero means there is no limits.",
-        0, false, 0, Integer.MAX_VALUE);
+        null, false, 0, Integer.MAX_VALUE);
 
     /** JDBC connection timeout. */
     private IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
@@ -258,6 +258,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
 
+    /** Whether an experimental SQL engine enabled for a connection. */
+    private BooleanProperty useExperimentalQueryEngine = new BooleanProperty("useExperimentalQueryEngine",
+        "Enables experimental query engine.", false, false);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -276,7 +280,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         qryTimeout,
         connTimeout,
         disabledFeatures,
-        keepBinary
+        keepBinary,
+        useExperimentalQueryEngine
     };
 
     /** {@inheritDoc} */
@@ -685,6 +690,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         this.keepBinary.setValue(keepBinary);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isUseExperimentalQueryEngine() {
+        return useExperimentalQueryEngine.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine) {
+        this.useExperimentalQueryEngine.setValue(useExperimentalQueryEngine);
+    }
+
     /**
      * @param url URL connection.
      * @param props Environment properties.
@@ -1088,7 +1103,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return JDBC property info object.
          */
         DriverPropertyInfo getDriverPropertyInfo() {
-            DriverPropertyInfo dpi = new DriverPropertyInfo(name, valueObject());
+            DriverPropertyInfo dpi = new DriverPropertyInfo(PROP_PREFIX + name, valueObject());
 
             dpi.choices = choices();
             dpi.required = required;

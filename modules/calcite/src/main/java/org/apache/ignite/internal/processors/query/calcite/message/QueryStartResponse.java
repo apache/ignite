@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -79,15 +78,15 @@ public class QueryStartResponse implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
+    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (error != null)
-            errBytes = marshaller.marshal(error);
+            errBytes = ctx.marshal(error);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (errBytes != null)
-            error = marshaller.unmarshal(errBytes, loader);
+            error = ctx.unmarshal(errBytes);
     }
 
     /** {@inheritDoc} */

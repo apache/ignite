@@ -17,11 +17,12 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
  * Persistence metrics used to obtain statistics on persistence.
  *
- * @deprecated Use {@link DataStorageMetrics} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
  */
 @Deprecated
 public interface PersistenceMetrics {
@@ -32,6 +33,8 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average number of WAL records per second written during the last time interval.
      */
     public float getWalLoggingRate();
 
@@ -41,11 +44,13 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average number of bytes per second written during the last time interval.
      */
     public float getWalWritingRate();
 
     /**
-     * Gets the current number of WAL segments in the WAL archive.
+     * @return The current number of WAL segments in the WAL archive.
      */
     public int getWalArchiveSegments();
 
@@ -56,6 +61,8 @@ public interface PersistenceMetrics {
      * configurartion property.
      * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
+     *
+     * @return The average WAL fsync duration in microseconds over the last time interval.
      */
     public float getWalFsyncTimeAverage();
 

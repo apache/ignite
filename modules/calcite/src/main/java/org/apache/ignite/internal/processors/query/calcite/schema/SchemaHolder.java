@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public interface SchemaHolder extends Service {
     /**
-     * @return Schema.
+     * @return Specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
      */
-    SchemaPlus schema();
+    SchemaPlus schema(@Nullable String schema);
 }

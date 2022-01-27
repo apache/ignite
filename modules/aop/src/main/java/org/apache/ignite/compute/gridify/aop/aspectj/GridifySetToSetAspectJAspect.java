@@ -57,9 +57,10 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
      * @throws Throwable If execution failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
-    @Around("execution(@org.apache.ignite.compute.gridify.GridifySetToSet * *(..)) && !cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
+    @Around("execution(@org.apache.ignite.compute.gridify.GridifySetToSet * *(..)) && " +
+        "!cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
-        Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();
+        Method mtd = ((MethodSignature)joinPnt.getSignature()).getMethod();
 
         GridifySetToSet ann = mtd.getAnnotation(GridifySetToSet.class);
 
@@ -123,7 +124,7 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
         catch (Exception e) {
-            for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {
+            for (Class<?> ex : ((MethodSignature)joinPnt.getSignature()).getMethod().getExceptionTypes()) {
                 // Descend all levels down.
                 Throwable cause = e.getCause();
 

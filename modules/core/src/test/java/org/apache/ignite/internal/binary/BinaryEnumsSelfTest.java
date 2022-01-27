@@ -37,14 +37,13 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Contains tests for binary enums.
  */
 @SuppressWarnings("unchecked")
-public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
+public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";
 
@@ -74,11 +73,15 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         register = false;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
     }
 
@@ -255,6 +258,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         BinaryEnumObjectImpl binEnum = new BinaryEnumObjectImpl(binCtx, bytes);
 
+        assertEquals(srcBinEnum.size(), binEnum.size());
         assertEquals(clsName, binEnum.className());
         assertEquals(typeId, binEnum.typeId());
         assertEquals(ord, binEnum.enumOrdinal());
@@ -324,8 +328,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      */
     private void validateNested(int key, EnumType val, boolean registered) throws Exception {
         if (registered) {
-            EnumHolder res1 = (EnumHolder) cache1.get(key);
-            EnumHolder res2 = (EnumHolder) cache2.get(key);
+            EnumHolder res1 = (EnumHolder)cache1.get(key);
+            EnumHolder res2 = (EnumHolder)cache2.get(key);
 
             assertEquals(val, res1.val);
             assertEquals(val, res2.val);
@@ -592,8 +596,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(DeclaredBodyEnum.ONE, cache2.get(1));
         }
 
-        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnum.ONE);
-        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary1.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject)cacheBinary2.get(1), DeclaredBodyEnum.ONE);
     }
 
     /**
@@ -616,17 +620,24 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(EnumType.TWO, arr2[1]);
         }
 
-        Object[] arrBinary1 = (Object[])cacheBinary1.get(1);
-        Object[] arrBinary2 = (Object[])cacheBinary2.get(1);
+        Object arr1 = cacheBinary1.get(1);
+        Object arr2 = cacheBinary2.get(1);
+
+        Object[] arrBinary1 = useBinaryArrays
+            ? ((BinaryArray)arr1).array()
+            : (Object[])arr1;
+        Object[] arrBinary2 = useBinaryArrays
+            ? ((BinaryArray)arr2).array()
+            : (Object[])arr2;
 
         assertEquals(2, arrBinary1.length);
         assertEquals(2, arrBinary2.length);
 
-        validate((BinaryObject) arrBinary1[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary1[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary1[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary1[1], EnumType.TWO);
 
-        validate((BinaryObject) arrBinary2[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary2[1], EnumType.TWO);
+        validate((BinaryObject)arrBinary2[0], EnumType.ONE);
+        validate((BinaryObject)arrBinary2[1], EnumType.TWO);
     }
 
     /**
@@ -643,8 +654,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(val, cache2.get(key));
         }
 
-        validate((BinaryObject) cacheBinary1.get(key), val);
-        validate((BinaryObject) cacheBinary2.get(key), val);
+        validate((BinaryObject)cacheBinary1.get(key), val);
+        validate((BinaryObject)cacheBinary2.get(key), val);
     }
 
     /**
@@ -715,7 +726,10 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * Enumeration for tests.
      */
     public enum EnumType {
+        /** */
         ONE,
+
+        /** */
         TWO
     }
 
@@ -723,17 +737,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * Enumeration for tests.
      */
     public enum DeclaredBodyEnum {
+        /** */
         ONE {
+            /** {@inheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         },
+
+        /** */
         TWO {
+            /** {@inheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         };
 
+        /** */
         abstract boolean isSupported();
     }
 }

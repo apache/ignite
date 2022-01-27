@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rule.RuleUtils;
 
 /**
  *
@@ -44,22 +40,7 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution toDist, boolean allowInfiniteCostConverters) {
-        if (rel.getConvention() == Convention.NONE)
-            return null;
-
-        IgniteDistribution fromDist = rel.getTraitSet().getTrait(INSTANCE);
-
-        if (fromDist.satisfies(toDist))
-            return rel;
-
-        RelTraitSet newTraits = rel.getTraitSet().replace(toDist);
-        RelNode input = RuleUtils.convert(rel, IgniteDistributions.any()); // erasing source distribution a bit reduces search space
-        RelNode newRel = planner.register(new IgniteExchange(rel.getCluster(), newTraits, input, toDist), rel);
-
-        if (!newRel.getTraitSet().equals(newTraits))
-            newRel = planner.changeTraits(newRel, newTraits);
-
-        return newRel;
+        return TraitUtils.convertDistribution(planner, toDist, rel);
     }
 
     /** {@inheritDoc} */

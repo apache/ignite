@@ -17,12 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
-import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
+import org.apache.ignite.internal.processors.query.calcite.sql.SqlDdlParserTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -31,12 +29,16 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTest.class,
-    ExecutionTest.class,
+    PlannerTestSuite.class,
+    ExecutionTestSuite.class,
+    IntegrationTestSuite.class,
+
     ClosableIteratorsHolderTest.class,
-    ContinuousExecutionTest.class,
-    CalciteQueryProcessorTest.class,
-    JdbcQueryTest.class
+    QueryCheckerTest.class,
+    SqlDdlParserTest.class,
+    IgniteSqlFunctionsTest.class,
+
+    ScriptTestSuite.class,
 })
 public class IgniteCalciteTestSuite {
 }

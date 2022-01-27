@@ -313,7 +313,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         return runningCnt + heldCnt;
     }
 
-    /*
+    /**
      * Gets number of currently running (not {@code 'held}) jobs.
      *
      * @return Number of currently running (not {@code 'held}) jobs.
@@ -684,7 +684,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     /**
      * Comparator for by priority comparison of collision contexts.
      */
-    private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>,Serializable {
+    private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

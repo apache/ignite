@@ -22,9 +22,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -33,17 +35,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 /**
  * Scan query request.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
-    /** Java filter. */
-    private static final byte FILTER_PLATFORM_JAVA = 1;
-
-    /** .NET filter. */
-    private static final byte FILTER_PLATFORM_DOTNET = 2;
-
-    /** C++ filter. */
-    private static final byte FILTER_PLATFORM_CPP = 3;
-
     /** Local flag. */
     private final boolean loc;
 
@@ -81,13 +74,13 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+        IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
 
         ScanQuery qry = new ScanQuery()
             .setLocal(loc)
             .setPageSize(pageSize)
             .setPartition(part)
-            .setFilter(createFilter(ctx));
+            .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
 
         ctx.incrementCursors();
 
@@ -115,16 +108,16 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
      * @return Filter.
      * @param ctx Context.
      */
-    private IgniteBiPredicate createFilter(ClientConnectionContext ctx) {
+    private static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
         if (filterObj == null)
             return null;
 
         switch (filterPlatform) {
-            case FILTER_PLATFORM_JAVA:
+            case ClientPlatform.JAVA:
                 return ((BinaryObject)filterObj).deserialize();
 
-            case FILTER_PLATFORM_DOTNET:
-                PlatformContext platformCtx = ctx.kernalContext().platform().context();
+            case ClientPlatform.DOTNET:
+                PlatformContext platformCtx = ctx.platform().context();
 
                 String curPlatform = platformCtx.platform();
 
@@ -135,7 +128,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
 
                 return platformCtx.createCacheEntryFilter(filterObj, 0);
 
-            case FILTER_PLATFORM_CPP:
+            case ClientPlatform.CPP:
             default:
                 throw new UnsupportedOperationException("Invalid client ScanQuery filter code: " + filterPlatform);
         }

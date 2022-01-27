@@ -271,12 +271,12 @@ public class ConcurrentLinkedDeque8<E>
 
     @SuppressWarnings("unchecked")
     Node<E> prevTerminator() {
-        return (Node<E>) PREV_TERMINATOR;
+        return (Node<E>)PREV_TERMINATOR;
     }
 
     @SuppressWarnings("unchecked")
     Node<E> nextTerminator() {
-        return (Node<E>) NEXT_TERMINATOR;
+        return (Node<E>)NEXT_TERMINATOR;
     }
 
     public static final class Node<E> {
@@ -1660,7 +1660,7 @@ public class ConcurrentLinkedDeque8<E>
         Object item;
         while ((item = s.readObject()) != null) {
             @SuppressWarnings("unchecked")
-            Node<E> newNode = new Node<E>((E) item);
+            Node<E> newNode = new Node<E>((E)item);
             if (h == null)
                 h = t = newNode;
             else {
@@ -1718,7 +1718,7 @@ public class ConcurrentLinkedDeque8<E>
 
                             f.setAccessible(true);
 
-                            return (Unsafe) f.get(null);
+                            return (Unsafe)f.get(null);
                         }
                     });
             }

@@ -467,7 +467,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         //internal map in BinaryMetadataFileStore with futures awaiting write operations
         Map map = GridTestUtils.getFieldValue(
-            (CacheObjectBinaryProcessorImpl)ig1.context().cacheObjects(), "metadataFileStore", "writer", "preparedWriteTasks");
+           ig1.context().cacheObjects(), "metadataFileStore", "writer", "preparedTasks");
 
         assertTrue(!map.isEmpty());
 

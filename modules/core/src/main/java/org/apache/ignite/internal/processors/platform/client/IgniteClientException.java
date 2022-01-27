@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.IgniteException;
-
 import java.sql.SQLException;
+import org.apache.ignite.IgniteException;
 
 /**
  * Client exception.

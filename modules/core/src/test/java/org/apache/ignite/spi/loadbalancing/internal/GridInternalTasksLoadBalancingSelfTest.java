@@ -113,7 +113,8 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
             ignite.compute().execute(CustomTestTask.class.getName(), null);
         }
         catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Node can not be null [mappedJob=org.apache.ignite.spi.loadbalancing.internal.GridInternalTasksLoadBalancingSelfTest$CustomTestJob"));
+            assertTrue(e.getMessage().startsWith("Node can not be null " +
+                "[mappedJob=org.apache.ignite.spi.loadbalancing.internal.GridInternalTasksLoadBalancingSelfTest$CustomTestJob"));
         }
     }
 

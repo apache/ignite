@@ -3,6 +3,7 @@
 %define _libdir /usr/lib
 %define _log %{_var}/log
 %define _sharedstatedir /var/lib
+%define _binaries_in_noarch_packages_terminate_build 0
 
 
 #-------------------------------------------------------------------------------
@@ -11,7 +12,7 @@
 #
 
 Name:             apache-ignite
-Version:          2.8.1
+Version:          2.11.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
@@ -265,6 +266,18 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 #
 # Changelog
 #
+
+* Fri Jul 09 2021 Alexey Gidaspov <olive.crow@gmail.com> - 2.11.0-1
+- Updated Apache Ignite to version 2.11.0
+
+* Mon Feb 01 2021 Maxim Muzafarov <mmuzaf@apache.org> - 2.10.0-1
+- Updated Apache Ignite to version 2.10.0
+
+* Wed Nov 25 2020 Yaroslav Molochkov <y.n.molochkov@gmail.com> - 2.9.1-1
+- Updated Apache Ignite to version 2.9.1
+
+* Mon Sep 28 2020 Alexey Plekhanov <alexpl@apache.org> - 2.9.0-1
+- Updated Apache Ignite to version 2.9.0
 
 * Wed May 20 2020 Nikolay Izhikov <nizhikov@apache.org> - 2.8.1-1
 - Updated Apache Ignite to version 2.8.1

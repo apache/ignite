@@ -114,26 +114,15 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        if (ig.context().service() instanceof GridServiceProcessor) {
+        GridTestUtils.assertThrowsWithCause(() -> {
             svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
-            assertNull(svcs.service(svcName));
+            return null;
+        }, ServiceDeploymentException.class);
 
-            ig.createCache(ccfg);
-        }
-        else if (ig.context().service() instanceof IgniteServiceProcessor) {
-            GridTestUtils.assertThrowsWithCause(() -> {
-                svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        ig.createCache(ccfg);
 
-                return null;
-            }, ServiceDeploymentException.class);
-
-            ig.createCache(ccfg);
-
-            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
-        }
-        else
-            fail("Unexpected service implementation.");
+        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {

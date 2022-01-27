@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Abstract node of execution tree.
  */
-public abstract class AbstractNode<T> implements Node<T> {
+public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 512);
 
@@ -36,10 +39,10 @@ public abstract class AbstractNode<T> implements Node<T> {
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_BATCH_SIZE", 100);
 
     /** */
-    protected static final int IO_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 200);
+    protected static final int IO_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 256);
 
     /** */
-    protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 50);
+    protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 4);
 
     /** for debug purpose */
     private volatile Thread thread;
@@ -47,30 +50,56 @@ public abstract class AbstractNode<T> implements Node<T> {
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
-     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
+     * sets in scope of {@link Inbox#init(ExecutionContext, RelDataType, Collection, Comparator)} method call.
      */
-    protected ExecutionContext ctx;
+    private ExecutionContext<Row> ctx;
 
     /** */
-    protected Downstream<T> downstream;
+    private RelDataType rowType;
 
     /** */
-    protected List<Node<T>> sources;
+    private Downstream<Row> downstream;
+
+    /** */
+    private boolean closed;
+
+    /** */
+    private List<Node<Row>> sources;
 
     /**
      * @param ctx Execution context.
      */
-    protected AbstractNode(ExecutionContext ctx) {
+    protected AbstractNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+        this.ctx = ctx;
+        this.rowType = rowType;
+    }
+
+    /**
+     * {@link Inbox} node may not have proper context at creation time in case it
+     * creates on first message received from a remote source. This case the context
+     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
+     */ /** {@inheritDoc} */
+    @Override public ExecutionContext<Row> context() {
+        return ctx;
+    }
+
+    /** */
+    protected void context(ExecutionContext<Row> ctx) {
         this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutionContext context() {
-        return ctx;
+    @Override public RelDataType rowType() {
+        return rowType;
+    }
+
+    /** */
+    protected void rowType(RelDataType rowType) {
+        this.rowType = rowType;
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<T>> sources) {
+    @Override public void register(List<Node<Row>> sources) {
         this.sources = sources;
 
         for (int i = 0; i < sources.size(); i++)
@@ -78,31 +107,94 @@ public abstract class AbstractNode<T> implements Node<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Downstream<T> downstream) {
-        this.downstream = downstream;
+    @Override public List<Node<Row>> sources() {
+        return sources;
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        checkThread();
+    @Override public void close() {
+        if (isClosed())
+            return;
 
-        context().markCancelled();
+        closeInternal();
 
-        if (!F.isEmpty(sources))
-            sources.forEach(Node::cancel);
+        if (!F.isEmpty(sources()))
+            sources().forEach(U::closeQuiet);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rewind() {
+        rewindInternal();
+
+        if (!F.isEmpty(sources()))
+            sources().forEach(Node::rewind);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRegister(Downstream<Row> downstream) {
+        this.downstream = downstream;
+    }
+
+    /**
+     * Processes given exception.
+     *
+     * @param e Exception.
+     */
+    public void onError(Throwable e) {
+        if (e instanceof ExecutionCancelledException)
+            U.warn(context().logger(), "Execution is cancelled.", e);
+        else
+            onErrorInternal(e);
     }
 
     /** */
-    protected abstract Downstream<T> requestDownstream(int idx);
+    protected void closeInternal() {
+        closed = true;
+    }
 
     /** */
-    protected void checkThread() {
+    protected abstract void rewindInternal();
+
+    /** */
+    protected void onErrorInternal(Throwable e) {
+        Downstream<Row> downstream = downstream();
+
+        assert downstream != null;
+
+        try {
+            downstream.onError(e);
+        }
+        finally {
+            U.closeQuiet(this);
+        }
+    }
+
+    /**
+     * @return {@code true} if the subtree is canceled.
+     */
+    protected boolean isClosed() {
+        return closed;
+    }
+
+    /** */
+    protected void checkState() throws Exception {
+        if (context().isCancelled())
+            throw new ExecutionCancelledException();
+        if (Thread.interrupted())
+            throw new IgniteInterruptedCheckedException("Thread was interrupted.");
         if (!U.assertionsEnabled())
             return;
-
         if (thread == null)
             thread = Thread.currentThread();
         else
             assert thread == Thread.currentThread();
+    }
+
+    /** */
+    protected abstract Downstream<Row> requestDownstream(int idx);
+
+    /** */
+    @Override public Downstream<Row> downstream() {
+        return downstream;
     }
 }

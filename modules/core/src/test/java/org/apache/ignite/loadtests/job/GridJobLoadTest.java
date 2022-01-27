@@ -183,7 +183,8 @@ public class GridJobLoadTest implements Runnable {
      *
      * @param igniteInstanceName name of new node.
      * @param springCfg file with spring configuration to use for this node.
-     * @return a grid instance local to new node {@link org.apache.ignite.Ignition#start(org.apache.ignite.configuration.IgniteConfiguration)}.
+     * @return a grid instance local to new node
+     * {@link org.apache.ignite.Ignition#start(org.apache.ignite.configuration.IgniteConfiguration)}.
      * @throws Exception if node run failed.
      */
     protected Ignite startNode(String igniteInstanceName, File springCfg) throws Exception {

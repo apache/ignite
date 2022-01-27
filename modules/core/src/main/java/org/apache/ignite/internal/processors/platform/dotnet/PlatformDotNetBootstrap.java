@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.io.PrintStream;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
-
-import java.io.PrintStream;
 
 /**
  * Interop .Net bootstrap.
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
+    /** */
     private boolean useLogger;
 
     /** {@inheritDoc} */

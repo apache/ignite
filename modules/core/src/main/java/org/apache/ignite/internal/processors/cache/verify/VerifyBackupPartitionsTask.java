@@ -272,7 +272,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                     if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
                         lastProgressLogTs = U.currentTimeMillis();
 
-                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
+                        log.warning("The check procedure is still running, processed " + completionCntr.get() + " of " +
                             partHashCalcFutures.size() + " local partitions");
                     }
                 }

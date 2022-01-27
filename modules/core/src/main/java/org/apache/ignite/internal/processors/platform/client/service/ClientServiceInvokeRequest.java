@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -143,37 +145,40 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         ClusterGroupAdapter grp = ctx.kernalContext().cluster().get();
 
-        if (ctx.securityContext() != null)
-            grp = (ClusterGroupAdapter)grp.forSubjectId(ctx.securityContext().subject().id());
-
         grp = (ClusterGroupAdapter)(nodeIds.isEmpty() ? grp.forServers() : grp.forNodeIds(nodeIds));
 
         IgniteServices services = grp.services();
-
-        if (!keepBinary() && args.length > 0) {
-            for (int i = 0; i < args.length; i++) {
-                if (paramTypeIds != null)
-                    reader.readInt(); // Skip parameter typeId, we already read it in constructor.
-
-                args[i] = reader.readObject();
-            }
-        }
 
         try {
             Object res;
 
             if (PlatformService.class.isAssignableFrom(svcCls)) {
-                PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
+                // Never deserialize platform service arguments and result: may contain platform-only types.
+                PlatformService proxy =
+                    ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, false, timeout, true);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), !keepBinary(), args);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args, null);
             }
             else {
+                // Deserialize Java service arguments when not in keepBinary mode.
+                if (!keepBinary() && args.length > 0) {
+                    for (int i = 0; i < args.length; i++) {
+                        if (paramTypeIds != null)
+                            reader.readInt(); // Skip parameter typeId, we already read it in constructor.
+
+                        args[i] = reader.readObject();
+                    }
+                }
+
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
-                    ctx.kernalContext());
+                    ctx.kernalContext(), null, true);
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                res = proxy.invokeMethod(method, args);
+                if (!BinaryArray.useBinaryArrays())
+                    PlatformServices.convertArrayArgs(args, method);
+
+                res = proxy.invokeMethod(method, args, null);
             }
 
             return new ClientObjectResponse(requestId(), res);

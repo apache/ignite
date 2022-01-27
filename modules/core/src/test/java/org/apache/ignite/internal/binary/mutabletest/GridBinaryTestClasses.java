@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary.mutabletest;
 
-import com.google.common.base.Throwables;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
@@ -27,11 +26,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
+import com.google.common.base.Throwables;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -323,7 +325,14 @@ public class GridBinaryTestClasses {
      *
      */
     public enum TestObjectEnum {
-        A, B, C
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
     }
 
     /**
@@ -365,6 +374,20 @@ public class GridBinaryTestClasses {
             this.street = street;
             this.streetNumber = streetNumber;
             this.flatNumber = flatNumber;
+        }
+
+        /**  */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Address address = (Address)o;
+            return streetNumber == address.streetNumber && flatNumber == address.flatNumber
+                    && Objects.equals(city, address.city) && Objects.equals(street, address.street);
+        }
+
+        /**  */
+        @Override public int hashCode() {
+            return Objects.hash(city, street, streetNumber, flatNumber);
         }
     }
 
@@ -487,5 +510,33 @@ public class GridBinaryTestClasses {
                 }
             });
         }
+    }
+
+    /**
+     *
+     */
+    public static class CollectionsHolder {
+        /** */
+        public Collection<Object> firstCol;
+
+        /** */
+        public Collection<Object> secondCol;
+
+        /** */
+        public Object obj;
+    }
+
+    /**
+     *
+     */
+    public static class MapsHolder {
+        /** */
+        public Map<Object, Object> firstMap;
+
+        /** */
+        public Map<Object, Object> secondMap;
+
+        /** */
+        public Object valObj;
     }
 }

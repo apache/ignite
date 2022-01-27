@@ -17,67 +17,89 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.HashMap;
 import java.util.List;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    protected final List<Fragment> fragments;
+    protected final FieldsMetadata fieldsMetadata;
 
     /** */
-    protected final List<GridQueryFieldMetadata> fieldsMeta;
+    protected final QueryTemplate queryTemplate;
 
-    protected AbstractMultiStepPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
-        this.fragments = fragments;
-        this.fieldsMeta = fieldsMeta;
+    /** */
+    protected ExecutionPlan executionPlan;
+
+    /** */
+    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMetadata) {
+        this.queryTemplate = queryTemplate;
+        this.fieldsMetadata = fieldsMetadata;
     }
 
     /** {@inheritDoc} */
     @Override public List<Fragment> fragments() {
-        return fragments;
+        return Objects.requireNonNull(executionPlan).fragments();
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridQueryFieldMetadata> fieldsMetadata() {
-        return fieldsMeta;
+    @Override public FieldsMetadata fieldsMetadata() {
+        return fieldsMetadata;
     }
 
     /** {@inheritDoc} */
-    @Override public void init(MappingService mappingService, PlanningContext ctx) {
-        RelMetadataQuery mq = F.first(fragments).root().getCluster().getMetadataQuery();
+    @Override public FragmentMapping mapping(Fragment fragment) {
+        return mapping(fragment.fragmentId());
+    }
 
-        for (int i = 0, j = 0; i < fragments.size();) {
-            Fragment fragment = fragments.get(i);
+    /** {@inheritDoc} */
+    @Override public ColocationGroup target(Fragment fragment) {
+        if (fragment.rootFragment())
+            return null;
 
-            try {
-                fragment.init(mappingService, ctx, mq);
+        IgniteSender sender = (IgniteSender)fragment.root();
+        return mapping(sender.targetFragmentId()).findGroup(sender.exchangeId());
+    }
 
-                i++;
-            }
-            catch (OptimisticPlanningException e) {
-                if (++j > 3)
-                    throw new IgniteSQLException("Failed to map query.", e);
+    /** {@inheritDoc} */
+    @Override public Map<Long, List<UUID>> remotes(Fragment fragment) {
+        List<IgniteReceiver> remotes = fragment.remotes();
 
-                replace(fragment, new FragmentSplitter().go(fragment, e.node(), mq));
+        if (F.isEmpty(remotes))
+            return null;
 
-                i = 0; // restart init routine.
-            }
-        }
+        HashMap<Long, List<UUID>> res = U.newHashMap(remotes.size());
+
+        for (IgniteReceiver remote : remotes)
+            res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(MappingService mappingService, MappingQueryContext ctx) {
+        executionPlan = queryTemplate.map(mappingService, ctx);
     }
 
     /** */
-    private void replace(Fragment fragment, List<Fragment> replacement) {
-        assert !F.isEmpty(replacement);
-
-        fragments.set(fragments.indexOf(fragment), F.first(replacement));
-        fragments.addAll(replacement.subList(1, replacement.size()));
+    private FragmentMapping mapping(long fragmentId) {
+        return Objects.requireNonNull(executionPlan).fragments().stream()
+            .filter(f -> f.fragmentId() == fragmentId)
+            .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
+                "fragmentId=" + fragmentId + ", " +
+                "fragments=" + fragments() + "]"))
+            .mapping();
     }
 }

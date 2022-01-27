@@ -31,7 +31,6 @@ fi
 # INTERACTIVE
 # QUIET
 # JVM_XOPTS
-# NOJMX
 #
 # Script setups reasonable defaults (see below) for omitted arguments.
 #
@@ -45,7 +44,6 @@ fi
 
 CONFIG=${DEFAULT_CONFIG:-}
 INTERACTIVE="0"
-NOJMX="0"
 QUIET="-DIGNITE_QUIET=true"
 JVM_XOPTS=""
 
@@ -53,7 +51,6 @@ while [ $# -gt 0 ]
 do
     case "$1" in
         -i) INTERACTIVE="1";;
-        -nojmx) NOJMX="1";;
         -v) QUIET="-DIGNITE_QUIET=false";;
         -J*) JVM_XOPTS="$JVM_XOPTS ${1:2}";;
         *) CONFIG="$1";;

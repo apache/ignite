@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Partition destroy queue.
@@ -48,24 +47,12 @@ public class PartitionDestroyQueue {
     }
 
     /**
-     * @param destroyId Destroy ID.
-     * @return Destroy request to complete if was not concurrently cancelled.
-     */
-    private PartitionDestroyRequest beginDestroy(T2<Integer, Integer> destroyId) {
-        PartitionDestroyRequest rmvd = pendingReqs.remove(destroyId);
-
-        return rmvd == null ? null : rmvd.beginDestroy() ? rmvd : null;
-    }
-
-    /**
      * @param grpId Group ID.
      * @param partId Partition ID.
-     * @return Destroy request to wait for if destroy has begun.
+     * @return Destroy request that was removed from the queue or {@code null} if the request was not found.
      */
-    public PartitionDestroyRequest cancelDestroy(int grpId, int partId) {
-        PartitionDestroyRequest rmvd = pendingReqs.remove(new T2<>(grpId, partId));
-
-        return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
+    public PartitionDestroyRequest removeRequest(int grpId, int partId) {
+        return pendingReqs.remove(new T2<>(grpId, partId));
     }
 
     /**

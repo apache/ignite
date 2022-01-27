@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.TreeMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary {@link TreeMap} write replacer.

@@ -1,0 +1,214 @@
+# name: test/sql/function/date/date_part_stats.test
+# description: Test date part stats on empty table
+# group: [date]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
+
+statement ok
+CREATE TABLE dates(d DATE);
+
+# test stats propagation from empty table
+query I
+SELECT EXTRACT(year FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(month FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(day FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(decade FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(century FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(millennium FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(microsecond FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(millisecond FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(second FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(minute FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(hour FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(epoch FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(dow FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(isodow FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(week FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(doy FROM d) FROM dates;
+----
+
+query I
+SELECT EXTRACT(quarter FROM d) FROM dates;
+----
+
+query I
+SELECT YEARWEEK(d) FROM dates;
+----
+
+query I
+SELECT DAYOFMONTH(d) FROM dates;
+----
+
+query I
+SELECT WEEKDAY(d) FROM dates;
+----
+
+query I
+SELECT WEEKOFYEAR(d) FROM dates;
+----
+
+statement ok
+INSERT INTO dates VALUES (DATE '1992-01-01'), (DATE '2000-12-31');
+
+query I
+SELECT EXTRACT(YEAR FROM d) as y FROM dates ORDER BY y;
+----
+1992
+2000
+
+query I
+SELECT EXTRACT(month FROM d) as m FROM dates ORDER BY m;
+----
+1
+12
+
+query I
+SELECT EXTRACT(day FROM d) as d FROM dates ORDER BY d;
+----
+1
+31
+
+query I
+SELECT EXTRACT(decade FROM d) as d FROM dates ORDER BY d;
+----
+199
+200
+
+query I
+SELECT EXTRACT(century FROM d) as c FROM dates ORDER BY c;
+----
+20
+20
+
+query I
+SELECT EXTRACT(millennium FROM d) as m FROM dates ORDER BY m;
+----
+2
+2
+
+query I
+SELECT EXTRACT(second FROM d) as s FROM dates ORDER BY s;
+----
+0
+0
+
+query I
+SELECT EXTRACT(microsecond FROM d) FROM dates;
+----
+0
+0
+
+query I
+SELECT EXTRACT(millisecond FROM d) FROM dates;
+----
+0
+0
+
+query I
+SELECT EXTRACT(minute FROM d) as m FROM dates ORDER BY m;
+----
+0
+0
+
+query I
+SELECT EXTRACT(hour FROM d) h FROM dates;
+----
+0
+0
+
+query I
+SELECT EXTRACT(dow FROM d) as d FROM dates ORDER BY d;
+----
+1
+4
+
+query I
+SELECT EXTRACT(isodow FROM d) as d FROM dates ORDER BY d;
+----
+3
+7
+
+query I
+SELECT EXTRACT(week FROM d) as w FROM dates ORDER BY w;
+----
+1
+52
+
+query I
+SELECT EXTRACT(doy FROM d) as d FROM dates ORDER BY d;
+----
+1
+366
+
+query I
+SELECT EXTRACT(quarter FROM d) as q FROM dates ORDER BY q;
+----
+1
+4
+
+
+query I
+SELECT DAYOFMONTH(d) as d FROM dates ORDER BY d;
+----
+1
+31
+
+query I
+SELECT stats(YEARWEEK(d)) FROM dates LIMIT 1;
+----
+<REGEX>:.*199201.*200052.*
+
+query I
+SELECT stats(WEEKDAY(d)) FROM dates LIMIT 1;
+----
+<REGEX>:.*0.*6.*
+
+query I
+SELECT stats(WEEKOFYEAR(d)) FROM dates LIMIT 1;
+----
+<REGEX>:.*1.*54.*
+

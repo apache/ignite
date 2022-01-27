@@ -25,21 +25,15 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -89,7 +83,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String schemaName,
         String qry,
         @Nullable Object[] params,
-        IgniteDataStreamer<?, ?> streamer
+        IgniteDataStreamer<?, ?> streamer,
+        String qryInitiatorId
     ) throws IgniteCheckedException {
         return 0;
     }
@@ -99,7 +94,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String schemaName,
         String qry,
         List<Object[]> params,
-        SqlClientContext cliCtx
+        SqlClientContext cliCtx,
+        String qryInitiatorId
     ) throws IgniteCheckedException {
         return null;
     }
@@ -108,9 +104,10 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
         String schemaName,
         String cacheName,
-        TextQuery<K, V> qry,
+        String qry,
         String typeName,
-        IndexingQueryFilter filter       
+        IndexingQueryFilter filter,
+        int limit
     ) throws IgniteCheckedException {
         return null;
     }
@@ -168,19 +165,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroyOrphanIndex(
-        RootPage page,
-        String idxName,
-        int grpId,
-        PageMemory pageMemory,
-        GridAtomicLong rmvId,
-        ReuseList reuseList,
-        boolean mvccEnabled
-    ) throws IgniteCheckedException {
 
     }
 
@@ -244,12 +228,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
+    @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
 
     }
 
@@ -294,11 +273,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGrpId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public @Nullable GridCacheContextInfo registeredCacheInfo(String cacheName) {
         return null;
     }
@@ -333,6 +307,4 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String colNamePtrn) {
         return null;
     }
-
-	
 }

@@ -34,4 +34,29 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update key, key fields or val field in case the val is a complex type.")
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
+
+    /** */
+    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
+    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+
+    /** */
+    @Resources.BaseMessage("Illegal value of {0}. The value must be positive and less than Integer.MAX_VALUE " +
+        "(" + Integer.MAX_VALUE + ")." )
+    Resources.ExInst<SqlValidatorException> correctIntegerLimit(String a0);
+
+    /** */
+    @Resources.BaseMessage("Option ''{0}'' has already been defined")
+    Resources.ExInst<SqlValidatorException> optionAlreadyDefined(String optName);
+
+    /** */
+    @Resources.BaseMessage("Illegal value ''{0}''. The value must be UUID")
+    Resources.ExInst<SqlValidatorException> illegalUuid(String value);
+
+    /** */
+    @Resources.BaseMessage("Illegal value ''{0}''. The value must be IgniteUuid")
+    Resources.ExInst<SqlValidatorException> illegalIgniteUuid(String value);
+
+    /** */
+    @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
+    Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
 }

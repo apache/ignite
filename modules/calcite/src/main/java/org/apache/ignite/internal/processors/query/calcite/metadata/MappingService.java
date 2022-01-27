@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -29,13 +31,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MappingService extends Service {
     /**
-     * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
+     * Returns Nodes responsible for executing intermediate fragments (fragments without Scan leafs). Such fragments may be executed
      * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using node filter).
      *
      * @param topVer Topology version.
-     * @param desiredCnt desired nodes count, {@code 0} means all possible nodes.
+     * @param single Flag, indicating that a fragment should execute in a single node.
      * @param nodeFilter Node filter.
      * @return Nodes mapping for intermediate fragments.
      */
-    NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter);
+    List<UUID> executionNodes(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter);
 }

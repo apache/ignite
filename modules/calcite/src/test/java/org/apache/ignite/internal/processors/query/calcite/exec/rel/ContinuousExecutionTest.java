@@ -17,47 +17,74 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@SuppressWarnings("TypeMayBeWeakened")
 public class ContinuousExecutionTest extends AbstractExecutionTest {
-    /** */
-    @Parameter(0)
-    public int rowsCount;
+    /** Row count parameter number. */
+    protected static final int ROW_CNT_PARAM_NUM = LAST_PARAM_NUM + 1;
+
+    /** Remote fragment parameter number. */
+    protected static final int REMOTE_FRAGMENTS_PARAM_NUM = LAST_PARAM_NUM + 2;
 
     /** */
-    @Parameter(1)
-    public int remoteFragmentsCount;
+    @Parameter(ROW_CNT_PARAM_NUM)
+    public int rowsCnt;
 
-    @Parameterized.Parameters(name = "rowsCount={0}, remoteFragmentsCount={1}")
-    public static List<Object[]> parameters() {
-        return ImmutableList.of(
-            new Object[]{10, 1},
-            new Object[]{10, 5},
-            new Object[]{10, 10},
-            new Object[]{100, 1},
-            new Object[]{100, 5},
-            new Object[]{100, 10},
-            new Object[]{100_000, 1},
-            new Object[]{100_000, 5},
-            new Object[]{100_000, 10}
+    /** */
+    @Parameter(REMOTE_FRAGMENTS_PARAM_NUM)
+    public int remoteFragmentsCnt;
+
+    /** */
+    @Parameterized.Parameters(name = PARAMS_STRING + ", " +
+        "rowsCount={" + ROW_CNT_PARAM_NUM + "}, " +
+        "remoteFragmentsCount={" + REMOTE_FRAGMENTS_PARAM_NUM + "}")
+    public static List<Object[]> data() {
+        List<Object[]> extraParams = new ArrayList<>();
+
+        ImmutableList<Object[]> newParams = ImmutableList.of(
+            new Object[] {10, 1},
+            new Object[] {10, 5},
+            new Object[] {10, 10},
+            new Object[] {100, 1},
+            new Object[] {100, 5},
+            new Object[] {100, 10},
+            new Object[] {100_000, 1},
+            new Object[] {100_000, 5},
+            new Object[] {100_000, 10}
         );
+
+        for (Object[] newParam : newParams) {
+            for (Object[] inheritedParam : AbstractExecutionTest.parameters()) {
+                Object[] both = Stream.concat(Arrays.stream(inheritedParam), Arrays.stream(newParam))
+                    .toArray(Object[]::new);
+
+                extraParams.add(both);
+            }
+        }
+
+        return extraParams;
     }
 
     /**
@@ -65,21 +92,19 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
      */
     @Before
     @Override public void setup() throws Exception {
-        nodesCount = remoteFragmentsCount + 1;
+        nodesCnt = remoteFragmentsCnt + 1;
         super.setup();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testContinuousExecution() throws Exception {
-        UUID queryId = UUID.randomUUID();
+    public void testContinuousExecution() {
+        UUID qryId = UUID.randomUUID();
 
         List<UUID> nodes = nodes();
 
         for (int i = 1; i < nodes.size(); i++) {
-            UUID localNodeId = nodes.get(i);
+            UUID locNodeId = nodes.get(i);
 
             Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
                 /** */
@@ -90,12 +115,12 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
                 /** {@inheritDoc} */
                 @Override public boolean hasNext() {
-                    return cntr < rowsCount;
+                    return cntr < rowsCnt;
                 }
 
                 /** {@inheritDoc} */
                 @Override public Object[] next() {
-                    if (cntr >= rowsCount)
+                    if (cntr >= rowsCnt)
                         throw new NoSuchElementException();
 
                     Object[] row = new Object[6];
@@ -109,39 +134,44 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
                 }
             };
 
-            ExecutionContext ectx = executionContext(localNodeId, queryId, 0);
+            ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 0);
+            IgniteTypeFactory tf = ectx.getTypeFactory();
 
-            ScanNode scan = new ScanNode(ectx, iterable);
+            RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class, int.class, int.class, int.class);
+            ScanNode<Object[]> scan = new ScanNode<>(ectx, rowType, iterable);
 
-            ProjectNode project = new ProjectNode(ectx, r -> new Object[]{r[0], r[1], r[5]});
+            rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class);
+            ProjectNode<Object[]> project = new ProjectNode<>(ectx, rowType, r -> new Object[]{r[0], r[1], r[5]});
             project.register(scan);
 
-            FilterNode filter = new FilterNode(ectx, r -> (Integer) r[0] >= 2);
+            FilterNode<Object[]> filter = new FilterNode<>(ectx, rowType, r -> (Integer)r[0] >= 2);
             filter.register(project);
 
-            MailboxRegistry registry = mailboxRegistry(localNodeId);
+            MailboxRegistry registry = mailboxRegistry(locNodeId);
 
-            Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(localNodeId), registry,
+            Outbox<Object[]> outbox = new Outbox<>(ectx, rowType, exchangeService(locNodeId), registry,
                 0, 1, new AllNodes(nodes.subList(0, 1)));
 
             outbox.register(filter);
             registry.register(outbox);
 
-            outbox.context().execute(outbox::init);
+            outbox.context().execute(outbox::init, outbox::onError);
         }
 
-        UUID localNodeId = nodes.get(0);
+        UUID locNodeId = nodes.get(0);
 
-        ExecutionContext ectx = executionContext(localNodeId, queryId, 1);
+        ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 1);
+        IgniteTypeFactory tf = ectx.getTypeFactory();
 
-        MailboxRegistry registry = mailboxRegistry(localNodeId);
+        MailboxRegistry registry = mailboxRegistry(locNodeId);
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
-            new Inbox<Object[]>(ectx, exchangeService(localNodeId), registry, 0, 0));
+        Inbox<Object[]> inbox = (Inbox<Object[]>)registry.register(
+            new Inbox<>(ectx, exchangeService(locNodeId), registry, 0, 0));
 
-        inbox.init(ectx, nodes.subList(1, nodes.size()), null);
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class);
+        inbox.init(ectx, rowType, nodes.subList(1, nodes.size()), null);
 
-        RootNode node = new RootNode(ectx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ectx, rowType);
 
         node.register(inbox);
 

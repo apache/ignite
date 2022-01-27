@@ -811,7 +811,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         info(evt.message());
 
-                        UUID id = ((DiscoveryEvent) evt).eventNode().id();
+                        UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                         if (id.equals(g1.cluster().localNode().id()))
                             latch2_1.countDown();
@@ -833,7 +833,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     info(evt.message());
 
-                    UUID id = ((DiscoveryEvent) evt).eventNode().id();
+                    UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                     if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();
@@ -1035,7 +1035,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 boolean found = false;
 
-                for (GridPortRecord rec : ((IgniteKernal) g).context().ports().records()) {
+                for (GridPortRecord rec : ((IgniteKernal)g).context().ports().records()) {
                     if ((rec.protocol() == UDP) && rec.port() == ipFinder.getMulticastPort()) {
                         found = true;
 
@@ -2347,11 +2347,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
 
                 private List getAllMappings(DiscoveryDataBag bag) {
-                    return (List) bag.commonData().get(MARSHALLER_PROC.ordinal());
+                    return (List)bag.commonData().get(MARSHALLER_PROC.ordinal());
                 }
 
                 private Map getJavaMappings(List allMappings) {
-                    return (Map) allMappings.get(JAVA_ID);
+                    return (Map)allMappings.get(JAVA_ID);
                 }
             });
         }

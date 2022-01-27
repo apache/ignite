@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycle
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
@@ -40,13 +41,17 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     private final List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
 
     /** */
+    private final List<SchemaChangeListener> schemaChangeListeners = new ArrayList<>();
+
+    /** */
     private final List<DistributedMetastorageLifecycleListener> distributedMetastorageListeners = new ArrayList<>();
 
     /** */
     private final List<DatabaseLifecycleListener> dbListeners = new ArrayList<>();
 
     /**
-     * Listeners of distributed configuration controlled by {@link org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor}.
+     * Listeners of distributed configuration controlled by
+     * {@link org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor}.
      */
     private List<DistributedConfigurationLifecycleListener> distributedConfigurationListeners = new ArrayList<>();
 
@@ -67,6 +72,18 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<MetastorageLifecycleListener> getMetastorageSubscribers() {
         return metastorageListeners;
+    }
+
+    /** */
+    public void registerSchemaChangeListener(@NotNull SchemaChangeListener schemaChangeListener) {
+        requireNonNull(schemaChangeListener, "Schema change event subscriber should be not-null.");
+
+        schemaChangeListeners.add(schemaChangeListener);
+    }
+
+    /** */
+    public List<SchemaChangeListener> getSchemaChangeSubscribers() {
+        return schemaChangeListeners;
     }
 
     /** */

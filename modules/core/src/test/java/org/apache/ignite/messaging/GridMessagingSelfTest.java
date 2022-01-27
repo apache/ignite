@@ -661,7 +661,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         UUID id1 = ignite2.message().remoteListen(topic1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener1 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+                System.out.println(
+                    Thread.currentThread().getName() + " Listener1 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']'
+                );
 
                 msgCnt1.incrementAndGet();
 
@@ -671,7 +673,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         UUID id2 = ignite2.message().remoteListen(topic2, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener2 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+                System.out.println(
+                    Thread.currentThread().getName() + " Listener2 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']'
+                );
 
                 msgCnt2.incrementAndGet();
 
@@ -681,7 +685,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         UUID id3 = ignite2.message().remoteListen(topic3, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener3 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+                System.out.println(
+                    Thread.currentThread().getName() + " Listener3 received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']'
+                );
 
                 msgCnt3.incrementAndGet();
 

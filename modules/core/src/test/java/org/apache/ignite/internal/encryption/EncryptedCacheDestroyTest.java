@@ -19,13 +19,13 @@ package org.apache.ignite.internal.encryption;
 
 import java.util.Collection;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
+import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEYS_PREFIX;
 
 /**
  */
@@ -114,17 +114,17 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(encCacheName, grpName);
 
-        KeystoreEncryptionKey encKey = (KeystoreEncryptionKey)grid.context().encryption().groupKey(grpId);
+        GroupKey encKey = grid.context().encryption().getActiveKey(grpId);
         MetaStorage metaStore = grid.context().cache().context().database().metaStorage();
 
         if (keyShouldBeEmpty) {
             assertNull(encKey);
 
-            assertNull(metaStore.readRaw(ENCRYPTION_KEY_PREFIX + grpId));
+            assertNull(metaStore.readRaw(ENCRYPTION_KEYS_PREFIX + grpId));
         } else {
             assertNotNull(encKey);
 
-            assertNotNull(metaStore.readRaw(ENCRYPTION_KEY_PREFIX + grpId));
+            assertNotNull(metaStore.readRaw(ENCRYPTION_KEYS_PREFIX + grpId));
         }
     }
 }

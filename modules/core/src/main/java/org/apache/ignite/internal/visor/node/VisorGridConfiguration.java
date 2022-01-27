@@ -110,6 +110,9 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** List of cache key configurations. */
     private List<VisorCacheKeyConfiguration> cacheKeyCfgs;
 
+    /** Hadoop configuration. */
+    private VisorHadoopConfiguration hadoopCfg;
+
     /** SQL connector configuration. */
     private VisorSqlConnectorConfiguration sqlConnCfg;
 
@@ -153,7 +156,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         inclEvtTypes = c.getIncludeEventTypes();
         rest = new VisorRestConfiguration(c);
         userAttrs = c.getUserAttributes();
-        igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
         atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
@@ -174,8 +176,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
             binaryCfg = new VisorBinaryConfiguration(bc);
 
         cacheKeyCfgs = VisorCacheKeyConfiguration.list(c.getCacheKeyConfiguration());
-
-        
 
         ClientConnectorConfiguration ccc = c.getClientConnectorConfiguration();
 
@@ -346,7 +346,12 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         return cacheKeyCfgs;
     }
 
-   
+    /**
+     * @return Hadoop configuration.
+     */
+    public VisorHadoopConfiguration getHadoopConfiguration() {
+        return hadoopCfg;
+    }
 
     /**
      * @return SQL connector configuration.
@@ -385,7 +390,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V4;
+        return V5;
     }
 
     /** {@inheritDoc} */
@@ -401,7 +406,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(inclEvtTypes);
         out.writeObject(rest);
         U.writeMap(out, userAttrs);
-        U.writeCollection(out, igfss);
+        U.writeCollection(out, null);
         U.writeMap(out, env);
         out.writeObject(sysProps);
         out.writeObject(atomic);
@@ -412,7 +417,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         U.writeString(out, warmupClos);
         out.writeObject(binaryCfg);
         U.writeCollection(out, cacheKeyCfgs);
-      
+        out.writeObject(null);
         out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
         out.writeObject(dataStorage);
@@ -444,8 +449,8 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         warmupClos = U.readString(in);
         binaryCfg = (VisorBinaryConfiguration)in.readObject();
         cacheKeyCfgs = U.readList(in);
-       
-        sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
+        hadoopCfg = (VisorHadoopConfiguration)in.readObject();
+        sqlConnCfg = (VisorSqlConnectorConfiguration)in.readObject();
         srvcCfgs = U.readList(in);
 
         if (protoVer > V1)

@@ -121,7 +121,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** 
+    /**
       * Default lock timeout.
       * @deprecated Default lock timeout configuration property has no effect.
       */
@@ -358,6 +358,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
+    @SerializeSeparately
     private CacheInterceptor<K, V> interceptor;
 
     /** */
@@ -607,6 +608,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @return Name of the memory policy.
      * @deprecated Use {@link #getDataRegionName()} (String)} instead.
      */
     @Deprecated
@@ -630,6 +632,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @param memPlcName Memory policy name.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link #setDataRegionName(String)} instead.
      */
     @Deprecated
@@ -759,6 +763,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
      *
+     * @param sqlOnheapCacheMaxSize Maximum SQL on-heap cache.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
@@ -809,6 +814,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Enabling this can greatly improve performance for key-value operations and scan queries,
      * at the expense of RAM usage.
      *
+     * @param platformCfg Platform cache configuration.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
@@ -1616,7 +1622,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
      *      start rebalancing manually, or positive value to specify delay in milliseconds
      *      after which rebalancing should start automatically.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public long getRebalanceDelay() {
         return rebalanceDelay;
     }
@@ -1626,7 +1634,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceDelay Rebalance delay to set.
      * @return {@code this} for chaining.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
 
@@ -2390,6 +2400,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache key configuration.
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.keyCfg = cacheKeyCfg;
@@ -2437,7 +2448,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      * @see #setDiskPageCompressionLevel
      */
-    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+    public CacheConfiguration<K, V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
         this.diskPageCompression = diskPageCompression;
 
         return this;
@@ -2460,7 +2471,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+    public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
 
         return this;

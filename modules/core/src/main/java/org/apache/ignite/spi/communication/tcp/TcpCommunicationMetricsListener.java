@@ -64,7 +64,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_M
 /**
  * Statistics for {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
-class TcpCommunicationMetricsListener {
+public class TcpCommunicationMetricsListener {
     /** SPI context. */
     private final IgniteSpiContext spiCtx;
 
@@ -113,7 +113,10 @@ class TcpCommunicationMetricsListener {
     /** Message type map. */
     private volatile Map<Short, String> msgTypeMap;
 
-    /** */
+    /**
+     * @param ignite Ignite instance.
+     * @param spiCtx Ignite SPI context.
+     */
     public TcpCommunicationMetricsListener(Ignite ignite, IgniteSpiContext spiCtx) {
         this.ignite = ignite;
         this.spiCtx = spiCtx;
@@ -185,7 +188,7 @@ class TcpCommunicationMetricsListener {
         return msgCntrsByType;
     }
 
-    /** Metrics registry. */
+    /** @return Metrics registry. */
     public MetricRegistry metricRegistry() {
         return mreg;
     }
@@ -201,7 +204,7 @@ class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
@@ -222,7 +225,7 @@ class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
@@ -308,7 +311,7 @@ class TcpCommunicationMetricsListener {
         return collectMessagesCountByNodeId(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
     }
 
-    /** */
+    /** Collect messages count by type */
     protected Map<String, Long> collectMessagesCountByType(String prefix) {
         Map<String, Long> res = new HashMap<>();
 
@@ -332,7 +335,7 @@ class TcpCommunicationMetricsListener {
         return res;
     }
 
-    /** */
+    /** Collect messages count by nodeId */
     protected Map<UUID, Long> collectMessagesCountByNodeId(String metricName) {
         Map<UUID, Long> res = new HashMap<>();
 
@@ -431,12 +434,22 @@ class TcpCommunicationMetricsListener {
         }
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of sent message.
+     * @return Metric name for sent message.
+     */
     public static String sentMessagesByTypeMetricName(Short directType) {
         return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of the received message.
+     * @return Metric name for the received message.
+     */
     public static String receivedMessagesByTypeMetricName(Short directType) {
         return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }

@@ -94,6 +94,13 @@ public interface IgniteInternalTx {
     public long startTime();
 
     /**
+     * Start time of this transaction in nanoseconds to measure duration.
+     *
+     * @return Start time of this transaction in nanoseconds.
+     */
+    public long startTimeNanos();
+
+    /**
      * Cache transaction isolation level.
      *
      * @return Isolation level.
@@ -495,12 +502,6 @@ public interface IgniteInternalTx {
      * @return Future.
      */
     @Nullable public IgniteInternalFuture<?> salvageTx();
-
-    /**
-     * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public void endVersion(GridCacheVersion endVer);
 
     /**
      * @return Transaction write version. For all transactions except DHT transactions, will be equal to

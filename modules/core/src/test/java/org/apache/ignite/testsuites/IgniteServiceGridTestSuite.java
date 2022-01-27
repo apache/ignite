@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSel
 import org.apache.ignite.internal.processors.service.GridServiceProxyTopologyInitializationTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
@@ -62,6 +63,8 @@ import org.apache.ignite.internal.processors.service.ServicePredicateAccessCache
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -117,6 +120,12 @@ import org.junit.runners.Suite;
     GridServiceProxyTopologyInitializationTest.class,
     GridServiceDeployClusterReadOnlyModeTest.class,
     GridServiceClusterReadOnlyModeTest.class,
+    IgniteServiceCallContextTest.class,
 })
 public class IgniteServiceGridTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
+    }
 }

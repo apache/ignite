@@ -37,11 +37,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -73,6 +75,8 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.NodeMetricsViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
@@ -86,22 +90,26 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
@@ -110,6 +118,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -118,6 +128,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
@@ -130,6 +141,8 @@ import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
+import org.apache.ignite.spi.systemview.view.NodeAttributeView;
+import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -138,13 +151,11 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -156,7 +167,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
@@ -164,10 +174,15 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -182,6 +197,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
+
+    /** */
+    public static final String NODE_ATTRIBUTES_SYS_VIEW = metricName("node", "attributes");
+
+    /** */
+    public static final String NODE_ATTRIBUTES_SYS_VIEW_DESC = "Node attributes";
+
+    /** */
+    public static final String NODE_METRICS_SYS_VIEW = metricName("node", "metrics");
+
+    /** */
+    public static final String NODE_METRICS_SYS_VIEW_DESC = "Node metrics";
+
+    /** @see IgniteSystemProperties#IGNITE_DISCOVERY_HISTORY_SIZE */
+    public static final int DFLT_DISCOVERY_HISTORY_SIZE = 500;
+
+    /** Name of the discovery metrics registry. */
+    public static final String DISCO_METRICS = metricName("io", "discovery");
 
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
@@ -198,7 +231,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
+    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -288,10 +321,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
-            new ClusterNodeViewWalker(),
-            () -> F.concat(false, allNodes(), daemonNodes()),
-            ClusterNodeView::new);
+        if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
+            ctx.systemView().registerView(
+                NODES_SYS_VIEW,
+                NODES_SYS_VIEW_DESC,
+                new ClusterNodeViewWalker(),
+                () -> F.concat(false, allNodes(), daemonNodes()),
+                ClusterNodeView::new
+            );
+
+            ctx.systemView().registerView(
+                NODE_METRICS_SYS_VIEW,
+                NODE_METRICS_SYS_VIEW_DESC,
+                new NodeMetricsViewWalker(),
+                () -> F.concat(false, allNodes(), daemonNodes()),
+                NodeMetricsView::new
+            );
+
+            ctx.systemView().registerFiltrableView(
+                NODE_ATTRIBUTES_SYS_VIEW,
+                NODE_ATTRIBUTES_SYS_VIEW_DESC,
+                new NodeAttributeViewWalker(),
+                this::nodeAttributeViewSupplier,
+                Function.identity()
+            );
+        }
     }
 
     /** {@inheritDoc} */
@@ -417,7 +471,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         }
 
-        return res == null ? Collections.<String, Map<UUID,Boolean>>emptyMap() : res;
+        return res == null ? Collections.<String, Map<UUID, Boolean>>emptyMap() : res;
     }
 
     /**
@@ -505,6 +559,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
+            private final Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {
                 for (IgniteInClosure<ClusterNode> lsnr : locNodeInitLsnrs)
@@ -518,26 +574,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            @Override public IgniteFuture<?> onDiscovery(
-                final int type,
-                final long topVer,
-                final ClusterNode node,
-                final Collection<ClusterNode> topSnapshot,
-                final Map<Long, Collection<ClusterNode>> snapshots,
-                @Nullable DiscoverySpiCustomMessage spiCustomMsg
-            ) {
+            /** {@inheritDoc} */
+            @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoNtfWrk.submit(notificationFut, () -> {
-                    synchronized (discoEvtMux) {
-                        onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
-                    }
-                });
+                discoNtfWrk.submit(notificationFut, ctx.security().enabled()
+                    ? new SecurityAwareNotificationTask(notification)
+                    : new NotificationTask(notification));
 
                 IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
 
                 //TODO could be optimized with more specific conditions.
-                switch (type) {
+                switch (notification.type()) {
                     case EVT_NODE_JOINED:
                     case EVT_NODE_LEFT:
                     case EVT_NODE_FAILED:
@@ -554,31 +602,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             /**
-             * @param type Event type.
-             * @param topVer Event topology version.
-             * @param node Event node.
-             * @param topSnapshot Topology snapsjot.
-             * @param snapshots Topology snapshots history.
-             * @param spiCustomMsg Custom event.
+             * @param notification Notification.
              */
-            private void onDiscovery0(
-                final int type,
-                final long topVer,
-                final ClusterNode node,
-                final Collection<ClusterNode> topSnapshot,
-                final Map<Long, Collection<ClusterNode>> snapshots,
-                @Nullable DiscoverySpiCustomMessage spiCustomMsg
-            ) {
-                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
-                    : ((CustomMessageWrapper)spiCustomMsg).delegate();
+            private void onDiscovery0(DiscoveryNotification notification) {
+                int type = notification.type();
+                ClusterNode node = notification.getNode();
+                long topVer = notification.getTopVer();
 
-                if (skipMessage(type, customMsg))
+                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
+                    : ((CustomMessageWrapper)notification.getCustomMsgData()).delegate();
+
+                if (skipMessage(notification.type(), customMsg))
                     return;
 
                 final ClusterNode locNode = localNode();
 
-                if (snapshots != null)
-                    topHist = snapshots;
+                if (notification.getTopHist() != null)
+                    topHist = notification.getTopHist();
 
                 boolean verChanged;
 
@@ -673,14 +713,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             nextTopVer,
                             ctx.state().clusterState(),
                             locNode,
-                            topSnapshot);
+                            notification.getTopSnapshot());
                     }
                     else if (customMsg instanceof ChangeGlobalStateMessage) {
                         discoCache = createDiscoCache(
                             nextTopVer,
                             ctx.state().pendingState((ChangeGlobalStateMessage)customMsg),
                             locNode,
-                            topSnapshot);
+                            notification.getTopSnapshot());
                     }
                     else
                         discoCache = customMsg.createDiscoCache(GridDiscoveryManager.this, nextTopVer, snapshot.discoCache);
@@ -701,7 +741,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
                         boolean discoCacheRecalculationRequired = ctx.state().autoAdjustInMemoryClusterState(
                             node.id(),
-                            topSnapshot,
+                            notification.getTopSnapshot(),
                             discoCache,
                             topVer,
                             minorTopVer
@@ -712,7 +752,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 nextTopVer,
                                 ctx.state().clusterState(),
                                 locNode,
-                                topSnapshot
+                                notification.getTopSnapshot()
                             );
 
                             discoCacheHist.put(nextTopVer, discoCache);
@@ -739,6 +779,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
+                SecurityContext secCtx = remoteSecurityContext(ctx);
+
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
                     if (gridStartTime == 0)
@@ -754,20 +796,32 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvt.eventNode(node);
                     discoEvt.type(EVT_NODE_JOINED);
 
-                    discoEvt.topologySnapshot(topVer, new ArrayList<>(F.view(topSnapshot, FILTER_NOT_DAEMON)));
+                    discoEvt.topologySnapshot(topVer, new ArrayList<>(F.view(notification.getTopSnapshot(), FILTER_NOT_DAEMON)));
+
+                    if (notification.getSpanContainer() != null)
+                        discoEvt.span(notification.getSpanContainer().span());
 
                     discoWrk.discoCache = discoCache;
 
-                    if (!isLocDaemon && !ctx.clientDisconnected()) {
-                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
+                    if (!ctx.clientDisconnected()) {
+                        // The security processor must be notified first, since {@link IgniteSecurity#onLocalJoin}
+                        // finishes local node security context initialization that can be demanded by other Ignite
+                        // components.
+                        ctx.security().onLocalJoin();
 
-                        ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
+                        if (!isLocDaemon) {
+                            ctx.cache().context().versions().onLocalJoin(topVer);
 
-                        ctx.service().onLocalJoin(discoEvt, discoCache);
+                            ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
 
-                        ctx.authentication().onLocalJoin();
+                            ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
-                        ctx.encryption().onLocalJoin();
+                            ctx.service().onLocalJoin(discoEvt, discoCache);
+
+                            ctx.encryption().onLocalJoin();
+
+                            ctx.cluster().onLocalJoin();
+                        }
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
@@ -815,6 +869,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     assert locNode.isClient() : locNode;
                     assert node.isClient() : node;
 
+                    ctx.security().onLocalJoin();
+
                     boolean clusterRestarted = gridStartTime != getSpi().getGridStartTime();
 
                     gridStartTime = getSpi().getGridStartTime();
@@ -834,7 +890,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache0, topSnapshot, null);
+                                discoWrk.addEvent(
+                                    new NotificationEvent(
+                                        EVT_CLIENT_NODE_RECONNECTED,
+                                        nextTopVer,
+                                        node,
+                                        discoCache0,
+                                        notification.getTopSnapshot(),
+                                        null,
+                                        notification.getSpanContainer(),
+                                        secCtx
+                                    )
+                                );
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -846,13 +913,87 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
-                    discoWrk.addEvent(type, nextTopVer, node, discoCache, topSnapshot, customMsg);
+                    discoWrk.addEvent(
+                        new NotificationEvent(
+                            type,
+                            nextTopVer,
+                            node, discoCache,
+                            notification.getTopSnapshot(),
+                            customMsg,
+                            notification.getSpanContainer(),
+                            secCtx
+                        )
+                    );
 
                 if (stateFinishMsg != null)
-                    discoWrk.addEvent(EVT_DISCOVERY_CUSTOM_EVT, nextTopVer, node, discoCache, topSnapshot, stateFinishMsg);
+                    discoWrk.addEvent(
+                        new NotificationEvent(
+                            EVT_DISCOVERY_CUSTOM_EVT,
+                            nextTopVer,
+                            node,
+                            discoCache,
+                            notification.getTopSnapshot(),
+                            stateFinishMsg,
+                            notification.getSpanContainer(),
+                            secCtx
+                        )
+                    );
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED)
                     discoWrk.awaitDisconnectEvent();
+            }
+
+            /**
+             * Extends {@link NotificationTask} to run in a security context owned by the initiator of the
+             * discovery event.
+             */
+            class SecurityAwareNotificationTask extends NotificationTask {
+                /** */
+                public SecurityAwareNotificationTask(DiscoveryNotification notification) {
+                    super(notification);
+                }
+
+                /** */
+                @Override public void run() {
+                    DiscoverySpiCustomMessage customMsg = notification.getCustomMsgData();
+
+                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
+                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
+
+                        try (OperationSecurityContext ignored = ctx.security().withContext(secSubjId)) {
+                            super.run();
+                        }
+                    }
+                    else {
+                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                            marshaller,
+                            U.resolveClassLoader(ctx.config()),
+                            notification.getNode()
+                        );
+
+                        try (OperationSecurityContext ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
+                            super.run();
+                        }
+                    }
+                }
+            }
+
+            /** Represents task to handle discovery notification asynchronously. */
+            class NotificationTask implements Runnable {
+                /** */
+                protected final DiscoveryNotification notification;
+
+                /** */
+                public NotificationTask(DiscoveryNotification notification) {
+                    this.notification = notification;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void run() {
+                    synchronized (discoEvtMux) {
+                        onDiscovery0(notification);
+                    }
+                }
             }
         });
 
@@ -1034,7 +1175,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return new DiscoveryMetricsProvider() {
             /** Disable cache metrics update. */
             private final boolean disableCacheMetricsUpdate = IgniteSystemProperties.getBoolean(
-                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, false);
+                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE);
 
             /** */
             private final long startTime = U.currentTimeMillis();
@@ -1142,6 +1283,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
+        ShutdownPolicy locShutdownPolicy = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
+
         boolean ipV4Warned = false;
 
         boolean jvmMajVerWarned = false;
@@ -1156,7 +1299,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSrvcProcMode = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
         for (ClusterNode n : nodes) {
@@ -1242,20 +1384,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            Boolean rmtSrvcProcModeAttr = n.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+            ShutdownPolicy rmtShutdownPolicy = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
+                ShutdownPolicy.fromOrdinal(n.attribute(ATTR_SHUTDOWN_POLICY));
 
-            final boolean rmtSrvcProcMode = rmtSrvcProcModeAttr != null ? rmtSrvcProcModeAttr : false;
-
-            if (!F.eq(locSrvcProcMode, rmtSrvcProcMode)) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED +
-                    " property value differs from remote node's value " +
-                    "(to make sure all nodes in topology have identical service processor mode, " +
-                    "configure system property explicitly) " +
-                    "[locSrvcProcMode=" + locSrvcProcMode +
-                    ", rmtSrvcProcMode=" + rmtSrvcProcMode +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
+            if (rmtShutdownPolicy != null && !F.eq(locShutdownPolicy, rmtShutdownPolicy)) {
+                throw new IgniteCheckedException("Remote node has shutdoun policy different from local" +
+                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPolicy +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPolicy +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
             if (ctx.security().enabled()) {
@@ -1384,7 +1520,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, false);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1435,7 +1571,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, true);
     }
 
     /**
@@ -1501,28 +1637,59 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @param offheap Offheap size.
+     * @param needNodesDetails Flag for additional alive nodes logging.
      */
-    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
-        int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
-        double offheap) {
+    private void topologySnapshotMessage(
+        IgniteClosure<String, Void> clo,
+        long topVer,
+        DiscoCache discoCache,
+        int evtType,
+        ClusterNode evtNode,
+        int srvNodesNum,
+        int clientNodesNum,
+        int totalCpus,
+        double heap,
+        double offheap,
+        boolean needNodesDetails
+    ) {
         DiscoveryDataClusterState state = discoCache.state();
 
-        String summary = PREFIX + " [" +
-            (discoOrdered ? "ver=" + topVer + ", " : "") +
-            "locNode=" + U.id8(discoCache.localNode().id()) +
-            ", servers=" + srvNodesNum +
-            ", clients=" + clientNodesNum +
-            ", state=" + (state.active() ? "ACTIVE" : "INACTIVE") +
-            ", CPUs=" + totalCpus +
-            ", offheap=" + offheap + "GB" +
-            ", heap=" + heap + "GB]";
+        SB summary = new SB(PREFIX);
 
-        clo.apply(summary);
+        summary.a(" [");
+        summary.a(discoOrdered ? "ver=" + topVer + ", " : "");
+        summary.a("locNode=").a(U.id8(discoCache.localNode().id()));
+        summary.a(", servers=").a(srvNodesNum);
+        summary.a(", clients=").a(clientNodesNum);
+        summary.a(", state=").a(state.active() ? "ACTIVE" : "INACTIVE");
+        summary.a(", CPUs=").a(totalCpus);
+        summary.a(", offheap=").a(offheap).a("GB");
+        summary.a(", heap=").a(heap).a("GB");
+
+        if ((evtType == EVT_NODE_JOINED
+            || evtType == EVT_NODE_LEFT
+            || evtType == EVT_NODE_FAILED)
+            && needNodesDetails) {
+            summary.a(", aliveNodes=[");
+
+            for (ClusterNode clusterNode : discoCache.allNodes()) {
+                if (discoCache.alive(clusterNode.id()))
+                    summary.a(nodeDescription(clusterNode)).a(", ");
+            }
+
+            summary.setLength(summary.length() - 2);
+
+            summary.a(']');
+        }
+
+        summary.a(']');
+
+        clo.apply(summary.toString());
 
         ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
-                currCrd != null && currCrd.order() > evtNode.order())
+                currCrd != null && currCrd.order() > evtNode.order() && !evtNode.isClient() && !evtNode.isDaemon())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
 
         BaselineTopology blt = state.baselineTopology();
@@ -1540,7 +1707,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (targetState == null)
                 targetState = ctx.config().isAutoActivationEnabled() ? ACTIVE : INACTIVE;
 
-            if (!active(state.state()) && active(targetState)) {
+            if (!state.state().active() && targetState.active()) {
                 String offlineConsistentIds = "";
 
                 if (bltOffline > 0 && bltOffline <= 5) {
@@ -1559,6 +1726,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
             }
         }
+    }
+
+    /**
+     * Provides text descrition of a cluster node.
+     *
+     * @param node Node.
+     */
+    private static String nodeDescription(ClusterNode node) {
+        return new SB(node.getClass().getSimpleName())
+            .a(" [id=").a(node.id())
+            .a(", consistentId=").a(node.consistentId())
+            .a(", isClient=").a(node.isClient())
+            .a(", ver=").a(node.version()).a(']')
+            .toString();
     }
 
     /** {@inheritDoc} */
@@ -1773,7 +1954,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCache().allNodes();
     }
 
-    /** @return all alive server nodes is topology */
+    /** @return all alive server nodes in topology */
     public Collection<ClusterNode> aliveServerNodes() {
         return discoCache().aliveServerNodes();
     }
@@ -2147,7 +2328,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
-            getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+            IgniteSecurity security = ctx.security();
+
+            getSpi().sendCustomEvent(security.enabled()
+                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
+                : new CustomMessageWrapper(msg));
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
@@ -2169,26 +2354,40 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @Nullable Set<String> cachesToClose) {
         // Prevent race when discovery message was processed, but was passed to discoWrk.
         synchronized (discoEvtMux) {
-            discoWrk.addEvent(EVT_DISCOVERY_CUSTOM_EVT,
-                AffinityTopologyVersion.NONE,
-                localNode(),
-                null,
-                Collections.<ClusterNode>emptyList(),
-                new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose));
+            discoWrk.addEvent(
+                new NotificationEvent(
+                    EVT_DISCOVERY_CUSTOM_EVT,
+                    AffinityTopologyVersion.NONE,
+                    localNode(),
+                    null,
+                    Collections.<ClusterNode>emptyList(),
+                    new ClientCacheChangeDummyDiscoveryMessage(remoteSecurityContext(ctx), reqId, startReqs, cachesToClose),
+                    null,
+                    remoteSecurityContext(ctx)
+                )
+            );
         }
     }
 
     /**
-     * @param discoCache
-     * @param node
+     * Adds metrics update event to discovery worker queue.
+     *
+     * @param discoCache Discovery cache.
+     * @param node Event node.
      */
     public void metricsUpdateEvent(DiscoCache discoCache, ClusterNode node) {
-        discoWrk.addEvent(EVT_NODE_METRICS_UPDATED,
-            discoCache.version(),
-            node,
-            discoCache,
-            discoCache.nodeMap.values(),
-            null);
+        discoWrk.addEvent(
+            new NotificationEvent(
+                EVT_NODE_METRICS_UPDATED,
+                discoCache.version(),
+                node,
+                discoCache,
+                discoCache.nodeMap.values(),
+                null,
+                null,
+                remoteSecurityContext(ctx)
+            )
+        );
     }
 
     /**
@@ -2248,7 +2447,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode clusterNode = ctx.discovery().localNode();
 
         boolean client = (clusterNode instanceof TcpDiscoveryNode) ?
-                (((TcpDiscoveryNode) clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
+                (((TcpDiscoveryNode)clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
 
         return client && (spi instanceof IgniteDiscoverySpi) &&
             ((IgniteDiscoverySpi)spi).clientReconnectSupported();
@@ -2429,13 +2628,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         DiscoverySpi discoverySpi = cfg.getDiscoverySpi();
 
         if (rslvr != null) {
-            if (!supportsCommunicationErrorResolve(commSpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but CommunicationSpi does not support communication" +
-                    "problem resolve: " + commSpi.getClass().getName());
+            if (!supportsCommunicationErrorResolve(commSpi)) {
+                throw new IgniteCheckedException(
+                    "CommunicationFailureResolver is configured, but CommunicationSpi does not support communication" +
+                    "problem resolve: " + commSpi.getClass().getName()
+                );
+            }
 
-            if (!supportsCommunicationErrorResolve(discoverySpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but DiscoverySpi does not support communication" +
-                    "problem resolve: " + discoverySpi.getClass().getName());
+            if (!supportsCommunicationErrorResolve(discoverySpi)) {
+                throw new IgniteCheckedException(
+                    "CommunicationFailureResolver is configured, but DiscoverySpi does not support communication" +
+                    "problem resolve: " + discoverySpi.getClass().getName()
+                );
+            }
         }
         else {
             if (supportsCommunicationErrorResolve(commSpi) && supportsCommunicationErrorResolve(discoverySpi))
@@ -2564,16 +2769,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         Collection<ClusterNode> locNodeOnlyTop = Collections.singleton(node);
 
-                        discoWrk.addEvent(EVT_NODE_SEGMENTED,
-                            AffinityTopologyVersion.NONE,
-                            node,
-                            createDiscoCache(
+                        discoWrk.addEvent(
+                            new NotificationEvent(
+                                EVT_NODE_SEGMENTED,
                                 AffinityTopologyVersion.NONE,
-                                ctx.state().clusterState(),
                                 node,
-                                locNodeOnlyTop),
-                            locNodeOnlyTop,
-                            null);
+                                createDiscoCache(
+                                    AffinityTopologyVersion.NONE,
+                                    ctx.state().clusterState(),
+                                    node,
+                                    locNodeOnlyTop),
+                                locNodeOnlyTop,
+                                null,
+                                null,
+                                remoteSecurityContext(ctx)
+                            )
+                        );
 
                         lastSegChkRes.set(false);
                     }
@@ -2678,22 +2889,81 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 try {
                     body0();
                 }
-                catch (InterruptedException e) {
-                    if (!isCancelled)
-                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                    throw e;
-                }
                 catch (Throwable t) {
-                    U.error(log, "Exception in discovery notyfier worker thread.", t);
+                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
+                        || X.hasCause(t, IgniteInterruptedException.class)
+                        || X.hasCause(t, IgniteInterruptedCheckedException.class);
 
-                    FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+                    if (!isInterruptedException)
+                        U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    ctx.failure().process(new FailureContext(type, t));
+                    if (!isInterruptedException || !isCancelled) {
+                        FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+
+                        ctx.failure().process(new FailureContext(type, t));
+                    }
 
                     throw t;
                 }
             }
+        }
+    }
+
+    /**
+     * Internal notification event.
+     */
+    private static class NotificationEvent {
+        /** Type. */
+        int type;
+
+        /** Topology version. */
+        AffinityTopologyVersion topVer;
+
+        /** Node. */
+        ClusterNode node;
+
+        /** Disco cache. */
+        DiscoCache discoCache;
+
+        /** Topology snapshot. */
+        Collection<ClusterNode> topSnapshot;
+
+        /** Data. */
+        @Nullable DiscoveryCustomMessage data;
+
+        /** Span container. */
+        SpanContainer spanContainer;
+
+        /** Security context. */
+        SecurityContext secCtx;
+
+        /**
+         * @param type Type.
+         * @param topVer Topology version.
+         * @param node Node.
+         * @param discoCache Disco cache.
+         * @param topSnapshot Topology snapshot.
+         * @param data Data.
+         * @param spanContainer Span container.
+         */
+        public NotificationEvent(
+            int type,
+            AffinityTopologyVersion topVer,
+            ClusterNode node,
+            DiscoCache discoCache,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable DiscoveryCustomMessage data,
+            SpanContainer spanContainer,
+            SecurityContext secCtx
+        ) {
+            this.type = type;
+            this.topVer = topVer;
+            this.node = node;
+            this.discoCache = discoCache;
+            this.topSnapshot = topSnapshot;
+            this.data = data;
+            this.spanContainer = spanContainer;
+            this.secCtx = secCtx;
         }
     }
 
@@ -2703,8 +2973,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private DiscoCache discoCache;
 
         /** Event queue. */
-        private final BlockingQueue<GridTuple6<Integer, AffinityTopologyVersion, ClusterNode,
-            DiscoCache, Collection<ClusterNode>, DiscoveryCustomMessage>> evts = new LinkedBlockingQueue<>();
+        private final BlockingQueue<NotificationEvent> evts = new LinkedBlockingQueue<>();
 
         /** Restart process handler. */
         private final RestartProcessFailureHandler restartProcHnd = new RestartProcessFailureHandler();
@@ -2740,7 +3009,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param topSnapshot Topology snapshot.
          */
         @SuppressWarnings("RedundantTypeArguments")
-        private void recordEvent(int type, long topVer, ClusterNode node, DiscoCache discoCache, Collection<ClusterNode> topSnapshot) {
+        private void recordEvent(
+            int type,
+            long topVer,
+            ClusterNode node,
+            DiscoCache discoCache,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable SpanContainer spanContainer
+        ) {
             assert node != null;
 
             if (ctx.event().isRecordable(type)) {
@@ -2750,6 +3026,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.eventNode(node);
                 evt.type(type);
                 evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_NOT_DAEMON));
+                evt.span(spanContainer != null ? spanContainer.span() : null);
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     evt.message("Metrics were updated");
@@ -2780,27 +3057,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /**
-         * @param type Event type.
-         * @param topVer Topology version.
-         * @param node Node.
-         * @param discoCache Discovery cache.
-         * @param topSnapshot Topology snapshot.
-         * @param data Custom message.
+         * @param notificationEvt Notification event.
          */
-        void addEvent(
-            int type,
-            AffinityTopologyVersion topVer,
-            ClusterNode node,
-            DiscoCache discoCache,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable DiscoveryCustomMessage data
-        ) {
-            assert node != null : data;
+        void addEvent(NotificationEvent notificationEvt) {
+            assert notificationEvt.node != null : notificationEvt.data;
 
-            if (type == EVT_CLIENT_NODE_DISCONNECTED)
+            if (notificationEvt.type == EVT_CLIENT_NODE_DISCONNECTED)
                 discoWrk.disconnectEvtFut = new GridFutureAdapter();
 
-            evts.add(new GridTuple6<>(type, topVer, node, discoCache, topSnapshot, data));
+            evts.add(notificationEvt);
         }
 
         /** {@inheritDoc} */
@@ -2831,8 +3096,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** @throws InterruptedException If interrupted. */
         private void body0() throws InterruptedException {
-            GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt;
+            NotificationEvent evt;
 
             blockingSectionBegin();
 
@@ -2843,170 +3107,173 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            int type = evt.get1();
+            try (OperationSecurityContext ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
+                int type = evt.type;
 
-            AffinityTopologyVersion topVer = evt.get2();
+                AffinityTopologyVersion topVer = evt.topVer;
 
-            if (type == EVT_NODE_METRICS_UPDATED && (discoCache == null || topVer.compareTo(discoCache.version()) < 0))
-                return;
+                if (type == EVT_NODE_METRICS_UPDATED && (discoCache == null || topVer.compareTo(discoCache.version()) < 0))
+                    return;
 
-            ClusterNode node = evt.get3();
+                ClusterNode node = evt.node;
 
-            boolean isDaemon = node.isDaemon();
+                boolean isDaemon = node.isDaemon();
 
-            boolean segmented = false;
+                boolean segmented = false;
 
-            if (evt.get4() != null)
-                discoCache = evt.get4();
+                if (evt.discoCache != null)
+                    discoCache = evt.discoCache;
 
-            switch (type) {
-                case EVT_NODE_JOINED: {
-                    assert !discoOrdered || topVer.topologyVersion() == node.order() : "Invalid topology version [topVer=" + topVer +
-                        ", node=" + node + ']';
+                switch (type) {
+                    case EVT_NODE_JOINED: {
+                        assert !discoOrdered || topVer.topologyVersion() == node.order() : "Invalid topology version [topVer=" + topVer +
+                            ", node=" + node + ']';
 
-                    try {
-                        checkAttributes(F.asList(node));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
-                    }
+                        try {
+                            checkAttributes(F.asList(node));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
+                        }
 
-                    if (!isDaemon) {
-                        if (!isLocDaemon) {
-                            if (log.isInfoEnabled())
-                                log.info("Added new node to topology: " + node);
+                        if (!isDaemon) {
+                            if (!isLocDaemon) {
+                                if (log.isInfoEnabled())
+                                    log.info("Added new node to topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), type, node, true);
+                                ackTopology(topVer.topologyVersion(), type, node, true);
+                            }
+                            else if (log.isDebugEnabled())
+                                log.debug("Added new node to topology: " + node);
                         }
                         else if (log.isDebugEnabled())
-                            log.debug("Added new node to topology: " + node);
+                            log.debug("Added new daemon node to topology: " + node);
+
+                        break;
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Added new daemon node to topology: " + node);
 
-                    break;
-                }
+                    case EVT_NODE_LEFT: {
+                        // Check only if resolvers were configured.
+                        if (hasRslvrs)
+                            segChkWrk.scheduleSegmentCheck();
 
-                case EVT_NODE_LEFT: {
-                    // Check only if resolvers were configured.
-                    if (hasRslvrs)
-                        segChkWrk.scheduleSegmentCheck();
+                        if (!isDaemon) {
+                            if (!isLocDaemon) {
+                                if (log.isInfoEnabled())
+                                    log.info("Node left topology: " + node);
 
-                    if (!isDaemon) {
-                        if (!isLocDaemon) {
-                            if (log.isInfoEnabled())
-                                log.info("Node left topology: " + node);
-
-                            ackTopology(topVer.topologyVersion(), type, node, true);
+                                ackTopology(topVer.topologyVersion(), type, node, true);
+                            }
+                            else if (log.isDebugEnabled())
+                                log.debug("Node left topology: " + node);
                         }
                         else if (log.isDebugEnabled())
-                            log.debug("Node left topology: " + node);
+                            log.debug("Daemon node left topology: " + node);
+
+                        break;
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Daemon node left topology: " + node);
 
-                    break;
-                }
+                    case EVT_CLIENT_NODE_DISCONNECTED: {
+                        disconnectEvtFut.onDone();
 
-                case EVT_CLIENT_NODE_DISCONNECTED: {
-                    disconnectEvtFut.onDone();
+                        break;
+                    }
 
-                    break;
-                }
+                    case EVT_CLIENT_NODE_RECONNECTED: {
+                        if (log.isInfoEnabled())
+                            log.info("Client node reconnected to topology: " + node);
 
-                case EVT_CLIENT_NODE_RECONNECTED: {
-                    if (log.isInfoEnabled())
-                        log.info("Client node reconnected to topology: " + node);
-
-                    if (!isLocDaemon)
-                        ackTopology(topVer.topologyVersion(), type, node, true);
-
-                    break;
-                }
-
-                case EVT_NODE_FAILED: {
-                    // Check only if resolvers were configured.
-                    if (hasRslvrs)
-                        segChkWrk.scheduleSegmentCheck();
-
-                    if (!isDaemon) {
-                        if (!isLocDaemon) {
-                            U.warn(log, "Node FAILED: " + node);
-
+                        if (!isLocDaemon)
                             ackTopology(topVer.topologyVersion(), type, node, true);
+
+                        break;
+                    }
+
+                    case EVT_NODE_FAILED: {
+                        // Check only if resolvers were configured.
+                        if (hasRslvrs)
+                            segChkWrk.scheduleSegmentCheck();
+
+                        if (!isDaemon) {
+                            if (!isLocDaemon) {
+                                U.warn(log, "Node FAILED: " + node);
+
+                                ackTopology(topVer.topologyVersion(), type, node, true);
+                            }
+                            else if (log.isDebugEnabled())
+                                log.debug("Node FAILED: " + node);
                         }
                         else if (log.isDebugEnabled())
-                            log.debug("Node FAILED: " + node);
+                            log.debug("Daemon node FAILED: " + node);
+
+                        break;
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Daemon node FAILED: " + node);
 
-                    break;
-                }
+                    case EVT_NODE_SEGMENTED: {
+                        assert F.eqNodes(localNode(), node);
 
-                case EVT_NODE_SEGMENTED: {
-                    assert F.eqNodes(localNode(), node);
+                        if (nodeSegFired) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Ignored node segmented event [type=EVT_NODE_SEGMENTED, " +
+                                    "node=" + node + ']');
+                            }
 
-                    if (nodeSegFired) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Ignored node segmented event [type=EVT_NODE_SEGMENTED, " +
-                                "node=" + node + ']');
+                            return;
+                        }
+
+                        // Ignore all further EVT_NODE_SEGMENTED events
+                        // until EVT_NODE_RECONNECTED is fired.
+                        nodeSegFired = true;
+
+                        lastLoggedTop.set(0);
+
+                        segmented = true;
+
+                        if (!isLocDaemon)
+                            U.warn(log, "Local node SEGMENTED: " + node);
+                        else if (log.isDebugEnabled())
+                            log.debug("Local node SEGMENTED: " + node);
+
+                        break;
+                    }
+
+                    case EVT_DISCOVERY_CUSTOM_EVT: {
+                        if (ctx.event().isRecordable(EVT_DISCOVERY_CUSTOM_EVT)) {
+                            DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
+
+                            customEvt.node(ctx.discovery().localNode());
+                            customEvt.eventNode(node);
+                            customEvt.type(type);
+                            customEvt.topologySnapshot(topVer.topologyVersion(), evt.topSnapshot);
+                            customEvt.affinityTopologyVersion(topVer);
+                            customEvt.customMessage(evt.data);
+                            customEvt.span(evt.spanContainer != null ? evt.spanContainer.span() : null);
+
+                            if (evt.discoCache == null) {
+                                assert discoCache != null : evt.data;
+
+                                evt.discoCache = discoCache;
+                            }
+
+                            ctx.event().record(customEvt, evt.discoCache);
                         }
 
                         return;
                     }
 
-                    // Ignore all further EVT_NODE_SEGMENTED events
-                    // until EVT_NODE_RECONNECTED is fired.
-                    nodeSegFired = true;
+                    // Don't log metric update to avoid flooding the log.
+                    case EVT_NODE_METRICS_UPDATED:
+                        break;
 
-                    lastLoggedTop.set(0);
-
-                    segmented = true;
-
-                    if (!isLocDaemon)
-                        U.warn(log, "Local node SEGMENTED: " + node);
-                    else if (log.isDebugEnabled())
-                        log.debug("Local node SEGMENTED: " + node);
-
-                    break;
+                    default:
+                        assert false : "Invalid discovery event: " + type;
                 }
 
-                case EVT_DISCOVERY_CUSTOM_EVT: {
-                    if (ctx.event().isRecordable(EVT_DISCOVERY_CUSTOM_EVT)) {
-                        DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
+                recordEvent(type, topVer.topologyVersion(), node, evt.discoCache, evt.topSnapshot, evt.spanContainer);
 
-                        customEvt.node(ctx.discovery().localNode());
-                        customEvt.eventNode(node);
-                        customEvt.type(type);
-                        customEvt.topologySnapshot(topVer.topologyVersion(), evt.get5());
-                        customEvt.affinityTopologyVersion(topVer);
-                        customEvt.customMessage(evt.get6());
-
-                        if (evt.get4() == null) {
-                            assert discoCache != null : evt.get6();
-
-                            evt.set4(discoCache);
-                        }
-
-                        ctx.event().record(customEvt, evt.get4());
-                    }
-
-                    return;
-                }
-
-                // Don't log metric update to avoid flooding the log.
-                case EVT_NODE_METRICS_UPDATED:
-                    break;
-
-                default:
-                    assert false : "Invalid discovery event: " + type;
-            }
-
-            recordEvent(type, topVer.topologyVersion(), node, evt.get4(), evt.get5());
-
-            if (segmented)
-                onSegmentation();
+                if (segmented)
+                    onSegmentation();
+            };
         }
 
         /**
@@ -3316,12 +3583,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
 
-                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
-
-                    if (nodes == null)
-                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
-
-                    nodes.add(node);
+                    cacheGrpAffNodes.computeIfAbsent(grpId, id -> new ArrayList<>()).add(node);
                 }
             }
 
@@ -3378,5 +3640,63 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             discoCache.consIdxToNodeId,
             discoCache.minimumNodeVersion(),
             discoCache.minimumServerNodeVersion());
+    }
+
+    /**
+     * Node attributes view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<NodeAttributeView> nodeAttributeViewSupplier(Map<String, Object> filter) {
+        Object nodeFilter = filter.get(NodeAttributeViewWalker.NODE_ID_FILTER);
+
+        UUID nodeId = null;
+
+        if (nodeFilter instanceof UUID)
+            nodeId = (UUID)nodeFilter;
+        else if (nodeFilter instanceof String) {
+            try {
+                nodeId = UUID.fromString((String)nodeFilter);
+            }
+            catch (RuntimeException ignored) {
+                return Collections.emptyList();
+            }
+        }
+        else if (nodeFilter != null)
+            return Collections.emptyList();
+
+        Collection<ClusterNode> nodes;
+
+        if (nodeId != null) {
+            ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node != null)
+                nodes = Collections.singleton(node);
+            else
+                nodes = Collections.emptySet();
+        }
+        else
+            nodes = F.concat(false, allNodes(), daemonNodes());
+
+        String attrName = (String)filter.get(NodeAttributeViewWalker.NAME_FILTER);
+
+        return F.flat(F.iterator(nodes, node -> {
+            Map<String, Object> attrs = node.attributes();
+
+            if (attrName != null) {
+                Object attrVal = attrs.get(attrName);
+
+                if (attrVal == null)
+                    return Collections.emptyList();
+
+                attrs = F.asMap(attrName, attrs.get(attrName));
+            }
+
+            return F.iterator(
+                attrs.entrySet(),
+                na -> new NodeAttributeView(node.id(), na.getKey(), na.getValue()),
+                true
+            );
+        }, true));
     }
 }

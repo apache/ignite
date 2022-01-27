@@ -224,6 +224,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteEx ignite3 = startGrid(3);
 
+        awaitPartitionMapExchange();
+
         log.info("Stop block1.");
 
         spi.stopBlock();
@@ -563,6 +565,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteEx ignite3 = startGrid(3);
 
+        awaitPartitionMapExchange();
+
         log.info("Stop block1.");
 
         spi.stopBlock();
@@ -611,6 +615,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.stopBlock();
 
         putFut.get();
+
+        awaitPartitionMapExchange();
 
         checkData(map, null, cache, 4);
 
@@ -1215,6 +1221,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         startGrid(3);
 
+        awaitPartitionMapExchange();
+
         log.info("Stop block.");
 
         assertEquals(1, lockedLatch.getCount());
@@ -1463,7 +1471,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertTrue(((GridNearTxPrepareRequest)msgs.get(0)).firstClientRequest());
 
         for (int i = 1; i < msgs.size(); i++)
-            assertFalse(((GridNearTxPrepareRequest) msgs.get(i)).firstClientRequest());
+            assertFalse(((GridNearTxPrepareRequest)msgs.get(i)).firstClientRequest());
     }
 
     /**

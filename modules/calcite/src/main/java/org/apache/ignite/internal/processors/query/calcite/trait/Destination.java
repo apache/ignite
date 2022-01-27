@@ -23,12 +23,12 @@ import java.util.UUID;
 /**
  * Determines where to send a row to.
  */
-public interface Destination {
+public interface Destination<Row> {
     /**
      * @param row Row.
      * @return Target nodes list for specific row.
      */
-    List<UUID> targets(Object row);
+    List<UUID> targets(Row row);
 
     /**
      * @return All target nodes.

@@ -558,4 +558,16 @@ public interface ConnectionProperties {
      * @param keepBinary Whether to keep binary objects in binary form.
      */
     public void setKeepBinary(boolean keepBinary);
+
+    /**
+     * @return {@code True} if experimental query engine is enabled for a connection.
+     */
+    public boolean isUseExperimentalQueryEngine();
+
+    /**
+     * Sets use experimental query engine flag.
+     *
+     * @param useExperimentalQueryEngine {@code True} if experimental query engine is enabled for a connection.
+     */
+    public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine);
 }

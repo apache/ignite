@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,6 +60,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_S
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
@@ -66,11 +68,17 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  * Affinity cached function.
  */
 public class GridAffinityAssignmentCache {
+    /** @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE */
+    public static final int DFLT_AFFINITY_HISTORY_SIZE = 25;
+
+    /** @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD */
+    public static final float DFLT_PART_DISTRIBUTION_WARN_THRESHOLD = 50f;
+
     /**
      * Affinity cache will shrink when total number of non-shallow (see {@link HistoryAffinityAssignmentImpl})
      * historical instances will be greater than value of this constant.
      */
-    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 25);
+    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, DFLT_AFFINITY_HISTORY_SIZE);
 
     /**
      * Affinity cache will also shrink when total number of both shallow ({@link HistoryAffinityAssignmentShallowCopy})
@@ -89,7 +97,8 @@ public class GridAffinityAssignmentCache {
     private final int MIN_NON_SHALLOW_HIST_SIZE = 2;
 
     /** Partition distribution. */
-    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
+    private final float partDistribution =
+        getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, DFLT_PART_DISTRIBUTION_WARN_THRESHOLD);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -156,7 +165,7 @@ public class GridAffinityAssignmentCache {
      * @param backups Number of backups.
      * @param locCache Local cache flag.
      */
-    public GridAffinityAssignmentCache(GridKernalContext ctx,
+    private GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheOrGrpName,
         int grpId,
         AffinityFunction aff,
@@ -186,6 +195,22 @@ public class GridAffinityAssignmentCache {
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
 
         assert similarAffKey != null;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param aff Initialized affinity function.
+     * @param ccfg Cache configuration.
+     * @return Affinity assignment cache instance.
+     */
+    public static GridAffinityAssignmentCache create(GridKernalContext ctx, AffinityFunction aff, CacheConfiguration<?, ?> ccfg) {
+        return new GridAffinityAssignmentCache(ctx,
+            CU.cacheOrGroupName(ccfg),
+            CU.cacheGroupId(ccfg),
+            aff,
+            ccfg.getNodeFilter(),
+            ccfg.getBackups(),
+            ccfg.getCacheMode() == LOCAL);
     }
 
     /**
@@ -331,7 +356,7 @@ public class GridAffinityAssignmentCache {
         if (!locCache) {
             sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
 
-            Collections.sort(sorted, NodeOrderComparator.getInstance());
+            sorted.sort(NodeOrderComparator.getInstance());
         }
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
@@ -597,6 +622,13 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @return Last initialized affinity assignment.
+     */
+    public AffinityAssignment lastReadyAffinity() {
+        return head.get();
+    }
+
+    /**
      * @param topVer Topology version.
      * @return Affinity assignment.
      */
@@ -819,8 +851,8 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        assert cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
-            cache.topologyVersion().compareTo(topVer) <= 0 : "Invalid cached affinity: [cache=" + cache + ", topVer=" + topVer + ", lastAffChangedTopVer=" + lastAffChangeTopVer + "]";
+        assert cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 && cache.topologyVersion().compareTo(topVer) <= 0
+            : "Invalid cached affinity: [cache=" + cache + ", topVer=" + topVer + ", lastAffChangedTopVer=" + lastAffChangeTopVer + "]";
 
         return cache;
     }

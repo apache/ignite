@@ -18,18 +18,46 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 
 /**
  *
  */
 public enum MessageType {
+    /** */
     QUERY_START_REQUEST(300, QueryStartRequest::new),
+
+    /** */
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
-    QUERY_CANCEL_REQUEST(302, QueryCancelRequest::new),
+
+    /** */
+    QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
+
+    /** */
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
+
+    /** */
     QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
-    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCancelMessage::new),
-    GENERIC_ROW_MESSAGE(306, GenericRowMessage::new);
+
+    /** */
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
+
+    /** */
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
+
+    /** */
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
+
+    /** */
+    FRAGMENT_MAPPING(350, FragmentMapping::new),
+
+    /** */
+    COLOCATION_GROUP(351, ColocationGroup::new),
+
+    /** */
+    FRAGMENT_DESCRIPTION(352, FragmentDescription::new);
 
     /** */
     private final int directType;
@@ -49,42 +77,13 @@ public enum MessageType {
      * @return Message direct type;
      */
     public short directType() {
-        return (short) directType;
-    }
-
-    /** */
-    private CalciteMessage newMessage() {
-        CalciteMessage msg = factory.get();
-
-        assert msg.type() == this;
-
-        return msg;
+        return (short)directType;
     }
 
     /**
-     * Message factory method.
-     *
-     * @param directType Message direct type.
-     * @return new message or {@code null} in case of unknown message direct type.
+     * @return Message factory.
      */
-    public static CalciteMessage newMessage(short directType) {
-        switch (directType) {
-            case 300:
-                return QUERY_START_REQUEST.newMessage();
-            case 301:
-                return QUERY_START_RESPONSE.newMessage();
-            case 302:
-                return QUERY_CANCEL_REQUEST.newMessage();
-            case 303:
-                return QUERY_BATCH_MESSAGE.newMessage();
-            case 304:
-                return QUERY_ACKNOWLEDGE_MESSAGE.newMessage();
-            case 305:
-                return QUERY_INBOX_CANCEL_MESSAGE.newMessage();
-            case 306:
-                return GENERIC_ROW_MESSAGE.newMessage();
-            default:
-                return null;
-        }
+    public Supplier<CalciteMessage> factory() {
+        return factory;
     }
 }

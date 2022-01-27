@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.Arrays;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -164,8 +165,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         stopAllGrids();
 
-        for (int i = 0; i < channels.length; i++)
-            channels[i] = null;
+        Arrays.fill(channels, null);
 
         // Start 2 grids, so topology version of the new cluster will be less then old cluster.
         startGrids(2);
@@ -173,12 +173,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         awaitPartitionMapExchange();
 
         // Send any request to failover.
-        try {
-            client.cache(REPL_CACHE_NAME).put(0, 0);
-        }
-        catch (Exception expected) {
-            // No-op.
-        }
+        client.cache(REPL_CACHE_NAME).put(0, 0);
 
         initDefaultChannel();
 

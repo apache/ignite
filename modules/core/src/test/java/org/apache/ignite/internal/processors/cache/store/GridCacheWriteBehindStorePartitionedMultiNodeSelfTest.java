@@ -187,7 +187,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         Collection<Integer> allKeys = new ArrayList<>(100);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Map<Integer,String> map = stores[i].getMap();
+            Map<Integer, String> map = stores[i].getMap();
 
             assertFalse("Missing writes for node: " + i, map.isEmpty());
 

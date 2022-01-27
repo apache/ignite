@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -32,6 +29,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +41,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -58,9 +59,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -104,16 +103,6 @@ import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
@@ -151,8 +140,11 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -177,14 +169,26 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  * Tests for Jetty REST protocol.
  */
 @SuppressWarnings("unchecked")
+@RunWith(Parameterized.class)
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** */
     private static boolean memoryMetricsEnabled;
+
+    /** */
+    @Parameterized.Parameter
+    public boolean useBinaryArrays;
+
+    /** Generates values for the {@link #useBinaryArrays} parameter. */
+    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
+    public static Iterable<Object[]> useBinaryArrays() {
+        return Arrays.asList(new Object[][] {{true}, {false}});
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
 
         super.beforeTestsStarted();
 
@@ -194,6 +198,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
 
         super.afterTestsStopped();
     }
@@ -1713,6 +1718,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Tests that PROBE command is handled successfully.
+     */
+    @Test
+    public void testProbeCommand() throws Exception {
+        String ret = content(null, GridRestCommand.PROBE);
+
+        assertResponseSucceeded(ret, false);
+    }
+
+    /**
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
@@ -1844,32 +1859,37 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
+        try {
+            Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content("", GridRestCommand.CACHE_METADATA);
+            String ret = content("", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata: " + ret);
+            info("Cache metadata: " + ret);
 
-        JsonNode arrRes = validateJsonResponse(ret);
+            JsonNode arrRes = validateJsonResponse(ret);
 
-        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
-        // int cachesCnt = grid(1).cacheNames().size();
-        // assertEquals(cachesCnt, arrRes.size());
+            // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+            // int cachesCnt = grid(1).cacheNames().size();
+            // assertEquals(cachesCnt, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        ret = content("person", GridRestCommand.CACHE_METADATA);
+            ret = content("person", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata with cacheName parameter: " + ret);
+            info("Cache metadata with cacheName parameter: " + ret);
 
-        arrRes = validateJsonResponse(ret);
+            arrRes = validateJsonResponse(ret);
 
-        assertEquals(1, arrRes.size());
+            assertEquals(1, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
-            "Failed to request meta data. nonExistingCacheName is not found");
+            assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
+                "Failed to request meta data. nonExistingCacheName is not found");
+        }
+        finally {
+            grid(1).destroyCache("partial");
+        }
     }
 
     /**
@@ -2122,47 +2142,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             .argument(VisorCacheResetMetricsTaskArg.class, "person"));
 
         info("VisorCacheResetMetricsTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsSamplingStateTaskArg.class, "igfs", false));
-
-        info("VisorIgfsSamplingStateTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerClearTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerClearTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsFormatTaskArg.class, "igfs"));
-
-        info("VisorIgfsFormatTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsResetMetricsTaskArg.class)
-            .set(String.class, "igfs"));
-
-        info("VisorIgfsResetMetricsTask result: " + ret);
 
         jsonTaskResult(ret);
 
@@ -3112,6 +3091,98 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Test to check work of Cache REST commands without cache name
+     *
+     * Steps:
+     * 1) Start test node
+     * 2) From REST client call all Cache commands
+     * 3) All requests except request for CACHE_METADATA should fail with
+     * "Failed to find mandatory parameter in request: cacheName" exception
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheCommandsWithoutCacheName() throws Exception {
+        final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
+
+        EnumSet<GridRestCommand> cacheCommands = EnumSet.of(GridRestCommand.DESTROY_CACHE,
+            GridRestCommand.GET_OR_CREATE_CACHE,
+            GridRestCommand.CACHE_CONTAINS_KEYS,
+            GridRestCommand.CACHE_CONTAINS_KEY,
+            GridRestCommand.CACHE_GET,
+            GridRestCommand.CACHE_GET_AND_PUT,
+            GridRestCommand.CACHE_GET_AND_REPLACE,
+            GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT,
+            GridRestCommand.CACHE_PUT_IF_ABSENT,
+            GridRestCommand.CACHE_GET_ALL,
+            GridRestCommand.CACHE_PUT,
+            GridRestCommand.CACHE_ADD,
+            GridRestCommand.CACHE_PUT_ALL,
+            GridRestCommand.CACHE_REMOVE,
+            GridRestCommand.CACHE_REMOVE_VALUE,
+            GridRestCommand.CACHE_REPLACE_VALUE,
+            GridRestCommand.CACHE_GET_AND_REMOVE,
+            GridRestCommand.CACHE_REMOVE_ALL,
+            GridRestCommand.CACHE_REPLACE,
+            GridRestCommand.CACHE_CAS,
+            GridRestCommand.CACHE_APPEND,
+            GridRestCommand.CACHE_PREPEND,
+            GridRestCommand.CACHE_METRICS,
+            GridRestCommand.CACHE_SIZE,
+            GridRestCommand.CACHE_METADATA);
+
+        for (GridRestCommand command : cacheCommands) {
+            String ret = content(null, command);
+
+            if (command == GridRestCommand.CACHE_METADATA)
+                validateJsonResponse(ret);
+            else {
+                JsonNode json = JSON_MAPPER.readTree(ret);
+                assertFalse(json.isNull());
+                assertTrue(json.get("error").asText().contains(ERROR_MSG));
+            }
+        }
+    }
+
+    /**
+     * Test to check work of Query REST commands without cache name
+     *
+     * Steps:
+     * 1) Start test node
+     * 2) From REST client call all Query commands
+     * 3) All requests except requests for FETCH_SQL_QUERY and CLOSE_SQL_QUERY should fail with
+     * "Failed to find mandatory parameter in request: cacheName" exception
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryCommandsWithoutCacheName() throws Exception {
+        final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
+
+        EnumSet<GridRestCommand> qryCommands = EnumSet.of(GridRestCommand.EXECUTE_SQL_QUERY,
+            GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+            GridRestCommand.EXECUTE_SCAN_QUERY,
+            GridRestCommand.FETCH_SQL_QUERY,
+            GridRestCommand.CLOSE_SQL_QUERY);
+
+        for (GridRestCommand command : qryCommands) {
+            String ret = content(null, command,
+                "pageSize", "1",
+                "qry", "SELECT * FROM table");
+
+            JsonNode json = JSON_MAPPER.readTree(ret);
+            assertFalse(json.isNull());
+
+            if (command == GridRestCommand.EXECUTE_SQL_QUERY ||
+                command == GridRestCommand.EXECUTE_SCAN_QUERY ||
+                command == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
+                assertTrue(json.get("error").asText().contains(ERROR_MSG));
+            else
+                assertFalse(json.get("error").asText().contains(ERROR_MSG));
+        }
+    }
+
+    /**
      * @return True if any query cursor is available.
      */
     private boolean queryCursorFound() {
@@ -4021,13 +4092,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        FileSystemConfiguration igfs = new FileSystemConfiguration();
-
-        igfs.setName("igfs");
-        igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
-
-        cfg.setFileSystemConfiguration(igfs);
-
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
@@ -4056,7 +4120,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     private void checkState(ClusterState expState) throws Exception {
         assertClusterState(expState);
-        assertClusterState(ClusterState.active(expState));
+        assertClusterState(expState.active());
     }
 
     /**

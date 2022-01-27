@@ -29,6 +29,7 @@ public interface QueryMXBean {
      * Kills continuous query by the identifier.
      *
      * @param routineId Continuous query id.
+     * @param originNodeId ID of the node that is CQ initiator.
      * @see ContinuousQueryView#routineId()
      */
     @MXBeanDescription("Kills continuous query by the identifier.")

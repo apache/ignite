@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,7 +45,8 @@ import org.jetbrains.annotations.Nullable;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method
+ * {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -52,8 +54,8 @@ import org.jetbrains.annotations.Nullable;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  * @see EventType#EVT_TASK_FAILED
  * @see EventType#EVT_TASK_FINISHED
@@ -96,6 +98,8 @@ public class TaskEvent extends EventAdapter {
      * @param sesId Task session ID.
      * @param taskName Task name.
      * @param subjId Subject ID.
+     * @param internal Whether current task belongs to Ignite internal tasks.
+     * @param taskClsName Name ot the task class.
      */
     public TaskEvent(ClusterNode node, String msg, int type, IgniteUuid sesId, String taskName, String taskClsName,
         boolean internal, @Nullable UUID subjId) {
@@ -145,13 +149,11 @@ public class TaskEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this task event, if available. This property
-     * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
-     * <p>
-     * Subject ID will be set either to node ID or client ID initiated
-     * task execution.
+     * Gets security subject ID initiated this task event, if security is enabled. This property is not available for
+     * {@link EventType#EVT_TASK_SESSION_ATTR_SET} task event.
      *
-     * @return Subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     @Nullable public UUID subjectId() {
         return subjId;

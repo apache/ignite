@@ -87,8 +87,9 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 
+        IgniteKernal grid = (IgniteKernal)grid();
         GridCacheAdapter<Integer, Integer> c =
-            ((GridNearCacheAdapter<Integer, Integer>)((IgniteKernal)grid()).internalCache(DEFAULT_CACHE_NAME).<Integer, Integer>cache()).dht();
+            ((GridNearCacheAdapter<Integer, Integer>)grid.internalCache(DEFAULT_CACHE_NAME).<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }

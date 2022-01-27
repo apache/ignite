@@ -43,4 +43,14 @@ public class ClientAuthorizationException extends ClientException {
     public ClientAuthorizationException(Throwable cause) {
         super(MSG, cause);
     }
+
+    /**
+     * Constructs a new exception with the specified detail message and cause.
+     *
+     * @param msg the detail message.
+     * @param cause the cause.
+     */
+    public ClientAuthorizationException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

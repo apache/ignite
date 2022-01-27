@@ -25,6 +25,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
@@ -37,23 +39,17 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * {@link ClientConfiguration} unit tests.
  */
-public class ClientCacheConfigurationTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
-
-    /** Serialization/deserialization. */
+public class ClientCacheConfigurationTest extends AbstractThinClientTest {
+    /** Java serialization/deserialization. */
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         ClientCacheConfiguration target = new ClientCacheConfiguration().setName("Person")
@@ -103,5 +99,43 @@ public class ClientCacheConfigurationTest {
         Object desTarget = in.readObject();
 
         assertTrue(Comparers.equal(target, desTarget));
+    }
+
+    /** Ignite serialization/deserialization of cache configurations with different sizes. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testDifferentSizeCacheConfiguration() throws Exception {
+        Collection<CacheConfiguration> cacheCfgs = new ArrayList<>();
+
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) {
+            qryEntities.add(new QueryEntity(int.class.getName(), "QueryEntity" + i)
+                    .setTableName("ENTITY" + i)
+                    .setFields(new LinkedHashMap<>(
+                            F.asMap("id", Integer.class.getName(), "name", String.class.getName()))));
+        }
+
+        CacheConfiguration<?, ?> cfgTemplate = new CacheConfiguration<>()
+                .setGroupName("CacheGroupName")
+                .setQueryEntities(qryEntities);
+
+        String cacheName = "";
+
+        for (int i = 0; i < 256; i++) {
+            cacheName += 'a';
+
+            cacheCfgs.add(new CacheConfiguration<>(cfgTemplate).setName(cacheName));
+        }
+
+        startGrid(0).createCaches(cacheCfgs);
+
+        try (IgniteClient client = startClient(0)) {
+            for (CacheConfiguration igniteCacheCfg : cacheCfgs) {
+                ClientCacheConfiguration clientCacheCfg = client.cache(igniteCacheCfg.getName()).getConfiguration();
+
+                assertEquals(igniteCacheCfg.getName(), clientCacheCfg.getName());
+            }
+        }
     }
 }

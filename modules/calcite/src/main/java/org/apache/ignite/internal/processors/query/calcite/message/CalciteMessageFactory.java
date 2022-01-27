@@ -17,37 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
+import java.util.function.Supplier;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * Message factory.
  */
-public class CalciteMessageFactory implements MessageFactory {
+public class CalciteMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public @Nullable Message create(short type) {
-        return MessageType.newMessage(type);
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        for (MessageType type : MessageType.values())
+            factory.register(type.directType(), (Supplier)type.factory());
     }
 
     /**
-     * Produces a row message.
-     *
-     * TODO In future a row is expected to implement Message interface.
+     * Produces a value message.
      */
-    public static Message asMessage(Object row) {
-        return new GenericRowMessage(row);
-    }
+    public static ValueMessage asMessage(Object val) {
+        if (val == null)
+            return null;
 
-    /**
-     * Produces a row from a message.
-     *
-     * TODO In future a row is expected to implement Message interface.
-     */
-    public static Object asRow(Message mRow) {
-        if (mRow instanceof GenericRowMessage)
-            return ((GenericRowMessage) mRow).row();
-
-        throw new AssertionError("Unexpected message type. [message=" + mRow + "]");
+        return new GenericValueMessage(val);
     }
 }

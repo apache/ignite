@@ -95,11 +95,13 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     public int getThreadPriority();
 
     /**
-     * Gets IP finder clean frequency.
+     * Gets frequency with which coordinator cleans IP finder and keeps it in the correct state, unregistering addresses
+     * of the nodes that have left the topology.
      *
      * @return IP finder clean frequency.
      */
-    @MXBeanDescription("IP finder clean frequency.")
+    @MXBeanDescription("The frequency with which coordinator cleans IP finder and keeps it in the correct state, " +
+        "unregistering addresses of the nodes that have left the topology.")
     public long getIpFinderCleanFrequency();
 
     /**
@@ -247,11 +249,16 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     public long getSocketTimeout();
 
     /**
-     * Gets join timeout.
+     * The join timeout, in milliseconds. Time to wait for joining. If node cannot connect to any address from the IP
+     * finder, the node continues to try to join during this timeout. If all addresses still do not respond, an
+     * exception will occur and the node will fail to start. If 0 is specified, it means wait forever.
      *
      * @return Join timeout.
      */
-    @MXBeanDescription("Join timeout.")
+    @MXBeanDescription("The join timeout, in milliseconds. Time to wait for joining. " +
+        "If node cannot connect to any address from the IP finder, the node continues to try to join during this timeout. " +
+        "If all addresses still do not respond, an exception will occur and the node will fail to start. " +
+        "If 0 is specified, it means wait forever.")
     public long getJoinTimeout();
 
     /**

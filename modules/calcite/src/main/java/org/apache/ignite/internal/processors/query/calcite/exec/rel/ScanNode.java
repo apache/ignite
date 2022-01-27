@@ -19,19 +19,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Scan node.
  */
-public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, AutoCloseable {
+public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
-    private final Iterable<Object[]> source;
+    private final Iterable<Row> src;
 
     /** */
-    private Iterator<Object[]> it;
+    private Iterator<Row> it;
 
     /** */
     private int requested;
@@ -41,91 +42,89 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /**
      * @param ctx Execution context.
-     * @param source Source.
+     * @param src Source.
      */
-    public ScanNode(ExecutionContext ctx, Iterable<Object[]> source) {
-        super(ctx);
+    public ScanNode(ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
+        super(ctx, rowType);
 
-        this.source = source;
+        this.src = src;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
-        checkThread();
+    @Override public void request(int rowsCnt) throws Exception {
+        assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
-        assert rowsCount > 0 && requested == 0;
+        checkState();
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::pushInternal);
+            context().execute(this::push, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
-        close();
-    }
+    @Override public void closeInternal() {
+        super.closeInternal();
 
-    /** {@inheritDoc} */
-    @Override public void close() {
         Commons.closeQuiet(it);
+        it = null;
+        Commons.closeQuiet(src);
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<Object[]>> sources) {
+    @Override protected void rewindInternal() {
+        Commons.closeQuiet(it);
+        it = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(List<Node<Row>> sources) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
     /** */
-    private void pushInternal() {
+    private void push() throws Exception {
+        if (isClosed())
+            return;
+
+        checkState();
+
         inLoop = true;
         try {
             if (it == null)
-                it = source.iterator();
+                it = src.iterator();
 
             int processed = 0;
-
-            Thread thread = Thread.currentThread();
-
             while (requested > 0 && it.hasNext()) {
-                if (context().cancelled())
-                    return;
-
-                if (thread.isInterrupted())
-                    throw new IgniteInterruptedCheckedException("Thread was interrupted.");
+                checkState();
 
                 requested--;
-                downstream.push(it.next());
+                downstream().push(it.next());
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::pushInternal);
+                    context().execute(this::push, this::onError);
 
                     return;
                 }
             }
-
-            if (requested > 0 && !it.hasNext()) {
-                downstream.end();
-                requested = 0;
-
-                close();
-            }
-        }
-        catch (Throwable e) {
-            close();
-
-            downstream.onError(e);
         }
         finally {
             inLoop = false;
+        }
+
+        if (requested > 0 && !it.hasNext()) {
+            Commons.closeQuiet(it);
+            it = null;
+
+            requested = 0;
+
+            downstream().end();
         }
     }
 }

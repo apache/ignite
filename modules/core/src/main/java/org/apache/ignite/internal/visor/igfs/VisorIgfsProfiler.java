@@ -19,12 +19,12 @@ package org.apache.ignite.internal.visor.igfs;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Various global constants for IGFS profiler.
  */
+@Deprecated
 public class VisorIgfsProfiler {
     /** Default file block size to calculate uniformity. */
     public static final int UNIFORMITY_DFLT_BLOCK_SIZE = 4096;
@@ -56,7 +56,7 @@ public class VisorIgfsProfiler {
             long bytesWritten = 0;
             long writeTime = 0;
             long userWriteTime = 0;
-            IgfsMode mode = null;
+            VisorIgfsMode mode = null;
             VisorIgfsProfilerUniformityCounters counters = new VisorIgfsProfilerUniformityCounters();
 
             for (VisorIgfsProfilerEntry entry : entries) {

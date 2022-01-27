@@ -63,7 +63,8 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
 
     /** Log message pattern. */
     private static final Pattern logPtrn = Pattern.compile(
-        "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), enforceJoinOrder=(true|false), lazy=(true|false), schema=(\\S+), sql");
+        "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), enforceJoinOrder=(true|false), " +
+            "lazy=(true|false), schema=(\\S+), sql");
 
     /** Test log. */
     private static Map<String, BigResultsLogListener> logListeners = new HashMap<>();
@@ -193,10 +194,10 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     protected void checkDurations(List<Long> durations) {
         assertFalse(F.isEmpty(durations));
 
-        assertTrue("Invalid durations: " + durations,durations.get(0) >= 0);
+        assertTrue("Invalid durations: " + durations, durations.get(0) >= 0);
 
         for (int i = 0; i < durations.size() - 1; ++i) {
-            assertTrue("Invalid durations: " + durations,durations.get(i + 1) >= 0);
+            assertTrue("Invalid durations: " + durations, durations.get(i + 1) >= 0);
             assertTrue("Invalid durations: " + durations, durations.get(i) <= durations.get(i + 1));
         }
     }

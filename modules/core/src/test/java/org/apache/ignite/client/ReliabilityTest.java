@@ -37,26 +37,40 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientServerError;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVTS_CACHE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * High Availability tests.
  */
-public class ReliabilityTest extends GridCommonAbstractTest {
+public class ReliabilityTest extends AbstractThinClientTest {
+    /** Service name. */
+    private static final String SERVICE_NAME = "svc";
+
     /**
      * Thin clint failover.
      */
     @Test
     public void testFailover() throws Exception {
+        if (isPartitionAware())
+            return;
+
         final int CLUSTER_SIZE = 3;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setReconnectThrottlingRetries(0) // Disable throttling.
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
              )
@@ -72,7 +86,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                 Integer key = rnd.nextInt();
                 String val = key.toString();
 
-                cache.put(key, val);
+                cachePut(cache, key, val);
 
                 String cachedVal = cache.get(key);
 
@@ -91,15 +105,20 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                 Query<Cache.Entry<Integer, String>> qry =
                     new ScanQuery<Integer, String>().setPageSize(data.size() / 10);
 
-                try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
-                    List<Cache.Entry<Integer, String>> res = cur.getAll();
+                try {
+                    try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
+                        List<Cache.Entry<Integer, String>> res = cur.getAll();
 
-                    assertEquals("Unexpected number of entries", data.size(), res.size());
+                        assertEquals("Unexpected number of entries", data.size(), res.size());
 
-                    Map<Integer, String> act = res.stream()
-                        .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
+                        Map<Integer, String> act = res.stream()
+                                .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                    assertEquals("Unexpected entries", data, act);
+                        assertEquals("Unexpected entries", data, act);
+                    }
+                } catch (ClientConnectionException ignored) {
+                    // QueryCursor.getAll always executes on the same channel where the cursor is open,
+                    // so failover is not possible, and the call will fail when connection drops.
                 }
             });
 
@@ -109,14 +128,14 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             boolean igniteUnavailable = false;
 
             try {
-                cache.put(1, "1");
+                cachePut(cache, 1, "1");
             }
             catch (ClientConnectionException ex) {
                 igniteUnavailable = true;
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                assertEquals(suppressed.length, CLUSTER_SIZE - 1);
+                assertEquals(CLUSTER_SIZE - 1, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
@@ -131,26 +150,45 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     @Test
     public void testSingleServerFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().iterator().next()))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
             // Before fail.
-            cache.put(0, 0);
+            cachePut(cache, 0, 0);
 
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            try {
-                cache.put(0, 0);
-            }
-            catch (Exception expected) {
-                // No-op.
-            }
+            GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
             // Recover after fail.
-            cache.put(0, 0);
+            cachePut(cache, 0, 0);
+        }
+    }
+
+    /**
+     * Test single server can be used multiple times in configuration.
+     */
+    @Test
+    public void testSingleServerDuplicatedFailover() throws Exception {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            cachePut(cache, 0, 0);
         }
     }
 
@@ -162,13 +200,13 @@ public class ReliabilityTest extends GridCommonAbstractTest {
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
-            cache.put(0, 0);
-            cache.put(1, 1);
+            cachePut(cache, 0, 0);
+            cachePut(cache, 1, 1);
 
             Query<Cache.Entry<Integer, String>> qry = new ScanQuery<Integer, String>().setPageSize(1);
 
@@ -184,9 +222,8 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                     }
                 }
 
-                fail("ClientReconnectedException must be thrown");
-            }
-            catch (ClientReconnectedException expected) {
+                fail("ClientReconnectedException or ClientConnectionException must be thrown");
+            } catch (ClientReconnectedException | ClientConnectionException expected) {
                 // No-op.
             }
         }
@@ -198,10 +235,15 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
+        // Partition-aware client connects to all known servers at the start, and dropAllThinClientConnections
+        // causes failure on all channels, so the logic in this test is not applicable.
+        if (isPartitionAware())
+            return;
+
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration().setName("cache")
@@ -242,7 +284,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             barrier.await(1, TimeUnit.SECONDS);
 
             GridTestUtils.assertThrows(null, () -> {
-                cache.put(0, 0);
+                cachePut(cache, 0, 0);
 
                 return null;
             }, ClientException.class, "Transaction context has been lost due to connection errors");
@@ -268,7 +310,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
         long throttlingPeriod = 3_000L;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setReconnectThrottlingPeriod(throttlingPeriod)
                  .setReconnectThrottlingRetries(throttlingRetries)
                  .setAddresses(cluster.clientAddresses().toArray(new String[1])))
@@ -277,22 +319,22 @@ public class ReliabilityTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < throttlingRetries; i++) {
                 // Attempts to reconnect within throttlingRetries should pass.
-                cache.put(0, 0);
+                cachePut(cache, 0, 0);
 
                 dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+                GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
             }
 
             for (int i = 0; i < 10; i++) // Attempts to reconnect after throttlingRetries should fail.
-                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+                GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
             doSleep(throttlingPeriod);
 
             // Attempt to reconnect after throttlingPeriod should pass.
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 try {
-                    cache.put(0, 0);
+                    cachePut(cache, 0, 0);
 
                     return true;
                 }
@@ -304,15 +346,112 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Drop all thin client connections on given Ignite instance.
-     *
-     * @param ignite Ignite.
+     * Test server-side critical error.
      */
-    private void dropAllThinClientConnections(Ignite ignite) throws Exception {
-        ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-            ClientListenerProcessor.class, ClientProcessorMXBean.class);
+    @Test
+    public void testServerCriticalError() throws Exception {
+        AtomicBoolean failure = new AtomicBoolean();
 
-        mxBean.dropAllConnections();
+        FailureHandler hnd = (ignite, ctx) -> failure.compareAndSet(false, true);
+
+        try (Ignite ignite = startGrid(getConfiguration().setFailureHandler(hnd)
+            .setIncludeEventTypes(EVTS_CACHE)); IgniteClient client = startClient(ignite)
+        ) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+            cachePut(cache, 0, 0);
+
+            String msg = "critical error message";
+
+            ignite.events().localListen(e -> { throw new Error(msg); }, EVT_CACHE_OBJECT_READ);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.get(0), ClientServerError.class, msg);
+
+            assertFalse(failure.get());
+
+            // OutOfMemoryError should also invoke failure handler.
+            ignite.events().localListen(e -> { throw new OutOfMemoryError(msg); }, EVT_CACHE_OBJECT_REMOVED);
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
+
+            assertTrue(GridTestUtils.waitForCondition(failure::get, 1_000L));
+        }
+    }
+
+    /**
+     * Test that client can invoke service method with externalizable parameter after
+     * cluster failover.
+     */
+    @Test
+    public void testServiceMethodInvocationAfterFailover() throws Exception {
+        PersonExternalizable person = new PersonExternalizable("Person 1");
+
+        ServiceConfiguration testServiceConfig = new ServiceConfiguration();
+        testServiceConfig.setName(SERVICE_NAME);
+        testServiceConfig.setService(new TestService());
+        testServiceConfig.setTotalCount(1);
+
+        Ignite ignite = null;
+        IgniteClient client = null;
+        try {
+            // Initialize cluster and client
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            client = startClient(ignite);
+            TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
+
+            // Invoke the service method with Externalizable parameter for the first time.
+            // This triggers registration of the PersonExternalizable type in the cluter.
+            String result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+
+            // Kill the cluster node, clean up the working directory (with cached types)
+            // and drop the client connection.
+            ignite.close();
+            U.delete(U.resolveWorkDirectory(
+                    U.defaultWorkDirectory(),
+                    DataStorageConfiguration.DFLT_MARSHALLER_PATH,
+                    false));
+            dropAllThinClientConnections();
+
+            // Invoke the service.
+            GridTestUtils.assertThrowsWithCause(() -> svc.testMethod(person), ClientConnectionException.class);
+
+            // Restore the cluster and redeploy the service.
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+
+            // Invoke the service method with Externalizable parameter once again.
+            // This should restore the client connection and trigger registration of the
+            // PersonExternalizable once again.
+            result = svc.testMethod(person);
+            assertEquals("testMethod(PersonExternalizable person): " + person, result);
+        } finally {
+            if (ignite != null) {
+                try {
+                    ignite.close();
+                } catch (Throwable ignore) {
+                }
+            }
+
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (Throwable ignore) {
+                }
+            }
+        }
+    }
+
+    /**
+     * Performs cache put.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Val.
+     * @param <K> Key type.
+     * @param <V> Val type.
+     */
+    protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
+        cache.put(key, val);
     }
 
     /**
@@ -350,6 +489,44 @@ public class ReliabilityTest extends GridCommonAbstractTest {
         }
         finally {
             stopFlag.set(true);
+        }
+    }
+
+    /**
+     * Returns a value indicating whether partition awareness is enabled.
+     */
+    protected boolean isPartitionAware() {
+        return false;
+    }
+
+    /** */
+    public static interface TestServiceInterface {
+        /** */
+        public String testMethod(PersonExternalizable person);
+    }
+
+    /**
+     * Implementation of TestServiceInterface.
+     */
+    public static class TestService implements Service, TestServiceInterface {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String testMethod(PersonExternalizable person) {
+            return "testMethod(PersonExternalizable person): " + person;
         }
     }
 }

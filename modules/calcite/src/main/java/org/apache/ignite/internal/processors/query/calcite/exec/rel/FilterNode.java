@@ -20,18 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
+
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
+public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private final Predicate<Object[]> predicate;
+    private final Predicate<Row> pred;
 
     /** */
-    private Deque<Object[]> inBuffer = new ArrayDeque<>(IN_BUFFER_SIZE);
+    private final Deque<Row> inBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private int requested;
@@ -44,102 +46,99 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
     /**
      * @param ctx Execution context.
-     * @param predicate Predicate.
+     * @param pred Predicate.
      */
-    public FilterNode(ExecutionContext ctx, Predicate<Object[]> predicate) {
-        super(ctx);
+    public FilterNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> pred) {
+        super(ctx, rowType);
 
-        this.predicate = predicate;
+        this.pred = pred;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
-        checkThread();
+    @Override public void request(int rowsCnt) throws Exception {
+        assert !F.isEmpty(sources()) && sources().size() == 1;
+        assert rowsCnt > 0 && requested == 0;
 
-        assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCount > 0 && requested == 0;
+        checkState();
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::flushFromBuffer);
+            context().execute(this::doFilter, this::onError);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) {
-        checkThread();
-
-        assert downstream != null;
+    @Override public void push(Row row) throws Exception {
+        assert downstream() != null;
         assert waiting > 0;
+
+        checkState();
 
         waiting--;
 
-        try {
-            if (predicate.test(row))
-                inBuffer.add(row);
+        if (pred.test(row))
+            inBuf.add(row);
 
-            flushFromBuffer();
-        }
-        catch (Exception e) {
-            downstream.onError(e);
-        }
+        filter();
     }
 
     /** {@inheritDoc} */
-    @Override public void end() {
-        checkThread();
-
-        assert downstream != null;
+    @Override public void end() throws Exception {
+        assert downstream() != null;
         assert waiting > 0;
+
+        checkState();
 
         waiting = -1;
 
-        try {
-            flushFromBuffer();
-        }
-        catch (Exception e) {
-            downstream.onError(e);
-        }
+        filter();
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
         return this;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void rewindInternal() {
+        requested = 0;
+        waiting = 0;
+        inBuf.clear();
+    }
+
     /** */
-    public void flushFromBuffer() {
+    private void doFilter() throws Exception {
+        checkState();
+
+        filter();
+    }
+
+    /** */
+    private void filter() throws Exception {
         inLoop = true;
         try {
-            while (requested > 0 && !inBuffer.isEmpty()) {
+            while (requested > 0 && !inBuf.isEmpty()) {
+                checkState();
+
                 requested--;
-                downstream.push(inBuffer.remove());
-            }
-
-            if (inBuffer.isEmpty() && waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
-
-            if (waiting == -1 && requested > 0) {
-                assert inBuffer.isEmpty();
-
-                downstream.end();
-                requested = 0;
+                downstream().push(inBuf.remove());
             }
         }
         finally {
             inLoop = false;
+        }
+
+        if (inBuf.isEmpty() && waiting == 0)
+            source().request(waiting = IN_BUFFER_SIZE);
+
+        if (waiting == -1 && requested > 0) {
+            assert inBuf.isEmpty();
+
+            requested = 0;
+            downstream().end();
         }
     }
 }

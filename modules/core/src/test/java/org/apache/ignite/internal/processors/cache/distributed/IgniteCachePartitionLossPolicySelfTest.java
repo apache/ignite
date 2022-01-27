@@ -202,6 +202,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
+        cfg.setActiveOnStart(false);
+
         return cfg;
     }
 
@@ -271,7 +273,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         if (safe)
             ignite(0).resetLostPartitions(Arrays.asList(CACHES));
 
-        awaitPartitionMapExchange(true, true, null);
+        // Do not wait for evictions because it's not guaranteed in the current implementation.
+        awaitPartitionMapExchange();
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
@@ -506,7 +509,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             int c = 0;
 
             for (int idx = 0; idx < nodes; idx++) {
-                if (Arrays.binarySearch(stopNodesSorted, idx) < 0 && !aff.isPrimary(grid(idx).localNode(), i) && !aff.isBackup(grid(idx).localNode(), i))
+                if (Arrays.binarySearch(stopNodesSorted, idx) < 0
+                    && !aff.isPrimary(grid(idx).localNode(), i)
+                    && !aff.isBackup(grid(idx).localNode(), i))
                     c++;
             }
 

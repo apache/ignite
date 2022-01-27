@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -70,6 +72,9 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof BinaryBuilderSerializationAware) {
+            if (writer.tryWriteAsHandle(val))
+                return;
+            
             ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
             return;
@@ -142,6 +147,9 @@ class BinaryBuilderSerializer {
         if (forceCol || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
+            if (writer.tryWriteAsHandle(c))
+                return;
+            
             writer.writeByte(GridBinaryMarshaller.COL);
             writer.writeInt(c.size());
 
@@ -157,6 +165,9 @@ class BinaryBuilderSerializer {
 
         if (forceMap || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
+
+            if (writer.tryWriteAsHandle(map))
+                return;
 
             writer.writeByte(GridBinaryMarshaller.MAP);
             writer.writeInt(map.size());
@@ -175,6 +186,28 @@ class BinaryBuilderSerializer {
 
         if (flag != null) {
             BinaryUtils.writePlainObject(writer, val);
+
+            return;
+        }
+
+        if (val instanceof BinaryEnumArray) {
+            BinaryArray val0 = (BinaryArray)val;
+
+            if (val0.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                writeArray(writer, GridBinaryMarshaller.ENUM_ARR, val0.array(), val0.componentClassName());
+            else
+                writeArray(writer, GridBinaryMarshaller.ENUM_ARR, val0.array(), val0.componentTypeId());
+
+            return;
+        }
+
+        if (val instanceof BinaryArray) {
+            BinaryArray val0 = (BinaryArray)val;
+
+            if (val0.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                writeArray(writer, GridBinaryMarshaller.OBJ_ARR, val0.array(), val0.componentClassName());
+            else
+                writeArray(writer, GridBinaryMarshaller.OBJ_ARR, val0.array(), val0.componentTypeId());
 
             return;
         }

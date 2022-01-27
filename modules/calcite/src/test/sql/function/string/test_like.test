@@ -1,0 +1,285 @@
+# name: test/sql/function/string/test_like.test
+# description: Test LIKE statement
+# group: [string]
+
+# scalar like
+query T
+SELECT 'aaa' LIKE 'bbb'
+----
+false
+
+query T
+SELECT 'aaa' LIKE 'abab'
+----
+false
+
+query T
+SELECT 'aaa' LIKE 'aaa'
+----
+true
+
+query T
+SELECT 'aaa' LIKE '%'
+----
+true
+
+query T
+SELECT 'aaa' LIKE '%a'
+----
+true
+
+query T
+SELECT 'aaa' LIKE '%b'
+----
+false
+
+query T
+SELECT 'aaa' LIKE 'a%'
+----
+true
+
+query T
+SELECT 'aaa' LIKE 'b%'
+----
+false
+
+query T
+SELECT 'aaa' LIKE 'a_a'
+----
+true
+
+query T
+SELECT 'aaa' LIKE 'a_'
+----
+false
+
+query T
+SELECT 'aaa' LIKE '__%'
+----
+true
+
+query T
+SELECT 'aaa' LIKE '____%'
+----
+false
+
+query T
+SELECT 'ababac' LIKE '%abac'
+----
+true
+
+query T
+SELECT 'ababac' LIKE '%%%abac'
+----
+true
+
+query T
+SELECT 'ababac' LIKE 'abab%%%%%'
+----
+true
+
+query T
+SELECT 'ababac' LIKE '%%%a%%%b%%a%b%%%%%a%c%%'
+----
+true
+
+query T
+SELECT 'ababac' LIKE '%%%a%%%b%%a%b%%%%%a%d%%'
+----
+false
+
+query T
+SELECT 'ababac' NOT LIKE '%abac'
+----
+false
+
+query T
+SELECT 'aabbccc' LIKE '%aa%bb%cc'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE ''
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra elephant tiger horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra elephant tiger horse%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%zebra elephant tiger horse%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%zebra elephant tiger horse blabla'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra elephant tiger horse blabla%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%elephant%horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%elephant%tiger%horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%zebra%elephant%tiger%horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%elephant%tiger%horse%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%zebra%elephant%tiger%horse%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE '%%zebra %%%ele%phan%t t%ig%er% horse%'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%tiger%horse'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' LIKE 'zebra%tiger%elephant%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE ''
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE '%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra'
+----
+true
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra elephant tiger horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE '%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%elephant%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%elephant%tiger%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE '%zebra%elephant%tiger%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%elephant%tiger%horse%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE '%zebra%elephant%tiger%horse%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE '%%zebra %%%ele%phan%t t%ig%er% horse%'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%tiger%horse'
+----
+false
+
+query T
+SELECT 'zebra elephant tiger horse' NOT LIKE 'zebra%tiger%elephant%horse'
+----
+true
+
+# like with table
+statement ok
+CREATE TABLE strings(s VARCHAR, pat VARCHAR);
+
+statement ok
+INSERT INTO strings VALUES ('abab', 'ab%'), ('aaa', 'a_a'), ('aaa', '%b%')
+
+query T
+SELECT s FROM strings WHERE s LIKE 'ab%'
+----
+abab
+
+query T
+SELECT s FROM strings WHERE 'aba' LIKE pat ORDER BY s
+----
+aaa
+aaa
+abab
+
+query T
+SELECT s FROM strings WHERE s LIKE pat ORDER BY s
+----
+aaa
+abab
+

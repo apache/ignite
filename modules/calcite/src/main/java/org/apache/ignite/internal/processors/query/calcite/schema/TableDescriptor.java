@@ -17,40 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
-    /**
-     * @return Underlying cache context.
-     */
-    GridCacheContext<?,?> cacheContext();
-
+public interface TableDescriptor<TableRow> extends RelProtoDataType, InitializerExpressionFactory {
     /**
      * @return Distribution.
      */
     IgniteDistribution distribution();
 
     /**
-     * @return Collations.
+     * Returns nodes mapping.
+     *
+     * @param ctx Planning context.
+     * @return Nodes mapping.
      */
-    List<RelCollation> collations();
+    ColocationGroup colocationGroup(MappingQueryContext ctx);
+
+    /** {@inheritDoc} */
+    @Override default RelDataType apply(RelDataTypeFactory factory) {
+        return rowType((IgniteTypeFactory)factory, null);
+    }
 
     /**
      * Returns row type excluding effectively virtual fields.
@@ -59,7 +61,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Row type for INSERT operation.
      */
     default RelDataType insertRowType(IgniteTypeFactory factory) {
-        return apply(factory);
+        return rowType(factory, null);
     }
 
     /**
@@ -68,46 +70,49 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @param factory Type factory.
      * @return Row type for SELECT operation.
      */
-    default RelDataType selectRowType(IgniteTypeFactory factory) {
-        return apply(factory);
+    default RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
+        return rowType(factory, null);
     }
+
+    /**
+     * Returns row type.
+     *
+     * @param factory Type factory.
+     * @param usedColumns Participating columns numeration.
+     * @return Row type.
+     */
+    RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns);
 
     /**
      * Checks whether is possible to update a column with a given index.
      *
-     * @param table Parent table.
-     * @param iColumn Column index.
+     * @param tbl Parent table.
+     * @param colIdx Column index.
      * @return {@code True} if update operation is allowed for a column with a given index.
      */
-    boolean isUpdateAllowed(RelOptTable table, int iColumn);
-
-    /**
-     * Checks whether a provided cache row belongs to described table.
-     *
-     * @param row Cache row.
-     * @return {@code True} If a provided cache row matches a defined query type.
-     */
-    boolean match(CacheDataRow row);
+    boolean isUpdateAllowed(RelOptTable tbl, int colIdx);
 
     /**
      * Converts a cache row to relational node row.
      *
      * @param ectx Execution context.
      * @param row Cache row.
+     * @param requiredColumns Participating columns.
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
-    <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException;
+    <Row> Row toRow(
+        ExecutionContext<Row> ectx,
+        TableRow row,
+        RowHandler.RowFactory<Row> factory,
+        @Nullable ImmutableBitSet requiredColumns
+    ) throws IgniteCheckedException;
 
     /**
-     * Converts a relational node row to cache key-value tuple;
+     * Returns column descriptor for given field name.
      *
-     * @param ectx Execution context.
-     * @param row Relational node row.
-     * @param op Operation.
-     * @param arg Operation specific argument.
-     * @return Cache key-value tuple;
-     * @throws IgniteCheckedException If failed.
+     * @param fieldName Field name.
+     * @return Column descriptor.
      */
-    <T> IgniteBiTuple<?,?> toTuple(ExecutionContext ectx, T row, TableModify.Operation op, @Nullable Object arg) throws IgniteCheckedException;
+    ColumnDescriptor columnDescriptor(String fieldName);
 }

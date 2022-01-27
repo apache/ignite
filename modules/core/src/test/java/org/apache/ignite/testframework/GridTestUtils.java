@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -112,14 +112,21 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.hamcrest.CustomMatcher;
+import org.hamcrest.Matcher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -218,22 +225,16 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-            @Nullable DiscoverySpiCustomMessage spiCustomMsg
-        ) {
-            hook.beforeDiscovery(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
+            hook.beforeDiscovery(notification.getCustomMsgData());
 
-            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
+            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
 
             return fut;
         }
+
 
         /** {@inheritDoc} */
         @Override public void onLocalNodeInitialized(ClusterNode locNode) {
@@ -474,6 +475,22 @@ public final class GridTestUtils {
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
+        return assertThrows(log, call, cls, msg, null);
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -507,7 +524,9 @@ public final class GridTestUtils {
             return e;
         }
 
-        throw new AssertionError("Exception has not been thrown.");
+        String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
+
+        throw new AssertionError(asrtMsg);
     }
 
     /**
@@ -1104,7 +1123,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final Runnable task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
@@ -1609,14 +1628,31 @@ public final class GridTestUtils {
     private static Object findField(Class<?> cls, Object obj,
         String fieldName) throws NoSuchFieldException, IllegalAccessException {
         // Resolve inner field.
-        Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        NoSuchFieldException ex = null;
 
-        if (!accessible)
-            field.setAccessible(true);
+        while (cls != null) {
+            try {
+                Field field = cls.getDeclaredField(fieldName);
 
-        return field.get(obj);
+                boolean accessible = field.isAccessible();
+
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            catch (NoSuchFieldException ex0) {
+                if (ex == null)
+                    ex = ex0;
+                else
+                    ex.addSuppressed(ex0);
+
+                cls = cls.getSuperclass();
+            }
+        }
+
+        throw ex;
     }
 
     /**
@@ -1761,10 +1797,10 @@ public final class GridTestUtils {
                     Throwable cause = e.getCause();
 
                     if (cause instanceof Error)
-                        throw (Error) cause;
+                        throw (Error)cause;
 
                     if (cause instanceof Exception)
-                        throw (Exception) cause;
+                        throw (Exception)cause;
 
                     throw new RuntimeException("Failed to invoke method)" +
                         " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
@@ -1842,7 +1878,7 @@ public final class GridTestUtils {
         assert file.exists();
         assert file.length() < Integer.MAX_VALUE;
 
-        byte[] bytes = new byte[(int) file.length()];
+        byte[] bytes = new byte[(int)file.length()];
 
         try (FileInputStream fis = new FileInputStream(file)) {
             int readBytesCnt = fis.read(bytes);
@@ -1903,19 +1939,24 @@ public final class GridTestUtils {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
-        long curTime = U.currentTimeMillis();
-        long endTime = curTime + timeout;
+        long endTime = U.currentTimeMillis() + timeout;
+        long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        if (endTime < 0)
-            endTime = Long.MAX_VALUE;
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
+    }
 
-        while (curTime < endTime) {
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
+        while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
             U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
-
-            curTime = U.currentTimeMillis();
         }
 
         return false;
@@ -1929,13 +1970,13 @@ public final class GridTestUtils {
      * @throws IOException If keystore cannot be accessed.
      */
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
-        SSLContext ctx = SSLContext.getInstance("TLS");
+        SSLContext ctx = SSLContext.getInstance(DFLT_SSL_PROTOCOL);
 
         char[] storePass = keyStorePassword().toCharArray();
 
-        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
+        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(DFLT_KEY_ALGORITHM);
 
-        KeyStore keyStore = KeyStore.getInstance("JKS");
+        KeyStore keyStore = KeyStore.getInstance(DFLT_STORE_TYPE);
 
         keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
@@ -2000,10 +2041,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2104,7 +2147,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }
@@ -2165,6 +2210,34 @@ public final class GridTestUtils {
      */
     public static String apacheIgniteTestPath() {
         return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
+    }
+
+    /**
+     * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
+     */
+    public static void deleteIndexBin(String igniteInstanceName) throws IgniteCheckedException {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
+            new File(grp, "index.bin").delete();
+        }
+    }
+
+    /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
     }
 
     /**
@@ -2252,20 +2325,20 @@ public final class GridTestUtils {
      * Checks that {@code state} is active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertActive(ClusterState state) {
-        assertTrue(state + " isn't active state", ClusterState.active(state));
+        assertTrue(state + " isn't active state", state.active());
     }
 
     /**
      * Checks that {@code state} isn't active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertInactive(ClusterState state) {
-        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+        assertFalse(state + " isn't inactive state", state.active());
     }
 
     /** Test parameters scale factor util. */
@@ -2342,16 +2415,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
-    }
-
-    /**
      * @param grid Node.
      * @param grp Group name.
      * @param name Object name.
@@ -2409,6 +2472,24 @@ public final class GridTestUtils {
             while ((remainTime = end - System.currentTimeMillis()) > 0);
 
             return sleepMs;
+        }
+
+        /**
+         * Delays execution for {@code duration} milliseconds.
+         *
+         * @param duration Duration.
+         * @return amount of milliseconds to delay.
+         */
+        @QuerySqlFunction
+        public static long delay(long duration) {
+            try {
+                Thread.sleep(duration);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return duration;
         }
 
         /**
@@ -2490,5 +2571,19 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
+    }
+
+    /**
+     * Matcher to verify size of the collection.
+     *
+     * @param size Required size.
+     * @return {@code true} in case collection is not null and has an exactly the same size.
+     */
+    public static <T extends Collection<?>> Matcher<T> hasSize(int size) {
+        return new CustomMatcher<T>("should be non empty with size=" + size) {
+            @Override public boolean matches(Object item) {
+                return item instanceof Collection && ((Collection<?>)item).size() == size;
+            }
+        };
     }
 }

@@ -84,8 +84,7 @@ public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
             assertFalse(client.connected());
             GridTestUtils.assertThrowsAnyCause(log,
                 () -> {
-                    client.throwLastError();
-                    return null;
+                    throw client.checkLastError();
                 },
                 GridClientAuthenticationException.class,
                 "Client version is not found.");

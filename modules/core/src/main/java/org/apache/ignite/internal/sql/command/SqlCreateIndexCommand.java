@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlLexerToken;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
@@ -83,6 +82,42 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** Inline size. Zero effectively disables inlining. */
     private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
+
+    /**
+     * Default constructor.
+     */
+    public SqlCreateIndexCommand() {
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param ifNotExists "If not exists" clause.
+     * @param cols Indexed columns.
+     * @param spatial Spatial flag.
+     * @param parallel Count of threads to rebuild.
+     * @param inlineSize Inline size.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public SqlCreateIndexCommand(String schemaName, String tblName, String idxName, boolean ifNotExists,
+        Collection<SqlIndexColumn> cols, boolean spatial, int parallel, int inlineSize) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.idxName = idxName;
+        this.ifNotExists = ifNotExists;
+        this.spatial = spatial;
+        this.parallel = parallel;
+        this.inlineSize = inlineSize;
+        this.cols = cols;
+
+        colNames = new HashSet<>();
+
+        for (SqlIndexColumn col : cols) {
+            if (!colNames.add(col.name()))
+                throw new IllegalArgumentException("Column already defined: " + col.name());
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String schemaName() {

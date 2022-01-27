@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStal
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMultiClientsStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.OnePhaseCommitAndNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
@@ -92,13 +93,16 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCacheMultiClientsStartTest.class);
         ignoredTests.add(CacheIgniteOutOfMemoryExceptionTest.class);
+        ignoredTests.add(OnePhaseCommitAndNodeLeftTest.class);
 
         // Mixed local/dht tx test.
         ignoredTests.add(TxLocalDhtMixedCacheModesTest.class);
 
         // Skip tests that has Mvcc clones.
-        ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class); // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
-        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class); //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
+        // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
+        ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+        //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
+        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
 
         // Read-through is not allowed with MVCC and transactional cache.
         ignoredTests.add(TxOptimisticReadThroughTest.class);

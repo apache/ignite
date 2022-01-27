@@ -142,7 +142,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
                 new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
             5_000));
 
-        TestDiscoverySpi discoSpi = (TestDiscoverySpi) grid(2).context().discovery().getInjectedDiscoverySpi();
+        TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(2).context().discovery().getInjectedDiscoverySpi();
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -273,6 +273,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             });
 
             startGridsMultiThreaded(1, 3);
+
+            awaitPartitionMapExchange();
 
             CountDownLatch latch = new CountDownLatch(1);
             for (Ignite ignite : G.allGrids()) {

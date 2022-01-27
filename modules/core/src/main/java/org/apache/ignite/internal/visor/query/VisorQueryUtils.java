@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -101,48 +102,15 @@ public class VisorQueryUtils {
         if (o instanceof Byte[])
             return "size=" + ((Byte[])o).length;
 
-        if (o instanceof Object[])
-            return "size=" + ((Object[])o).length + ", values=[" + mkString((Object[])o, 120) + "]";
+        if (o instanceof Object[]) {
+            return "size=" + ((Object[])o).length +
+                ", values=[" + S.joinToString(Arrays.asList((Object[])o), ", ", "...", 120, 0) + "]";
+        }
 
         if (o instanceof BinaryObject)
             return binaryToString((BinaryObject)o);
 
         return o.toString();
-    }
-
-    /**
-     * @param arr Object array.
-     * @param maxSz Maximum string size.
-     * @return Fixed size string.
-     */
-    private static String mkString(Object[] arr, int maxSz) {
-        String sep = ", ";
-
-        StringBuilder sb = new StringBuilder();
-
-        boolean first = true;
-
-        for (Object v : arr) {
-            if (first)
-                first = false;
-            else
-                sb.append(sep);
-
-            sb.append(v);
-
-            if (sb.length() > maxSz)
-                break;
-        }
-
-        if (sb.length() >= maxSz) {
-            String end = "...";
-
-            sb.setLength(maxSz - end.length());
-
-            sb.append(end);
-        }
-
-        return sb.toString();
     }
 
     /**
@@ -360,7 +328,7 @@ public class VisorQueryUtils {
         final VisorQueryTaskArg arg,
         final GridQueryCancel cancel
     ) {
-        ignite.context().closure().runLocalSafe(() -> {
+        ignite.context().closure().runLocalSafe((GridPlainRunnable)() -> {
             try {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
 
@@ -440,7 +408,7 @@ public class VisorQueryUtils {
         final VisorQueryHolder holder,
         final VisorScanQueryTaskArg arg
     ) {
-        ignite.context().closure().runLocalSafe(() -> {
+        ignite.context().closure().runLocalSafe((GridPlainRunnable)() -> {
             try {
                 IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
                 String filterText = arg.getFilter();

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEventFilter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -125,7 +125,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
-            if (isDeploymentResponse((GridIoMessage) msg)) {
+            if (isDeploymentResponse((GridIoMessage)msg)) {
                 log.info(">>> Delaying deployment message: " + msg);
 
                 try {

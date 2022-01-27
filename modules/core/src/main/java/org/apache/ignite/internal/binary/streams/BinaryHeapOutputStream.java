@@ -28,6 +28,9 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
 
+    /** Disable auto close flag. */
+    private final boolean disableAutoClose;
+
     /** Data. */
     private byte[] data;
 
@@ -37,7 +40,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
      * @param cap Initial capacity.
      */
     public BinaryHeapOutputStream(int cap) {
-        this(cap, BinaryMemoryAllocator.INSTANCE.chunk());
+        this(cap, BinaryMemoryAllocator.THREAD_LOCAL.chunk());
     }
 
     /**
@@ -47,19 +50,41 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
      * @param chunk Chunk.
      */
     public BinaryHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
+        this(cap, chunk, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cap Capacity.
+     * @param chunk Chunk.
+     * @param disableAutoClose Whether to disable resource release in {@link BinaryHeapOutputStream#close()} method
+     *                         so that an explicit {@link BinaryHeapOutputStream#release()} call is required.
+     */
+    public BinaryHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk, boolean disableAutoClose) {
         this.chunk = chunk;
+        this.disableAutoClose = disableAutoClose;
 
         data = chunk.allocate(cap);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        if (!disableAutoClose)
+            release();
+    }
+
+    /**
+     * Releases pooled memory.
+     */
+    public void release() {
         chunk.release(data, pos);
     }
 
     /** {@inheritDoc} */
     @Override public void ensureCapacity(int cnt) {
-        if (cnt > data.length) {
+        // overflow-conscious code
+        if (cnt - data.length > 0) {
             int newCap = capacity(data.length, cnt);
 
             data = chunk.reallocate(data, newCap);

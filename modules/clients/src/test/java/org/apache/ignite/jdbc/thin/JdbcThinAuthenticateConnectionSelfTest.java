@@ -25,10 +25,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
 /**
  * Tests for authenticated an non authenticated JDBC thin connection.
@@ -67,11 +69,9 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         grid(0).cluster().active(true);
 
-        AuthorizationContext.context(grid(0).context().authentication().authenticate("ignite", "ignite"));
-
-        grid(0).context().authentication().addUser("another_user", "passwd");
-
-        AuthorizationContext.clear();
+        try (AutoCloseable ignored = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"))) {
+            grid(0).context().security().createUser("another_user", "passwd".toCharArray());
+        }
     }
 
     /** {@inheritDoc} */
@@ -94,7 +94,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
      */
     @Test
     public void testInvalidUserPassword() {
-        String err = "Unauthenticated sessions are prohibited";
+        String err = "The user name or password is incorrect [userName=null]";
         checkInvalidUserPassword(URL, null, null, err);
 
         err = "The user name or password is incorrect";

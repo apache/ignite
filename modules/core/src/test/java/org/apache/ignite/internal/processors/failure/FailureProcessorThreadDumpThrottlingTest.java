@@ -196,7 +196,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         IgniteEx ignite = ignite(0);
 
         assertEquals(
-                ignite.context().failure().dumpThreadsTrottlingTimeout,
+                ignite.context().failure().dumpThreadsTrottlingTimeout(),
                 ignite.configuration().getFailureDetectionTimeout().longValue()
         );
     }

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Extended query entity with not-null fields support.
@@ -34,6 +33,12 @@ public class QueryEntityEx extends QueryEntity {
 
     /** Fields that must have non-null value. */
     private Set<String> notNullFields;
+
+    /** Whether to preserve order specified by {@link #getKeyFields()} or not. */
+    private boolean preserveKeysOrder;
+
+    /** Whether a primary key should be autocreated or not. */
+    private boolean implicitPk;
 
     /**
      * Default constructor.
@@ -54,6 +59,10 @@ public class QueryEntityEx extends QueryEntity {
             QueryEntityEx other0 = (QueryEntityEx)other;
 
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
+
+            preserveKeysOrder = other0.preserveKeysOrder;
+
+            implicitPk = other0.implicitPk;
         }
     }
 
@@ -69,6 +78,35 @@ public class QueryEntityEx extends QueryEntity {
         return this;
     }
 
+    /**
+     * @return {@code true} if order should be preserved, {@code false} otherwise.
+     */
+    public boolean isPreserveKeysOrder() {
+        return preserveKeysOrder;
+    }
+
+    /**
+     * @param preserveKeysOrder Whether the order should be preserved or not.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setPreserveKeysOrder(boolean preserveKeysOrder) {
+        this.preserveKeysOrder = preserveKeysOrder;
+
+        return this;
+    }
+
+    /** */
+    public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** */
+    public QueryEntity implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -79,7 +117,8 @@ public class QueryEntityEx extends QueryEntity {
 
         QueryEntityEx entity = (QueryEntityEx)o;
 
-        return super.equals(entity) && F.eq(notNullFields, entity.notNullFields);
+        return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
+            && preserveKeysOrder == entity.preserveKeysOrder && implicitPk == entity.implicitPk;
     }
 
     /** {@inheritDoc} */
@@ -87,6 +126,8 @@ public class QueryEntityEx extends QueryEntity {
         int res = super.hashCode();
 
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
+        res = 31 * res + (preserveKeysOrder ? 1 : 0);
+        res = 31 * res + (implicitPk ? 1 : 0);
 
         return res;
     }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -79,6 +80,11 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** {@inheritDoc} */
     @Override public GridCacheVersion conflictVersion() {
         return drVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheEntryVersion otherClusterVersion() {
+        return conflictVersion();
     }
 
     /** {@inheritDoc} */

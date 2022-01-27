@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,11 +37,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class MappingServiceImpl extends AbstractService implements MappingService {
-    /**
-     * Max nodes count, used on to-hash or to-random redistribution.
-     */
-    private static final int MAX_BUCKETS_COUNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_MAX_BUCKETS_COUNT", 1024);
-
     /** */
     private GridDiscoveryManager discoveryManager;
 
@@ -64,22 +60,19 @@ public class MappingServiceImpl extends AbstractService implements MappingServic
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
-        assert desiredCnt >= 0;
-
-        desiredCnt = desiredCnt == 0 ? MAX_BUCKETS_COUNT : Math.min(desiredCnt, MAX_BUCKETS_COUNT);
-
+    @Override public List<UUID> executionNodes(@NotNull AffinityTopologyVersion topVer, boolean single,
+        @Nullable Predicate<ClusterNode> nodeFilter) {
         List<ClusterNode> nodes = new ArrayList<>(discoveryManager.discoCache(topVer).serverNodes());
 
         if (nodeFilter != null)
             nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());
 
-        if (desiredCnt < nodes.size()) {
-            Collections.shuffle(nodes);
+        if (single && nodes.size() > 1)
+            nodes = F.asList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
 
-            nodes = nodes.subList(0, desiredCnt);
-        }
+        if (F.isEmpty(nodes))
+            throw new IllegalStateException("failed to map query to execution nodes. Nodes list is empty.");
 
-        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, (byte) 0);
+        return Commons.transform(nodes, ClusterNode::id);
     }
 }

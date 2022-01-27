@@ -97,7 +97,7 @@ public class IgfsContext {
 
         log = ctx.log(IgfsContext.class);
 
-        igfsSvc = ctx.getIgfsExecutorService();
+        igfsSvc = ctx.pools().getDataStreamerExecutorService();
 
         igfs = new IgfsImpl(this);
     }

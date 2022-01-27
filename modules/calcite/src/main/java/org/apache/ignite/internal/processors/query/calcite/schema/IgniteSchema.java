@@ -20,6 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
@@ -31,7 +36,10 @@ public class IgniteSchema extends AbstractSchema {
     private final String schemaName;
 
     /** */
-    private final Map<String, Table> tableMap = new ConcurrentHashMap<>();
+    private final Map<String, IgniteTable> tblMap = new ConcurrentHashMap<>();
+
+    /** */
+    private final Multimap<String, Function> funcMap = Multimaps.synchronizedMultimap(HashMultimap.create());
 
     /**
      * Creates a Schema.
@@ -51,20 +59,33 @@ public class IgniteSchema extends AbstractSchema {
 
     /** {@inheritDoc} */
     @Override protected Map<String, Table> getTableMap() {
-        return Collections.unmodifiableMap(tableMap);
+        return Collections.unmodifiableMap(tblMap);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Multimap<String, Function> getFunctionMultimap() {
+        return Multimaps.unmodifiableMultimap(funcMap);
     }
 
     /**
-     * @param table Table.
+     * @param tbl Table.
      */
-    public void addTable(String tableName, Table table) {
-        tableMap.put(tableName, table);
+    public void addTable(String tblName, IgniteTable tbl) {
+        tblMap.put(tblName, tbl);
     }
 
     /**
-     * @param tableName Table name.
+     * @param tblName Table name.
      */
-    public void removeTable(String tableName) {
-        tableMap.remove(tableName);
+    public void removeTable(String tblName) {
+        tblMap.remove(tblName);
+    }
+
+    /**
+     * @param name Function name.
+     * @param func SQL function.
+     */
+    public void addFunction(String name, Function func) {
+        funcMap.put(name, func);
     }
 }

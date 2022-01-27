@@ -18,13 +18,19 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A node with a single input
  */
-public interface SingleNode<T> extends Node<T> {
+public interface SingleNode<Row> extends Node<Row> {
     /** */
-    default void register(Node<T> source) {
-        register(F.asList(source));
+    default void register(@NotNull Node<Row> src) {
+        register(F.asList(src));
+    }
+
+    /** */
+    default @NotNull Node<Row> source() {
+        return F.first(sources());
     }
 }

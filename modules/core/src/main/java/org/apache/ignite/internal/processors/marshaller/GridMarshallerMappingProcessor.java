@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -125,7 +126,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         if (ctx.clientNode())
             ctx.event().addLocalEventListener(new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     if (!ctx.isStopping()) {
                         for (ClientRequestFuture fut : clientReqSyncMap.values())
@@ -171,7 +172,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
-            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
+            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -203,7 +204,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
-            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
+            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -304,7 +305,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             final MarshallerMappingItem item = msg.getMappingItem();
             marshallerCtx.onMappingAccepted(item);
 
-            closProc.runLocalSafe(new Runnable() {
+            closProc.runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (MappingUpdatedListener lsnr : mappingUpdatedLsnrs)
                         lsnr.mappingUpdated(item.platformId(), item.typeId(), item.className());

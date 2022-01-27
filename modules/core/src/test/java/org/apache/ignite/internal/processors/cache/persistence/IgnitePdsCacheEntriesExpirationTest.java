@@ -41,8 +41,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -62,7 +65,7 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(1024L * 1024 * 1024)
-                .setPersistenceEnabled(true))
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(60_000);
 
@@ -96,24 +99,20 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
 
     /**
      * Verifies scenario of a deadlock between thread, modifying a cache entry (acquires cp read lock and entry lock),
-     * ttl thread, expiring the entry (acquires cp read lock and entry lock)
-     * and checkpoint thread (acquires cp write lock).
+     * ttl thread, expiring the entry (acquires cp read lock and entry lock) and checkpoint thread (acquires cp write
+     * lock).
      *
-     * Checkpoint thread in not used but emulated by the test to avoid test hang (interruptible API for acquiring
-     * write lock is used).
+     * Checkpoint thread in not used but emulated by the test to avoid test hang (interruptible API for acquiring write
+     * lock is used).
      *
      * For more details see <a href="https://ggsystems.atlassian.net/browse/GG-23135">GG-23135</a>.
      *
-     * <p>
-     *     <strong>Important note</strong>
-     *     Implementation of this test relies heavily on structure of existing code in
+     * <p> <strong>Important note</strong> Implementation of this test relies heavily on structure of existing code in
      * {@link GridCacheOffheapManager.GridCacheDataStore#purgeExpiredInternal(GridCacheContext, IgniteInClosure2X, int)}
-     * and
-     * {@link GridCacheMapEntry#onExpired(CacheObject, GridCacheVersion)} methods.
+     * and {@link GridCacheMapEntry#onExpired(CacheObject, GridCacheVersion)} methods.
      *
-     * Any changes to those methods could break logic inside the test so if new failures of the test occure
-     * test code itself may require refactoring.
-     * </p>
+     * Any changes to those methods could break logic inside the test so if new failures of the test occure test code
+     * itself may require refactoring. </p>
      *
      * @throws Exception If failed.
      */
@@ -138,9 +137,9 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
         GridDhtPartitionTopologyImpl top =
             (GridDhtPartitionTopologyImpl)srv0.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        top.partitionFactory((ctx, grp, id) -> {
+        top.partitionFactory((ctx, grp, id, recovery) -> {
             partId.set(id);
-            return new GridDhtLocalPartition(ctx, grp, id, false) {
+            return new GridDhtLocalPartition(ctx, grp, id, recovery) {
                 /**
                  * This method is modified to bring threads in deadlock situation.
                  * Idea is the following: updater thread (see code below) on its way to
@@ -240,12 +239,19 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)srv0.context().cache().context().database();
 
+        CheckpointReadWriteLock checkpointReadWriteLock = U.field(
+            db.checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+        );
+
+        ReentrantReadWriteLockWithTracking rwLock = U.field(checkpointReadWriteLock, "checkpointLock");
+
         int key = 0;
 
         while (true) {
             if (srv0.affinity(DEFAULT_CACHE_NAME).partition(key) != partId.get())
                 key++;
-            else break;
+            else
+                break;
         }
 
         cache.put(key, 1);
@@ -284,7 +290,7 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
             try {
                 cpWriteLocked.set(true);
 
-                db.checkpointLock.writeLock().lockInterruptibly();
+                rwLock.writeLock().lockInterruptibly();
 
                 ttlLatch.await();
             }
@@ -292,16 +298,15 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
                 log.warning(">>> Write lock holder thread was interrupted while obtaining write lock.");
             }
             finally {
-                db.checkpointLock.writeLock().unlock();
+                rwLock.writeLock().unlock();
             }
         }, "cp-write-lock-holder");
 
         GridTestUtils.runAsync(() -> {
             long start = System.currentTimeMillis();
 
-            while (System.currentTimeMillis() - start < TIMEOUT) {
+            while (System.currentTimeMillis() - start < TIMEOUT)
                 doSleep(1_000);
-            }
 
             timeoutReached.set(true);
         });

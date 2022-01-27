@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.lang.reflect.Method;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Accessor with getter only.

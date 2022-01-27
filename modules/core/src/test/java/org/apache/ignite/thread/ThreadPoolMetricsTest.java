@@ -34,10 +34,10 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.THREAD_POOLS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -52,12 +52,12 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         metricName(THREAD_POOLS, "GridSystemExecutor"),
         metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
         metricName(THREAD_POOLS, "GridManagementExecutor"),
-        metricName(THREAD_POOLS, "GridIgfsExecutor"),
         metricName(THREAD_POOLS, "GridAffinityExecutor"),
         metricName(THREAD_POOLS, "GridCallbackExecutor"),
         metricName(THREAD_POOLS, "GridQueryExecutor"),
         metricName(THREAD_POOLS, "GridSchemaExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceExecutor"),
+        metricName(THREAD_POOLS, "GridThinClientExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
         metricName(THREAD_POOLS, "GridDataStreamExecutor")
     );

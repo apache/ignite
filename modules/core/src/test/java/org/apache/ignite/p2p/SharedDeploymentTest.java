@@ -17,7 +17,10 @@
 
 package org.apache.ignite.p2p;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,9 +28,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.util.Collection;
 import org.junit.Test;
 
 /**
@@ -43,7 +43,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     private static final String RUN_CLS2 = "org.apache.ignite.tests.p2p.compute.ExternalCallable2";
 
     /** */
-    private static final String RUN_LAMBDA = "org.apache.ignite.tests.p2p.compute.ExternalLambda";
+    public static final String RUN_LAMBDA = "org.apache.ignite.tests.p2p.compute.ExternalLambda";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

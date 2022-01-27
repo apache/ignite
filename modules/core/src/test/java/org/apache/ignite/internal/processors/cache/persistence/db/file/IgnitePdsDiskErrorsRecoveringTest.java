@@ -171,13 +171,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("START.bin" + FilePageStoreManager.TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+        ioFactory = new FilteringFileIOFactory(
+            "START.bin" + FilePageStoreManager.TMP_SUFFIX,
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20)
+        );
 
         final IgniteEx grid = startGrid(0);
         grid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
@@ -207,11 +210,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         recoveredGrid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }
@@ -228,7 +231,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         grid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
@@ -257,11 +260,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         recoveredGrid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }
@@ -285,7 +288,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
+        ioFactory = new FilteringFileIOFactory(
+            ".wal",
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long)(1.5 * WAL_SEGMENT_SIZE))
+        );
 
         System.setProperty(IGNITE_WAL_MMAP, "false");
 
@@ -311,7 +317,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         final int dataSize = 2048;
 
         for (int i = 0; i < keysCount; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
@@ -339,11 +345,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         grid.cluster().active(true);
 
         for (int i = 0; i < failedPosition; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) grid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])grid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }

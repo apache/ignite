@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
  */
 public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
-    private int backups = 2;
+    protected int backups = 2;
 
     /** Number of girds. */
     private int gridInstanceNum;

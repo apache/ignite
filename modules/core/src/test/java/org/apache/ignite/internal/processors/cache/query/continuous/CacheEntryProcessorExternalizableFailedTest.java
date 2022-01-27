@@ -687,6 +687,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         }
     }
 
+    /** */
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     private void checkExplicitMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) {

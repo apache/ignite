@@ -56,6 +56,7 @@ import org.junit.Test;
  * Indexing Spi query only test
  */
 public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
+    /** */
     private IndexingSpi indexingSpi;
 
     /** {@inheritDoc} */
@@ -68,7 +69,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected <K,V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
         return new CacheConfiguration<>(cacheName);
     }
 

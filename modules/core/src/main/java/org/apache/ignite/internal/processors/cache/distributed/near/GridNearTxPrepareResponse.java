@@ -165,7 +165,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Pending versions.
      */
     public Collection<GridCacheVersion> pending() {
-        return pending == null ? Collections.<GridCacheVersion>emptyList() : pending;
+        return pending == null ? Collections.emptyList() : pending;
     }
 
     /**

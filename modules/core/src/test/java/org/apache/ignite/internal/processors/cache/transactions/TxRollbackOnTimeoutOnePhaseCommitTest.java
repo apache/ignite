@@ -195,13 +195,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
 
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
+        assertPartitionsSame(res);
 
         checkFutures();
     }

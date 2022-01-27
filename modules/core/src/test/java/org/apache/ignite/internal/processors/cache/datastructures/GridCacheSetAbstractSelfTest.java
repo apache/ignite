@@ -146,7 +146,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             for (IgniteCache cache : grid.caches()) {
                 GridCacheQueryManager queries = grid.internalCache(cache.getName()).context().queries();
@@ -154,7 +154,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
                 for (Object obj : map.values())
-                    assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
+                    assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
             }
         }
     }
@@ -634,6 +634,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         startGrid(gridCount());
 
+        awaitPartitionMapExchange();
+
         try {
             IgniteSet<Integer> set1 = grid(0).set(SET_NAME, null);
 
@@ -651,10 +653,13 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             stopGrid(gridCount());
         }
 
-        for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
+        // Stopping a node will cause data loss with zero backups.
+        if (colCfg.getBackups() != 0) {
+            for (int i = 0; i < gridCount(); i++) {
+                IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
 
-            assertSetContent(set, ITEMS);
+                assertSetContent(set, ITEMS);
+            }
         }
     }
 

@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.MGET;
 
 /**
  * Redis MGET command handler.
@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        MGET,HMGET,HGETALL
+        MGET
     );
 
     /**
@@ -67,7 +67,7 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.messageSize() < 2 && msg.command()!=HGETALL)
+        if (msg.messageSize() < 2)
             throw new GridRedisGenericException("Wrong number of arguments");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
@@ -78,14 +78,13 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
         restReq.cacheName(msg.cacheName());
 
         List<String> keys = msg.auxMKeys();
-        if(keys!=null) {
-	        Map<Object, Object> mget = U.newHashMap(keys.size());
-	
-	        for (String key : keys)
-	            mget.put(key, null);
-	
-	        restReq.values(mget);
-        }
+
+        Map<Object, Object> mget = U.newHashMap(keys.size());
+
+        for (String key : keys)
+            mget.put(key, null);
+
+        restReq.values(mget);
 
         return restReq;
     }
@@ -93,6 +92,6 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toArray((Map<Object, Object>)restRes.getResponse(),params));
+            : GridRedisProtocolParser.toOrderedArray((Map<Object, Object>)restRes.getResponse(), params));
     }
 }

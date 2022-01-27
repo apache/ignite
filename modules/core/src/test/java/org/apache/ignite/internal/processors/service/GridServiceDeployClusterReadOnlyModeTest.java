@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,13 +51,19 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
     private static int NODES_CNT = 2;
 
     /** Service initialize flag. */
-    private static final Map<String, Boolean> SERVICE_INIT_FLAGS = new HashMap<>();
+    private static final Map<String, Boolean> SERVICE_INIT_FLAGS = new ConcurrentHashMap<>();
 
     /** Service execute flag. */
-    private static final Map<String, Boolean> SERVICE_EXECUTE_FLAGS = new HashMap<>();
+    private static final Map<String, Boolean> SERVICE_EXECUTE_FLAGS = new ConcurrentHashMap<>();
 
     /** Service cancel flag. */
-    private static final Map<String, Boolean> SERVICE_CANCEL_FLAGS = new HashMap<>();
+    private static final Map<String, Boolean> SERVICE_CANCEL_FLAGS = new ConcurrentHashMap<>();
+
+    /** Service {@code Service#execute(ServiceContext)} called latches. */
+    private static CountDownLatch serviceExecLatches;
+
+    /** Service {@code Service#cancel(ServiceContext)} called latches. */
+    private static CountDownLatch serviceCancelLatches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,6 +87,10 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        serviceExecLatches = null;
+
+        serviceCancelLatches = null;
 
         super.afterTest();
     }
@@ -183,7 +195,7 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
-        grid(0).services().deployAll(configs);
+        deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
         for (String serviceName : serviceNames)
             checkServiceDeployed(serviceName, true);
@@ -208,7 +220,7 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
-        grid(0).services().deployAllAsync(configs).get();
+        deployMultipleServices(s -> s.deployAllAsync(configs), configs.size());
 
         for (String serviceName : serviceNames)
             checkServiceDeployed(serviceName, true);
@@ -253,7 +265,7 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
-        grid(0).services().deployAll(configs);
+        deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
         for (String serviceName : serviceNames)
             checkServiceDeployed(serviceName, true);
@@ -278,7 +290,7 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
-        grid(0).services().deployAll(configs);
+        deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
         for (String serviceName : serviceNames)
             checkServiceDeployed(serviceName, true);
@@ -293,9 +305,27 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
 
     /** */
     private void deployServiceAndCheck(Consumer<IgniteServices> clo, boolean singleNode) {
-        clo.accept(grid(0).services());
+        deployService(clo, singleNode);
 
         checkServiceDeployed(singleNode);
+    }
+
+    /** */
+    private void deployMultipleServices(Consumer<IgniteServices> clo, int count) {
+        serviceExecLatches = new CountDownLatch(count);
+
+        serviceCancelLatches = new CountDownLatch(count);
+
+        clo.accept(grid(0).services());
+    }
+
+    /** */
+    private void deployService(Consumer<IgniteServices> clo, boolean singleNode) {
+        serviceExecLatches = new CountDownLatch(singleNode ? 1 : NODES_CNT);
+
+        serviceCancelLatches = new CountDownLatch(singleNode ? 1 : NODES_CNT);
+
+        clo.accept(grid(0).services());
     }
 
     /** */
@@ -312,6 +342,13 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
 
     /** */
     private static void checkServiceCanceled(String name, boolean singleNode) {
+        try {
+            serviceCancelLatches.await();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteException(e);
+        }
+
         checkMap(SERVICE_CANCEL_FLAGS, name, singleNode ? 1 : NODES_CNT, true);
     }
 
@@ -322,6 +359,13 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
 
     /** */
     private static void checkServiceDeployed(String name, boolean singleNode) {
+        try {
+            serviceExecLatches.await();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteException(e);
+        }
+
         checkMap(SERVICE_INIT_FLAGS, name, singleNode ? 1 : NODES_CNT, true);
         checkMap(SERVICE_EXECUTE_FLAGS, name, singleNode ? 1 : NODES_CNT, true);
         checkMap(SERVICE_CANCEL_FLAGS, name, singleNode ? 1 : NODES_CNT, false);
@@ -370,6 +414,8 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             assertFalse(key, SERVICE_CANCEL_FLAGS.get(key));
 
             SERVICE_CANCEL_FLAGS.put(key, true);
+
+            serviceCancelLatches.countDown();
         }
 
         /** {@inheritDoc} */
@@ -388,6 +434,8 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
             assertFalse(key, SERVICE_EXECUTE_FLAGS.get(key));
 
             SERVICE_EXECUTE_FLAGS.put(key, true);
+
+            serviceExecLatches.countDown();
         }
     }
 }

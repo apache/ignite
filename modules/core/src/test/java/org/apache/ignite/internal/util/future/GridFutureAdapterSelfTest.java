@@ -30,11 +30,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.junit.Test;
 
 /**
@@ -178,10 +180,22 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testListenNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
-        ctx.setExecutorService(Executors.newFixedThreadPool(1));
-        ctx.setSystemExecutorService(Executors.newFixedThreadPool(1));
+        ctx.add(new NoOpIgniteSecurityProcessor(ctx));
 
-        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx) {
+            final ExecutorService execSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "exec-svc"));
+
+            final ExecutorService sysExecSvc = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "system-exec"));
+
+            @Override public ExecutorService getSystemExecutorService() {
+                return sysExecSvc;
+            }
+
+            @Override public ExecutorService getExecutorService() {
+                return execSvc;
+            }
+        });
+
         ctx.add(new GridClosureProcessor(ctx));
 
         ctx.start();
@@ -237,7 +251,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testChaining() throws Exception {
         checkChaining(null);
 
-        ExecutorService exec = Executors.newFixedThreadPool(1);
+        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "grid-future-adapter-test-exec"));
 
         try {
             checkChaining(exec);

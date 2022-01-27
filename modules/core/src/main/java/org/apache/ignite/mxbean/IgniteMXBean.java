@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
  * This interface defines JMX view on kernal.
@@ -152,7 +153,7 @@ public interface IgniteMXBean {
      * Gets string presentation of the version.
      *
      * @return String presentation of the version.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.fullVersion" instead.
      */
     @Deprecated
     @MXBeanDescription(FULL_VER_DESC)
@@ -162,7 +163,7 @@ public interface IgniteMXBean {
      * Gets copyright statement for Ignite product.
      *
      * @return Copyright statement for Ignite product.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.copyright" instead.
      */
     @Deprecated
     @MXBeanDescription(COPYRIGHT_DESC)
@@ -172,7 +173,7 @@ public interface IgniteMXBean {
      * Gets string presentation of the kernal start timestamp.
      *
      * @return String presentation of the kernal start timestamp.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.startTimestampFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(START_TIMESTAMP_DESC)
@@ -182,7 +183,7 @@ public interface IgniteMXBean {
      * Gets rebalance enabled flag.
      *
      * @return Rebalance enabled flag.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.isRebalanceEnabled" instead.
      */
     @Deprecated
     @MXBeanDescription(IS_REBALANCE_ENABLED_DESC)
@@ -205,7 +206,7 @@ public interface IgniteMXBean {
      * Gets string presentation of up-time for the kernal.
      *
      * @return String presentation of up-time for the kernal.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.uptimeFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(UPTIME_FORMATTED_DESC)
@@ -215,7 +216,7 @@ public interface IgniteMXBean {
      * Get start timestamp of the kernal.
      *
      * @return Start timestamp of the kernal.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.startTimestamp" instead.
      */
     @Deprecated
     @MXBeanDescription(START_TIMESTAMP_DESC)
@@ -225,7 +226,7 @@ public interface IgniteMXBean {
      * Gets up-time of the kernal.
      *
      * @return Up-time of the kernal.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.upTime" instead.
      */
     @Deprecated
     @MXBeanDescription(UPTIME_DESC)
@@ -235,7 +236,7 @@ public interface IgniteMXBean {
      * Gets long JVM pauses count.
      *
      * @return Long JVM pauses count.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.longJVMPausesCount" instead.
      */
     @Deprecated
     @MXBeanDescription(LONG_JVM_PAUSES_CNT_DESC)
@@ -245,7 +246,7 @@ public interface IgniteMXBean {
      * Gets long JVM pauses total duration.
      *
      * @return Long JVM pauses total duration.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.longJVMPausesTotalDuration" instead.
      */
     @Deprecated
     @MXBeanDescription(LONG_JVM_PAUSES_TOTAL_DURATION_DESC)
@@ -255,7 +256,7 @@ public interface IgniteMXBean {
      * Gets long JVM pause last events.
      *
      * @return Long JVM pause last events.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.longJVMPauseLastEvents" instead.
      */
     @Deprecated
     @MXBeanDescription(LONG_JVM_PAUSE_LAST_EVENTS_DESC)
@@ -269,7 +270,7 @@ public interface IgniteMXBean {
      * used for SPI implementation.
      *
      * @return User defined attributes for this node.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.userAttributesFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(USER_ATTRS_FORMATTED_DESC)
@@ -279,7 +280,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of logger that is in grid.
      *
      * @return Logger that is used in grid.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.gridLoggerFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(GRID_LOG_FORMATTED_DESC)
@@ -289,7 +290,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured thread pool that is used in grid.
      *
      * @return Thread pool implementation that is used in grid.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.executorServiceFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(EXECUTOR_SRVC_FORMATTED_DESC)
@@ -299,7 +300,7 @@ public interface IgniteMXBean {
      * Gets Ignite installation home folder.
      *
      * @return Ignite installation home.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.igniteHome" instead.
      */
     @Deprecated
     @MXBeanDescription(IGNITE_HOME_DESC)
@@ -309,7 +310,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of MBean server instance.
      *
      * @return MBean server instance.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.mBeanServerFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(MBEAN_SERVER_FORMATTED_DESC)
@@ -319,7 +320,7 @@ public interface IgniteMXBean {
      * Unique identifier for this node within grid.
      *
      * @return Unique identifier for this node within grid.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.localNodeId" instead.
      */
     @Deprecated
     @MXBeanDescription(LOC_NODE_ID_DESC)
@@ -336,7 +337,7 @@ public interface IgniteMXBean {
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.isPeerClassLoadingEnabled" instead.
      */
     @Deprecated
     @MXBeanDescription(IS_PEER_CLS_LOADING_ENABLED_DESC)
@@ -348,7 +349,7 @@ public interface IgniteMXBean {
      *
      * @return {@code toString()} representation of all lifecycle beans configured
      *      with Ignite.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.lifecycleBeansFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(LIFECYCLE_BEANS_FORMATTED_DESC)
@@ -388,7 +389,10 @@ public interface IgniteMXBean {
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param active Activate/DeActivate flag.
+     * @deprecated Use {@link #clusterState(String, boolean)} instead.
+     * @throws IgniteCheckedException if deactivation stopped.
      */
+    @Deprecated
     @MXBeanDescription(
         "Execute activate or deactivate process."
     )
@@ -401,7 +405,7 @@ public interface IgniteMXBean {
      * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.active" instead.
      */
     @Deprecated
     @MXBeanDescription(ACTIVE_DESC)
@@ -458,7 +462,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of configured discovery SPI implementation.
      *
      * @return Grid discovery SPI implementation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.discoverySpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(DISCOVERY_SPI_FORMATTED_DESC)
@@ -468,7 +472,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured SPI communication implementation.
      *
      * @return Grid communication SPI implementation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.communicationSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(COMMUNICATION_SPI_FORMATTED_DESC)
@@ -478,7 +482,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured deployment SPI implementation.
      *
      * @return Grid deployment SPI implementation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.deploymentSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(DEPLOYMENT_SPI_FORMATTED_DESC)
@@ -488,7 +492,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of configured checkpoint SPI implementation.
      *
      * @return Grid checkpoint SPI implementation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.checkpointSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(CHECKPOINT_SPI_FORMATTED_DESC)
@@ -498,7 +502,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of configured collision SPI implementations.
      *
      * @return Grid collision SPI implementations.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.collisionSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(COLLISION_SPI_FORMATTED_DESC)
@@ -508,7 +512,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured event SPI implementation.
      *
      * @return Grid event SPI implementation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.eventStorageSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(EVT_STORAGE_SPI_FORMATTED_DESC)
@@ -518,7 +522,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured failover SPI implementations.
      *
      * @return Grid failover SPI implementations.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.failoverSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(FAILOVER_SPI_FORMATTED_DESC)
@@ -528,7 +532,7 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured load balancing SPI implementations.
      *
      * @return Grid load balancing SPI implementations.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.loadBalancingSpiFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(LOAD_BALANCING_SPI_FORMATTED_DESC)
@@ -538,7 +542,7 @@ public interface IgniteMXBean {
      * Gets OS information.
      *
      * @return OS information.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.osInformation" instead.
      */
     @Deprecated
     @MXBeanDescription(OS_INFO_DESC)
@@ -548,7 +552,7 @@ public interface IgniteMXBean {
      * Gets JDK information.
      *
      * @return JDK information.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.jdkInformation" instead.
      */
     @Deprecated
     @MXBeanDescription(JDK_INFO_DESC)
@@ -558,7 +562,7 @@ public interface IgniteMXBean {
      * Gets OS user.
      *
      * @return OS user name.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.osUser" instead.
      */
     @Deprecated
     @MXBeanDescription(OS_USER_DESC)
@@ -568,7 +572,7 @@ public interface IgniteMXBean {
      * Gets VM name.
      *
      * @return VM name.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.VmName" instead.
      */
     @Deprecated
     @MXBeanDescription(VM_NAME_DESC)
@@ -578,7 +582,7 @@ public interface IgniteMXBean {
      * Gets optional kernal instance name. It can be {@code null}.
      *
      * @return Optional kernal instance name.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.InstanceName" instead.
      */
     @Deprecated
     @MXBeanDescription(INSTANCE_NAME_DESC)
@@ -599,7 +603,7 @@ public interface IgniteMXBean {
     /**
      * Gets a formatted properties of current coordinator.
      * @return String representation of current coordinator node.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.currentCoordinatorFormatted" instead.
      */
     @Deprecated
     @MXBeanDescription(CUR_COORDINATOR_FORMATTED_DESC)
@@ -609,7 +613,7 @@ public interface IgniteMXBean {
      * Gets a flag whether local node is in baseline. Returns false if baseline topology is not established.
      *
      * @return Return a baseline flag.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.isNodeInBaseline" instead.
      */
     @Deprecated
     @MXBeanDescription(IS_NODE_BASELINE_DESC)
@@ -655,7 +659,7 @@ public interface IgniteMXBean {
      *
      * @return String representation of current cluster state.
      * See {@link ClusterState}.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.clusterState" instead.
      */
     @Deprecated
     @MXBeanDescription(CLUSTER_STATE_DESC)
@@ -668,17 +672,37 @@ public interface IgniteMXBean {
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param state String representation of new cluster state.
+     * @deprecated Use {@link #clusterState(String, boolean)} instead.
+     * @throws IgniteCheckedException if deactivation stopped.
      */
+    @Deprecated
     @MXBeanDescription("Changes current cluster state.")
     public void clusterState(
         @MXBeanParameter(name = "state", description = "New cluster state.") String state
     );
 
     /**
+     * Changes current cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param state String representation of new cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws IgniteCheckedException if deactivation stopped.
+     */
+    @MXBeanDescription("Changes current cluster state.")
+    public void clusterState(
+        @MXBeanParameter(name = "state", description = "New cluster state.") String state,
+        @MXBeanParameter(name = "forceDeactivation",
+            description = "If true, cluster deactivation will be forced.") boolean forceDeactivation
+    );
+
+    /**
      * Gets last cluster state change operation.
      *
      * @return Unix time of last cluster state change operation.
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.lastClusterStateChangeTime" instead.
      */
     @Deprecated
     @MXBeanDescription(LAST_CLUSTER_STATE_CHANGE_TIME_DESC)
