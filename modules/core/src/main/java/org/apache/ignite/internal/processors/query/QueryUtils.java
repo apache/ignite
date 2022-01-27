@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -611,7 +612,7 @@ public class QueryUtils {
         desc.typeId(valTypeId);
 
         if (qryEntity.getKeyType() != null) {
-            desc.keyTypeId(ctx.cacheObjects().binary().typeId(qryEntity.getKeyType()));
+            desc.keyTypeId(ctx.cacheObjects().typeId(qryEntity.getKeyType()));
 
             if (!ctx.marshallerContext().isSystemType(qryEntity.getKeyType())
                 && !ctx.query().getIndexing().isDisableCheckKeySchema()
@@ -644,7 +645,16 @@ public class QueryUtils {
                 }
 
                 if ((type == null || !schemaFound) && qryEntity.getKeyFieldName() != null || !F.isEmpty(qryEntity.getKeyFields())) {
-                    BinaryMetadata meta = createKeyMetadata(ctx, qryEntity);
+                    String affFieldName = cacheInfo.config().getKeyConfiguration() == null
+                        ? null
+                        : Arrays.stream(cacheInfo.config().getKeyConfiguration())
+                        .filter(keyCfg -> keyCfg.getTypeName().equals(qryEntity.getKeyType()))
+                        .findFirst()
+                        .map(CacheKeyConfiguration::getAffinityKeyFieldName)
+                        .orElse(null);
+
+                    BinaryMetadata meta = createKeyMetadata(ctx, qryEntity, affFieldName);
+
                     ctx.cacheObjects().addMetaLocally(meta.typeId(), new BinaryTypeImpl(null, meta));
 
                     desc.keySchemaId(F.first(meta.schemas()).schemaId());
@@ -656,7 +666,11 @@ public class QueryUtils {
     }
 
     /** */
-    private static BinaryMetadata createKeyMetadata(GridKernalContext ctx, QueryEntity qryEntity) {
+    private static BinaryMetadata createKeyMetadata(
+        GridKernalContext ctx,
+        QueryEntity qryEntity,
+        String affFieldName
+    ) {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
         IgniteBinary bin = ctx.cacheObjects().binary();
         BinarySchema.Builder schemaBuiler = BinarySchema.Builder.newBuilder();
@@ -680,7 +694,7 @@ public class QueryUtils {
             bin.typeId(qryEntity.getKeyType()),
             qryEntity.getKeyType(),
             fields,
-            null,
+            affFieldName,
             Collections.singleton(schemaBuiler.build()),
             false,
             Collections.emptyMap()
