@@ -148,8 +148,8 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         Set<KeyCacheObject> irreparableSet = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (KeyCacheObject key : fut.keys()) {
-                if (!inconsistentKeys.contains(key))
+            for (KeyCacheObject key : inconsistentKeys) {
+                if (!fut.keys().contains(key))
                     continue;
 
                 EntryGetResult candidateRes = fut.result().get(key);
@@ -263,14 +263,14 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         Set<KeyCacheObject> irreparableSet = new HashSet<>(inconsistentKeys.size());
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
-        for (KeyCacheObject inconsistentKey : inconsistentKeys) {
+        for (KeyCacheObject key : inconsistentKeys) {
             Map<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> cntMap = new HashMap<>();
 
             for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-                if (!fut.keys().contains(inconsistentKey))
+                if (!fut.keys().contains(key))
                     continue;
 
-                EntryGetResult res = fut.result().get(inconsistentKey);
+                EntryGetResult res = fut.result().get(key);
 
                 ByteArrayWrapper wrapped;
                 GridCacheVersion ver;
@@ -304,14 +304,14 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             assert max > 0;
 
             if (sorted.length > 1 && sorted[1] == max) { // Majority was not found.
-                irreparableSet.add(inconsistentKey);
+                irreparableSet.add(key);
 
                 continue;
             }
 
             for (Map.Entry<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> count : cntMap.entrySet())
                 if (count.getValue().getValue().equals(max)) {
-                    fixedMap.put(inconsistentKey, count.getValue().getKey());
+                    fixedMap.put(key, count.getValue().getKey());
 
                     break;
                 }
