@@ -114,7 +114,10 @@ namespace ignite
                             if (!data.IsEmpty())
                                 clientPool->HandleMessageReceived(client->GetId(), data);
 
-                            client->Receive();
+                            bool success = client->Receive();
+
+                            if (!success)
+                                clientPool->CloseAndRelease(client->GetId(), 0);
 
                             break;
                         }

@@ -23,78 +23,7 @@
 #include <ignite/network/ssl/secure_data_filter.h>
 
 #include "network/ssl/ssl_gateway.h"
-
-enum
-{
-    SSL_OPERATION_SUCCESS = 1,
-};
-
-namespace
-{
-    void FreeContext(SSL_CTX* ctx)
-    {
-        using namespace ignite::network::ssl;
-
-        SslGateway &sslGateway = SslGateway::GetInstance();
-
-        assert(sslGateway.Loaded());
-
-        sslGateway.SSL_CTX_free_(ctx);
-    }
-
-    bool IsActualError(int err)
-    {
-        switch (err)
-        {
-            case SSL_ERROR_NONE:
-            case SSL_ERROR_WANT_READ:
-            case SSL_ERROR_WANT_WRITE:
-            case SSL_ERROR_WANT_X509_LOOKUP:
-            case SSL_ERROR_WANT_CONNECT:
-            case SSL_ERROR_WANT_ACCEPT:
-                return false;
-
-            default:
-                return true;
-        }
-    }
-
-    std::string GetSslError(void* ssl, int ret)
-    {
-        using namespace ignite::network::ssl;
-
-        SslGateway &sslGateway = SslGateway::GetInstance();
-
-        assert(sslGateway.Loaded());
-
-        SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
-
-        int sslError = sslGateway.SSL_get_error_(ssl0, ret);
-
-        switch (sslError)
-        {
-            case SSL_ERROR_NONE:
-                break;
-
-            case SSL_ERROR_WANT_WRITE:
-                return std::string("SSL_connect wants write");
-
-            case SSL_ERROR_WANT_READ:
-                return std::string("SSL_connect wants read");
-
-            default:
-                return std::string("SSL error: ") + ignite::common::LexicalCast<std::string>(sslError);
-        }
-
-        unsigned long error = sslGateway.ERR_get_error_();
-
-        char errBuf[1024] = { 0 };
-
-        sslGateway.ERR_error_string_n_(error, errBuf, sizeof(errBuf));
-
-        return std::string(errBuf);
-    }
-}
+#include "network/ssl/secure_utils.h"
 
 namespace ignite
 {
@@ -103,56 +32,14 @@ namespace ignite
         namespace ssl
         {
             SecureDataFilter::SecureDataFilter(const SecureConfiguration &cfg) :
-                cfg(cfg),
+                sslContext(0),
                 contexts(0),
                 contextCs()
             {
                 EnsureSslLoaded();
 
-                SslGateway &sslGateway = SslGateway::GetInstance();
+                sslContext = MakeContext(cfg);
 
-                const SSL_METHOD* method = sslGateway.SSLv23_client_method_();
-                if (!method)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Can not get SSL method");
-
-                SSL_CTX* sslContext0 = sslGateway.SSL_CTX_new_(method);
-                if (!sslContext0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not create new SSL context");
-
-                common::DeinitGuard<SSL_CTX> guard(sslContext0, &FreeContext);
-
-                sslGateway.SSL_CTX_set_verify_(sslContext0, SSL_VERIFY_PEER, 0);
-
-                sslGateway.SSL_CTX_set_verify_depth_(sslContext0, 8);
-
-                sslGateway.SSL_CTX_set_options_(sslContext0, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION);
-
-                const char* cCaPath = cfg.caPath.empty() ? 0 : cfg.caPath.c_str();
-
-                long res = sslGateway.SSL_CTX_load_verify_locations_(sslContext0, cCaPath, 0);
-                if (res != SSL_OPERATION_SUCCESS)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not set Certificate Authority path for secure connection");
-
-                res = sslGateway.SSL_CTX_use_certificate_chain_file_(sslContext0, cfg.certPath.c_str());
-                if (res != SSL_OPERATION_SUCCESS)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not set client certificate file for secure connection");
-
-                res = sslGateway.SSL_CTX_use_RSAPrivateKey_file_(sslContext0, cfg.keyPath.c_str(), SSL_FILETYPE_PEM);
-                if (res != SSL_OPERATION_SUCCESS)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not set private key file for secure connection");
-
-                const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
-                res = sslGateway.SSL_CTX_set_cipher_list_(sslContext0, PREFERRED_CIPHERS);
-                if (res != SSL_OPERATION_SUCCESS)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not set ciphers list for secure connection");
-
-                guard.Release();
-                sslContext = sslContext0;
                 contexts = new ContextMap;
             }
 
@@ -194,8 +81,14 @@ namespace ignite
                     DataFilterAdapter::OnConnectionClosed(id, err);
                 else
                 {
-                    IgniteError err0(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Connection closed during SSL/TLS handshake");
+                    std::stringstream sslErrMsg;
+                    sslErrMsg << "Connection closed during SSL/TLS handshake";
+                    if (err)
+                        sslErrMsg << ". Details: " << err->GetText();
+
+                    std::string sslErrMsgStr = sslErrMsg.str();
+
+                    IgniteError err0(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, sslErrMsgStr.c_str());
 
                     DataFilterAdapter::OnConnectionError(context.Get()->GetAddress(), err0);
                 }
@@ -269,16 +162,15 @@ namespace ignite
 
                 ssl = sslGateway.SSL_new_(static_cast<SSL_CTX*>(filter.sslContext));
                 if (!ssl)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE,
-                        "Can not create secure connection");
+                    ThrowLastSecureError("Can not create secure connection");
 
                 bioIn = sslGateway.BIO_new_(sslGateway.BIO_s_mem_());
                 if (!bioIn)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Can not create input BIO");
+                    ThrowLastSecureError("Can not create input BIO");
 
                 bioOut = sslGateway.BIO_new_(sslGateway.BIO_s_mem_());
                 if (!bioOut)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Can not create output BIO");
+                    ThrowLastSecureError("Can not create output BIO");
 
                 sslGateway.SSL_set_bio_(static_cast<SSL*>(ssl), static_cast<BIO*>(bioIn), static_cast<BIO*>(bioOut));
                 sslGateway.SSL_set_connect_state_(static_cast<SSL*>(ssl));
@@ -300,7 +192,7 @@ namespace ignite
                 }
             }
 
-            void SecureDataFilter::SecureConnectionContext::DoConnect()
+            bool SecureDataFilter::SecureConnectionContext::DoConnect()
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
@@ -311,14 +203,12 @@ namespace ignite
                 {
                     int sslError = sslGateway.SSL_get_error_(ssl0, res);
                     if (IsActualError(sslError))
-                    {
-                        std::string msg = "Can not establish secure connection: " + GetSslError(ssl0, res);
-
-                        throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, msg.c_str());
-                    }
+                        ThrowLastSecureError("Can not establish secure connection");
                 }
 
                 SendPendingData();
+
+                return res == SSL_OPERATION_SUCCESS;
             }
 
             bool SecureDataFilter::SecureConnectionContext::SendPendingData()
@@ -350,7 +240,7 @@ namespace ignite
                 SslGateway &sslGateway = SslGateway::GetInstance();
                 int res = sslGateway.BIO_write_(static_cast<BIO*>(bioIn), data.GetData(), data.GetSize());
                 if (res <= 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, "Failed to process SSL data");
+                    ThrowLastSecureError("Failed to process SSL data");
 
                 data.Skip(res);
 
@@ -359,17 +249,12 @@ namespace ignite
                 if (connected)
                     return false;
 
-                if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
-                {
-                    DoConnect();
+                connected = DoConnect();
 
-                    SendPendingData();
+                SendPendingData();
 
-                    if (!sslGateway.SSL_is_init_finished_(static_cast<SSL*>(ssl)))
-                        return false;
-                }
-
-                connected = true;
+                if (!connected)
+                    return false;
 
                 recvBuffer = impl::interop::SP_InteropMemory(
                     new impl::interop::InteropUnpooledMemory(RECEIVE_BUFFER_SIZE));
