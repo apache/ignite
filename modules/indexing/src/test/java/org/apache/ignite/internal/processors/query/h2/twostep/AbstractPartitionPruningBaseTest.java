@@ -238,7 +238,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         sql.append(", CACHE_NAME=" + name);
 
         if (affCol != null) {
-            sql.append(", AFFINITY_KEY=" + affCol);
+            sql.append(", AFFINITY_KEY='" + affCol + '\'');
             sql.append(", KEY_TYPE=" + name + "_key");
         }
 

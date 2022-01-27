@@ -627,7 +627,7 @@ public class QueryUtils {
                     if (type.metadata().schemas() != null) {
                         for (BinarySchema schema : type.metadata().schemas()) {
                             final Map<Integer, String> fldIdToName = type.metadata().fieldsMap().entrySet().stream()
-                                .collect(Collectors.toMap(e -> e.getValue().fieldId(), e -> e.getKey()));
+                                .collect(Collectors.toMap(e -> e.getValue().fieldId(), Map.Entry::getKey));
 
                             Set<String> fields = Arrays.stream(schema.fieldIds()).mapToObj(fldIdToName::get).collect(Collectors.toSet());
 

@@ -128,8 +128,8 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
 
         // Complex key.
         BinaryObject key = client().binary().builder("t2_key")
-            .setField("k1", "5")
-            .setField("ak2", "5")
+            .setField("K1", "5")
+            .setField("AK2", "5")
             .build();
 
         List<List<?>> res = executeSingle("UPDATE t2 SET v2 = 'new1' WHERE _KEY = ?", key);
@@ -202,13 +202,13 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         cli.destroyCaches(cli.cacheNames());
 
         createPartitionedTable("t1",
-            pkColumn("k1"),
-            "v1");
+            pkColumn("K1"),
+            "V1");
 
         createPartitionedTable("t2",
-            pkColumn("k2"),
-            affinityColumn("ak2"),
-            "v2");
+            pkColumn("K2"),
+            affinityColumn("AK2"),
+            "V2");
 
         for (int i = 0; i < ROWS; ++i) {
             executeSql("INSERT INTO t1 VALUES (?, ?)",

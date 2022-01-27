@@ -97,6 +97,9 @@ public class BasicSqlTest extends AbstractIndexingCommonTest {
         sql("CREATE TABLE TEST (ID0 INT, ID1 INT, VAL0 INT, VAL1 INT, PRIMARY KEY(ID0, ID1)) "
             + "WITH \"CACHE_NAME=test,KEY_TYPE=TestType,VALUE_TYPE=VAL_TYPE\"");
 
+        // SQL engine must create key with proper schema
+        sql("INSERY INTO TEST (ID0, VAL0) VALUES (99, 99)");
+
         {
             BinaryObjectBuilder bobKey0 = grid(0).binary().builder("TestType");
             bobKey0.setField("ID0", 0);
