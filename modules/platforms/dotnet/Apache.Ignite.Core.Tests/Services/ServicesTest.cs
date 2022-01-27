@@ -499,7 +499,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestMetrics(_client.GetServices(), _client.GetServices(), null, false);
         }
-
+        
         /// <summary>
         /// Tests statistics of a platform service from client/remote node using a call context.
         /// </summary>
@@ -521,7 +521,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestMetrics(_client.GetServices(), _client.GetServices(), null, true);
         }
-
+        
         /// <summary>
         /// Tests statistics of a dynamically-proxied platform service from client/remote node using a call context.
         /// </summary>
@@ -543,7 +543,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestMetrics(_client.GetServices(), Grid1.GetServices(), null, false);
         }
-
+        
         /// <summary>
         /// Tests statistics of a platform service from server/local node using the call context.
         /// </summary>
@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             DoTestMetrics(_client.GetServices(), Grid1.GetServices(), null, true);
         }
-
+        
         /// <summary>
         /// Tests statistics of a dynamically-proxied platform service from server/local node using a call context.
         /// </summary>
@@ -1438,7 +1438,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
             Assert.AreEqual(true, dyn ? svc.test(false) : ((IJavaService)svc).test(false));
             Assert.AreEqual(null, dyn ? svc.testNull(null) : ((IJavaService)svc).testNull(null));
-
+  
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
 
