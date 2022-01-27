@@ -19,10 +19,11 @@ package org.apache.ignite.internal.table.distributed.storage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -81,9 +82,8 @@ public class InternalTableImpl implements InternalTable {
     /** IgniteUuid generator. */
     private static final IgniteUuidGenerator UUID_GENERATOR = new IgniteUuidGenerator(UUID.randomUUID(), 0);
 
-    //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
     /** Partition map. */
-    protected final Map<Integer, RaftGroupService> partitionMap;
+    protected final Int2ObjectMap<RaftGroupService> partitionMap;
 
     /** Partitions. */
     private final int partitions;
@@ -116,7 +116,7 @@ public class InternalTableImpl implements InternalTable {
     public InternalTableImpl(
             String tableName,
             IgniteUuid tableId,
-            Map<Integer, RaftGroupService> partMap,
+            Int2ObjectMap<RaftGroupService> partMap,
             int partitions,
             Function<NetworkAddress, String> netAddrResolver,
             TxManager txManager,
@@ -176,14 +176,14 @@ public class InternalTableImpl implements InternalTable {
 
         final InternalTransaction tx0 = implicit ? txManager.begin() : tx;
 
-        Map<Integer, List<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(keyRows);
+        Int2ObjectOpenHashMap<List<BinaryRow>> keyRowsByPartition = mapRowsToPartitions(keyRows);
 
         CompletableFuture<R>[] futures = new CompletableFuture[keyRowsByPartition.size()];
 
         int batchNum = 0;
 
-        for (Map.Entry<Integer, List<BinaryRow>> partToRows : keyRowsByPartition.entrySet()) {
-            CompletableFuture<RaftGroupService> fut = enlist(partToRows.getKey(), tx0);
+        for (Int2ObjectOpenHashMap.Entry<List<BinaryRow>> partToRows : keyRowsByPartition.int2ObjectEntrySet()) {
+            CompletableFuture<RaftGroupService> fut = enlist(partToRows.getIntKey(), tx0);
 
             futures[batchNum++] = fut.thenCompose(svc -> svc.run(op.apply(partToRows.getValue(), tx0)));
         }
@@ -365,9 +365,8 @@ public class InternalTableImpl implements InternalTable {
      * @param rows Rows.
      * @return Partition -%gt; rows mapping.
      */
-    private Map<Integer, List<BinaryRow>> mapRowsToPartitions(Collection<BinaryRow> rows) {
-        //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
-        HashMap<Integer, List<BinaryRow>> keyRowsByPartition = new HashMap<>();
+    private Int2ObjectOpenHashMap<List<BinaryRow>> mapRowsToPartitions(Collection<BinaryRow> rows) {
+        Int2ObjectOpenHashMap<List<BinaryRow>> keyRowsByPartition = new Int2ObjectOpenHashMap<>();
 
         for (BinaryRow keyRow : rows) {
             keyRowsByPartition.computeIfAbsent(partId(keyRow), k -> new ArrayList<>()).add(keyRow);
@@ -381,8 +380,8 @@ public class InternalTableImpl implements InternalTable {
     public @NotNull List<String> assignments() {
         awaitLeaderInitialization();
 
-        return partitionMap.entrySet().stream()
-                .sorted(Comparator.comparingInt(Map.Entry::getKey))
+        return partitionMap.int2ObjectEntrySet().stream()
+                .sorted(Comparator.comparingInt(Int2ObjectOpenHashMap.Entry::getIntKey))
                 .map(Map.Entry::getValue)
                 .map(RaftGroupService::leader)
                 .map(Peer::address)

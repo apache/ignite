@@ -26,13 +26,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -186,7 +186,7 @@ public class ItInternalTableScanTest {
         internalTbl = new InternalTableImpl(
                 TEST_TABLE_NAME,
                 tblId,
-                Map.of(0, raftGrpSvc),
+                Int2ObjectMaps.singleton(0, raftGrpSvc),
                 1,
                 NetworkAddress::toString,
                 txManager,

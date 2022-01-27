@@ -21,9 +21,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -67,7 +67,8 @@ public class DummyInternalTableImpl extends InternalTableImpl {
      * @param txManager Transaction manager.
      */
     public DummyInternalTableImpl(VersionedRowStore store, TxManager txManager) {
-        super("test", new IgniteUuid(UUID.randomUUID(), 0), Map.of(0, mock(RaftGroupService.class)),
+        super("test", new IgniteUuid(UUID.randomUUID(), 0),
+                Int2ObjectMaps.singleton(0, mock(RaftGroupService.class)),
                 1, null, txManager, mock(TableStorage.class));
 
         RaftGroupService svc = partitionMap.get(0);

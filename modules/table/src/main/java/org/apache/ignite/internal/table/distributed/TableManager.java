@@ -20,11 +20,11 @@ package org.apache.ignite.internal.table.distributed;
 import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.directProxy;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -498,7 +498,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         CompletableFuture.allOf(partitionsGroupsFutures.toArray(CompletableFuture[]::new)).thenRun(() -> {
             try {
-                HashMap<Integer, RaftGroupService> partitionMap = new HashMap<>(partitions);
+                Int2ObjectOpenHashMap<RaftGroupService> partitionMap = new Int2ObjectOpenHashMap<>(partitions);
 
                 for (int p = 0; p < partitions; p++) {
                     CompletableFuture<RaftGroupService> future = partitionsGroupsFutures.get(p);

@@ -20,6 +20,7 @@ package org.apache.ignite.distributed;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,7 +101,7 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
-                Map.of(0, service),
+                Int2ObjectMaps.singleton(0, service),
                 1,
                 NetworkAddress::toString,
                 txManager,
@@ -122,7 +123,7 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
-                Map.of(0, service),
+                Int2ObjectMaps.singleton(0, service),
                 1,
                 NetworkAddress::toString,
                 txManager,
@@ -150,7 +151,7 @@ public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<Parti
         var table = new InternalTableImpl(
                 "table",
                 new IgniteUuid(UUID.randomUUID(), 0),
-                Map.of(0, service),
+                Int2ObjectMaps.singleton(0, service),
                 1,
                 NetworkAddress::toString,
                 txManager,
