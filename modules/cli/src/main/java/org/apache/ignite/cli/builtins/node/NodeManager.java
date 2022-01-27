@@ -111,6 +111,8 @@ public class NodeManager {
             var cmdArgs = new ArrayList<String>();
 
             cmdArgs.add("java");
+            cmdArgs.add("--add-opens java.base/jdk.internal.misc=ALL-UNNAMED");
+            cmdArgs.add("-Dio.netty.tryReflectionSetAccessible=true");
 
             if (javaLogProps != null) {
                 cmdArgs.add("-Djava.util.logging.config.file=" + javaLogProps.toAbsolutePath());
