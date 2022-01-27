@@ -1459,7 +1459,7 @@ public class BinaryContext {
      * @param typeName Type name.
      */
     public boolean isSystemType(String typeName) {
-        return  marshCtx.isSystemType(typeName);
+        return marshCtx.isSystemType(typeName);
     }
 
     /**
