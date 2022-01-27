@@ -612,12 +612,13 @@ public class QueryUtils {
         desc.typeId(valTypeId);
 
         if (qryEntity.getKeyType() != null) {
-            desc.keyTypeId(ctx.cacheObjects().typeId(qryEntity.getKeyType()));
+            int keyTypeId = ctx.cacheObjects().typeId(qryEntity.getKeyType());
+            desc.keyTypeId(keyTypeId);
 
             if (!ctx.marshallerContext().isSystemType(qryEntity.getKeyType())
                 && !ctx.query().getIndexing().isDisableCheckKeySchema()
             ) {
-                BinaryTypeImpl type = (BinaryTypeImpl)ctx.cacheObjects().binary().type(qryEntity.getKeyType());
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.cacheObjects().metadata(keyTypeId);
 
                 boolean schemaFound = false;
                 if (type != null) {
@@ -682,7 +683,7 @@ public class QueryUtils {
         Map<String, BinaryFieldMetadata> fields = new HashMap<>();
 
         for (String fld : keyFileds) {
-            int fldTypeId = bin.typeId(qryEntity.getFields().get(fld));
+            int fldTypeId = ctx.cacheObjects().typeId(qryEntity.getFields().get(fld));
             int fldId = binCtx.fieldId(fldTypeId, fld);
 
             fields.put(fld, new BinaryFieldMetadata(fldTypeId, fldId));
@@ -691,7 +692,7 @@ public class QueryUtils {
         }
 
         return new BinaryMetadata(
-            bin.typeId(qryEntity.getKeyType()),
+            ctx.cacheObjects().typeId(qryEntity.getKeyType()),
             qryEntity.getKeyType(),
             fields,
             affFieldName,

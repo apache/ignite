@@ -132,7 +132,6 @@ public class CacheClientBinaryQueryExample {
     private static QueryEntity createEmployeeQueryEntity() {
         return new QueryEntity()
             .setValueType(Employee.class.getName())
-            .setKeyType(EmployeeKey.class.getName())
             .addQueryField("organizationId", Integer.class.getName(), null)
             .addQueryField("name", String.class.getName(), null)
             .addQueryField("salary", Long.class.getName(), null)
