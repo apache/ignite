@@ -1481,9 +1481,6 @@ namespace Apache.Ignite.Core.Tests.Services
             
             // We did 5 total invocations.
             Assert.AreEqual(5, helperSvc.testNumberOfInvocations(cfg.Name));
-            
-            // We did 6 total invocations.
-            Assert.AreEqual(6, helperSvc.testNumberOfInvocations(cfg.Name));
 
             // Undeploy again.
             producer.Cancel(cfg.Name);
