@@ -214,12 +214,9 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (KeyCacheObject key : fut.keys()) {
-                if (!inconsistentKeys.contains(key) ||
-                    !primaries.get(key).equals(fut.affNode()))
-                    continue;
-
-                fixedMap.put(key, fut.result().get(key));
+            for (KeyCacheObject key : inconsistentKeys) {
+                if (fut.keys().contains(key) && primaries.get(key).equals(fut.affNode()))
+                    fixedMap.put(key, fut.result().get(key));
             }
         }
 
