@@ -76,30 +76,50 @@ class IgniteSpec(metaclass=ABCMeta):
     This class is a basic Spec
     """
 
-    def __init__(self, service, jvm_opts, full_jvm_opts):
+    def __init__(self, service, jvm_opts=None, full_jvm_opts=None):
+        """
+        Only one of the jvm_opts or full_jvm_opts may be passed.
+
+        :param service: Service
+        :param jvm_opts: If passed will be added or overwrite the default ones.
+        :param full_jvm_opts: If passed will be used 'as is'. None of the default ones will be applied.
+        """
+
+        assert (jvm_opts and not full_jvm_opts) or \
+               (not jvm_opts and full_jvm_opts) or \
+               (not jvm_opts and not full_jvm_opts)
+
         self.service = service
+        self.external_jvm_opts = jvm_opts
+        self.external_full_jvm_opts = full_jvm_opts
 
-        if full_jvm_opts:
-            self.jvm_opts = full_jvm_opts
+    def get_default_jvm_opts(self):
+        """
+        Return a set of default JVM options.
 
-            if jvm_opts:
-                self._add_jvm_opts(jvm_opts)
-        else:
-            self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                                gc_dump_path=os.path.join(service.log_dir, "gc.log"),
-                                                oom_path=os.path.join(service.log_dir, "out_of_mem.hprof"))
+        The subclass willing to add its own default options or overwrite the parent's one should implement this method.
+        Before actual execution options are merged in a way that ones goes from the most specific subclass have higher
+        priority and overwrites ones come from parent. See final_jvm_opts() and __merge_default_jvm_opts() for details.
+        """
+        default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
+                                               oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"))
 
-        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
-                            "-Dlog4j.configDebug=true"])
+        default_jvm_opts = merge_jvm_settings(
+            default_jvm_opts, ["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
+                               "-Dlog4j.configDebug=true"])
 
         if self.service.config and self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
-            self._add_jvm_opts(["-Dlog4j.configuration=file:" + self.service.log_config_file])
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts,
+                                                  ["-Dlog4j.configuration=file:" + self.service.log_config_file])
 
-        if service.context.globals.get(JFR_ENABLED, False):
-            self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
-                                "-XX:+FlightRecorder",
-                                "-XX:StartFlightRecording=dumponexit=true," +
-                                f"filename={self.service.jfr_dir}/recording.jfr"])
+        if self.service.context.globals.get(JFR_ENABLED, False):
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts,
+                                                  ["-XX:+UnlockCommercialFeatures",
+                                                   "-XX:+FlightRecorder",
+                                                   "-XX:StartFlightRecording=dumponexit=true," +
+                                                   f"filename={self.service.jfr_dir}/recording.jfr"])
+
+        return default_jvm_opts
 
     def config_templates(self):
         """
@@ -205,16 +225,48 @@ class IgniteSpec(metaclass=ABCMeta):
         self._runcmd(f"chmod a+x {local_dir}/*.sh")
         self._runcmd(f"{local_dir}/mkcerts.sh")
 
+    def final_jvm_opts(self):
+        """
+        Return final set of JVM options used to run service. Function takes into account both default options specified
+        in each subclass in a hierarhy and options passed from the outside via the constructor.
+
+        The external jvm_opts passed via the constructor have the higher priority than any default options.
+
+        The external full_jvm_opts passed via the constructor have the absolute priority and none of the default options
+        or jvm_opts passed via construction are used at all.
+
+        :return: list of strings containing JVM options
+        """
+        return merge_jvm_settings(self.external_full_jvm_opts, []) \
+            if self.external_full_jvm_opts \
+            else merge_jvm_settings(self.__merge_default_jvm_opts(),
+                                    self.external_jvm_opts if self.external_jvm_opts else [])
+
+    def __merge_default_jvm_opts(self):
+        """
+        Merge default JVM options through the whole classes hierarhy. Options from the subclasses have higher priority
+        and overwrite ones from the parents.
+
+        :return: merged set of default JVM options specified in all subclasses
+        """
+
+        # Start from the most specific subclass and go up until the root class (IgniteSpec)
+        merged_default_jvm_opts = self.get_default_jvm_opts()
+        clazz = type(self)
+        while clazz != __class__:
+            # noinspection PyUnresolvedReferences
+            parent_default_jvm_opt = super(clazz, self).get_default_jvm_opts()
+            merged_default_jvm_opts = merge_jvm_settings(parent_default_jvm_opt, merged_default_jvm_opts)
+            clazz = clazz.__base__
+
+        return merged_default_jvm_opts
+
     def _jvm_opts(self):
         """
         :return: line with extra JVM params for ignite.sh script: -J-Dparam=value -J-ea
         """
-        opts = ["-J%s" % o for o in self.jvm_opts]
+        opts = ["-J%s" % o for o in self.final_jvm_opts()]
         return " ".join(opts)
-
-    def _add_jvm_opts(self, opts):
-        """Properly adds JVM options to current"""
-        self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
 
     def _runcmd(self, cmd):
         self.service.logger.debug(cmd)
@@ -246,18 +298,11 @@ class IgniteApplicationSpec(IgniteSpec):
     Spec to run ignite application
     """
 
-    DEFAULT_IGNITE_APP_HEAP = "-Xmx1G"
-
-    def __init__(self, service, jvm_opts, full_jvm_opts):
-        """Applies the default heap max size if and only if it wasn't passed from the outside"""
-        super().__init__(
-            service,
-            self.__get_jvm_opts(jvm_opts, full_jvm_opts),
-            self.__get_full_jvm_opts(jvm_opts, full_jvm_opts))
-
-        self._add_jvm_opts(["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-                            "-ea",
-                            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
+    def get_default_jvm_opts(self):
+        return ["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows performing operations on app termination.
+                "-Xmx1G",
+                "-ea",
+                "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"]
 
     def command(self, node):
         args = [
@@ -296,26 +341,3 @@ class IgniteApplicationSpec(IgniteSpec):
 
     def envs(self):
         return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}
-
-    def __has_option(self, prefix, opts):
-        if opts is None:
-            return False
-
-        assert isinstance(opts, (str, list)), "JVM options should be either string or list only."
-
-        if isinstance(opts, str):
-            opts = opts.split()
-
-        return any(opt.startswith(prefix) for opt in opts)
-
-    def __get_jvm_opts(self, jvm_opts, full_jvm_opts):
-        if self.__has_option("-Xmx", jvm_opts) or self.__has_option("-Xmx", full_jvm_opts):
-            return jvm_opts
-        else:
-            return merge_jvm_settings(self.DEFAULT_IGNITE_APP_HEAP, jvm_opts if jvm_opts is not None else [])
-
-    def __get_full_jvm_opts(self, jvm_opts, full_jvm_opts):
-        if self.__has_option("-Xmx", jvm_opts) or self.__has_option("-Xmx", full_jvm_opts):
-            return full_jvm_opts
-        else:
-            return merge_jvm_settings(self.DEFAULT_IGNITE_APP_HEAP, full_jvm_opts if full_jvm_opts is not None else [])
