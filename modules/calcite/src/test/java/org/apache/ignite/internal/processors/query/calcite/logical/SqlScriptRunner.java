@@ -659,6 +659,8 @@ public class SqlScriptRunner {
 
         /** */
         private void checkEquals(String msg, String expectedStr, Object actual) {
+            expectedStr = F.isEmpty(expectedStr) ? expectedStr : expectedStr.trim();
+
             if (actual == null && String.valueOf(actual).equalsIgnoreCase(expectedStr))
                 return;
 
@@ -696,6 +698,7 @@ public class SqlScriptRunner {
                     messageDigest.update(SqlScriptRunner.toString(col).getBytes(Charset.forName(UTF_8.name())));
                     messageDigest.update(NL_BYTES);
                 }
+
             }
 
             String res0 = byteArray2HexString(messageDigest.digest(), false);
@@ -714,7 +717,8 @@ public class SqlScriptRunner {
 
             if (!res0.equals(expectedHash))
                 throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
-                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
+                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows + ", calculated=" +
+                    res0);
         }
 
         /** {@inheritDoc} */

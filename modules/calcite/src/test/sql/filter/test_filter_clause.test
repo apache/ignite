@@ -1,7 +1,6 @@
 # name: test/sql/filter/test_filter_clause.test
 # description: Test aggregation with filter clause
 # group: [filter]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15589
 
 statement ok
 create table t as select x i, mod(x,10) j,mod(x,10)*10000000 k from table(system_range(0, 999));
@@ -10,6 +9,7 @@ query I
 SELECT count(*) from t;
 ----
 1000
+
 
 query II
 SELECT
@@ -446,83 +446,3 @@ select count (a) filter (where a>10 and a < 15), count (b) filter (where b betwe
 4	90	0	90	0
 0	900	90	900	0
 
-
-#Filter with some more complex aggregates: COVAR_POP (multiple input columns), STRING_AGG (strings) and ARRAY_AGG (lists)
-query II
-select COVAR_POP(a,b) filter (where a < 100), COVAR_POP(a,b) filter (where b <5) from t_2;
-----
-4.5	49.95
-
-query II
-select COVAR_POP(a,c) filter (where a < 100), COVAR_POP(a,c) filter (where c <50)
-from t_2
-group by b;
-----
-8.250000	8.250000
-674.916667	133.250000
-NULL	208.250000
-
-statement ok
-CREATE TABLE films(film_id INTEGER, title VARCHAR)
-
-statement ok
-CREATE TABLE actors(actor_id INTEGER, first_name VARCHAR, last_name VARCHAR)
-
-statement ok
-CREATE TABLE film_actor(film_id INTEGER, actor_id INTEGER)
-
-statement ok
-INSERT INTO films VALUES (1, 'The Martian'), (2, 'Saving Private Ryan'), (3, 'Team America');
-
-statement ok
-INSERT INTO actors VALUES (1, 'Matt', 'Damon'), (2, 'Jessica', 'Chastain'), (3, 'Tom', 'Hanks'), (4, 'Edward', 'Burns'),
-						  (5, 'Kim', 'Jong Un'), (6, 'Alec', 'Baldwin');
-
-statement ok
-INSERT INTO film_actor VALUES (1, 1), (2, 1), (3, 1), (1, 2), (2, 3), (2, 4), (3, 5), (3, 6);
-
-query II
-SELECT
-	title,
-	ARRAY_AGG (first_name || ' ' || last_name) filter (where first_name = 'Matt') actors
-FROM films
-JOIN film_actor USING (film_id)
-JOIN actors USING (actor_id)
-GROUP BY
-	title
-ORDER BY
-	title;
-----
-Saving Private Ryan	[Matt Damon]
-Team America	[Matt Damon]
-The Martian	[Matt Damon]
-
-
-query II
-SELECT
-	title,
-	STRING_AGG (first_name || ' ' || last_name) filter (where first_name = 'Matt') actors
-FROM films
-JOIN film_actor USING (film_id)
-JOIN actors USING (actor_id)
-GROUP BY
-	title
-ORDER BY
-	title;
-----
-Saving Private Ryan	Matt Damon
-Team America	Matt Damon
-The Martian	Matt Damon
-
-
-#DISTINCT aggregates
-statement ok
-CREATE TABLE integers(i INTEGER)
-
-statement ok
-insert into integers values (1),(1),(2),(2),(3),(4),(8);
-
-query I
-select  sum(distinct i) filter (where i >1 and i < 5) from integers;
-----
-9

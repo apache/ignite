@@ -3,14 +3,10 @@
 # group: [order]
 # Ignore https://issues.apache.org/jira/browse/IGNITE-14636
 # Ignore https://issues.apache.org/jira/browse/IGNITE-14555
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15563
-
-statement ok
-PRAGMA enable_verification
 
 # payload string that is longer than the 8MB initial string size - this tests whether RowChunk dynamically increases block capacity
 statement ok
-select range % 2 i, string_agg('thisstringis200characterslong..........................................................................................................................................................................') s from range(100000) group by i order by i
+select x % 2 i, string_agg('thisstringis200characterslong..........................................................................................................................................................................') s from table(system_range(0, 100000)) group by i order by i
 
 # weird one from SQLancer
 statement ok
