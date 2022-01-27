@@ -111,7 +111,8 @@ public class NodeManager {
             var cmdArgs = new ArrayList<String>();
 
             cmdArgs.add("java");
-            cmdArgs.add("--add-opens java.base/jdk.internal.misc=ALL-UNNAMED");
+            cmdArgs.add("--add-opens");
+            cmdArgs.add("java.base/jdk.internal.misc=ALL-UNNAMED");
             cmdArgs.add("-Dio.netty.tryReflectionSetAccessible=true");
 
             if (javaLogProps != null) {
