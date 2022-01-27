@@ -92,7 +92,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     .setNotNullFields(new HashSet<>(Arrays.asList("age", "name")))
             )),
             cacheConfiguration("org").setQueryEntities(Arrays.asList(
-                new QueryEntity(AffinityKey.class, Organization.class))),
+                new QueryEntity(String.class, Organization.class))),
 
             cacheConfiguration("metaTest").setQueryEntities(Arrays.asList(
                 new QueryEntity(AffinityKey.class, MetaTest.class))));
