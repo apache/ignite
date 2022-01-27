@@ -18,18 +18,18 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -85,7 +85,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         fields.put("valLong", Long.class.getName());
         fields.put("valPojo", Pojo.class.getName());
 
-        Set<String> keyFields = new HashSet<>();
+        LinkedHashSet<String> keyFields = new LinkedHashSet<>();
         keyFields.add("keyStr");
         keyFields.add("keyLong");
         keyFields.add("keyPojo");

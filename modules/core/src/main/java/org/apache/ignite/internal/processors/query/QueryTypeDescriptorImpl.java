@@ -34,10 +34,12 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -630,6 +632,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
 
                 if (keySchemaId != null && !idx.isDisableCheckKeySchema() && binKey.schemaId() != keySchemaId) {
+                    log.error("+++ Metadata: " +
+                        ((BinaryTypeImpl)((CacheObjectBinaryProcessorImpl)coCtx.kernalContext().cacheObjects()).binaryContext().metadata(binKey.typeId())).metadata().prettyPrint());
+
                     throw new IgniteSQLException("Key schema not is allowed for table ["
                         + "table=" + tblName + ", "
                         + "keyType=" + keyTypeName + ", "
