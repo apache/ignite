@@ -88,7 +88,7 @@ public class TxVerboseId extends IgniteDataTransferObject {
                 "either UUID or GridCacheVersion text representation: " + text);
         }
 
-        assert m.groupCount() == 3 : "Unexpected group count [cnt=" + m.groupCount() + ", pattern=" + regexPtrn + ']';
+        assert m.groupCount() == 4 : "Unexpected group count [cnt=" + m.groupCount() + ", pattern=" + regexPtrn + ']';
 
         try {
             return new TxVerboseId(null, new GridCacheVersion(
