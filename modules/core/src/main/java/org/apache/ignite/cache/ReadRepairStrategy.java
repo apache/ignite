@@ -19,12 +19,14 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Read repair strategies.
  *
  * @see IgniteCache#withReadRepair(ReadRepairStrategy) for details.
  */
+@IgniteExperimental
 public enum ReadRepairStrategy {
     /** Last write (the newest entry) wins.
      * <p>
