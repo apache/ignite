@@ -263,7 +263,7 @@ namespace ignite
 
         std::string GetLastSystemError(const std::string& description, const std::string& advice)
         {
-            return common::FormatErrorMessage(description, GetLastSystemError(), advice);
+            return FormatErrorMessage(description, GetLastSystemError(), advice);
         }
 
         std::string GetLastSystemError(const std::string &description)

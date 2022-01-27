@@ -636,6 +636,17 @@ namespace ignite
                 return fp(ssl);
             }
 
+            const char* SslGateway::SSL_get_version_(const SSL* ssl)
+            {
+                assert(functions.fpSSL_get_version != 0);
+
+                typedef const char*(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(functions.fpSSL_get_version);
+
+                return fp(ssl);
+            }
+
             int SslGateway::SSL_get_fd_(const SSL* ssl)
             {
                 assert(functions.fpSSL_get_fd != 0);

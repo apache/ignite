@@ -85,14 +85,6 @@ namespace ignite
             void HandleConnectionEvents();
 
             /**
-             * Add file descriptor to epoll for monitoring.
-             *
-             * @param fd File descriptor to add.
-             * @param client Client. May be null.
-             */
-            void StartMonitoringFd(int fd, LinuxAsyncClient* client);
-
-            /**
              * Handle network error during connection establishment.
              *
              * @param addr End point.
