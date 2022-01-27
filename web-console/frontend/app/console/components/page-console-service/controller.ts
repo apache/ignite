@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Subject, merge, combineLatest} from 'rxjs';
+import {Subject, BehaviorSubject, merge, combineLatest, from, empty} from 'rxjs';
 import {tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
@@ -58,7 +58,7 @@ export default class ServiceController {
     visibleRows$ = new Subject();
     selectedRows$ = new Subject();
 
-    servicesColumnDefs = [
+    serviceColumnDefs = [
         {
             name: 'name',
             displayName: 'Name',
@@ -117,7 +117,7 @@ export default class ServiceController {
     ];
     
     
-    cachesColumnDefs: Array<IColumnDefOf<ShortCache>> = [
+    cachesColumnDefs = [
         {
             name: 'name',
             displayName: 'Name',
@@ -133,27 +133,11 @@ export default class ServiceController {
         {
             name: 'cacheMode',
             displayName: 'Mode',
-            field: 'cacheMode',
+            field: 'mode',
             multiselectFilterOptions: this.Caches.cacheModes,
             width: 160
-        },
-        {
-            name: 'atomicityMode',
-            displayName: 'Atomicity',
-            field: 'atomicityMode',
-            multiselectFilterOptions: this.Caches.atomicityModes,
-            width: 160
-        },
-        {
-            name: 'backups',
-            displayName: 'Backups',
-            field: 'backups',
-            width: 130,
-            enableFiltering: false,
-            cellTemplate: `
-                <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
-            `
         }
+        
     ];
 
     $onInit() {
@@ -171,9 +155,15 @@ export default class ServiceController {
         );
        
         
+        this.serviceListSubject$ = new BehaviorSubject();
+        this.serviceMap = {
+            'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'},
+            'serviceList':{ id: 'serviceList', name:'serviceList', description:'get cluster service list', mode: 'NodeSinger'}
+        };
+        this.serviceList = [this.serviceMap['status'],this.serviceMap['serviceList']];  
         
-        this.serviceMap = {'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'}};
-        this.serviceList = [];        
+        this.serviceList$ = this.serviceListSubject$.pipe(tap((val) => console.log(`BEFORE MAP: ${val[0]['id']}`)));
+        this.serviceListSubject$.next(this.serviceList);     
         
         clusterID$.subscribe((v)=>{ 
             this.clusterID = v; 
@@ -181,20 +171,31 @@ export default class ServiceController {
                 if(data.message){
                     this.message = data.message;
                 }  
-                this.serviceMap = Object.assign(data);
+                this.serviceMap = Object.assign(data.result);
                 Object.keys(this.serviceMap).forEach((key) => {
+                   this.serviceMap[key]['id'] = key;
                    this.serviceList.push(this.serviceMap[key]);
                 });
+                
+                this.serviceListSubject$.next(this.serviceList)
             });  
             
         });
         
+        
+         
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
         this.originalCache$ = serviceID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
+                if(id in this.serviceMap){
+                    return from(this.serviceMap[id]).asObservable();
+                }
+                return empty();
+                
+                //id = '485743be-e9f3-4c01-8e47-7947abaaac85';
+                //return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
             })
         );
 
@@ -206,7 +207,7 @@ export default class ServiceController {
             itemID$: serviceID$,
             selectedItemRows$: this.selectedRows$,
             visibleRows$: this.visibleRows$,
-            loadedItems$: this.shortCaches$
+            loadedItems$: this.serviceList$
         });
 
         this.subscription = merge(
@@ -217,7 +218,7 @@ export default class ServiceController {
 
         this.isBlocked$ = serviceID$;        
 
-        this.serviceList$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => { return this.serviceList; }));
+        
         
         this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
             {
@@ -226,16 +227,23 @@ export default class ServiceController {
                 available: false
             },
             {
-                action: 'LoadData',
+                action: 'Load Data',
                 click: () => {
                     this.call(selectedItems,'loadDataService');
                 },
                 available: true
             },
             {
-                action: 'ClearData',
+                action: 'Clear Data',
                 click: () => {
                     this.call(selectedItems,'clearDataService');
+                },
+                available: true
+            },
+            {
+                action: 'Write Data to Other Cluster',
+                click: () => {
+                    this.call(selectedItems,'writeDataService');
                 },
                 available: true
             }

@@ -44,14 +44,14 @@ const DFLT_CACHE = {
             batchSize: 512,
             maximumWriteAttempts: 2,
             parallelLoadCacheMinimumThreshold: 512,
-            sqlEscapeAll: false,
+            sqlEscapeAll: true,
             streamerEnabled: true
         },
         CacheJdbcPojoStoreFactory: {
             batchSize: 512,
             maximumWriteAttempts: 2,
             parallelLoadCacheMinimumThreshold: 512,
-            sqlEscapeAll: false
+            sqlEscapeAll: true
         }
     },
     storeConcurrentLoadAllThreshold: 5,

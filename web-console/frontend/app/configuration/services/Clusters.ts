@@ -563,7 +563,7 @@ export default class Clusters {
         {value: null, label: 'Default'}
     ];
 
-    normalize = omit(['__v', 'space']);
+    normalize = omit(['__v']);
 
     addPeerClassLoadingLocalClassPathExclude(cluster) {
         if (!cluster.peerClassLoadingLocalClassPathExclude)

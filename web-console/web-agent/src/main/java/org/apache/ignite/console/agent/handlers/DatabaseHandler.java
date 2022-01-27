@@ -48,11 +48,12 @@ import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.agent.db.DbTable;
-import org.apache.ignite.console.agent.handlers.DatabaseListener.DBInfo;
+
 import org.apache.ignite.console.agent.rest.JdbcExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
+import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;

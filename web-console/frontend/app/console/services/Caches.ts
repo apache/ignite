@@ -225,6 +225,6 @@ export default class Caches {
     }
 
     requiresProprietaryDrivers(storeFactory) {
-        return !!this.jdbcDriverURL(storeFactory);
+        return false;
     }
 }

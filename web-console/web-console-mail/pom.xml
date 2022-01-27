@@ -29,8 +29,7 @@
         <relativePath>../</relativePath>        
     </parent>
 
-    <artifactId>ignite-web-console-mail</artifactId>
-    <version>8.8.0.t30</version>
+    <artifactId>ignite-web-console-mail</artifactId>    
     <url>http://ignite.apache.org</url>
 
     <dependencyManagement>
@@ -57,12 +56,7 @@
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-        </dependency>
+        </dependency>       
 
         <dependency>
             <groupId>org.hibernate</groupId>

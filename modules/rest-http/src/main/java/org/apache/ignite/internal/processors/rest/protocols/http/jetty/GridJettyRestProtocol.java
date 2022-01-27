@@ -452,12 +452,18 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        stopJetty();
-
-        httpSrv = null;
-        jettyHnd = null;
-
-        if (log.isInfoEnabled())
+    	
+    	if(jettyHnd.index == 0) {
+	        stopJetty();	
+	        httpSrv = null;
+    	}
+    	else if(httpSrv!=null) {  
+    		HandlerList handlers = (HandlerList)httpSrv.getHandler(); 
+    		handlers.removeHandler(jettyHnd);
+    	}
+    	
+    	jettyHnd = null;
+    	if (log.isInfoEnabled())
             log.info(stopInfo());
     }
 

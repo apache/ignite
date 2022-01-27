@@ -21,6 +21,7 @@ import DEMO_INFO from 'app/data/demo-info.json';
 import templateUrl from 'views/templates/demo-info.tpl.pug';
 import {directive as demoStatus} from './demoStatus.directive';
 
+
 const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
 
 DemoProvider.$inject = ['$stateProvider', '$httpProvider'];

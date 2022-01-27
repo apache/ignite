@@ -1,0 +1,186 @@
+{
+  "type": "page",
+  "title": "列表",
+  "remark": null,
+  "name": "page-demo",
+  "toolbar": [
+    {
+      "type": "button",
+      "actionType": "drawer",
+      "_link": "/datasource/new",
+      "label": "新增数据源",
+      "drawer": {
+          "title": "新增数据源",
+          "size": "lg",
+          "body": {        
+            "type": "form",
+            "name": "data-source-form",
+            "api": "post:https://3xsw4ap8wah59.cfc-execute.bj.baidubce.com/api/amis-mock/sample",
+            "body": [
+              {
+                "type": "input-text",
+                "name": "driverCls",
+                "label": "Engine",
+                "required": true
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "jdbcUrl",
+                "label": "jdbcUrl",
+                "required": true
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "jndiName",
+                "label": "Jndi Name",
+                "required": true
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "dbName",
+                "label": "dbName"
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "schemaName",
+                "label": "schemaName"
+              },             
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "userName",
+                "label": "userName"
+              },              
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "password",
+                "label": "password"
+              }
+            ]
+          }
+       },
+      "primary": true
+    }
+  ],
+  "body": [
+    {
+      "type": "crud",
+      "name": "sample",
+      "api": "api/v1/datasource",
+      "filter": {
+        "title": "",
+        "mode": "inline",
+        "wrapWithPanel": false,
+        "submitText": "",
+        "controls": [
+          {
+            "type": "text",
+            "name": "keywords",
+            "placeholder": "通过关键字搜索",
+            "addOn": {
+              "label": "搜索",
+              "type": "submit",
+              "className": "btn-success"
+            },
+            "clearable": true
+          }
+        ],
+        "className": "m-b-sm"
+      },
+      
+      "columns": [
+        {
+          "name": "engine",
+          "label": "Rendering engine",
+          "sortable": true
+        },
+        {
+          "name": "id",
+          "label": "ID",
+          "width": 20,
+          "sortable": true
+        },
+        {
+          "name": "browser",
+          "label": "Browser",
+          "sortable": true
+        },
+        {
+          "name": "platform",
+          "label": "Platform(s)",
+          "sortable": true
+        },
+        {
+          "name": "version",
+          "label": "Engine version"
+        },
+        {
+          "name": "grade",
+          "label": "CSS grade"
+        },
+        {
+          "type": "operation",
+          "label": "操作",
+          "width": "",
+          "buttons": [
+            {
+              "type": "button-group",
+              "buttons": [
+                {
+                  "type": "button",
+                  "label": "查看",
+                  "level": "primary",
+                  "actionType": "link",
+                  "link": "/crud/${id}"
+                },
+                {
+                  "type": "button",
+                  "label": "修改",
+                  "level": "info",
+                  "actionType": "link",
+                  "link": "/crud/${id}/edit"
+                },
+                {
+                  "type": "button",
+                  "label": "删除",
+                  "level": "danger",
+                  "actionType": "ajax",
+                  "confirmText": "您确认要删除?",
+                  "api": "delete:api/v1/datasource/$id"
+                }
+              ]
+            }
+          ],
+          "placeholder": "-",
+          "fixed": "right"
+        }
+      ],
+      "affixHeader": true,
+      "columnsTogglable": "auto",
+      "placeholder": "暂无数据",
+      "tableClassName": "table-db table-striped",
+      "headerClassName": "crud-table-header",
+      "footerClassName": "crud-table-footer",
+      "toolbarClassName": "crud-table-toolbar",
+      "combineNum": 0,
+      "bodyClassName": "panel-default"
+    }
+  ]
+}

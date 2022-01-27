@@ -49,6 +49,8 @@ public class ClusterHandler extends AbstractClusterHandler {
     
     /** Map of clusterId->  node URI. */
     public static final Map<String, List<String>> clusterUrlMap = U.newHashMap(2);
+    
+    public static final Map<String, String> clusterNameMap = U.newHashMap(2);
 
     /**
      * @param cfg Web agent configuration.
@@ -58,12 +60,13 @@ public class ClusterHandler extends AbstractClusterHandler {
         clusterUrlMap.put("",cfg.nodeURIs());
     }
     
-    public static void registerNodeUrl(String clusterId,String url) {
+    public static void registerNodeUrl(String clusterId,String url,String clusterName) {
     	List<String> urls = clusterUrlMap.get(clusterId);
     	if(urls==null) {
     		urls = new ArrayList<>(1);
     		urls.add(url);
     		clusterUrlMap.put(clusterId, urls);
+    		clusterNameMap.put(clusterId,clusterName);
     	}
     	else if(!urls.contains(url)){    		
     		urls.add(url);

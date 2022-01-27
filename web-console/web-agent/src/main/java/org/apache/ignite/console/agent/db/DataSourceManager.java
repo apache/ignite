@@ -68,7 +68,7 @@ public class DataSourceManager {
 	
 	public DataSource bindDataSource(String jndiName, String jdbcUrl,Properties info) throws SQLException {
 		HikariConfig config = new HikariConfig();
-
+		config.setMinimumIdle(1);
 		config.setMaximumPoolSize(8);
 		config.setJdbcUrl(jdbcUrl);
 		if(info!=null) {

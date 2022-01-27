@@ -116,7 +116,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
         if (ids.isEmpty())
             return Collections.emptyList();
 
-        return loadAll(new HashSet<>(ids.values()));
+        return loadAll(new HashSet<T>(ids.values()));
     }
 
     /**

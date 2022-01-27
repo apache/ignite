@@ -118,7 +118,11 @@ export default class PageConfigureBasicController {
                 if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);   
                 
-                this.serviceList = Object.assign({},this.callService('serviceList'));      
+                this.serviceList = Object.assign({},this.callService('serviceList'));  
+                
+                this.clonedCluster.demo = this.AgentManager.isDemoMode();
+                
+                this.originalCluster.status =  this.clonedCluster.status;        
                 
             }))
         ).subscribe();

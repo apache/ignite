@@ -131,9 +131,7 @@ export default class PageConfigureBasicController {
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
-        );       
-        
-        this.serviceList = {'status':{ name:'status',description:'get cluster last status'}};
+        );         
         
         this.subscription = merge(
             this.shortCaches$.pipe(
@@ -152,7 +150,11 @@ export default class PageConfigureBasicController {
                 if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);   
                 
-                this.servceList = Object.assign({},this.callService('serviceList'));      
+                this.callService('');
+                
+                this.clonedCluster.demo = this.AgentManager.isDemoMode();
+                
+                this.originalCluster.status =  this.clonedCluster.status;    
                 
             }))
         ).subscribe();

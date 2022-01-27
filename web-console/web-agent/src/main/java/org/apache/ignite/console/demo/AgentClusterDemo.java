@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -53,12 +54,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.console.demo.AgentDemoUtils.newScheduledThreadPool;
@@ -86,7 +82,7 @@ public class AgentClusterDemo {
     private static final String CLN_NODE_NAME = "demo-client-";
 
     /** Node count 2 means 3 node*/
-    private static final int NODE_CNT = 2;
+    private static final int NODE_CNT = 1;
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -164,7 +160,7 @@ public class AgentClusterDemo {
         dataRegCfg.setName("demo");
         dataRegCfg.setMetricsEnabled(true);
         dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-        dataRegCfg.setPersistenceEnabled(true);
+        dataRegCfg.setPersistenceEnabled(!true);
 
         DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
         dataStorageCfg.setMetricsEnabled(true);
@@ -219,7 +215,8 @@ public class AgentClusterDemo {
 
             System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "20");
             System.setProperty(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true");
-
+            System.setProperty(IGNITE_SQL_DISABLE_SYSTEM_VIEWS, "false");
+            
             final AtomicInteger basePort = new AtomicInteger(60700);
             final AtomicInteger cnt = new AtomicInteger(-1);
 
@@ -242,6 +239,9 @@ public class AgentClusterDemo {
                             cfg.getDataStorageConfiguration().getStoragePath(),
                             true
                         );
+                    }
+                    else {
+                    	cfg.setNodeId(null);
                     }
 
                     Ignite ignite = Ignition.start(cfg);

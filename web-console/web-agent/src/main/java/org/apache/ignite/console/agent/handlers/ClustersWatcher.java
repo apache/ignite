@@ -168,7 +168,7 @@ public class ClustersWatcher implements Closeable {
 	                newTop.setDemo(false);
 	                newTop.setActive(active);
 	                newTop.setSecured(!F.isEmpty(res.getSessionToken()));
-	                newTop.setName(cluster);
+	                newTop.setName(ClusterHandler.clusterNameMap.getOrDefault(cluster, cluster));
 	
 	                latestTop = newTop;
 	

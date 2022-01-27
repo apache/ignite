@@ -407,7 +407,7 @@ public class WebSocketRouter implements AutoCloseable {
 		        	// 启动一个节点，最后再部署服务
 		        	Ignite ignite = AgentClusterLauncher.tryStart(cfg);
 		        	if(ignite!=null) {
-		        		
+		        		//ignite.cluster().tag(clusterName);
 			        	AgentClusterLauncher.registerNodeUrl(ignite);
 			        	
 			        	AgentClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));

@@ -23,28 +23,15 @@ public class ClusterClearDataService implements ClusterAgentService {
 	@Override
 	public Map<String, ? extends Object> call(Map<String,Object> payload) {
 		Map<String,Object> result = new HashMap<>();
-		int count = 0;
-		JsonObject args = (JsonObject)payload.get("args");
-		String cacheId = null;
-		JsonArray selectCaches = args.getJsonArray("caches");
-		if(args.get("cache")!=null) {
-			cacheId = args.getJsonObject("cache").getString("id");
-		}		
-		List<String> message = new ArrayList<>();
-		for(String cache: ignite.cacheNames()) {
+		int count = 0;		
+		JsonObject args = new JsonObject((Map)payload.get("args"));	
+		List<String> message = new ArrayList<>();	
+		List<String> caches = ClusterAgentServiceUtil.cacheSelectList(ignite,args);
+		for(String cache: caches) {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);
-				if(cacheId!=null) {
-					if(!igcache.getName().equals(cacheId)) {
-						continue;
-					}
-				}
-				if(selectCaches!=null) {
-					if(!selectCaches.contains(igcache.getName())) {
-						continue;
-					}
-				}				
-				igcache.clear();
+					
+				igcache.withSkipStore().clear();
 				count++;
 			}
 			catch(Exception e) {

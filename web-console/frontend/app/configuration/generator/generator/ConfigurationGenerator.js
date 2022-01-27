@@ -208,17 +208,19 @@ export default class IgniteConfigurationGenerator {
 
         return dsBean;
     }
+    
+    static escapeClusterName(name) {
+        return name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+    }
 
     // Generate general section.
     static clusterGeneral(cluster, available, cfg = this.igniteConfigurationBean(cluster), client = false) {
         if (client)
             cfg.prop('boolean', 'clientMode', true);
 
-        if (available('2.0.0'))
-            cfg.stringProperty('name', 'igniteInstanceName');
-        else
-            cfg.stringProperty('name', 'gridName');
-
+        
+        cfg.stringProperty('name', 'igniteInstanceName',(name) => IgniteConfigurationGenerator.escapeClusterName(name));
+        
         cfg.stringProperty('localHost');
 
         if (isNil(cluster.discovery))

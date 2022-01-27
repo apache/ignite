@@ -21,12 +21,13 @@ header.header-with-selector
 div.pc-content-container
     ul.tabs.tabs--blue
         li(role='presentation' ui-sref-active='active')
-            a(ui-sref='base.console.edit.basic') Basic Metric
-        li(role='presentation' ui-sref-active='{active: "base.console.edit.service"}')
-            a(ui-sref='base.console.edit.service') Service
+            a(ui-sref='base.console.edit.basic') Basic Metric        
         li(role='presentation' ui-sref-active='{active: "base.console.edit.advanced"}')
             a(ui-sref='base.console.edit.advanced.cluster') Advanced
-        
+        li(role='presentation' ui-sref-active='{active: "base.console.edit.service"}')
+            a(ui-sref='base.console.edit.service') Grid Service
+        li(role='presentation' ui-sref-active='{active: "base.console.edit.cache-service"}')
+            a(ui-sref='base.console.edit.cache-service') Cache Service
             
 
     label.pc-tooltips-toggle.switcher--ignite

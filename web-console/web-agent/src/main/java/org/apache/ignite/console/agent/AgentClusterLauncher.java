@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.handlers.ClusterHandler;
 import org.apache.ignite.console.agent.service.ClusterLoadDataService;
+import org.apache.ignite.console.agent.service.ClusterWriteDataService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
 import org.apache.ignite.console.agent.service.ClusterClearDataService;
 import org.apache.ignite.console.discovery.IsolatedCommunicationSpi;
@@ -230,6 +231,7 @@ public class AgentClusterLauncher {
         services.deployNodeSingleton("serviceList", new ClusterAgentServiceList());
         services.deployNodeSingleton("loadDataService", new ClusterLoadDataService());
         services.deployNodeSingleton("clearDataService", new ClusterClearDataService());
+        services.deployClusterSingleton("writeDataService", new ClusterWriteDataService());
         
         //String cacheName = "default";
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
@@ -245,7 +247,12 @@ public class AgentClusterLauncher {
              throw new IgniteException("Cluster: Failed to start Jetty REST server on embedded node");
          }
 
-         String jettyHost = jettyAddrs.iterator().next();
+         String jettyHost = "127.0.0.1";
+         for(String host: jettyAddrs) {
+        	 if(!host.startsWith("0")) {
+        		 jettyHost = host;
+        	 }
+         }
 
          Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
 
@@ -256,7 +263,7 @@ public class AgentClusterLauncher {
 
          String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
 
-         ClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl);
+         ClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl,ignite.name());
          
          return nodeUrl;
     }

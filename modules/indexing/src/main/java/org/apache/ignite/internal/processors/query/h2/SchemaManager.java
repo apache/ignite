@@ -240,7 +240,9 @@ public class SchemaManager {
             }
         }
         catch (IgniteCheckedException | SQLException e) {
-            throw new IgniteException("Failed to register system view.", e);
+            //throw new IgniteException("Failed to register system view.", e);
+        	//modify@byron
+        	log.error("Failed to register system view.", e);
         }
     }
 

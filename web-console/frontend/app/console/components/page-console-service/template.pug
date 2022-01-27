@@ -1,8 +1,8 @@
 
 pc-items-table(
-    table-title='::"My Services"'
+    table-title='::"Grid Services"'
     column-defs='$ctrl.cachesColumnDefs'
-    items='$ctrl.shortCaches$|async:this'
+    items='$ctrl.serviceList$|async:this'
     actions-menu='$ctrl.tableActions$|async:this'
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'

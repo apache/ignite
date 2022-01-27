@@ -128,7 +128,7 @@ public class TopologySnapshot {
         gridgain = allHasAttribute(srvs, GRIDGAIN_PLUGIN, true);
         ultimate = allHasAttribute(srvs, ULTIMATE_CLUSTER, true);
 
-        supportedFeatures = supportedFeatures(nodes);
+        //supportedFeatures = supportedFeatures(nodes);
         clusterVer = clusterVersion(nodes);
 
         this.nodes = nodeMap(nodes);

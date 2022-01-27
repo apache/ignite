@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import angular from 'angular';
 import uiValidate from 'angular-ui-validate';
 import {UIRouterRx} from '@uirouter/rx';
 import {UIRouter} from '@uirouter/angularjs';
@@ -25,7 +25,6 @@ import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 import ConfigureState from './services/ConfigureState';
 import PageConfigure from './services/PageConfigure';
 import ConfigSelectionManager from './services/ConfigSelectionManager';
-
 import ConfigurationResource from './services/ConfigurationResource';
 import selectors from './store/selectors';
 import effects from './store/effects';
@@ -38,6 +37,7 @@ import pageConsole from './components/page-configure';
 import pageConsoleBasic from './components/page-configure-basic';
 import pageConsoleAdvanced from './components/page-configure-advanced';
 import pageConsoleService from './components/page-console-service';
+import pageConsoleCacheService from './components/page-console-cache-service';
 import pageConsoleOverview from './components/page-configure-overview';
 
 
@@ -71,7 +71,7 @@ import {
     refsReducer
 } from './store/reducer';
 
-import {errorState} from './transitionHooks/errorState';
+import {errorState} from '../configuration/transitionHooks/errorState';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
 
 
@@ -93,6 +93,7 @@ export default angular
         pageConsoleBasic.name,
         pageConsoleAdvanced.name,
         pageConsoleService.name,
+        pageConsoleCacheService.name,
         pageConsoleOverview.name,
         pcUiGridFilters.name,
     

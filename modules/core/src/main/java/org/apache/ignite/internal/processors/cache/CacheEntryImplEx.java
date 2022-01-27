@@ -36,7 +36,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     private static final long serialVersionUID = 0L;
 
     /** Version. */
-    //@remove@byron
+    //remove@byron
     //-private GridCacheVersion ver;
 
     /**

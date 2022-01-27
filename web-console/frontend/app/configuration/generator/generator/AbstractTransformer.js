@@ -382,5 +382,5 @@ export default class AbstractTransformer {
         this._setProperties(sb, cfg);
 
         return sb;
-    }
+    }    
 }

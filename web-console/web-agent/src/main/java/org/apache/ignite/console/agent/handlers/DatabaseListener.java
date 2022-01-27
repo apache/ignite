@@ -31,8 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.db.DbSchema;
+import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -46,32 +48,7 @@ public class DatabaseListener {
 	/** Index of alive node URI. */
 	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
 	final public DataSourceManager dataSourceManager = new DataSourceManager();
-	/**
-	 * add@byron 保存当前的关系数据库连接信息
-	 */
-	public static class DBInfo {
-		public final String clusterId;
-		public String driverCls;
-		public String jdbcUrl;
-		public String jndiName;
-		public Properties jdbcProp;
-		public TopologySnapshot top;
-
-		public DBInfo(String clusterId, String currentDriverCls, String currentJdbcUrl) {
-			super();
-			this.clusterId = clusterId;
-			this.driverCls = currentDriverCls;
-			this.jdbcUrl = currentJdbcUrl;
-		}
-
-		public DBInfo(String clusterId, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
-			super();
-			this.clusterId = clusterId;
-			this.driverCls = currentDriverCls;
-			this.jdbcUrl = currentJdbcUrl;
-			this.jdbcProp = currentJdbcInfo;
-		}
-	}
+	
 
 	public DBInfo addDB(Map<String, Object> args,Connection conn) throws IllegalArgumentException {
 		String driverPath = null;
@@ -109,15 +86,42 @@ public class DatabaseListener {
 		if(conn!=null) {
 			try {
 				String dbProductName = conn.getMetaData().getDatabaseProductName();
-				ResultSet result = conn.getMetaData().getCatalogs();
-				String catalog = "";
-				if(result.next()){
-					catalog = result.getString(1);
+				
+				String catalog = conn.getCatalog();
+				
+				
+				if(StringUtils.isEmpty(catalog)) {
+					catalog = conn.getSchema();
+				}
+				
+				if(StringUtils.isEmpty(catalog)) {
+					ResultSet result = conn.getMetaData().getCatalogs();
+					if(result.next()){
+						catalog = result.getString(1);
+					}
+				}
+				
+				if(catalog.equals("DREMIO")) {
+					dbProductName = "Dremio";
+					int pos = url.indexOf("schema=");
+					if(pos>0) {
+						int endPos = url.indexOf(';',pos);
+						if(endPos<0) {
+							endPos = url.length();
+						}
+						catalog = url.substring(pos+7,endPos); 
+					}
 				}
 				
 				dbInfo.jndiName= String.format("java:jdbc/ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));
 				
 				dataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo.jdbcUrl, info);
+				
+				
+				dbInfo.jndiName= String.format("java:jdbc/ds%s_%s","Generic",catalog.replaceAll("_", "").replace('-','_'));
+				
+				dataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo.jdbcUrl, info);
+				
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -149,7 +153,7 @@ public class DatabaseListener {
 		if (!args.containsKey("schemas"))
 			throw new IllegalArgumentException("Missing schemas in arguments: " + args);
 
-		List<String> schemas = (List<String>) args.get("schemas");
+		//List<String> schemas = (List<String>) args.get("schemas");
 
 		if (!args.containsKey("tablesOnly"))
 			throw new IllegalArgumentException("Missing tablesOnly in arguments: " + args);

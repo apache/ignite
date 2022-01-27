@@ -53,8 +53,6 @@ export default class ServiceEditFormController {
                 {value: null, label: 'Default'}
             ];
 
-            
-
             if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
                 && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
                 this.clonedCache.cacheStoreFactory.kind = null;
@@ -82,9 +80,10 @@ export default class ServiceEditFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad()},
+            {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad(false)},
             {text: 'Load Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},
-            {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()}
+            {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()},
+            {text: 'Writer Data', icon: 'checkmark', click: () => this.confirmAndWriter(true)}            
         ];
     }
 
@@ -115,9 +114,14 @@ export default class ServiceEditFormController {
         return this.callServiceForCache(serviceName,{updated});
     }
     
+    writerData(updated:boolean) {        
+        let serviceName = 'writerDataService';
+        return this.callServiceForCache(serviceName,{updated});
+    }
+    
     clearData(){
         let serviceName = 'clearDataService';
-        return this.callServiceForCache(serviceName);
+        return this.callServiceForCache(serviceName,{});
     }
     
     callServiceForCache(serviceName:string,params) {
@@ -151,6 +155,13 @@ export default class ServiceEditFormController {
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         return this.IgniteConfirm.confirm('Are you sure you want to load all data for current cache?')
         .then( () => { this.loadData(updated); } );
+    }
+    
+    confirmAndWriter(updated:boolean) {        
+        if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
+            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
+        return this.IgniteConfirm.confirm('Are you sure you want to writer all data to dest cluster cache?')
+        .then( () => { this.writerData(updated); } );
     }
 
     clearImplementationVersion(storeFactory) {

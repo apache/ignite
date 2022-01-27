@@ -124,7 +124,21 @@ function registerStates($stateProvider) {
             async: 'NOWAIT'
         },
         tfMetaTags: {
-            title: 'Service Console'
+            title: 'Grid Service Console'
+        }
+    })
+    .state('base.console.edit.cache-service', {
+        url: '/cache-service',
+        component: 'pageConsoleCacheService',
+        permission: 'configuration',
+        resolve: {
+            _shortCaches: shortCachesResolve
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Cache Service Console'
         }
     })
     .state('base.console.edit.service.select', {
@@ -137,11 +151,34 @@ function registerStates($stateProvider) {
                 if (serviceID === 'new')
                     return Promise.resolve();
 
-                return etp('LOAD_CACHE', {serviceID,cacheID:serviceID});
+                return etp('LOAD_CACHE', {serviceID,cacheID:'485743be-e9f3-4c01-8e47-7947abaaac85'});
             }]
         },
         data: {
             errorState: 'base.console.edit.service'
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Service'
+        }
+    })
+    .state('base.console.edit.cache-service.select', {
+        url: `/{cacheID}`,
+        permission: 'configuration',
+        resolve: {
+            _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                const {clusterID, cacheID} = $transition$.params();
+
+                if (cacheID === 'new')
+                    return Promise.resolve();
+
+                return etp('LOAD_CACHE', {cacheID});
+            }]
+        },
+        data: {
+            errorState: 'base.console.edit.cache-service'
         },
         resolvePolicy: {
             async: 'NOWAIT'

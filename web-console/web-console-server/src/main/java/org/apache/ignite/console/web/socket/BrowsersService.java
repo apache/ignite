@@ -189,6 +189,7 @@ public class BrowsersService extends AbstractSocketHandler {
                         if (F.isEmpty(clusterId))
                             throw new IllegalStateException(messages.getMessage("err.missing-cluster-id-param"));
                         
+                        
                         AgentKey key = new AgentKey(accId, clusterId);
                         Optional<WebSocketSession> nid = agentsSrvc.findLocalAgent(key);
                         if (nid.isPresent())

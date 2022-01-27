@@ -40,6 +40,16 @@ public abstract class AbstractDto {
     protected AbstractDto(UUID id) {
         this.id = id;
     }
+    
+    /**
+     * Full constructor.
+     *
+     * @param id ID.
+     */
+    protected AbstractDto(String id) {
+        this.id = UUID.fromString(id);
+    }
+
 
     /**
      * @return Object ID.
