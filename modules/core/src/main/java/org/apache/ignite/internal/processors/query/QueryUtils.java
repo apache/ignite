@@ -656,9 +656,12 @@ public class QueryUtils {
 
                     BinaryMetadata meta = createKeyMetadata(ctx, qryEntity, affFieldName);
 
-                    ctx.cacheObjects().addMetaLocally(meta.typeId(), new BinaryTypeImpl(null, meta));
+                    // Validation will be skipped if the metadata cannot be created.
+                    if (meta != null) {
+                        ctx.cacheObjects().addMetaLocally(meta.typeId(), new BinaryTypeImpl(null, meta));
 
-                    desc.keySchemaId(F.first(meta.schemas()).schemaId());
+                        desc.keySchemaId(F.first(meta.schemas()).schemaId());
+                    }
                 }
             }
         }
@@ -672,8 +675,8 @@ public class QueryUtils {
         QueryEntity qryEntity,
         String affFieldName
     ) {
+        int keyTypeId =  ctx.cacheObjects().typeId(qryEntity.getKeyType());
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
-        IgniteBinary bin = ctx.cacheObjects().binary();
         BinarySchema.Builder schemaBuiler = BinarySchema.Builder.newBuilder();
 
         Collection<String> keyFileds = !F.isEmpty(qryEntity.getKeyFields())
@@ -683,8 +686,16 @@ public class QueryUtils {
         Map<String, BinaryFieldMetadata> fields = new HashMap<>();
 
         for (String fld : keyFileds) {
+            if (!binCtx.isSystemType(qryEntity.getFields().get(fld))) {
+                // TODO WARNING LOG
+
+                return null;
+            }
+
             int fldTypeId = ctx.cacheObjects().typeId(qryEntity.getFields().get(fld));
-            int fldId = binCtx.fieldId(fldTypeId, fld);
+
+
+            int fldId = binCtx.fieldId(keyTypeId, fld);
 
             fields.put(fld, new BinaryFieldMetadata(fldTypeId, fldId));
 
@@ -692,7 +703,7 @@ public class QueryUtils {
         }
 
         return new BinaryMetadata(
-            ctx.cacheObjects().typeId(qryEntity.getKeyType()),
+            keyTypeId,
             qryEntity.getKeyType(),
             fields,
             affFieldName,

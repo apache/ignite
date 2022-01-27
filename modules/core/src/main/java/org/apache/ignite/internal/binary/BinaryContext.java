@@ -1456,6 +1456,13 @@ public class BinaryContext {
     }
 
     /**
+     * @param typeName Type namr.
+     */
+    public boolean isSystemType(String typeName) {
+        return  marshCtx.isSystemType(typeName);
+    }
+
+    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {
