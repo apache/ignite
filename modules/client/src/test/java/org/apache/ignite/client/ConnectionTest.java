@@ -17,9 +17,10 @@
 
 package org.apache.ignite.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.Disabled;
@@ -53,9 +54,9 @@ public class ConnectionTest extends AbstractClientTest {
 
         String errMsg = ex.getCause().getMessage();
 
-        assertTrue(
-                errMsg.startsWith("Connection refused"),
-                "Error message should start with 'Connection refused' [actual=" + errMsg + ']');
+        // It does not seem possible to verify that it's a 'Connection refused' exception because with different
+        // user locales the message differs, so let's just check that the message ends with the known suffix.
+        assertThat(errMsg, endsWith(": /127.0.0.1:47500"));
     }
 
     @Test

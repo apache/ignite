@@ -145,14 +145,14 @@ public class ExpandableByteBufTest {
         ExpandableByteBuf buf = new ExpandableByteBuf(1);
 
         assertEquals(3, buf.putString(0, "我", StandardCharsets.UTF_8.newEncoder()));
-        assertEquals("我", new String(buf.toArray()));
+        assertEquals("我", new String(buf.toArray(), StandardCharsets.UTF_8));
 
         assertEquals(3, buf.putString(3, "愛", StandardCharsets.UTF_8.newEncoder()));
-        assertEquals("我愛", new String(buf.toArray()));
+        assertEquals("我愛", new String(buf.toArray(), StandardCharsets.UTF_8));
 
         assertEquals(4, buf.putString(6, "Java", StandardCharsets.UTF_8.newEncoder()));
         assertEquals(10, buf.toArray().length);
-        assertEquals("我愛Java", new String(buf.toArray()));
+        assertEquals("我愛Java", new String(buf.toArray(), StandardCharsets.UTF_8));
     }
 
     /**
