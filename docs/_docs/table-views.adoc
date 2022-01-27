@@ -16,6 +16,35 @@
 
 Apache Ignite 3.0 Alpha introduces the key-value API to access cached data via built-in table views.
 
+[NOTE]
+====
+Please note that the key-value API requires using a case sensitive collation for the database object names and parsing a string argument of the name that is passed through the API.
+
+See the examples below:
+
+* String values:
++
+[source,text]
+----
+CREATE TABLE MyTable (id INT, val INT); -> creates PUBLIC.MYTABLE
+ignite.tables().table("public.mytable"); -> returns PUBLIC.MYTABLE
+CREATE TABLE \"MyTable\" (id INT, val INT); -> creates PUBLIC.MyTable
+ignite.tables().table("public.\"MyTable\""); -> returns PUBLIC.MyTable
+----
+
+* Tuples or columns:
++
+[source,text]
+----
+CREATE TABLE MyTable (id INT, \"Id\" INT, val INT); -> creates PUBLIC.MYTABLE (ID, Id, VAL)
+Tuple tuple = ...
+tuple.value("id") -> returns ID column's value
+tuple.value("Id") -> returns ID column's value
+tuple.value("\"Id\"") -> returns Id column's value
+----
+
+====
+
 == Key-Value View
 
 This table view maps key objects to value objects. The view cannot contain duplicate key objects; each key object can map to at most one value object.
@@ -38,7 +67,7 @@ To start running `RecordViewExample`, please refer to its link:https://github.co
 
 == Record Binary View
 
-NOTE: This is a table view implementation for binary objects.
+NOTE: This is a table view implementation for the binary objects.
 
 You can use binary objects to access the cached data. The benefit of using binary objects is that you avoid deserialization, which is important if you access objects from a server node that does not have the object’s class representation.
 
