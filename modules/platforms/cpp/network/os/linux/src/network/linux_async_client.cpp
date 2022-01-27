@@ -71,17 +71,15 @@ namespace ignite
 
         bool LinuxAsyncClient::Close()
         {
-            State::Type stateBefore = state;
+            if (State::CLOSED == state)
+                return false;
 
-            if (state != State::CLOSED)
-            {
-                StopMonitoring();
-                close(fd);
-                fd = -1;
-                state = State::CLOSED;
-            }
+            StopMonitoring();
+            close(fd);
+            fd = -1;
+            state = State::CLOSED;
 
-            return stateBefore == State::CONNECTED;
+            return true;
         }
 
         bool LinuxAsyncClient::Send(const DataBuffer& data)
