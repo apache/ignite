@@ -686,7 +686,7 @@ public class QueryUtils {
         String affFieldName,
         IgniteLogger log
     ) {
-        int keyTypeId =  ctx.cacheObjects().typeId(qryEntity.getKeyType());
+        int keyTypeId = ctx.cacheObjects().typeId(qryEntity.getKeyType());
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
         BinarySchema.Builder schemaBuiler = BinarySchema.Builder.newBuilder();
 
