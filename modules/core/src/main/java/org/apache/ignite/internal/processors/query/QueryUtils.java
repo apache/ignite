@@ -40,9 +40,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -466,9 +466,15 @@ public class QueryUtils {
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(GridKernalContext ctx, String cacheName, String schemaName,
+    public static QueryTypeCandidate typeForQueryEntity(
+        GridKernalContext ctx,
+        String cacheName,
+        String schemaName,
         GridCacheContextInfo cacheInfo,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
+        QueryEntity qryEntity,
+        List<Class<?>> mustDeserializeClss,
+        boolean escape,
+        IgniteLogger log)
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
@@ -638,7 +644,11 @@ public class QueryUtils {
                                     desc.keySchemaId(schema.schemaId());
                                 }
                                 else {
-                                    // TODO: LOG WARNING
+                                    log.warning("The object used for table primary key has more than one binary schemas ["
+                                        + "cache=" + cacheInfo.name() + ", "
+                                        + "table=" + qryEntity.getTableName() + ", "
+                                        + "keyTypeName=" + qryEntity.getKeyType() + ", "
+                                        + ']');
                                 }
                             }
                         }
@@ -654,7 +664,7 @@ public class QueryUtils {
                         .map(CacheKeyConfiguration::getAffinityKeyFieldName)
                         .orElse(null);
 
-                    BinaryMetadata meta = createKeyMetadata(ctx, qryEntity, affFieldName);
+                    BinaryMetadata meta = createKeyMetadata(ctx, qryEntity, affFieldName, log);
 
                     // Validation will be skipped if the metadata cannot be created.
                     if (meta != null) {
@@ -673,7 +683,8 @@ public class QueryUtils {
     private static BinaryMetadata createKeyMetadata(
         GridKernalContext ctx,
         QueryEntity qryEntity,
-        String affFieldName
+        String affFieldName,
+        IgniteLogger log
     ) {
         int keyTypeId =  ctx.cacheObjects().typeId(qryEntity.getKeyType());
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
@@ -686,14 +697,18 @@ public class QueryUtils {
         Map<String, BinaryFieldMetadata> fields = new HashMap<>();
 
         for (String fld : keyFileds) {
-            if (!binCtx.isSystemType(qryEntity.getFields().get(fld))) {
-                // TODO WARNING LOG
+            Integer fldTypeId = binCtx.fieldTypeId(qryEntity.getFields().get(fld));
+
+            if (fldTypeId == null) {
+                log.warning("Key schema validation is disabled for the table because the schema cannot be defined on the table creation ["
+                    + "table=" + qryEntity.getTableName() + ", "
+                    + "keyType=" + qryEntity.getKeyType() + ", "
+                    + "field=" + fld + ", "
+                    + "fieldType=" + qryEntity.getFields().get(fld) + ", "
+                    + ']');
 
                 return null;
             }
-
-            int fldTypeId = ctx.cacheObjects().typeId(qryEntity.getFields().get(fld));
-
 
             int fldId = binCtx.fieldId(keyTypeId, fld);
 

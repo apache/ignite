@@ -153,7 +153,7 @@ public class OdbcColumnMeta {
         if (dataType.equals(java.sql.Date.class))
             return GridBinaryMarshaller.DATE;
 
-        return BinaryUtils.typeByClass(dataType);
+        return BinaryUtils.fieldTypeByClass(dataType);
     }
 
     /** {@inheritDoc} */

@@ -597,7 +597,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return Binary field type.
      */
-    public static byte typeByClass(Class<?> cls) {
+    public static byte fieldTypeByClass(Class<?> cls) {
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
 
         if (type != null)
