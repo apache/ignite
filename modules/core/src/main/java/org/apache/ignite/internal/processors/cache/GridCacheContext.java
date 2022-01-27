@@ -1654,6 +1654,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         return conflictRslvr != null;
     }
 
+    /** @return Conflict resolver. */
+    public CacheVersionConflictResolver conflictResolver() {
+        return conflictRslvr;
+    }
+
     /**
      * Resolve DR conflict.
      *
