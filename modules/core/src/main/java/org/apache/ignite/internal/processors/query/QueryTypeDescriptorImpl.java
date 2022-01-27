@@ -633,7 +633,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
                 if (keySchemaId != null && !idx.isDisableCheckKeySchema() && binKey.schemaId() != keySchemaId) {
                     log.error("+++ Metadata: " +
-                        ((BinaryTypeImpl)((CacheObjectBinaryProcessorImpl)coCtx.kernalContext().cacheObjects()).binaryContext().metadata(binKey.typeId())).metadata().prettyPrint());
+                        ((BinaryTypeImpl)((CacheObjectBinaryProcessorImpl)coCtx.kernalContext().cacheObjects())
+                            .binaryContext().metadata(binKey.typeId())).metadata().prettyPrint());
 
                     throw new IgniteSQLException("Key schema not is allowed for table ["
                         + "table=" + tblName + ", "
