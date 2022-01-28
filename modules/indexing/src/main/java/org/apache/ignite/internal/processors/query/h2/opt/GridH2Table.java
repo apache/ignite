@@ -988,6 +988,8 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase rmvIdx = tmpIdxs.remove(idxName);
 
             assert rmvIdx != null;
+
+            rmvIdx.destroy(true);
         }
         finally {
             unlock(true);
