@@ -1991,21 +1991,20 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         @QuerySqlField
         int notUniqueId;
 
+        /** */
         public TestValue(int notUniqueId) {
             this.notUniqueId = notUniqueId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
 
-            TestValue testValue = (TestValue) o;
+            TestValue testValue = (TestValue)o;
 
             return notUniqueId == testValue.notUniqueId;
         }
