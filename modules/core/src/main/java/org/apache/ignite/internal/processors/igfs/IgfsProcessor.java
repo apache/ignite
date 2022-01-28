@@ -81,8 +81,11 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (igniteCfg.isDaemon())
             return;
 
+        IgfsUtils.prepareCacheConfigurations(igniteCfg);
+        
         FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
-
+        
+        
         assert cfgs != null && cfgs.length > 0;
 
         // Start IGFS instances.
