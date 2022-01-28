@@ -77,7 +77,7 @@ public class SnapshotMetadata implements Serializable {
 
     /** Master key digest for encrypted caches. */
     @GridToStringInclude
-    private byte[] masterKeyDigest;
+    @Nullable private final byte[] masterKeyDigest;
 
     /**
      * F@param snpName Snapshot name.
@@ -86,6 +86,7 @@ public class SnapshotMetadata implements Serializable {
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -95,7 +96,8 @@ public class SnapshotMetadata implements Serializable {
         int pageSize,
         List<Integer> grpIds,
         Set<String> bltNodes,
-        Set<GroupPartitionId> pairs
+        Set<GroupPartitionId> pairs,
+        @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -104,6 +106,7 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.masterKeyDigest = masterKeyDigest;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -227,13 +230,6 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
-    }
-
-    /**
-     * @param masterKeyDigest Master key digest for encrypted caches.
-     */
-    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
-        this.masterKeyDigest = masterKeyDigest;
     }
 
     /**

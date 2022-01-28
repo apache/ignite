@@ -5134,11 +5134,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.disabledAfterStart(disabledAfterStart);
 
+        req.masterKeyDigest(masterKeyDigest);
+
         req.encryptionKey(encKey);
 
         req.encryptionKeyId(encKeyId);
-
-        req.masterKeyDigest(masterKeyDigest);
 
         req.restartId(restartId);
 

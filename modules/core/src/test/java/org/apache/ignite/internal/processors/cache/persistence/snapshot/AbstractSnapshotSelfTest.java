@@ -247,22 +247,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param ccfg Ensures the cache is absent.
      * @throws IgniteCheckedException if failed.
      */
     protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException, InterruptedException {
-        ensureCacheAbsent(ccfg, true);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @param awaitPME If {@code true}, awaits PME.
-     * @throws IgniteCheckedException if failed.
-     */
-    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg, boolean awaitPME) throws IgniteCheckedException, InterruptedException {
-        if (awaitPME)
-            awaitPartitionMapExchange();
-
         String cacheName = ccfg.getName();
 
         for (Ignite ignite : G.allGrids()) {
@@ -287,11 +275,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
 
             assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
-
-            if (ccfg.isEncryptionEnabled()) {
-                assertNull("Encryption key for cache " + dfltCacheCfg.getName(),
-                    ((IgniteEx)ignite).context().encryption().getActiveKey(CU.cacheGroupId(dfltCacheCfg)));
-            }
         }
     }
 

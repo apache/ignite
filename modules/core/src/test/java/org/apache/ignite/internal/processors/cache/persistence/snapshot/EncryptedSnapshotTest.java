@@ -44,6 +44,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 /**
  * Snapshot test for encrypted-only snapshots.
  */
+
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Second cache name. */
     private static final String CACHE2 = "cache2";
@@ -62,13 +63,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks creation of encrypted cache with same name after putting plain cache in snapshot. */
     @Test
     public void testEncryptedCacheCreatedAfterPlainCacheSnapshotting() throws Exception {
-        testCacheCreatedAfterSnaphotting(true);
+        testCacheCreatedAfterSnapshotting(true);
     }
 
     /** Checks creation of plain cache with same name after putting encrypted cache in snapshot. */
     @Test
     public void testPlainCacheCreatedAfterEncryptedCacheSnapshotting() throws Exception {
-        testCacheCreatedAfterSnaphotting(false);
+        testCacheCreatedAfterSnapshotting(false);
     }
 
     /** Checks re-encryption fails during snapshot restoration. */
@@ -143,7 +144,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks both encrypted and plain caches can be restored from same snapshot. */
     @Test
     public void testRestoringEncryptedAndPlainCaches() throws Exception {
-        start2GridsCreateEncrPlainSnp();
+        start2GridsWithEncryptesAndPlainCachesSnapshot();
 
         grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -154,7 +155,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks both encrypted and plain caches can be restored from same snapshot. */
     @Test
     public void testStartingWithEncryptedAndPlainCaches() throws Exception {
-        start2GridsCreateEncrPlainSnp();
+        start2GridsWithEncryptesAndPlainCachesSnapshot();
 
         stopAllGrids();
 
@@ -217,17 +218,17 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             dfltCacheCfg = null;
 
             File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false);
-            assert snpDir.isDirectory() && snpDir.listFiles().length > 0;
+            assertTrue(snpDir.isDirectory() && snpDir.listFiles().length > 0);
 
             tmpSnpDir = new File(snpDir.getAbsolutePath() + "_tmp");
 
-            assert tmpSnpDir.length() == 0;
+            assertTrue(tmpSnpDir.length() == 0);
 
-            assert snpDir.renameTo(tmpSnpDir);
+            assertTrue(snpDir.renameTo(tmpSnpDir));
 
             cleanPersistenceDir();
 
-            assert tmpSnpDir.renameTo(snpDir);
+            assertTrue(tmpSnpDir.renameTo(snpDir));
 
             IgniteEx ig = startGrids(3);
 
@@ -288,13 +289,21 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             "Metastore is required because it holds encryption keys");
     }
 
+    /** {@inheritDoc} */
+    @Override protected void ensureCacheAbsent(
+        CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
+        super.ensureCacheAbsent(ccfg);
+    }
+
     /**
      * Ensures that same-name-cache is created after putting cache into snapshot and deleting.
      *
      * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order
      *                       {@code false}.
      */
-    private void testCacheCreatedAfterSnaphotting(boolean encryptedFirst) throws Exception {
+    private void testCacheCreatedAfterSnapshotting(boolean encryptedFirst) throws Exception {
         startGrids(2);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
@@ -455,7 +464,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /**
      * Starts 2 nodes, creates encrypted and plain caches, creates snapshot, destroes the caches. Ensures caches absent.
      */
-    private void start2GridsCreateEncrPlainSnp() throws Exception {
+    private void start2GridsWithEncryptesAndPlainCachesSnapshot() throws Exception {
         startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         CacheConfiguration<?, ?> ccfg = addCache(false);
@@ -466,7 +475,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         grid(1).cache(CACHE2).destroy();
 
         ensureCacheAbsent(dfltCacheCfg);
-        ensureCacheAbsent(ccfg, false);
+        ensureCacheAbsent(ccfg);
     }
 
     /**

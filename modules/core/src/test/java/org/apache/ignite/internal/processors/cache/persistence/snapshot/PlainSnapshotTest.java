@@ -53,14 +53,14 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Checks, compares CRCs of partitions in datafiles of the snapshot and of the source database.
+     * Checks, compares CRCs of partitions in snapshot data files against the source.
      * <p>
      * <b>NOTE:</b>
      * This test is actual only for not-encrypted snapshots.
      * Writing the deltas causes several page writes into file. Every page write calls encrypt(). Every repeatable
-     * encrypt() produces different record even for same original data. Re-writing pages from delta to partition file
-     * in the shanpshot leads to additional encryption before writing to the snapshot partition file. Thus, page in
-     * original partition and in snapshot partiton has different encrypted CRC and same de-crypted CRC. Different
+     * encrypt() produces different record. Even for same original data. Re-writing pages from delta to partition file
+     * in the snapshot issues additional encryption before writing to the snapshot partition file. Thus, page in
+     * original partition and in snapshot partition has different encrypted CRC and same decrypted CRC. Different
      * encrypted CRC looks like different data in point of view of third-party observer.
      *
      * @throws Exception If fails.

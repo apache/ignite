@@ -626,14 +626,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpLocDir Local snapshot directory.
-     * @return Snapshot data directory.
-     */
-    File snapshotDataDirectory(File snpLocDir) {
-        return new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
-    }
-
-    /**
      * @return Node snapshot working directory.
      */
     public File snapshotTmpDir() {
@@ -741,9 +733,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    (Set<GroupPartitionId>)fut.result());
-
-                meta.masterKeyDigest(cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
+                    (Set<GroupPartitionId>)fut.result(),
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    );
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh, meta, out);
@@ -1145,24 +1137,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
-                byte[] curMasterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
+                byte[] masterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
                     for (SnapshotMetadata meta : nodeMetas) {
                         byte[] snpMasterKeyDigest = meta.masterKeyDigest();
 
-                        if (curMasterKeyDigest == null && snpMasterKeyDigest != null) {
+                        if (masterKeyDigest == null && snpMasterKeyDigest != null) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
-                                    "' has encrypted caches while encryption is disabled. No keys exist to decrypt data to validate.")))));
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
+                                    meta.snapshotName() + "' has encrypted caches while encryption is disabled. To " +
+                                    "restore this snapshot, start Ignite with configured encryption and the same " +
+                                    "master key.")))));
 
                             return;
                         }
 
-                        if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, curMasterKeyDigest)) {
+                        if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
-                                    "' has different master key digest. Unable to decrypt data to validate.")))));
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
+                                    meta.snapshotName() + "' has different master key digest. To restore this " +
+                                    "snapshot, start Ignite with the same master key.")))));
 
                             return;
                         }
@@ -2940,7 +2935,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = snapshotDataDirectory(snpLocDir);
+            dbDir = new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
 
             if (dbDir.exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +

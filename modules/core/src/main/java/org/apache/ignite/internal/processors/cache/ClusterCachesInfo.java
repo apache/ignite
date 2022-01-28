@@ -2176,14 +2176,14 @@ public class ClusterCachesInfo {
 
             assert cacheInfo.cacheData().config().isEncryptionEnabled();
 
-            GroupKeyEncrypted incomingKeyEncrypted = cacheInfo.cacheData().groupKeyEncrypted();
+            GroupKeyEncrypted restoredKey = cacheInfo.cacheData().groupKeyEncrypted();
             GroupKey activeKey = ctx.encryption().getActiveKey(grpId);
 
             if (activeKey == null)
-                ctx.encryption().setInitialGroupKey(grpId, incomingKeyEncrypted.key(), incomingKeyEncrypted.id());
+                ctx.encryption().setInitialGroupKey(grpId, restoredKey.key(), restoredKey.id());
             else {
-                assert activeKey.equals(new GroupKey(incomingKeyEncrypted.id(),
-                    ctx.config().getEncryptionSpi().decryptKey(incomingKeyEncrypted.key())));
+                assert activeKey.equals(new GroupKey(restoredKey.id(),
+                    ctx.config().getEncryptionSpi().decryptKey(restoredKey.key())));
             }
         }
 

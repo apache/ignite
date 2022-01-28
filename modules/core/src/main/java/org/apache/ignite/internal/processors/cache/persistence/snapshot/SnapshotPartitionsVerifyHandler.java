@@ -272,6 +272,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /**
      * Provides encryption keys stored within snapshot.
+     * <p>
+     * To restore an encrypted snapshot, we have to read the keys it was encrypted with. The better place for the is
+     * Metastore. But it is currently unreadable as simple structure. Once it is done, we should move snapshot
+     * encryption keys there.
      */
     private static class SnapshotEncryptionKeyProvider implements EncryptionCacheKeyProvider {
         /** Kernal context */
@@ -296,7 +300,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         /** {@inheritDoc} */
         @Override public @Nullable GroupKey getActiveKey(int grpId) {
-            return decryptedKeys.computeIfAbsent(grpId, gid -> {
+            return decryptedKeys.computeIfAbsent(grpId, id -> {
                 GroupKey grpKey = null;
 
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
@@ -320,7 +324,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     return grpKey;
                 }
                 catch (Exception e) {
-                    throw new IgniteException("Unable to extract ciphered encryption key of cache group " + gid + '.', e);
+                    throw new IgniteException("Unable to extract ciphered encryption key of cache group " + id + '.', e);
                 }
             });
         }

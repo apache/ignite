@@ -526,14 +526,13 @@ public class SnapshotRestoreProcess {
     /**
      * Ensures that a cache with the specified name does not exist locally.
      *
-     * @param cacheCfg Cache configuration.
+     * @param name Cache name.
      */
-    private void ensureCacheAbsent(CacheConfiguration<?, ?> cacheCfg) {
-        int id = CU.cacheGroupId(cacheCfg);
+    private void ensureCacheAbsent(String name) {
+        int id = CU.cacheId(name);
 
-        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null ||
-            ctx.encryption().getActiveKey(id) != null) {
-            throw new IgniteIllegalStateException("Cache \"" + cacheCfg.getName() +
+        if (ctx.cache().cacheGroupDescriptors().containsKey(id) || ctx.cache().cacheDescriptor(id) != null) {
+            throw new IgniteIllegalStateException("Cache \"" + name +
                 "\" should be destroyed manually before perform restore operation.");
         }
     }
@@ -597,10 +596,10 @@ public class SnapshotRestoreProcess {
 
             // Ensure that shared cache groups has no conflicts.
             for (StoredCacheData cfg : opCtx0.cfgs.values()) {
-                ensureCacheAbsent(cfg.config());
+                ensureCacheAbsent(cfg.config().getName());
 
                 if (!F.isEmpty(cfg.config().getGroupName()))
-                    ensureCacheAbsent(cfg.config());
+                    ensureCacheAbsent(cfg.config().getGroupName());
             }
 
             if (ctx.isStopping())
