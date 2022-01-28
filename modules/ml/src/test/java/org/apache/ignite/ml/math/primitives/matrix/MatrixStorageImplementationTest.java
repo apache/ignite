@@ -38,11 +38,16 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
         final AtomicReference<Integer> expRowSize = new AtomicReference<>(0);
         final AtomicReference<Integer> expColSize = new AtomicReference<>(0);
 
-        consumeSampleStorages((x, y) -> {
+        consumeSampleStorages(
+            (x, y) -> {
                 expRowSize.set(x);
                 expColSize.set(y);
             },
-            (ms, desc) -> assertTrue("Expected size for " + desc, expColSize.get().equals(ms.columnSize()) && expRowSize.get().equals(ms.rowSize())));
+            (ms, desc) -> assertTrue(
+                "Expected size for " + desc,
+                expColSize.get().equals(ms.columnSize()) && expRowSize.get().equals(ms.rowSize())
+            )
+        );
     }
 
     /** */

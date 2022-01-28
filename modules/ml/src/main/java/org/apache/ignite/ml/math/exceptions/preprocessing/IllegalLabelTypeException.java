@@ -32,6 +32,7 @@ public class IllegalLabelTypeException extends IgniteException {
      * @param desiredCls The desired type.
      */
     public IllegalLabelTypeException(Class illegalCls, Object illegalVal, Class desiredCls) {
-        super("The type of label " + illegalCls + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredCls);
+        super("The type of label " + illegalCls + " is illegal. " +
+            "The found value is: " + illegalVal + " The type of label should be " + desiredCls);
     }
 }

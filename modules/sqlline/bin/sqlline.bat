@@ -133,6 +133,7 @@ if %MAJOR_JAVA_VER% GEQ 11 (
     --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
     --illegal-access=permit ^
     %JVM_OPTS%
 )
@@ -140,6 +141,10 @@ if %MAJOR_JAVA_VER% GEQ 11 (
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver %*
+:: Between version 2 and 3, jline changed the format of its history file. After this change,
+:: the Ignite provides --historyfile argument to SQLLine usage
+set SQLLINE_HISTORY=%HOMEPATH%\.sqlline\ignite_history
+
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --historyFile=%SQLLINE_HISTORY% %*
 
 :error_finish

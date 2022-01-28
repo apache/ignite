@@ -34,10 +34,13 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 /**
  */
 public class IgniteDataStreamerTest extends GridCommonAbstractTest {
+    /** */
     public static final String CACHE_NAME = "UUID_CACHE";
 
+    /** */
     public static final int DATA_SIZE = 3;
 
+    /** */
     public static final long WAIT_TIMEOUT = 30_000L;
 
     /** {@inheritDoc} */
@@ -46,8 +49,11 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
         startGrids(2);
         startClientGrid("client");
+
+        awaitPartitionMapExchange();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

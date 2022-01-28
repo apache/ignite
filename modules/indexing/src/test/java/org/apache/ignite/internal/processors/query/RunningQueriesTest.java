@@ -64,8 +64,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -137,7 +137,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
-            .setIndexedTypes(Integer.class,Integer.class)
+            .setIndexedTypes(Integer.class, Integer.class)
         );
 
         cache.put(100000, 0);

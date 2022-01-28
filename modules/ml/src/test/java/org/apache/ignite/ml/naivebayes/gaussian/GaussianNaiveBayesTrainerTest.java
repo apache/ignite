@@ -164,7 +164,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Test. */
     @Test
     public void testUpdatingModel() {
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer =
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
 
         GaussianNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata1, parts),

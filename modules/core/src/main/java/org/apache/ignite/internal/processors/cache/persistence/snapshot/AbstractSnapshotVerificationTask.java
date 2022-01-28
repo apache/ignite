@@ -84,7 +84,7 @@ public abstract class AbstractSnapshotVerificationTask extends
 
         while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
-                SnapshotMetadata meta = F.find(e.getValue(), null, allMetas::remove);
+                SnapshotMetadata meta = F.<SnapshotMetadata>find(e.getValue(), null, allMetas::remove);
 
                 if (meta == null)
                     continue;

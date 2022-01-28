@@ -24,12 +24,17 @@ import org.apache.ignite.ml.preprocessing.encoding.FrequencyEncoderPreprocessorT
 import org.apache.ignite.ml.preprocessing.encoding.LabelEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.OneHotEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.StringEncoderPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.encoding.TargetEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainerTest;
+import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainerTest;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainerTest;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainerTest;
+import org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -48,10 +53,16 @@ import org.junit.runners.Suite;
     OneHotEncoderPreprocessorTest.class,
     FrequencyEncoderPreprocessorTest.class,
     StringEncoderPreprocessorTest.class,
+    TargetEncoderPreprocessorTest.class,
     LabelEncoderPreprocessorTest.class,
     NormalizationTrainerTest.class,
-    NormalizationPreprocessorTest.class
+    NormalizationPreprocessorTest.class,
 
+    StandardScalerTrainerTest.class,
+    StandardScalerPreprocessorTest.class,
+
+    MaxAbsScalerTrainerTest.class,
+    MaxAbsScalerPreprocessorTest.class
 })
 public class PreprocessingTestSuite {
     // No-op.

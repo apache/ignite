@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.List;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlMerge extends GridSqlStatement {
     /** */
@@ -36,24 +38,26 @@ public class GridSqlMerge extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("MERGE INTO ")
             .append(into.getSQL())
-            .append("(");
+            .append('(');
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(", ");
-            buff.append('\n')
+            buff.append(delim)
                 .append(col.getSQL());
         }
-        buff.append("\n)\n");
+        buff.append(delim).append(')').append(delim);
 
         if (!rows.isEmpty()) {
-            buff.append("VALUES\n");
+            buff.append("VALUES").append(delim);
             StatementBuilder valuesBuff = new StatementBuilder();
 
             for (GridSqlElement[] row : rows()) {
-                valuesBuff.appendExceptFirst(",\n");
+                valuesBuff.appendExceptFirst("," + delim);
                 StatementBuilder rowBuff = new StatementBuilder("(");
                 for (GridSqlElement e : row) {
                     rowBuff.appendExceptFirst(", ");
@@ -65,7 +69,7 @@ public class GridSqlMerge extends GridSqlStatement {
             buff.append(valuesBuff.toString());
         }
         else
-            buff.append('\n')
+            buff.append(delim)
                 .append(qry.getSQL());
 
         return buff.toString();

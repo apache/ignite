@@ -19,9 +19,7 @@ package org.apache.ignite.tests;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
-
 import org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer;
-
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

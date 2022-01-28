@@ -125,7 +125,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
      * Finds the best set of hyper-parameters based on Genetic Programming approach.
      */
     private CrossValidationResult scoreEvolutionAlgorithmSearchHyperparameterOptimization() {
-        EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy) paramGrid.getHyperParameterTuningStrategy();
+        EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy)paramGrid.getHyperParameterTuningStrategy();
 
         List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIdx()).generate();
 
@@ -143,17 +143,11 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
 
             cvRes.addScores(tr.locScores, tr.paramMap);
 
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-            return locAvgScore;
+            return Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
         };
 
-        Random rnd = new Random(stgy.getSeed()); //TODO: common seed for shared lambdas can produce the same value on each function call? or sequent?
+        //TODO: common seed for shared lambdas can produce the same value on each function call? or sequent?
+        Random rnd = new Random(stgy.getSeed());
 
         BiFunction<Integer, Double, Double> mutator = (Integer geneIdx, Double geneValue) -> {
             Double newGeneVal;
@@ -167,10 +161,10 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         GeneticAlgorithm ga = new GeneticAlgorithm(rndParamSets);
         ga.withFitnessFunction(fitnessFunction)
             .withMutationOperator(mutator)
-            .withAmountOfEliteChromosomes(stgy.getAmountOfEliteChromosomes())
+            .withAmountOfEliteChromosomes(stgy.getNumberOfEliteChromosomes())
             .withCrossingoverProbability(stgy.getCrossingoverProbability())
             .withCrossoverStgy(stgy.getCrossoverStgy())
-            .withAmountOfGenerations(stgy.getAmountOfGenerations())
+            .withAmountOfGenerations(stgy.getNumberOfGenerations())
             .withSelectionStgy(stgy.getSelectionStgy())
             .withMutationProbability(stgy.getMutationProbability());
 
@@ -186,7 +180,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
      * Finds the best set of hyperparameters based on Random Serach.
      */
     private CrossValidationResult scoreRandomSearchHyperparameterOptimization() {
-        RandomStrategy stgy = (RandomStrategy) paramGrid.getHyperParameterTuningStrategy();
+        RandomStrategy stgy = (RandomStrategy)paramGrid.getHyperParameterTuningStrategy();
 
         List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIdx()).generate();
 
@@ -198,23 +192,14 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         List<Double[]> rndParamSets = paramSetsCp.subList(0, stgy.getMaxTries());
 
         List<IgniteSupplier<TaskResult>> tasks = rndParamSets.stream()
-            .map(paramSet -> (IgniteSupplier<TaskResult>) (() -> calculateScoresForFixedParamSet(paramSet)))
+            .map(paramSet -> (IgniteSupplier<TaskResult>)(() -> calculateScoresForFixedParamSet(paramSet)))
             .collect(Collectors.toList());
 
         List<TaskResult> taskResults = environment.parallelismStrategy().submit(tasks).stream()
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
 
         return cvRes;
     }
@@ -228,24 +213,14 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         CrossValidationResult cvRes = new CrossValidationResult();
 
         List<IgniteSupplier<TaskResult>> tasks = paramSets.stream()
-            .map(paramSet -> (IgniteSupplier<TaskResult>) (() -> calculateScoresForFixedParamSet(paramSet)))
+            .map(paramSet -> (IgniteSupplier<TaskResult>)(() -> calculateScoresForFixedParamSet(paramSet)))
             .collect(Collectors.toList());
 
         List<TaskResult> taskResults = environment.parallelismStrategy().submit(tasks).stream()
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore > cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
         return cvRes;
     }
 
@@ -264,22 +239,22 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
          * @param locScores Locale scores.
          */
         public TaskResult(Map<String, Double> paramMap, double[] locScores) {
-            this.paramMap = paramMap;
-            this.locScores = locScores;
+            this.paramMap = Collections.unmodifiableMap(paramMap);
+            this.locScores = locScores.clone();
         }
 
         /**
          * @param paramMap Parameter map.
          */
         public void setParamMap(Map<String, Double> paramMap) {
-            this.paramMap = paramMap;
+            this.paramMap = Collections.unmodifiableMap(paramMap);;
         }
 
         /**
          * @param locScores Local scores.
          */
         public void setLocScores(double[] locScores) {
-            this.locScores = locScores;
+            this.locScores = locScores.clone();
         }
     }
 

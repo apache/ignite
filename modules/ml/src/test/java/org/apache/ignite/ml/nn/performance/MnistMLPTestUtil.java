@@ -63,7 +63,12 @@ public class MnistMLPTestUtil {
      */
     public static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
-        return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
+        return MnistUtils.mnistAsList(
+            props.getProperty(PROP_TRAINING_IMAGES),
+            props.getProperty(PROP_TRAINING_LABELS),
+            new Random(123L),
+            cnt
+        );
     }
 
     /**

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * DML update results iterator.

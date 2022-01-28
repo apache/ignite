@@ -18,21 +18,27 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
 
 /**
@@ -52,13 +58,36 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
     /** The second node index. This node should execute only map parts of the queries. */
     protected static final int MAPPER_IDX = 1;
 
+    /** */
+    private static final AtomicInteger SQL_QRY_EXEC_EVT_CNTR = new AtomicInteger();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        IgnitePredicate<SqlQueryExecutionEvent> lsnr = evt -> {
+            assertNotNull(evt.text());
+
+            SQL_QRY_EXEC_EVT_CNTR.incrementAndGet();
+
+            return true;
+        };
+
+        int[] evts = new int[] {EVT_SQL_QUERY_EXECUTION};
+
+        cfg.setIncludeEventTypes(evts);
+        cfg.setLocalEventListeners(Collections.singletonMap(lsnr, evts));
+
+        return cfg;
+    }
+
     /**
      * Verify that after specified action is performed, all metrics are left unchanged.
      *
      * @param act Action.
      */
     protected void assertMetricsRemainTheSame(Runnable act) {
-        assertMetricsAre(fetchAllMetrics(REDUCER_IDX), fetchAllMetrics(MAPPER_IDX), act);
+        assertMetricsAre(fetchAllMetrics(REDUCER_IDX), fetchAllMetrics(MAPPER_IDX), act, 0);
     }
 
     /**
@@ -68,6 +97,21 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
      * @param incrementedMetrics array of metrics to check.
      */
     protected void assertMetricsIncrementedOnlyOnReducer(Runnable act, String... incrementedMetrics) {
+        assertMetricsIncrementedOnlyOnReducer(act, 1, incrementedMetrics);
+    }
+
+    /**
+     * Verify that after action is performed, specified metrics gets incremented only on reducer node.
+     *
+     * @param act action (callback) to perform.
+     * @param qryCnt Amount of queries.
+     * @param incrementedMetrics array of metrics to check.
+     */
+    protected void assertMetricsIncrementedOnlyOnReducer(
+        Runnable act,
+        int qryCnt,
+        String... incrementedMetrics
+    ) {
         Map<String, Long> expValuesMapper = fetchAllMetrics(MAPPER_IDX);
 
         Map<String, Long> expValuesReducer = fetchAllMetrics(REDUCER_IDX);
@@ -75,7 +119,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
         for (String incMet : incrementedMetrics)
             expValuesReducer.compute(incMet, (name, val) -> val + 1);
 
-        assertMetricsAre(expValuesReducer, expValuesMapper, act);
+        assertMetricsAre(expValuesReducer, expValuesMapper, act, qryCnt);
     }
 
     /**
@@ -97,11 +141,16 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
      * @param expMetricsReducer Expected metrics on reducer.
      * @param expMetricsMapper Expected metrics on mapper.
      * @param act callback to perform. Usually sql query execution.
+     * @param qryEvtCnt Expected sql query events.
      */
     private void assertMetricsAre(
         Map<String, Long> expMetricsReducer,
         Map<String, Long> expMetricsMapper,
-        Runnable act) {
+        Runnable act,
+        int qryEvtCnt
+    ) {
+        SQL_QRY_EXEC_EVT_CNTR.set(0);
+
         act.run();
 
         expMetricsReducer.forEach((mName, expVal) -> {
@@ -115,6 +164,9 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
 
             Assert.assertEquals("Unexpected value for metric " + mName, (long)expVal, actVal);
         });
+
+        Assert.assertEquals("Unexpected records for SqlQueryExecutionEvent.",
+            qryEvtCnt, SQL_QRY_EXEC_EVT_CNTR.get());
     }
 
     /**

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Represents vector with repetitions counters for subsamples in bootstrapped dataset.
@@ -83,6 +82,6 @@ public class BootstrappedVector extends LabeledVector<Double> {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        counters = (int[]) in.readObject();
+        counters = (int[])in.readObject();
     }
 }

@@ -126,8 +126,8 @@ public class BaggedTrainer<L> extends
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
 
-        AdaptableDatasetTrainer<Vector, Double, Vector, List<Double>, IgniteModel<Vector, List<Double>>, L> finalTrainer = AdaptableDatasetTrainer.of(
-            new TrainersParallelComposition<>(
+        AdaptableDatasetTrainer<Vector, Double, Vector, List<Double>, IgniteModel<Vector, List<Double>>, L> finalTrainer =
+            AdaptableDatasetTrainer.of(new TrainersParallelComposition<>(
                 subspaceTrainers)).afterTrainedModel(l -> aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray()));
 
         return CompositionUtils.unsafeCoerce(finalTrainer);

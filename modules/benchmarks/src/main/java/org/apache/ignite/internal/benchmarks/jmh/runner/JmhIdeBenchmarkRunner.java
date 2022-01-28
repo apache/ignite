@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.runner;
 
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * JMH IDE benchmark runner configuration.

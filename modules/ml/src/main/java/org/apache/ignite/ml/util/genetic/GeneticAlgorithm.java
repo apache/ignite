@@ -149,7 +149,8 @@ public class GeneticAlgorithm {
                 for (int j = amountOfEliteChromosomes; j < populationSize; j++) {
                     int finalJ = j;
                     Population finalNewPopulation1 = newPopulation;
-                    IgniteSupplier<Pair<Integer, Double>> task = () -> new Pair<>(finalJ, fitnessFunction.apply(finalNewPopulation1.getChromosome(finalJ)));
+                    IgniteSupplier<Pair<Integer, Double>> task =
+                        () -> new Pair<>(finalJ, fitnessFunction.apply(finalNewPopulation1.getChromosome(finalJ)));
                     tasks.add(task);
                 }
 

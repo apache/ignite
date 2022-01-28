@@ -23,8 +23,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -76,6 +78,10 @@ public class CacheMvccPartitionedSqlTxQueriesWithReducerTest extends CacheMvccSq
 
         spi.stopBlock();
 
-        queryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+        try {
+            queryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            assertTrue(X.hasCause(e, ClusterTopologyException.class));
+        }
     }
 }

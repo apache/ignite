@@ -145,7 +145,12 @@ public class OneVsRestClassificationExample {
 
                         confusionMtxWithMinMaxScaling[idx1][idx2]++;
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t\t\t\t\t| %.4f\t\t|\n", prediction, predictionWithMinMaxScaling, groundTruth);
+                        System.out.printf(
+                            ">>> | %.4f\t\t| %.4f\t\t\t\t\t\t| %.4f\t\t|\n",
+                            prediction,
+                            predictionWithMinMaxScaling,
+                            groundTruth
+                        );
                     }
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println("\n>>> -----------------One-vs-Rest SVM model-------------");

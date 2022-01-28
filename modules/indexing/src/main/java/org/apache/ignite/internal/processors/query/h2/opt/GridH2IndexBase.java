@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -26,7 +27,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends BaseIndex {
+public abstract class GridH2IndexBase extends H2IndexCostedBase {
     /**
      * Constructor.
      *
@@ -49,7 +49,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param type Index type.
      */
     protected GridH2IndexBase(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
-        initBaseIndex(tbl, 0, name, cols, type);
+        super(tbl, name, cols, type);
     }
 
     /** {@inheritDoc} */
@@ -65,15 +65,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param rmv Flag remove.
      */
     public void destroy(boolean rmv) {
-        // No-op.
-    }
-
-    /**
-     * Attempts to asyncronously {@link #destroy} index and release all the resources.
-     *
-     * @param rmv Flag remove.
-     */
-    public void asyncDestroy(boolean rmv) {
         // No-op.
     }
 
@@ -266,5 +257,19 @@ public abstract class GridH2IndexBase extends BaseIndex {
         IndexColumn.mapColumns(cols, tbl);
 
         return cols;
+    }
+
+    /**
+     * Finds an instance of an interface implemented by this object,
+     * or returns null if this object does not support that interface.
+     */
+    public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        return null;
     }
 }

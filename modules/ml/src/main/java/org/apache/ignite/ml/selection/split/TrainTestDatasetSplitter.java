@@ -80,7 +80,7 @@ public class TrainTestDatasetSplitter<K, V> implements Serializable {
      * pair to a point on the segment (0, 1) and an interval inside that segment (for example (0, 0.2)). After that this
      * filter will pass all entries whose mappings lie in the specified interval.
      */
-    class DatasetSplitFilter implements IgniteBiPredicate<K,V> {
+    class DatasetSplitFilter implements IgniteBiPredicate<K, V> {
         /** */
         private static final long serialVersionUID = 2247757751655582254L;
 

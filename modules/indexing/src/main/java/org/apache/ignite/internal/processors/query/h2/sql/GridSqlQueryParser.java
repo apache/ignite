@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -683,7 +683,7 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                Query qry = VIEW_QUERY.get((TableView) tbl);
+                Query qry = VIEW_QUERY.get((TableView)tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
             }
@@ -1091,7 +1091,14 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+            Boolean prev = flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+
+            if (prev != null) {
+                String prevCol = INDEX_COLUMN_NAME.get(col) + " " + (prev ? "ASC" : "DESC");
+
+                throw new IgniteSQLException("Already defined column in index: " + prevCol,
+                    IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS);
+            }
         }
 
         idx.setFields(flds);
@@ -1781,7 +1788,7 @@ public class GridSqlQueryParser {
 
         assert table instanceof GridH2Table : table;
 
-        return (GridH2Table) table;
+        return (GridH2Table)table;
     }
 
     /**
@@ -1887,13 +1894,13 @@ public class GridSqlQueryParser {
         // check all involved caches
         for (Object o : parserObjects) {
             if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge) o).into();
+                o = ((GridSqlMerge)o).into();
             else if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert) o).into();
+                o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlUpdate)
-                o = ((GridSqlUpdate) o).target();
+                o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete) o).from();
+                o = ((GridSqlDelete)o).from();
 
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);

@@ -32,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-ml-spark-model-parser</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <url>http://ignite.apache.org</url>
 
     <build>
@@ -57,12 +57,21 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -78,6 +87,14 @@
             <artifactId>hadoop-common</artifactId>
             <version>2.9.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
 
 </project>

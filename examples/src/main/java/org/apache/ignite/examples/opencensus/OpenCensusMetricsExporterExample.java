@@ -17,20 +17,16 @@
 
 package org.apache.ignite.examples.opencensus;
 
-import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
-import io.prometheus.client.exporter.HTTPServer;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.CharBuffer;
-
-
+import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
+import io.prometheus.client.exporter.HTTPServer;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -53,6 +49,9 @@ public class OpenCensusMetricsExporterExample {
     /** Export period. */
     private static final long PERIOD = 1_000L;
 
+    /**
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) throws Exception {
         // Setting up prometheus stats collector.
         PrometheusStatsCollector.createAndRegister();
@@ -99,10 +98,8 @@ public class OpenCensusMetricsExporterExample {
                 URLConnection conn = new URL(METRICS_URL).openConnection();
 
                 try (InputStream in = conn.getInputStream()) {
-                    Reader reader = new InputStreamReader(in, conn.getContentEncoding());
-                    CharBuffer cb = CharBuffer.allocate(1024);
-                    reader.read(cb);
-                    String content = cb.toString();
+                    String content = IOUtils.toString(in, conn.getContentEncoding());
+
                     System.out.println(content);
                 }
             }

@@ -140,7 +140,7 @@ public interface PreprocessingTrainer<K, V> {
      * @param basePreprocessor Preprocessor.
      * @return Learning environment.
      */
-    public default LearningEnvironment learningEnvironment(Preprocessor<K,V> basePreprocessor) {
+    public default LearningEnvironment learningEnvironment(Preprocessor<K, V> basePreprocessor) {
         LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
         env.initDeployingContext(basePreprocessor);
         return env;

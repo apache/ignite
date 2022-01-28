@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
@@ -68,10 +69,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     public static final int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
 
     /**
-     * Unused. Keep for backward compatibility.
+     * Whether to treat replicated as partitioned (for outer joins).
      */
-    @SuppressWarnings("unused")
-    public static final int FLAG_UNUSED = 1 << 2;
+    public static final int FLAG_REPLICATED_AS_PARTITIONED = 1 << 2;
 
     /**
      * If it is an EXPLAIN command.
@@ -160,6 +160,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
     private GridH2SelectForUpdateTxDetails txReq;
 
+    /** */
+    private boolean explicitTimeout;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -186,6 +189,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         schemaName = req.schemaName;
         mvccSnapshot = req.mvccSnapshot;
         txReq = req.txReq;
+        explicitTimeout = req.explicitTimeout;
     }
 
     /**
@@ -403,6 +407,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * @return {@code true} if query timeout is set explicitly.
+     */
+    public boolean explicitTimeout() {
+        return explicitTimeout;
+    }
+
+    /**
+     * @param explicitTimeout Explicit timeout flag.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest explicitTimeout(boolean explicitTimeout) {
+        this.explicitTimeout = explicitTimeout;
+
+        return this;
+    }
+
+    /**
      * @return Schema name.
      */
     public String schemaName() {
@@ -458,7 +479,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         boolean lazy,
         boolean replicatedOnly,
         boolean explain,
-        Boolean dataPageScanEnabled) {
+        Boolean dataPageScanEnabled,
+        boolean treatReplicatedAsPartitioned) {
         int flags = enforceJoinOrder ? FLAG_ENFORCE_JOIN_ORDER : 0;
 
         // Distributed joins flag is set if it is either reald
@@ -475,6 +497,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
             flags |= FLAG_LAZY;
 
         flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+
+        if (treatReplicatedAsPartitioned)
+            flags |= FLAG_REPLICATED_AS_PARTITIONED;
 
         return flags;
     }
@@ -531,7 +556,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
             if (m instanceof BinaryMarshaller)
                 // To avoid deserializing of enum types.
-                params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
             else
                 params = U.unmarshal(m, paramsBytes, ldr);
         }
@@ -632,6 +657,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
             case 13:
                 if (!writer.writeMessage("txReq", txReq))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeBoolean("explicitTimeout", explicitTimeout))
                     return false;
 
                 writer.incrementState();
@@ -761,6 +792,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+            case 14:
+                explicitTimeout = reader.readBoolean("explicitTimeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -773,7 +812,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

@@ -62,10 +62,4 @@ public class H2PlainRowSingle extends H2Row {
     @Override public String toString() {
         return S.toString(H2PlainRowSingle.class, this);
     }
-    
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {        	
-    	if(v==null) return true;
-    	return false;
-    }
 }

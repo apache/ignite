@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,20 +49,22 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QuerySysIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
+import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,15 +75,19 @@ import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.h2.index.Index;
+import org.h2.table.Column;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
  */
-public class SchemaManager {
+public class SchemaManager implements GridQuerySchemaManager {
     /** */
     public static final String SQL_SCHEMA_VIEW = "schemas";
 
@@ -115,6 +124,9 @@ public class SchemaManager {
     /** */
     public static final String SQL_VIEW_COLS_VIEW_DESC = "SQL view columns";
 
+    /** */
+    private final SchemaChangeListener lsnr;
+
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
@@ -139,6 +151,12 @@ public class SchemaManager {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Drop column listeners. */
+    private final Set<BiConsumer<GridH2Table, List<String>>> dropColsLsnrs = ConcurrentHashMap.newKeySet();
+
+    /** Drop table listeners. */
+    private final Set<BiConsumer<String, String>> dropTblLsnrs = ConcurrentHashMap.newKeySet();
+
     /**
      * Constructor.
      *
@@ -149,6 +167,7 @@ public class SchemaManager {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
+        lsnr = schemaChangeListener(ctx);
         log = ctx.log(SchemaManager.class);
 
         ctx.systemView().registerView(SQL_SCHEMA_VIEW, SQL_SCHEMA_VIEW_DESC,
@@ -169,7 +188,7 @@ public class SchemaManager {
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
             new SqlIndexViewWalker(),
             dataTables.values(),
-            GridH2Table::getIndexes,
+            GridH2Table::indexesInformation,
             SqlIndexView::new);
 
         ctx.systemView().registerInnerArrayView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
@@ -193,9 +212,6 @@ public class SchemaManager {
     public void start(String[] schemaNames) throws IgniteCheckedException {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
-
-        // Create system views.
-        createSystemViews();
 
         // Create schemas listed in node's configuration.
         createPredefinedSchemas(schemaNames);
@@ -238,35 +254,13 @@ public class SchemaManager {
 
                 systemViews.add(view);
             }
+
+            if (view.getSystemView() != null) // Skip pure H2-indexing views.
+                lsnr.onSystemViewCreated(schema, view.getSystemView());
         }
         catch (IgniteCheckedException | SQLException e) {
-            //throw new IgniteException("Failed to register system view.", e);
-        	//modify@byron
-        	log.error("Failed to register system view.", e);
+            throw new IgniteException("Failed to register system view.", e);
         }
-    }
-
-    /**
-     * Create system views.
-     */
-    private void createSystemViews() throws IgniteCheckedException {
-        for (SqlSystemView view : systemViews(ctx))
-            createSystemView(QueryUtils.SCHEMA_SYS, view);
-    }
-
-    /**
-     * @param ctx Context.
-     * @return Predefined system views.
-     */
-    private Collection<SqlSystemView> systemViews(GridKernalContext ctx) {
-        Collection<SqlSystemView> views = new ArrayList<>();
-
-        views.add(new SqlSystemViewNodeAttributes(ctx));
-        views.add(new SqlSystemViewBaselineNodes(ctx));
-        views.add(new SqlSystemViewNodeMetrics(ctx));
-        views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
-
-        return views;
     }
 
     /**
@@ -365,7 +359,8 @@ public class SchemaManager {
                 try {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
-                    dropTable(tbl);
+                    dropTable(tbl, rmvIdx);
+                    lsnr.onSqlTypeDropped(schemaName, tbl.type());
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -431,6 +426,7 @@ public class SchemaManager {
      */
     private void createSchema0(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
+        lsnr.onSchemaCreated(schema);
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -483,6 +479,8 @@ public class SchemaManager {
                         cls.getName() + '.' + m.getName() + '"';
 
                     connMgr.executeStatement(schema, clause);
+
+                    lsnr.onFunctionCreated(schema, alias, m);
                 }
             }
         }
@@ -544,7 +542,11 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexProcessor());
+
+        lsnr.onSqlTypeCreated(schemaName, tbl.type(), tbl.cacheInfo());
+
+        registerSystemIndexes(h2Tbl, schemaName, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
@@ -553,11 +555,42 @@ public class SchemaManager {
     }
 
     /**
+     * Registers all available indexes.
+     *
+     * @param h2Tbl Table representation.
+     * @param schemaName Current schema.
+     * @param tbl Table descriptor.
+     */
+    private void registerSystemIndexes(GridH2Table h2Tbl, String schemaName, H2TableDescriptor tbl) {
+        Collection<Index> sysIdxs = h2Tbl.getIndexes().stream()
+            .filter(idx -> (idx instanceof H2TreeIndexBase) || ((idx instanceof GridH2ProxyIndex)
+                && ((GridH2ProxyIndex)idx).underlyingIndex() instanceof H2TreeIndexBase))
+            .collect(Collectors.toList());
+
+        for (Index idx : sysIdxs) {
+            Collection<String> idxCols = Stream.of(idx.getColumns())
+                .map(Column::getName)
+                .collect(Collectors.toList());
+
+            String idxName = idx.getName();
+
+            if (idx instanceof GridH2ProxyIndex)
+                idx = ((GridH2ProxyIndex)idx).underlyingIndex();
+
+            QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
+
+            lsnr.onIndexCreated(schemaName, tbl.tableName(), idxName, desc,
+                ((GridH2IndexBase)idx).unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
+        }
+    }
+
+    /**
      * Drops table form h2 database and clear all related indexes (h2 text, lucene).
      *
      * @param tbl Table to unregister.
+     * @param destroy {@code true} when table destroyed (cache destroyed) otherwise {@code false}.
      */
-    private void dropTable(H2TableDescriptor tbl) {
+    private void dropTable(H2TableDescriptor tbl, boolean destroy) {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -575,6 +608,9 @@ public class SchemaManager {
                     log.debug("Dropping database index table with SQL: " + sql);
 
                 stmt.executeUpdate(sql);
+
+                if (destroy)
+                    afterDropTable(tbl.schemaName(), tbl.tableName());
             }
             catch (SQLException e) {
                 throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
@@ -593,6 +629,7 @@ public class SchemaManager {
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        lsnr.onSchemaDropped(schema);
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -623,10 +660,15 @@ public class SchemaManager {
 
             throw e;
         }
+
+        GridQueryIndexDescriptor idxDesc = desc.type().indexes().get(h2Idx.getName());
+
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc,
+            h2Idx.unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
     }
 
     /**
-     * Create index.
+     * Create index dynamically.
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
@@ -649,16 +691,11 @@ public class SchemaManager {
         GridH2Table h2Tbl = desc.table();
 
         // Create index.
-        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc);
+        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc, cacheVisitor);
 
         h2Tbl.proposeUserIndex(h2Idx);
 
         try {
-            // Populate index with existing cache data.
-            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
-
-            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
-
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
@@ -671,6 +708,9 @@ public class SchemaManager {
 
             throw e;
         }
+
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc,
+            h2Idx.unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
     }
 
     /**
@@ -692,6 +732,8 @@ public class SchemaManager {
         tbl.setRemoveIndexOnDestroy(true);
 
         connMgr.executeStatement(schemaName, sql);
+
+        lsnr.onIndexDropped(schemaName, tbl.getName(), idxName);
     }
 
     /**
@@ -720,6 +762,8 @@ public class SchemaManager {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        lsnr.onSqlTypeUpdated(schemaName, desc.type(), desc.table().cacheInfo());
     }
 
     /**
@@ -748,6 +792,10 @@ public class SchemaManager {
         }
 
         desc.table().dropColumns(cols, ifColExists);
+
+        lsnr.onSqlTypeUpdated(schemaName, desc.type(), desc.table().cacheInfo());
+
+        dropColsLsnrs.forEach(l -> l.accept(desc.table(), cols));
     }
 
     /**
@@ -832,5 +880,212 @@ public class SchemaManager {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
+        GridH2Table dataTable = dataTable(schemaName, tableName);
+
+        return dataTable == null ? null : dataTable.rowDescriptor().type();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName) {
+        GridH2Table dataTable = dataTableForIndex(schemaName, idxName);
+
+        return dataTable == null ? null : dataTable.rowDescriptor().type();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName) {
+        GridH2Table dataTable = dataTable(schemaName, tableName);
+
+        return dataTable == null ? null : (GridCacheContextInfo<K, V>)dataTable.cacheInfo();
+    }
+
+    /** */
+    private SchemaChangeListener schemaChangeListener(GridKernalContext ctx) {
+        List<SchemaChangeListener> subscribers = new ArrayList<>(ctx.internalSubscriptionProcessor().getSchemaChangeSubscribers());
+
+        if (F.isEmpty(subscribers))
+            return new NoOpSchemaChangeListener();
+
+        return subscribers.size() == 1 ? subscribers.get(0) : new CompoundSchemaChangeListener(subscribers);
+    }
+
+    /** */
+    private static final class NoOpSchemaChangeListener implements SchemaChangeListener {
+        /** {@inheritDoc} */
+        @Override public void onSchemaCreated(String schemaName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSchemaDropped(String schemaName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
+            GridQueryIndexDescriptor idxDesc, org.apache.ignite.internal.cache.query.index.Index idx) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeCreated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeUpdated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
+
+        /** {@inheritDoc} */
+        @Override public void onFunctionCreated(String schemaName, String name, Method method) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {}
+    }
+
+    /** */
+    private static final class CompoundSchemaChangeListener implements SchemaChangeListener {
+        /**
+         *
+         */
+        private final List<SchemaChangeListener> lsnrs;
+
+        /**
+         * @param lsnrs Lsnrs.
+         */
+        private CompoundSchemaChangeListener(List<SchemaChangeListener> lsnrs) {
+            this.lsnrs = lsnrs;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onSchemaCreated(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaCreated(schemaName));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onSchemaDropped(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaDropped(schemaName));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onSqlTypeCreated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreated(schemaName, typeDesc, cacheInfo));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onSqlTypeUpdated(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo
+        ) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeUpdated(schemaName, typeDesc, cacheInfo));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDropped(schemaName, typeDescriptor));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
+            GridQueryIndexDescriptor idxDesc, org.apache.ignite.internal.cache.query.index.Index idx) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexCreated(schemaName, tblName, idxName, idxDesc, idx));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexDropped(schemaName, tblName, idxName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+            lsnrs.forEach(lsnr -> lsnr.onFunctionCreated(schemaName, name, method));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
+            lsnrs.forEach(lsnr -> lsnr.onSystemViewCreated(schemaName, sysView));
+        }
+    }
+
+    /**
+     * Register listener for drop columns event.
+     *
+     * @param lsnr Drop columns event listener.
+     */
+    public void registerDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+        requireNonNull(lsnr, "Drop columns listener should be not-null.");
+
+        dropColsLsnrs.add(lsnr);
+    }
+
+    /**
+     * Unregister listener for drop columns event.
+     *
+     * @param lsnr Drop columns event listener.
+     */
+    public void unregisterDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+        requireNonNull(lsnr, "Drop columns listener should be not-null.");
+
+        dropColsLsnrs.remove(lsnr);
+    }
+
+    /**
+     * Register listener for drop table event.
+     *
+     * @param lsnr Drop table event listener.
+     */
+    public void registerDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+        requireNonNull(lsnr, "Drop table listener should be not-null.");
+
+        dropTblLsnrs.add(lsnr);
+    }
+
+    /**
+     * Unregister listener for drop table event.
+     *
+     * @param lsnr Drop table event listener.
+     */
+    public void unregisterDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+        requireNonNull(lsnr, "Drop table listener should be not-null.");
+
+        dropTblLsnrs.remove(lsnr);
+    }
+
+    /**
+     * Fire each listener after table drop.
+     *
+     * @param schema Dropped table schema.
+     * @param tblName Dropped table name.
+     */
+    private void afterDropTable(String schema, String tblName) {
+        dropTblLsnrs.forEach(l -> l.accept(schema, tblName));
     }
 }

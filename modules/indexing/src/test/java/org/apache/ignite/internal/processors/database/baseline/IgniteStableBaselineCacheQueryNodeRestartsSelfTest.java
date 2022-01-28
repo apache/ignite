@@ -63,7 +63,10 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
+    @Override protected IgniteInternalFuture createRestartAction(
+        final AtomicBoolean done,
+        final AtomicInteger restartCnt
+    ) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
             private final int logFreq = 50;
@@ -88,6 +91,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
         }, 1, "restart-thread");
     }
 
+    /** {@inheritDoc} */
     @Override protected int countRebalances(int nodes, int restarts) {
         return 0;
     }

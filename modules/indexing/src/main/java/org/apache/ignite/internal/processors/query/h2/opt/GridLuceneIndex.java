@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -437,9 +438,13 @@ public class GridLuceneIndex implements AutoCloseable {
             
             while (idx < docs.length) {
                 Document doc;
+                float score;
 
                 try {
                     doc = searcher.doc(docs[idx++].doc);                   
+                    score = docs[idx].score;
+
+                    idx++;
                 }
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);
@@ -460,8 +465,8 @@ public class GridLuceneIndex implements AutoCloseable {
                 }
                 assert v != null;             
                 
-                //end@
-                curr = new IgniteBiTuple<>(k, v);
+                curr = new ScoredCacheEntry(k, v, score);
+                
 
                 break;
             }

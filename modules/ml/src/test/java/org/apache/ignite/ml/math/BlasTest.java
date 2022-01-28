@@ -185,7 +185,7 @@ public class BlasTest {
         double beta = 0.0;
         DenseMatrix c = new DenseMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
 
-        DenseMatrix exp = (DenseMatrix)a.times(b);//.times(alpha).plus(c.times(beta));
+        DenseMatrix exp = (DenseMatrix)a.times(b); //.times(alpha).plus(c.times(beta));
 
         Blas.gemm(alpha, a, b, beta, c);
 
@@ -204,7 +204,7 @@ public class BlasTest {
         double beta = 0.0;
         DenseMatrix c = new DenseMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
 
-        Matrix exp = a.times(b);//.times(alpha).plus(c.times(beta));
+        Matrix exp = a.times(b); //.times(alpha).plus(c.times(beta));
 
         Blas.gemm(alpha, a, b, beta, c);
 

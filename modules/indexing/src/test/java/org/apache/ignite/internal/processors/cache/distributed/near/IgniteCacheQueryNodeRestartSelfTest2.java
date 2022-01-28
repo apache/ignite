@@ -235,7 +235,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                         final IgniteEx grid = grid(g);
 
                         if (rnd.nextBoolean()) { // Partitioned query.
-                            final IgniteCache<?,?> cache = grid.cache("pu");
+                            final IgniteCache<?, ?> cache = grid.cache("pu");
 
                             final SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 

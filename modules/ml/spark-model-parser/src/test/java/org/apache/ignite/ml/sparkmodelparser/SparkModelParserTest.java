@@ -35,8 +35,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class SparkModelParserTest {
     /** Learning environment. */
-    LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
-        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
+    LearningEnvironment env =
+        LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+            .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /** Expected exception. */
     @Rule

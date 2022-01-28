@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import java.io.IOException;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.util.Locale;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -34,17 +40,12 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
-import java.io.IOException;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.util.Locale;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
@@ -69,7 +70,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     /**
      * @param ctx Defines a kernal context to enable deserialization into the Ignite binary object.
      */
-    public GridJettyObjectMapper(GridKernalContext ctx) {
+    GridJettyObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);
 
         setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));
@@ -82,6 +83,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
         module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
         module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
+        module.addSerializer(BinaryArray.class, IGNITE_BINARY_ARRAY_SERIALIZER);
 
         // Standard serializer loses nanoseconds.
         module.addSerializer(Timestamp.class, IGNITE_TIMESTAMP_SERIALIZER);
@@ -247,19 +249,20 @@ public class GridJettyObjectMapper extends ObjectMapper {
     };
 
     /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
-    private static final JsonSerializer<GridCacheSqlIndexMetadata> IGNITE_SQL_INDEX_METADATA_SERIALIZER = new JsonSerializer<GridCacheSqlIndexMetadata>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(GridCacheSqlIndexMetadata idx, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeStartObject();
+    private static final JsonSerializer<GridCacheSqlIndexMetadata> IGNITE_SQL_INDEX_METADATA_SERIALIZER =
+        new JsonSerializer<GridCacheSqlIndexMetadata>() {
+            /** {@inheritDoc} */
+            @Override public void serialize(GridCacheSqlIndexMetadata idx, JsonGenerator gen, SerializerProvider ser) throws IOException {
+                gen.writeStartObject();
 
-            gen.writeStringField("name", idx.name());
-            gen.writeObjectField("fields", idx.fields());
-            gen.writeObjectField("descendings", idx.descendings());
-            gen.writeBooleanField("unique", idx.unique());
+                gen.writeStringField("name", idx.name());
+                gen.writeObjectField("fields", idx.fields());
+                gen.writeObjectField("descendings", idx.descendings());
+                gen.writeBooleanField("unique", idx.unique());
 
-            gen.writeEndObject();
-        }
-    };
+                gen.writeEndObject();
+            }
+        };
 
     /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
     private static final JsonSerializer<BinaryObjectImpl> IGNITE_BINARY_OBJECT_SERIALIZER = new JsonSerializer<BinaryObjectImpl>() {
@@ -300,6 +303,19 @@ public class GridJettyObjectMapper extends ObjectMapper {
             catch (BinaryObjectException ignore) {
                 gen.writeNull();
             }
+        }
+    };
+
+    /** Custom serializer for {@link BinaryArray}. */
+    private static final JsonSerializer<BinaryArray> IGNITE_BINARY_ARRAY_SERIALIZER = new JsonSerializer<BinaryArray>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeStartArray();
+
+            for (Object o : val.array())
+                gen.writeObject(o);
+
+            gen.writeEndArray();
         }
     };
 

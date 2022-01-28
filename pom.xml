@@ -83,7 +83,7 @@
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
-        <module>modules/camel</module>
+        
         
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
@@ -101,11 +101,10 @@
         <module>modules/mongodb-relay</module>
 		<!-- <module>modules/presto-ignite</module> -->
         
-        <!-- 
+        
         <module>modules/opencensus</module>
         <module>modules/calcite</module> 
-        -->
-
+        
     </modules>
 
     <profiles>

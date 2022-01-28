@@ -177,7 +177,9 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Vectorizer<Integer, Vector, Integer, Double> createVectorizer() throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException {
+    private Vectorizer<Integer, Vector, Integer, Double> createVectorizer()
+        throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException,
+        java.lang.reflect.InvocationTargetException {
         ClassLoader ldr = getExternalClassLoader();
         Class<?> clazz = ldr.loadClass(EXT_VECTORIZER);
 

@@ -129,7 +129,7 @@ public class ReducePartitionMapper {
      * @param cacheId Cache ID.
      * @return Cache context.
      */
-    private GridCacheContext<?,?> cacheContext(Integer cacheId) {
+    private GridCacheContext<?, ?> cacheContext(Integer cacheId) {
         GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
 
         if (cctx == null)
@@ -389,7 +389,7 @@ public class ReducePartitionMapper {
     @SuppressWarnings("unchecked")
     private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(List<Integer> cacheIds) {
         // If the main cache is replicated, just replace it with the first partitioned.
-        GridCacheContext<?,?> cctx = findFirstPartitioned(cacheIds);
+        GridCacheContext<?, ?> cctx = findFirstPartitioned(cacheIds);
 
         final int partsCnt = cctx.affinity().partitions();
 
@@ -581,7 +581,7 @@ public class ReducePartitionMapper {
         if (F.isEmpty(nodes))
             return null; // Retry.
 
-        for (;i < cacheIds.size(); i++) {
+        for (; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
 
             if (extraCctx.isLocal())
@@ -617,7 +617,7 @@ public class ReducePartitionMapper {
      * @param cctx Cache context.
      * @return Owning nodes or {@code null} if we can't find owners for some partitions.
      */
-    private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?,?> cctx) {
+    private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?, ?> cctx) {
         assert cctx.isReplicated() : cctx.name() + " must be replicated";
 
         String cacheName = cctx.name();
@@ -699,7 +699,7 @@ public class ReducePartitionMapper {
      * @param cacheIds Cache IDs.
      * @return The first partitioned cache context.
      */
-    public GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
+    public GridCacheContext<?, ?> findFirstPartitioned(List<Integer> cacheIds) {
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 

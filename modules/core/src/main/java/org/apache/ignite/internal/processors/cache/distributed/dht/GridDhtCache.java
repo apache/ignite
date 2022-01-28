@@ -92,5 +92,5 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
      */
     public void near(GridNearTransactionalCache<K, V> near) {
         this.near = near;
-    }
+    }	
 }

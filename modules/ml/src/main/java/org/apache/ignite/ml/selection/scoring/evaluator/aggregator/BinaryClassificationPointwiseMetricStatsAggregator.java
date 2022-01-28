@@ -28,7 +28,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * This class represents statistics for pointwise metrics evaluation for binary classification like TruePositive,
  * FalsePositive, TrueNegative and FalseNegative.
  */
-public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serializable> implements MetricStatsAggregator<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
+public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serializable>
+    implements MetricStatsAggregator<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
     /**
      * Serial version uid.
      */

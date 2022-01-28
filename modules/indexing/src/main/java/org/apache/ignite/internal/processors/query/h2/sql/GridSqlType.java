@@ -106,10 +106,8 @@ public final class GridSqlType {
     public static GridSqlType fromExpression(Expression e) {
         if (e.getType() == Value.UNKNOWN)
             return UNKNOWN;
-		//modify@byron
-        Column col = new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize());
-        //-col.setOriginalSQL(e.getSQL());
-        return fromColumn(col);       
+
+        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
     }
 
     /**

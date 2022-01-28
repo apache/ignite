@@ -29,9 +29,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -89,7 +90,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         cleanPersistenceDir();
 
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** */
@@ -117,7 +118,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         IgniteEx ignite = startGrid(0);
 
@@ -127,11 +128,19 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
-        assertEquals(parts1 + parts2, indexBuildCountPartitionsLeft.value());
+        assertTrue(GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return parts1 + parts2 == indexBuildCountPartitionsLeft.value();
+                }
+            },
+            5000
+        ));
 
         failIndexRebuild.set(true);
 
-        ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName1);
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexProcessor().idxRebuild())
+            .stopBlock(cacheName1);
 
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
             IgniteSpiException.class, "Test exception.");
@@ -140,7 +149,8 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(false);
 
-        ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
+        ((AbstractIndexingCommonTest.BlockingIndexesRebuildTask)ignite.context().indexProcessor().idxRebuild())
+            .stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 

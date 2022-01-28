@@ -20,7 +20,12 @@ package org.apache.ignite.platform.plugin;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
 import org.apache.ignite.platform.plugin.cache.PlatformTestCachePluginProvider;
-import org.apache.ignite.plugin.*;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginContext;
 
 /**
  * Plugin provider for platform tests.
@@ -39,7 +44,7 @@ public class PlatformTestPluginProvider extends AbstractTestPluginProvider {
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         registry.registerExtension(PlatformPluginExtension.class,
-                new PlatformTestPluginExtension((IgniteEx) ctx.grid()));
+                new PlatformTestPluginExtension((IgniteEx)ctx.grid()));
     }
 
     /** {@inheritDoc} */

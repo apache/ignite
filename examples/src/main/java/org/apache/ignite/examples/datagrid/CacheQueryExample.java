@@ -18,13 +18,13 @@
 package org.apache.ignite.examples.datagrid;
 
 import javax.cache.Cache;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -34,10 +34,12 @@ import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
+
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 
 /**
- * Cache queries example. This example demonstrates TEXT and FULL SCAN
+ * Cache queries example. This example demonstrates TEXT, FULL SCAN and INDEX
  * queries over cache.
  * <p>
  * Example also demonstrates usage of fields queries that return only required
@@ -77,14 +79,10 @@ public class CacheQueryExample {
      * @param args Command line arguments, none required.
      * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws Exception {    	
-    	System.setProperty("IGNITE_H2_DEBUG_CONSOLE", "true");
+    public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
-            
-            ignite.cluster().active(true);
-            
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
@@ -99,30 +97,25 @@ public class CacheQueryExample {
 
             try {
                 // Create caches.
-            	IgniteCache o = ignite.getOrCreateCache(orgCacheCfg);
-                IgniteCache p = ignite.getOrCreateCache(personCacheCfg);
+                ignite.getOrCreateCache(orgCacheCfg);
+                ignite.getOrCreateCache(personCacheCfg);
 
                 // Populate caches.
                 initialize();
-                
-                System.in.read();
 
                 // Example for SCAN-based query based on a predicate.
                 scanQuery();
 
                 // Example for TEXT-based querying for a given string in peoples resumes.
                 textQuery();
-                
-                textBinaryQuery();
-                
-                o.close();
-                p.close();
+
+                // Example for INDEX-based query with index criteria.
+                indexQuery();
             }
             finally {
-            	
                 // Distributed cache could be removed from cluster only by Ignite.destroyCache() call.
-               ignite.destroyCache(PERSON_CACHE);
-               ignite.destroyCache(ORG_CACHE);
+                ignite.destroyCache(PERSON_CACHE);
+                ignite.destroyCache(ORG_CACHE);
             }
 
             print("Cache query example finished.");
@@ -152,52 +145,59 @@ public class CacheQueryExample {
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      */
     private static void textQuery() {
-        IgniteCache<AffinityKey, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-        
-        IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
-            @Override public boolean apply(AffinityKey key, Person person) {
-                return person.salary > 1000;
-            }
-        };        
+        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         //  Query for all people with "Master Degree" in their resumes.
         QueryCursor<Cache.Entry<Long, Person>> masters =
-            cache.query(new TextQuery<Long, Person>(Person.class, "Master")); 
+            cache.query(new TextQuery<Long, Person>(Person.class, "Master"));
 
         // Query for all people with "Bachelor Degree" in their resumes.
-        QueryCursor<Cache.Entry<AffinityKey, Person>> bachelors =
-            cache.query(new TextQuery<AffinityKey, Person>(Person.class, "Bachelor", filter));
-        
+        QueryCursor<Cache.Entry<Long, Person>> bachelors =
+            cache.query(new TextQuery<Long, Person>(Person.class, "Bachelor"));
 
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
     }
 
     /**
-     * Example for TEXT queries using LUCENE-based indexing of people's resumes.
+     * Example for query indexes with criteria and binary objects.
      */
-    private static void textBinaryQuery() {
-        IgniteCache<BinaryObject, BinaryObject> cache = Ignition.ignite().cache(PERSON_CACHE).withKeepBinary();
-        
-        IgniteBiPredicate<BinaryObject, BinaryObject> filter = new IgniteBiPredicate<BinaryObject, BinaryObject>() {
-            @Override public boolean apply(BinaryObject key, BinaryObject person) {
-                return person.<Double>field("salary") > 1000;
-            }
-        };        
+    private static void indexQuery() {
+        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
-        //  Query for all people with "Master Degree" in their resumes.
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> masters =
-            cache.query(new TextQuery<BinaryObject, BinaryObject>(Person.class, "Master"));
-        
-       
+        // Query for all people who work in the organization "ApacheIgnite".
+        QueryCursor<Cache.Entry<Long, Person>> igniters = cache.query(
+            new IndexQuery<Long, Person>(Person.class)
+                .setCriteria(eq("orgId", 1L))
+        );
 
-        // Query for all people with "Bachelor Degree" in their resumes.
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> bachelors =
-            cache.query(new TextQuery<BinaryObject, BinaryObject>(Person.class, "Bachelor", filter));
-        
+        print("Following people work in the 'ApacheIgnite' organization (queried with INDEX query): ",
+            igniters.getAll());
 
-        print("Following people have lastName:Smith AND 'Master Degree' in their resumes: ", masters.getAll());
-        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
+        // Query for all people who work in the organization "Other" and have salary more than 1,500.
+        QueryCursor<Cache.Entry<Long, Person>> others = cache.query(
+            new IndexQuery<Long, Person>(Person.class)  // Index name {@link Person#ORG_SALARY_IDX} is optional.
+                .setCriteria(eq("orgId", 2L), gt("salary", 1500.0)));
+
+        print("Following people work in the 'Other' organizations and have salary more than 1500 (queried with INDEX query): ",
+            others.getAll());
+
+        // Query for all people who have salary more than 1,500 using BinaryObject.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> rich = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0)));
+
+        print("Following people have salary more than 1500 (queried with INDEX query and using binary objects): ",
+            rich.getAll());
+
+        // Query for all people who have salary more than 1,500 and have 'Master Degree' in their resumes.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> richMasters = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0))
+                .setFilter((k, v) -> v.<String>field("resume").contains("Master")));
+
+        print("Following people have salary more than 1500 and Master degree (queried with INDEX query): ",
+            richMasters.getAll());
     }
 
     /**
@@ -224,13 +224,8 @@ public class CacheQueryExample {
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
         Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
-        Person p3 = new Person(org2, "John", "Smith", 1100, "John Smith has Bachelor Degree.");
-        Person p4 = new Person(org2, "Jane", "Smith", 2200, "Jane Smith has Master Degree.");
-        
-        p1.setPerms("admin","power");
-        p2.setPerms("user","power");
-        p3.setPerms("power","user");
-        p4.setPerms("ann");
+        Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
+        Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
 
         // Note that in this example we use custom affinity key for Person objects
         // to ensure that all persons are collocated with their organizations.

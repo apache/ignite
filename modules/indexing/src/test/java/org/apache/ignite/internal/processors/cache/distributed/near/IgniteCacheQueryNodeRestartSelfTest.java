@@ -123,7 +123,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
                     Set<Integer> keys = new HashSet<>();
 
-                    for (Cache.Entry<Integer,Integer> entry : res)
+                    for (Cache.Entry<Integer, Integer> entry : res)
                         keys.add(entry.getKey());
 
                     if (KEY_CNT > keys.size()) {

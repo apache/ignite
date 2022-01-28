@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;

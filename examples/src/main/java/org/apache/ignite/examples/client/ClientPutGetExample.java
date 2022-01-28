@@ -18,11 +18,11 @@
 package org.apache.ignite.examples.client;
 
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.examples.model.Address;
 
 /**
  * Demonstrates how to use Ignite thin client for basic put/get cache operations.
@@ -34,7 +34,11 @@ import org.apache.ignite.client.ClientException;
  * </p>
  */
 public class ClientPutGetExample {
-    /** Entry point. */
+    /**
+     * Entry point.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) {
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
 
@@ -61,9 +65,6 @@ public class ClientPutGetExample {
         }
         catch (ClientException e) {
             System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
-            System.err.format("Unexpected failure: %s\n", e);
         }
     }
 }

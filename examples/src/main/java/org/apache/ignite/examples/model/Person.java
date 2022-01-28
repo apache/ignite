@@ -30,20 +30,23 @@ public class Person implements Serializable {
     /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
+    /** Name of index by two fields (orgId, salary). */
+    public static final String ORG_SALARY_IDX = "ORG_SALARY_IDX";
+
     /** Person ID (indexed). */
     @QuerySqlField(index = true)
     public Long id;
 
     /** Organization ID (indexed). */
-    @QuerySqlField(index = true)
+    @QuerySqlField(index = true, orderedGroups = @QuerySqlField.Group(name = ORG_SALARY_IDX, order = 0))
     public Long orgId;
 
     /** First name (not-indexed). */
     @QuerySqlField
     public String firstName;
 
-    /** Last name (text indexed). */
-    @QueryTextField
+    /** Last name (not indexed). */
+    @QuerySqlField
     public String lastName;
 
     /** Resume text (create LUCENE-based TEXT index for this field). */
@@ -51,24 +54,13 @@ public class Person implements Serializable {
     public String resume;
 
     /** Salary (indexed). */
-    @QuerySqlField(index = true)
+    @QuerySqlField(index = true, orderedGroups = @QuerySqlField.Group(name = ORG_SALARY_IDX, order = 1))
     public double salary;
 
-    /** Custom cache key to guarantee that person is always collocated with its organization. */
+    /** Custom cache key to guarantee that person is always colocated with its organization. */
     private transient AffinityKey<Long> key;
-    
-    @QuerySqlField(index = true)
-    public String[] perms;
 
-    public String[] getPerms() {
-		return perms;
-	}
-
-	public void setPerms(String... perms) {
-		this.perms = perms;
-	}
-
-	/**
+    /**
      * Default constructor.
      */
     public Person() {

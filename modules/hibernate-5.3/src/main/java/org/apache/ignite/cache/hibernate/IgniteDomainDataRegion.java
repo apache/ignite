@@ -43,7 +43,13 @@ public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements 
     /** Strategy factory. */
     private HibernateAccessStrategyFactory stgyFactory;
 
-    /** */
+    /**
+     * @param regionCfg Domain data region configuration.
+     * @param regionFactory Region factory.
+     * @param defKeysFactory Default cache keys factory.
+     * @param buildingCtx Domain data region building context.
+     * @param stgyFactory Access strategy factory.
+     */
     public IgniteDomainDataRegion(DomainDataRegionConfig regionCfg,
         RegionFactory regionFactory,
         CacheKeysFactory defKeysFactory,

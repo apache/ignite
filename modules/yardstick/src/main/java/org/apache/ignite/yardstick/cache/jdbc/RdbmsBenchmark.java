@@ -54,7 +54,9 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
             clearCaches();
         else {
             conn.get().createStatement().execute("DROP TABLE if exists History;");
-            conn.get().createStatement().execute("CREATE TABLE if not exists History (id BIGINT, aid BIGINT, tid BIGINT, bid BIGINT, delta BIGINT);");
+            conn.get().createStatement().execute(
+                "CREATE TABLE if not exists History (id BIGINT, aid BIGINT, tid BIGINT, bid BIGINT, delta BIGINT);"
+            );
         }
         cnt = new AtomicLong();
 

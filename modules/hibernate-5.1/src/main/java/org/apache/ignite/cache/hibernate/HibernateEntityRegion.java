@@ -120,7 +120,14 @@ public class HibernateEntityRegion extends HibernateTransactionalDataRegion impl
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterUpdate(SessionImplementor ses, Object key, Object val, Object currVer, Object previousVer, SoftLock lock)
+        @Override public boolean afterUpdate(
+            SessionImplementor ses,
+            Object key,
+            Object val,
+            Object currVer,
+            Object previousVer,
+            SoftLock lock
+        )
             throws CacheException {
             return stgy.afterUpdate(key, val);
         }

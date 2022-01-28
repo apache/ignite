@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.misc;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
@@ -35,12 +40,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
@@ -91,7 +90,10 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
          * @param sizesMap Sizes map.
          * @return Message with specified {@code countersMap} and {@code sizeMap}.
          */
-        private GridDhtPartitionsSingleMessage from(@Nullable Map<Integer, T2<Long, Long>> countersMap, @Nullable Map<Integer, Long> sizesMap) {
+        private GridDhtPartitionsSingleMessage from(
+            @Nullable Map<Integer, T2<Long, Long>> countersMap,
+            @Nullable Map<Integer, Long> sizesMap
+        ) {
             GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
             if (countersMap != null)
                 msg.addPartitionUpdateCounters(0, countersMap);

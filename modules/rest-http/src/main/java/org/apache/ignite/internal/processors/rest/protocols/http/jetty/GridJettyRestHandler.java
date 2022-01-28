@@ -735,7 +735,8 @@ public class GridJettyRestHandler extends AbstractHandler {
             case DATA_REGION_METRICS:
             case DATA_STORAGE_METRICS:
             case NAME:
-            case VERSION: {
+            case VERSION:
+            case PROBE: {
                 restReq = new GridRestRequest();
 
                 break;
@@ -909,6 +910,22 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.queryId(Long.parseLong(qryId));
 
                 restReq0.cacheName(params.get(CACHE_NAME_PARAM));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case NODE_STATE_BEFORE_START: {
+                restReq = new GridRestNodeStateBeforeStartRequest();
+
+                break;
+            }
+
+            case WARM_UP: {
+                GridRestWarmUpRequest restReq0 = new GridRestWarmUpRequest();
+
+                restReq0.stopWarmUp(Boolean.parseBoolean(String.valueOf(params.get("stopWarmUp"))));
 
                 restReq = restReq0;
 

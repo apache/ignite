@@ -31,7 +31,7 @@ public class DiscreteNaiveBayesModelTest {
         double second = 2;
         double[][][] probabilities = new double[][][] {
             {{.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
-            {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
+            {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7}}
         };
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
