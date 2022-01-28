@@ -346,7 +346,7 @@ public class CheckpointHistory {
     /**
      * Clears checkpoint history after WAL truncation.
      *
-     * @param ptr Upper bound.
+     * @param highBound Upper bound.
      * @return List of checkpoint entries removed from history.
      */
     public List<CheckpointEntry> onWalTruncated(WALPointer highBound) {
