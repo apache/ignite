@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
+import org.apache.ignite.internal.processors.igfs.IgfsHelperImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
@@ -565,6 +566,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (IgniteRestProcessor)comp;
         else if (comp instanceof DataStreamProcessor)
             dataLdrProc = (DataStreamProcessor)comp;
+        else if (comp instanceof IgfsProcessorAdapter)
+            igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof IgniteCacheObjectProcessor)
@@ -619,8 +622,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     public void addHelper(Object helper) {
         assert helper != null;
-
-        assert false : "Unknown helper class: " + helper.getClass();
+        //add@byron
+        if (helper instanceof IgfsHelper)
+            igfsHelper = (IgfsHelper)helper;
+        else
+            assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
