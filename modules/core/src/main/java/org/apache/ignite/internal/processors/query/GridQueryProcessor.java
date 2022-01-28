@@ -934,7 +934,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 String schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheInfo.config().getSqlSchema());
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
-                    candRes = createQueryCandidates(cacheName, schemaName, cacheInfo, schema.entities(), escape);
+                    candRes = createQueryCandidates(cacheName, schemaName, cacheInfo, schema.entities(), escape, isSql);
 
                 // Ensure that candidates has unique index names.
                 // Otherwise we will not be able to apply pending operations.
@@ -1009,7 +1009,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                     opEnableIdx.schemaName(),
                                                     cacheInfo,
                                                     opEnableIdx.entities(),
-                                                    opEnableIdx.isSqlEscape()
+                                                    opEnableIdx.isSqlEscape(),
+                                                    isSql
                                                 ).get1();
 
                                         schemaName = opEnableIdx.schemaName();
@@ -1218,7 +1219,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String schemaName,
             GridCacheContextInfo<?, ?> cacheInfo,
             Collection<QueryEntity> entities,
-            boolean escape
+            boolean escape,
+            boolean isSql
         ) throws IgniteCheckedException {
         Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
@@ -1234,6 +1236,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     qryEntity,
                     mustDeserializeClss,
                     escape,
+                    isSql,
                     log
                 );
 
@@ -1973,7 +1976,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                         candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
-                        op0.isSqlEscape());
+                        op0.isSqlEscape(), false);
 
                     registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
                 }

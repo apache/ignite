@@ -474,6 +474,7 @@ public class QueryUtils {
         QueryEntity qryEntity,
         List<Class<?>> mustDeserializeClss,
         boolean escape,
+        boolean isSql,
         IgniteLogger log)
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
@@ -621,7 +622,8 @@ public class QueryUtils {
             int keyTypeId = ctx.cacheObjects().typeId(qryEntity.getKeyType());
             desc.keyTypeId(keyTypeId);
 
-            if (!ctx.marshallerContext().isSystemType(qryEntity.getKeyType())
+            if (isSql
+                && !ctx.marshallerContext().isSystemType(qryEntity.getKeyType())
                 && !ctx.query().getIndexing().isDisableCheckKeySchema()
             ) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.cacheObjects().metadata(keyTypeId);
