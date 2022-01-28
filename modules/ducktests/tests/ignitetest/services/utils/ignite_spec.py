@@ -97,9 +97,9 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Return a set of default JVM options.
 
-        The subclass willing to add its own default options or overwrite the parent's one should implement this method.
+        The subclass willing to add its own default options or overwrite the parent's ones should implement this method.
         Before actual execution options are merged in a way that ones goes from the most specific subclass have higher
-        priority and overwrites ones come from parent. See final_jvm_opts() and __merge_default_jvm_opts() for details.
+        priority and overwrite ones come from parent. See final_jvm_opts() and __merge_default_jvm_opts() for details.
         """
         default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
                                                oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"))

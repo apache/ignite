@@ -37,7 +37,7 @@ def mock_service():
 
 class CheckIgniteSpec:
     """
-    Checks that the JVM options passed via constructor are not overriden by the default one.
+    Checks that the JVM options passed via constructor are not overriden by the default ones.
     """
 
     def check_exception__raised__if_both_jvm_and_full_jvm_opts_passed(self):
