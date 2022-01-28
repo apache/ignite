@@ -34,8 +34,8 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
     /** Snapshot name. */
     private String snpName;
 
-    /** Operation completion wait flag. */
-    private boolean waitComplete;
+    /** Synchronous execution flag. */
+    private boolean sync;
 
     /** Default constructor. */
     public VisorSnapshotCreateTaskArg() {
@@ -44,11 +44,11 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
 
     /**
      * @param snpName Snapshot name.
-     * @param waitComplete Operation completion wait flag.
+     * @param sync Synchronous execution flag.
      */
-    public VisorSnapshotCreateTaskArg(String snpName, boolean waitComplete) {
+    public VisorSnapshotCreateTaskArg(String snpName, boolean sync) {
         this.snpName = snpName;
-        this.waitComplete = waitComplete;
+        this.sync = sync;
     }
 
     /** @return Snapshot name. */
@@ -56,21 +56,21 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
         return snpName;
     }
 
-    /** @return Operation completion wait flag. */
+    /** @return Synchronous execution flag. */
     public boolean waitComplete() {
-        return waitComplete;
+        return sync;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
-        out.writeBoolean(waitComplete);
+        out.writeBoolean(sync);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
-        waitComplete = in.readBoolean();
+        sync = in.readBoolean();
     }
 
     /** {@inheritDoc} */

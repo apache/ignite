@@ -96,7 +96,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         // Visor task parameters.
         String snpName = argIter.nextArg("Expected snapshot name.");
         VisorSnapshotRestoreTaskAction restoreAction = VisorSnapshotRestoreTaskAction.START;
-        boolean waitComplete = false;
+        boolean sync = false;
         Set<String> grpNames = null;
 
         // Error messages.
@@ -115,11 +115,11 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("");
 
-            if ("--wait".equals(arg)) {
+            if ("--sync".equals(arg)) {
                 if (restoreAction != VisorSnapshotRestoreTaskAction.START)
                     throw new IllegalArgumentException(String.format(invalidModeMsg, restoreAction));
 
-                waitComplete = true;
+                sync = true;
 
                 continue;
             }
@@ -141,7 +141,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 case "--status":
                     restoreAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
 
-                    if (waitComplete)
+                    if (sync)
                         throw new IllegalArgumentException(String.format(invalidModeMsg, restoreAction));
 
                     break;
@@ -154,8 +154,8 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         }
 
         cmdArg = cmd == CREATE ?
-            new VisorSnapshotCreateTaskArg(snpName, waitComplete) :
-            new VisorSnapshotRestoreTaskArg(snpName, waitComplete, restoreAction, grpNames);
+            new VisorSnapshotCreateTaskArg(snpName, sync) :
+            new VisorSnapshotRestoreTaskArg(snpName, sync, restoreAction, grpNames);
     }
 
     /** {@inheritDoc} */
@@ -163,10 +163,10 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
         Map<String, String> createParams = new LinkedHashMap<>(commonParams);
 
-        createParams.put("wait", "Wait for the entire operation to complete. " +
-            "Otherwise, the operation will be performed in the background, and the command will immediately return control.");
+        createParams.put("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
+            "Otherwise, the it will be performed in the background, and the command will immediately return control.");
 
-        usage(log, "Create cluster snapshot:", SNAPSHOT, createParams, CREATE.toString(), "snapshot_name", optional("--wait"));
+        usage(log, "Create cluster snapshot:", SNAPSHOT, createParams, CREATE.toString(), "snapshot_name", optional("--sync"));
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
         usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
 
@@ -175,7 +175,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         restoreParams.put("group1,...groupN", "Cache group names.");
 
         usage(log, "Restore snapshot:", SNAPSHOT, restoreParams, RESTORE.toString(),
-            "snapshot_name", optional("--wait"), optional("--groups", "group1,...groupN"));
+            "snapshot_name", optional("--sync"), optional("--groups", "group1,...groupN"));
 
         usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());

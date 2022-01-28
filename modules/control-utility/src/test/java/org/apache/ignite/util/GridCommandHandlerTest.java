@@ -3025,7 +3025,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         List<String> args = new ArrayList<>(Arrays.asList("--snapshot", "create", snpName));
 
         if (syncMode)
-            args.add("--wait");
+            args.add("--sync");
 
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
@@ -3132,10 +3132,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Option \"--start\" is deprecated");
 
         // Invalid command syntax checks.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--groups", "--wait"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--groups", "--sync"));
         assertContains(log, testOut.toString(), "Expected a comma-separated list of cache group names.");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--cancel", "--wait"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--cancel", "--sync"));
         assertContains(log, testOut.toString(), "Operation \"cancel\" executes synchronously by default.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
@@ -3144,17 +3144,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "blah"));
         assertContains(log, testOut.toString(), "Command \"restore\" doesn't support option \"blah\".");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--wait", "--status"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--sync", "--status"));
         assertContains(log, testOut.toString(), "Operation \"status\" executes synchronously by default.");
 
         // Cache exists.
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--wait"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--sync"));
         assertContains(log, testOut.toString(), "Unable to restore cache group, directory is not empty");
 
         ig.cache(cacheName).destroy();
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--wait"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--sync"));
         assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
 
         IgniteCache<Object, Object> cache = ig.cache(cacheName);
