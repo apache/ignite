@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleS
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +51,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
      */
     @Test
     public void notApplicableForSortAggregate() {
-        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+        TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -73,7 +73,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** Checks if already sorted input exist and involved [Map|Reduce]SortAggregate */
     @Test
     public void testNoSortAppendingWithCorrectCollation() throws Exception {
-        RelFieldCollation coll = new RelFieldCollation(1, RelFieldCollation.Direction.DESCENDING);
+        RelFieldCollation coll = TraitUtils.createFieldCollation(1, false);
 
         TestTable tbl = createAffinityTable().addIndex(RelCollations.of(coll), "val0Idx");
 
@@ -120,7 +120,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 return IgniteDistributions.broadcast();
             }
         }
-            .addIndex(RelCollations.of(ImmutableIntList.of(3, 4)), "grp0_1");
+            .addIndex("grp0_1", 3, 4);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -174,7 +174,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 return IgniteDistributions.affinity(0, "test", "hash");
             }
         }
-            .addIndex(RelCollations.of(ImmutableIntList.of(3, 4)), "grp0_1");
+            .addIndex("grp0_1", 3, 4);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

@@ -16,13 +16,17 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Spool;
@@ -64,9 +68,11 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
 
         RelNode input = spool.getInput();
 
+        RelCollation inCollation = TraitUtils.collation(input);
+
         IndexConditions idxCond = RexUtils.buildSortedIndexConditions(
             cluster,
-            TraitUtils.collation(input),
+            inCollation,
             filter.getCondition(),
             spool.getRowType(),
             null
@@ -75,13 +81,27 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
             return;
 
-        RelCollation collation = TraitUtils.createCollation(ImmutableList.copyOf(idxCond.keys()));
-        
+        if (inCollation == null || inCollation.isDefault())
+            return; // TODO https://issues.apache.org/jira/browse/IGNITE-16430
+
+        // Create search collation as a prefix of input collation.
+        RelCollation traitCollation = inCollation;
+
+        Set<Integer> searchKeys = idxCond.keys();
+
+        List<RelFieldCollation> collationFields = inCollation.getFieldCollations().subList(0, searchKeys.size());
+
+        assert searchKeys.containsAll(collationFields.stream().map(RelFieldCollation::getFieldIndex)
+            .collect(Collectors.toSet())) : "Search condition should be a prefix of collation [searchKeys=" +
+            searchKeys + ", collation=" + inCollation + ']';
+
+        RelCollation searchCollation = RelCollations.of(collationFields);
+
         RelNode res = new IgniteSortedIndexSpool(
             cluster,
-            trait.replace(collation),
-            convert(input, input.getTraitSet().replace(collation)),
-            collation,
+            trait.replace(traitCollation),
+            convert(input, input.getTraitSet().replace(traitCollation)),
+            searchCollation,
             filter.getCondition(),
             idxCond
         );

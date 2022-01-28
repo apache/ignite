@@ -23,12 +23,13 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.Test;
@@ -59,7 +60,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
+                .addIndex("t0_jid_idx", 1, 0)
         );
 
         publicSchema.addTable(
@@ -75,7 +76,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
+                .addIndex("t1_jid_idx", 1, 0)
         );
 
         String sql = "select * " +
@@ -150,7 +151,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid0_idx")
+                .addIndex("t1_jid0_idx", 1, 0)
         );
 
         String sql = "select * " +
@@ -188,5 +189,50 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
         assertNull(uBound.get(2));
         assertNull(uBound.get(3));
+    }
+
+    /**
+     * Check colocated fields with DESC ordering.
+     */
+    @Test
+    public void testDescFields() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("T0", 10, IgniteDistributions.affinity(0, "T0", "hash"),
+                "ID", Integer.class, "JID", Integer.class, "VAL", String.class)
+                .addIndex("t0_jid_idx", 1),
+            createTable("T1", 100, IgniteDistributions.affinity(0, "T1", "hash"),
+                "ID", Integer.class, "JID", Integer.class, "VAL", String.class)
+                .addIndex(RelCollations.of(TraitUtils.createFieldCollation(1, false)), "t1_jid_idx")
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t1.jid < t0.jid";
+
+        assertPlan(sql, publicSchema,
+            isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
+                    .and(spool -> {
+                        List<RexNode> lBound = spool.indexCondition().lowerBound();
+
+                        // Condition is LESS_THEN, but we have DESC field and condition should be in lower bound
+                        // instead of upper bound.
+                        assertNotNull(lBound);
+                        assertEquals(3, lBound.size());
+
+                        assertTrue(((RexLiteral)lBound.get(0)).isNull());
+                        assertTrue(lBound.get(1) instanceof RexFieldAccess);
+                        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+
+                        List<RexNode> uBound = spool.indexCondition().upperBound();
+
+                        assertNull(uBound);
+
+                        return true;
+                    })
+                    .and(hasChildThat(isIndexScan("T1", "t1_jid_idx")))
+                )),
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+        );
     }
 }
