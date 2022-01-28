@@ -593,7 +593,7 @@ If the index inline sizes are different, the console output is similar to the da
 [source,text]
 ----
 Control utility [ver. 2.10.0]
-2021 Copyright(C) Apache Software Foundation
+2022 Copyright(C) Apache Software Foundation
 User: test
 Time: 2021-04-27T16:13:21.213
 Command [CACHE] started

@@ -138,7 +138,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * general rules to avoid deadlocks.
  * <ul>
  *     <li>
- *         Pages within a level always locked from right to left.
+ *         Pages within a level always locked from left to right.
  *     </li>
  *     <li>
  *         If there's already a lock on the page of level X then no locks should be acquired on levels less than X.

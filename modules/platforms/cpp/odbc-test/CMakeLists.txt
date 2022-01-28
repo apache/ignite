@@ -30,7 +30,8 @@ find_package(ODBC REQUIRED)
 include_directories(SYSTEM ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 include_directories(include ../odbc/include ../network/include)
 
-set(SOURCES src/teamcity/teamcity_boost.cpp
+set(SOURCES
+        src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
         src/parser_test.cpp
         src/cursor_test.cpp

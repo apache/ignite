@@ -43,6 +43,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+
 /**
  * Checks all basic sql types work correctly.
  */
@@ -96,12 +100,10 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     /** Test run configurations: Ignite version, Inline size configuration. */
     @Parameterized.Parameters(name = "ver={0}")
     public static Collection<Object[]> runConfig() {
-        return Arrays.asList(new Object[][] {
-            {"2.6.0"}, {"2.7.0"}, {"2.7.6"}, {"2.8.0"}, {"2.8.1"}, {"2.9.0"}, {"2.9.1"}, {"2.10.0"}
-        });
+        return cartesianProduct(since(VER_2_6_0));
     }
 
-        /** */
+    /** */
     @Test
     public void testQueryOldIndex() throws Exception {
         doTestStartupWithOldVersion(igniteVer, new PostStartupClosure());
