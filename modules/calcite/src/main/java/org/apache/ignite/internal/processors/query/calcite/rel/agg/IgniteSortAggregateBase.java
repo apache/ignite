@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
@@ -48,7 +47,22 @@ interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
     @Override default Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
         RelTraitSet nodeTraits, List<RelTraitSet> inputTraits
     ) {
-        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(getGroupSet().asList()));
+        RelCollation required = TraitUtils.collation(nodeTraits);
+        ImmutableBitSet requiredKeys = ImmutableBitSet.of(required.getKeys());
+        RelCollation collation;
+
+        if (getGroupSet().contains(requiredKeys)) {
+            List<RelFieldCollation> newCollationFields = new ArrayList<>(getGroupSet().cardinality());
+            newCollationFields.addAll(required.getFieldCollations());
+
+            ImmutableBitSet keysLeft = getGroupSet().except(requiredKeys);
+
+            keysLeft.forEach(fieldIdx -> newCollationFields.add(TraitUtils.createFieldCollation(fieldIdx)));
+
+            collation = RelCollations.of(newCollationFields);
+        }
+        else
+            collation = TraitUtils.createCollation(getGroupSet().asList());
 
         return Pair.of(nodeTraits.replace(collation),
             ImmutableList.of(inputTraits.get(0).replace(collation)));
