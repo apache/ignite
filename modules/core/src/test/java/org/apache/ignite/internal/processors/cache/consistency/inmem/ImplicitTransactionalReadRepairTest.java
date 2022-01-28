@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.consistency.AbstractFullSetReadRepairTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -69,34 +71,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> {
-                if (all)
-                    GETALL_CHECK_AND_FIX.accept(data);
-                else
-                    GET_CHECK_AND_FIX.accept(data);
-
-                check(data, true, true);
-            });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void testGetNull(Ignite initiator) throws Exception {
-        prepareAndCheck(
-            initiator,
-            1,
-            raw,
-            async,
-            misses,
-            nulls,
-            (ReadRepairData data) -> {
-                GET_NULL.accept(data); // first attempt.
-
-                checkEventMissed();
-
-                GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).
-
-                checkEventMissed();
-            });
+            (ReadRepairData data) -> repairIfRepairable.accept(data,
+                () -> testReadRepair(data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, true)));
     }
 
     /** {@inheritDoc} */
@@ -108,13 +84,31 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> {
-                if (all)
-                    CONTAINS_ALL_CHECK_AND_FIX.accept(data);
-                else
-                    CONTAINS_CHECK_AND_FIX.accept(data);
+            (ReadRepairData data) -> repairIfRepairable.accept(data,
+                () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true)));
+    }
 
-                check(data, true, true);
-            });
+    /** {@inheritDoc} */
+    @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
+            raw,
+            async,
+            misses,
+            nulls,
+            (ReadRepairData data) -> testReadRepair(data, all ? GET_ALL_NULL : GET_NULL, false));
+    }
+
+    /**
+     *
+     */
+    private void testReadRepair(ReadRepairData data, Consumer<ReadRepairData> readOp, boolean hit) {
+        readOp.accept(data);
+
+        if (hit)
+            check(data, null, true); // Hit.
+        else
+            checkEventMissed(); // Miss.
     }
 }

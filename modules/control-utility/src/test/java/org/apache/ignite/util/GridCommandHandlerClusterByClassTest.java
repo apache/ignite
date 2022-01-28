@@ -1661,7 +1661,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
         cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList(new String[] {"get_all"}));
-        cmdArgs.put(CONSISTENCY, Collections.singletonList(new String[] {"repair", "cache", "0"}));
+        cmdArgs.put(CONSISTENCY, Collections.singletonList(new String[] {"repair", "cache", "0", "LWW"}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
