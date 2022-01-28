@@ -126,7 +126,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
             return obj0.getField(propName);
         }
         else if (obj instanceof KeyCacheObjectImpl) {
-            KeyCacheObjectImpl obj0 = (KeyCacheObjectImpl) obj;
+            KeyCacheObjectImpl obj0 = (KeyCacheObjectImpl)obj;
 
             return obj0.value(null, false);
         }
