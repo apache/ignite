@@ -36,6 +36,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import sun.net.util.IPAddressUtil;
+
 /**  */
 public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest {
 
@@ -477,22 +479,14 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
                 needReturnIp1 = !needReturnIp1;
 
-                final byte[] arrOfByte = sun.net.util.IPAddressUtil.textToNumericFormatV4(ip);
+                final byte[] arrOfByte = IPAddressUtil.textToNumericFormatV4(ip);
 
                 final InetAddress addr = InetAddress.getByAddress(paramStr, arrOfByte);
 
                 return new InetAddress[] {addr};
             }
             else if (multipleFqdn.equals(paramStr)) {
-                final byte[] arrOfByte1 = sun.net.util.IPAddressUtil.textToNumericFormatV4(ip1);
-
-                final byte[] arrOfByte2 = sun.net.util.IPAddressUtil.textToNumericFormatV4(ip2);
-
-                final InetAddress addr1 = InetAddress.getByAddress(paramStr, arrOfByte1);
-
-                final InetAddress addr2 = InetAddress.getByAddress(paramStr, arrOfByte2);
-
-                return new InetAddress[] {addr1, addr2};
+                
             }
             else
                 throw new UnknownHostException();
