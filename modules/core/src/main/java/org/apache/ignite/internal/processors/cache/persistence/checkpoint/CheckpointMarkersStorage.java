@@ -34,9 +34,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,8 +101,8 @@ public class CheckpointMarkersStorage {
     /** Counter representing quantity of checkpoints since last checkpoint history snapshot. */
     private final AtomicInteger checkpointSnapshotCounter = new AtomicInteger(1);
 
-    /** Lock that guards the creation of the checkpoint history snapshot. */
-    private final Lock checkpointSnapshotLock = new ReentrantLock();
+    /** Guards checkpoint snapshot operation, so that it couldn't run in parallel. */
+    private final AtomicBoolean checkpointSnapshotInProgress = new AtomicBoolean(false);
 
     /**
      * @param igniteInstanceName Ignite instance name.
@@ -603,7 +602,9 @@ public class CheckpointMarkersStorage {
 
         if (createSnapshot) {
             Runnable runnable = () -> {
-                checkpointSnapshotLock.lock();
+                if (!checkpointSnapshotInProgress.compareAndSet(false, true)) {
+                    return;
+                }
 
                 try {
                     EarliestCheckpointMapSnapshot snapshot;
@@ -663,7 +664,7 @@ public class CheckpointMarkersStorage {
                     }
                 }
                 finally {
-                    checkpointSnapshotLock.unlock();
+                    checkpointSnapshotInProgress.set(false);
                 }
             };
 

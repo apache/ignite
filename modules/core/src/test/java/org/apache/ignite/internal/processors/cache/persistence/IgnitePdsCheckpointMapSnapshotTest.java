@@ -75,7 +75,7 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
             /** {@inheritDoc} */
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteWriteAheadLogManager.class.equals(cls))
-                    return (T) new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
+                    return (T)new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
 
                 return null;
             }
@@ -199,13 +199,13 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        TestFileWriteAheadLogManager wal = (TestFileWriteAheadLogManager) walMgr(grid);
+        TestFileWriteAheadLogManager wal = (TestFileWriteAheadLogManager)walMgr(grid);
 
         cache = grid.getOrCreateCache(configuration);
 
         // Check data in a cache
         for (int i = 0; i < cnt; i++)
-            assertEquals(i, (int) cache.get(i));
+            assertEquals(i, (int)cache.get(i));
 
         // Get count of WAL replays that are invoked from CheckpointEntry
         int replayCount = wal.replayCount.get();
