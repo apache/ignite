@@ -17,24 +17,16 @@
 
 package org.apache.ignite.configuration.schemas.store;
 
-import static org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
+import static org.apache.ignite.configuration.schemas.store.UnsafeMemoryAllocatorConfigurationSchema.UNSAFE_MEMORY_ALLOCATOR_TYPE;
 
-import org.apache.ignite.configuration.annotation.InjectedName;
 import org.apache.ignite.configuration.annotation.PolymorphicConfig;
 import org.apache.ignite.configuration.annotation.PolymorphicId;
-import org.apache.ignite.configuration.validation.Immutable;
 
 /**
- * Configuration schema for data region.
+ * Configuration schema for memory allocation strategies.
  */
 @PolymorphicConfig
-public class DataRegionConfigurationSchema {
-    /** Type for the future polymorphic configuration schemas. */
-    @Immutable
+public class MemoryAllocatorConfigurationSchema {
     @PolymorphicId(hasDefault = true)
-    public String type = ROCKSDB_DATA_REGION_TYPE;
-
-    /** Name of the data region. */
-    @InjectedName
-    public String name;
+    public String type = UNSAFE_MEMORY_ALLOCATOR_TYPE;
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
+import static org.apache.ignite.internal.configuration.ConfigurationTestUtils.fixConfiguration;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -32,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionChange;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
@@ -67,16 +70,20 @@ public class RocksDbTableStorageTest {
 
     @BeforeEach
     public void setUp(
-            @InjectConfiguration DataRegionConfiguration dataRegionCfg,
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataRegionConfiguration dataRegionCfg,
             @InjectConfiguration(polymorphicExtensions = HashIndexConfigurationSchema.class) TableConfiguration tableCfg
     ) throws Exception {
-        CompletableFuture<Void> changeFuture = dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024));
+        CompletableFuture<Void> changeFuture = dataRegionCfg.change(cfg ->
+                cfg.convert(RocksDbDataRegionChange.class).changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)
+        );
 
         assertThat(changeFuture, willBe(nullValue(Void.class)));
 
         changeFuture = tableCfg.change(cfg -> cfg.changePartitions(512));
 
         assertThat(changeFuture, willBe(nullValue(Void.class)));
+
+        dataRegionCfg = fixConfiguration(dataRegionCfg);
 
         dataRegion = engine.createDataRegion(dataRegionCfg);
 

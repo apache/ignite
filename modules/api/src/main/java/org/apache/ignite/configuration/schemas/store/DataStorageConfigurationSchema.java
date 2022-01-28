@@ -20,6 +20,7 @@ package org.apache.ignite.configuration.schemas.store;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.configuration.annotation.Name;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.validation.ExceptKeys;
 
@@ -33,6 +34,7 @@ public class DataStorageConfigurationSchema {
 
     /** Default data region. */
     @ConfigValue
+    @Name(DEFAULT_DATA_REGION_NAME)
     public DataRegionConfigurationSchema defaultRegion;
 
     /** Other data regions. */

@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageView;
+import org.apache.ignite.configuration.schemas.store.PageMemoryDataRegionConfigurationSchema;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema;
+import org.apache.ignite.configuration.schemas.store.UnsafeMemoryAllocatorConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.HashIndexChange;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
@@ -72,7 +75,9 @@ public class TableValidatorImplTest {
 
     /** Tests that validator finds no issues in a simple valid configuration. */
     @Test
-    public void testNoIssues(@InjectConfiguration DataStorageConfiguration dbCfg) {
+    public void testNoIssues(
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataStorageConfiguration dbCfg
+    ) {
         ValidationContext<NamedListView<TableView>> ctx = mockContext(null, dbCfg.value());
 
         ArgumentCaptor<ValidationIssue> issuesCaptor = validate(ctx);
@@ -82,7 +87,9 @@ public class TableValidatorImplTest {
 
     /** Tests that the validator catches nonexistent data regions. */
     @Test
-    public void testMissingDataRegion(@InjectConfiguration DataStorageConfiguration dbCfg) throws Exception {
+    public void testMissingDataRegion(
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataStorageConfiguration dbCfg
+    ) throws Exception {
         tablesCfg.tables().get("table").dataRegion().update("r0").get(1, TimeUnit.SECONDS);
 
         ValidationContext<NamedListView<TableView>> ctx = mockContext(null, dbCfg.value());
@@ -100,7 +107,13 @@ public class TableValidatorImplTest {
     /** Tests that new data region must have the same type. */
     @Test
     public void testChangeDataRegionType(
-            @InjectConfiguration("mock.regions.r0.type = foo") DataStorageConfiguration dbCfg
+            @InjectConfiguration(
+                    value = "mock.regions.r0.type = pagemem",
+                    polymorphicExtensions = {
+                            RocksDbDataRegionConfigurationSchema.class, PageMemoryDataRegionConfigurationSchema.class,
+                            UnsafeMemoryAllocatorConfigurationSchema.class
+                    })
+                    DataStorageConfiguration dbCfg
     ) throws Exception {
         NamedListView<TableView> oldValue = tablesCfg.tables().value();
 
@@ -114,7 +127,7 @@ public class TableValidatorImplTest {
 
         assertEquals(
                 "Unable to move table 'schema.table' from region 'default' to region 'r0' because it has"
-                        + " different type (old=rocksdb, new=foo)",
+                        + " different type (old=rocksdb, new=pagemem)",
                 issuesCaptor.getValue().message()
         );
     }
@@ -123,7 +136,9 @@ public class TableValidatorImplTest {
      * Tests that column names and column keys inside a Named List must be equal.
      */
     @Test
-    void testMisalignedColumnNamedListKeys(@InjectConfiguration DataStorageConfiguration dbCfg) {
+    void testMisalignedColumnNamedListKeys(
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataStorageConfiguration dbCfg
+    ) {
         NamedListView<TableView> oldValue = tablesCfg.tables().value();
 
         TableConfiguration tableCfg = tablesCfg.tables().get("table");
@@ -153,7 +168,9 @@ public class TableValidatorImplTest {
      * Tests that index names and index keys inside a Named List must be equal.
      */
     @Test
-    void testMisalignedIndexNamedListKeys(@InjectConfiguration DataStorageConfiguration dbCfg) {
+    void testMisalignedIndexNamedListKeys(
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataStorageConfiguration dbCfg
+    ) {
         NamedListView<TableView> oldValue = tablesCfg.tables().value();
 
         TableConfiguration tableCfg = tablesCfg.tables().get("table");

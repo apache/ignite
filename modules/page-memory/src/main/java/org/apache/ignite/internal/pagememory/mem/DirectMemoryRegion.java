@@ -15,26 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.schemas.store;
-
-import static org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
-
-import org.apache.ignite.configuration.annotation.InjectedName;
-import org.apache.ignite.configuration.annotation.PolymorphicConfig;
-import org.apache.ignite.configuration.annotation.PolymorphicId;
-import org.apache.ignite.configuration.validation.Immutable;
+package org.apache.ignite.internal.pagememory.mem;
 
 /**
- * Configuration schema for data region.
+ * Interface for a direct memory region allocated by provider.
  */
-@PolymorphicConfig
-public class DataRegionConfigurationSchema {
-    /** Type for the future polymorphic configuration schemas. */
-    @Immutable
-    @PolymorphicId(hasDefault = true)
-    public String type = ROCKSDB_DATA_REGION_TYPE;
+public interface DirectMemoryRegion {
+    /**
+     * Returns a region start address.
+     */
+    public long address();
 
-    /** Name of the data region. */
-    @InjectedName
-    public String name;
+    /**
+     * Returns a region size.
+     */
+    public long size();
+
+    /**
+     * Creates a sub-region of this region starting from the given offset.
+     *
+     * @param offset Offset within this region.
+     * @return Sub-region.
+     */
+    public DirectMemoryRegion slice(long offset);
 }

@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.schemas.store;
-
-import static org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
-
-import org.apache.ignite.configuration.annotation.InjectedName;
-import org.apache.ignite.configuration.annotation.PolymorphicConfig;
-import org.apache.ignite.configuration.annotation.PolymorphicId;
-import org.apache.ignite.configuration.validation.Immutable;
+package org.apache.ignite.internal.pagememory.mem;
 
 /**
- * Configuration schema for data region.
+ * Base interface for offheap memory allocator.
  */
-@PolymorphicConfig
-public class DataRegionConfigurationSchema {
-    /** Type for the future polymorphic configuration schemas. */
-    @Immutable
-    @PolymorphicId(hasDefault = true)
-    public String type = ROCKSDB_DATA_REGION_TYPE;
+public interface MemoryAllocator {
+    /**
+     * Allocates memory.
+     *
+     * @param size Size of allocated memory.
+     *
+     * @return Pointer to memory or {@code 0} if failed.
+     */
+    public long allocateMemory(long size);
 
-    /** Name of the data region. */
-    @InjectedName
-    public String name;
+    /**
+     * Deallocates memory.
+     *
+     * @param addr Address of memory.
+     */
+    public void freeMemory(long addr);
 }

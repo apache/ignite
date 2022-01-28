@@ -20,12 +20,25 @@ package org.apache.ignite.internal.pagememory;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagememory.io.PageIo;
 import org.apache.ignite.internal.pagememory.io.PageIoRegistry;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
  * Class responsible for pages storage and handling.
  */
 //TODO IGNITE-16350 Improve javadoc in this class.
 public interface PageMemory extends PageIdAllocator, PageSupport {
+    /**
+     * Starts page memory.
+     */
+    void start() throws IgniteInternalException;
+
+    /**
+     * Stops page memory.
+     *
+     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse on subsequent {@link #start()}
+     */
+    void stop(boolean deallocate) throws IgniteInternalException;
+
     /**
      * Returns a page's size in bytes.
      */

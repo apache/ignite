@@ -45,11 +45,8 @@ public class TestPageIoModule implements PageIoModule {
     public static class TestPageIo extends PageIo {
         /**
          * Constructor.
-         *
-         * @param type Page type.
-         * @param ver  Page format version.
          */
-        protected TestPageIo() {
+        public TestPageIo() {
             super(TEST_PAGE_TYPE, TEST_PAGE_VER);
         }
 

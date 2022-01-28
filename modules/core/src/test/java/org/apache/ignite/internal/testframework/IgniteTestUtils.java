@@ -23,10 +23,15 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -203,7 +208,7 @@ public final class IgniteTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static CompletableFuture runAsync(final Runnable task) {
+    public static CompletableFuture<?> runAsync(final Runnable task) {
         return runAsync(task, "async-runnable-runner");
     }
 
@@ -213,7 +218,7 @@ public final class IgniteTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static CompletableFuture runAsync(final Runnable task, String threadName) {
+    public static CompletableFuture<?> runAsync(final Runnable task, String threadName) {
         return runAsync(() -> {
             task.run();
 
@@ -255,6 +260,96 @@ public final class IgniteTestUtils {
         }).start();
 
         return fut;
+    }
+
+    /**
+     * Runs callable tasks each in separate threads.
+     *
+     * @param calls Callable tasks.
+     * @param threadFactory Thread factory.
+     * @return Execution time in milliseconds.
+     * @throws Exception If failed.
+     */
+    public static long runMultiThreaded(Iterable<Callable<?>> calls, ThreadFactory threadFactory) throws Exception {
+        Collection<Thread> threads = new ArrayList<>();
+
+        Collection<CompletableFuture<?>> futures = new ArrayList<>();
+
+        for (Callable<?> task : calls) {
+            CompletableFuture<?> fut = new CompletableFuture<>();
+
+            futures.add(fut);
+
+            threads.add(threadFactory.newThread(() -> {
+                try {
+                    // Execute task.
+                    task.call();
+
+                    fut.complete(null);
+                } catch (Throwable e) {
+                    fut.completeExceptionally(e);
+                }
+            }));
+        }
+
+        long time = System.currentTimeMillis();
+
+        for (Thread t : threads) {
+            t.start();
+        }
+
+        // Wait threads finish their job.
+        try {
+            for (Thread t : threads) {
+                t.join();
+            }
+        } catch (InterruptedException e) {
+            for (Thread t : threads) {
+                t.interrupt();
+            }
+
+            throw e;
+        }
+
+        time = System.currentTimeMillis() - time;
+
+        for (CompletableFuture<?> fut : futures) {
+            fut.join();
+        }
+
+        return time;
+    }
+
+    /**
+     * Runs runnable object in specified number of threads.
+     *
+     * @param run Target runnable.
+     * @param threadNum Number of threads.
+     * @param threadName Thread name.
+     * @return Future for the run. Future returns execution time in milliseconds.
+     */
+    public static CompletableFuture<Long> runMultiThreadedAsync(Runnable run, int threadNum, String threadName) {
+        return runMultiThreadedAsync(() -> {
+            run.run();
+
+            return null;
+        }, threadNum, threadName);
+    }
+
+    /**
+     * Runs callable object in specified number of threads.
+     *
+     * @param call Callable.
+     * @param threadNum Number of threads.
+     * @param threadName Thread names.
+     * @return Future for the run. Future returns execution time in milliseconds.
+     */
+    public static CompletableFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
+        List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
+
+        NamedThreadFactory threadFactory = new NamedThreadFactory(threadName);
+
+        return runAsync(() -> runMultiThreaded(calls, threadFactory));
     }
 
     /**

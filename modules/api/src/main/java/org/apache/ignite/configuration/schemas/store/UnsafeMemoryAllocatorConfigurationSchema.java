@@ -17,24 +17,14 @@
 
 package org.apache.ignite.configuration.schemas.store;
 
-import static org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
+import static org.apache.ignite.configuration.schemas.store.UnsafeMemoryAllocatorConfigurationSchema.UNSAFE_MEMORY_ALLOCATOR_TYPE;
 
-import org.apache.ignite.configuration.annotation.InjectedName;
-import org.apache.ignite.configuration.annotation.PolymorphicConfig;
-import org.apache.ignite.configuration.annotation.PolymorphicId;
-import org.apache.ignite.configuration.validation.Immutable;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
 
 /**
- * Configuration schema for data region.
+ * Memory allocator that allocates data in offheap using {@link sun.misc.Unsafe}.
  */
-@PolymorphicConfig
-public class DataRegionConfigurationSchema {
-    /** Type for the future polymorphic configuration schemas. */
-    @Immutable
-    @PolymorphicId(hasDefault = true)
-    public String type = ROCKSDB_DATA_REGION_TYPE;
-
-    /** Name of the data region. */
-    @InjectedName
-    public String name;
+@PolymorphicConfigInstance(UNSAFE_MEMORY_ALLOCATOR_TYPE)
+public class UnsafeMemoryAllocatorConfigurationSchema extends MemoryAllocatorConfigurationSchema {
+    public static final String UNSAFE_MEMORY_ALLOCATOR_TYPE = "unsafe";
 }

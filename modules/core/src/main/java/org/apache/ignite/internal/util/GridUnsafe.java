@@ -61,6 +61,12 @@ public abstract class GridUnsafe {
     /** Unsafe. */
     private static final Unsafe UNSAFE = unsafe();
 
+    /** Page size. */
+    private static final int PAGE_SIZE = UNSAFE.pageSize();
+
+    /** Empty page. */
+    private static final byte[] EMPTY_PAGE = new byte[PAGE_SIZE];
+
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
 
@@ -1258,6 +1264,24 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Fills memory with zeroes.
+     *
+     * @param addr Address.
+     * @param len Length.
+     */
+    public static void zeroMemory(long addr, long len) {
+        long off = 0;
+
+        for (; off + PAGE_SIZE <= len; off += PAGE_SIZE) {
+            GridUnsafe.copyMemory(EMPTY_PAGE, GridUnsafe.BYTE_ARR_OFF, null, addr + off, PAGE_SIZE);
+        }
+
+        if (len != off) {
+            GridUnsafe.copyMemory(EMPTY_PAGE, GridUnsafe.BYTE_ARR_OFF, null, addr + off, len - off);
+        }
+    }
+
+    /**
      * Copy memory between offheap locations.
      *
      * @param srcAddr Source address.
@@ -1499,7 +1523,7 @@ public abstract class GridUnsafe {
      * @return Page size.
      */
     public static int pageSize() {
-        return UNSAFE.pageSize();
+        return PAGE_SIZE;
     }
 
     /**

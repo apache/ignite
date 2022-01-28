@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.schemas.store;
+package org.apache.ignite.internal.pagememory.mem.unsafe;
 
-import static org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
+import org.apache.ignite.internal.pagememory.mem.MemoryAllocator;
+import org.apache.ignite.internal.util.GridUnsafe;
 
-import org.apache.ignite.configuration.annotation.InjectedName;
-import org.apache.ignite.configuration.annotation.PolymorphicConfig;
-import org.apache.ignite.configuration.annotation.PolymorphicId;
-import org.apache.ignite.configuration.validation.Immutable;
+/** Memory allocator implementation that uses {@link GridUnsafe}. */
+public class UnsafeMemoryAllocator implements MemoryAllocator {
+    /** {@inheritDoc} */
+    @Override
+    public long allocateMemory(long size) {
+        return GridUnsafe.allocateMemory(size);
+    }
 
-/**
- * Configuration schema for data region.
- */
-@PolymorphicConfig
-public class DataRegionConfigurationSchema {
-    /** Type for the future polymorphic configuration schemas. */
-    @Immutable
-    @PolymorphicId(hasDefault = true)
-    public String type = ROCKSDB_DATA_REGION_TYPE;
-
-    /** Name of the data region. */
-    @InjectedName
-    public String name;
+    /** {@inheritDoc} */
+    @Override
+    public void freeMemory(long addr) {
+        GridUnsafe.freeMemory(addr);
+    }
 }

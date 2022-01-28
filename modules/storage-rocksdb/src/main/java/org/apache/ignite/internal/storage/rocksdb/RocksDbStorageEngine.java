@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.storage.engine.DataRegion;
@@ -59,7 +60,9 @@ public class RocksDbStorageEngine implements StorageEngine {
     /** {@inheritDoc} */
     @Override
     public DataRegion createDataRegion(DataRegionConfiguration regionCfg) {
-        return new RocksDbDataRegion(regionCfg);
+        assert regionCfg instanceof RocksDbDataRegionConfiguration : regionCfg;
+
+        return new RocksDbDataRegion((RocksDbDataRegionConfiguration) regionCfg);
     }
 
     /** {@inheritDoc} */

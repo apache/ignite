@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
@@ -80,7 +81,10 @@ public class SchemaConfigurationConverterTest {
                 Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
                 new TestConfigurationStorage(DISTRIBUTED),
                 List.of(),
-                List.of(HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class)
+                List.of(
+                        HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class,
+                        RocksDbDataRegionConfigurationSchema.class
+                )
         );
 
         confRegistry.start();

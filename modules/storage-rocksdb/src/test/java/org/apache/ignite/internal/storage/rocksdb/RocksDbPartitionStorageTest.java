@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
+import static org.apache.ignite.internal.configuration.ConfigurationTestUtils.fixConfiguration;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.file.Path;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionChange;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
@@ -56,10 +59,14 @@ public class RocksDbPartitionStorageTest extends AbstractPartitionStorageTest {
     @BeforeEach
     public void setUp(
             @WorkDirectory Path workDir,
-            @InjectConfiguration DataRegionConfiguration dataRegionCfg,
+            @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class) DataRegionConfiguration dataRegionCfg,
             @InjectConfiguration(polymorphicExtensions = HashIndexConfigurationSchema.class) TableConfiguration tableCfg
     ) throws Exception {
-        dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)).get();
+        dataRegionCfg.change(cfg ->
+                cfg.convert(RocksDbDataRegionChange.class).changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)
+        ).get();
+
+        dataRegionCfg = fixConfiguration(dataRegionCfg);
 
         dataRegion = engine.createDataRegion(dataRegionCfg);
 

@@ -43,6 +43,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Phaser;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
+import org.apache.ignite.configuration.schemas.store.RocksDbDataRegionConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
@@ -140,7 +141,7 @@ public class TableManagerTest extends IgniteAbstractTest {
     private TablesConfiguration tblsCfg;
 
     /** Data storage configuration. */
-    @InjectConfiguration
+    @InjectConfiguration(polymorphicExtensions = RocksDbDataRegionConfigurationSchema.class)
     private DataStorageConfiguration dataStorageCfg;
 
     /** Test node. */
