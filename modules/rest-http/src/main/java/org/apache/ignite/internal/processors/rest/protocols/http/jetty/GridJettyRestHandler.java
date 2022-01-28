@@ -62,9 +62,11 @@ import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateReq
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBeforeStartRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.util.typedef.C1;

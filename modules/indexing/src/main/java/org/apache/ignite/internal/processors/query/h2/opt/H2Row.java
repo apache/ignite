@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
+
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;

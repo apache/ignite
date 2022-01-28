@@ -267,7 +267,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery<K, V> qry, IndexingQueryFilter filters) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry, IndexingQueryFilter filters,int limit) throws IgniteCheckedException {
         try {
         	indexAccess.flush();
         }
@@ -285,11 +285,11 @@ public class GridLuceneIndex implements AutoCloseable {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.getQueryAnalyzer());
 
 //            parser.setAllowLeadingWildcard(true);
-            String [] items = qry.getText().split("\\s");
+            String [] items = qry.split("\\s");
             //qty: hello type:blog user:xiaoming sort:create
-            int limit =  qry.getLimit()>0? qry.getLimit(): qry.getPageSize();
+            
             if(limit<=0) {
-            	limit = Integer.MAX_VALUE;
+            	limit = 1000;
             }
             String uid = null;
             String sort = null;
@@ -465,7 +465,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 }
                 assert v != null;             
                 
-                curr = new ScoredCacheEntry(k, v, score);
+                curr = new ScoredCacheEntry<K,V>(k, v, score);
                 
 
                 break;

@@ -515,7 +515,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Long qryId = runningQueryManager().register(qry, TEXT, schemaName, true, null, null);
 
             try {
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
+                return tbl.luceneIndex().query(qry, filters, limit);
             }
             finally {
                 runningQueryManager().unregister(qryId, null);

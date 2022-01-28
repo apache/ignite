@@ -63,78 +63,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         return new T2<>(g0, g1);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testEncryptionKeysEqualsOnThirdNodeJoin() throws Exception {
-        T2<IgniteEx, IgniteEx> g = startTestGrids(true);
 
-        IgniteEx g2 = (IgniteEx)IgnitionEx.start(
-            IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-2");
-
-        Collection<String> cacheNames = Arrays.asList("encrypted", "encrypted-2");
-
-        for (String cacheName : cacheNames) {
-            IgniteInternalCache<Object, Object> enc = g.get1().cachex(cacheName);
-
-            assertNotNull(enc);
-
-            int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
-
-            KeystoreEncryptionKey key0 = (KeystoreEncryptionKey)g.get1().context().encryption().groupKey(grpId);
-            KeystoreEncryptionKey key1 = (KeystoreEncryptionKey)g.get2().context().encryption().groupKey(grpId);
-            KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g2.context().encryption().groupKey(grpId);
-
-            assertNotNull(cacheName, key0);
-            assertNotNull(cacheName, key1);
-            assertNotNull(cacheName, key2);
-
-            assertNotNull(cacheName, key0.key());
-            assertNotNull(cacheName, key1.key());
-            assertNotNull(cacheName, key2.key());
-
-            assertEquals(cacheName, key0.key(), key1.key());
-            assertEquals(cacheName, key1.key(), key2.key());
-        }
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCreateEncryptedCacheGroup() throws Exception {
-        IgniteEx g0 = (IgniteEx)IgnitionEx.start(
-            IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/enc/enc-group.xml").getAbsolutePath(), "grid-0");
-
-        IgniteEx g1 = (IgniteEx)IgnitionEx.start(
-            IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-1");
-
-        g1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteInternalCache<Object, Object> encrypted = g0.cachex("encrypted");
-
-        assertNotNull(encrypted);
-
-        IgniteInternalCache<Object, Object> encrypted2 = g0.cachex("encrypted-2");
-
-        assertNotNull(encrypted2);
-
-        KeystoreEncryptionKey key = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
-            CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
-
-        assertNotNull(key);
-        assertNotNull(key.key());
-
-        KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
-            CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
-
-        assertNotNull(key2);
-        assertNotNull(key2.key());
-
-        assertEquals(key.key(), key2.key());
-    }
 
     /** @throws Exception If failed. */
     @Test

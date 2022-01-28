@@ -767,4 +767,16 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
 
         return res;
     }
+
+	@Override
+	public boolean isIgfsDataCache() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public long igfsDataSpaceUsed() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

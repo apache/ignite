@@ -32,7 +32,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlWithSqlEscapeSelfTest;
-import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
+
 import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
@@ -42,9 +42,6 @@ import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
-import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
-import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
-import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -70,16 +67,12 @@ import org.junit.runners.Suite;
     IgniteDynamicCacheConfigTest.class,
 
     IgniteStartFromStreamConfigurationTest.class,
-
-    CacheSpringStoreSessionListenerSelfTest.class,
-
+   
     CacheJdbcBlobStoreFactorySelfTest.class,
     CacheJdbcPojoStoreFactorySelfTest.class,
     CachePojoStoreXmlSelfTest.class,
     CachePojoStoreXmlWithSqlEscapeSelfTest.class,
 
-    GridSpringTransactionManagerSelfTest.class,
-    GridSpringTransactionManagerSpringBeanSelfTest.class,
 
     GridServiceInjectionSpringResourceTest.class,
     IgniteSpringBeanSpringResourceInjectionTest.class,
@@ -87,8 +80,7 @@ import org.junit.runners.Suite;
     GridTransformSpringInjectionSelfTest.class,
 
     SpringCacheManagerContextInjectionTest.class,
-    SpringTransactionManagerContextInjectionTest.class,
-
+   
     SpringCacheTest.class,
 
     SpringEncryptedCacheRestartTest.class,

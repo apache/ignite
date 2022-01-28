@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.store.cassandra.session;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -24,9 +26,6 @@ import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedId;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.policies.RetryPolicy;
-
-import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * Simple wrapper providing access to Cassandra prepared statement and generation of Cassandra

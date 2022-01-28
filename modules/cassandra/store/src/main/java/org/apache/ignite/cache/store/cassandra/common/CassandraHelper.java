@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cache.store.cassandra.common;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.regex.Pattern;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
@@ -24,9 +27,6 @@ import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -56,7 +56,11 @@ public class CassandraHelper {
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
         "was created with another Cluster instance";
 
-    /** Closes Cassandra driver session. */
+    /**
+     * Closes Cassandra driver session.
+     *
+     * @param driverSes Session to close.
+     */
     public static void closeSession(Session driverSes) {
         if (driverSes == null)
             return;
@@ -104,7 +108,7 @@ public class CassandraHelper {
                     KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
 
-            if (e instanceof NoHostAvailableException && ((NoHostAvailableException) e).getErrors() != null) {
+            if (e instanceof NoHostAvailableException && ((NoHostAvailableException)e).getErrors() != null) {
                 NoHostAvailableException ex = (NoHostAvailableException)e;
 
                 for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {

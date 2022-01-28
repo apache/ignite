@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Row;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.Row;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
 
@@ -113,6 +112,9 @@ public abstract class PojoField implements Serializable {
     /**
      * Creates instance of {@link PojoField} from the other instance
      * and java class.
+     *
+     * @param field {@link PojoField} instance to copy from.
+     * @param pojoCls Class of the {@link PojoField} instance.
      */
     public PojoField(PojoField field, Class<?> pojoCls) {
         this.name = field.name;
@@ -197,6 +199,7 @@ public abstract class PojoField implements Serializable {
     /**
      * Returns POJO field annotation.
      *
+     * @param clazz Class of the annotation to get.
      * @return annotation.
      */
     public Annotation getAnnotation(Class clazz) {

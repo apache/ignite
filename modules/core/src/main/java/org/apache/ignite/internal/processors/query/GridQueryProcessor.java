@@ -3239,7 +3239,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
+    public IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
         SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
 
         SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);
