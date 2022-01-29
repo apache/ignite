@@ -17,64 +17,65 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
-import org.jetbrains.annotations.Nullable;
+import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
+import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
+
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /**
- * Set of snapshot sub-commands.
- *
- * @see SnapshotCommand
+ * Snapshot sub-command.
  */
-public enum SnapshotSubcommand {
-    /** Sub-command to create a cluster snapshot. */
-    CREATE("create", VisorSnapshotCreateTask.class.getName()),
-
-    /** Sub-command to cancel running snapshot. */
-    CANCEL("cancel", VisorSnapshotCancelTask.class.getName()),
-
-    /** Sub-command to check snapshot. */
-    CHECK("check", VisorSnapshotCheckTask.class.getName()),
-
-    /** Sub-command to restore snapshot. */
-    RESTORE("restore", VisorSnapshotRestoreTask.class.getName());
+public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
+    /** Snapshot visor task class. */
+    protected final Class<?> taskCls;
 
     /** Sub-command name. */
-    private final String name;
+    protected final String name;
 
-    /** Task class name to execute. */
-    private final String taskName;
+    /** Command argument. */
+    protected Object cmdArg;
 
-    /** @param name Snapshot sub-command name. */
-    SnapshotSubcommand(String name, String taskName) {
+    /**
+     * @param name Sub-command name.
+     * @param taskCls Visor compute task class.
+     */
+    protected SnapshotSubcommand(String name, Class<?> taskCls) {
         this.name = name;
-        this.taskName = taskName;
-    }
-
-    /**
-     * @param text Command text (case insensitive).
-     * @return Command for the text. {@code Null} if there is no such command.
-     */
-    @Nullable public static SnapshotSubcommand of(String text) {
-        for (SnapshotSubcommand cmd : values()) {
-            if (cmd.name.equalsIgnoreCase(text))
-                return cmd;
-        }
-
-        throw new IllegalArgumentException("Expected correct action: " + text);
-    }
-
-    /**
-     * @return Task class name to execute.
-     */
-    public String taskName() {
-        return taskName;
+        this.taskCls = taskCls;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        try (GridClient client = Command.startClient(clientCfg)) {
+            return executeTaskByNameOnNode(
+                client,
+                taskCls.getName(),
+                arg(),
+                null,
+                clientCfg
+            );
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object arg() {
+        return cmdArg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        cmdArg = argIter.nextArg("Expected snapshot name.");
+
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Invalid argument: " + argIter.peekNextArg() + '.');
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
         return name;
     }
 }

@@ -45,17 +45,17 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
 
     /**
      * @param snpName Snapshot name.
-     * @param waitComplete Operation completion wait flag.
+     * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
      */
     public VisorSnapshotRestoreTaskArg(
         String snpName,
-        boolean waitComplete,
+        boolean sync,
         VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames
     ) {
-        super(snpName, waitComplete);
+        super(snpName, sync);
 
         this.action = action;
         this.grpNames = grpNames;

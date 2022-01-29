@@ -159,12 +159,12 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name [--sync] [--groups group1,...groupN]
+    control.(sh|bat) --snapshot restore snapshot_name --start [--sync] [--groups group1,...groupN]
 
     Parameters:
       snapshot_name     - Snapshot name.
-      sync              - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, the it will be performed in the background, and the command will immediately return control.
       group1,...groupN  - Cache group names.
+      sync              - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, the it will be performed in the background, and the command will immediately return control.
 
   Snapshot restore operation status:
     control.(sh|bat) --snapshot restore snapshot_name --status
