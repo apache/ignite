@@ -2073,16 +2073,16 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
 
-            assertEquals(1, F.size(views.iterator()));
+            assertEquals(1, views.size());
 
-            SnapshotView view = views.iterator().next();
+            SnapshotView view = F.first(views);
 
             assertEquals(testSnap0, view.snapshotName());
             assertEquals(toStringSafe(ignite.localNode().consistentId()), view.nodeId());
 
-            List<?> collect = ignite.cluster().nodes().stream().map(ClusterNode::consistentId).collect(Collectors.toList());
+            List<?> constIds = ignite.cluster().nodes().stream().map(ClusterNode::consistentId).collect(Collectors.toList());
 
-            assertEquals(toStringSafe(collect), view.baselineNodes());
+            assertEquals(toStringSafe(constIds), view.baselineNodes());
             assertEquals(toStringSafe(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME)), view.cacheGroups());
 
             ignite.createCache("testCache");
@@ -2091,7 +2091,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
 
-            assertEquals(2, F.size(views.iterator()));
+            assertEquals(2, views.size());
         }
     }
 

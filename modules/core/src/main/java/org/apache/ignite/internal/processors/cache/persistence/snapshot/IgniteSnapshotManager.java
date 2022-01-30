@@ -497,7 +497,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SNAPSHOTS_SYS_VIEW,
             SNAPSHOTS_SYS_VIEW_DESC,
             new SnapshotViewWalker(),
-            this::localSnapshotNames,
+            () -> localSnapshotNames().stream().map(this::readSnapshotMetadatas).flatMap(List::stream).collect(Collectors.toList()),
             this::snapshotViewSupplier);
     }
 
@@ -1899,14 +1899,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
+     * @param meta Snapshot metadata.
      * @return Snapshot view.
      */
-    private SnapshotView snapshotViewSupplier(String snpName) {
-        SnapshotMetadata meta = readSnapshotMetadata(snpName,
-            toStringSafe(cctx.kernalContext().discovery().localNode().consistentId()));
-
-        Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(snpName, meta.folderName()),
+    private SnapshotView snapshotViewSupplier(SnapshotMetadata meta) {
+        Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(meta.snapshotName(), meta.folderName()),
             FilePageStoreManager::cacheGroupName);
 
         return new SnapshotView(meta.snapshotName(), meta.consistentId(), toStringSafe(meta.baselineNodes()), toStringSafe(cacheGrps));

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import java.util.Objects;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
@@ -88,25 +87,5 @@ public class SnapshotView {
     @Order(3)
     public String cacheGroups() {
         return cacheGrps;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        SnapshotView view = (SnapshotView)o;
-        return name.equals(view.name)
-            && nodeId.equals(view.nodeId)
-            && baselineNodes.equals(view.baselineNodes)
-            && cacheGrps.equals(view.cacheGrps);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(name, nodeId, baselineNodes, cacheGrps);
     }
 }
