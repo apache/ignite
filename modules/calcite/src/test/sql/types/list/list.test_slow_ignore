@@ -4,7 +4,7 @@
 # Ignore https://issues.apache.org/jira/browse/IGNITE-16417
 
 statement ok
-CREATE TABLE test AS (SELECT x i, 0 as j FROM table(system_range(1, 70000)));
+CREATE TABLE test AS (SELECT x i, 0 as j FROM table(system_range(0, 69999)));
 
 query I
 SELECT list(i)[69999] FROM test GROUP BY j;

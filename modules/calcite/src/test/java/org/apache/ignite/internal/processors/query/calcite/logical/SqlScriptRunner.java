@@ -659,8 +659,6 @@ public class SqlScriptRunner {
 
         /** */
         private void checkEquals(String msg, String expectedStr, Object actual) {
-            expectedStr = F.isEmpty(expectedStr) ? expectedStr : expectedStr.trim();
-
             if (actual == null && String.valueOf(actual).equalsIgnoreCase(expectedStr))
                 return;
 
@@ -716,9 +714,9 @@ public class SqlScriptRunner {
             }
 
             if (!res0.equals(expectedHash))
-                throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
-                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows + ", calculated=" +
-                    res0);
+                throw new AssertionError("Unexpected hash result, error at: " + posDesc +
+                    ", expected=" + expectedHash + ", calculated=" + res0 +
+                    ", expectedRows=" + expectedRows + ", returnedRows=" + res.size() * res.get(0).size());
         }
 
         /** {@inheritDoc} */
