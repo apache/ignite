@@ -2078,12 +2078,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             SnapshotView view = F.first(views);
 
             assertEquals(testSnap0, view.snapshotName());
-            assertEquals(toStringSafe(ignite.localNode().consistentId()), view.nodeId());
+            assertEquals(ignite.localNode().consistentId().toString(), view.nodeId());
 
             List<?> constIds = ignite.cluster().nodes().stream().map(ClusterNode::consistentId).collect(Collectors.toList());
 
-            assertEquals(toStringSafe(constIds), view.baselineNodes());
-            assertEquals(toStringSafe(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME)), view.cacheGroups());
+            assertEquals(F.concat(constIds, ","), view.baselineNodes());
+            assertEquals(F.concat(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME), ","), view.cacheGroups());
 
             ignite.createCache("testCache");
 

@@ -1114,7 +1114,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testSnapshotView() throws Exception {
-        int srvCnt = (int)G.allGrids().stream().filter(n -> !n.configuration().isClientMode()).count();
+        int srvCnt = ignite0.cluster().forServers().nodes().size();
 
         String snap0 = "testSnapshot0";
 
