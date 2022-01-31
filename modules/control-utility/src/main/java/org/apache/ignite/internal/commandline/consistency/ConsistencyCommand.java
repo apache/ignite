@@ -189,9 +189,14 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     break;
             }
 
-            assert cacheName != null;
-            assert part >= 0;
-            assert strategy != null;
+            if (cacheName == null)
+                throw new IllegalArgumentException("Cache name argument missed.");
+
+            if (part == -1)
+                throw new IllegalArgumentException("Partition argument missed.");
+
+            if (strategy == null)
+                throw new IllegalArgumentException("Strategy argument missed.");
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
         }
