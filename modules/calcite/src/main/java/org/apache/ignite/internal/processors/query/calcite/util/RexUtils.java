@@ -62,6 +62,7 @@ import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -179,8 +180,16 @@ public class RexUtils {
         List<RexNode> upper = new ArrayList<>();
 
         // Force collation for all fields of the condition.
-        if (collation == null || collation.isDefault())
-            return new IndexConditions(); // TODO https://issues.apache.org/jira/browse/IGNITE-16430
+        if (collation == null || collation.isDefault()) {
+            List<Integer> equalsFields = new ArrayList<>(fieldsToPredicates.size());
+            List<Integer> otherFields = new ArrayList<>(fieldsToPredicates.size());
+
+            // It's more effective to put equality conditions in the collation first.
+            fieldsToPredicates.forEach((idx, conds) ->
+                (F.exist(conds, call -> call.getOperator().getKind() == EQUALS) ? equalsFields : otherFields).add(idx));
+
+            collation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
+        }
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
             RelFieldCollation fc = collation.getFieldCollations().get(i);

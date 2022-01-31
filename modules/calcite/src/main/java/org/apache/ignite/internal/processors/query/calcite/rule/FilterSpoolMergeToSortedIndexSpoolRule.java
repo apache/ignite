@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
@@ -81,21 +83,44 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
             return;
 
-        if (inCollation == null || inCollation.isDefault())
-            return; // TODO https://issues.apache.org/jira/browse/IGNITE-16430
+        RelCollation traitCollation;
+        RelCollation searchCollation;
 
-        // Create search collation as a prefix of input collation.
-        RelCollation traitCollation = inCollation;
+        if (inCollation == null || inCollation.isDefault()) {
+            // Create collation by index condition.
+            List<RexNode> lowerBound = idxCond.lowerBound();
+            List<RexNode> upperBound = idxCond.upperBound();
 
-        Set<Integer> searchKeys = idxCond.keys();
+            int cardinality = lowerBound != null ? lowerBound.size() : upperBound.size();
 
-        List<RelFieldCollation> collationFields = inCollation.getFieldCollations().subList(0, searchKeys.size());
+            List<Integer> equalsFields = new ArrayList<>(cardinality);
+            List<Integer> otherFields = new ArrayList<>(cardinality);
 
-        assert searchKeys.containsAll(collationFields.stream().map(RelFieldCollation::getFieldIndex)
-            .collect(Collectors.toSet())) : "Search condition should be a prefix of collation [searchKeys=" +
-            searchKeys + ", collation=" + inCollation + ']';
+            // First, add all equality filters to collation, then add other fields.
+            for (int i = 0; i < cardinality; i++) {
+                RexNode lowerNode = lowerBound != null ? lowerBound.get(i) : null;
+                RexNode upperNode = upperBound != null ? upperBound.get(i) : null;
 
-        RelCollation searchCollation = RelCollations.of(collationFields);
+                if (RexUtils.isNotNull(lowerNode) || RexUtils.isNotNull(upperNode))
+                    (F.eq(lowerNode, upperNode) ? equalsFields : otherFields).add(i);
+            }
+
+            searchCollation = traitCollation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
+        }
+        else {
+            // Create search collation as a prefix of input collation.
+            traitCollation = inCollation;
+
+            Set<Integer> searchKeys = idxCond.keys();
+
+            List<RelFieldCollation> collationFields = inCollation.getFieldCollations().subList(0, searchKeys.size());
+
+            assert searchKeys.containsAll(collationFields.stream().map(RelFieldCollation::getFieldIndex)
+                .collect(Collectors.toSet())) : "Search condition should be a prefix of collation [searchKeys=" +
+                searchKeys + ", collation=" + inCollation + ']';
+
+            searchCollation = RelCollations.of(collationFields);
+        }
 
         RelNode res = new IgniteSortedIndexSpool(
             cluster,

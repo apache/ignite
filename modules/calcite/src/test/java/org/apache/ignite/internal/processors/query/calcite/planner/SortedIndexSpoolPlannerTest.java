@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
+import java.util.stream.IntStream;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -220,9 +222,9 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                         assertNotNull(lBound);
                         assertEquals(3, lBound.size());
 
-                        assertTrue(((RexLiteral)lBound.get(0)).isNull());
+                        assertNull(lBound.get(0));
                         assertTrue(lBound.get(1) instanceof RexFieldAccess);
-                        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+                        assertNull(lBound.get(2));
 
                         List<RexNode> uBound = spool.indexCondition().upperBound();
 
@@ -234,5 +236,37 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                 )),
             "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
+    }
+
+    /**
+     * Check sorted spool without input collation.
+     */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16430")
+    public void testRestoreCollation() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("T0", 100, IgniteDistributions.random(),
+                "I0", Integer.class, "I1", Integer.class, "I2", Integer.class, "I3", Integer.class),
+            createTable("T1", 10000, IgniteDistributions.random(),
+                "I0", Integer.class, "I1", Integer.class, "I2", Integer.class, "I3", Integer.class)
+        );
+
+        for (int i = 0; i < 4; i++) {
+            final int equalIdx = i;
+
+            String[] conds = IntStream.range(0, 4)
+                .mapToObj(idx -> "t0.i" + idx + ((idx == equalIdx) ? "=" : ">") + "t1.i" + idx)
+                .toArray(String[]::new);
+
+            String sql = "select * from t0 join t1 on " + String.join(" and ", conds);
+
+            assertPlan(sql, publicSchema,
+                hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                    .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
+                        .and(spool -> spool.collation().getFieldCollations().get(0).getFieldIndex() == equalIdx)
+                    ))),
+                "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+            );
+        }
     }
 }
