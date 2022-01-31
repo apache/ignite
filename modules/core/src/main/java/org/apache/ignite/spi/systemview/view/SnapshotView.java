@@ -24,13 +24,19 @@ import org.apache.ignite.internal.managers.systemview.walker.Order;
  * Snapshot representation for a {@link SystemView}.
  */
 public class SnapshotView {
+    /** Snapshot system view name. */
+    public static final String SNAPSHOT_SYS_VIEW = "snapshot";
+
+    /** Snapshot system view description. */
+    public static final String SNAPSHOT_SYS_VIEW_DESC = "Snapshot";
+
     /** Snapshot name. */
     private final String name;
 
     /** Node consistent id. */
     private final String nodeId;
 
-    /** Baseline nodes affected by snapshots. */
+    /** Baseline nodes affected by snapshot. */
     private final String baselineNodes;
 
     /** Cache group names that were included in the snapshot. */
@@ -39,7 +45,7 @@ public class SnapshotView {
     /**
      * @param name Snapshot name.
      * @param nodeId Node consistent id.
-     * @param baselineNodes Baseline nodes affected by snapshots.
+     * @param baselineNodes Baseline nodes affected by snapshot.
      * @param cacheGrps Cache group names that were included in the snapshot.
      */
     public SnapshotView(
@@ -73,7 +79,7 @@ public class SnapshotView {
     }
 
     /**
-     * @return Baseline nodes affected by snapshots.
+     * @return Baseline nodes affected by snapshot.
      */
     @Order(2)
     @Filtrable

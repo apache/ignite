@@ -206,10 +206,11 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
-import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW_DESC;
 
 /**
  * Internal implementation of snapshot operations over persistence caches.
@@ -256,12 +257,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
-
-    /** Snapshot system view name. */
-    public static final String SNAPSHOTS_SYS_VIEW = "snapshots";
-
-    /** Snapshot system view description. */
-    public static final String SNAPSHOTS_SYS_VIEW_DESC = "Snapshots";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -494,10 +489,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtMgr);
 
         ctx.systemView().registerView(
-            SNAPSHOTS_SYS_VIEW,
-            SNAPSHOTS_SYS_VIEW_DESC,
+            SNAPSHOT_SYS_VIEW,
+            SNAPSHOT_SYS_VIEW_DESC,
             new SnapshotViewWalker(),
-            () -> localSnapshotNames().stream().map(this::readSnapshotMetadatas).flatMap(List::stream).collect(Collectors.toList()),
+            () -> F.flatCollections(F.transform(localSnapshotNames(), this::readSnapshotMetadatas)),
             this::snapshotViewSupplier);
     }
 
@@ -1906,7 +1901,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(meta.snapshotName(), meta.folderName()),
             FilePageStoreManager::cacheGroupName);
 
-        return new SnapshotView(meta.snapshotName(), meta.consistentId(), toStringSafe(meta.baselineNodes()), toStringSafe(cacheGrps));
+        return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
     }
 
     /** @return Snapshot handlers. */

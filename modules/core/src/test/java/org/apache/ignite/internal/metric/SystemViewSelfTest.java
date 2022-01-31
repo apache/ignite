@@ -145,7 +145,6 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOTS_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODE_ATTRIBUTES_SYS_VIEW;
@@ -171,6 +170,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -2050,7 +2050,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testSnapshots() throws Exception {
+    public void testSnapshot() throws Exception {
         cleanPersistenceDir();
 
         String dfltCacheGrp = "testGroup";
@@ -2071,7 +2071,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             ignite.snapshot().createSnapshot(testSnap0).get();
 
-            SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
+            SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
 
             assertEquals(1, views.size());
 
@@ -2089,7 +2089,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             ignite.snapshot().createSnapshot(testSnap1).get();
 
-            views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
+            views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
 
             assertEquals(2, views.size());
         }

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -115,6 +116,7 @@ import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_V
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -431,7 +433,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
             "SCAN_QUERIES",
-            "SNAPSHOTS",
+            "SNAPSHOT",
             "NODE_ATTRIBUTES",
             "TABLES",
             "CLIENT_CONNECTIONS",
@@ -1107,6 +1109,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
                 .filter(row -> name.equals(row.get(0)) && val.equals(row.get(1)))
                 .count() == 1,
             getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshotView() throws Exception {
+        int srvCnt = (int)G.allGrids().stream().filter(n -> !n.configuration().isClientMode()).count();
+
+        String snap0 = "testSnapshot0";
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(srvCnt, systemView(ignite0, SNAPSHOT_SYS_VIEW).size());
     }
 
     /**
