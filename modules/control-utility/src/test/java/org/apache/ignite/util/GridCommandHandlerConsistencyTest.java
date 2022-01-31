@@ -208,9 +208,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
                 execute("--consistency", "repair",
-                    ConsistencyCommand.C, "non-existent",
-                    ConsistencyCommand.P, String.valueOf(i),
-                    ConsistencyCommand.S, strategy.toString()));
+                    ConsistencyCommand.CACHE, "non-existent",
+                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.STRATEGY, strategy.toString()));
 
             assertContains(log, testOut.toString(), "Cache not found");
         }
@@ -222,9 +222,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     private void readRepair(AtomicInteger brokenParts, String cacheName, Integer fixesPerEntry) {
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-                ConsistencyCommand.C, cacheName,
-                ConsistencyCommand.P, String.valueOf(i),
-                ConsistencyCommand.S, strategy.toString()));
+                ConsistencyCommand.CACHE, cacheName,
+                ConsistencyCommand.PARTITION, String.valueOf(i),
+                ConsistencyCommand.STRATEGY, strategy.toString()));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, fixed=" + (fixesPerEntry != null ? fixesPerEntry.toString() : ""));
 

@@ -44,19 +44,10 @@ import static org.apache.ignite.internal.commandline.consistency.ConsistencySubC
  */
 public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Cache. */
-    public static final String C = "-c";
-
-    /** Cache. */
     public static final String CACHE = "--cache";
 
     /** Partition. */
-    public static final String P = "-p";
-
-    /** Partition. */
     public static final String PARTITION = "--partition";
-
-    /** Strategy. */
-    public static final String S = "-s";
 
     /** Strategy. */
     public static final String STRATEGY = "--strategy";
@@ -157,25 +148,20 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             while (argIter.hasNextArg()) {
                 String arg = argIter.peekNextArg();
 
-                if (C.equals(arg) || CACHE.equals(arg) ||
-                    P.equals(arg) || PARTITION.equals(arg) ||
-                    S.equals(arg) || STRATEGY.equals(arg)) {
+                if (CACHE.equals(arg) || PARTITION.equals(arg) || STRATEGY.equals(arg)) {
                     arg = argIter.nextArg("Expected parameter key.");
 
                     switch (arg) {
-                        case C:
                         case CACHE:
                             cacheName = argIter.nextArg("Expected cache name.");
 
                             break;
 
-                        case P:
                         case PARTITION:
                             part = argIter.nextNonNegativeIntArg("Expected partition.");
 
                             break;
 
-                        case S:
                         case STRATEGY:
                             strategy = ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy."));
 
