@@ -55,11 +55,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -124,7 +122,6 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
