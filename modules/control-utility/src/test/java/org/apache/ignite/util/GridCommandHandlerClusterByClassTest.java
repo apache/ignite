@@ -113,6 +113,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NA
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITION;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
@@ -1661,7 +1664,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
         cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList(new String[] {"get_all"}));
-        cmdArgs.put(CONSISTENCY, Collections.singletonList(new String[] {"repair", "cache", "0", "LWW"}));
+        cmdArgs.put(CONSISTENCY, Collections.singletonList(
+            new String[] {"repair", CACHE, "cache", PARTITION, "0", STRATEGY, "LWW"}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
