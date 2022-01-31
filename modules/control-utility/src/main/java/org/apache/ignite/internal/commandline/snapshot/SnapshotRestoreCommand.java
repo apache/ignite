@@ -92,7 +92,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         Map<String, String> startParams = new LinkedHashMap<String, String>(params) {{
             put("group1,...groupN", "Cache group names.");
             put("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-                    "Otherwise, the it will be performed in the background, and the command will immediately return control.");
+                    "Otherwise, it will be performed in the background, and the command will immediately return control.");
         }};
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),

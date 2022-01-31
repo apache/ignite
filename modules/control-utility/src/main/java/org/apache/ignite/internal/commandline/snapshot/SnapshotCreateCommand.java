@@ -58,7 +58,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
         Map<String, String> params = new LinkedHashMap<String, String>() {{
             put("snapshot_name", "Snapshot name.");
             put("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-                    "Otherwise, the it will be performed in the background, and the command will immediately return control.");
+                    "Otherwise, it will be performed in the background, and the command will immediately return control.");
         }};
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, params, name, "snapshot_name", optional("--sync"));
