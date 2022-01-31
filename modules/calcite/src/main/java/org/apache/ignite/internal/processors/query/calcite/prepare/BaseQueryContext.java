@@ -28,6 +28,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
@@ -92,7 +93,13 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         EMPTY_CONTEXT = builder().build();
 
-        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
+        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT) {
+            @Override public void registerSchema(RelOptSchema schema) {
+                // This method in VolcanoPlanner stores schema in hash map. It can be invoked during relational
+                // operators cloning, so, can be executed even with empty context. Override it for empty context to
+                // prevent memory leaks.
+            }
+        };
 
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
@@ -102,7 +109,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
 
         // Forbid using the empty cluster in any planning or mapping procedures to prevent memory leaks.
-        AssertionError cantBeUsed = new AssertionError("Empty cluster can't be used for planning or mapping");
+        String cantBeUsedMsg = "Empty cluster can't be used for planning or mapping";
 
         CLUSTER.setMetadataProvider(
             new RelMetadataProvider() {
@@ -110,20 +117,20 @@ public final class BaseQueryContext extends AbstractQueryContext {
                     Class<? extends RelNode> relCls,
                     Class<? extends M> metadataCls)
                 {
-                    throw cantBeUsed;
+                    throw new AssertionError(cantBeUsedMsg);
                 }
 
                 @Override public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers(MetadataDef<M> def) {
-                    throw cantBeUsed;
+                    throw new AssertionError(cantBeUsedMsg);
                 }
 
                 @Override public List<MetadataHandler<?>> handlers(Class<? extends MetadataHandler<?>> hndCls) {
-                    throw cantBeUsed;
+                    throw new AssertionError(cantBeUsedMsg);
                 }
             }
         );
 
-        CLUSTER.setMetadataQuerySupplier(() -> { throw cantBeUsed; });
+        CLUSTER.setMetadataQuerySupplier(() -> { throw new AssertionError(cantBeUsedMsg); });
     }
 
     /** */
