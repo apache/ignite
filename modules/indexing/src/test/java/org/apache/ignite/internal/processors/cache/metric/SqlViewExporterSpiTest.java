@@ -1169,21 +1169,21 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         String snap0 = "testSnapshot0";
         String snap1 = "testSnapshot1";
 
-        int nodes = G.allGrids().size();
+        int nodesCnt = G.allGrids().size();
 
         assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
 
         ignite0.snapshot().createSnapshot(snap0).get();
 
-        assertEquals(nodes, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
 
         ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
 
         ignite0.snapshot().createSnapshot(snap1).get();
 
-        assertEquals(nodes * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
-        assertEquals(nodes, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS where snapshot_name = ?", snap0).size());
-        assertEquals(nodes, execute(ignite0,
+        assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS where snapshot_name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0,
             "SELECT * FROM SYS.SNAPSHOTS WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
     }
 

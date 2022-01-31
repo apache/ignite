@@ -1085,7 +1085,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration(node0));
         startGrid(getTestIgniteInstanceName(1), getPdsConfiguration(node1));
 
-        int nodes = G.allGrids().size();
+        int nodesCnt = G.allGrids().size();
 
         ignite.cluster().state(ClusterState.ACTIVE);
         ignite.snapshot().createSnapshot(testSnapname).get();
@@ -1094,7 +1094,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
 
-        assertEquals(nodes, res.size());
+        assertEquals(nodesCnt, res.size());
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
 
@@ -1108,7 +1108,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
-        assertEquals(nodes * 2, res.size());
+        assertEquals(nodesCnt * 2, res.size());
 
         String expBltNodes = toStringSafe(asList(node0, node1));
 
@@ -1121,7 +1121,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOTS " +
             "WHERE SNAPSHOT_NAME = ?", testSnapname0);
 
-        assertEquals(nodes, res.size());
+        assertEquals(nodesCnt, res.size());
 
         assertEquals(testSnapname0, res.get(0).get(0));
 
