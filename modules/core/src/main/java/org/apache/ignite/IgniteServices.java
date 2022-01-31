@@ -588,7 +588,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public <T> Collection<T> services(String name);
 
     /**
-     * Gets a handle on the service.
+     * Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
@@ -601,7 +601,8 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 
     /**
-     * Gets a handle on the service with the timeout.
+     * Gets a handle on remote or local service with the timeout. The proxy is dynamically created and provided for the
+     * specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
@@ -617,7 +618,8 @@ public interface IgniteServices extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Gets a handle on the service with the specified caller context.
+     * Gets a handle on remote or local service with the precified caller context. The proxy is dynamically created and
+     * provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
@@ -638,7 +640,8 @@ public interface IgniteServices extends IgniteAsyncSupport {
     ) throws IgniteException;
 
     /**
-     * Gets a handle on the service with the specified caller context and the timeout.
+     * Gets a handle on remote or local service with the specified caller context and the timeout. The proxy is
+     * dynamically created and provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
