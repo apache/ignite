@@ -1065,19 +1065,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     }
 
     /**
-     * @param prj Grid nodes projection.
-     * @return Whether given projection contains any local node.
-     */
-    private boolean hasLocalNode(ClusterGroup prj) {
-        for (ClusterNode n : prj.nodes()) {
-            if (n.isLocal())
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @param name Service name.
      * @param <T> Service type.
      * @return Services by specified service name.
