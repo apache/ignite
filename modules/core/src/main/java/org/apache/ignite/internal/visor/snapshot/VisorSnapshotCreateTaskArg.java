@@ -57,7 +57,7 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
     }
 
     /** @return Synchronous execution flag. */
-    public boolean waitComplete() {
+    public boolean sync() {
         return sync;
     }
 

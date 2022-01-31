@@ -54,11 +54,11 @@ public class VisorSnapshotCreateTask extends VisorOneNodeTask<VisorSnapshotCreat
         @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
             IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(arg.snapshotName());
 
-            if (arg.waitComplete() || fut.isDone())
+            if (arg.sync() || fut.isDone())
                 fut.get();
 
             return "Snapshot operation " +
-                (arg.waitComplete() ? "completed successfully" : "started") + ": " + arg.snapshotName();
+                (arg.sync() ? "completed successfully" : "started") + ": " + arg.snapshotName();
         }
     }
 }
