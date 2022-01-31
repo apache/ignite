@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -59,6 +60,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
@@ -199,28 +201,23 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cctx.wal();
 
+        // Force checkpoint.
         dbMgr.enableCheckpoints(true).get(getTestTimeout());
 
-        WALPointer trucateWalPtr = dbMgr.checkpointHistory().lastCheckpoint().checkpointMark();
+        dbMgr.checkpointReadLock();
 
-        IgniteCache<Object, Object> dummyCache = ig.cache(dummyCacheName);
+        try {
+            WALPointer lastWalPtr = dbMgr.checkpointHistory().lastCheckpoint().checkpointMark();
 
-        byte[] dummyData = new byte[WAL_SEGMENT_SIZE / 2];
+            // Move current WAL segment into the archive.
+            wal.log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
+            assertTrue(waitForCondition(() -> wal.lastArchivedSegment() >= lastWalPtr.index(), getTestTimeout()));
 
-        // Try to move current WAL segment into archive.
-        for (int i = 0; i < WAL_SEGMENTS_CNT * 2; i++) {
-            dummyCache.put(i, dummyData);
-
-            if (wal.lastArchivedSegment() >= trucateWalPtr.index())
-                break;
+            wal.truncate(lastWalPtr);
+            dbMgr.onWalTruncated(lastWalPtr);
+        } finally {
+            dbMgr.checkpointReadUnlock();
         }
-
-        assertTrue(wal.lastArchivedSegment() >= trucateWalPtr.index());
-
-        forceCheckpoint();
-
-        wal.truncate(trucateWalPtr);
-        dbMgr.onWalTruncated(trucateWalPtr);
 
         stopAllGrids();
 
