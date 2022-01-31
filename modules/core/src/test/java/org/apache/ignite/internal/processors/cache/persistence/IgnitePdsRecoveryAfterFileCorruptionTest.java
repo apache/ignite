@@ -69,17 +69,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     /** Total pages. */
     private static final int totalPages = 512;
 
-    /** WAL segment size. */
-    private static final int WAL_SEGMENT_SIZE = 2 * 1024 * 1024;
-
-    /** Number of WAL segments. */
-    private static final int WAL_SEGMENTS_CNT = 5;
-
     /** Cache name. */
     private final String cacheName = "cache";
-
-    /** Dummy cache name. */
-    private final String dummyCacheName = "dummy";
 
     /** Policy name. */
     private final String policyName = "dfltDataRegion";
@@ -98,7 +89,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(ccfg, new CacheConfiguration<>(dummyCacheName));
+        cfg.setCacheConfiguration(ccfg);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -107,8 +98,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                     .setPersistenceEnabled(true)
                     .setName(policyName))
             .setWalMode(WALMode.LOG_ONLY)
-            .setWalSegmentSize(WAL_SEGMENT_SIZE)
-            .setWalSegments(WAL_SEGMENTS_CNT)
+            .setWalSegmentSize(1024 * 1024)
             .setAlwaysWriteFullPages(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -215,7 +205,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
             wal.truncate(lastWalPtr);
             dbMgr.onWalTruncated(lastWalPtr);
-        } finally {
+        }
+        finally {
             dbMgr.checkpointReadUnlock();
         }
 
