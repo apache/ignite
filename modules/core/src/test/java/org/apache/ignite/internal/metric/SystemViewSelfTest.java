@@ -20,6 +20,7 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,8 +35,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.cache.Cache;
+
+import com.google.common.collect.Lists;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -2080,7 +2082,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(testSnap0, view.snapshotName());
             assertEquals(ignite.localNode().consistentId().toString(), view.nodeId());
 
-            List<?> constIds = ignite.cluster().nodes().stream().map(ClusterNode::consistentId).collect(Collectors.toList());
+            Collection<?> constIds = F.nodeConsistentIds(ignite.cluster().nodes());
 
             assertEquals(F.concat(constIds, ","), view.baselineNodes());
             assertEquals(F.concat(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME), ","), view.cacheGroups());
@@ -2092,6 +2094,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
 
             assertEquals(2, views.size());
+
+            List<String> exp = Lists.newArrayList(testSnap0, testSnap1);
+
+            views.forEach(v -> assertTrue(exp.remove(v.snapshotName())));
+
+            assertTrue(exp.isEmpty());
         }
     }
 
