@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
@@ -64,7 +63,6 @@ public class SnapshotView {
      * @return Snapshot name.
      */
     @Order
-    @Filtrable
     public String snapshotName() {
         return name;
     }
@@ -73,7 +71,6 @@ public class SnapshotView {
      * @return Node consistent id.
      */
     @Order(1)
-    @Filtrable
     public String nodeId() {
         return nodeId;
     }
@@ -82,7 +79,6 @@ public class SnapshotView {
      * @return Baseline nodes affected by snapshot.
      */
     @Order(2)
-    @Filtrable
     public String baselineNodes() {
         return baselineNodes;
     }
