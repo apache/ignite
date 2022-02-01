@@ -17,21 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.junit.Assert.assertArrayEquals;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServiceDescriptor;
@@ -48,6 +41,10 @@ import org.apache.ignite.services.ServiceCallContextBuilder;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Checks service invocation for thin client.
@@ -115,24 +112,6 @@ public class ServicesTest extends AbstractThinClientTest {
             svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
 
             checkOverloadedMethods(svc);
-        }
-    }
-
-    @Test
-    public void testTreeSetMapRoundtrip() {
-        try (IgniteClient client = startClient(0)) {
-            TreeSet<Object> treeSet = new TreeSet<>();
-
-            ClientCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
-            IgniteCache<Object, Object> serverCache = grid().cache(DEFAULT_CACHE_NAME);
-
-            clientCache.put(1, treeSet);
-            serverCache.put(2, treeSet);
-
-            Object res1 = clientCache.get(2);
-            Object res2 = serverCache.get(1);
-
-            assertEquals(res1.getClass(), res2.getClass());
         }
     }
 
