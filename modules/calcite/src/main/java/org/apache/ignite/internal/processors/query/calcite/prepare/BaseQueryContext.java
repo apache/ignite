@@ -141,7 +141,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         qryCancel = unwrap(GridQueryCancel.class);
 
-        rexBuilder = new RexBuilder(typeFactory);
+        rexBuilder = new IgniteRexBuilder(typeFactory);
     }
 
     /**

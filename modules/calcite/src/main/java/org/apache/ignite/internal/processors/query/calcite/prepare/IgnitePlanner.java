@@ -280,8 +280,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             planner.setExecutor(rexExecutor);
             this.planner = planner;
 
-            for (RelTraitDef<?> def : traitDefs)
-                this.planner.addRelTraitDef(def);
+            if (traitDefs != null) {
+                for (RelTraitDef<?> def : traitDefs)
+                    this.planner.addRelTraitDef(def);
+            }
         }
 
         return planner;

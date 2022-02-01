@@ -1111,18 +1111,6 @@ public class PlannerTest extends AbstractPlannerTest {
     public void testJoinPushExpressionRule() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable emp = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("DEPTNO", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
         TestTable dept = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("DEPTNO", f.createJavaType(Integer.class))
@@ -1136,15 +1124,12 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("EMP", emp);
         publicSchema.addTable("DEPT", dept);
 
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "select d.deptno, e.deptno " +
-            "from dept d, emp e " +
-            "where d.deptno + e.deptno = 2";
+        String sql = "select * from dept d";
 
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(BaseQueryContext.builder()

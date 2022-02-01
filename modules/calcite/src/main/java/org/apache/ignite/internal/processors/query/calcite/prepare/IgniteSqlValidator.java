@@ -270,6 +270,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        return super.deriveType(scope, expr);
+    }
+
+    /** {@inheritDoc} */
     @Override public String deriveAlias(SqlNode node, int ordinal) {
         if (node.isA(HUMAN_READABLE_ALIASES_FOR)) {
             String alias = node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)

@@ -29,10 +29,12 @@ import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -40,24 +42,34 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** Interval qualifier to create year-month interval types. */
+    /**
+     * Interval qualifier to create year-month interval types.
+     */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_YEAR_MONTH = new SqlIntervalQualifier(TimeUnit.YEAR,
         TimeUnit.MONTH, SqlParserPos.ZERO);
 
-    /** Interval qualifier to create day-time interval types. */
+    /**
+     * Interval qualifier to create day-time interval types.
+     */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_DAY_TIME = new SqlIntervalQualifier(TimeUnit.DAY,
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
-    /** */
+    /**
+     *
+     */
     private final Charset charset;
 
-    /** */
+    /**
+     *
+     */
     public IgniteTypeFactory() {
         this(IgniteTypeSystem.INSTANCE);
     }
@@ -78,7 +90,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Type getJavaClass(RelDataType type) {
         if (type instanceof JavaType)
             return ((JavaType)type).getJavaClass();
@@ -234,7 +248,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RelDataType leastRestrictive(List<RelDataType> types) {
         assert types != null;
         assert types.size() >= 1;
@@ -245,12 +261,16 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.leastRestrictive(types);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Charset getDefaultCharset() {
         return charset;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RelDataType toSql(RelDataType type) {
         if (type instanceof JavaType) {
             Class<?> clazz = ((JavaType)type).getJavaClass();
@@ -259,12 +279,25 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+            else if (clazz == UUID.class)
+                return createTypeWithNullability(new UUIDType(true), true);
         }
 
         return super.toSql(type);
     }
 
     /** {@inheritDoc} */
+    @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
+        /** TODO: copy */
+        if (type instanceof UUIDType && type.isNullable() != nullable)
+            type = new UUIDType(nullable);
+
+        return super.createTypeWithNullability(type, nullable);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override public RelDataType createType(Type type) {
         if (type == Duration.class || type == Period.class)
             return createJavaType((Class<?>)type);
@@ -272,7 +305,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.createType(type);
     }
 
-    /** */
+    /**
+     *
+     */
     private boolean allEquals(List<RelDataType> types) {
         assert types.size() > 1;
 
@@ -284,4 +319,27 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         return true;
     }
+
+    /** */
+    final class UUIDType extends JavaType {
+        /** */
+        public UUIDType(boolean nullable) {
+            super(UUID.class, nullable);
+        }
+
+        /** */
+        @Override public RelDataTypeFamily getFamily() {
+            return SqlTypeFamily.ANY;
+        }
+
+        /** TODO */
+        @Override public SqlTypeName getSqlTypeName() {
+            return SqlTypeName.ANY;
+        }
+
+        /** TODO */
+        @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
+            sb.append("UUID");
+        }
+    };
 }

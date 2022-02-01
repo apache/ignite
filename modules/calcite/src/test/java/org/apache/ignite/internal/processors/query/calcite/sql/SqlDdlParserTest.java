@@ -16,28 +16,66 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCreate;
+import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.OperandTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.ListSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Planner;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -46,6 +84,9 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
+import static org.apache.calcite.tools.Frameworks.createRootSchema;
+import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -55,14 +96,201 @@ import static org.junit.Assert.assertThat;
  * Test suite to verify parsing of the DDL command.
  */
 public class SqlDdlParserTest extends GridCommonAbstractTest {
-    /**
-     * Very simple case where only table name and a few columns are presented.
-     */
+    //** TODO */
     @Test
-    public void test() throws SqlParseException {
-        String query = "create table test (e as UUID)";
+    public void testUUID() throws Exception {
+        IgniteTypeFactory typeFactory = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        SqlNode node = parse(query);
+//        AbstractPlannerTest.TestTable dept = new AbstractPlannerTest.TestTable(
+//            new RelDataTypeFactory.Builder(typeFactory)
+//                .add("DEPTNO", typeFactory.createJavaType(Integer.class))
+////                .add("NAME", typeFactory.createJavaType(String.class))
+//                .add("NAME", typeFactory.createJavaType(UUID.class))
+//                .build()) {
+//
+//            @Override public IgniteDistribution distribution() {
+//                return IgniteDistributions.broadcast();
+//            }
+//        };
+
+//        AbstractPlannerTest.TestTable uuidTabl = new AbstractPlannerTest.TestTable(
+//            new RelDataTypeFactory.Builder(typeFactory)
+//                .add("ID", typeFactory.createJavaType(Integer.class))
+//                .add("UUID_FIELD", typeFactory.createJavaType(UUID.class))
+//                .build()) {
+//
+//            @Override public IgniteDistribution distribution() {
+//                return IgniteDistributions.broadcast();
+//            }
+//        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+//        publicSchema.addTable("DEPT", dept);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * from dept d";
+//        String sql = "create table test_tbl (ID INTEGER, UID UUID)";
+
+        PlanningContext ctx = PlanningContext.builder()
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .costFactory(new IgniteCostFactory(1, 100, 1, 1))
+                    .build())
+                .logger(log)
+                .build()
+            )
+            .query(sql)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+//            String qry = ctx.query();
+            String qry = "create table test_tbl (ID INTEGER, UID UUID)";
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+//            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            assertNotNull(rel);
+            assertEquals("" +
+                    "LogicalProject(DEPTNO=[$0], NAME=[$1])\n" +
+                    "  IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n",
+                RelOptUtil.toString(rel));
+        }
+    }
+
+    /** TODO */
+    @Test
+    public void myUUIDTest() throws Exception {
+        IgniteSchema igniteSchema = new IgniteSchema("PUBLIC");
+
+        CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, false);
+
+        rootSchema.add("PUBLIC", igniteSchema);
+
+        registerType(rootSchema);
+
+        addSmapleTable(rootSchema);
+
+//        FrameworkConfig config = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+        FrameworkConfig config = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+            .defaultSchema(rootSchema.plus())
+            .operatorTable(SqlOperatorTables.chain(
+                SqlStdOperatorTable.instance(),
+                new ListSqlOperatorTable(Collections.singletonList(my_custom_function()))
+            ))
+            .build();
+
+        PlanningContext ctx = PlanningContext.builder()
+            .parentContext(BaseQueryContext.builder()
+                .logger(log)
+                .frameworkConfig(config)
+                .build())
+//            .query("SELECT CAST(my_custom_function(NAME) as my_custom_type) from SAMPLE")
+//            .parameters(2)
+            .build();
+
+//        Planner planner = Frameworks.getPlanner(config);
+        IgnitePlanner planner = ctx.planner();
+
+//        String stm = "SELECT CAST(my_custom_function(NAME) as my_custom_type) from SAMPLE";
+        String stm = "create table test_tbl(id integer, uid UUID)";
+
+//        SqlNode sqlNode = planner.parse("create table test_tbl(id integer, uid UUID");
+
+        IgniteSqlCreateTable ddlNode = (IgniteSqlCreateTable)Commons.parse(stm, config.getParserConfig()).get(0);
+
+        List<SqlColumnDeclaration> colDeclarations = ddlNode.columnList().getList().stream()
+            .filter(SqlColumnDeclaration.class::isInstance)
+            .map(SqlColumnDeclaration.class::cast)
+            .collect(Collectors.toList());
+
+        for (SqlColumnDeclaration col : colDeclarations) {
+            if (!col.name.isSimple())
+                throw new IgniteSQLException("Unexpected value of columnName [" +
+                    "expected a simple identifier, but was " + col.name + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+
+            RelDataType dataType = planner.convert(col.dataType);
+
+            System.err.println("TEST | datatype : " + dataType);
+        }
+
+        SqlParser parser = SqlParser.create(stm, config.getParserConfig());
+
+        SqlNode plannerNode = planner.parse(stm);
+        SqlNode parserNode = parser.parseStmt();
+
+//        SqlNode plannerValidatedNode = planner.validate(plannerNode);
+        SqlNode parserValidatedNode = planner.validate(parserNode);
+
+        SqlNodeList qryList = Commons.parse(stm, config.getParserConfig());
+
+//        RelRoot relNode = planner.rel(validatedNode);
+//
+//        System.err.println(RelOptUtil.toString(relNode.rel));
+    }
+
+    private SqlOperator my_custom_function() {
+        return new SqlFunction(
+            "MY_CUSTOM_FUNCTION",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.INTEGER,
+            null,
+            OperandTypes.STRING,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+    }
+
+    CalciteSchema registerType(CalciteSchema rootSchema){
+        rootSchema.add("MY_CUSTOM_TYPE", new RelProtoDataType() {
+            @Override public RelDataType apply(RelDataTypeFactory typeFactory) {
+                return typeFactory.createSqlType(SqlTypeName.VARCHAR);
+            }
+        });
+
+        return rootSchema;
+    }
+
+    CalciteSchema addSmapleTable(CalciteSchema rootSchema) {
+        rootSchema.add(
+            "SAMPLE",
+            new AbstractTable() {
+                @Override
+                public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+                    RelDataTypeFactory.FieldInfoBuilder builder = typeFactory.builder();
+                    RelDataType id = typeFactory.createTypeWithNullability(
+                        typeFactory.createSqlType(SqlTypeName.INTEGER),
+                        false
+                    );
+                    RelDataType name = typeFactory.createTypeWithNullability(
+                        typeFactory.createSqlType(SqlTypeName.VARCHAR),
+                        false
+                    );
+                    builder.add("ID", id);
+                    builder.add("NAME", name);
+                    return builder.build();
+                }
+            }
+        );
+
+        return rootSchema;
     }
 
     /**

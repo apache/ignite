@@ -78,6 +78,19 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
+    public void myTestUUIDJdbc() throws Exception {
+        stmt.execute("CREATE TABLE UUIDTestTbl(id INT, uid UUID, PRIMARY KEY(id))");
+        stmt.execute("insert into UUIDTestTbl values(1, '9e120341-627f-32be-8393-58b5d655b751')");
+//        stmt.execute("CREATE TABLE UUIDTestTbl(id INT, name VARCHAR(100), PRIMARY KEY(id))");
+//        stmt.execute("insert into UUIDTestTbl values(1, 'testname')");
+
+        stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
     public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 

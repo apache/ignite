@@ -660,7 +660,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static class TestTable implements IgniteCacheTable {
+    public static class TestTable implements IgniteCacheTable {
         /** */
         private final String name;
 
@@ -680,7 +680,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final CacheTableDescriptor desc;
 
         /** */
-        TestTable(RelDataType type) {
+        public TestTable(RelDataType type) {
             this(type, 100.0);
         }
 

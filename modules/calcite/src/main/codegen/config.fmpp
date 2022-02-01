@@ -64,6 +64,7 @@ data: {
       "CONTINUOUS"
       "SERVICE"
       "COMPUTE"
+      "UUID"
     ]
 
     # List of non-reserved keywords to add;

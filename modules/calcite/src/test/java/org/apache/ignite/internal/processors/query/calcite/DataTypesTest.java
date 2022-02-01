@@ -32,6 +32,15 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    @Test
+    public void testUUID(){
+        try {
+            executeSql("create table tbl(id INT, uid UUID)");
+        } finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
+    }
+
     /**
      * Tests numeric types mapping on Java types.
      */
