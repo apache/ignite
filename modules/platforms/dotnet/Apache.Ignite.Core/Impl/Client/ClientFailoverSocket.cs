@@ -142,7 +142,24 @@ namespace Apache.Ignite.Core.Impl.Client
             Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            var attempt = 0;
+
+            while (true)
+            {
+                try
+                {
+                    return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+                catch (IgniteClientException e)
+                {
+                    if (!ShouldRetry(attempt, e, opId))
+                    {
+                        throw;
+                    }
+
+                    attempt++;
+                }
+            }
         }
 
         /// <summary>
@@ -338,7 +355,7 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            // Lock order: same as in OnAffinityTopologyVersionChange. 
+            // Lock order: same as in OnAffinityTopologyVersionChange.
             lock (_topologyUpdateLock)
             lock (_socketLock)
             {
@@ -923,6 +940,23 @@ namespace Apache.Ignite.Core.Impl.Client
                 : basicMapper.IsSimpleName
                     ? BinaryNameMapperMode.BasicSimple
                     : BinaryNameMapperMode.BasicFull;
+        }
+
+        private bool ShouldRetry(int attempt, IgniteClientException exception, ClientOp clientOp)
+        {
+            if (_config.RetryPolicy == null)
+            {
+                return false;
+            }
+
+            if (_config.RetryLimit > 0 && attempt >= _config.RetryLimit)
+            {
+                return false;
+            }
+
+            var ctx = new ClientRetryPolicyContext(_config, ClientOperationType.CacheCreate, attempt, exception);
+
+            return _config.RetryPolicy.ShouldRetry(ctx);
         }
     }
 }
