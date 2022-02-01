@@ -32,7 +32,7 @@ public class SnapshotView {
     /** Snapshot name. */
     private final String name;
 
-    /** Node consistent id. */
+    /** Node consistent ID. */
     private final String consistentId;
 
     /** Baseline nodes affected by snapshot. */
@@ -43,8 +43,8 @@ public class SnapshotView {
 
     /**
      * @param name Snapshot name.
-     * @param consistentId Node consistent id.
-     * @param baselineNodes Baseline nodes affected by snapshot.
+     * @param consistentId Node consistent ID.
+     * @param baselineNodes Baseline nodes affected by the snapshot.
      * @param cacheGrps Cache group names that were included in the snapshot.
      */
     public SnapshotView(
@@ -68,7 +68,7 @@ public class SnapshotView {
     }
 
     /**
-     * @return Node consistent id.
+     * @return Node consistent ID.
      */
     @Order(1)
     public String consistentId() {
