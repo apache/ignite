@@ -652,6 +652,15 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests automatic retry with retry limit.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyThrowsOnRetryCountExceeded()
+        {
+            Assert.Fail("TODO");
+        }
+
+        /// <summary>
         /// Tests automatic retry with multiple servers.
         /// </summary>
         [Test]

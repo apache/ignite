@@ -154,6 +154,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     if (!ShouldRetry(attempt, e, opId))
                     {
+                        // TODO: Throw with more details, like how many attempts were performed and all the errors?
                         throw;
                     }
 
