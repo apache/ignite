@@ -643,6 +643,65 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests automatic retry with one server.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyOneNode()
+        {
+            Assert.Fail("TODO");
+        }
+
+        /// <summary>
+        /// Tests automatic retry with multiple servers.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicy()
+        {
+            // Start 3 nodes.
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "0"));
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "1"));
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+
+            // Connect client.
+            var port = IgniteClientConfiguration.DefaultPort;
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[]
+                {
+                    "localhost",
+                    string.Format("127.0.0.1:{0}..{1}", port + 1, port + 2)
+                },
+                RetryPolicy = new ClientRetryAllPolicy()
+            };
+
+            // ReSharper disable AccessToDisposedClosure
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Action checkOperation = () => Assert.AreEqual(0, client.GetCacheNames().Count);
+
+                checkOperation();
+
+                // Stop first node.
+                var nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
+
+                checkOperation();
+
+                // Stop second node.
+                nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
+
+                checkOperation();
+
+                // Stop all nodes.
+                Ignition.StopAll(true);
+
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            }
+        }
+
+        /// <summary>
         /// Tests that client stops it's receiver thread upon disposal.
         /// </summary>
         [Test]
