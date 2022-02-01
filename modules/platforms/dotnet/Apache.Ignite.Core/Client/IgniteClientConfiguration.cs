@@ -245,6 +245,17 @@ namespace Apache.Ignite.Core.Client
         public TransactionClientConfiguration TransactionConfiguration { get; set; }
 
         /// <summary>
+        /// Gets or sets the retry policy. When a request fails due to a connection error, and multiple server
+        /// connections are available, Ignite will retry the request if the specified policy allows it.
+        /// <para />
+        /// Default is null: operations won't be retried.
+        /// <para />
+        /// See also <see cref="ClientRetryAllPolicy"/>, <see cref="ClientRetryNonePolicy"/>,
+        /// <see cref="ClientRetryReadPolicy"/>.
+        /// </summary>
+        public IClientRetryPolicy RetryPolicy { get; set; }
+
+        /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
         /// </summary>
         internal IBinaryProcessor BinaryProcessor { get; set; }
