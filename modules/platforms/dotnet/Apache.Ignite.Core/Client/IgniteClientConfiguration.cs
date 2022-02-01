@@ -131,6 +131,9 @@ namespace Apache.Ignite.Core.Client
             {
                 TransactionConfiguration = new TransactionClientConfiguration(cfg.TransactionConfiguration);
             }
+
+            RetryLimit = cfg.RetryLimit;
+            RetryPolicy = cfg.RetryPolicy;
         }
 
         /// <summary>
