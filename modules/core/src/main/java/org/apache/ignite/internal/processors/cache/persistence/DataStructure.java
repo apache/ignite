@@ -20,20 +20,25 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -49,6 +54,12 @@ public abstract class DataStructure {
     public static Random rnd;
 
     /** */
+    private final String name;
+
+    /** */
+    private final PageLockListener lockLsnr;
+
+    /** */
     protected final int grpId;
 
     /** */
@@ -58,34 +69,60 @@ public abstract class DataStructure {
     protected final PageMemory pageMem;
 
     /** */
+    @Nullable
     protected final IgniteWriteAheadLogManager wal;
-
-    /** */
-    protected final PageLockListener lockLsnr;
 
     /** */
     protected ReuseList reuseList;
 
+    /** */
+    protected final PageIoResolver pageIoRslvr;
+
+    /** */
+    protected final byte pageFlag;
+
+    /** */
+    protected final PageMetrics metrics;
+
     /**
-     * @param cacheGrpId Cache group ID.
-     * @param grpName Cache group name.
+     * @param name Structure name (for debugging purposes).
+     * @param cacheGrpId Cache group id.
+     * @param grpName Group name.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param pageLockTrackerManager Page lock tracker manager.
+     * @param pageIoRslvr Page IO resolver.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public DataStructure(
+        String name,
         int cacheGrpId,
-        String grpName,
+        @Nullable String grpName,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal,
-        PageLockListener lockLsnr
+        @Nullable IgniteWriteAheadLogManager wal,
+        PageLockTrackerManager pageLockTrackerManager,
+        PageIoResolver pageIoRslvr,
+        byte pageFlag
     ) {
+        assert !F.isEmpty(name);
         assert pageMem != null;
 
+        this.name = name;
         this.grpId = cacheGrpId;
         this.grpName = grpName;
         this.pageMem = pageMem;
         this.wal = wal;
-        this.lockLsnr = lockLsnr == null ? NOOP_LSNR : lockLsnr;
+        this.lockLsnr = pageLockTrackerManager.createPageLockTracker(name);
+        this.pageIoRslvr = pageIoRslvr;
+        this.pageFlag = pageFlag;
+        this.metrics = pageMem.metrics().cacheGrpPageMetrics(cacheGrpId);
+    }
+
+    /**
+     * @return Tree name.
+     */
+    public final String name() {
+        return name;
     }
 
     /**
@@ -123,15 +160,29 @@ public abstract class DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long allocatePage(ReuseBag bag, boolean useRecycled) throws IgniteCheckedException {
-        long pageId = bag != null ? bag.pollFreePage() : 0;
+        long pageId = 0;
 
-        if (pageId == 0 && useRecycled && reuseList != null)
-            pageId = reuseList.takeRecycledPage();
+        if (useRecycled && reuseList != null) {
+            pageId = bag != null ? bag.pollFreePage() : 0;
+
+            if (pageId == 0)
+                pageId = reuseList.takeRecycledPage();
+
+            // Recycled. "pollFreePage" result should be reinitialized to move rotatedId to itemId.
+            if (pageId != 0)
+                pageId = reuseList.initRecycledPage(pageId, pageFlag, null);
+        }
 
         if (pageId == 0)
             pageId = allocatePageNoReuse();
 
         assert pageId != 0;
+
+        assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
+            PageIdUtils.flag(pageId) != FLAG_IDX && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
+            PageIdUtils.toDetailString(pageId);
+
+        assert PageIdUtils.flag(pageId) != FLAG_DATA || PageIdUtils.itemId(pageId) == 0 : PageIdUtils.toDetailString(pageId);
 
         return pageId;
     }
@@ -152,7 +203,7 @@ public abstract class DataStructure {
      */
     protected final long acquirePage(long pageId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
-            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
+            PageIdUtils.flag(pageId) != FLAG_IDX && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
             U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
 
         return pageMem.acquirePage(grpId, pageId, statHolder);
@@ -251,7 +302,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            null, null, null, null, intArg, lockFailed, statHolder);
+            null, null, null, null, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -272,7 +323,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            null, null, null, arg, intArg, lockFailed, statHolder);
+            null, null, null, arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -295,7 +346,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, page, lockLsnr, h,
-            null, null, null, arg, intArg, lockFailed, statHolder);
+            null, null, null, arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -318,7 +369,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            init, wal, null, arg, intArg, lockFailed, statHolder);
+            init, wal, null, arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -339,7 +390,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, lockLsnr,
-            h, arg, intArg, lockFailed, statHolder);
+            h, arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -362,7 +413,7 @@ public abstract class DataStructure {
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, page, lockLsnr, h,
-            arg, intArg, lockFailed, statHolder);
+            arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**
@@ -395,7 +446,7 @@ public abstract class DataStructure {
             int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
             if (rotatedIdPart != 0) {
-                recycled = PageIdUtils.link(pageId, rotatedIdPart > MAX_ITEMID_NUM ? 1 : rotatedIdPart);
+                recycled = PageIdUtils.link(pageId, rotatedIdPart);
 
                 PageIO.setRotatedIdPart(pageAddr, 0);
 
@@ -414,6 +465,9 @@ public abstract class DataStructure {
         if (needWalDeltaRecord)
             wal.log(new RecycleRecord(grpId, pageId, recycled));
 
+        if (PageIO.isIndexPage(PageIO.getType(pageAddr)))
+            metrics.indexPages().decrement();
+
         return recycled;
     }
 
@@ -424,30 +478,10 @@ public abstract class DataStructure {
         return pageMem.realPageSize(grpId);
     }
 
-    /** No-op page lock listener. */
-    public static final PageLockListener NOOP_LSNR = new PageLockListener() {
-        @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
-            // No-op.
-        }
-
-        @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
-            // No-op.
-        }
-
-        @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-
-        @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
-            // No-op.
-        }
-    };
+    /**
+     * Frees the resources allocated by this structure.
+     */
+    public void close() {
+        lockLsnr.close();
+    }
 }

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
@@ -49,6 +49,7 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
     /** Property: reservation batch size. */
     private static final String PROP_BATCH_SIZE = "ignite.jmh.sequence.batchSize";
 
+    /** */
     @State(Scope.Benchmark)
     public static class SequenceState {
         /** IP finder shared across nodes. */

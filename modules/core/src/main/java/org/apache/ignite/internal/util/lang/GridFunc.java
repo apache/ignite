@@ -53,6 +53,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -716,7 +717,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static IgniteClosure<ClusterNode, UUID> node2id() {
+    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 
@@ -1216,13 +1217,23 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
      * Tests if the given collection is either {@code null} or empty.
      *
      * @param c Collection to test.
      * @return Whether or not the given collection is {@code null} or empty.
      */
     public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>) c).isEmpty() : !c.iterator().hasNext());
+        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
     }
 
     /**
@@ -1487,7 +1498,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
     public static <T> IgnitePredicate<T> notNull() {
-        return (IgnitePredicate<T>) IS_NOT_NULL;
+        return (IgnitePredicate<T>)IS_NOT_NULL;
     }
 
     /**
@@ -2799,6 +2810,20 @@ public class GridFunc {
     }
 
     /**
+     * Checks if key is contained in the map passed in. If the map
+     * is {@code null}, then {@code false} is returned.
+     *
+     * @param m Map to check.
+     * @param k Key to check for containment.
+     * @param <T> Key type.
+     * @return {@code true} if map is not {@code null} and contains given
+     *      key, {@code false} otherwise.
+     */
+    public static <T> boolean mapContainsKey(@Nullable final Map<T, ?> m, final T k) {
+        return m != null && m.containsKey(k);
+    }
+
+    /**
      * Check's that {@code val} contains ignore case in collection {@code col}.
      *
      * @param col Collection of values.
@@ -3354,5 +3379,245 @@ public class GridFunc {
                 return dfltVal;
             }
         };
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if not null and array.
+     */
+    public static boolean isArray(Object val) {
+        return val != null && val.getClass().isArray();
+    }
+
+    /**
+     * Check for arrays equality.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return {@code True} if arrays equal.
+     */
+    public static boolean arrayEq(Object a1, Object a2) {
+        if (a1 == a2)
+            return true;
+
+        if (a1 == null || a2 == null)
+            return a1 != null || a2 != null;
+
+        if (a1.getClass() != a2.getClass())
+            return false;
+
+        if (a1 instanceof byte[])
+            return Arrays.equals((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return Arrays.equals((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return Arrays.equals((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return Arrays.equals((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return Arrays.equals((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return Arrays.equals((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return Arrays.equals((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return Arrays.equals((double[])a1, (double[])a2);
+        else if (a1 instanceof BinaryArray)
+            return a1.equals(a2);
+
+        return Arrays.deepEquals((Object[])a1, (Object[])a2);
+    }
+
+    /**
+     * Compare arrays.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to,
+     * or greater than the second.
+     */
+    public static int compareArrays(Object a1, Object a2) {
+        if (a1 == a2)
+            return 0;
+
+        if (a1 == null || a2 == null)
+            return a1 != null ? 1 : -1;
+
+        if (a1.getClass() != a2.getClass()) {
+            throw new IllegalArgumentException(
+                "Can't compare arrays of different types[a1=" + a1.getClass() + ",a2=" + a2.getClass() + ']'
+            );
+        }
+
+        if (a1 instanceof byte[])
+            return compareArrays((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return compareArrays((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return compareArrays((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return compareArrays((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return compareArrays((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return compareArrays((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return compareArrays((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return compareArrays((double[])a1, (double[])a2);
+        else if (a1 instanceof Object[])
+            return compareArrays((Object[])a1, (Object[])a2);
+
+        throw new IllegalStateException("Unknown array type " + a1.getClass());
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(Object[] a1, Object[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] == null || a2[i] == null) {
+                if (a1[i] != null || a2[i] != null)
+                    return a1[i] != null ? 1 : -1;
+
+                continue;
+            }
+
+            if (F.isArray(a1[i]) && F.isArray(a2[i])) {
+                int res = compareArrays(a1[i], a2[i]);
+
+                if (res != 0)
+                    return res;
+            }
+
+            return ((Comparable)a1[i]).compareTo(a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(byte[] a1, byte[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Byte.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(boolean[] a1, boolean[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Boolean.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(short[] a1, short[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Short.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(char[] a1, char[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Character.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(int[] a1, int[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Integer.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(long[] a1, long[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Long.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(float[] a1, float[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Float.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(double[] a1, double[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Double.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
     }
 }

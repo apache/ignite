@@ -22,7 +22,8 @@ import org.springframework.aop.support.DefaultPointcutAdvisor;
 
 /**
  * Spring AOP enhancer. Use it to grid-enable methods annotated with
- * {@link org.apache.ignite.compute.gridify.Gridify}, {@link org.apache.ignite.compute.gridify.GridifySetToValue} and {@link org.apache.ignite.compute.gridify.GridifySetToSet} annotations.
+ * {@link org.apache.ignite.compute.gridify.Gridify}, {@link org.apache.ignite.compute.gridify.GridifySetToValue} and
+ * {@link org.apache.ignite.compute.gridify.GridifySetToSet} annotations.
  * <p>
  * Note, that Spring AOP requires that all grid-enabled methods must
  * be {@code enhanced} because it is proxy-based. Other AOP implementations,

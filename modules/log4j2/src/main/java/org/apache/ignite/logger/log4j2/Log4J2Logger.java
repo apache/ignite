@@ -18,7 +18,6 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -31,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
@@ -81,9 +80,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
+public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
     /** */
     private static final String NODE_ID = "nodeId";
+
+    /** */
+    private static final String APP_ID = "appId";
 
     /** */
     private static final String CONSOLE_APPENDER = "autoConfiguredIgniteConsoleAppender";
@@ -234,27 +236,18 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                     return ((RollingFileAppender)a).getFileName();
 
                 if (a instanceof RoutingAppender) {
-                    try {
-                        RoutingAppender routing = (RoutingAppender)a;
+                    RoutingAppender routing = (RoutingAppender)a;
 
-                        Field appsFiled = routing.getClass().getDeclaredField("appenders");
+                    Map<String, AppenderControl> appenders = routing.getAppenders();
 
-                        appsFiled.setAccessible(true);
+                    for (AppenderControl control : appenders.values()) {
+                        Appender innerApp = control.getAppender();
 
-                        Map<String, AppenderControl> appenders = (Map<String, AppenderControl>)appsFiled.get(routing);
+                        if (innerApp instanceof FileAppender)
+                            return normalize(((FileAppender)innerApp).getFileName());
 
-                        for (AppenderControl control : appenders.values()) {
-                            Appender innerApp = control.getAppender();
-
-                            if (innerApp instanceof FileAppender)
-                                return normalize(((FileAppender)innerApp).getFileName());
-
-                            if (innerApp instanceof RollingFileAppender)
-                                return normalize(((RollingFileAppender)innerApp).getFileName());
-                        }
-                    }
-                    catch (IllegalAccessException | NoSuchFieldException e) {
-                        error("Failed to get file name (was the implementation of log4j2 changed?).", e);
+                        if (innerApp instanceof RollingFileAppender)
+                            return normalize(((RollingFileAppender)innerApp).getFileName());
                     }
                 }
             }
@@ -384,13 +377,14 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void setNodeId(UUID nodeId) {
+    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
 
         // Set nodeId as system variable to be used at configuration.
         System.setProperty(NODE_ID, U.id8(nodeId));
+        System.setProperty(APP_ID, application != null ? application : "ignite");
 
         if (inited) {
             final LoggerContext ctx = impl.getContext();

@@ -38,11 +38,10 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -238,7 +237,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             dbMgr.onWalTruncated(lowBoundForTruncate);
 
-            int num = wal.truncate(null, lowBoundForTruncate);
+            int num = wal.truncate(lowBoundForTruncate);
 
             if (walFiles != null) {
                 sortWalFiles(walFiles);
@@ -265,11 +264,9 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          *
          */
         private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, WALPointer lowBoundForTruncate) {
-            FileWALPointer low = (FileWALPointer)lowBoundForTruncate;
-
             int resCnt = wal.reserved(null, lowBoundForTruncate);
 
-            long highIdx = low.index();
+            long highIdx = lowBoundForTruncate.index();
 
             return (int)(highIdx - resCnt + 1);
         }

@@ -18,8 +18,6 @@ import redis
 To execute this script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured.
 You will also need to have 'redis-py' installed.
 See https://github.com/andymccurdy/redis-py for the details on redis-py.
-
-See https://apacheignite.readme.io/docs/redis for more details on Redis integration.
 '''
 
 r = redis.StrictRedis(host='localhost', port=11211, db=0)

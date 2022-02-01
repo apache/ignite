@@ -212,9 +212,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(srvs);
 
-        srv.cluster().state(activationMode);
+        srv.cluster().state(ACTIVE);
 
         srv.createCaches(Arrays.asList(cacheConfigurations1()));
+
+        srv.cluster().state(activationMode);
 
         Map<Integer, Integer> cacheData = new LinkedHashMap<>();
 
@@ -404,12 +406,14 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(SRVS);
 
-        srv.cluster().state(state);
+        srv.cluster().state(ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         srv.createCache(ccfg);
+
+        srv.cluster().state(state);
 
         stopAllGrids();
 
@@ -516,7 +520,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
             }
 
             for (int k : addedKeys) {
@@ -524,7 +528,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
             }
         }
     }

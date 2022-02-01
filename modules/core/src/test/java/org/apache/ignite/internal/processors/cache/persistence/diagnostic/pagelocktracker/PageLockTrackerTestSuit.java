@@ -37,6 +37,7 @@ import org.junit.runners.Suite;
     OffHeapLockLogTest.class,
     HeapArrayLockStackTest.class,
     OffHeapLockStackTest.class,
+    PageLockTrackerMXBeanImplTest.class
 })
 
 public class PageLockTrackerTestSuit {

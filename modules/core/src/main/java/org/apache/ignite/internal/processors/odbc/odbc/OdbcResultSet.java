@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * Represents single result set.
@@ -39,6 +38,9 @@ public class OdbcResultSet {
     /** Client version. */
     private ClientListenerProtocolVersion ver;
 
+    /** Result columns metadata. */
+    private Collection<OdbcColumnMeta> meta;
+
     /**
      * Constructor.
      * @param cursor Result set cursor.
@@ -50,10 +52,14 @@ public class OdbcResultSet {
         this.cursor = (QueryCursorImpl<List<?>>)cursor;
         this.ver = ver;
 
-        if (this.cursor.isQuery())
+        if (this.cursor.isQuery()) {
             iter = this.cursor.iterator();
-        else
+            meta = OdbcUtils.convertMetadata(this.cursor.fieldsMeta());
+        }
+        else {
             iter = null;
+            meta = new ArrayList<>();
+        }
     }
 
     /**
@@ -67,10 +73,7 @@ public class OdbcResultSet {
      * @return Fields metadata of the current result set.
      */
     public Collection<OdbcColumnMeta> fieldsMeta() {
-        if (!cursor.isQuery())
-            return new ArrayList<>();
-
-        return convertMetadata(cursor.fieldsMeta(), ver);
+        return meta;
     }
 
     /**
@@ -88,25 +91,5 @@ public class OdbcResultSet {
             items.add(iter.next());
 
         return items;
-    }
-
-    /**
-     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link OdbcColumnMeta}.
-     *
-     * @param meta Internal query field metadata.
-     * @param ver Client version.
-     * @return Odbc query field metadata.
-     */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta,
-        ClientListenerProtocolVersion ver) {
-        List<OdbcColumnMeta> res = new ArrayList<>();
-
-        if (meta != null) {
-            for (GridQueryFieldMetadata info : meta)
-                res.add(new OdbcColumnMeta(info, ver));
-        }
-
-        return res;
     }
 }

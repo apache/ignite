@@ -22,9 +22,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Employee;
-import org.apache.ignite.binary.BinaryObject;
 
 /**
  * This example demonstrates use of binary objects with task execution.

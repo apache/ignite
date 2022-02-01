@@ -49,13 +49,6 @@ std::string toString(boost::unit_test::const_string bstr)
     ss << bstr;
     return ss.str();
 }
-
-std::string toString(const boost::execution_exception& excpt)
-{
-    std::stringstream ss(std::ios_base::out);
-    ss << excpt.what();
-    return ss.str();
-}
 }                                                           // anonymous namespace
 
 /// Custom formatter for TeamCity messages
@@ -106,7 +99,7 @@ public:
     virtual void log_entry_context(std::ostream& os, boost::unit_test::log_level, boost::unit_test::const_string ctx) {
         log_entry_context(os, ctx);
     }
-    virtual void entry_context_finish(std::ostream& os, boost::unit_test::log_level) override {
+    virtual void entry_context_finish(std::ostream& os, boost::unit_test::log_level) {
         entry_context_finish(os);
     }
 #endif
@@ -151,7 +144,7 @@ void TeamcityBoostLogFormatter::log_build_info(std::ostream& /*out*/)
 #if BOOST_VERSION >= 107000
  // Since v1.70.0 the second argument indicates whether build info should be logged or not
  // See boostorg/test.git:7e20f966dca4e4b49585bbe7654334f31b35b3db
-void log_build_info(std::ostream& os, bool log_build_info) override {
+void TeamcityBoostLogFormatter::log_build_info(std::ostream& os, bool log_build_info) {
     if (log_build_info) this->log_build_info(os);
 }
 #endif
@@ -239,7 +232,7 @@ void TeamcityBoostLogFormatter::log_exception_start(
 }
 
 void TeamcityBoostLogFormatter::test_unit_skipped(
-    std::ostream& out
+    std::ostream&
   , const boost::unit_test::test_unit& tu
   , boost::unit_test::const_string reason
   )

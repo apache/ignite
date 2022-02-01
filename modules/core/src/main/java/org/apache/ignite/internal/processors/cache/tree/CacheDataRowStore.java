@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public class CacheDataRowStore extends RowStore {
     /** Whether version should be skipped. */
-    private static ThreadLocal<Boolean> SKIP_VER = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> SKIP_VER = ThreadLocal.withInitial(() -> false);
 
     /**
      * @return Skip version flag.
@@ -74,17 +74,8 @@ public class CacheDataRowStore extends RowStore {
      * @param link Link.
      * @return Search row.
      */
-    CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
-        DataRow dataRow = new DataRow(
-            grp,
-            hash,
-            link,
-            partId,
-            CacheDataRowAdapter.RowData.KEY_ONLY,
-            SKIP_VER.get()
-        );
-
-        return initDataRow(dataRow, cacheId);
+    protected CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
+        return dataRow(cacheId, hash, link, CacheDataRowAdapter.RowData.KEY_ONLY);
     }
 
     /**
@@ -97,7 +88,15 @@ public class CacheDataRowStore extends RowStore {
      * @param opCntr Mvcc operation counter.
      * @return Search row.
      */
-    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
+    protected MvccDataRow mvccRow(
+        int cacheId,
+        int hash,
+        long link,
+        CacheDataRowAdapter.RowData rowData,
+        long crdVer,
+        long mvccCntr,
+        int opCntr
+    ) {
         MvccDataRow row = new MvccDataRow(
             grp,
             hash,
@@ -120,7 +119,7 @@ public class CacheDataRowStore extends RowStore {
      * @param rowData Required row data.
      * @return Data row.
      */
-    CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
+    protected CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
         DataRow dataRow = new DataRow(
             grp,
             hash,

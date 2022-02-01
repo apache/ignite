@@ -452,9 +452,9 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
             QueryCursor cursor = orgCache.query(new SqlFieldsQuery(sqlQry).setArgs(args));
 
-            Iterable iter = U.field(cursor,"iterExec");
+            Iterable iter = U.field(cursor, "iterExec");
 
-            Iterator innerIter = U.field(iter.iterator(),"iter");
+            Iterator innerIter = U.field(iter.iterator(), "iter");
 
             if (expMergeTbl)
                 assertTrue(innerIter instanceof H2ResultSetIterator);

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.cache.expiry;
 
+import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Platform expiry policy.

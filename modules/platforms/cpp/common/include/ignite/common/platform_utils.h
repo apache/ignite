@@ -116,7 +116,14 @@ namespace ignite
          *
          * @return Random seed.
          */
-        unsigned GetRandSeed();
+        IGNITE_IMPORT_EXPORT unsigned GetRandSeed();
+
+        /**
+         * Try extract from system error stack, and return platform-specific error.
+         *
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError();
     }
 }
 

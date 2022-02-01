@@ -1,0 +1,49 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Custom SQL Functions
+
+:javaFile: {javaCodeDir}/SqlAPI.java
+
+The SQL Engine can extend the SQL functions' set, defined by the ANSI-99 specification, via the addition of custom SQL functions written in Java.
+
+A custom SQL function is just a public static method marked by the `@QuerySqlFunction` annotation.
+
+////
+TODO looks like it's unsupported in C#
+////
+
+
+[source,java]
+----
+include::{javaFile}[tags=sql-function-example, indent=0]
+----
+
+
+The class that owns the custom SQL function has to be registered in the `CacheConfiguration`.
+To do that, use the `setSqlFunctionClasses(...)` method.
+
+[source,java]
+----
+include::{javaFile}[tags=sql-function-config, indent=0]
+----
+
+Once you have deployed a cache with the above configuration, you can call the custom function from within SQL queries:
+
+[source,java]
+----
+include::{javaFile}[tags=sql-function-query, indent=0]
+----
+
+NOTE: Classes registered with `CacheConfiguration.setSqlFunctionClasses(...)` must be added to the classpath of all the nodes where the defined custom functions might be executed. Otherwise, you will get a `ClassNotFoundException` error when trying to execute the custom function.

@@ -34,6 +34,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public delegate void ThreadExitCallback(IntPtr threadLocalValue);
 
         /// <summary>
+        /// Initializes the <see cref="UnmanagedThread"/> class.
+        /// </summary>
+        static UnmanagedThread()
+        {
+            NativeLibraryUtils.SetDllImportResolvers();
+        }
+
+        /// <summary>
         /// Sets the thread exit callback, and returns an id to pass to <see cref="EnableCurrentThreadExitEvent"/>.
         /// </summary>
         /// <param name="callbackPtr">
@@ -103,10 +111,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             else if (Os.IsLinux)
             {
-                var res = Os.IsMono 
+                var res = Os.IsMono
                     ? NativeMethodsMono.pthread_key_delete(callbackId)
                     : NativeMethodsLinux.pthread_key_delete(callbackId);
-                
+
                 NativeMethodsLinux.CheckResult(res);
             }
             else
@@ -139,10 +147,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             else if (Os.IsLinux)
             {
-                var res = Os.IsMono 
+                var res = Os.IsMono
                     ? NativeMethodsMono.pthread_setspecific(callbackId, threadLocalValue)
                     : NativeMethodsLinux.pthread_setspecific(callbackId, threadLocalValue);
-                
+
                 NativeMethodsLinux.CheckResult(res);
             }
             else
@@ -220,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [DllImport("libSystem.dylib")]
             public static extern int pthread_setspecific(int key, IntPtr value);
         }
-        
+
         /// <summary>
         /// Mono on Linux requires __Internal instead of libcoreclr.so.
         /// </summary>
@@ -229,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("__Internal")]
             public static extern int pthread_key_create(IntPtr key, IntPtr destructorCallback);
-            
+
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("__Internal")]
             public static extern int pthread_key_delete(int key);

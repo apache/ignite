@@ -104,7 +104,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
 
-        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setIndexedTypes(
@@ -126,7 +126,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             )
         );
 
-        IgniteCache<Object,Object> cache = server.createCache(ccfg);
+        IgniteCache<Object, Object> cache = server.createCache(ccfg);
 
         cache.put(1L, "bla-bla");
         cache.put(2L, new TestData(777L));
@@ -188,19 +188,20 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
         final String cacheName = "test_updates";
 
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
 
-        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
         ccfg.setAtomicityMode(enableMvcc ?
             CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
             CacheAtomicityMode.TRANSACTIONAL);
 
-        IgniteCache<Long,Long> cache = server.createCache(ccfg);
+        IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
         long accounts = 100;
         long initialBalance = 100;
@@ -208,7 +209,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         for (long i = 0; i < accounts; i++)
             cache.put(i, initialBalance);
 
-        assertEquals(accounts * initialBalance,((Number)
+        assertEquals(accounts * initialBalance, ((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                 ).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
@@ -314,18 +315,18 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         IgniteEx client = startClientGrid(1);
 
-        CacheConfiguration<Long,TestData> ccfg = new CacheConfiguration<>(cacheName);
+        CacheConfiguration<Long, TestData> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, TestData.class);
         ccfg.setSqlFunctionClasses(QueryDataPageScanTest.class);
 
-        IgniteCache<Long,TestData> clientCache = client.createCache(ccfg);
+        IgniteCache<Long, TestData> clientCache = client.createCache(ccfg);
 
         final int keysCnt = 1000;
 
         for (long i = 0; i < keysCnt; i++)
             clientCache.put(i, new TestData(i));
 
-        IgniteCache<Long,TestData> serverCache = server.cache(cacheName);
+        IgniteCache<Long, TestData> serverCache = server.cache(cacheName);
 
         doTestScanQuery(clientCache, keysCnt);
         doTestScanQuery(serverCache, keysCnt);
@@ -340,13 +341,15 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         doTestLazySql(serverCache, keysCnt);
     }
 
-    private void doTestLazySql(IgniteCache<Long,TestData> cache, int keysCnt) {
+    /** */
+    private void doTestLazySql(IgniteCache<Long, TestData> cache, int keysCnt) {
         checkLazySql(cache, false, keysCnt);
         checkLazySql(cache, true, keysCnt);
         checkLazySql(cache, null, keysCnt);
     }
 
-    private void checkLazySql(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
+    /** */
+    private void checkLazySql(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
         CacheDataTree.isLastFindWithDataPageScan();
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
@@ -388,7 +391,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         }
     }
 
-    private void doTestDml(IgniteCache<Long,TestData> cache) {
+    /** */
+    private void doTestDml(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
@@ -406,7 +410,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
-    private void checkDml(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+    /** */
+    private void checkDml(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
         assertEquals(0L, cache.query(new SqlFieldsQuery(
@@ -417,6 +422,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
+    /** */
     private void checkSqlLastFindDataPageScan(Boolean dataPageScanEnabled) {
         if (dataPageScanEnabled == FALSE)
             assertNull(CacheDataTree.isLastFindWithDataPageScan()); // HashIdx was not used.
@@ -424,7 +430,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
-    private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
+    /** */
+    private void doTestSqlQuery(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
@@ -442,7 +449,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
-    private void checkSqlQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+    /** */
+    private void checkSqlQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
         assertTrue(cache.query(new SqlQuery<>(TestData.class,
@@ -454,7 +462,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
-    private void doTestScanQuery(IgniteCache<Long,TestData> cache, int keysCnt) {
+    /** */
+    private void doTestScanQuery(IgniteCache<Long, TestData> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
         TestPredicate.callsCnt.set(0);
         int callsCnt = 0;
@@ -476,7 +485,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
     }
 
-    private void checkScanQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
+    /** */
+    private void checkScanQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
         assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
         assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDataPageScan());
     }
@@ -522,7 +532,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
     /**
      */
-    static class TestPredicate implements IgniteBiPredicate<Long,TestData> {
+    static class TestPredicate implements IgniteBiPredicate<Long, TestData> {
         /** */
         static final AtomicInteger callsCnt = new AtomicInteger();
 
@@ -569,31 +579,38 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * Externalizable class to make it non-binary.
      */
     static class Person implements Externalizable {
+        /** */
         String name;
 
+        /** */
         int age;
 
+        /** */
         public Person() {
             // No-op
         }
 
+        /** */
         Person(String name, int age) {
             this.name = Objects.requireNonNull(name);
             this.age = age;
         }
 
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeUTF(name);
             out.writeInt(age);
         }
 
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             name = in.readUTF();
             age = in.readInt();
         }
 
-        static LinkedHashMap<String,String> getFields() {
-            LinkedHashMap<String,String> m = new LinkedHashMap<>();
+        /** */
+        static LinkedHashMap<String, String> getFields() {
+            LinkedHashMap<String, String> m = new LinkedHashMap<>();
 
             m.put("age", "INT");
             m.put("name", "VARCHAR");

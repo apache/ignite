@@ -44,7 +44,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
  * <p>
  * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicyFactory<K,V> extends AbstractEvictionPolicyFactory<SortedEvictionPolicy<K, V>> {
+public class SortedEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<SortedEvictionPolicy<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,12 +55,16 @@ public class SortedEvictionPolicyFactory<K,V> extends AbstractEvictionPolicyFact
     public SortedEvictionPolicyFactory() {
     }
 
-    /** */
+    /** @param maxSize Maximum allowed size of cache before entry will start getting evicted. */
     public SortedEvictionPolicyFactory(int maxSize) {
         setMaxSize(maxSize);
     }
 
-    /** */
+    /**
+     * @param maxSize Maximum allowed size of cache before entry will start getting evicted.
+     * @param batchSize Batch size.
+     * @param maxMemSize Maximum allowed cache size in bytes.
+     */
     public SortedEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
         setMaxSize(maxSize);
         setBatchSize(batchSize);

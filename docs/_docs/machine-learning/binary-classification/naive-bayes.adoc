@@ -1,0 +1,109 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Naive Bayes
+
+== Overview
+
+Naive Bayes classifiers are a family of simple probabilistic classifiers based on applying Bayes' theorem with strong (naive) independence assumptions between the features.
+In all trainers, prior probabilities can be preset or calculated. Also, there is an option to use equal probabilities.
+
+
+
+== Gaussian Naive Bayes
+
+Gaussian Naive Bayes algorithm is based on https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Gaussian_naive_Bayes[this information^].
+
+When dealing with continuous data, a typical assumption is that the continuous values associated with each class are distributed according to a normal (or Gaussian) distribution
+
+The model predicts the result value y belongs to a class C_k, k in [0..K] as
+
+image::images/naive-bayes.png[]
+
+Where
+
+image::images/naive-bayes2.png[]
+
+
+The model returns the number (index) of the most possible class.
+The trainer counts means and variances for each class.
+
+
+[source, java]
+----
+GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+
+GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+----
+
+The full example could be found https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/naivebayes/GaussianNaiveBayesTrainerExample.java[here].
+
+== Discrete (Bernoulli) Naive Bayes
+
+Naive Bayes algorithm over Bernoulli or multinomial distribution based on next https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes[information].
+
+It can be used for non-continuous features. The thresholds to convert a feature to a discrete value should be set to a trainer. If the features are binary, the discrete Bayes becomes Bernoulli.
+
+The model predicts the result value y belongs to a class C_k, k in [0..K] as
+
+image::images/naive-bayes3.png[]
+
+Where x_i is a discrete feature, p_ki is a prior probability of class p(C_k).
+
+The model returns the number (index) of the most possible class.
+
+
+[source, java]
+----
+double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
+DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
+  .setBucketThresholds(thresholds);
+
+ DiscreteNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+----
+
+
+The full example could be found https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/naivebayes/DiscreteNaiveBayesTrainerExample.java[here].
+
+
+== Compound Naive Bayes
+
+Compound Naive Bayes is a composition of several Naive Bayes classifiers where each classifier represents subset of features of one type.
+
+The model contains both Gaussian and Discrete Bayes. A user can select which set of features will be trained on each model.
+
+The model returns the number (index) of the most possible class.
+
+
+
+[source, java]
+----
+double[] priorProbabilities = new double[] {.5, .5};
+
+double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
+CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
+  .withPriorProbabilities(priorProbabilities)
+  .withGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
+  .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
+  .withDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
+                                 .setBucketThresholds(thresholds))
+  .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
+
+  CompoundNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+----
+
+The full example could be found https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/naivebayes/CompoundNaiveBayesExample.java[here].
+

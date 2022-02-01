@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.EnumSet;
+import java.util.Objects;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
@@ -34,13 +35,21 @@ public class JdbcProtocolContext {
     /** Features. */
     private final EnumSet<JdbcThinFeature> features;
 
+    /** {@code true} if binary should not be deserialized. */
+    private final boolean keepBinary;
+
     /**
      * @param ver Protocol version.
      * @param features Supported features.
+     * @param keepBinary Wether to keep objects in binary form.
      */
-    public JdbcProtocolContext(ClientListenerProtocolVersion ver, EnumSet<JdbcThinFeature> features) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public JdbcProtocolContext(ClientListenerProtocolVersion ver, EnumSet<JdbcThinFeature> features, boolean keepBinary) {
+        assert Objects.nonNull(features);
+
         this.ver = ver;
         this.features = features;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -72,9 +81,24 @@ public class JdbcProtocolContext {
     }
 
     /**
+     * @param feature {@code true} if given feature supported.
+     */
+    public boolean isFeatureSupported(JdbcThinFeature feature) {
+        return features.contains(feature);
+    }
+
+    /**
      * @return Supported features.
      */
-    public EnumSet<JdbcThinFeature> features() {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    EnumSet<JdbcThinFeature> features() {
         return features;
+    }
+
+    /**
+     * @return {@code true} if binary should not be deserialized.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 }

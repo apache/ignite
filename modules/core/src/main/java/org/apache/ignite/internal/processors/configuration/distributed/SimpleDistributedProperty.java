@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,7 +43,7 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     private volatile boolean attached = false;
 
     /** Listeners of property update. */
-    private final ConcurrentLinkedQueue<DistributePropertyListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<DistributePropertyListener<? super T>> updateListeners = new ConcurrentLinkedQueue<>();
 
     /**
      * Specific consumer for update value in cluster. It is null when property doesn't ready to update value on cluster
@@ -48,11 +52,17 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     @GridToStringExclude
     private volatile PropertyUpdateClosure clusterWideUpdater;
 
+    /** Property value parser. */
+    @GridToStringExclude
+    private final Function<String, T> parser;
+
     /**
      * @param name Name of property.
+     * @param parser Property value parser.
      */
-    public SimpleDistributedProperty(String name) {
+    public SimpleDistributedProperty(String name, Function<String, T> parser) {
         this.name = name;
+        this.parser = parser;
     }
 
     /** {@inheritDoc} */
@@ -108,7 +118,7 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     }
 
     /** {@inheritDoc} */
-    @Override public void addListener(DistributePropertyListener<T> listener) {
+    @Override public void addListener(DistributePropertyListener<? super T> listener) {
         updateListeners.add(listener);
     }
 
@@ -132,7 +142,64 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     }
 
     /** {@inheritDoc} */
+    @Override public T parse(String str) {
+        if (parser == null)
+            throw new IgniteException("The parser is not specified for property [name=" + name + ']');
+
+        return parser.apply(str);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SimpleDistributedProperty.class, this);
+    }
+
+    /**
+     * @param val String to parse.
+     * @return Integer value.
+     */
+    public static Integer parseNonNegativeInteger(String val) {
+        if (val == null || val.trim().isEmpty())
+            return null;
+
+        int intVal = Integer.parseInt(val);
+
+        if (intVal < 0)
+            throw new IllegalArgumentException("The value must not be negative");
+
+        return intVal;
+    }
+
+    /**
+     * @param val String to parse.
+     * @return Long value.
+     */
+    public static Long parseNonNegativeLong(String val) {
+        if (val == null || val.trim().isEmpty())
+            return null;
+
+        long intVal = Long.parseLong(val);
+
+        if (intVal < 0)
+            throw new IllegalArgumentException("The value must not be negative");
+
+        return intVal;
+    }
+
+    /**
+     * @param val String value.
+     * @return String set.
+     */
+    public static HashSet<String> parseStringSet(String val) {
+        HashSet<String> set = new HashSet<>();
+
+        if (val == null || val.trim().isEmpty())
+            return set;
+
+        String[] vals = val.split("\\W+");
+
+        set.addAll(Arrays.asList(vals));
+
+        return set;
     }
 }

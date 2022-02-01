@@ -45,6 +45,9 @@ public class SqlConfiguration {
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
+    /** Enable validation of key & values against sql schema. */
+    private boolean validationEnabled;
+
     /**
      * Defines the default query timeout.
      *
@@ -52,7 +55,9 @@ public class SqlConfiguration {
      * {@code 0} means there is no timeout (this is a default value)
      *
      * @return Default query timeout.
+     * @deprecated Since 2.9. Please use distributed default query timeout.
      */
+    @Deprecated
     public long getDefaultQueryTimeout() {
         return dfltQryTimeout;
     }
@@ -63,7 +68,9 @@ public class SqlConfiguration {
      *
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     * @deprecated Since 2.9. Please use distributed default query timeout.
      */
+    @Deprecated
     public SqlConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
         A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE,
             "default query timeout value should be valid Integer.");
@@ -143,6 +150,28 @@ public class SqlConfiguration {
      */
     public SqlConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     * Is key & value validation enabled.
+     *
+     * @return {@code true} When key & value shall be validated against SQL schema.
+     */
+    public boolean isValidationEnabled() {
+        return validationEnabled;
+    }
+
+    /**
+     * Enable/disable key & value validation.
+     *
+     * @param validationEnabled {@code true} When key & value shall be validated against SQL schema.
+     * Default value is {@code false}.
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setValidationEnabled(boolean validationEnabled) {
+        this.validationEnabled = validationEnabled;
 
         return this;
     }

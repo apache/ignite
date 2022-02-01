@@ -19,11 +19,14 @@
 namespace Apache.Ignite.Service
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core;
 
     /// <summary>
     /// .NET Core implementation of Ignite Service.
     /// </summary>
+    [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters",
+        MessageId = "Signature should match other implementations")]
     public static class IgniteService
     {
         /// <summary>

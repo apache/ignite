@@ -44,8 +44,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestSetUp()
         {
             // Start fresh cluster for each test
-            _grid = Ignition.Start(Config("config\\compute\\compute-grid1.xml"));
-            _clientGrid = Ignition.Start(Config("config\\compute\\compute-grid3.xml"));
+            _grid = Ignition.Start(Config("Config\\Compute\\compute-grid1.xml"));
+            _clientGrid = Ignition.Start(Config("Config\\Compute\\compute-grid3.xml"));
         }
 
         /// <summary>

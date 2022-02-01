@@ -18,12 +18,17 @@
 package org.apache.ignite.testframework;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Test thread that has convenience failure checks.
  */
 @SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridTestThread extends Thread {
+
+    /** Anonymous name sequence. */
+    private static final AtomicInteger NAME_SEQUENCE = new AtomicInteger(1);
+
     /** Error. */
     private Throwable err;
 
@@ -67,14 +72,13 @@ public class GridTestThread extends Thread {
      * @param name Thread name.
      */
     public GridTestThread(Callable<?> call, String name) {
+        super(name != null ? name : "grid-test-thread-" + NAME_SEQUENCE.getAndIncrement());
+
         assert call != null;
 
         this.call = call;
 
         run = null;
-
-        if (name != null)
-            setName(name);
     }
 
     /** {@inheritDoc} */

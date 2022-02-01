@@ -71,12 +71,13 @@ public class OracleDialect extends BasicJdbcDialect {
             }
         }, "", ", ", "");
 
+        String whenMatched = !uniqCols.isEmpty() ? String.format(" WHEN MATCHED THEN UPDATE SET %s", setCols) : "";
+
         return String.format("MERGE INTO %s t" +
             " USING (SELECT %s FROM dual) v" +
             "  ON %s" +
-            " WHEN MATCHED THEN" +
-            "  UPDATE SET %s" +
+            "%s" +
             " WHEN NOT MATCHED THEN" +
-            "  INSERT (%s) VALUES (%s)", fullTblName, selCols, match, setCols, colsLst, valuesCols);
+            "  INSERT (%s) VALUES (%s)", fullTblName, selCols, match, whenMatched, colsLst, valuesCols);
     }
 }

@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -149,7 +150,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             }
 
             case OP_EXEC_ASYNC:
-                return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
+                return wrapListenable((PlatformListenable)executeJavaTask(reader, true));
 
             case OP_WITH_EXECUTOR: {
                 String executorName = reader.readString();
@@ -363,7 +364,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         IgniteCompute compute0 = computeForTask(nodeIds);
 
-        if (!keepBinary && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && (arg instanceof BinaryObjectImpl || arg instanceof BinaryArray))
             arg = ((BinaryObject)arg).deserialize();
 
         if (async)

@@ -45,6 +45,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -82,6 +84,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
@@ -100,10 +106,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** Cache configuration for test. */
-    private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
+    private static final CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
         .setBackups(2)
-        .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
+        .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
@@ -135,6 +141,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
+
+        ignite.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         // Start node not in baseline.
         IgniteEx notBltIgnite = startGrid(grids);
@@ -206,6 +214,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             U.await(loadLatch, 10, TimeUnit.SECONDS);
 
             fut.get();
+
+            waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
         }
         finally {
             loadFut.cancel();
@@ -320,6 +330,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
+
+        dfltCacheCfg = null;
 
         startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
@@ -546,6 +558,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
     }
 
     /** @throws Exception If fails. */
@@ -569,7 +583,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        U.await(partProcessed);
+        U.await(partProcessed, TIMEOUT, TimeUnit.MILLISECONDS);
 
         stopGrid(1);
 
@@ -577,8 +591,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertThrowsAnyCause(log,
             fut::get,
-            IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster");
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
@@ -612,7 +628,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         cfg2.getDataStorageConfiguration()
             .setFileIOFactory(new HaltJvmFileIOFactory(new RandomAccessFileIOFactory(),
-                (Predicate<File> & Serializable) file -> {
+                (Predicate<File> & Serializable)file -> {
                     // Trying to create FileIO over partition file.
                     return file.getAbsolutePath().contains(SNAPSHOT_NAME);
                 }));
@@ -629,8 +645,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
-            IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
             !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());
@@ -679,6 +695,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         commSpi.stopBlock(true);
 
         fut.get();
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
         stopAllGrids();
 
@@ -853,6 +871,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
@@ -872,13 +892,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        for (Ignite grid : Arrays.asList(grid(1), grid(2))) {
-            ((IgniteEx)grid).context().cache().context().exchange()
+        for (IgniteEx grid : Arrays.asList(grid(1), grid(2))) {
+            grid.context().cache().context().exchange()
                 .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                         try {
-                            block.await();
+                            block.await(TIMEOUT, TimeUnit.MILLISECONDS);
                         }
                         catch (InterruptedException e) {
                             fail("Must not catch exception here: " + e.getMessage());
@@ -891,7 +911,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             TestRecordingCommunicationSpi.spi(grid)
                 .blockMessages((node, msg) -> {
                     if (msg instanceof GridDhtPartitionsSingleMessage)
-                        return ((GridDhtPartitionsSingleMessage)msg).exchangeId() != null;
+                        return ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null;
 
                     return false;
                 });
@@ -965,6 +985,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        if (!(fut.firstEvent() instanceof DiscoveryCustomEvent))
+                            return;
+
                         try {
                             exchFuts.add(new T2<>(fut.exchangeId(), fut.rebalanced()));
                             latch.countDown();
@@ -1053,6 +1076,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
@@ -1101,6 +1126,53 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             "Client disconnected. Snapshot result is unknown");
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInProgressCancelled() throws Exception {
+        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(1);
+        IgniteEx killCli = startClientGrid(2);
+
+        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
+            snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFinishedTryCancel() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snpIg = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotInMemoryFail() throws Exception {
+        persistence = false;
+
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteEx clnt = startClientGrid(1);
+
+        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "Snapshots on an in-memory clusters are not allowed.");
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
@@ -1121,7 +1193,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 started.countDown();
 
                 try {
-                    U.await(blocked);
+                    U.await(blocked, TIMEOUT, TimeUnit.MILLISECONDS);
 
                     if (log.isInfoEnabled())
                         log.info("Latch released. Processing delta file continued: " + delta.getName());

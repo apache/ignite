@@ -23,7 +23,7 @@ import org.apache.zookeeper.Watcher;
 /**
  *
  */
-abstract class ZkAbstractWatcher extends ZkAbstractCallabck implements Watcher {
+abstract class ZkAbstractWatcher extends ZkAbstractCallback implements Watcher {
     /**
      * @param rtState Runtime state.
      * @param impl Discovery impl.

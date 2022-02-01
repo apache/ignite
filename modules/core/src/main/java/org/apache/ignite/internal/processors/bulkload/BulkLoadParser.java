@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Bulk load file format parser superclass + factory of known formats.

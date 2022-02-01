@@ -37,8 +37,8 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
-        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/>
         /// for introspection, or converted with <see cref="ToCacheQueryable{T}"/> extension method.
@@ -58,16 +58,16 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
-        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
-        /// depending on requested result. 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>.
+        /// depending on requested result.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/> for introspection.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <param name="local">Local flag. When set query will be executed only on local node, so only local 
+        /// <param name="local">Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.</param>
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// depending on requested result.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -90,13 +90,13 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <param name="local">Local flag. When set query will be executed only on local node, so only local 
+        /// <param name="local">Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.</param>
         /// <param name="tableName">
         /// Name of the table.
         /// <para />
         /// Table name is equal to short class name of a cache value.
-        /// When a cache has only one type of values, or only one <see cref="QueryEntity"/> defined, 
+        /// When a cache has only one type of values, or only one <see cref="QueryEntity"/> defined,
         /// table name will be inferred and can be omitted.
         /// </param>
         /// <returns><see cref="IQueryable{T}" /> instance over this cache.</returns>
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// depending on requested result.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -124,13 +124,21 @@ namespace Apache.Ignite.Linq
         /// <returns>
         ///   <see cref="IQueryable{T}" /> instance over this cache.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", Justification = "False positive")]
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, QueryOptions queryOptions)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
             IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
 
-            return new CacheQueryable<TKey, TValue>((ICacheInternal) cache, queryOptions, cache.Ignite);
+            var cacheInternal = cache as ICacheInternal;
+
+            if (cacheInternal == null)
+            {
+                throw new NotSupportedException("Unsupported ICache implementation: " + cache.GetType());
+            }
+
+            return new CacheQueryable<TKey, TValue>(cacheInternal, queryOptions, cache.Ignite);
         }
 
         /// <summary>
@@ -146,7 +154,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Removes all rows that are matched by the specified query.
         /// <para />
-        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete 
+        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete
         /// (as opposed to fetching all rows locally).
         /// </summary>
         /// <typeparam name="TKey">Key type.</typeparam>
@@ -181,7 +189,7 @@ namespace Apache.Ignite.Linq
             Justification = "Only specified type of predicate is valid.")]
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
             Justification = "Validation is present.")]
-        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
+        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
             Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
         {
             IgniteArgumentCheck.NotNull(query, "query");
@@ -197,7 +205,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Updates all rows that are matched by the specified query.
         /// <para />
-        /// This method results in "UPDATE" distributed SQL query, performing bulk update 
+        /// This method results in "UPDATE" distributed SQL query, performing bulk update
         /// (as opposed to fetching all rows locally).
         /// </summary>
         /// <typeparam name="TKey">Key type.</typeparam>
@@ -205,6 +213,7 @@ namespace Apache.Ignite.Linq
         /// <param name="query">The query.</param>
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", Justification = "False positive")]
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
             Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
         {

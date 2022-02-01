@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -256,14 +256,17 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 
+    /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientWithOutConfigurationTemplate() throws Exception {
         return withOutConfigurationTemplate().nodeConfiguration(setClient);
     }
 
+    /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationOnJoinTemplate() throws Exception {
         return staticCacheConfigurationOnJoinTemplate().nodeConfiguration(setClient);
     }
 
+    /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate() throws Exception {
         return staticCacheConfigurationInClusterTemplate()
             .nodeConfiguration(setClient)
@@ -324,10 +327,12 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
             });
     }
 
+    /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationSameOnBothTemplate() throws Exception {
         return staticCacheConfigurationSameOnBothTemplate().nodeConfiguration(setClient);
     }
 
+    /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate() throws Exception {
         return staticCacheConfigurationDifferentOnBothTemplate()
             .nodeConfiguration(setClient)

@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             // Fallback to slow-path with normal string comparison.
             for (var i = 0; i < _names.Length; i++)
             {
-                if (fieldName.Equals(_names[i]))
+                if (fieldName.Equals(_names[i], StringComparison.Ordinal))
                     return _pathIdxs[i];
             }
 

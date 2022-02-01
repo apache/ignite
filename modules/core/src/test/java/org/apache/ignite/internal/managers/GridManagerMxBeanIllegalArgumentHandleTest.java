@@ -72,7 +72,9 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     @NotNull private MemoryMXBean createAlwaysFailingMxBean() {
         final Answer<MemoryUsage> failingAnswer = new Answer<MemoryUsage>() {
             @Override public MemoryUsage answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new IllegalArgumentException("java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616");
+                throw new IllegalArgumentException(
+                    "java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616"
+                );
             }
         };
         final MemoryMXBean memoryMXBean = Mockito.mock(MemoryMXBean.class);

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="DataRegionConfiguration"/> has all properties from Java configuration APIs.
     /// </summary>
-    [Ignore(ParityTest.IgnoreReason)]
+    [Explicit(ParityTest.IgnoreReason)]
     public class DataRegionConfigurationParityTest
     {
         /// <summary>
@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         public void TestRegionConfiguration()
         {
             ParityTest.CheckConfigurationParity(
-                @"modules\core\src\main\java\org\apache\ignite\configuration\DataRegionConfiguration.java", 
+                @"modules\core\src\main\java\org\apache\ignite\configuration\DataRegionConfiguration.java",
                 typeof(DataRegionConfiguration));
         }
     }

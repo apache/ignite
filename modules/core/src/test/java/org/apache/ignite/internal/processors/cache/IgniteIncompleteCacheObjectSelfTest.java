@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Test;
 
 /**
@@ -48,7 +47,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         int off = 0;
         int len = 3;
 
-        final TestCacheObject obj = new TestCacheObject((byte) 1);
+        final TestCacheObject obj = new TestCacheObject((byte)1);
 
         // Write part of the cache object and cut on header (3 bytes instead of 5)
         assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);
@@ -105,6 +104,11 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy) {
+            return value(ctx, cpy, null);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy, ClassLoader ldr) {
             return null;
         }
 

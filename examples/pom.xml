@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>${revision}</version>
 
     <dependencies>
         <dependency>
@@ -37,13 +37,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
             <!--Remove exclusion while upgrading ignite-spring version to 5.0-->
@@ -59,26 +59,33 @@
             </exclusions>
         </dependency>
 
+        <!--Remove spring-core and spring-beans dependencies while upgrading ignite-spring version to 5.0-->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring-5.0.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring-5.0.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data_2.0</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -96,26 +103,44 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml-xgboost-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-ml-catboost-model-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml-h2o-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml-spark-model-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-kubernetes</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -132,11 +157,24 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -197,7 +235,7 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-scalar</artifactId>
                     <version>${project.version}</version>
                 </dependency>
@@ -216,7 +254,7 @@
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-spark</artifactId>
                     <version>${project.version}</version>
                 </dependency>
@@ -227,6 +265,16 @@
                     <plugin>
                         <groupId>net.alchim31.maven</groupId>
                         <artifactId>scala-maven-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <sourceDirectories combine.children="append">
+                                <sourceDirectory>${spark.folder}</sourceDirectory>
+                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -242,23 +290,38 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-hibernate_5.1</artifactId>
                     <version>${project.version}</version>
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-schedule</artifactId>
                     <version>${project.version}</version>
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-geospatial</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <sourceDirectories combine.children="append">
+                                <sourceDirectory>${lgpl.folder}</sourceDirectory>
+                                <sourceDirectory>${lgpl.test.folder}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>spark-2.4</id>
@@ -270,7 +333,7 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-scalar</artifactId>
                     <version>${project.version}</version>
                 </dependency>
@@ -289,7 +352,7 @@
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-spark-2.4</artifactId>
                     <version>${project.version}</version>
                 </dependency>
@@ -300,6 +363,16 @@
                     <plugin>
                         <groupId>net.alchim31.maven</groupId>
                         <artifactId>scala-maven-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <sourceDirectories combine.children="append">
+                                <sourceDirectory>${spark.folder}</sourceDirectory>
+                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

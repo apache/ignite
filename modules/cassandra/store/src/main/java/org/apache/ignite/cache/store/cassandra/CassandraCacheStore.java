@@ -17,10 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,6 +29,10 @@ import java.util.concurrent.Future;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Statement;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -133,7 +133,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
                     String qry = ((String)obj).trim();
 
                     if (qry.toLowerCase().startsWith("select"))
-                        task = new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo);
+                        task = new LoadCacheCustomQueryWorker<>(ses, (String)obj, controller, log, clo);
                 }
 
                 if (task != null)

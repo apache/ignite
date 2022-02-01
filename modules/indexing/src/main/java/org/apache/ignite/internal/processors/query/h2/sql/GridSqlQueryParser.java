@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -681,7 +683,7 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                Query qry = VIEW_QUERY.get((TableView) tbl);
+                Query qry = VIEW_QUERY.get((TableView)tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
             }
@@ -1089,7 +1091,14 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+            Boolean prev = flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+
+            if (prev != null) {
+                String prevCol = INDEX_COLUMN_NAME.get(col) + " " + (prev ? "ASC" : "DESC");
+
+                throw new IgniteSQLException("Already defined column in index: " + prevCol,
+                    IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS);
+            }
         }
 
         idx.setFields(flds);
@@ -1550,20 +1559,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode atomicityMode;
+                try {
+                    res.atomicityMode(CacheAtomicityMode.valueOf(val.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    String validVals = Arrays.stream(CacheAtomicityMode.values())
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
 
-                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.ATOMIC;
-                else if (CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT.name().equalsIgnoreCase(val))
-                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-                else {
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
-                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
+                        "(should be either " + validVals + "): " + val,
+                        IgniteQueryErrorCode.PARSING, e);
                 }
-
-                res.atomicityMode(atomicityMode);
 
                 break;
 
@@ -1782,7 +1788,7 @@ public class GridSqlQueryParser {
 
         assert table instanceof GridH2Table : table;
 
-        return (GridH2Table) table;
+        return (GridH2Table)table;
     }
 
     /**
@@ -1888,13 +1894,13 @@ public class GridSqlQueryParser {
         // check all involved caches
         for (Object o : parserObjects) {
             if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge) o).into();
+                o = ((GridSqlMerge)o).into();
             else if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert) o).into();
+                o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlUpdate)
-                o = ((GridSqlUpdate) o).target();
+                o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete) o).from();
+                o = ((GridSqlDelete)o).from();
 
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);

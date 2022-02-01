@@ -21,7 +21,14 @@
 #include <stdint.h>
 #include <string>
 
+#include <ignite/thin/cache/query/query_sql_fields.h>
+
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
+
 #include "impl/data_router.h"
+#include "impl/transactions/transactions_impl.h"
+#include "impl/cache/query/query_fields_cursor_impl.h"
+#include "impl/cache/query/continuous/continuous_query_handle_impl.h"
 
 namespace ignite
 {
@@ -58,6 +65,7 @@ namespace ignite
                      */
                     CacheClientImpl(
                         const SP_DataRouter& router,
+                        const transactions::SP_TransactionsImpl& tx,
                         const std::string& name,
                         int32_t id);
 
@@ -285,6 +293,23 @@ namespace ignite
                      */
                     void GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut);
 
+                    /**
+                     * Perform SQL fields query.
+                     *
+                     * @param qry Query.
+                     * @return Query cursor.
+                     */
+                    query::SP_QueryFieldsCursorImpl Query(const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                    /**
+                     * Starts the continuous query execution
+                     *
+                     * @param continuousQuery Continuous query.
+                     * @return Query handle. Once all instances are destroyed query execution stopped.
+                     */
+                    query::continuous::SP_ContinuousQueryHandleClientImpl QueryContinuous(
+                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery);
+
                 private:
                     /**
                      * Synchronously send request message and receive response.
@@ -295,20 +320,70 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
+                    void SyncCacheKeyMessage(const WritableKey& key, ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send message and receive response.
                      *
                      * @param req Request message.
                      * @param rsp Response message.
+                     * @return Channel that was used for request.
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SyncMessage(const ReqT& req, RspT& rsp);
+                    SP_DataChannel SyncMessage(ReqT& req, RspT& rsp);
+
+                    /**
+                     * Synchronously send message and receive response.
+                     * Modified to properly set SQL state on connection errors.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @return Channel that was used for request.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    SP_DataChannel SyncMessageSql(ReqT& req, RspT& rsp);
+
+                    /**
+                     * Synchronously send request message and receive response taking in account that it can be
+                     * transactional.
+                     *
+                     * @param key Key.
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    void TransactionalSyncCacheKeyMessage(const WritableKey& key, ReqT& req, RspT& rsp);
+
+                    /**
+                     * Synchronously send message and receive response taking in account that it can be transactional.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @return Channel that was used for request.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    void TransactionalSyncMessage(ReqT& req, RspT& rsp);
+
+                    /***
+                     * Check whether request is transactional and process it if it is.
+                     * @tparam ReqT Request type.
+                     * @tparam RspT Response type.
+                     * @param req Request.
+                     * @param rsp Response.
+                     * @return @c true if processed and false otherwise.
+                     */
+                    template<typename ReqT, typename RspT>
+                    bool TryProcessTransactional(ReqT& req, RspT& rsp);
 
                     /** Data router. */
                     SP_DataRouter router;
+
+                    /** Transactions. */
+                    transactions::SP_TransactionsImpl tx;
 
                     /** Cache name. */
                     std::string name;

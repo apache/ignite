@@ -167,4 +167,14 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     @Override public CacheGroupContext context() {
         return grp;
     }
+
+    /** {@inheritDoc} */
+    @Override public PartitionUpdateCounter copy() {
+        PartitionUpdateCounterVolatileImpl copy = new PartitionUpdateCounterVolatileImpl(grp);
+
+        copy.cntr.set(cntr.get());
+        copy.initCntr = this.initCntr;
+
+        return copy;
+    }
 }

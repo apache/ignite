@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using Pentaho With Apache Ignite
+
+== Overview
+
+http://www.pentaho.com[Pentaho, window=_blank] is a comprehensive platform that provides the ability to extract,
+transform, visualize, and analyze your data easily. Pentaho Data Integration uses the Java Database Connectivity (JDBC)
+API in order to connect to your database.
+
+Apache Ignite is shipped with its own implementation of the JDBC driver which makes it possible to connect to Ignite
+from the Pentaho platform and analyze the data stored in a distributed Ignite cluster.
+
+== Installation and Configuration
+
+* Download and Install Pentaho platform. Refer to the official https://help.pentaho.com/Documentation/7.1/Installation[Pentaho documentation, window=_blank].
+* After Pentaho is successfully installed, you will need to install the Apache Ignite JDBC Driver using the JDBC Distribution Tool.
+To do so, download Apache Ignite and locate `{apache-ignite}/libs/ignite-core-{version}.jar` and copy the file to the `{pentaho}/jdbc-distribution` directory.
+* Open a command line tool, navigate to the `{pentaho}/jdbc-distribution` directory and run the following script `./distribute-files.sh ignite-core-{version}.jar`
+
+== Ignite JDBC Driver Setup
+
+The next step is to set up the JDBC driver and connect to the cluster. Below you will find the minimal number of actions
+that need to be taken. Refer to the link:SQL/JDBC/jdbc-driver[JDBC Thin Driver] documentation for the more details.
+
+. Open your command line tool, go to the `{pentaho}/design-tools/data-integration` directory and launch Pentaho Data Integration using the `./spoon.sh` script.
+. Once the screen like the one below appears, click on the `File` menu option and create a new transformation -  `New -> Transformation`
++
+image::images/tools/pentaho-new-transformation.png[Pentaho New Transformation]
+
+. You can create a new Database Connection using setting the following parameters in Pentaho:
++
+[opts="header"]
+|===
+|Pentaho Property Name | Value
+
+| Connection Name| Set some custom name such as `IgniteConnection`
+| Connection Type| Select the `Generic database` option.
+| Access| Select the `Native (JDBC)` option.
+| Custom Connection URL| `jdbc:ignite:thin://localhost:10800` or the real address of a cluster node to connect to.
+| Custom Driver Class Name| `org.apache.ignite.IgniteJdbcThinDriver`
+|===
+
+. Click the `Test` button to check that the connection​ can be established:
++
+image::images/tools/pentaho-ignite-connection.png[Pentaho Ignite Connection]
+
+== Data Querying and Analysis
+
+Once the connection between Ignite and Pentaho is established , you can query, transform, and analyze the data in a
+variety of ways supported by Pentaho. For more details, refer to the official Pentaho documentation.
+
+image::images/tools/pentaho-running-and-inspecting-data.png[Pentaho Running Queries]

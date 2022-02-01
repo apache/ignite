@@ -17,7 +17,23 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.EventType;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -61,23 +77,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.EventType;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -624,10 +623,10 @@ public class PlatformUtils {
      */
     private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
         switch (evtType) {
-            case CREATED: writer.writeByte((byte) 0); break;
-            case UPDATED: writer.writeByte((byte) 1); break;
-            case REMOVED: writer.writeByte((byte) 2); break;
-            case EXPIRED: writer.writeByte((byte) 3); break;
+            case CREATED: writer.writeByte((byte)0); break;
+            case UPDATED: writer.writeByte((byte)1); break;
+            case REMOVED: writer.writeByte((byte)2); break;
+            case EXPIRED: writer.writeByte((byte)3); break;
             default:
                 throw new IllegalArgumentException("Unknown event type: " + evtType);
         }
@@ -718,7 +717,7 @@ public class PlatformUtils {
      * @return Platform processor.
      */
     public static PlatformProcessor platformProcessor(Ignite grid) {
-        GridKernalContext ctx = ((IgniteKernal) grid).context();
+        GridKernalContext ctx = ((IgniteKernal)grid).context();
 
         return ctx.platform();
     }
@@ -833,12 +832,26 @@ public class PlatformUtils {
      */
     public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
+        return readInvocationResult(ctx, reader, false);
+    }
+
+    /**
+     * Reads invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param ctx Platform context.
+     * @param reader Reader.
+     * @param deserialize If {@code true} deserialize invocation result.
+     * @return Result.
+     * @throws IgniteCheckedException When invocation result is an error.
+     */
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader, boolean deserialize)
+            throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
 
         if (success)
             // 2. Return result as is.
-            return reader.readObjectDetached();
+            return deserialize ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
             boolean hasException = reader.readBoolean();
@@ -875,7 +888,7 @@ public class PlatformUtils {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         return new GridBinaryMarshaller(ctx);
     }
@@ -976,6 +989,9 @@ public class PlatformUtils {
      * @return Result.
      */
     public static Object[] unwrapBinariesInArray(Object[] arr) {
+        if (arr.getClass().getComponentType() != Object.class)
+            return arr;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
@@ -1047,12 +1063,17 @@ public class PlatformUtils {
                     throw new IgniteException("Java object/factory class field is not found [" +
                         "className=" + clsName + ", fieldName=" + fieldName + ']');
 
+                Object val = prop.getValue();
+
                 try {
-                    field.set(obj, prop.getValue());
+                    field.set(
+                        obj,
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                    );
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                        ", fieldName=" + fieldName + ", fieldValue=" + val + ']', e);
                 }
             }
         }

@@ -21,10 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Plugin validation exception.
  */
 public class PluginValidationException extends IgniteException {
     /** */

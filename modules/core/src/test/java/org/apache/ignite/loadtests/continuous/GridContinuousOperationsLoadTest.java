@@ -115,8 +115,8 @@ public class GridContinuousOperationsLoadTest {
                 if (useQry) {
                     ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-                    qry.setLocalListener(new CacheEntryUpdatedListener<Object,Object>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<?,?>> evts) {
+                    qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
                             if (cbSleepMs > 0) {
                                 try {
                                     U.sleep(cbSleepMs);
@@ -126,13 +126,13 @@ public class GridContinuousOperationsLoadTest {
                                 }
                             }
 
-                            for (CacheEntryEvent<?,?> ignored : evts)
+                            for (CacheEntryEvent<?, ?> ignored : evts)
                                 cbCntr.incrementAndGet();
                         }
                     });
 
-                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object,Object>() {
-                        @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
+                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object, Object>() {
+                        @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
                             if (filterSleepMs > 0) {
                                 try {
                                     U.sleep(filterSleepMs);

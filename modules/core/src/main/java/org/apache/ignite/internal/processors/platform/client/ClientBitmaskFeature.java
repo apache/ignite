@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.ThinProtocolFeature;
 
 /**
@@ -30,14 +31,32 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     /** Compute tasks (execute by task name). */
     EXECUTE_TASK_BY_NAME(1),
 
-    /** Cluster operations (state and WAL). */
-    CLUSTER_API(2),
+    /** Adds cluster states besides ACTIVE and INACTIVE. */
+    CLUSTER_STATES(2),
 
     /** Client discovery. */
     CLUSTER_GROUP_GET_NODES_ENDPOINTS(3),
 
     /** Cluster groups. */
-    CLUSTER_GROUPS(4);
+    CLUSTER_GROUPS(4),
+
+    /** Service invocation. This flag is not necessary and exists for legacy reasons. */
+    SERVICE_INVOKE(5),
+
+    /** Feature for use default query timeout if the qry timeout isn't set explicitly. */
+    DEFAULT_QRY_TIMEOUT(6),
+
+    /** Additional SqlFieldsQuery properties: partitions, updateBatchSize. */
+    QRY_PARTITIONS_BATCH_SIZE(7),
+
+    /** Binary configuration retrieval. */
+    BINARY_CONFIGURATION(8),
+
+    /** Handle of {@link ClientServices#serviceDescriptors()}. */
+    GET_SERVICE_DESCRIPTORS(9),
+
+    /** Invoke service methods with caller context. */
+    SERVICE_INVOKE_CALLCTX(10);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

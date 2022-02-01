@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Closure that generates file path adding node id to filename as a suffix.
@@ -31,22 +32,29 @@ class Log4jNodeIdFilePath implements IgniteClosure<String, String> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Applictaion name. */
+    private final @Nullable String app;
+
     /** Node id. */
     private final UUID nodeId;
 
     /**
      * Creates new instance.
      *
+     * @param app Application name.
      * @param id Node id.
      */
-    Log4jNodeIdFilePath(UUID id) {
+    Log4jNodeIdFilePath(@Nullable String app, UUID id) {
+        this.app = app;
         nodeId = id;
     }
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
+        String fileName = (app != null ? app : "ignite") + ".log";
+
         if (!F.isEmpty(U.IGNITE_LOG_DIR))
-            return U.nodeIdLogFileName(nodeId, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
+            return U.nodeIdLogFileName(nodeId, new File(U.IGNITE_LOG_DIR, fileName).getAbsolutePath());
 
         if (oldPath != null) // fileName could be null if IGNITE_HOME is not defined.
             return U.nodeIdLogFileName(nodeId, oldPath);
@@ -54,7 +62,7 @@ class Log4jNodeIdFilePath implements IgniteClosure<String, String> {
         String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
 
         if (tmpDir != null)
-            return U.nodeIdLogFileName(nodeId, new File(tmpDir, "ignite.log").getAbsolutePath());
+            return U.nodeIdLogFileName(nodeId, new File(tmpDir, fileName).getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
 

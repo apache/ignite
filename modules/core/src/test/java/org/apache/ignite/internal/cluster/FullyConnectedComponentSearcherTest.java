@@ -33,13 +33,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Class to test correctness of fully-connectet component searching algorithm.
+ * Class to test correctness of fully-connected component searching algorithm.
  */
 @RunWith(Parameterized.class)
 public class FullyConnectedComponentSearcherTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;

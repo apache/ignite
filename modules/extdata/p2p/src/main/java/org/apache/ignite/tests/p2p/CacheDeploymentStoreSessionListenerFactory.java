@@ -43,6 +43,7 @@ public class CacheDeploymentStoreSessionListenerFactory implements Factory<Cache
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public CacheStoreSessionListener create() {
         return new CacheDeploymentSessionListener(name);
     }

@@ -22,6 +22,8 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Security.Authentication;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -31,6 +33,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -157,15 +160,33 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
-            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var client1 = StartClient();
-                var client2 = StartClient();
-                var client3 = StartClient();
+                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
 
+                var client1 = StartClient();
+                var thinClientConnections = GetThinClientConnections(ignite);
+                Assert.AreEqual(1, thinClientConnections.Length);
+                StringAssert.Contains(
+                    "rmtAddr=" + client1.GetConnections().Single().LocalEndPoint,
+                    thinClientConnections.Single());
+
+                var client2 = StartClient();
+                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+
+                var client3 = StartClient();
+                Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
+
+                // ReSharper disable AccessToDisposedClosure
                 client1.Dispose();
+                TestUtils.WaitForTrueCondition(() => 2 == GetThinClientConnections(ignite).Length);
+
                 client2.Dispose();
+                TestUtils.WaitForTrueCondition(() => 1 == GetThinClientConnections(ignite).Length);
+
                 client3.Dispose();
+                TestUtils.WaitForTrueCondition(() => 0 == GetThinClientConnections(ignite).Length);
+                // ReSharper restore AccessToDisposedClosure
             }
         }
 
@@ -239,7 +260,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Assert.AreEqual("foo", client.GetCacheNames().Single());
                 }
-                
+
                 // Port range.
                 cfg = new IgniteClientConfiguration("127.0.0.1:10798..10800");
 
@@ -259,10 +280,21 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10700");
 
             var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(cfg));
-            
+
             Assert.AreEqual(
-                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700", 
+                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
                 ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that invalid protocol causes a socket exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidProtocolThrowsSocketException()
+        {
+            var cfg = new IgniteClientConfiguration("bad_proto://foo.bar:12345");
+
+            Assert.Catch<SocketException>(() => Ignition.StartClient(cfg));
         }
 
         /// <summary>
@@ -347,7 +379,9 @@ namespace Apache.Ignite.Core.Tests.Client
 
             if (socketEx != null)
             {
-                Assert.AreEqual(SocketError.ConnectionAborted, socketEx.SocketErrorCode);
+                Assert.Contains(
+                    socketEx.SocketErrorCode,
+                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset, SocketError.ConnectionRefused});
             }
             else
             {
@@ -396,10 +430,15 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
 
-            const int count = 100000;
+            const int count = 10000;
             var ops = new Task[count];
 
-            using (var client = StartClient())
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                SocketTimeout = TimeSpan.FromSeconds(30)
+            };
+
+            using (var client = Ignition.StartClient(clientCfg))
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
                 Parallel.For(0, count, new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount},
@@ -409,11 +448,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     });
             }
 
-            var completed = ops.Count(x => x.Status == TaskStatus.RanToCompletion);
-            Assert.Greater(completed, 0, "Some tasks should have completed.");
-
-            var failed = ops.Where(x => x.Status == TaskStatus.Faulted).ToArray();
-            Assert.IsTrue(failed.Any(), "Some tasks should have failed.");
+            var failed = ops.Where(x => x.Status == TaskStatus.Faulted);
 
             foreach (var task in failed)
             {
@@ -561,34 +596,149 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
+            // ReSharper disable AccessToDisposedClosure
             using (var client = Ignition.StartClient(cfg))
             {
                 Assert.AreEqual(0, client.GetCacheNames().Count);
 
-                // Stop target node.
+                Action checkReconnect = () =>
+                {
+                    // First operation may fail or may not.
+                    // Sometimes the client will switch to another socket in background due to
+                    // OnAffinityTopologyVersionChange callback.
+                    var timeout = DateTime.Now.AddSeconds(0.3);
+
+                    while (DateTime.Now < timeout)
+                    {
+                        try
+                        {
+                            Assert.AreEqual(0, client.GetCacheNames().Count);
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            Assert.IsNotNull(GetSocketException(e));
+                        }
+                    }
+                };
+
+                // Stop first node.
                 var nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
-                // Check failure.
-                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                checkReconnect();
 
-                // Check reconnect.
-                Assert.AreEqual(0, client.GetCacheNames().Count);
-
-                // Stop target node.
+                // Stop second node.
                 nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
-                // Check failure.
-                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
-
-                // Check reconnect.
-                Assert.AreEqual(0, client.GetCacheNames().Count);
+                checkReconnect();
 
                 // Stop all nodes.
                 Ignition.StopAll(true);
+
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            }
+        }
+
+        /// <summary>
+        /// Tests that client stops it's receiver thread upon disposal.
+        /// </summary>
+        [Test]
+        public void TestClientDisposalStopsReceiverThread([Values(true, false)] bool async)
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Trace}};
+
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Logger = logger
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                if (async)
+                {
+                    cache.PutAsync(1, 1);
+                }
+                else
+                {
+                    cache.Put(1, 1);
+                }
+            }
+
+            var threadId = logger.Entries
+                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started."))
+                .Where(m => m.Success)
+                .Select(m => int.Parse(m.Groups[1].Value))
+                .First();
+
+            TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
+                e => e.Message == string.Format("Receiver thread #{0} stopped.", threadId)));
+        }
+
+        /// <summary>
+        /// Tests SSL connection with client-side SSL certificate.
+        /// </summary>
+        [Test]
+        public void TestSslConnectionWithClientAuth()
+        {
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
+            });
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1:11110" },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
+                    CertificatePassword = "123456",
+                    SkipServerCertificateValidation = true,
+                    CheckCertificateRevocation = true,
+                    SslProtocols = SslProtocols.Tls12
+                }
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
+            }
+
+            // Does not connect without client certificate.
+            cfg.SslStreamFactory = new SslStreamFactory { SkipServerCertificateValidation = true };
+            Assert.Catch<Exception>(() => Ignition.StartClient(cfg));
+        }
+
+        /// <summary>
+        /// Tests SSL connection without client-side SSL certificate.
+        /// </summary>
+        [Test]
+        public void TestSslConnectionWithoutClientAuth()
+        {
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl-no-client-auth.xml"),
+            });
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1:11120" },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    SkipServerCertificateValidation = true,
+                    SslProtocols = SslProtocols.Tls12
+                }
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
             }
         }
 
@@ -663,8 +813,21 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration("localhost")
             {
                 UserName = "ignite",
-                Password = "ignite"
+                Password = "ignite",
+                SocketTimeout = TimeSpan.FromSeconds(10),
+                EnablePartitionAwareness = false
             };
+        }
+
+        /// <summary>
+        /// Gets thin client connections for the given server node.
+        /// </summary>
+        /// <param name="ignite">Ignite server instance.</param>
+        /// <returns>Active thin client connections.</returns>
+        private static string[] GetThinClientConnections(IIgnite ignite)
+        {
+            return ignite.GetCompute().ExecuteJavaTask<string[]>(
+                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", ignite.Name);
         }
 
         /// <summary>

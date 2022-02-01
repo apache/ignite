@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.h2o;
 
-import java.io.*;
-
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;

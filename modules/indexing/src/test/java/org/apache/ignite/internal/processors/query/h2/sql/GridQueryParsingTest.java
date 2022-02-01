@@ -453,7 +453,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
             buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", true),
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
@@ -474,7 +474,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", false),
+            QueryIndex.DFLT_INLINE_SIZE, "name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
@@ -693,7 +693,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
-        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex)stmt);
     }
 
     /**
@@ -706,7 +706,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
-        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
+        assertDropIndexEquals(exp, (GridSqlDropIndex)stmt);
     }
 
     /**
@@ -741,7 +741,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
-        assertCreateTableEquals(exp, (GridSqlCreateTable) stmt);
+        assertCreateTableEquals(exp, (GridSqlCreateTable)stmt);
     }
 
     /**
@@ -879,7 +879,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
-        assertDropTableEquals(exp, (GridSqlDropTable) stmt);
+        assertDropTableEquals(exp, (GridSqlDropTable)stmt);
     }
 
     /**
@@ -1035,11 +1035,13 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
@@ -1063,21 +1065,27 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public Date date = new Date(System.currentTimeMillis());
 
+        /** */
         @QuerySqlField(index = true)
         public String name = "Ivan";
 
+        /** */
         @QuerySqlField(index = true)
         public String parentName;
 
+        /** */
         @QuerySqlField(index = true)
         public int addrId;
 
+        /** */
         @QuerySqlField
         public Integer[] addrIds;
 
+        /** */
         @QuerySqlField(index = true)
         public int old;
     }
@@ -1086,12 +1094,15 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public int id;
 
+        /** */
         @QuerySqlField(index = true)
         public int streetNumber;
 
+        /** */
         @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }

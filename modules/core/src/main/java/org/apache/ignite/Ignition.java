@@ -204,7 +204,7 @@ public class Ignition {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return IgnitionEx.stop(cancel);
+        return IgnitionEx.stop(cancel, null);
     }
 
     /**
@@ -226,8 +226,8 @@ public class Ignition {
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
-    public static boolean stop(@Nullable String name, boolean cancel) {
-        return IgnitionEx.stop(name, cancel, false);
+    public static boolean stop(String name, boolean cancel) {
+        return IgnitionEx.stop(name, cancel, null, false);
     }
 
     /**
@@ -246,7 +246,7 @@ public class Ignition {
      *      up to the actual job to exit from execution
      */
     public static void stopAll(boolean cancel) {
-        IgnitionEx.stopAll(cancel);
+        IgnitionEx.stopAll(cancel, null);
     }
 
     /**
@@ -429,6 +429,7 @@ public class Ignition {
      *
      * @param springXmlPath Spring XML configuration file path (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
@@ -447,6 +448,7 @@ public class Ignition {
      *
      * @param springXmlUrl Spring XML configuration file URL (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
@@ -465,6 +467,7 @@ public class Ignition {
      *
      * @param springXmlStream Input stream containing Spring XML configuration (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
+     * @param <T> Type of the loaded bean.
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
@@ -562,7 +565,7 @@ public class Ignition {
      */
     private static Ignite wrapToProxy(Ignite ignite) {
         return AccessController.doPrivileged((PrivilegedAction<Ignite>)
-            () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
+            () -> SandboxIgniteComponentProxy.igniteProxy(ignite)
         );
     }
 

@@ -1,0 +1,28 @@
+>>> Messaging example started.
+
+>>> Sending unordered messages...
+>>> Finished sending unordered messages.
+>>> Sending ordered messages...
+>>> Finished sending ordered messages.
+>>> Check output on all nodes for message printouts.
+>>> Waiting for messages acknowledgements from all remote nodes...
+Received unordered message [msg=6, fromNodeId=*
+Received unordered message [msg=0, fromNodeId=*
+Received unordered message [msg=5, fromNodeId=*
+Received unordered message [msg=4, fromNodeId=*
+Received unordered message [msg=7, fromNodeId=*
+Received unordered message [msg=3, fromNodeId=*
+Received unordered message [msg=2, fromNodeId=*
+Received unordered message [msg=1, fromNodeId=*
+Received unordered message [msg=9, fromNodeId=*
+Received unordered message [msg=8, fromNodeId=*
+Received ordered message [msg=0, fromNodeId=*
+Received ordered message [msg=1, fromNodeId=*
+Received ordered message [msg=2, fromNodeId=*
+Received ordered message [msg=3, fromNodeId=*
+Received ordered message [msg=4, fromNodeId=*
+Received ordered message [msg=5, fromNodeId=*
+Received ordered message [msg=6, fromNodeId=*
+Received ordered message [msg=7, fromNodeId=*
+Received ordered message [msg=8, fromNodeId=*
+Received ordered message [msg=9, fromNodeId=*

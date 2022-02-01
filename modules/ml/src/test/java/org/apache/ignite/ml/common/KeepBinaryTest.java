@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.common;
 
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
@@ -30,8 +31,6 @@ import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.UUID;
 
 /**
  * Test for IGNITE-10700.
@@ -84,7 +83,7 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         Integer zeroCentre = mdl.predict(VectorUtils.num2Vec(0.0));
 
-        assertTrue(mdl.getCenters()[zeroCentre].get(0) == 0);
+        assertTrue(mdl.centers()[zeroCentre].get(0) == 0);
     }
 
     /**

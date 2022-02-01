@@ -57,7 +57,11 @@ public class ImputerTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[] {1, 0, 100}, preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(), 1e-8);
+        assertArrayEquals(
+            new double[] {1, 0, 100},
+            preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(),
+            1e-8
+        );
     }
 
 
@@ -83,7 +87,11 @@ public class ImputerTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[] {0, 0, 22}, preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(), 1e-8);
+        assertArrayEquals(
+            new double[] {0, 0, 22},
+            preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(),
+            1e-8
+        );
     }
 
     /** Tests {@code fit()} method. */
@@ -108,7 +116,11 @@ public class ImputerTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[] {-1, 0, 22}, preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(), 1e-8);
+        assertArrayEquals(
+            new double[] {-1, 0, 22},
+            preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(),
+            1e-8
+        );
     }
 
     /** Tests {@code fit()} method. */
@@ -133,7 +145,11 @@ public class ImputerTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[] {0, 0, 100}, preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(), 1e-8);
+        assertArrayEquals(
+            new double[] {0, 0, 100},
+            preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(),
+            1e-8
+        );
     }
 
     /** Tests {@code fit()} method. */
@@ -158,6 +174,10 @@ public class ImputerTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[] {3, 0, 3}, preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(), 1e-8);
+        assertArrayEquals(
+            new double[] {3, 0, 3},
+            preprocessor.apply(5, VectorUtils.of(Double.NaN, 0, Double.NaN)).features().asArray(),
+            1e-8
+        );
     }
 }

@@ -752,7 +752,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 lock.getOrCreateCondition("c1").signal();
 
-                lock.getOrCreateCondition("c2").await(10,MILLISECONDS);
+                lock.getOrCreateCondition("c2").await(10, MILLISECONDS);
             }
             finally {
                 lock.unlock();
@@ -1568,6 +1568,25 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     }
 
     /**
+     * Tests that closed lock throws meaningful exception.
+     */
+    @Test (expected = IgniteException.class)
+    public void testClosedLockThrowsIgniteException() {
+        final String lockName = "lock";
+
+        IgniteLock lock1 = grid(0).reentrantLock(lockName, false, false, true);
+        IgniteLock lock2 = grid(0).reentrantLock(lockName, false, false, true);
+        lock1.close();
+        try {
+            lock2.lock();
+        } catch (IgniteException e) {
+            String msg = String.format("Failed to find reentrant lock with given name: " + lockName);
+            assertEquals(msg, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
      * Tests if lock is evenly acquired among nodes when fair flag is set on.
      * Since exact ordering of lock acquisitions cannot be guaranteed because it also depends
      * on the OS thread scheduling, certain deviation from uniform distribution is tolerated.
@@ -1625,7 +1644,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 l.lock();
 
                                 try {
-                                    long opsCounter = (long) ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
+                                    long opsCounter = (long)ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
                                     if (opsCounter == opsCount)
                                         break;

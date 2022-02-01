@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -87,4 +89,27 @@ public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTe
 
         assertTrue(log0.toString().contains(WARN_MSG_PREFIX));
     }
+
+    /**
+     * Test that temporary work directory warning is not printed, if PDS is not actually in temporary directory
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPdsDirWarningIsNotLogged() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("0");
+
+        String tempDir = System.getProperty("java.io.tmpdir");
+
+        assertNotNull(tempDir);
+
+        File workDir = new File(U.defaultWorkDirectory(), tempDir);
+
+        // set working directory to file not in tmp directory, but with temp directory folder name in path
+        cfg.setWorkDirectory(workDir.getAbsolutePath());
+
+        startGrid(cfg);
+
+        assertFalse(log0.toString().contains(WARN_MSG_PREFIX));
+    }
+
 }

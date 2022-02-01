@@ -21,20 +21,28 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.security.AccessControlException;
 import java.util.UUID;
+import org.apache.ignite.internal.GridInternalWrapper;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Abstract security aware Externalizable.
  */
-public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable {
+public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable, GridInternalWrapper<T> {
     /** Security subject id. */
     protected UUID subjectId;
 
     /** Original component. */
     protected T original;
+
+    /** Ignite. */
+    @IgniteInstanceResource
+    protected transient IgniteEx ignite;
 
     /**
      * Default constructor.
@@ -50,6 +58,21 @@ public abstract class AbstractSecurityAwareExternalizable<T> implements External
     protected AbstractSecurityAwareExternalizable(UUID subjectId, T original) {
         this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
         this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
+    }
+
+    /**
+     * Writes access denied message.
+     *
+     * @param e Exception to log.
+     */
+    protected void logAccessDeniedMessage(AccessControlException e) {
+        ignite.context().log(getClass()).error("The operation can't be executed because the current subject " +
+            "doesn't have appropriate permission [subjectId=" + subjectId + "].", e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public T userObject() {
+        return original;
     }
 
     /** {@inheritDoc} */

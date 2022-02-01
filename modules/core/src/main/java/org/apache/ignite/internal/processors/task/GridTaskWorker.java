@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,9 +52,7 @@ import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
-import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
@@ -69,8 +68,10 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
+import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -80,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -88,6 +88,8 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER;
@@ -102,6 +104,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
@@ -160,7 +165,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** */
     private final GridTaskEventListener evtLsnr;
 
-    /** */
+    /** Guarded by {@link #mux}. */
     private Map<IgniteUuid, GridJobResultImpl> jobRes;
 
     /** */
@@ -424,7 +429,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 return;
         }
 
-        U.warn(log, "Task has timed out: " + ses);
+        if (log.isDebugEnabled())
+            U.warn(log, "Task has timed out: " + ses);
 
         recordTaskEvent(EVT_TASK_TIMEDOUT, "Task has timed out.");
 
@@ -500,8 +506,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             ses.setClassLoader(dep.classLoader());
 
             // Nodes are ignored by affinity tasks.
-            final List<ClusterNode> shuffledNodes =
-                affCacheIds == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
+            final List<ClusterNode> shuffledNodes = affCacheIds == null ? getTaskTopology() : emptyList();
 
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -514,16 +519,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                        return task.map(shuffledNodes, arg);
-                    }
-                });
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(
+                dep.classLoader(),
+                (Callable<Map<? extends ComputeJob, ClusterNode>>)() -> task.map(shuffledNodes, arg)
+            );
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
                     ", mappedJobs=" + mappedJobs + ", ses=" + ses + ']');
+            }
 
             if (F.isEmpty(mappedJobs)) {
                 synchronized (mux) {
@@ -542,13 +546,14 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             processDelayedResponses();
         }
         catch (ClusterGroupEmptyCheckedException e) {
-            U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
+            if (log.isDebugEnabled())
+                U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
             finishTask(null, e);
         }
         catch (IgniteException | IgniteCheckedException e) {
             if (!fut.isCancelled()) {
-                if (!(e instanceof VisorClusterGroupEmptyException))
+                if (log.isDebugEnabled())
                     U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
                 finishTask(null, e);
@@ -561,7 +566,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             String errMsg = "Failed to map task jobs to nodes due to undeclared user exception" +
                 " [cause=" + e.getMessage() + ", ses=" + ses + "]";
 
-            U.error(log, errMsg, e);
+            if (log.isDebugEnabled())
+                U.error(log, errMsg, e);
 
             finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
 
@@ -632,6 +638,10 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         "@ComputeTaskNoResultCache annotation.");
             }
         }
+
+        ses.jobNodes(F.viewReadOnly(jobs.values(), F.node2id()));
+
+        evtLsnr.onJobsMapped(this);
 
         // Set mapped flag.
         ses.onMapped();
@@ -843,7 +853,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Error deserializing job response: " + res, e);
+                        if (log.isDebugEnabled())
+                            U.error(log, "Error deserializing job response: " + res, e);
 
                         finishTask(null, e);
                     }
@@ -852,7 +863,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 List<ComputeJobResult> results;
 
                 if (!resCache)
-                    results = Collections.emptyList();
+                    results = emptyList();
                 else {
                     synchronized (mux) {
                         results = getRemoteResults();
@@ -976,7 +987,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 }
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
+                if (log.isDebugEnabled())
+                    U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
                 finishTask(null, e);
 
@@ -1003,7 +1015,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (waitForAffTop && affFut != null) {
                 affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut0) {
-                        ctx.closure().runLocalSafe(new Runnable() {
+                        ctx.closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
                                 onResponse(failoverRes);
                             }
@@ -1022,7 +1034,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
         ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
-                ctx.closure().runLocalSafe(new Runnable() {
+                ctx.closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         try {
                             ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,
@@ -1034,7 +1046,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             sendRequest(jRes);
                         }
                         catch (Exception e) {
-                            U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to re-map job or retry request [ses=" + ses + "]", e);
 
                             finishTask(null, e);
                         }
@@ -1081,14 +1094,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     return plc;
                 }
                 catch (IgniteException e) {
-                    if (X.hasCause(e, GridInternalException.class) ||
-                        X.hasCause(e, IgfsOutOfSpaceException.class)) {
-                        // Print internal exceptions only if debug is enabled.
-                        if (log.isDebugEnabled())
-                            U.error(log, "Failed to obtain remote job result policy for result from " +
-                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
-                    }
-                    else if (X.hasCause(e, ComputeJobFailoverException.class)) {
+                    if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                             "ComputeJobResultPolicy.FAILOVER was not returned from " +
                             "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
@@ -1099,13 +1105,16 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     }
                     else if (X.hasCause(e, GridServiceNotFoundException.class) ||
                         X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                        // Should be throttled, because GridServiceProxy continuously retry getting service.
-                        LT.error(log, e, "Failed to obtain remote job result policy for result from " +
-                            "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                        if (log.isDebugEnabled()) {
+                            // Should be throttled, because GridServiceProxy continuously retry getting service.
+                            LT.error(log, e, "Failed to obtain remote job result policy for result from " +
+                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                        }
                     }
-                    else
+                    else if (log.isDebugEnabled()) {
                         U.error(log, "Failed to obtain remote job result policy for result from " +
                             "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
+                    }
 
                     finishTask(null, e);
 
@@ -1116,7 +1125,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         "ComputeTask.result(..) method due to undeclared user exception " +
                         "(will fail the whole task): " + jobRes;
 
-                    U.error(log, errMsg, e);
+                    if (log.isDebugEnabled())
+                        U.error(log, errMsg, e);
 
                     Throwable tmp = new ComputeUserUndeclaredException(errMsg, e);
 
@@ -1165,12 +1175,14 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
         catch (ClusterTopologyCheckedException e) {
-            U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
+            if (log.isDebugEnabled())
+                U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
 
             userE = e;
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to reduce job results for task: " + task, e);
+            if (log.isDebugEnabled())
+                U.error(log, "Failed to reduce job results for task: " + task, e);
 
             userE = e;
         }
@@ -1179,7 +1191,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             String errMsg = "Failed to reduce job results due to undeclared user exception [task=" + task +
                 ", err=" + e + ']';
 
-            U.error(log, errMsg, e);
+            if (log.isDebugEnabled())
+                U.error(log, errMsg, e);
 
             userE = new ComputeUserUndeclaredException(errMsg, e);
 
@@ -1217,7 +1230,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             String errMsg = "Failed to failover job due to undeclared user exception [job=" +
                 jobRes.getJob() + ", err=" + e + ']';
 
-            U.error(log, errMsg, e);
+            if (log.isDebugEnabled())
+                U.error(log, errMsg, e);
 
             finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
 
@@ -1358,9 +1372,11 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             // that we make this check because we cannot count on exception being
             // thrown in case of send failure.
             if (curNode == null) {
-                U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
-                    "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                    ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                if (log.isDebugEnabled()) {
+                    U.warn(log, "Failed to send job request because remote node left grid (if fail-over is enabled, " +
+                        "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                        ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                }
 
                 ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
@@ -1415,7 +1431,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             forceLocDep,
                             ses.isFullSupport(),
                             internal,
-                            subjId,
                             affCacheIds,
                             affPartId,
                             mapTopVer,
@@ -1463,13 +1478,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                 // Avoid stack trace if node has left grid.
                 if (deadNode) {
-                    U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
-                        "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                        ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                    if (log.isDebugEnabled()) {
+                        U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
+                            "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+                    }
 
                     fakeErr = new ClusterTopologyException("Failed to send job due to node failure: " + node, e);
                 }
-                else
+                else if (log.isDebugEnabled())
                     U.error(log, "Failed to send job request: " + req, e);
 
             }
@@ -1580,7 +1597,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
-            evt.taskSubjectId(ses.subjectId());
+            evt.taskSubjectId(subjId);
             evt.resultPolicy(plc);
 
             ctx.event().record(evt);
@@ -1632,7 +1649,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 recordTaskEvent(EVT_TASK_FAILED, "Task failed.");
 
             // Clean resources prior to finishing future.
-            evtLsnr.onTaskFinished(this);
+            evtLsnr.onTaskFinished(this, e);
 
             if (cancelChildren)
                 cancelChildren();
@@ -1664,6 +1681,57 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** @return Affinity partition id. */
     public int affPartId() {
         return affPartId;
+    }
+
+    /**
+     * Collects statistics on jobs locally, only for those jobs that have
+     * already sent a response or are being executed locally.
+     *
+     * @return Job statistics for the task. Mapping: Job status -> count of jobs.
+     */
+    Map<ComputeJobStatusEnum, Long> jobStatuses() {
+        List<GridJobResultImpl> jobResults = null;
+
+        synchronized (mux) {
+            if (jobRes != null)
+                jobResults = new ArrayList<>(jobRes.values());
+        }
+
+        // Jobs have not been mapped yet.
+        if (F.isEmpty(jobResults))
+            return emptyMap();
+
+        UUID locNodeId = ctx.localNodeId();
+
+        boolean getLocJobStatistics = false;
+
+        Map<ComputeJobStatusEnum, Long> res = new EnumMap<>(ComputeJobStatusEnum.class);
+
+        for (GridJobResultImpl jobResult : jobResults) {
+            if (jobResult.hasResponse()) {
+                ComputeJobStatusEnum jobStatus;
+
+                if (jobResult.isCancelled())
+                    jobStatus = CANCELLED;
+                else if (jobResult.getException() != null)
+                    jobStatus = FAILED;
+                else
+                    jobStatus = FINISHED;
+
+                res.merge(jobStatus, 1L, Long::sum);
+            }
+            else if (!getLocJobStatistics && locNodeId.equals(jobResult.getNode().id()))
+                getLocJobStatistics = true;
+        }
+
+        if (getLocJobStatistics) {
+            Map<ComputeJobStatusEnum, Long> jobStatuses = ctx.job().jobStatuses(getTaskSessionId());
+
+            for (Map.Entry<ComputeJobStatusEnum, Long> e : jobStatuses.entrySet())
+                res.merge(e.getKey(), e.getValue(), Long::sum);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -73,6 +73,8 @@ namespace ignite
 
             assert(hdr == ignite::impl::binary::IGNITE_TYPE_DECIMAL);
 
+            IGNITE_UNUSED(hdr);
+
             int32_t scale = reader.ReadInt32();
 
             int32_t len = reader.ReadInt32();
@@ -109,10 +111,18 @@ namespace ignite
 
             unscaled.MagnitudeToBytes(magnitude);
 
-            if (unscaled.GetSign() == -1)
-                magnitude[0] |= -0x80;
+            int8_t addBit = unscaled.GetSign() == -1 ? -0x80 : 0;
 
-            writer.WriteInt32(magnitude.GetSize());
+            if (magnitude[0] < 0)
+            {
+                writer.WriteInt32(magnitude.GetSize() + 1);
+                writer.WriteInt8(addBit);
+            }
+            else
+            {
+                writer.WriteInt32(magnitude.GetSize());
+                magnitude[0] |= addBit;
+            }
 
             impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), magnitude.GetData(), magnitude.GetSize());
         }
@@ -146,21 +156,6 @@ namespace ignite
             }
             else
                 res.clear();
-        }
-
-        std::string HexDump(const void* data, size_t count)
-        {
-            std::stringstream  dump;
-            size_t cnt = 0;
-            for(const uint8_t* p = (const uint8_t*)data, *e = (const uint8_t*)data + count; p != e; ++p)
-            {
-                if (cnt++ % 16 == 0)
-                {
-                    dump << std::endl;
-                }
-                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
-            }
-            return dump.str();
         }
     }
 }

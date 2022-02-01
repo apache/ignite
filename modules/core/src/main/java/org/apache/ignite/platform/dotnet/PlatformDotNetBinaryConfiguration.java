@@ -17,10 +17,9 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Mirror of .Net class BinaryConfiguration.cs

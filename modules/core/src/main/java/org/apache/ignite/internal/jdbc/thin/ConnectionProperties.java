@@ -542,4 +542,20 @@ public interface ConnectionProperties {
      *      The string should contain enumeration of feature names, separated by the comma.
      */
     public void disabledFeatures(String features);
+
+    /**
+     * Get keep binary configuration flag.
+     *
+     * @return Keep binary configuration flag.
+     */
+    public boolean isKeepBinary();
+
+    /**
+     * Set to {@code true} to keep binary objects in binary form.
+     *
+     * <p> Defaults is {@code false}.
+     **
+     * @param keepBinary Whether to keep binary objects in binary form.
+     */
+    public void setKeepBinary(boolean keepBinary);
 }

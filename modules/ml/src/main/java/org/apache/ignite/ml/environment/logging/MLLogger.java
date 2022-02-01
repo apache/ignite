@@ -51,7 +51,7 @@ public interface MLLogger {
      * @param verboseLevel Verbose level.
      * @param mdl Model.
      */
-    public <K, V> IgniteModel<K,V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl);
+    public <K, V> IgniteModel<K, V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl);
 
     /**
      * Log line with formatting.

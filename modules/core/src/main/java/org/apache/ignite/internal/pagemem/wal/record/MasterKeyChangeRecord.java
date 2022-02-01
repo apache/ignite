@@ -24,7 +24,10 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 
 /**
  * Logical record that stores encryption keys. Written to the WAL on the master key change.
+ *
+ * @deprecated Replaced by MasterKeyChangeRecordV2.
  */
+@Deprecated
 public class MasterKeyChangeRecord extends WALRecord {
     /** Master key name. */
     private final String masterKeyName;
@@ -58,7 +61,7 @@ public class MasterKeyChangeRecord extends WALRecord {
 
     /** @return Record data size. */
     public int dataSize() {
-        int size = /*Master key name length*/4 + masterKeyName.length() + /*Group keys map size*/4;
+        int size = /*Master key name length*/4 + masterKeyName.getBytes().length + /*Group keys map size*/4;
 
         for (Entry<Integer, byte[]> entry : grpKeys.entrySet())
             size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;

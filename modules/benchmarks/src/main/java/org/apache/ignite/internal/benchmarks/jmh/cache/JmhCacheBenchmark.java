@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -24,8 +25,6 @@ import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.profile.GCProfiler;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Put benchmark.

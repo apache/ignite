@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
@@ -135,12 +137,14 @@ namespace Apache.Ignite.Core.Tests
             DeployTo(dllFolder, jarFolder);
 
             // Copy config
-            var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
+            var springPath = Path.GetFullPath("Config/Compute/compute-grid2.xml");
             var springFile = Path.GetFileName(springPath);
             File.Copy(springPath, Path.Combine(dllFolder, springFile));
 
             // Start a node and make sure it works properly
             var exePath = Path.Combine(dllFolder, "Apache.Ignite.exe");
+
+            Assert.IsTrue(File.Exists(exePath));
 
             var args = new List<string>
             {
@@ -156,9 +160,15 @@ namespace Apache.Ignite.Core.Tests
                 args.Add("-jvmClasspath=" + string.Join(";", Directory.GetFiles(jarFolder)));
             }
 
-            var proc = IgniteProcess.Start(exePath, string.Empty, args: args.ToArray());
+            var reader = new ListDataReader();
+            var proc = IgniteProcess.Start(exePath, string.Empty, reader, args.ToArray());
 
             Assert.IsNotNull(proc);
+
+            if (proc.WaitForExit(300))
+            {
+                Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
+            }
 
             VerifyNodeStarted(exePath);
         }
@@ -196,11 +206,22 @@ namespace Apache.Ignite.Core.Tests
             }
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            foreach (var type in new[]
             {
+                typeof(IgniteRunner), typeof(Ignition), GetType(), typeof(ConfigurationManager)
+            })
+            {
+                var asm = type.Assembly;
                 Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
             }
+
+            // ReSharper disable once AssignNullToNotNullAttribute
+            var cfgMan = Path.Combine(
+                Path.GetDirectoryName(typeof(Ignition).Assembly.Location),
+                "System.Configuration.ConfigurationManager.dll");
+
+            File.Copy(cfgMan, Path.Combine(folder, Path.GetFileName(cfgMan)));
         }
 
         /// <summary>
@@ -210,7 +231,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                SpringConfigUrl = "Config/Compute/compute-grid1.xml",
             }))
             {
                 Assert.IsTrue(ignite.WaitTopology(2));
@@ -243,3 +264,4 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+#endif

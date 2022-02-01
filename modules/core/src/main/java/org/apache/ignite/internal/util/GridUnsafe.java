@@ -65,9 +65,12 @@ public abstract class GridUnsafe {
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
 
+    /** @see IgniteSystemProperties#IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD */
+    public static final long DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD = 0L;
+
     /** Per-byte copy threshold. */
-    private static final long PER_BYTE_THRESHOLD =
-        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
+    private static final long PER_BYTE_THRESHOLD = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
@@ -204,8 +207,11 @@ public abstract class GridUnsafe {
             return wrapPointerJavaNio(ptr, len, NEW_DIRECT_BUF_MTD, JAVA_NIO_ACCESS_OBJ);
         else if (NEW_DIRECT_BUF_CONSTRUCTOR != null)
             return wrapPointerDirectBufCtor(ptr, len, NEW_DIRECT_BUF_CONSTRUCTOR);
-        else
-            throw new RuntimeException("All alternative for a new DirectByteBuffer() creation failed: " + FeatureChecker.JAVA_VER_SPECIFIC_WARN);
+        else {
+            throw new RuntimeException(
+                "All alternative for a new DirectByteBuffer() creation failed: " + FeatureChecker.JAVA_VER_SPECIFIC_WARN
+            );
+        }
     }
 
     /**

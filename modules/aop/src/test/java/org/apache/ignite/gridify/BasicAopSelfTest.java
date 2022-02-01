@@ -17,15 +17,14 @@
 
 package org.apache.ignite.gridify;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.gridify.Gridify;
 import org.apache.ignite.compute.gridify.GridifyArgument;
 import org.apache.ignite.compute.gridify.GridifyTaskSplitAdapter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Collection;
-import java.util.List;
 import org.junit.Test;
 
 /**

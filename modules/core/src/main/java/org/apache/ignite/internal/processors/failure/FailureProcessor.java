@@ -31,24 +31,29 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
 
 /**
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
+    /** @see IgniteSystemProperties#IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE */
+    public static final int DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = 64 * 1024;
+
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
-        IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE, false);
+        IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE, true);
 
     /** Timeout for throttling of thread dumps generation. */
-    long dumpThreadsTrottlingTimeout;
+    private long dumpThreadsTrottlingTimeout;
 
     /** Ignored failure log message. */
     static final String IGNORED_FAILURE_LOG_MSG = "Possible failure suppressed accordingly to a configured handler ";
@@ -58,7 +63,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         "Will be handled accordingly to configured handler ";
 
     /** Thread dump per failure type timestamps. */
-    private Map<FailureType, Long> threadDumpPerFailureTypeTime;
+    private final Map<FailureType, Long> threadDumpPerFailureTypeTs;
 
     /** Ignite. */
     private final Ignite ignite;
@@ -80,6 +85,8 @@ public class FailureProcessor extends GridProcessorAdapter {
 
         ignite = ctx.grid();
 
+        Map<FailureType, Long> threadDumpPerFailureTypeTs = null;
+
         if (igniteDumpThreadsOnFailure) {
             dumpThreadsTrottlingTimeout =
                     IgniteSystemProperties.getLong(
@@ -88,12 +95,14 @@ public class FailureProcessor extends GridProcessorAdapter {
                     );
 
             if (dumpThreadsTrottlingTimeout > 0) {
-                threadDumpPerFailureTypeTime = new EnumMap<>(FailureType.class);
+                threadDumpPerFailureTypeTs = new EnumMap<>(FailureType.class);
 
                 for (FailureType type : FailureType.values())
-                    threadDumpPerFailureTypeTime.put(type, 0L);
+                    threadDumpPerFailureTypeTs.put(type, 0L);
             }
         }
+
+        this.threadDumpPerFailureTypeTs = threadDumpPerFailureTypeTs;
     }
 
     /** {@inheritDoc} */
@@ -104,7 +113,7 @@ public class FailureProcessor extends GridProcessorAdapter {
             hnd = getDefaultFailureHandler();
 
         reserveBuf = new byte[IgniteSystemProperties.getInteger(
-            IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE, 64 * 1024)];
+            IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE, DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE)];
 
         assert hnd != null;
 
@@ -121,7 +130,8 @@ public class FailureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * This method is used to initialize local failure handler if {@link IgniteConfiguration} don't contain configured one.
+     * This method is used to initialize local failure handler if {@link IgniteConfiguration}
+     * doesn't contain configured one.
      *
      * @return Default {@link FailureHandler} implementation.
      */
@@ -172,12 +182,24 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
 
-        if (X.hasCause(failureCtx.error(), CorruptedPersistenceException.class))
-            log.error("A critical problem with persistence data structures was detected." +
-                " Please make backup of persistence storage and WAL files for further analysis." +
-                " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
-                " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
-                " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+        CorruptedDataStructureException corruptedDataStructureEx =
+            X.cause(failureCtx.error(), CorruptedDataStructureException.class);
+
+        if (corruptedDataStructureEx != null) {
+            CacheGroupContext grpCtx = ctx.cache().cacheGroup(corruptedDataStructureEx.groupId());
+
+            if (grpCtx != null && grpCtx.dataRegion() != null) {
+                if (grpCtx.dataRegion().config().isPersistenceEnabled()) {
+                    log.error("A critical problem with persistence data structures was detected." +
+                        " Please make backup of persistence storage and WAL files for further analysis." +
+                        " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
+                        " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
+                        " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+                }
+                else
+                    log.error("A critical problem with in-memory data structures was detected.");
+            }
+        }
 
         if (igniteDumpThreadsOnFailure && !throttleThreadDump(failureCtx.type()))
             U.dumpThreads(log, !failureTypeIgnored(failureCtx, hnd));
@@ -185,7 +207,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
 
         if (diagnosticProcessor != null)
-            diagnosticProcessor.onFailure(ignite, failureCtx);
+            diagnosticProcessor.onFailure(failureCtx);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
@@ -199,7 +221,16 @@ public class FailureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Defines whether thread dump should be throttled for givn failure type or not.
+     * Returns timeout for throttling of thread dumps generation.
+     *
+     * @return Timeout for throttling of thread dumps generation.
+     */
+    long dumpThreadsTrottlingTimeout() {
+        return dumpThreadsTrottlingTimeout;
+    }
+
+    /**
+     * Defines whether thread dump should be throttled for given failure type or not.
      *
      * @param type Failure type.
      * @return {@code True} if thread dump generation should be throttled fro given failure type.
@@ -208,16 +239,16 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (dumpThreadsTrottlingTimeout <= 0)
             return false;
 
-        long curr = U.currentTimeMillis();
+        long curr = System.currentTimeMillis();
 
-        Long last = threadDumpPerFailureTypeTime.get(type);
+        Long last = threadDumpPerFailureTypeTs.get(type);
 
         assert last != null : "Unknown failure type " + type;
 
         boolean throttle = curr - last < dumpThreadsTrottlingTimeout;
 
         if (!throttle)
-            threadDumpPerFailureTypeTime.put(type, curr);
+            threadDumpPerFailureTypeTs.put(type, curr);
         else {
             if (log.isInfoEnabled()) {
                 log.info("Thread dump is hidden due to throttling settings. " +

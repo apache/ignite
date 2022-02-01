@@ -33,19 +33,19 @@ public class SqlViewView {
         this.view = view;
     }
 
-    /** View name. */
+    /** @return View name. */
     @Order
     public String name() {
         return view.getTableName();
     }
 
-    /** View description. */
+    /** @return View description. */
     @Order(2)
     public String description() {
         return view.getDescription();
     }
 
-    /** View schema. */
+    /** @return View schema. */
     @Order(1)
     public String schema() {
         return QueryUtils.SCHEMA_SYS;

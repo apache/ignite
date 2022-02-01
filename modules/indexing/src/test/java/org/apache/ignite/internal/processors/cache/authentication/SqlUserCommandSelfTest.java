@@ -23,14 +23,17 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
@@ -39,8 +42,8 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 3;
 
-    /** Authorization context for default user. */
-    private AuthorizationContext actxDflt;
+    /** Security context for default user. */
+    private SecurityContext secCtxDflt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -71,9 +74,9 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        assertNotNull(actxDflt);
+        assertNotNull(secCtxDflt);
     }
 
     /** {@inheritDoc} */
@@ -88,24 +91,22 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateUpdateDropUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             userSql(i, "CREATE USER test WITH PASSWORD 'test'");
 
-            AuthorizationContext actx = grid(i).context().authentication()
-                .authenticate("TEST", "test");
+            SecurityContext secCtx = authenticate(grid(i), "TEST", "test");
 
-            assertNotNull(actx);
-            assertEquals("TEST", actx.userName());
+            assertNotNull(secCtx);
+            assertEquals("TEST", secCtx.subject().login());
 
             userSql(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
-            actx = grid(i).context().authentication()
-                .authenticate("TEST", "newpasswd");
+            secCtx = authenticate(grid(i), "TEST", "newpasswd");
 
-            assertNotNull(actx);
-            assertEquals("TEST", actx.userName());
+            assertNotNull(secCtx);
+            assertEquals("TEST", secCtx.subject().login());
 
             userSql(i, "DROP USER test");
         }
@@ -116,7 +117,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateWithAlreadyExistUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
         userSql(0, "CREATE USER test WITH PASSWORD 'test'");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
@@ -137,7 +138,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAlterDropNotExistUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
@@ -174,7 +175,8 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -182,7 +184,8 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -190,7 +193,8 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+            }, IgniteAccessControlException.class,
+                "User management operations initiated on behalf of the Ignite node are not expected");
         }
     }
 
@@ -199,14 +203,13 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotAuthorizedOperation() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
 
-        AuthorizationContext actx = grid(0).context().authentication()
-            .authenticate("USER0", "user0");
+        SecurityContext secCtx = authenticate(grid(0), "USER0", "user0");
 
-        AuthorizationContext.context(actx);
+        withSecurityContextOnAllNodes(secCtx);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
@@ -242,7 +245,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDropDefaultUser() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
@@ -262,7 +265,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQuotedUsername() throws Exception {
-        AuthorizationContext.context(actxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         userSql(0, "CREATE USER \"test\" with password 'test'");
 

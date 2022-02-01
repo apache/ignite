@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientReconnectedException;
 
@@ -50,6 +52,29 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** Client channel on first query page. */
     private ClientChannel clientCh;
 
+    /** Cache ID, required only for affinity node calculation. */
+    private final int cacheId;
+
+    /** Partition filter (-1 for all partitions), required only for affinity node calculation. */
+    private final int part;
+
+    /** Constructor. */
+    GenericQueryPager(
+        ReliableChannel ch,
+        ClientOperation qryOp,
+        ClientOperation pageQryOp,
+        Consumer<PayloadOutputChannel> qryWriter,
+        int cacheId,
+        int part
+    ) {
+        this.ch = ch;
+        this.qryOp = qryOp;
+        this.pageQryOp = pageQryOp;
+        this.qryWriter = qryWriter;
+        this.cacheId = cacheId;
+        this.part = part;
+    }
+
     /** Constructor. */
     GenericQueryPager(
         ReliableChannel ch,
@@ -57,10 +82,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter
     ) {
-        this.ch = ch;
-        this.qryOp = qryOp;
-        this.pageQryOp = pageQryOp;
-        this.qryWriter = qryWriter;
+        this(ch, qryOp, pageQryOp, qryWriter, 0, -1);
     }
 
     /** {@inheritDoc} */
@@ -68,14 +90,20 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         if (!hasNext)
             throw new IllegalStateException("No more query results");
 
-        return hasFirstPage ? queryPage() : ch.service(qryOp, qryWriter, this::readResult);
+        return hasFirstPage ? queryPage() : part == -1 ? ch.service(qryOp, qryWriter, this::readResult) :
+            ch.affinityService(cacheId, part, qryOp, qryWriter, this::readResult);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
-        if (cursorId != null && hasNext)
-            ch.request(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId));
+        if (cursorId != null && hasNext && !clientCh.closed()) {
+            try {
+                clientCh.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId), null);
+            } catch (ClientConnectionException | ClientReconnectedException ignored) {
+                // Original connection was lost and cursor was closed by the server.
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -135,13 +163,6 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Get page. */
     private Collection<T> queryPage() throws ClientException {
-        return ch.service(pageQryOp, req -> {
-            if (clientCh != req.clientChannel()) {
-                throw new ClientReconnectedException("Client was reconnected in the middle of results fetch, " +
-                    "query results can be inconsistent, please retry the query.");
-            }
-
-            req.out().writeLong(cursorId);
-        }, this::readResult);
+        return clientCh.service(pageQryOp, req -> req.out().writeLong(cursorId), this::readResult);
     }
 }

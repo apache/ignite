@@ -22,6 +22,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -260,6 +261,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         resetBaselineTopology();
+
+        ignite.resetLostPartitions(Collections.singleton(CACHE_NAME));
 
         // This node will join to different blt.
         startGrid(2);
@@ -572,7 +575,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     private static byte[] dummyPage(int pageSize) {
         ByteBuffer pageBuf = ByteBuffer.allocateDirect(pageSize);
 
-        DummyPageIO.VERSIONS.latest().initNewPage(GridUnsafe.bufferAddress(pageBuf), -1, pageSize);
+        DummyPageIO.VERSIONS.latest().initNewPage(GridUnsafe.bufferAddress(pageBuf), -1, pageSize, null);
 
         byte[] pageData = new byte[pageSize];
 

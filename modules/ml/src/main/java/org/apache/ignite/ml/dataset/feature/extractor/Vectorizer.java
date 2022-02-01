@@ -175,8 +175,11 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * Shotrcuts for coordinates in feature vector.
      */
     public enum LabelCoordinate {
-        /** First. */FIRST,
-        /** Last. */LAST
+        /** First. */
+        FIRST,
+
+        /** Last. */
+        LAST
     }
 
     /** {@inheritDoc} */

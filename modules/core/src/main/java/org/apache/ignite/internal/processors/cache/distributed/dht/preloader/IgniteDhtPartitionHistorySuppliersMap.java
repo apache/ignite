@@ -19,7 +19,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -50,11 +53,13 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @param cntrSince Partition update counter since history supplying is requested.
-     * @return Supplier UUID.
+     * @return List of supplier UUIDs or empty list if haven't these.
      */
-    @Nullable public synchronized UUID getSupplier(int grpId, int partId, long cntrSince) {
+    public synchronized List<UUID> getSupplier(int grpId, int partId, long cntrSince) {
         if (map == null)
-            return null;
+            return Collections.EMPTY_LIST;
+
+        List<UUID> suppliers = new ArrayList<>();
 
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
@@ -62,10 +67,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
             Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
 
             if (historyCounter != null && historyCounter <= cntrSince)
-                return supplierNode;
+                suppliers.add(supplierNode);
         }
 
-        return null;
+        return suppliers;
     }
 
     /**

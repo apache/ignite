@@ -76,6 +76,18 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Get cache partitions distributions. */
     public static final byte CACHE_PARTITIONS = 16;
 
+    /** Get binary type schema request. */
+    public static final byte BINARY_TYPE_GET = 17;
+
+    /** Update binary type schema request. */
+    public static final byte BINARY_TYPE_PUT = 18;
+
+    /** Get binary type name request. */
+    public static final byte BINARY_TYPE_NAME_GET = 19;
+
+    /** Update binary type name request. */
+    public static final byte BINARY_TYPE_NAME_PUT = 20;
+
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
@@ -214,6 +226,26 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
             case CACHE_PARTITIONS:
                 req = new JdbcCachePartitionsRequest();
+
+                break;
+
+            case BINARY_TYPE_NAME_PUT:
+                req = new JdbcBinaryTypeNamePutRequest();
+
+                break;
+
+            case BINARY_TYPE_NAME_GET:
+                req = new JdbcBinaryTypeNameGetRequest();
+
+                break;
+
+            case BINARY_TYPE_PUT:
+                req = new JdbcBinaryTypePutRequest();
+
+                break;
+
+            case BINARY_TYPE_GET:
+                req = new JdbcBinaryTypeGetRequest();
 
                 break;
 

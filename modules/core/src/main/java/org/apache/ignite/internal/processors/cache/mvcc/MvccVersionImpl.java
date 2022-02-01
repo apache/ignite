@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
-import java.nio.ByteBuffer;
 
 /**
  * Base MVCC version implementation.
@@ -85,16 +84,16 @@ public class MvccVersionImpl implements MvccVersion, Message {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MvccVersionImpl that = (MvccVersionImpl) o;
+        MvccVersionImpl that = (MvccVersionImpl)o;
 
         return crdVer == that.crdVer && cntr == that.cntr;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = (int) (crdVer ^ (crdVer >>> 32));
+        int res = (int)(crdVer ^ (crdVer >>> 32));
 
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
+        res = 31 * res + (int)(cntr ^ (cntr >>> 32));
 
         return res;
     }

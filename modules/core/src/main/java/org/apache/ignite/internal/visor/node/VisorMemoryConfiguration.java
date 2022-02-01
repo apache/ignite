@@ -22,8 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,8 +72,8 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     public VisorMemoryConfiguration(DataStorageConfiguration memCfg) {
         assert memCfg != null;
 
-        sysCacheInitSize = memCfg.getSystemRegionInitialSize();
-        sysCacheMaxSize = memCfg.getSystemRegionMaxSize();
+        sysCacheInitSize = memCfg.getSystemDataRegionConfiguration().getInitialSize();
+        sysCacheMaxSize = memCfg.getSystemDataRegionConfiguration().getMaxSize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
 //        dfltMemPlcName = memCfg.getDefaultDataRegionName();

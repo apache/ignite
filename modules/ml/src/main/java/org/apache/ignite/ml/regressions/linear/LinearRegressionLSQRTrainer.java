@@ -63,7 +63,8 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
                                                                  Preprocessor<K, V> extractor) {
         LSQRResult res;
 
-        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor =
+            new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder, envBuilder,
@@ -72,10 +73,10 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
 
             double[] x0 = null;
             if (mdl != null) {
-                int x0Size = mdl.getWeights().size() + 1;
-                Vector weights = mdl.getWeights().like(x0Size);
-                mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
-                weights.set(weights.size() - 1, mdl.getIntercept());
+                int x0Size = mdl.weights().size() + 1;
+                Vector weights = mdl.weights().like(x0Size);
+                mdl.weights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
+                weights.set(weights.size() - 1, mdl.intercept());
                 x0 = weights.asArray();
             }
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);

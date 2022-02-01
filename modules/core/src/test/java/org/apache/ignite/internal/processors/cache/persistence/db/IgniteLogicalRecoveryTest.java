@@ -149,7 +149,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(String name, @Nullable String groupName, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(
+        String name,
+        @Nullable String groupName,
+        CacheMode cacheMode,
+        CacheAtomicityMode atomicityMode
+    ) {
         CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(name)
             .setGroupName(groupName)
             .setCacheMode(cacheMode)
@@ -186,7 +191,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().active(true);
 
@@ -218,7 +223,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().active(true);
 
@@ -281,7 +286,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * @param dynamicCaches Dynamic caches.
      */
     private void doTestWithDynamicCaches(List<CacheConfiguration> dynamicCaches) throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().active(true);
 
@@ -316,7 +321,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
@@ -352,7 +357,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3, false);
 
         crd.cluster().active(true);
 
@@ -464,14 +469,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
 
-            Set<Integer> mvccCaches = ((IgniteEx) node).context().cache().cacheGroups().stream()
+            Set<Integer> mvccCaches = ((IgniteEx)node).context().cache().cacheGroups().stream()
                 .flatMap(group -> group.caches().stream())
                 .filter(cache -> cache.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
                 .map(GridCacheContext::groupId)
                 .collect(Collectors.toSet());
 
             List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
-                .map(msg -> (GridDhtPartitionDemandMessage) msg)
+                .map(msg -> (GridDhtPartitionDemandMessage)msg)
                 .map(GridCacheGroupIdMessage::groupId)
                 .filter(grpId -> grpId != sysCacheGroupId)
                 //TODO: remove following filter when failover for MVCC will be fixed.
@@ -480,7 +485,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                 .collect(Collectors.toList());
 
             Assert.assertTrue("There was unexpected rebalance for some groups" +
-                    " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+                " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
         }
     }
 
@@ -623,7 +628,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            CacheLoader loader = (CacheLoader) o;
+            CacheLoader loader = (CacheLoader)o;
 
             return Objects.equals(cacheName, loader.cacheName);
         }
@@ -661,7 +666,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue) o;
+            TestValue testValue = (TestValue)o;
 
             return indexedField == testValue.indexedField &&
                 Arrays.equals(payload, testValue.payload);

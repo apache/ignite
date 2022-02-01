@@ -1,0 +1,85 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Logistic Regression
+
+Binary Logistic Regression is a special type of regression where a binary response variable is related to a set of explanatory variables, which can be discrete and/or continuous. The important point here to note is that in linear regression, the expected values of the response variable are modeled based on a combination of values taken by the predictors. In logistic regression Probability or Odds of the response taking a particular value is modeled based on the combination of values taken by the predictors. In the Apache Ignite ML module it is implemented via LogisticRegressionModel that solves the binary classification problem. It is a linear method with the loss function in the formulation given by the logistic loss:
+
+image::images/logistic-regression.png[]
+
+For binary classification problems, the algorithm outputs a binary logistic regression model. Given a new data point, denoted by x, the model makes predictions by applying the logistic function:
+
+
+image::images/logistic-regression2.png[]
+
+By default, if `f(wTx)>0.5` or `\mathrm{f}(\wv^T x) > 0.5` (Tex formula), the outcome is positive, or negative otherwise. However, unlike linear SVMs, the raw output of the logistic regression model f(z) has a probabilistic interpretation (i.e., the probability that it is positive).
+
+== Model
+
+The model is represented by the class `LogisticRegressionModel` and keeps the weight vector. It enables a prediction to be made for a given vector of features, in the following way:
+
+
+[source, java]
+----
+LogisticRegressionModel mdl = …;
+
+double prediction = mdl.predict(observation);
+----
+
+Ignite supports several parameters for LogisticRegressionModel:
+
+* `isKeepingRawLabels` - controls the output label format: 0 and 1 for false value and raw distances from the separating hyperplane otherwise (default value: false)
+* `threshold` - a threshold to assign label ‘1’ to the observation if the raw value is more than this threshold (default value: 0.5)
+
+
+
+[source, java]
+----
+LogisticRegressionModel mdl = …;
+
+double prediction = mdl.withRawLabels(true).withThreshold(0.5).predict(observation);
+----
+
+== Trainer
+
+Trainer of the binary logistic regression model builds a MLP 1-level trainer under the hood.
+
+Ignite supports the following parameters for LogisticRegressionSGDTrainer:
+
+  * updatesStgy - update strategy
+  * maxIterations - max amount of iterations before convergence
+  * batchSize - the size of learning batch
+  * locIterations - the amount of local iterations of SGD algorithm
+  * seed - seed value for internal random purposes to reproduce training results
+
+
+Set up the trainer:
+
+[source, java]
+----
+LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
+  .withUpdatesStgy(UPDATES_STRATEGY)
+  .withAmountOfIterations(MAX_ITERATIONS)
+  .withAmountOfLocIterations(BATCH_SIZE)
+  .withBatchSize(LOC_ITERATIONS)
+  .withSeed(SEED);
+
+// Build the model
+LogisticRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+----
+
+
+== Example
+
+To see how `LogRegressionMultiClassModel` can be used in practice, try this link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/regression/logistic/multiclass/LogRegressionMultiClassClassificationExample.java[example, window=_blank], available on GitHub and delivered with every Apache Ignite distribution.

@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(tx.StartTime.Ticks > 0);
             Assert.AreEqual(tx.NodeId, GetIgnite(0).GetCluster().GetLocalNode().Id);
             Assert.AreEqual(Transactions.DefaultTimeoutOnPartitionMapExchange, TimeSpan.Zero);
-            
+
             DateTime startTime1 = tx.StartTime;
 
             tx.Commit();
@@ -860,6 +860,59 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
                 CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
             }
+        }
+
+        /// <summary>
+        /// Tests that read operations lock keys in Serializable mode.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead()
+        {
+            Action<Func<ICache<int, int>, int, int>>
+                test = TestTransactionScopeWithSerializableIsolationLocksKeysOnRead;
+
+            test((cache, key) => cache[key]);
+            test((cache, key) => cache.Get(key));
+            test((cache, key) => cache.GetAsync(key).Result);
+            test((cache, key) => { int val; return cache.TryGet(key, out val) ? val : 0; });
+            test((cache, key) => cache.TryGetAsync(key).Result.Value);
+            test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
+            test((cache, key) => cache.GetAllAsync(new[] {key}).Result.Single().Value);
+        }
+
+        /// <summary>
+        /// Tests that read operations lock keys in Serializable mode.
+        /// </summary>
+        private void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead(
+            Func<ICache<int, int>, int, int> readOp)
+        {
+            var cache = Cache();
+            cache.Put(1, 1);
+
+            var options = new TransactionOptions {IsolationLevel = IsolationLevel.Serializable};
+
+            using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
+            {
+                Assert.AreEqual(1, readOp(cache, 1));
+                Assert.IsNotNull(GetIgnite(0).GetTransactions().Tx);
+
+                var evt = new ManualResetEventSlim();
+
+                var task = Task.Factory.StartNew(() =>
+                {
+                    cache.PutAsync(1, 2);
+                    evt.Set();
+                });
+
+                evt.Wait();
+
+                Assert.AreEqual(1, readOp(cache, 1));
+
+                scope.Complete();
+                task.Wait();
+            }
+
+            TestUtils.WaitForTrueCondition(() => 2 == readOp(cache, 1));
         }
 
         /// <summary>

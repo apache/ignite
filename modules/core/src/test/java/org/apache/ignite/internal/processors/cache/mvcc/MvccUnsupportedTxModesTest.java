@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
+import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;

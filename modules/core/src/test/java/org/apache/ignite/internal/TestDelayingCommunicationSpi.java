@@ -25,12 +25,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  *
  */
-public abstract class TestDelayingCommunicationSpi extends TcpCommunicationSpi {
+public abstract class TestDelayingCommunicationSpi extends TestRecordingCommunicationSpi {
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {

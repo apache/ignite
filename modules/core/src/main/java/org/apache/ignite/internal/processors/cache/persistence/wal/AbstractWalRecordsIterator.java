@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -144,6 +143,9 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
+        if (curException != null)
+            throw curException;
+
         return curRec != null;
     }
 
@@ -166,15 +168,19 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException If failed.
      */
     protected void advance() throws IgniteCheckedException {
+        if (curRec != null)
+            lastRead = curRec.get1();
+
         while (true) {
             try {
                 curRec = advanceRecord(currWalSegment);
 
                 if (curRec != null) {
-                    lastRead = curRec.get1();
+                    if (curRec.get2().type() == null) {
+                        lastRead = curRec.get1();
 
-                    if (curRec.get2().type() == null)
                         continue; // Record was skipped by filter of current serializer, should read next record.
+                    }
 
                     return;
                 }
@@ -261,7 +267,7 @@ public abstract class AbstractWalRecordsIterator
         if (hnd == null)
             return null;
 
-        FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx(), (int)hnd.in().position(), 0);
+        WALPointer actualFilePtr = new WALPointer(hnd.idx(), (int)hnd.in().position(), 0);
 
         try {
             WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
@@ -269,7 +275,7 @@ public abstract class AbstractWalRecordsIterator
             actualFilePtr.length(rec.size());
 
             // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
+            return new IgniteBiTuple<>(actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException) {
@@ -313,7 +319,7 @@ public abstract class AbstractWalRecordsIterator
      */
     protected IgniteCheckedException handleRecordException(
         @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr
+        @Nullable final WALPointer ptr
     ) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
@@ -333,7 +339,7 @@ public abstract class AbstractWalRecordsIterator
      */
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start,
+        @Nullable final WALPointer start,
         @NotNull final SegmentIO fileIO,
         @NotNull final SegmentHeader segmentHeader
     ) throws IgniteCheckedException {
@@ -397,12 +403,12 @@ public abstract class AbstractWalRecordsIterator
      */
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start
+        @Nullable final WALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
         SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.toIO(ioFactory);
+            fileIO = desc.toReadOnlyIO(ioFactory);
 
             SegmentHeader segmentHeader;
 
@@ -455,7 +461,7 @@ public abstract class AbstractWalRecordsIterator
         private static final long serialVersionUID = 0L;
 
         /** Start pointer. */
-        private final FileWALPointer start;
+        private final WALPointer start;
 
         /** Start reached flag. */
         private boolean startReached;
@@ -463,13 +469,13 @@ public abstract class AbstractWalRecordsIterator
         /**
          * @param start Start.
          */
-        StartSeekingFilter(FileWALPointer start) {
+        StartSeekingFilter(WALPointer start) {
             this.start = start;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(WALRecord.RecordType type, WALPointer pointer) {
-            if (start.fileOffset() == ((FileWALPointer)pointer).fileOffset())
+            if (start.fileOffset() == pointer.fileOffset())
                 startReached = true;
 
             return startReached;
@@ -514,6 +520,6 @@ public abstract class AbstractWalRecordsIterator
          * @return One of implementation of {@link FileIO}.
          * @throws IOException if creation of fileIo was not success.
          */
-        SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException;
+        SegmentIO toReadOnlyIO(FileIOFactory fileIOFactory) throws IOException;
     }
 }

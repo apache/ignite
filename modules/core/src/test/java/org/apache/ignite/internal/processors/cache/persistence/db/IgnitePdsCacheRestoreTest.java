@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -130,7 +131,9 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
             ccfgs = configurations2();
         }
 
-        startGrid(2);
+        IgniteEx g2 = startGrid(2);
+
+        g2.resetLostPartitions(Arrays.asList("c1", "c2", "c3"));
 
         cache1 = ignite(2).cache("c1");
 

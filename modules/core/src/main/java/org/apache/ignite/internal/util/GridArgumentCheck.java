@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -171,6 +172,33 @@ public class GridArgumentCheck {
         notNull(arr, name);
 
         if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given String is not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void notEmpty(String str, String name) {
+        notNull(str, name);
+
+        if (str.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given String is nullable but not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void nullableNotEmpty(String str, String name) {
+        if (str == null)
+            return;
+
+        if (str.isEmpty())
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
     }
 

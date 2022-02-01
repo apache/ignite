@@ -30,6 +30,7 @@ using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
+
 namespace ignite
 {
     namespace impl
@@ -59,7 +60,7 @@ namespace ignite
                 return ReadRaw<int8_t>(BinaryUtils::ReadInt8);
             }
 
-            int32_t BinaryReaderImpl::ReadInt8Array(int8_t* res, const int32_t len)
+            int32_t BinaryReaderImpl::ReadInt8Array(int8_t* res, int32_t len)
             {
                 return ReadRawArray<int8_t>(res, len, BinaryUtils::ReadInt8Array, IGNITE_TYPE_ARRAY_BYTE);
             }
@@ -796,6 +797,183 @@ namespace ignite
                 return true;
             }
 
+            void BinaryReaderImpl::Skip()
+            {
+                int8_t hdr = stream->ReadInt8();
+                switch (hdr)
+                {
+                    case IGNITE_TYPE_BINARY:
+                    {
+                        int32_t portLen = stream->ReadInt32(); // Total length of binary object.
+                        stream->Ignore(portLen + 4);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_DECIMAL:
+                    {
+                        stream->Ignore(4); // scale
+                        int32_t magLen = stream->ReadInt32();
+
+                        stream->Ignore(magLen);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_OPTM_MARSH:
+                    {
+                        int32_t realLen = stream->ReadInt32();
+                        stream->Ignore(realLen);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_BYTE:
+                    case IGNITE_TYPE_BOOL:
+                    {
+                        stream->Ignore(1);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_SHORT:
+                    case IGNITE_TYPE_CHAR:
+                    {
+                        stream->Ignore(2);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_INT:
+                    case IGNITE_TYPE_FLOAT:
+                    {
+                        stream->Ignore(4);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_LONG:
+                    case IGNITE_TYPE_DOUBLE:
+                    case IGNITE_TYPE_DATE:
+                    case IGNITE_TYPE_TIME:
+                    case IGNITE_TYPE_ENUM:
+                    case IGNITE_TYPE_BINARY_ENUM:
+                    {
+                        stream->Ignore(8);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_UUID:
+                    {
+                        stream->Ignore(16);
+                        return;
+                    }
+
+                    case IGNITE_TYPE_STRING:
+                    case IGNITE_TYPE_ARRAY_BYTE:
+                    case IGNITE_TYPE_ARRAY_BOOL:
+                    {
+                        int32_t realLen = stream->ReadInt32();
+                        if (realLen > 0)
+                            stream->Ignore(realLen);
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_ARRAY_SHORT:
+                    case IGNITE_TYPE_ARRAY_CHAR:
+                    {
+                        int32_t realLen = stream->ReadInt32();
+                        if (realLen > 0)
+                            stream->Ignore(realLen * 2);
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_ARRAY_INT:
+                    case IGNITE_TYPE_ARRAY_FLOAT:
+                    {
+                        int32_t realLen = stream->ReadInt32();
+                        if (realLen > 0)
+                            stream->Ignore(realLen * 4);
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_ARRAY_LONG:
+                    case IGNITE_TYPE_ARRAY_DOUBLE:
+                    {
+                        int32_t realLen = stream->ReadInt32();
+                        if (realLen > 0)
+                            stream->Ignore(realLen * 8);
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_ARRAY_STRING:
+                    case IGNITE_TYPE_ARRAY_UUID:
+                    case IGNITE_TYPE_ARRAY_DATE:
+                    case IGNITE_TYPE_ARRAY_TIMESTAMP:
+                    case IGNITE_TYPE_ARRAY_TIME:
+                    case IGNITE_TYPE_ARRAY_DECIMAL:
+                    case IGNITE_TYPE_ARRAY:
+                    {
+                        int32_t cnt = stream->ReadInt32();
+                        for (int32_t i = 0; i < cnt; i++)
+                            Skip();
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_COLLECTION:
+                    {
+                        int32_t cnt = stream->ReadInt32();
+
+                        // Collection type ID.
+                        stream->Ignore(1);
+
+                        for (int32_t i = 0; i < cnt; i++)
+                            Skip();
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_MAP:
+                    {
+                        int32_t cnt = stream->ReadInt32();
+
+                        // Map type ID.
+                        stream->Ignore(1);
+
+                        for (int32_t i = 0; i < cnt; i++)
+                        {
+                            Skip();
+                            Skip();
+                        }
+
+                        return;
+                    }
+
+                    case IGNITE_TYPE_TIMESTAMP:
+                    {
+                        stream->Ignore(12);
+                        return;
+                    }
+
+                    case IGNITE_HDR_FULL:
+                    {
+                        int32_t objectBegin = stream->Position() - 1;
+                        int32_t objectLen = stream->ReadInt32(objectBegin + IGNITE_OFFSET_LEN);
+                        stream->Position(objectBegin + objectLen);
+                        return;
+                    }
+
+                    case IGNITE_HDR_NULL:
+                        return;
+
+                    default:
+                    {
+                        int32_t pos = stream->Position() - 1;
+                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos,
+                            "unsupported type", static_cast<int>(hdr));
+                    }
+                }
+            }
+
             void BinaryReaderImpl::SetRawMode()
             {
                 CheckRawMode(false);
@@ -915,6 +1093,34 @@ namespace ignite
                     IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos,
                         "expected", static_cast<int>(IGNITE_TYPE_STRING), "actual", static_cast<int>(typeId))
                 }
+            }
+
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<
+                    ignite::binary::BinaryReader, std::vector<int8_t> >(std::vector<int8_t>& res)
+            {
+                ReadArrayToVectorInternal<int8_t>(res, stream, BinaryUtils::ReadInt8Array, IGNITE_TYPE_ARRAY_BYTE);
+            }
+
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<
+                    ignite::binary::BinaryReader, std::vector<int16_t> >(std::vector<int16_t>& res)
+            {
+                ReadArrayToVectorInternal<int16_t>(res, stream, BinaryUtils::ReadInt16Array, IGNITE_TYPE_ARRAY_SHORT);
+            }
+
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<
+                    ignite::binary::BinaryReader, std::vector<int32_t> >(std::vector<int32_t>& res)
+            {
+                ReadArrayToVectorInternal<int32_t>(res, stream, BinaryUtils::ReadInt32Array, IGNITE_TYPE_ARRAY_INT);
+            }
+
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<
+                    ignite::binary::BinaryReader, std::vector<int64_t> >(std::vector<int64_t>& res)
+            {
+                ReadArrayToVectorInternal<int64_t>(res, stream, BinaryUtils::ReadInt64Array, IGNITE_TYPE_ARRAY_LONG);
             }
 
             template <typename T>

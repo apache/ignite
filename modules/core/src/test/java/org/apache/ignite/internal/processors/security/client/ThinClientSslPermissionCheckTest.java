@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -161,7 +162,9 @@ public class ThinClientSslPermissionCheckTest extends AbstractSecurityTest {
     public void testCacheTaskPermOperations() throws Exception {
         List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
             t(c -> c.cache(CACHE).removeAll(), "removeAll"),
-            t(c -> c.cache(CACHE).clear(), "clear")
+            t(c -> c.cache(CACHE).clear(), "clear"),
+            t(c -> c.cache(CACHE).clear("key"), "clearKey"),
+            t(c -> c.cache(CACHE).clearAll(ImmutableSet.of("key")), "clearKeys")
         );
 
         for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops) {
@@ -203,9 +206,11 @@ public class ThinClientSslPermissionCheckTest extends AbstractSecurityTest {
             t(c -> c.cache(cacheName).get("key"), "get)"),
             t(c -> c.cache(cacheName).getAll(Collections.singleton("key")), "getAll"),
             t(c -> c.cache(cacheName).containsKey("key"), "containsKey"),
+            t(c -> c.cache(cacheName).containsKeys(ImmutableSet.of("key")), "containsKeys"),
             t(c -> c.cache(cacheName).remove("key"), "remove"),
             t(c -> c.cache(cacheName).replace("key", "value"), "replace"),
             t(c -> c.cache(cacheName).putIfAbsent("key", "value"), "putIfAbsent"),
+            t(c -> c.cache(cacheName).getAndPutIfAbsent("key", "value"), "getAndPutIfAbsent"),
             t(c -> c.cache(cacheName).getAndPut("key", "value"), "getAndPut"),
             t(c -> c.cache(cacheName).getAndRemove("key"), "getAndRemove"),
             t(c -> c.cache(cacheName).getAndReplace("key", "value"), "getAndReplace")

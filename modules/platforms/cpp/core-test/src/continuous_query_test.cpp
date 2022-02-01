@@ -274,11 +274,6 @@ namespace ignite
             }
         };
 
-        namespace
-        {
-            extern const char typeName[] = "RangeFilter";
-        }
-
         template<typename K, typename V>
         struct BinaryType< RangeFilter<K,V> > : BinaryTypeDefaultAll< RangeFilter<K,V> >
         {
@@ -615,7 +610,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 
     ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr));
 
-    BOOST_CHECK_EQUAL(qry.GetBufferSize(), QueryType::DEFAULT_BUFFER_SIZE);
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), (int32_t) QueryType::DEFAULT_BUFFER_SIZE);
 
     qry.SetBufferSize(2 * QueryType::DEFAULT_BUFFER_SIZE);
 

@@ -35,6 +35,7 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/config/connection_string_parser.h"
+#include "ignite/odbc/system/system_dsn.h"
 
 // Uncomment for per-byte debug.
 //#define PER_BYTE_DEBUG
@@ -85,7 +86,8 @@ namespace ignite
                 << config::ConnectionInfo::InfoTypeToString(type) << "), "
                 << std::hex << reinterpret_cast<size_t>(buf) << ", "
                 << buflen << ", "
-                << std::hex << reinterpret_cast<size_t>(reslen));
+                << std::hex << reinterpret_cast<size_t>(reslen)
+                << std::dec);
 
             IGNITE_ODBC_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
@@ -102,30 +104,39 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& connectStr)
+        void Connection::Establish(const std::string& connectStr, void* parentWindow)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr));
+            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr, parentWindow));
         }
 
-        SqlResult::Type Connection::InternalEstablish(const std::string& connectStr)
+        SqlResult::Type Connection::InternalEstablish(const std::string& connectStr, void* parentWindow)
         {
             config::Configuration config;
-
             config::ConnectionStringParser parser(config);
-
             parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+
+            if (parentWindow)
+            {
+                LOG_MSG("Parent window is passed. Creating configuration window.");
+                if (!DisplayConnectionWindow(parentWindow, config))
+                {
+                    AddStatusRecord(odbc::SqlState::SHY008_OPERATION_CANCELED, "Connection canceled by user");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
 
             if (config.IsDsnSet())
             {
                 std::string dsn = config.GetDsn();
 
-                ReadDsnConfiguration(dsn.c_str(), config);
+                ReadDsnConfiguration(dsn.c_str(), config, &GetDiagnosticRecords());
             }
 
             return InternalEstablish(config);
         }
 
-        void Connection::Establish(const config::Configuration cfg)
+        void Connection::Establish(const config::Configuration& cfg)
         {
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
@@ -136,7 +147,7 @@ namespace ignite
 
             if (sslMode == ssl::SslMode::DISABLE)
             {
-                socket.reset(network::ssl::MakeTcpSocketClient());
+                socket.reset(network::MakeTcpSocketClient());
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -149,14 +160,17 @@ namespace ignite
             {
                 LOG_MSG("Can not load OpenSSL library: " << err.GetText());
 
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                                "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+                AddStatusRecord("Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?)");
 
                 return SqlResult::AI_ERROR;
             }
 
-            socket.reset(network::ssl::MakeSecureSocketClient(
-                config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
+            network::ssl::SecureConfiguration sslCfg;
+            sslCfg.certPath = config.GetSslCertFile();
+            sslCfg.keyPath = config.GetSslKeyFile();
+            sslCfg.caPath = config.GetSslCaFile();
+
+            socket.reset(network::ssl::MakeSecureSocketClient(sslCfg));
 
             return SqlResult::AI_SUCCESS;
         }
@@ -176,7 +190,7 @@ namespace ignite
 
             if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+                AddStatusRecord("No valid address to connect.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -211,7 +225,9 @@ namespace ignite
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
-                return SqlResult::AI_ERROR;
+                // It is important to return SUCCESS_WITH_INFO and not ERROR here, as if we return an error, Windows
+                // Driver Manager may decide that connection is not valid anymore which results in memory leak.
+                return SqlResult::AI_SUCCESS_WITH_INFO;
             }
 
             Close();
@@ -276,7 +292,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << common::HexDump(msg.GetData(), msg.GetSize()));
 #endif //PER_BYTE_DEBUG
 
             return true;
@@ -345,7 +361,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+            LOG_MSG("Message received: " << common::HexDump(&msg[0], msg.size()));
 #endif //PER_BYTE_DEBUG
 
             return true;
@@ -430,7 +446,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -471,7 +487,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -484,7 +500,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
         }
 
-        SqlResult::Type Connection::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        SqlResult::Type Connection::InternalGetAttribute(int attr, void* buf, SQLINTEGER, SQLINTEGER* valueLen)
         {
             if (!buf)
             {
@@ -560,7 +576,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
         }
 
-        SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER)
         {
             switch (attr)
             {
@@ -681,7 +697,7 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current version of the protocol, used by the server node is " 
+                constructor << "Current version of the protocol, used by the server node is "
                             << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version "
                             << protocolVersion.ToString() << ".";

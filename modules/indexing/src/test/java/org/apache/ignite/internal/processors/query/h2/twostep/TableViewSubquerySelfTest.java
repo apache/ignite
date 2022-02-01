@@ -69,7 +69,7 @@ public class TableViewSubquerySelfTest extends AbstractIndexingCommonTest {
             "WITH \"TEMPLATE=partitioned, cache_name=%s\""; //, WRAP_VALUE=false
 
         try (FieldsQueryCursor<List<?>> cur = initCache.query(
-            new SqlFieldsQuery(String.format(creationQry,cacheName)))) {
+            new SqlFieldsQuery(String.format(creationQry, cacheName)))) {
             assertNotNull(cur);
 
             List<List<?>> rows = cur.getAll();

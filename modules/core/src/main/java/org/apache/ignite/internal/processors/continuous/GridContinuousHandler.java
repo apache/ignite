@@ -116,7 +116,9 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * Node which started routine leave topology.
      */
-    public void onNodeLeft();
+    public default void flushOnNodeLeft() {
+        // No-op.
+    }
 
     /**
      * @return Topic for ordered notifications. If {@code null}, notifications

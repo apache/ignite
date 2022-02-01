@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
 
 /**
  * Common class for SQL parser tests.

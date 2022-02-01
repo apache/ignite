@@ -21,12 +21,21 @@ import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,9 +50,21 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
         throws BinaryObjectException {
+        return readObject(reader, binObjAllow, true);
+    }
+
+    /**
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+        throws BinaryObjectException {
         byte type = reader.readByte();
 
-        return readObject(type, reader, binObjAllow);
+        return readObject(type, reader, binObjAllow, keepBinary);
     }
 
     /**
@@ -53,8 +74,8 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow)
-        throws BinaryObjectException {
+    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+        boolean keepBinary) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -146,8 +167,13 @@ public abstract class SqlListenerUtils {
             default:
                 reader.in().position(reader.in().position() - 1);
 
-                if (binObjAllow)
-                    return reader.readObjectDetached();
+                if (binObjAllow) {
+                    Object res = reader.readObjectDetached();
+
+                    return !keepBinary && res instanceof BinaryObject
+                        ? ((BinaryObject)res).deserialize()
+                        : res;
+                }
                 else
                     throw new BinaryObjectException("Custom objects are not supported");
         }
@@ -264,6 +290,29 @@ public abstract class SqlListenerUtils {
             || cls == Time[].class
             || cls == Timestamp[].class
             || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+    }
+
+    /**
+     * @param e Exception to convert.
+     * @return IgniteQueryErrorCode.
+     */
+    public static int exceptionToSqlErrorCode(Throwable e) {
+        if (e instanceof QueryCancelledException)
+            return IgniteQueryErrorCode.QUERY_CANCELED;
+        if (e instanceof TransactionSerializationException)
+            return IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+        if (e instanceof TransactionAlreadyCompletedException)
+            return IgniteQueryErrorCode.TRANSACTION_COMPLETED;
+        if (e instanceof TransactionDuplicateKeyException)
+            return IgniteQueryErrorCode.DUPLICATE_KEY;
+        if (e instanceof TransactionMixedModeException)
+            return IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH;
+        if (e instanceof TransactionUnsupportedConcurrencyException)
+            return IgniteQueryErrorCode.UNSUPPORTED_OPERATION;
+        if (e instanceof IgniteSQLException)
+            return ((IgniteSQLException)e).statusCode();
+        else
+            return IgniteQueryErrorCode.UNKNOWN;
     }
 
     /**

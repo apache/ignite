@@ -17,9 +17,11 @@
 
 #include <time.h>
 #include <vector>
+#include <sstream>
 
 #include <windows.h>
 
+#include <ignite/ignite_error.h>
 #include <ignite/common/platform_utils.h>
 
 namespace ignite
@@ -133,6 +135,25 @@ namespace ignite
         unsigned GetRandSeed()
         {
             return static_cast<unsigned>(GetTickCount() ^ GetCurrentProcessId());
+        }
+
+        std::string GetLastSystemError()
+        {
+            DWORD errorCode = GetLastError();
+
+            std::string errorDetails;
+            if (errorCode != ERROR_SUCCESS)
+            {
+                char errBuf[1024] = { 0 };
+
+                FormatMessageA(
+                        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, errorCode,
+                        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), errBuf, sizeof(errBuf), NULL);
+
+                errorDetails.assign(errBuf);
+            }
+
+            return errorDetails;
         }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.events;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +47,8 @@ import org.jetbrains.annotations.Nullable;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method
+ * {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -54,8 +56,8 @@ import org.jetbrains.annotations.Nullable;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  *
  * @see EventType#EVT_CACHE_QUERY_EXECUTED
@@ -106,6 +108,8 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      * @param scanQryFilter Scan query filter.
      * @param args Query arguments.
      * @param subjId Security subject ID.
+     * @param contQryFilter Continuous query filter.
+     * @param taskName Name of the task if event was caused by an operation initiated within task execution.
      */
     public CacheQueryExecutedEvent(
         ClusterNode node,
@@ -212,7 +216,8 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     /**
      * Gets security subject ID.
      *
-     * @return Security subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     @Nullable public UUID subjectId() {
         return subjId;

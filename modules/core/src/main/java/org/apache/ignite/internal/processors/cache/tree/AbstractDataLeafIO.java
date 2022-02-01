@@ -45,6 +45,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
         assert row.link() != 0;
+        assertPageType(pageAddr);
 
         PageUtils.putLong(pageAddr, off, row.link());
         off += 8;
@@ -87,7 +88,9 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
         int srcIdx) {
-        RowLinkIO rowIo = (RowLinkIO) srcIo;
+        assertPageType(dstPageAddr);
+
+        RowLinkIO rowIo = (RowLinkIO)srcIo;
 
         long link = rowIo.getLink(srcPageAddr, srcIdx);
         int hash = rowIo.getHash(srcPageAddr, srcIdx);
@@ -167,7 +170,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
 
     /** {@inheritDoc} */
     @Override public final long getLink(long pageAddr, int idx) {
-        assert idx < getCount(pageAddr) : idx;
+        assert idx < getCount(pageAddr) : "idx=" + idx + ", cnt=" + getCount(pageAddr);
 
         return PageUtils.getLong(pageAddr, offset(idx));
     }
@@ -179,6 +182,8 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
 
     /** {@inheritDoc} */
     @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+        assertPageType(pageAddr);
+
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++)
@@ -188,7 +193,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /**
      * @return {@code True} if cache ID has to be stored.
      */
-    protected boolean storeCacheId() {
+    public boolean storeCacheId() {
         return false;
     }
 

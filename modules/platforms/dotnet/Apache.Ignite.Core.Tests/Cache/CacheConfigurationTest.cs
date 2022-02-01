@@ -131,10 +131,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
 
             var ignoredProps = new[] {"AffinityFunction"};
-            
+
             AssertExtensions.ReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
                 ignoredProperties: new HashSet<string>(ignoredProps));
-            
+
             AssertConfigIsDefault(springConfig);
         }
 
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't create existing cache
             Assert.Throws<IgniteException>(() => _ignite.CreateCache<int, int>(cfg));
-            
+
             // Check put-get
             cache[1] = new Entity { Foo = 1 };
             Assert.AreEqual(1, cache[1].Foo);
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
-            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
+            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold,
                 cfg.StoreConcurrentLoadAllThreshold);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
@@ -376,12 +376,33 @@ namespace Apache.Ignite.Core.Tests.Cache
                 return;
             }
 
-            var px = (AffinityFunctionBase) x;
-            var py = (AffinityFunctionBase) y;
+            var px = (RendezvousAffinityFunction) x;
+            var py = (RendezvousAffinityFunction) y;
 
             Assert.AreEqual(px.GetType(), py.GetType());
             Assert.AreEqual(px.Partitions, py.Partitions);
             Assert.AreEqual(px.ExcludeNeighbors, py.ExcludeNeighbors);
+
+            AssertConfigsAreEqual(px.AffinityBackupFilter, py.AffinityBackupFilter);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IAffinityBackupFilter x, IAffinityBackupFilter y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.GetType(), y.GetType());
+
+            var fx = (ClusterNodeAttributeAffinityBackupFilter) x;
+            var fy = (ClusterNodeAttributeAffinityBackupFilter) y;
+
+            Assert.AreEqual(fx.AttributeNames, fy.AttributeNames);
         }
 
         /// <summary>
@@ -627,7 +648,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TableName = "Table1",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)), 
+                            new QueryField("length", typeof(int)),
                             new QueryField("name", typeof(string)) {IsKeyField = true, DefaultValue = "defName"},
                             new QueryField("location", typeof(string)) {NotNull = true},
                         },
@@ -737,8 +758,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TableName = "MyTable",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)) {DefaultValue = -1}, 
-                            new QueryField("name", typeof(string)), 
+                            new QueryField("length", typeof(int)) {DefaultValue = -1},
+                            new QueryField("name", typeof(string)),
                             new QueryField("location", typeof(string)) {IsKeyField = true}
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -768,12 +789,16 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
-                }, 
+                },
                 OnheapCacheEnabled = true,  // Required with eviction policy
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,
-                    ExcludeNeighbors = false
+                    ExcludeNeighbors = false,
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = new[] {"foo", "bar"}
+                    }
                 }
             };
         }

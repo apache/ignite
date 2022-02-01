@@ -70,7 +70,10 @@ public enum GridTopic {
     /** */
     TOPIC_REPLICATION,
 
-    /** */
+    /**
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
+     */
+    @Deprecated
     TOPIC_IGFS,
 
     /** */
@@ -91,7 +94,10 @@ public enum GridTopic {
     /** */
     TOPIC_TIME_SYNC,
 
-    /** */
+    /**
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
+     */
+    @Deprecated
     TOPIC_HADOOP,
 
     /** */
@@ -146,7 +152,10 @@ public enum GridTopic {
     TOPIC_DEADLOCK_DETECTION,
 
     /** Message topic for the distributed process. See {@link DistributedProcess}. */
-    TOPIC_DISTRIBUTED_PROCESS;
+    TOPIC_DISTRIBUTED_PROCESS,
+
+    /** */
+    TOPIC_COMM_SYSTEM;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

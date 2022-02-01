@@ -20,12 +20,17 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.net.InetAddress;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,6 +50,12 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     private @Nullable Long order;
 
     /**
+     * Resolved list of (ip, hostname) pairs
+     * (if ip has no resolved host, hostname will be the string representation of ip).
+     */
+    private @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
+
+    /**
      * Default constructor.
      */
     public VisorBaselineNode() {
@@ -55,19 +66,22 @@ public class VisorBaselineNode extends VisorDataTransferObject {
      * Create data transfer object for baseline node.
      *
      * @param node Baseline node.
+     * @param resolvedInetAddrs List of resolved ip, hostnames pairs.
      */
-    public VisorBaselineNode(BaselineNode node) {
+    public VisorBaselineNode(BaselineNode node, @NotNull Collection<ResolvedAddresses> resolvedInetAddrs) {
         consistentId = String.valueOf(node.consistentId());
         attrs = node.attributes();
 
         //Baseline topology returns instances of DetachedClusternode
-        if (node instanceof IgniteClusterNode)
+        if (node instanceof IgniteClusterNode) {
             order = ((IgniteClusterNode)node).order();
+            addrs = resolvedInetAddrs;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /**
@@ -91,11 +105,20 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         return order;
     }
 
+    /**
+     *
+     * @return Collection with resolved pairs ip->hostname
+     */
+    public @NotNull Collection<ResolvedAddresses> getAddrs() {
+        return addrs;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, consistentId);
         U.writeMap(out, attrs);
         out.writeObject(order);
+        U.writeCollection(out, addrs);
     }
 
     /** {@inheritDoc} */
@@ -105,10 +128,72 @@ public class VisorBaselineNode extends VisorDataTransferObject {
 
         if (protoVer >= V2)
             order = (Long)in.readObject();
+
+        if (protoVer >= V3) {
+            Collection<ResolvedAddresses> inputAddrs = U.readCollection(in);
+
+            if (inputAddrs != null)
+                addrs = inputAddrs;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorBaselineNode.class, this);
+    }
+
+    /**
+     * Simple data class for storing (hostname, address) pairs
+     */
+    public static class ResolvedAddresses extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String hostname;
+
+        /** Textual representation of IP address. */
+        private String addr;
+
+        /**
+         * @param inetAddr Inet address.
+         */
+        ResolvedAddresses(InetAddress inetAddr) {
+            this.hostname = inetAddr.getHostName();
+            this.addr = inetAddr.getHostAddress();
+        }
+
+        /**
+         * Default constructor.
+         */
+        public ResolvedAddresses() {
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, hostname);
+            U.writeString(out, addr);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in)
+            throws IOException, ClassNotFoundException {
+            hostname = U.readString(in);
+            addr = U.readString(in);
+        }
+
+        /**
+         * @return Hostname.
+         */
+        public String hostname() {
+            return hostname;
+        }
+
+        /**
+         * @return Textual representation of IP address.
+         */
+        public String address() {
+            return addr;
+        }
     }
 }

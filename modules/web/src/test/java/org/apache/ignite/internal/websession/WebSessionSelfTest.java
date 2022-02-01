@@ -17,11 +17,23 @@
 
 package org.apache.ignite.internal.websession;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,14 +48,14 @@ import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.security.HashLoginService;
@@ -119,6 +131,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         testImplicitlyModification("ignite-webapp-config.xml");
     }
 
+    /** */
     @Test
     public void testSessionCookie() throws Exception {
         testSessionCookie("/modules/core/src/test/config/websession/example-cache.xml");
@@ -239,7 +252,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 HttpSession ses = cache.get(sesId);
 
                 assertNotNull(ses);
-                assertEquals(reqMarker, ((Profile) ses.getAttribute("profile")).getMarker());
+                assertEquals(reqMarker, ((Profile)ses.getAttribute("profile")).getMarker());
             }
             else {
                 IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
@@ -375,7 +388,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
 
-            HttpURLConnection con = (HttpURLConnection) conn2;
+            HttpURLConnection con = (HttpURLConnection)conn2;
 
             con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
 
@@ -543,7 +556,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
 
-            HttpURLConnection con = (HttpURLConnection) conn2;
+            HttpURLConnection con = (HttpURLConnection)conn2;
 
             con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
 
@@ -1247,7 +1260,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 ses.setAttribute("key2", "val2");
                 ses.setAttribute("mkey", new TestObj());
 
-                Profile p = (Profile) ses.getAttribute("profile");
+                Profile p = (Profile)ses.getAttribute("profile");
 
                 if (p == null) {
                     p = new Profile();
@@ -1383,7 +1396,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final TestObj testObj = (TestObj) o;
+            final TestObj testObj = (TestObj)o;
 
             if (keepBinaryFlag != testObj.keepBinaryFlag) return false;
             return val != null ? val.equals(testObj.val) : testObj.val == null;

@@ -18,16 +18,16 @@
 package org.apache.ignite.visor.commands.config
 
 import java.util.UUID
+
 import org.apache.ignite.cluster.ClusterGroupEmptyException
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask, VisorSpiDescription}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
-
-import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask, VisorSpiDescription}
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -289,7 +289,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Public thread pool size", safe(execCfg.getPublicThreadPoolSize))
         execSvcT += ("System thread pool size", safe(execCfg.getSystemThreadPoolSize))
         execSvcT += ("Management thread pool size", safe(execCfg.getManagementThreadPoolSize))
-        execSvcT += ("IGFS thread pool size", safe(execCfg.getIgfsThreadPoolSize))
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))

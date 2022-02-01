@@ -23,8 +23,10 @@ import org.apache.ignite.IgniteCache;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition loss policy. Defines how cache will behave in a case when one or more partitions are lost
+ * Partition loss policy. Defines how a cache will behave in a case when one or more partitions are lost
  * because of a node(s) failure.
+ * <p>
+ * A partition is considered <em>lost</em> if all owning nodes had left a topology.
  * <p>
  * All <code>*_SAFE</code> policies prevent a user from interaction with partial data in lost partitions until
  * {@link Ignite#resetLostPartitions(Collection)} method is called. <code>*_ALL</code> policies allow working with
@@ -47,6 +49,8 @@ public enum PartitionLossPolicy {
      * All writes to the cache will be failed with an exception. All reads will proceed as if all partitions
      * were in a consistent state. The result of reading from a lost partition is undefined and may be different
      * on different nodes in the cluster.
+     *
+     * @deprecated {@link #READ_ONLY_SAFE} is used instead.
      */
     READ_ONLY_ALL,
 
@@ -59,13 +63,16 @@ public enum PartitionLossPolicy {
     /**
      * All reads and writes will proceed as if all partitions were in a consistent state. The result of reading
      * from a lost partition is undefined and may be different on different nodes in the cluster.
+     *
+     * @deprecated {@link #READ_WRITE_SAFE} is used instead.
      */
     READ_WRITE_ALL,
 
     /**
-     * If partition is lost, reset it's state and do not clear intermediate data. The result of reading from
-     * a previously lost and not cleared partition is undefined and may be different on different nodes in the
-     * cluster.
+     * If a partition was lost silently ignore it and allow any operations with a partition.
+     * Partition loss events are not fired if using this mode.
+     * For pure in-memory caches the policy will work only when baseline auto adjust is enabled with zero timeout.
+     * If persistence is enabled, the policy is always ignored. READ_WRITE_SAFE is used instead.
      */
     IGNORE;
 

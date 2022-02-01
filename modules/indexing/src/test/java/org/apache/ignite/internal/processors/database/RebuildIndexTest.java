@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -105,7 +105,12 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointFrequency(10000000)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setInitialSize(256 * 1024 * 1024)
+                        .setMaxSize(256 * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                )
         );
 
         if (srvLog != null)
@@ -176,11 +181,12 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        while (IdleVerifyUtility.isCheckpointNow(node.context().cache().context().database()))
-            doSleep(500);
+        forceCheckpoint();
+
+        enableCheckpoints(G.allGrids(), false);
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false, true);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME), 0, 0, false, true);
 
         node.context().resource().injectGeneric(clo);
 

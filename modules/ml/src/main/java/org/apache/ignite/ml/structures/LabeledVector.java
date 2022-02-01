@@ -98,4 +98,9 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
         vector = (Vector)in.readObject();
         lb = (L)in.readObject();
     }
+
+    /** */
+    public L getLb() {
+        return lb;
+    }
 }

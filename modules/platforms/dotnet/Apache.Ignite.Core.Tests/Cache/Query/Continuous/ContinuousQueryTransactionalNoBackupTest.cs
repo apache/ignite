@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Continuous query tests for TRANSACTIONAL cache with no backups.
     /// </summary>
+    [TestFixture]
     public class ContinuousQueryTransactionalNoBackupTest : ContinuousQueryNoBackupAbstractTest
     {
         /// <summary>

@@ -38,7 +38,7 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * To choose the best hyper-parameters the cross-validation will be used in this example.
@@ -126,7 +126,7 @@ public class Step_8_CV {
                         DecisionTreeClassificationTrainer trainer
                             = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
-                        CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
+                        CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator
                             = new CrossValidation<>();
 
                         double[] scores = scoreCalculator
@@ -167,7 +167,7 @@ public class Step_8_CV {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
                 // Train decision tree model.
-                DecisionTreeNode bestMdl = trainer.fit(
+                DecisionTreeModel bestMdl = trainer.fit(
                     ignite,
                     dataCache,
                     split.getTrainFilter(),

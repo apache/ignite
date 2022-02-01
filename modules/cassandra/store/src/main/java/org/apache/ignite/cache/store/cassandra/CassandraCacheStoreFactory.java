@@ -192,7 +192,10 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
             return spring.loadBeanFromAppContext(appCtx, beanName);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']', e);
+            throw new IgniteException(
+                "Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']',
+                e
+            );
         }
     }
 }

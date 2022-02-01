@@ -58,7 +58,7 @@ public class HibernateKeyWrapper implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        HibernateKeyWrapper that = (HibernateKeyWrapper) o;
+        HibernateKeyWrapper that = (HibernateKeyWrapper)o;
 
         return (key != null ? key.equals(that.key) : that.key == null) &&
             (entry != null ? entry.equals(that.entry) : that.entry == null) &&

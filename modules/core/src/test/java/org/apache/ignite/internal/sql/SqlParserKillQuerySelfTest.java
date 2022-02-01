@@ -91,14 +91,16 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
      * @return Expected exception message.
      */
     private String expectedExceptionMessageNoAsyncAndQueryId() {
-        return "Expected ASYNC token or global query id. Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
+        return "Expected ASYNC token or global query id. " +
+            "Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
     }
 
     /**
      * @return Expected exception message.
      */
     private String expectedExceptionMessageNoQueryId() {
-        return "Expected global query id. Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
+        return "Expected global query id. " +
+            "Global query id should have format '{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
     }
 
     /**

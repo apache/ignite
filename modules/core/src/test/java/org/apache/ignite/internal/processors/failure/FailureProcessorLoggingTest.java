@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.failure;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -100,7 +100,9 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
 
         testLog.expectedWarnMessage(IGNORED_FAILURE_LOG_MSG);
 
-        ignite.context().failure().process(new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error")));
+        ignite.context().failure().process(
+            new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error"))
+        );
 
         assertTrue(testLog.warnFlag().get());
 

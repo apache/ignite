@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
     /// Cache client async wrapper.
@@ -356,6 +357,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
             return _cache.WithExpiryPolicy(plc);
+        }
+
+        /** <inheritDoc /> */
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

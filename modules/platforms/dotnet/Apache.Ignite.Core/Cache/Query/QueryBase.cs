@@ -21,11 +21,12 @@ namespace Apache.Ignite.Core.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// Base class for all Ignite cache entry queries.
     /// </summary>
-    public abstract class QueryBase
+    public abstract class QueryBase : IQueryBaseInternal
     {
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Cache.Query
         }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.
@@ -58,10 +59,22 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         internal abstract void Write(BinaryWriter writer, bool keepBinary);
 
+        /** <inheritdoc /> */
+        void IQueryBaseInternal.Write(BinaryWriter writer, bool keepBinary)
+        {
+            Write(writer, keepBinary);
+        }
+
         /// <summary>
         /// Gets the interop opcode.
         /// </summary>
         internal abstract CacheOp OpId { get; }
+
+        /** <inheritdoc /> */
+        CacheOp IQueryBaseInternal.OpId
+        {
+            get { return OpId; }
+        }
 
         /// <summary>
         /// Write query arguments.

@@ -62,7 +62,8 @@ public class KMeansClusterizationExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer =
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
                 KMeansTrainer trainer = new KMeansTrainer();
 
@@ -73,8 +74,8 @@ public class KMeansClusterizationExample {
                 );
 
                 System.out.println(">>> KMeans centroids");
-                Tracer.showAscii(mdl.getCenters()[0]);
-                Tracer.showAscii(mdl.getCenters()[1]);
+                Tracer.showAscii(mdl.centers()[0]);
+                Tracer.showAscii(mdl.centers()[1]);
                 System.out.println(">>>");
 
                 System.out.println(">>> --------------------------------------------");

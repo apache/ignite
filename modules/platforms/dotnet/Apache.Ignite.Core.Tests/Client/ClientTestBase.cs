@@ -45,13 +45,25 @@ namespace Apache.Ignite.Core.Tests.Client
         protected const string RequestNamePrefixCache = "cache.ClientCache";
 
         /** */
-        protected const string RequestNamePrefixBinary = "binary.ClientBinary";
+        protected const string RequestNamePrefixStreamer = "streamer.ClientDataStreamer";
 
         /** Grid count. */
         private readonly int _gridCount = 1;
 
         /** SSL. */
         private readonly bool _enableSsl;
+
+        /** Partition Awareness */
+        private readonly bool _enablePartitionAwareness;
+
+        /** Enable logging to a list logger for checks and assertions. */
+        private readonly bool _enableServerListLogging;
+
+        /** Server list log levels. */
+        private readonly LogLevel[] _serverListLoggerLevels;
+
+        /** */
+        protected readonly bool _useBinaryArray;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
@@ -64,10 +76,20 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount, bool enableSsl = false)
+        public ClientTestBase(
+            int gridCount,
+            bool enableSsl = false,
+            bool enablePartitionAwareness = false,
+            bool enableServerListLogging = false,
+            LogLevel[] serverListLoggerLevels = null,
+            bool useBinaryArray = false)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
+            _enablePartitionAwareness = enablePartitionAwareness;
+            _enableServerListLogging = enableServerListLogging;
+            _serverListLoggerLevels = serverListLoggerLevels ?? new[] { LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
+            _useBinaryArray = useBinaryArray;
         }
 
         /// <summary>
@@ -122,6 +144,18 @@ namespace Apache.Ignite.Core.Tests.Client
         public IIgniteClient Client { get; set; }
 
         /// <summary>
+        /// Gets Ignite.
+        /// </summary>
+        protected static IIgnite GetIgnite(int? idx = null)
+        {
+            if (idx == null)
+            {
+                return Ignition.GetAll().First(i => i.Name == null);
+            }
+            return Ignition.GetIgnite(idx.ToString());
+        }
+
+        /// <summary>
         /// Gets the cache.
         /// </summary>
         protected static ICache<int, T> GetCache<T>()
@@ -159,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Client
         protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
             var port = _enableSsl ? 11110 : IgniteClientConfiguration.DefaultPort;
-            
+
             return new IgniteClientConfiguration
             {
                 Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
@@ -172,13 +206,10 @@ namespace Apache.Ignite.Core.Tests.Client
                         CertificatePassword = "123456",
                         SkipServerCertificateValidation = true,
                         CheckCertificateRevocation = true,
-#if !NETCOREAPP
-                        SslProtocols = SslProtocols.Tls
-#else
                         SslProtocols = SslProtocols.Tls12
-#endif
                     }
-                    : null
+                    : null,
+                EnablePartitionAwareness = _enablePartitionAwareness
             };
         }
 
@@ -189,8 +220,15 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new ListLogger(),
-                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
+                Logger = _enableServerListLogging
+                    ? (ILogger) new ListLogger(new TestUtils.TestContextLogger())
+                    {
+                        EnabledLevels = _serverListLoggerLevels
+                    }
+                    : new TestUtils.TestContextLogger(),
+                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null,
+                RedirectJavaConsoleOutput = false,
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 
@@ -244,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var listLogger = (ListLogger) logger;
             return listLogger.Entries;
         }
-        
+
         /// <summary>
         /// Gets client request names for a given server node.
         /// </summary>
@@ -253,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var instanceName = serverIndex == 0 ? null : serverIndex.ToString();
             var grid = Ignition.GetIgnite(instanceName);
             var logger = (ListLogger) grid.Logger;
-         
+
             return GetServerRequestNames(logger, prefix);
         }
 
@@ -293,7 +331,7 @@ namespace Apache.Ignite.Core.Tests.Client
             return Ignition.GetAll()
                 .OrderBy(i => i.Name)
                 .Select(i => i.Logger)
-                .Cast<ListLogger>();
+                .OfType<ListLogger>();
         }
 
         /// <summary>

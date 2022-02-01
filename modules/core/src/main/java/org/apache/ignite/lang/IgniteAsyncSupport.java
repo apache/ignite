@@ -73,6 +73,7 @@ public interface IgniteAsyncSupport {
     /**
      * Gets and resets future for previous asynchronous operation.
      *
+     * @param <R> Type of the future result.
      * @return Future for previous asynchronous operation.
      *
      * @deprecated since 2.0. Please use new specialized async method

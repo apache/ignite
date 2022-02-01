@@ -31,12 +31,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -86,6 +82,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setRebalanceThreadPoolSize(4)
             .setGridLogger(testLog)
             .setCacheConfiguration(
                 of(DEFAULT_CACHE_NAMES)
@@ -106,8 +103,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEvictPartByRentingState() throws Exception {
-        IgniteEx node = startGrid(0);
-        awaitPartitionMapExchange();
+        IgniteEx node = startGrid();
 
         Map<Integer, Collection<Integer>> parseParts = new ConcurrentHashMap<>();
 
@@ -123,7 +119,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
         parts.subList(0, parts.size() - 1).forEach(GridDhtLocalPartition::clearAsync);
 
-        doSleep(100);
+        doSleep(500);
 
         parts.get(parts.size() - 1).clearAsync();
 
@@ -139,28 +135,12 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     public void testEvictPartByMovingState() throws Exception {
         backups = 1;
 
-        IgniteEx node = startGrids(3);
-        awaitPartitionMapExchange();
-
-        stopGrid(2);
-
-        awaitPartitionMapExchange();
+        IgniteEx node = startGrid();
 
         Map<Integer, Collection<Integer>> parseParts = new ConcurrentHashMap<>();
 
         LogListener logLsnr = logListener("clearing", parseParts, DEFAULT_CACHE_NAMES);
         testLog.registerListener(logLsnr);
-
-        List<GridCacheAdapter<Object, Object>> internalCaches = of(DEFAULT_CACHE_NAMES)
-            .map(node::cache)
-            .map(GridCommonAbstractTest::internalCache0)
-            .collect(toList());
-
-        List<RebalanceFuture> rebFuts = internalCaches.stream()
-            .map(internalCache -> (RebalanceFuture)internalCache.context().preloader().rebalanceFuture())
-            .collect(toList());
-
-        rebFuts.forEach(GridFutureAdapter::reset);
 
         List<GridDhtLocalPartition> parts = of(DEFAULT_CACHE_NAMES)
             .map(node::cache)
@@ -171,17 +151,9 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
         parts.subList(0, parts.size() - 1).forEach(GridDhtLocalPartition::clearAsync);
 
-        rebFuts.forEach(rebFut -> {
-            GridTestUtils.setFieldValue(rebFut, "next", null);
-
-            rebFut.onDone(Boolean.TRUE);
-        });
-
-        doSleep(100);
-        rebFuts.forEach(GridFutureAdapter::reset);
+        doSleep(500);
 
         parts.get(parts.size() - 1).clearAsync();
-        rebFuts.forEach(rebFut -> rebFut.onDone(Boolean.TRUE));
 
         check(logLsnr, parts, parseParts);
     }

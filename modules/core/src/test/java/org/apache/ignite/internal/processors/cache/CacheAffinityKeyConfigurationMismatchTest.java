@@ -259,10 +259,12 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
         @AffinityKeyMapped
         int a;
 
+        /** */
         public AKey(int a) {
             this.a = a;
         }
 
+        /** */
         @Override public String toString() {
             return "AKey{a=" + a + '}';
         }
@@ -276,10 +278,12 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
         @AffinityKeyMapped
         int b;
 
+        /** */
         public BKey(int b) {
             this.b = b;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "BKey{b=" + b + '}';
         }

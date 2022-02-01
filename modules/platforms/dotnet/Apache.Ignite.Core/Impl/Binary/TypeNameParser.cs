@@ -56,11 +56,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
+        /// </summary>
+        private TypeNameParser(string typeName)
+        {
+            _typeName = typeName;
+            NameStart = 0;
+            NameEnd = typeName.Length - 1;
+
+            AssemblyStart = -1;
+            AssemblyEnd = -1;
+            ArrayStart = -1;
+        }
+
+        /// <summary>
         /// Parses the specified type name.
         /// </summary>
         public static TypeNameParser Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            if (typeName.Contains("\\"))
+            {
+                // Do not parse compiler-generated special names, return as is.
+                return new TypeNameParser(typeName);
+            }
 
             int pos = 0;
 
@@ -157,6 +177,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return null;
 
             return _typeName.Substring(AssemblyStart, AssemblyEnd - AssemblyStart + 1);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the namespace is present.
+        /// </summary>
+        public bool HasNamespace()
+        {
+            return NameStart > 0;
+        }
+
+        /// <summary>
+        /// Gets namespace name part.
+        /// </summary>
+        public string GetNamespace()
+        {
+            return NameStart == 0 ? null : _typeName.Substring(_start, NameStart - _start);
         }
 
         /// <summary>
@@ -278,7 +314,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var bracket = true;
 
             RequireShift();
-            
+
             while (true)
             {
                 if (Char == '[')

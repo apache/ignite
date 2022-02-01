@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Encryption.Keystore
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// IEncryptionSPI implementation base on JDK provided cipher algorithm implementations.
@@ -34,19 +35,19 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         /// Default encryption key size.
         /// </summary>
         public const int DefaultKeySize = 256;
-        
+
         /// <summary>
         /// Name of master key in key store.
         /// </summary>
         [DefaultValue(DefaultMasterKeyName)]
         public string MasterKeyName { get; set; }
-        
+
         /// <summary>
         /// Size of encryption key.
         /// </summary>
         [DefaultValue(DefaultKeySize)]
         public int KeySize { get; set; }
-        
+
         /// <summary>
         /// Path to key store.
         /// </summary>
@@ -65,13 +66,15 @@ namespace Apache.Ignite.Core.Encryption.Keystore
             MasterKeyName = DefaultMasterKeyName;
             KeySize = DefaultKeySize;
         }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="KeystoreEncryptionSpi"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
         public KeystoreEncryptionSpi(IBinaryRawReader reader)
         {
+            IgniteArgumentCheck.NotNull(reader, "other");
+
             MasterKeyName = reader.ReadString();
             KeySize = reader.ReadInt();
             KeyStorePath = reader.ReadString();

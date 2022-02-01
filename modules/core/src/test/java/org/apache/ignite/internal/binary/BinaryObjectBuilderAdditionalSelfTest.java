@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -45,6 +41,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,6 +57,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
+import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
@@ -63,10 +65,10 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,7 +78,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -893,7 +895,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testEnumArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
-        obj.enumArr = new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
+        obj.enumArr =
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
@@ -902,7 +905,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         GridBinaryTestClasses.TestObjectAllTypes res = mutObj.build().deserialize();
 
-        Assert.assertArrayEquals(new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B}, res.enumArr);
+        Assert.assertArrayEquals(
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B},
+            res.enumArr
+        );
     }
 
     /**
@@ -1324,7 +1330,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testBinaryObjectField() {
-        GridBinaryTestClasses.TestObjectContainer container = new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
+        GridBinaryTestClasses.TestObjectContainer container =
+            new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
 
         BinaryObjectBuilderImpl wrapper = wrap(container);
 
@@ -1397,6 +1404,48 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         Object[] resArr = (Object[])res.foo;
 
         assertSame(((Object[])resArr[0])[0], resArr);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSameArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[] arr1 = new Object[2];
+
+        arr1[0] = new Object[2];
+        arr1[0] = arr1[1];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])res.foo;
+
+        assertSame(resArr[0], resArr[1]);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSameMultiDimensionalArray() {
+        GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
+
+        Object[][] arr1 = new Object[1][2];
+
+        arr1[0][0] = new Object[2];
+        arr1[0][1] = arr1[0][0];
+
+        obj.foo = arr1;
+
+        GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
+
+        Object[] resArr = (Object[])((Object[])res.foo)[0];
+
+        assertSame(resArr[0], resArr[1]);
     }
 
     /**
@@ -1604,14 +1653,20 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("intVal", 10).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
         builder = extObj.toBuilder();
@@ -1619,7 +1674,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         extObj = builder.setField("strVal", "some string").build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        Assert.assertArrayEquals(
+            expArr,
+            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
     }
@@ -1724,6 +1782,36 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
+    @Test
+    public void testArray2() {
+        try {
+            TestClass1[] expArr = new TestClass1[] {new TestClass1()};
+
+            BiConsumer<TestClass1[], BinaryObject> checker = (arr, bobj) -> {
+                Object[] val = useBinaryArrays
+                    ? bobj.<BinaryArray>field("arr").deserialize()
+                    : PlatformUtils.unwrapBinariesInArray(bobj.field("arr"));
+
+                Assert.assertArrayEquals(arr, val);
+                Assert.assertArrayEquals(arr, ((TestClsWithArray)bobj.deserialize()).arr);
+            };
+
+            BinaryObjectBuilder builder = newWrapper(TestClsWithArray.class.getName());
+            BinaryObject arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+
+            expArr = new TestClass1[] {new TestClass1(), new TestClass1()};
+
+            builder = newWrapper(arrObj.type().typeName());
+            arrObj = builder.setField("arr", expArr).build();
+            checker.accept(expArr, arrObj);
+        }
+        finally {
+            clearBinaryMeta();
+        }
+    }
+
     /**
      * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
      */
@@ -1749,7 +1837,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return Deserialized enums.
      */
     private TestEnum[] deserializeEnumBinaryArray(Object obj) {
-        Object[] arr = (Object[])obj;
+        if (useBinaryArrays)
+            return ((BinaryArray)obj).deserialize();
+
+        Object[] arr;
+
+        arr = (Object[])obj;
 
         final TestEnum[] res = new TestEnum[arr.length];
 
@@ -1784,6 +1877,33 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         builder.setField("f1", "val2");
         assertEquals("val2", builder.build().field("f1"));
+    }
+
+    /**
+     * @throws Exception If fails
+     */
+    @Test
+    public void testGetNotAssignedFieldInEmptyBuilder() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType")
+                .setField("w", "wewe");
+
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
+    }
+
+    /**
+     * @throws Exception If fails
+     */
+    @Test
+    public void testGetNotAssignedFieldInBuilder() {
+        GridBinaryTestClasses.TestObjectContainer testObjectContainer = new GridBinaryTestClasses.TestObjectContainer();
+        testObjectContainer.foo = "binaryCachedValue";
+        BinaryObjectBuilderImpl builder = wrap(testObjectContainer);
+        builder.setField("w", "wewe");
+
+        assertNull(builder.getField("field"));
+        assertEquals("wewe", builder.getField("w"));
+        assertEquals("binaryCachedValue", builder.getField("foo"));
     }
 
     /**
@@ -1857,6 +1977,17 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             this.testEnumA = testEnumA;
             this.testEnumB = testEnumB;
             this.testEnumArr = testEnumArr;
+        }
+    }
+
+    /** Test class with array. */
+    public static class TestClsWithArray {
+        /** */
+        private final Object[] arr;
+
+        /** */
+        public TestClsWithArray(TestClass1[] arr) {
+            this.arr = arr;
         }
     }
 

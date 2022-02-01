@@ -23,6 +23,7 @@ import java.util.Map;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,8 +35,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_QUEUE
  * {@link org.apache.ignite.IgniteQueue} implementation using atomic cache.
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
+    /** @see IgniteSystemProperties#IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT  */
+    public static final int DFLT_ATOMIC_CACHE_QUERY_RETRY_TIMEOUT = 10000;
+
     /** */
-    private static final long RETRY_TIMEOUT = Integer.getInteger(IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT, 10000);
+    private static final long RETRY_TIMEOUT =
+        Integer.getInteger(IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT, DFLT_ATOMIC_CACHE_QUERY_RETRY_TIMEOUT);
 
     /**
      * @param queueName Queue name.

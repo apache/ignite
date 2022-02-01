@@ -31,23 +31,6 @@ public class GridCacheAtomicVersionComparator {
      * @return Comparison value.
      */
     public int compare(GridCacheVersion one, GridCacheVersion other) {
-        int topVer = one.topologyVersion();
-        int otherTopVer = other.topologyVersion();
-
-        if (topVer == otherTopVer) {
-            long locOrder = one.order();
-            long otherLocOrder = other.order();
-
-            if (locOrder == otherLocOrder) {
-                int nodeOrder = one.nodeOrder();
-                int otherNodeOrder = other.nodeOrder();
-
-                return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
-            }
-            else
-                return locOrder > otherLocOrder ? 1 : -1;
-        }
-        else
-            return topVer > otherTopVer ? 1 : -1;
+        return one.compareTo(other);
     }
 }

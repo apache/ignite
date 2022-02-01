@@ -19,16 +19,19 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * The responsibility of this class is to enrich cache configuration with stored enrichment, in other words it allows to
+ * deserialize fields of {@link CacheConfiguration} that are marked with {@link SerializeSeparately}.
  */
 public class CacheConfigurationEnricher {
     /** Marshaller. */
@@ -37,11 +40,18 @@ public class CacheConfigurationEnricher {
     /** Class loader. */
     private final ClassLoader clsLdr;
 
+    /** Ignite logger. */
+    private final IgniteLogger log;
+
     /**
-     * @param marshaller Marshaller.
-     * @param clsLdr Class loader.
+     * Creates a new instance of enricher.
+     *
+     * @param ctx Kernal context.
+     * @param marshaller Marshaller to be used for deserializing parts on {@link CacheConfiguration}.
+     * @param clsLdr Class loader to be used for deserializing parts on {@link CacheConfiguration}.
      */
-    public CacheConfigurationEnricher(Marshaller marshaller, ClassLoader clsLdr) {
+    public CacheConfigurationEnricher(GridKernalContext ctx, Marshaller marshaller, ClassLoader clsLdr) {
+        this.log = ctx.log(CacheConfigurationEnricher.class);
         this.marshaller = marshaller;
         this.clsLdr = clsLdr;
     }
@@ -49,8 +59,8 @@ public class CacheConfigurationEnricher {
     /**
      * Enriches descriptor cache configuration with stored enrichment.
      *
-     * @param desc Description.
-     * @param affinityNode Affinity node.
+     * @param desc Cache desriptor.
+     * @param affinityNode {@code true} if enrichment is happened on affinity node.
      */
     public DynamicCacheDescriptor enrich(DynamicCacheDescriptor desc, boolean affinityNode) {
         if (CU.isUtilityCache(desc.cacheName()))
@@ -72,8 +82,8 @@ public class CacheConfigurationEnricher {
     /**
      * Enriches descriptor cache configuration with stored enrichment.
      *
-     * @param desc Description.
-     * @param affinityNode Affinity node.
+     * @param desc Cache group descriptor to be enriched.
+     * @param affinityNode {@code true} if enrichment is happened on affinity node.
      */
     public CacheGroupDescriptor enrich(CacheGroupDescriptor desc, boolean affinityNode) {
         if (CU.isUtilityCache(desc.cacheOrGroupName()))
@@ -93,7 +103,7 @@ public class CacheConfigurationEnricher {
     }
 
     /**
-     * Enriches cache configuration fields with deserialized values from given @{code enrichment}.
+     * Enriches cache configuration fields with deserialized values from given {@code enrichment}.
      *
      * @param ccfg Cache configuration to enrich.
      * @param enrichment Cache configuration enrichment.
@@ -112,18 +122,24 @@ public class CacheConfigurationEnricher {
         CacheConfiguration<?, ?> enrichedCp = new CacheConfiguration<>(ccfg);
 
         try {
-            for (Field field : CacheConfiguration.class.getDeclaredFields())
-                if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
-                    if (!affinityNode && skipDeserialization(ccfg, field))
+            for (String filedName : enrichment.fields()) {
+                try {
+                    if (!affinityNode && skipDeserialization(ccfg, filedName))
                         continue;
+
+                    Field field = CacheConfiguration.class.getDeclaredField(filedName);
 
                     field.setAccessible(true);
 
                     Object enrichedVal = deserialize(
-                        field.getName(), enrichment.getFieldSerializedValue(field.getName()));
+                        field.getName(), enrichment.getFieldSerializedValue(filedName));
 
                     field.set(enrichedCp, enrichedVal);
                 }
+                catch (NoSuchFieldException e) {
+                    log.warning("Field of cache configuration was not found [name=" + filedName + ']');
+                }
+            }
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration [cacheName=" + ccfg.getName() + "]", e);
@@ -135,6 +151,11 @@ public class CacheConfigurationEnricher {
     /**
      * @see #enrich(CacheConfiguration, CacheConfigurationEnrichment, boolean).
      * Does the same thing but without skipping any fields.
+     *
+     * @param ccfg Cache configuration to enrich.
+     * @param enrichment Cache configuration enrichment.
+     *
+     * @return Enriched cache configuration.
      */
     public CacheConfiguration<?, ?> enrichFully(
         CacheConfiguration<?, ?> ccfg,
@@ -145,6 +166,7 @@ public class CacheConfigurationEnricher {
 
     /**
      * @param fieldName Field name.
+     * @return Deserialized value of the given {@code fieldName}.
      */
     private Object deserialize(String fieldName, byte[] serializedVal) {
         try {
@@ -159,14 +181,12 @@ public class CacheConfigurationEnricher {
      * Skips deserialization for some fields.
      *
      * @param ccfg Cache configuration.
-     * @param field Field.
+     * @param field Field's name to check.
      *
      * @return {@code true} if deserialization for given field should be skipped.
      */
-    private static boolean skipDeserialization(CacheConfiguration<?, ?> ccfg, Field field) {
-        if ("storeFactory".equals(field.getName()) && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC)
-            return true;
-
-        return false;
+    private static boolean skipDeserialization(CacheConfiguration<?, ?> ccfg, String field) {
+        return ("storeFactory".equals(field) && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC) ||
+            "interceptor".equals(field);
     }
 }

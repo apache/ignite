@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
@@ -240,7 +241,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                 "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is " + DISCO_HISTORY_SIZE);
         }
         finally {
-            IgnitionEx.stop(getTestIgniteInstanceName(1), true, true);
+            IgnitionEx.stop(getTestIgniteInstanceName(1), true, ShutdownPolicy.IMMEDIATE, true);
 
             srvFuts.forEach(f -> {
                 try {

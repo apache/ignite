@@ -117,7 +117,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V4;
+        return V5;
     }
 
     /** {@inheritDoc} */

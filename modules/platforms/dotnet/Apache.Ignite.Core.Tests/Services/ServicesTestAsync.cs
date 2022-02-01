@@ -18,16 +18,41 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using Apache.Ignite.Core.Services;
+    using NUnit.Framework;
 
     /// <summary>
     /// Services async tests.
     /// </summary>
+    [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ServicesTestAsync : ServicesTest
     {
         /** <inheritdoc /> */
         protected override IServices Services
         {
             get { return new ServicesAsyncWrapper(Grid1.GetServices()); }
+        }
+
+        /** */
+        public ServicesTestAsync()
+        {
+            // No-op.
+        }
+
+        /** */
+        public ServicesTestAsync(bool useBinaryArray) : base(useBinaryArray)
+        {
+            // No-op.
+        }
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class ServicesTestAsyncBinaryArrays : ServicesTestAsync
+    {
+        /** */
+        public ServicesTestAsyncBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }

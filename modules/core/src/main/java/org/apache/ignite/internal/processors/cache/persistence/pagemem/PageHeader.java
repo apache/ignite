@@ -171,9 +171,9 @@ class PageHeader {
      * @param absPtr Absolute page address.
      */
     public static void writeTimestamp(final long absPtr, long tstamp) {
-        tstamp >>= 8;
+        tstamp &= 0xFFFFFFFFFFFFFF00L;
 
-        GridUnsafe.putLongVolatile(null, absPtr, (tstamp << 8) | 0x01);
+        GridUnsafe.putLongVolatile(null, absPtr, tstamp | 0x01);
     }
 
     /**

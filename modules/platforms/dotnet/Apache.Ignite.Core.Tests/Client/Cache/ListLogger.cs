@@ -98,6 +98,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     message = string.Format(formatProvider, message, args);
                 }
+
+                if (ex != null)
+                {
+                    message += Environment.NewLine + ex;
+                }
                 
                 _entries.Add(new Entry(message, level, category));
             }

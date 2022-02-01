@@ -1,0 +1,634 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= SQL and Scan Queries
+
+== Operation codes
+
+Upon a successful handshake with an Ignite server node, a client can start performing various SQL and scan queries by sending a request (see request/response structure below) with a specific operation code:
+
+
+[cols="2,1",opts="header"]
+|===
+|Operation |   OP_CODE
+|OP_QUERY_SQL|    2002
+|OP_QUERY_SQL_CURSOR_GET_PAGE|    2003
+|OP_QUERY_SQL_FIELDS| 2004
+|OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE| 2005
+|OP_QUERY_SCAN|   2000
+|OP_QUERY_SCAN_CURSOR_GET_PAGE|   2001
+|OP_RESOURCE_CLOSE|   0
+|===
+
+
+Note that the above mentioned op_codes are part of the request header, as explained link:binary-client-protocol/binary-client-protocol#standard-message-header[here].
+
+[NOTE]
+====
+[discrete]
+=== Customs Methods Used in Sample Code Snippets Implementation
+
+Some of the code snippets below use `readDataObject(...)` introduced in link:binary-client-protocol/binary-client-protocol#data-objects[this section] and little-endian versions of methods for reading and writing multiple-byte values that are covered in link:binary-client-protocol/binary-client-protocol#data-objects[this example].
+====
+
+
+== OP_QUERY_SQL
+
+Executes an SQL query over data stored in the cluster. The query returns the whole record (key and value).
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|String|  Name of a type or SQL table.
+|String|  SQL query string.
+|int| Query argument count.
+|Data Object| Query argument.
+
+Repeat for as many times as the query argument count that is passed in the previous parameter.
+|bool|    Distributed joins.
+|bool|    Local query.
+|bool|    Replicated only - Whether query contains only replicated tables or not.
+|int| Cursor page size.
+|long|    Timeout (miliseconds).
+
+Timeout value should be non-negative. Zero value disables timeout.
+|===
+
+
+Response includes the first page of the result.
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|long|    Cursor id. Can be closed with OP_RESOURSE_CLOSE.
+|int| Row count for the first page.
+|Key Data Object + Value Data Object| Records in the form of key-value pairs.
+
+Repeat for as many times as the row count obtained in the previous parameter.
+|bool|    Indicates whether more results are available to be fetched with OP_QUERY_SQL_CURSOR_GET_PAGE.
+When true, query cursor is closed automatically.
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String entityName = "Person";
+int entityNameLength = getStrLen(entityName); // UTF-8 bytes
+
+String sql = "Select * from Person";
+int sqlLength = getStrLen(sql);
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(34 + entityNameLength + sqlLength, OP_QUERY_SQL, 1, out);
+
+// Cache id
+String queryCacheName = "personCache";
+writeIntLittleEndian(queryCacheName.hashCode(), out);
+
+// Flag = none
+writeByteLittleEndian(0, out);
+
+// Query Entity
+writeString(entityName, out);
+
+// SQL query
+writeString(sql, out);
+
+// Argument count
+writeIntLittleEndian(0, out);
+
+// Joins
+out.writeBoolean(false);
+
+// Local query
+out.writeBoolean(false);
+
+// Replicated
+out.writeBoolean(false);
+
+// cursor page size
+writeIntLittleEndian(1, out);
+
+// Timeout
+writeLongLittleEndian(5000, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+long cursorId = readLongLittleEndian(in);
+
+int rowCount = readIntLittleEndian(in);
+
+// Read entries (as user objects)
+for (int i = 0; i < rowCount; i++) {
+  Object key = readDataObject(in);
+  Object val = readDataObject(in);
+
+  System.out.println("CacheEntry: " + key + ", " + val);
+}
+
+boolean moreResults = readBooleanLittleEndian(in);
+
+----
+
+--
+
+
+
+== OP_QUERY_SQL_CURSOR_GET_PAGE
+
+Retrieves the next SQL query cursor page by cursor id from OP_QUERY_SQL.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|long|    Cursor id.
+|===
+
+
+Response format looks as follows:
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|long|    Cursor id.
+|int| Row count.
+|Key Data Object + Value Data Object| Records in the form of key-value pairs.
+
+Repeat for as many times as the row count obtained in the previous parameter.
+|bool|    Indicates whether more results are available to be fetched with OP_QUERY_SQL_CURSOR_GET_PAGE.
+When true, query cursor is closed automatically.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(8, OP_QUERY_SQL_CURSOR_GET_PAGE, 1, out);
+
+// Cursor Id (received from Sql query operation)
+writeLongLittleEndian(cursorId, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+int rowCount = readIntLittleEndian(in);
+
+// Read entries (as user objects)
+for (int i = 0; i < rowCount; i++){
+  Object key = readDataObject(in);
+  Object val = readDataObject(in);
+
+  System.out.println("CacheEntry: " + key + ", " + val);
+}
+
+boolean moreResults = readBooleanLittleEndian(in);
+
+----
+
+--
+
+
+== OP_QUERY_SQL_FIELDS
+
+Performs SQL fields query.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|String|  Schema for the query; can be null, in which case default PUBLIC schema will be used.
+|int| Query cursor page size.
+|int| Max rows.
+|String|  SQL
+|int| Argument count.
+|Data Object| Query argument.
+
+Repeat for as many times as the query argument count that is passed in the previous parameter.
+
+|byte|    Statement type.
+
+ANY = 0
+
+SELECT = 1
+
+UPDATE = 2
+
+|bool|    Distributed joins
+|bool|    Local query.
+|bool|    Replicated only - Whether query contains only replicated tables or not.
+|bool|    Enforce join order.
+|bool|    Collocated - Whether your data is co-located or not.
+|bool|    Lazy query execution.
+|long|    Timeout (milliseconds).
+|bool|    Include field names.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|long|    Cursor id. Can be closed with OP_RESOURCE_CLOSE.
+|int| Field (column) count.
+|String (optional)|   Needed only when IncludeFieldNames is true in the request.
+
+Column name.
+
+Repeat for as many times as the field count that is retrieved in the previous parameter.
+
+|int| First page row count.
+Data Object Column (field) value. Repeat for as many times as the field count.
+
+Repeat for as many times as the row count that is retrieved in the previous parameter.
+|bool|    Indicates whether more results are available to be retrieved with OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String sql = "Select id, salary from Person";
+int sqlLength = sql.getBytes("UTF-8").length;
+
+String sqlSchema = "PUBLIC";
+int sqlSchemaLength = sqlSchema.getBytes("UTF-8").length;
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(43 + sqlLength + sqlSchemaLength, OP_QUERY_SQL_FIELDS, 1, out);
+
+// Cache id
+String queryCacheName = "personCache";
+int cacheId = queryCacheName.hashCode();
+writeIntLittleEndian(cacheId, out);
+
+// Flag = none
+writeByteLittleEndian(0, out);
+
+// Schema
+writeByteLittleEndian(9, out);
+writeIntLittleEndian(sqlSchemaLength, out);
+out.writeBytes(sqlSchema); //sqlSchemaLength
+
+// cursor page size
+writeIntLittleEndian(2, out);
+
+// Max Rows
+writeIntLittleEndian(5, out);
+
+// SQL query
+writeByteLittleEndian(9, out);
+writeIntLittleEndian(sqlLength, out);
+out.writeBytes(sql);//sqlLength
+
+// Argument count
+writeIntLittleEndian(0, out);
+
+// Statement type
+writeByteLittleEndian(1, out);
+
+// Joins
+out.writeBoolean(false);
+
+// Local query
+out.writeBoolean(false);
+
+// Replicated
+out.writeBoolean(false);
+
+// Enforce join order
+out.writeBoolean(false);
+
+// collocated
+out.writeBoolean(false);
+
+// Lazy
+out.writeBoolean(false);
+
+// Timeout
+writeLongLittleEndian(5000, out);
+
+// Replicated
+out.writeBoolean(false);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+long cursorId = readLongLittleEndian(in);
+
+int colCount = readIntLittleEndian(in);
+
+int rowCount = readIntLittleEndian(in);
+
+// Read entries
+for (int i = 0; i < rowCount; i++) {
+  long id = (long) readDataObject(in);
+  int salary = (int) readDataObject(in);
+
+  System.out.println("Person id: " + id + "; Person Salary: " + salary);
+}
+
+boolean moreResults = readBooleanLittleEndian(in);
+
+----
+
+--
+
+
+== OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE
+
+Retrieves the next query result page by cursor id from OP_QUERY_SQL_FIELDS .
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request header.
+|long|    Cursor id received from OP_QUERY_SQL_FIELDS
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|int| Row count.
+|Data Object| Column (field) value. Repeat for as many times as the field count.
+
+Repeat for as many times as the row count that is retrieved in the previous parameter.
+|bool|    Indicates whether more results are available to be retrieved with OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(8, QUERY_SQL_FIELDS_CURSOR_GET_PAGE, 1, out);
+
+// Cursor Id
+writeLongLittleEndian(1, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+int rowCount = readIntLittleEndian(in);
+
+// Read entries (as user objects)
+for (int i = 0; i < rowCount; i++){
+   // read data objects * column count.
+}
+
+boolean moreResults = readBooleanLittleEndian(in);
+
+----
+
+--
+
+
+== OP_QUERY_SCAN
+
+Performs scan query.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Flag. Pass 0 for default, or 1 to keep the value in binary form.
+|Data Object| Filter object. Can be null if you are not going to filter data on the cluster. The filter class has to be added to the classpath of the server nodes.
+|byte|    Filter platform:
+
+JAVA = 1
+
+DOTNET = 2
+
+CPP = 3
+
+Pass this parameter only if filter object is not null.
+|int| Cursor page size.
+|int| Number of partitions to query (negative to query entire cache).
+|bool|    Local flag - whether this query should be executed on local node only.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|long|    Cursor id.
+|int| Row count.
+|Key Data Object + Value Data Object| Records in the form of key-value pairs.
+
+Repeat for as many times as the row count obtained in the previous parameter.
+|bool|    Indicates whether more results are available to be fetched with OP_QUERY_SCAN_CURSOR_GET_PAGE.
+When true, query cursor is closed automatically.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_QUERY_SCAN, 1, out);
+
+// Cache id
+String queryCacheName = "personCache";
+writeIntLittleEndian(queryCacheName.hashCode(), out);
+
+// flags
+writeByteLittleEndian(0, out);
+
+// Filter Object
+writeByteLittleEndian(101, out); // null
+
+// Cursor page size
+writeIntLittleEndian(1, out);
+
+// Partition to query
+writeIntLittleEndian(-1, out);
+
+// local flag
+out.writeBoolean(false);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+//Response header
+readResponseHeader(in);
+
+// Cursor id
+long cursorId = readLongLittleEndian(in);
+
+int rowCount = readIntLittleEndian(in);
+
+// Read entries (as user objects)
+for (int i = 0; i < rowCount; i++) {
+  Object key = readDataObject(in);
+  Object val = readDataObject(in);
+
+  System.out.println("CacheEntry: " + key + ", " + val);
+}
+
+boolean moreResults = readBooleanLittleEndian(in);
+
+----
+
+--
+
+
+== OP_QUERY_SCAN_CURSOR_GET_PAGE
+
+
+Fetches the next SQL query cursor page by cursor id that is obtained from OP_QUERY_SCAN.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|long|    Cursor id.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|long|    Cursor id.
+|long|    Row count.
+|Key Data Object + Value Data Object | Records in the form of key-value pairs.
+
+Repeat for as many times as the row count obtained in the previous parameter.
+|bool|    Indicates whether more results are available to be fetched with OP_QUERY_SCAN_CURSOR_GET_PAGE.
+When true, query cursor is closed automatically.
+|===
+
+
+== OP_RESOURCE_CLOSE
+
+Closes a resource, such as query cursor.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|long|    Resource id.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(8, OP_RESOURCE_CLOSE, 1, out);
+
+// Resource id
+long cursorId = 1;
+writeLongLittleEndian(cursorId, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+
+--
+

@@ -1,0 +1,96 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Replacement Policies
+
+When link:persistence/native-persistence[Native Persistence] is on and the amount of data, which Ignite stores on the disk, is bigger than the off-heap memory amount allocated for the data region, another page should be evicted from the off-heap to the disk to preload a page from the disk to the completely full off-heap memory. This process is called _page rotation_ or _page replacement_.
+
+When Native Persistence is off, _eviction_ is used instead of _page replacement_. See the link:memory-configuration/eviction-policies[Eviction Policies] page for more information.
+
+Page replacement is implemented as follows:
+
+When Ignite requires a page, it tries to find this page in the off-heap memory. If the page is not currently in the off-heap memory (a page fault occurs), this page is preloaded from the disk. At the same time, when off-heap memory is already full, another page should be chosen to be replaced (to stored to the disk and evicted).
+
+Ignite supports three algorithms to find pages to replace:
+
+* Random-LRU algorithm;
+* Segmented-LRU algorithm;
+* CLOCK algorithm.
+
+Page replacement algorithm can be configured by the `PageReplacementMode` property of `DataRegionConfiguration`. By default, CLOCK algorithm is used.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+  <!-- Memory configuration. -->
+  <property name="dataStorageConfiguration">
+    <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+      <property name="dataRegionConfigurations">
+        <list>
+          <!--
+              Defining a persistent data region with Segmented LRU page replacement mode.
+          -->
+          <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+            <!-- Data region name. -->
+            <property name="name" value="persistent_data_region"/>
+
+            <!-- Enable persistence. -->
+            <property name="persistenceEnabled" value="true"/>
+
+            <!-- 20 GB maximum size (RAM). -->
+            <property name="maxSize" value="#{20L * 1024 * 1024 * 1024}"/>
+
+            <!-- Enabling SEGMENTED_LRU page replacement for this region.  -->
+            <property name="pageReplacementMode" value="SEGMENTED_LRU"/>
+          </bean>
+        </list>
+      </property>
+    </bean>
+  </property>
+
+  <!-- The rest of the configuration. -->
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/ReplacementPolicies.java[tag=segmentedLRU,indent=0]
+----
+tab:C#/.NET[unsupported]
+----
+tab:C++[unsupported]
+--
+
+The choice of the algorithm depends on your workload. For most cases, CLOCK (default) is a good candidate, but on some workloads other algorithms can perform better.
+
+== Random-LRU Algorithm
+
+Every time a page is accessed, its timestamp is updated. When a page fault occurs and it's required to replace some pages, the algorithm randomly chooses 5 pages from the page memory and evicts a page with the latest timestamp.
+
+This algorithm has zero maintenance cost, but it is not very effective in terms of finding the next page to replace. We recommend that you use it in environments, where page replacement is not needed (when working with large enough data region to store all the amount of data) or happens very seldom.
+
+== Segmented-LRU Algorithm
+
+Segmented-LRU algorithm is a scan-resistant variation of the Least Recently Used (LRU) algorithm. Segmented-LRU pages list is divided into two segments: A probationary segment and a protected segment. Pages in each segment are ordered from the least to the most recently accessed. New pages are added to the most recently accessed end (tail) of the probationary segment. Existing pages are removed from wherever they currently reside and added to the most recently accessed end of the protected segment. Pages in the protected segment have thus been accessed at least twice. The protected segment is finite, so migration of a page from the probationary segment to the protected segment may force the migration of the LRU page in the protected segment to the most recently used end of the probationary segment. This gives the page another chance to be accessed before being replaced. Page to replace is polled from the least recently accessed end (head) of the probationary segment.
+
+This algorithm requires additional memory to store pages list that also needs to be updated on each page access. At the same time, the algorithm has a near-optimal page to replace selection policy. So, there can be a little performance drop for environments without page replacement (compared to random-LRU and CLOCK), but for environments with a high rate of page replacement and a large amount of one-time scans segmented-LRU can outperform random-LRU and CLOCK.
+
+== CLOCK Algorithm
+
+The CLOCK algorithm keeps a circular list of pages in memory, with the "hand" pointing to the last examined page frame in the list. When a page fault occurs and no empty frames exist, the hit flag of the page is inspected at the hand's location. If the hit flag is 0, the new page is put in the place of the page that the "hand" points to, and the hand is advanced one position further. Otherwise, the hit flag is cleared, then the clock hand is incremented and the process is repeated until a page is replaced.
+
+This algorithm has near to zero maintenance cost and replacement policy efficiency between random-LRU and segmented-LRU.

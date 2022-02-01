@@ -191,12 +191,12 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_GUID, &res, 0, 0);
 
-        BOOST_CHECK_EQUAL(res.Data1, expected.GetMostSignificantBits() & 0xFFFFFFFF00000000ULL >> 32);
-        BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000ULL >> 16);
-        BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFULL);
+        BOOST_CHECK_EQUAL(res.Data1, expected.GetMostSignificantBits() & 0xFFFFFFFF00000000UL >> 32);
+        BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000UL >> 16);
+        BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFUL);
 
-        for (int i = 0; i < sizeof(res.Data4); ++i)
-            BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFULL << (8 * i))) >> (8 * i));
+        for (size_t i = 0; i < sizeof(res.Data4); ++i)
+            BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFUL << (8 * i))) >> (8 * i));
     }
 
     template<>
@@ -253,7 +253,7 @@ namespace ignite
     {
         SQL_DATE_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_DATE, &res, 0, 0);
     }
 
     template<>
@@ -261,7 +261,7 @@ namespace ignite
     {
         SQL_TIMESTAMP_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIMESTAMP, &res, 0, 0);
     }
 
     template<>
@@ -269,7 +269,7 @@ namespace ignite
     {
         SQL_TIME_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIME, &res, 0, 0);
     }
 
     template<>
@@ -297,6 +297,7 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
         ignite::common::Decimal actual(std::string(res, res + resLen));
+        BOOST_REQUIRE_EQUAL(actual, expected);
     }
 
     template<>
@@ -304,7 +305,7 @@ namespace ignite
     {
         SQL_DATE_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_DATE, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Date actual = common::MakeDateGmt(res.year, res.month, res.day);
@@ -316,7 +317,7 @@ namespace ignite
     {
         SQL_TIMESTAMP_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIMESTAMP, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Timestamp actual = common::MakeTimestampGmt(res.year, res.month, res.day, res.hour, res.minute, res.second, res.fraction);
@@ -330,7 +331,7 @@ namespace ignite
     {
         SQL_TIME_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIME, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Time actual = common::MakeTimeGmt(res.hour, res.minute, res.second);

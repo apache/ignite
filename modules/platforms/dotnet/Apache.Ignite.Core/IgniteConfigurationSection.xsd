@@ -128,6 +128,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="asyncContinuationExecutor" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ThreadPool" />
+            <xs:enumeration value="UnsafeSynchronous" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -263,6 +270,18 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="timestampConverter" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default date time converter.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
@@ -272,6 +291,11 @@
                         <xs:attribute name="compactFooter" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Compact footer flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="forceTimestamp" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Force timestamp flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -594,6 +618,32 @@
                                                 <xs:documentation>Affinity function to provide mapping from keys to nodes.</xs:documentation>
                                             </xs:annotation>
                                             <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="affinityBackupFilter" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="attributeNames" minOccurs="0">
+                                                                    <xs:annotation>
+                                                                        <xs:documentation>Attribute names for the backup filter.</xs:documentation>
+                                                                    </xs:annotation>
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
                                                 <xs:attribute name="partitions" type="xs:int">
                                                     <xs:annotation>
                                                         <xs:documentation>Number of partitions.</xs:documentation>
@@ -622,6 +672,18 @@
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="nodeFilter" minOccurs="0" maxOccurs="1">
+                                          <xs:annotation>
+                                            <xs:documentation>Node filter to match selected nodes. Only predefined AttributeNodeFilter is supported.</xs:documentation>
+                                          </xs:annotation>
+                                          <xs:complexType>
+                                            <xs:attribute name="type" type="xs:string" use="required">
+                                              <xs:annotation>
+                                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                              </xs:annotation>
+                                            </xs:attribute>
+                                          </xs:complexType>
                                         </xs:element>
                                         <xs:element name="keyConfiguration" minOccurs="0">
                                             <xs:annotation>
@@ -915,7 +977,7 @@
                 </xs:element>
                 <xs:element name="assemblies" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>List of additional .Net assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
+                        <xs:documentation>List of additional .NET assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
@@ -1862,6 +1924,23 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="systemDataRegionConfiguration">
+                                <xs:annotation>
+                                    <xs:documentation>System data region configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="initialSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Initial size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="storagePath" type="xs:string">
                             <xs:annotation>
@@ -1980,12 +2059,12 @@
                         </xs:attribute>
                         <xs:attribute name="systemRegionInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Initial size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="systemRegionMaxSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Maximum size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Maximum size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="concurrencyLevel" type="xs:int">
@@ -1996,6 +2075,11 @@
                         <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walForceArchiveTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Time interval (in milliseconds) for force archiving of incompletely WAL segment.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
@@ -2443,6 +2527,11 @@
                     <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="javaPeerClassLoadingEnabled" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Indicates whether Java peer class loading is enabled.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
@@ -2451,6 +2540,11 @@
             <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncContinuationExecutor" type="asyncContinuationExecutor">
+              <xs:annotation>
+                <xs:documentation>Async continuation behavior.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
         </xs:complexType>

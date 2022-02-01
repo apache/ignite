@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base platform service implementation.
@@ -180,8 +182,13 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
-        throws IgniteCheckedException {
+    @Override public Object invokeMethod(
+        String mthdName,
+        boolean srvKeepBinary,
+        boolean deserializeResult,
+        @Nullable Object[] args,
+        @Nullable Map<String, Object> callAttrs
+    ) throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
 
@@ -203,6 +210,8 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
                     writer.writeObjectDetached(arg);
             }
 
+            writer.writeMap(callAttrs);
+
             out.synchronize();
 
             platformCtx.gateway().serviceInvokeMethod(mem.pointer());
@@ -213,7 +222,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawReaderEx reader = platformCtx.reader(in);
 
-            return PlatformUtils.readInvocationResult(platformCtx, reader);
+            return PlatformUtils.readInvocationResult(platformCtx, reader, deserializeResult);
         }
     }
 

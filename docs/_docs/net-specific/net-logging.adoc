@@ -1,0 +1,133 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite.NET Logging
+
+== Overview
+By default, Ignite uses underlying the Java log4j logging system. Log messages from both .NET and Java are recorded there.
+You can also write to this log via an `IIgnite.Logger` instance:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var ignite = Ignition.Start();
+ignite.Logger.Info("Hello World!");
+----
+--
+
+`LoggerExtensions` class provides convenient shortcuts for `ILogger.Log` method.
+
+== Custom Logger
+
+You can provide a logger implementation via the `IgniteConfiguration.Logger` and `ILogger` interface.
+Messages from both .NET and Java will be redirected there.
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration
+{
+  Logger = new MemoryLogger()
+}
+
+var ignite = Ignition.Start();
+
+class MemoryLogger : ILogger
+{
+  // Logger can be called from multiple threads, use concurrent collection
+  private readonly ConcurrentBag<string> _messages = new ConcurrentBag<string>();
+
+  public void Log(LogLevel level, string message, object[] args,
+                  IFormatProvider formatProvider, string category,
+                  string nativeErrorInfo, Exception ex)
+  {
+    _messages.Add(message);
+  }
+
+  public bool IsEnabled(LogLevel level)
+  {
+    // Accept any level.
+    return true;
+  }
+}
+----
+tab:app.config[]
+[source,xml]
+----
+<igniteConfiguration>
+<logger type="MyNamespace.MemoryLogger, MyAssembly" />
+</igniteConfiguration>
+----
+--
+
+== NLog & log4net Loggers
+
+Ignite.NET provides `ILogger` implementations for http://nlog-project.org/[NLog, window=_blank] and https://logging.apache.org/log4net/[Apache log4net, window=_blank].
+They are included in the binary package (`Apache.Ignite.NLog.dll` and `Apache.Ignite.Log4Net.dll`) and can be installed via NuGet:
+
+* `Install-Package Apache.Ignite.NLog`
+* `Install-Package Apache.Ignite.Log4Net`
+
+NLog and Log4Net use statically defined configuration, so there is nothing to configure in Ignite besides `IgniteConfiguration.Logger`:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration
+{
+  Logger = new IgniteNLogLogger()  // or IgniteLog4NetLogger
+}
+
+var ignite = Ignition.Start();
+----
+tab:app.config[]
+[source,xml]
+----
+<igniteConfiguration>
+  <logger type="Apache.Ignite.NLog.IgniteNLogLogger, Apache.Ignite.NLog" />
+</igniteConfiguration>
+----
+--
+
+A simple file-based logging with NLog can be set up like this:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var nlogConfig = new LoggingConfiguration();
+
+var fileTarget = new FileTarget
+{
+  FileName = "ignite_nlog.log"
+};
+nlogConfig.AddTarget("logfile", fileTarget);
+
+nlogConfig.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, fileTarget));
+LogManager.Configuration = nlogConfig;
+
+var igniteConfig = new IgniteConfiguration
+{
+  Logger = new IgniteNLogLogger()
+};
+Ignition.Start(igniteConfig);
+----
+--

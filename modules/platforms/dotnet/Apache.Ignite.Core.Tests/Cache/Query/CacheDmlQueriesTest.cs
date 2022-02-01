@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -111,8 +112,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 Fields = new[]
                 {
-                    new QueryField("id", typeof(int)) {NotNull = true}, 
-                    new QueryField("name", typeof(string)) 
+                    new QueryField("id", typeof(int)) {NotNull = true},
+                    new QueryField("name", typeof(string))
                 }
             });
 
@@ -163,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private static void TestKey<T>(params T[] vals)
         {
-            var cfg = new CacheConfiguration("primitive_key_dotnet_" + typeof(T), 
+            var cfg = new CacheConfiguration("primitive_key_dotnet_" + typeof(T),
                 new QueryEntity(typeof(T), typeof(string)));
             var cache = Ignition.GetIgnite().CreateCache<T, string>(cfg);
 
@@ -397,7 +398,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Attribute-based config.
             var cfg = new CacheConfiguration("def_value_attr", new QueryEntity(typeof(int), typeof(Foo)));
             Assert.AreEqual(-1, cfg.QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
-            
+
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
             Assert.AreEqual(-1,
                 cache.GetConfiguration().QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
@@ -491,10 +492,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             private bool Equals(KeyAll other)
             {
-                return Byte == other.Byte && SByte == other.SByte && Short == other.Short && 
-                    UShort == other.UShort && Int == other.Int && UInt == other.UInt && Long == other.Long && 
-                    ULong == other.ULong && Float.Equals(other.Float) && Double.Equals(other.Double) && 
-                    Decimal == other.Decimal && Guid.Equals(other.Guid) && string.Equals(String, other.String) && 
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short &&
+                    UShort == other.UShort && Int == other.Int && UInt == other.UInt && Long == other.Long &&
+                    ULong == other.ULong && Float.Equals(other.Float) && Double.Equals(other.Double) &&
+                    Decimal == other.Decimal && Guid.Equals(other.Guid) && string.Equals(String, other.String) &&
                     Key.Equals(other.Key);
             }
 

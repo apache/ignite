@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -54,30 +54,25 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Row filter. */
-    private final SchemaIndexCacheFilter rowFilter;
-
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancel;
+    private final IndexRebuildCancelToken cancelTok;
 
     /** Future for create/rebuild index. */
     protected final GridFutureAdapter<Void> buildIdxFut;
 
     /** Logger. */
-    protected IgniteLogger log;
+    protected final IgniteLogger log;
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param rowFilter Row filter.
-     * @param cancel Cancellation token.
+     * @param cancelTok Cancellation token.
      * @param buildIdxFut Future for create/rebuild index.
      */
     public SchemaIndexCacheVisitorImpl(
-        GridCacheContext cctx,
-        @Nullable SchemaIndexCacheFilter rowFilter,
-        @Nullable SchemaIndexOperationCancellationToken cancel,
+        GridCacheContext<?, ?> cctx,
+        IndexRebuildCancelToken cancelTok,
         GridFutureAdapter<Void> buildIdxFut
     ) {
         assert nonNull(cctx);
@@ -89,8 +84,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         this.cctx = cctx;
         this.buildIdxFut = buildIdxFut;
 
-        this.cancel = cancel;
-        this.rowFilter = rowFilter;
+        this.cancelTok = cancelTok;
 
         log = cctx.kernalContext().log(getClass());
     }
@@ -108,6 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
 
         cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();
 
@@ -115,19 +110,20 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> buildIdxCompoundFut =
-            new GridCompoundFuture<>();
+        // To avoid a race between clearing pageMemory (on a cache stop ex. deactivation)
+        // and rebuilding indexes, which can lead to a fail of the node.
+        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture();
 
         for (GridDhtLocalPartition locPart : locParts) {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
 
             GridWorker worker =
-                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, rowFilter, partsCnt);
+                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancelTok, clo, workerFut, partsCnt);
 
             workerFut.setWorker(worker);
             buildIdxCompoundFut.add(workerFut);
 
-            cctx.kernalContext().buildIndexExecutorService().execute(worker);
+            cctx.kernalContext().pools().buildIndexExecutorService().execute(worker);
         }
 
         buildIdxCompoundFut.listen(fut -> {
@@ -179,7 +175,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             res.a("        Type name=" + type.name());
             res.a(U.nl());
 
-            String pk = "_key_PK";
+            String pk = QueryUtils.PRIMARY_KEY_INDEX;
             String tblName = type.tableName();
 
             res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), tblName, pk));

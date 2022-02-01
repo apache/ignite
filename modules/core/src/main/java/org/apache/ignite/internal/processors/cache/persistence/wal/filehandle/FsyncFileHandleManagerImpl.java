@@ -22,12 +22,11 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
@@ -147,7 +146,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         if (cur == null)
             return null;
 
-        FileWALPointer filePtr;
+        WALPointer filePtr;
 
         if (ptr == null) {
             WALRecord rec = cur.head.get();
@@ -155,10 +154,10 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
             if (rec instanceof FsyncFileWriteHandle.FakeRecord)
                 return null;
 
-            filePtr = (FileWALPointer)rec.position();
+            filePtr = rec.position();
         }
         else
-            filePtr = (FileWALPointer)ptr;
+            filePtr = ptr;
 
         // No need to sync if was rolled over.
         if (!cur.needFsync(filePtr))

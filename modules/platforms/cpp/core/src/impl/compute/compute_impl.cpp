@@ -25,10 +25,21 @@ namespace ignite
     {
         namespace compute
         {
-            ComputeImpl::ComputeImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-                InteropTarget(env, javaRef)
+            ComputeImpl::ComputeImpl(SharedPointer<IgniteEnvironment> env, cluster::SP_ClusterGroupImpl clusterGroup) :
+                InteropTarget(env, clusterGroup.Get()->GetComputeProcessor()),
+                clusterGroup(clusterGroup)
             {
                 // No-op.
+            }
+
+            bool ComputeImpl::ProjectionContainsPredicate() const
+            {
+                return clusterGroup.IsValid() && clusterGroup.Get()->GetPredicate() != 0;
+            }
+
+            std::vector<ignite::cluster::ClusterNode> ComputeImpl::GetNodes()
+            {
+                return clusterGroup.Get()->GetNodes();
             }
         }
     }

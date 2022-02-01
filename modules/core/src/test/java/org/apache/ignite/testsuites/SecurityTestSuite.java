@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -30,9 +29,11 @@ import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQu
 import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
+import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.ClientReconnectTest;
+import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
@@ -42,19 +43,33 @@ import org.apache.ignite.internal.processors.security.compute.closure.ComputeTas
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.daemon.DaemonNodeBasicSecurityTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.maintenance.MaintenanceModeNodeSecurityTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
+import org.apache.ignite.internal.processors.security.sandbox.EventsSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
-import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
+import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.PrivilegedProxyTest;
+import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
+import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
+import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
+import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -72,6 +87,9 @@ import org.junit.runners.Suite;
     ThinClientPermissionCheckTest.class,
     ThinClientPermissionCheckSecurityTest.class,
     ContinuousQueryPermissionCheckTest.class,
+    IgniteClientContainSubjectAddressTest.class,
+    ClientReconnectTest.class,
+    SnapshotPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -86,6 +104,8 @@ import org.junit.runners.Suite;
     ThinClientSslPermissionCheckTest.class,
     ThinClientSecurityContextOnRemoteNodeTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
+    EventsRemoteSecurityContextCheckTest.class,
+    SchedulerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
@@ -101,10 +121,23 @@ import org.junit.runners.Suite;
     SecuritySubjectPermissionsTest.class,
     IgnitionComponentProxyTest.class,
     MessagingSandboxTest.class,
+    ContinuousQuerySandboxTest.class,
+    ContinuousQueryWithTransformerSandboxTest.class,
+    EventsSandboxTest.class,
+    PrivilegedProxyTest.class,
+    SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    GridCommandHandlerSslWithSecurityTest.class,
-    MultipleSSLContextsTest.class
+    MultipleSSLContextsTest.class,
+    MaintenanceModeNodeSecurityTest.class,
+    DaemonNodeBasicSecurityTest.class,
+    ServiceAuthorizationTest.class,
+    ServiceStaticConfigTest.class
 })
 public class SecurityTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
+    }
 }

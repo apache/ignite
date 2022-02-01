@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # An example of a Kubernetes configuration for Ignite pods deployment.
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   # Custom Ignite cluster's name.
@@ -40,3 +40,7 @@ spec:
         - containerPort: 49112 # JMX port number.
         - containerPort: 8080  # REST port number.
         - containerPort: 10800 # SQL port number.
+      serviceAccountName: ignite
+  selector:
+    matchLabels:
+      app: ignite

@@ -174,8 +174,15 @@ public class GridH2RowRange implements Message {
         // No-op.
     }
 
+    /**
+     * @return Number of rows.
+     */
+    public int rowsSize() {
+        return rows == null ? 0 : rows.size();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridH2RowRange.class, this, "rowsSize", rows != null ? rows.size() : 0);
+        return S.toString(GridH2RowRange.class, this, "rowsSize", rowsSize());
     }
 }

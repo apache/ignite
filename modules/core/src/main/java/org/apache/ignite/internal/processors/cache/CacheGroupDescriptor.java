@@ -89,6 +89,7 @@ public class CacheGroupDescriptor {
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Whether WAL is enabled.
      * @param walChangeReqs Pending WAL change requests.
+     * @param cacheCfgEnrichment Cache configuration enrichment.
      */
     @SuppressWarnings("unchecked")
     CacheGroupDescriptor(
@@ -358,7 +359,7 @@ public class CacheGroupDescriptor {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheGroupDescriptor that = (CacheGroupDescriptor) o;
+        CacheGroupDescriptor that = (CacheGroupDescriptor)o;
 
         return grpId == that.grpId;
     }

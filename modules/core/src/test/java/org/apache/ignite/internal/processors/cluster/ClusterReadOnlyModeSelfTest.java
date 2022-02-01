@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -28,8 +29,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
-import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -46,14 +49,14 @@ import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTes
 /**
  * Checks main functionality of cluster read-only mode. In this mode cluster will be available only for read operations,
  * all data modification operations in user caches will be rejected with {@link IgniteClusterReadOnlyException}
- *
- * 1) Read-only mode could be enabled on active cluster only.
- * 2) Read-only mode doesn't store on PDS (i.e. after cluster restart enabled read-only mode will be forgotten)
- * 3) Updates to ignite-sys-cache will be available with enabled read-only mode.
- * 4) Updates to distributed metastorage will be available with enabled read-only mode.
- * 5) Read-only mode can't be enabled inside transaction.
- * 6) Lock can't be get with enabled read-only mode.
- *
+ * <br/>
+ * 1) Read-only mode could be enabled on active cluster only. <br/>
+ * 2) Read-only mode doesn't store on PDS (i.e. after cluster restart enabled read-only mode will be forgotten) <br/>
+ * 3) Updates to ignite-sys-cache will be available with enabled read-only mode. <br/>
+ * 4) Updates to distributed metastorage will be available with enabled read-only mode. <br/>
+ * 5) Updates to local metastorage will be available with enabled read-only mode. <br/>
+ * 6) Read-only mode can't be enabled inside transaction.<br/>
+ * 7) Lock can't be get with enabled read-only mode. <br/>
  */
 public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     /** Server nodes count. */
@@ -87,6 +90,45 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testMetaStorageAvailableForUpdatesOnReadOnlyCluster() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        node.cluster().state(ACTIVE);
+
+        IgniteCacheDatabaseSharedManager db = node.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        db.checkpointReadLock();
+
+        try {
+            metaStorage.write("key", "val");
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
+
+        node.cluster().state(ACTIVE_READ_ONLY);
+
+        db.checkpointReadLock();
+
+        try {
+            assertEquals("val", metaStorage.read("key"));
+
+            metaStorage.write("key", "new_val");
+
+            assertEquals("new_val", metaStorage.read("key"));
+
+            metaStorage.remove("key");
+
+            assertNull(metaStorage.read("key"));
+        } finally {
+            db.checkpointReadUnlock();
+        }
     }
 
     /** */
@@ -202,7 +244,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             tx.rollback();
         }
 
-        assertEquals(1, (int) cache.get(key));
+        assertEquals(1, (int)cache.get(key));
 
         t.join();
     }
@@ -216,9 +258,22 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
         checkClusterInReadOnlyMode(true, grid);
 
-        grid.utilityCache().put(new GridServiceAssignmentsKey("test"), "test");
+        GridCacheUtilityKey<?> key = new GridCacheUtilityKey() {
+            @Override protected boolean equalsx(GridCacheUtilityKey key) {
+                return false;
+            }
 
-        assertEquals("test", grid.utilityCache().get(new GridServiceAssignmentsKey("test")));
+            @Override public int hashCode() {
+                return 0;
+            }
+        };
+
+        HashSet<String> sysTypes = GridTestUtils.getFieldValue(grid.context().marshallerContext(), "sysTypesSet");
+        sysTypes.add(key.getClass().getName());
+
+        grid.utilityCache().put(key, "test");
+
+        assertEquals("test", grid.utilityCache().get(key));
     }
 
     /** */

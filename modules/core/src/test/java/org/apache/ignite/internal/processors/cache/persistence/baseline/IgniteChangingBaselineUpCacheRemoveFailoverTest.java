@@ -63,6 +63,7 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -108,7 +109,10 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean stop, final AtomicReference<CyclicBarrier> cmp) {
+    @Override protected IgniteInternalFuture createAndRunConcurrentAction(
+        final AtomicBoolean stop,
+        final AtomicReference<CyclicBarrier> cmp
+    ) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Thread.currentThread().setName("restart-thread");

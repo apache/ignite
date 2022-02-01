@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCacheLeakTest extends GridCommonAbstractTest {
     /** Cache name. */
-    private static final String CACHE_NAME = "igfs-data";
+    private static final String CACHE_NAME = "data";
 
     /** Iterations to run. */
     private static final int ITERS = 10_000;

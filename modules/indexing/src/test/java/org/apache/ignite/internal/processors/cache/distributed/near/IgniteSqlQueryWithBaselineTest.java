@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
 import java.util.Collection;
-
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -27,8 +27,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.Cache;
 import org.junit.Test;
 
 /**

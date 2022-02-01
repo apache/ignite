@@ -17,17 +17,25 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
 public interface DataStorageMetrics {
     /**
-     * Gets the average number of WAL records per second written during the last time interval.
+     * @return  The average number of WAL records per second written during the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
@@ -37,7 +45,7 @@ public interface DataStorageMetrics {
     public float getWalLoggingRate();
 
     /**
-     * Gets the average number of bytes per second written during the last time interval.
+     * @return  The average number of bytes per second written during the last time interval.
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
      * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
@@ -46,12 +54,12 @@ public interface DataStorageMetrics {
     public float getWalWritingRate();
 
     /**
-     * Gets the current number of WAL segments in the WAL archive.
+     * @return The current number of WAL segments in the WAL archive.
      */
     public int getWalArchiveSegments();
 
     /**
-     * Gets the average WAL fsync duration in microseconds over the last time interval.
+     * @return The average WAL fsync duration in microseconds over the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
@@ -61,7 +69,7 @@ public interface DataStorageMetrics {
     public float getWalFsyncTimeAverage();
 
     /**
-     * Returns WAL buffer poll spins number over the last time interval.
+     * @return  WAL buffer poll spins number over the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configuration property.
@@ -97,6 +105,13 @@ public interface DataStorageMetrics {
      * @return Total checkpoint duration in milliseconds.
      */
     public long getLastCheckpointDuration();
+
+    /**
+     * Returns time when the last checkpoint was started.
+     *
+     * @return Time when the last checkpoint was started.
+     * */
+    public long getLastCheckpointStarted();
 
     /**
      * Gets the duration of last checkpoint lock wait in milliseconds.
@@ -234,4 +249,18 @@ public interface DataStorageMetrics {
      *         or negative value is not supported.
      */
     public long getSparseStorageSize();
+
+    /**
+     * Getting the total number of logged bytes into the WAL.
+     *
+     * @return Number of bytes.
+     */
+    long getWalWrittenBytes();
+
+    /**
+     * Getting the total size of the compressed segments in bytes.
+     *
+     * @return Number of bytes.
+     */
+    long getWalCompressedBytes();
 }

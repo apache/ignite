@@ -26,6 +26,7 @@
         <property name="connectorConfiguration"><null/></property>
         <property name="networkSendRetryDelay" value="765"/>
         <property name="networkTimeout" value="2999" />
+        <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -45,6 +46,10 @@
 
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
+        </property>
+
+        <property name="asyncContinuationExecutor">
+            <bean class="org.apache.ignite.platform.PlatformTestExecutor"/>
         </property>
     </bean>
 </beans>

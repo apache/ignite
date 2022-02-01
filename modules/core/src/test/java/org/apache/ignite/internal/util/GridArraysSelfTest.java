@@ -110,12 +110,12 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveLong() {
-        long[] arr = {0,1,2,3,4,5,6};
+        long[] arr = {0, 1, 2, 3, 4, 5, 6};
 
-        assertTrue(Arrays.equals(new long[]{1,2,3,4,5,6}, remove(arr, 0)));
-        assertTrue(Arrays.equals(new long[]{0,2,3,4,5,6}, remove(arr, 1)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,5,6}, remove(arr, 4)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,4,5}, remove(arr, 6)));
+        assertTrue(Arrays.equals(new long[] {1, 2, 3, 4, 5, 6}, remove(arr, 0)));
+        assertTrue(Arrays.equals(new long[] {0, 2, 3, 4, 5, 6}, remove(arr, 1)));
+        assertTrue(Arrays.equals(new long[] {0, 1, 2, 3, 5, 6}, remove(arr, 4)));
+        assertTrue(Arrays.equals(new long[] {0, 1, 2, 3, 4, 5}, remove(arr, 6)));
         assertTrue(Arrays.equals(new long[0], remove(new long[]{1}, 0)));
     }
 
@@ -123,12 +123,12 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemove() {
-        Integer[] arr = {0,1,2,3,4,5,6};
+        Integer[] arr = {0, 1, 2, 3, 4, 5, 6};
 
-        assertTrue(Arrays.equals(new Integer[]{1,2,3,4,5,6}, remove(arr, 0)));
-        assertTrue(Arrays.equals(new Integer[]{0,2,3,4,5,6}, remove(arr, 1)));
-        assertTrue(Arrays.equals(new Integer[]{0,1,2,3,5,6}, remove(arr, 4)));
-        assertTrue(Arrays.equals(new Integer[]{0,1,2,3,4,5}, remove(arr, 6)));
+        assertTrue(Arrays.equals(new Integer[] {1, 2, 3, 4, 5, 6}, remove(arr, 0)));
+        assertTrue(Arrays.equals(new Integer[] {0, 2, 3, 4, 5, 6}, remove(arr, 1)));
+        assertTrue(Arrays.equals(new Integer[] {0, 1, 2, 3, 5, 6}, remove(arr, 4)));
+        assertTrue(Arrays.equals(new Integer[] {0, 1, 2, 3, 4, 5}, remove(arr, 6)));
         assertTrue(Arrays.equals(new Integer[0], remove(new Integer[]{1}, 0)));
     }
 }

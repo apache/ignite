@@ -212,10 +212,11 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
+        /// <param name="errorAction">Error action.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<Exception, TR> errorAction = null)
         {
-            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction);
+            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction, errorAction);
         }
 
         /// <summary>
@@ -239,24 +240,6 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Perform out-in operation with a single stream.
         /// </summary>
-        /// <typeparam name="TR">The type of the r.</typeparam>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inAction">In action.</param>
-        /// <param name="inErrorAction">The action to read an error.</param>
-        /// <returns>
-        /// Result.
-        /// </returns>
-        protected TR DoOutInOpX<TR>(int type, Func<BinaryWriter, bool> outAction, Func<IBinaryStream, long, TR> inAction,
-            Func<IBinaryStream, Exception> inErrorAction)
-        {
-            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                inAction, inErrorAction);
-        }
-
-        /// <summary>
-        /// Perform out-in operation with a single stream.
-        /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inErrorAction">The action to read an error.</param>
@@ -264,22 +247,6 @@ namespace Apache.Ignite.Core.Impl
         /// Result.
         /// </returns>
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
-            Func<IBinaryStream, Exception> inErrorAction)
-        {
-            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                (stream, res) => res == True, inErrorAction);
-        }
-
-        /// <summary>
-        /// Perform out-in operation with a single stream.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inErrorAction">The action to read an error.</param>
-        /// <returns>
-        /// Result.
-        /// </returns>
-        protected bool DoOutInOpX(int type, Func<BinaryWriter, bool> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
@@ -427,8 +394,8 @@ namespace Apache.Ignite.Core.Impl
         {
             return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
-                w.WriteObject(val1);
-                w.WriteObject(val2);
+                w.WriteObjectDetached(val1);
+                w.WriteObjectDetached(val2);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
             })).Task;
@@ -526,20 +493,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return fut;
-        }
-
-        /// <summary>
-        /// Writes to stream.
-        /// </summary>
-        private static bool WriteToStream(Func<BinaryWriter, bool> action, IBinaryStream stream, Marshaller marsh)
-        {
-            var writer = marsh.StartMarshal(stream);
-
-            var res = action(writer);
-
-            marsh.FinishMarshal(writer);
-
-            return res;
         }
 
         /// <summary>

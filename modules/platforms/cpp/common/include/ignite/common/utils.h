@@ -204,22 +204,11 @@ namespace ignite
         }
 
         /**
-         * Check if the predicate returns true for all the elements of the
-         * sequence.
+         * Check if all characters are digits.
          *
-         * @return True if the predicate returns true for all the elements
-         *     of the sequence and false otherwise.
+         * @param val Value to check.
          */
-        template<typename Iter, typename Pred>
-        bool AllOf(Iter begin, Iter end, Pred pred)
-        {
-            Iter i = begin;
-
-            while (i != end && pred(*i))
-                ++i;
-
-            return i == end;
-        }
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string& val);
 
         /**
          * Converts 32-bit integer to big endian format
@@ -391,7 +380,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -407,7 +396,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -420,7 +409,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Time in human understandable way.
@@ -432,7 +421,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Timestamp in human understandable way.
@@ -448,7 +437,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**
@@ -465,7 +454,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**
@@ -605,7 +594,7 @@ namespace ignite
         };
 
         /**
-         * Deinit guard class template.
+         * De-init guard class template.
          *
          * Upon destruction calls provided deinit function on provided instance.
          *
@@ -665,7 +654,107 @@ namespace ignite
          * @param name Name without extension.
          * @return Full name.
          */
-        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const std::string& name);
+
+        /**
+         * Get hex dump of binary data in string form.
+         * @param data Data.
+         * @param count Number of bytes.
+         * @return Hex dump string.
+         */
+        IGNITE_IMPORT_EXPORT std::string HexDump(const void* data, size_t count);
+
+        /**
+         * Fibonacci sequence iterator.
+         *
+         * @tparam S Sequence length. Should be >= 2.
+         */
+        template<size_t S>
+        class FibonacciSequence
+        {
+        public:
+            /** Size. */
+            static const size_t size = S > 2 ? S : 2;
+
+            /**
+             * Constructor.
+             */
+            FibonacciSequence()
+            {
+                sequence[0] = 0;
+                sequence[1] = 1;
+
+                for (size_t i = 2; i < size; ++i)
+                    sequence[i] = sequence[i - 1] + sequence[i - 2];
+            }
+
+            /**
+             * Get n-th or max member of sequence.
+             *
+             * @param n Member position.
+             * @return N-th member of sequence if n < size, or max member.
+             */
+            size_t GetValue(size_t n) const
+            {
+                if (n < size)
+                    return sequence[n];
+
+                return sequence[size-1];
+            }
+
+        private:
+            /** Sequence of fibonacci numbers */
+            size_t sequence[size];
+        };
+
+        /**
+         * Throw platform-specific error.
+         *
+         * @param msg Error message.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowSystemError(const std::string& msg);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description, const std::string& advice);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description);
+
+        /**
+         * Format error message.
+         *
+         * @param description Error description.
+         * @param description Error details.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT std::string FormatErrorMessage(const std::string& description, const std::string& details,
+            const std::string& advice);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description, const std::string& advice);
     }
 }
 

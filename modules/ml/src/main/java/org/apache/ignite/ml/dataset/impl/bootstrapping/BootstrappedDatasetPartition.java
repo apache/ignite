@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Arrays;
 import java.util.Iterator;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Partition of bootstrapped vectors.

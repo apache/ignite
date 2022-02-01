@@ -130,7 +130,7 @@ public class MvccDataRow extends DataRow {
     }
 
     /**
-     * 
+     *
      */
     public MvccDataRow() {
         super(0);

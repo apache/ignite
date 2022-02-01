@@ -42,11 +42,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTestsBase(bool noLocalhost, bool enableSsl) : base(3, enableSsl)
+        public ClientClusterDiscoveryTestsBase(bool noLocalhost, bool enableSsl)
+            : base(3, enableSsl, enableServerListLogging: true)
         {
             _noLocalhost = noLocalhost;
         }
 
+#if NETCOREAPP // TODO: IGNITE-15710
         /// <summary>
         /// Tests that client with one initial endpoint discovers all servers.
         /// </summary>
@@ -58,6 +60,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
+#endif
 
         /// <summary>
         /// Tests that client discovers new servers automatically when they join the cluster, and removes
@@ -78,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
-        
+
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
@@ -97,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AutoGenerateIgniteInstanceName = true
             };
         }
-        
+
         /// <summary>
         /// Asserts client connection count.
         /// </summary>
@@ -116,11 +119,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 }
 
                 return count == client.GetConnections().Count();
-            }, 1000);
+            }, 9000);
 
             if (!res)
             {
-                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}", 
+                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}",
                     count, client.GetConnections().Count());
             }
 
@@ -138,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     .Select(a => a.Split('%').First())  // Trim IPv6 scope.
                     .Select(IPAddress.Parse)
                     .ToArray();
-                
+
                 CollectionAssert.Contains(ipAddresses, remoteEndPoint.Address);
 
                 var localEndPoint = (IPEndPoint) connection.LocalEndPoint;

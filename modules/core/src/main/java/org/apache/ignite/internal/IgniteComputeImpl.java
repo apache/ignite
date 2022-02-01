@@ -25,7 +25,6 @@ import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -54,7 +53,6 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
@@ -72,9 +70,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** */
     private ClusterGroupAdapter prj;
 
-    /** */
-    private UUID subjId;
-
     /** Custom executor name. */
     private String execName;
 
@@ -88,24 +83,21 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
-     * @param subjId Subject ID.
      */
-    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId) {
-        this(ctx, prj, subjId, false);
+    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
+        this(ctx, prj, false);
     }
 
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
-     * @param subjId Subject ID.
      * @param async Async support flag.
      */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
         super(async);
 
         this.ctx = ctx;
         this.prj = prj;
-        this.subjId = subjId;
     }
 
     /**
@@ -117,19 +109,18 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param async Async support flag.
      * @param execName Custom executor name.
      */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async,
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async,
         String execName) {
         super(async);
 
         this.ctx = ctx;
         this.prj = prj;
-        this.subjId = subjId;
         this.execName = execName;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, subjId, true);
+        return new IgniteComputeImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */
@@ -481,7 +472,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskName, arg, execName);
         }
@@ -520,7 +510,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskCls, arg, execName);
         }
@@ -559,7 +548,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(task, arg, execName);
         }
@@ -1132,6 +1120,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        return new IgniteComputeImpl(ctx, prj, subjId, isAsync(), name);
+        return new IgniteComputeImpl(ctx, prj, isAsync(), name);
     }
 }

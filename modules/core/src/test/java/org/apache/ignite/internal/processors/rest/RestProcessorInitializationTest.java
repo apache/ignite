@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -52,13 +55,27 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCustomRestProcessorInitialization() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setConnectorConfiguration(new ConnectorConfiguration());
 
         cfg.setPluginProviders(new TestRestProcessorProvider());
 
         IgniteEx ignite = startGrid(cfg);
 
         assertEquals(ignite.context().rest().getClass(), TestGridRestProcessorImpl.class);
+
+        TestGridRestProcessorImpl rest = (TestGridRestProcessorImpl)ignite.context().rest();
+
+        GridRestRequest req = new GridRestRequest();
+
+        req.command(GridRestCommand.VERSION);
+
+        GridRestResponse res = rest.handleAsync0(req).get();
+
+        IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = rest.getTuple();
+
+        assertEquals(req, entry.get1());
+        assertEquals(res, entry.get2().get());
     }
 
     /**
@@ -82,12 +99,29 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
     /**
      * Test no-op implementation of {@link IgniteRestProcessor}.
      */
-    private static class TestGridRestProcessorImpl extends GridProcessorAdapter implements IgniteRestProcessor {
+    private static class TestGridRestProcessorImpl extends GridRestProcessor {
+        /** */
+        private final IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> tuple = new IgniteBiTuple<>();
+
         /**
          * @param ctx Kernal context.
          */
         protected TestGridRestProcessorImpl(GridKernalContext ctx) {
             super(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteInternalFuture<GridRestResponse> handleAsync0(GridRestRequest req) {
+            IgniteInternalFuture<GridRestResponse> fut = super.handleAsync0(req);
+
+            fut.listen(f -> tuple.set(req, f));
+
+            return fut;
+        }
+
+        /** */
+        public IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getTuple() {
+            return tuple;
         }
     }
 }

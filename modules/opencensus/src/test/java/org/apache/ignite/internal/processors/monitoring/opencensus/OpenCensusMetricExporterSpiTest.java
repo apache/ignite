@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
-import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
-import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.regex.Pattern;
+import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
+import io.prometheus.client.exporter.HTTPServer;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;

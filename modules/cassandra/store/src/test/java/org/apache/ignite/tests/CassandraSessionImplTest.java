@@ -17,25 +17,10 @@
 
 package org.apache.ignite.tests;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
-import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
-import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
-import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
-import org.junit.Test;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -48,24 +33,44 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
+import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
+import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
+import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/** */
 public class CassandraSessionImplTest {
 
+    /** */
     private PreparedStatement preparedStatement1 = mockPreparedStatement();
 
+    /** */
     private PreparedStatement preparedStatement2 = mockPreparedStatement();
 
+    /** */
     private MyBoundStatement1 boundStatement1 = new MyBoundStatement1(preparedStatement1);
 
+    /** */
     private MyBoundStatement2 boundStatement2 = new MyBoundStatement2(preparedStatement2);
 
+    /** */
     @SuppressWarnings("unchecked")
     @Test
     public void executeFailureTest() {
         Session session1 = mock(Session.class);
         Session session2 = mock(Session.class);
-        when(session1.prepare(any(String.class))).thenReturn(preparedStatement1);
-        when(session2.prepare(any(String.class))).thenReturn(preparedStatement2);
+        when(session1.prepare(nullable(String.class))).thenReturn(preparedStatement1);
+        when(session2.prepare(nullable(String.class))).thenReturn(preparedStatement2);
 
         ResultSetFuture rsFuture = mock(ResultSetFuture.class);
         ResultSet rs = mock(ResultSet.class);
@@ -102,11 +107,12 @@ public class CassandraSessionImplTest {
         cassandraSession.execute(batchExecutionAssistant, data);
 
         verify(cluster, times(2)).connect();
-        verify(session1, times(1)).prepare(any(String.class));
-        verify(session2, times(1)).prepare(any(String.class));
+        verify(session1, times(1)).prepare(nullable(String.class));
+        verify(session2, times(1)).prepare(nullable(String.class));
         assertEquals(10, batchExecutionAssistant.processedCount());
     }
 
+    /** */
     private static PreparedStatement mockPreparedStatement() {
         PreparedStatement ps = mock(PreparedStatement.class);
         when(ps.getVariables()).thenReturn(mock(ColumnDefinitions.class));
@@ -115,10 +121,12 @@ public class CassandraSessionImplTest {
         return ps;
     }
 
+    /** */
     private class MyBatchExecutionAssistant implements BatchExecutionAssistant {
-
+        /** */
         private Set<Integer> processed = new HashSet<>();
 
+        /** {@inheritDoc} */
         @Override public void process(Row row, int seqNum) {
             if (processed.contains(seqNum))
                 return;
@@ -126,26 +134,32 @@ public class CassandraSessionImplTest {
             processed.add(seqNum);
         }
 
+        /** {@inheritDoc} */
         @Override public boolean alreadyProcessed(int seqNum) {
             return processed.contains(seqNum);
         }
 
+        /** {@inheritDoc} */
         @Override public int processedCount() {
             return processed.size();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean tableExistenceRequired() {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public String getTable() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public String getStatement() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
             if (statement instanceof WrappedPreparedStatement)
                 statement = ((WrappedPreparedStatement)statement).getWrappedStatement();
@@ -160,30 +174,35 @@ public class CassandraSessionImplTest {
             throw new RuntimeException("unexpected");
         }
 
+        /** {@inheritDoc} */
         @Override public KeyValuePersistenceSettings getPersistenceSettings() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public String operationName() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public Object processedData() {
             return null;
         }
 
     }
 
+    /** */
     private static class MyBoundStatement1 extends BoundStatement {
-
+        /** */
         MyBoundStatement1(PreparedStatement ps) {
             super(ps);
         }
 
     }
 
+    /** */
     private static class MyBoundStatement2 extends BoundStatement {
-
+        /** */
         MyBoundStatement2(PreparedStatement ps) {
             super(ps);
         }

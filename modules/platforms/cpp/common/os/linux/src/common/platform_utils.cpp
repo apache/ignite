@@ -23,8 +23,9 @@
 #include <dirent.h>
 #include <dlfcn.h>
 #include <glob.h>
-#include <unistd.h>
 #include <ftw.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <ignite/common/utils.h>
 
@@ -94,7 +95,7 @@ namespace ignite
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
 
-        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        static int rmFiles(const char *pathname, const struct stat*, int, struct FTW*)
         {
             remove(pathname);
 
@@ -114,8 +115,11 @@ namespace ignite
 
         StdCharOutStream& Dle(StdCharOutStream& ostr)
         {
+#ifdef __APPLE__
+            static const char expansion[] = ".dylib";
+#else
             static const char expansion[] = ".so";
-
+#endif
             ostr.write(expansion, sizeof(expansion) - 1);
 
             return ostr;
@@ -132,6 +136,23 @@ namespace ignite
             res ^= static_cast<unsigned>(getpid());
 
             return res;
+        }
+
+        std::string GetLastSystemError()
+        {
+            int errorCode = errno;
+
+            std::string errorDetails;
+            if (errorCode != 0)
+            {
+                char errBuf[1024] = { 0 };
+
+                const char* res = strerror_r(errorCode, errBuf, sizeof(errBuf));
+                if (res)
+                    errorDetails.assign(res);
+            }
+
+            return errorDetails;
         }
     }
 }

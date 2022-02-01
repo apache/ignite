@@ -44,6 +44,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startClientGrid("client-" + i);
     }
 
+    /** */
     @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
@@ -73,6 +74,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
     }
 
+    /** */
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
         long localPrimary = 0L;
         long localBackups = 0L;

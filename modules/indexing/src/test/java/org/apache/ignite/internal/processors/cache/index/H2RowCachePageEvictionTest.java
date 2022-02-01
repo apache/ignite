@@ -30,11 +30,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.H2RowCacheRegistry;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCacheRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -101,6 +99,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setConcurrencyLevel(4)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(persistenceEnabled)
                     .setMaxSize(SIZE)
@@ -126,7 +125,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
                 stream.addData(i, new Value(i));
         }
 
-        H2RowCache rowCache = rowCache(grid()).forGroup(grpId);
+        IndexRowCache rowCache = rowCache(grid()).forGroup(grpId);
 
         fillRowCache(CACHE_NAME);
 
@@ -204,10 +203,8 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
      * @param ig Ignite node.
      * @return H2RowCacheRegistry for checks.
      */
-    private H2RowCacheRegistry rowCache(IgniteEx ig) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ig.context().query().getIndexing();
-
-        return GridTestUtils.getFieldValue(indexing, "rowCache");
+    private IndexRowCacheRegistry rowCache(IgniteEx ig) {
+        return ig.context().indexProcessor().idxRowCacheRegistry();
     }
 
     /**

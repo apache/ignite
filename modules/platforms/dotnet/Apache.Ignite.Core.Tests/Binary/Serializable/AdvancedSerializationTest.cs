@@ -20,9 +20,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+#if !NETCOREAPP  // AppDomains are not supported in .NET Core
     using System.Reflection;
     using System.Reflection.Emit;
+#endif
     using System.Runtime.Serialization;
     using System.Xml;
     using Apache.Ignite.Core.Cluster;
@@ -96,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0  // AppDomains are not supported in .NET Core
+#if !NETCOREAPP// AppDomains are not supported in .NET Core
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
@@ -183,6 +186,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
     [Serializable]
     [DataContract]
+    [SuppressMessage("Microsoft.Design", "CA1058:TypesShouldNotExtendCertainBaseTypes")]
     public sealed class SerializableXmlDoc : XmlDocument, ISerializable
     {
         /// <summary>

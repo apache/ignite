@@ -31,6 +31,10 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
 
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+
 /**
  * JDBC driver implementation for In-Memory Data Grid.
  * <p>
@@ -485,10 +489,10 @@ public class IgniteJdbcDriver implements Driver {
                     info.getProperty("ignite.client.ssl.enabled", "false"),
                     "Flag indicating that SSL is needed for connection."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.protocol",
-                    info.getProperty("ignite.client.ssl.protocol", "TLS"),
+                    info.getProperty("ignite.client.ssl.protocol", DFLT_SSL_PROTOCOL),
                     "SSL protocol."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.key.algorithm",
-                    info.getProperty("ignite.client.ssl.key.algorithm", "SunX509"),
+                    info.getProperty("ignite.client.ssl.key.algorithm", DFLT_KEY_ALGORITHM),
                     "Key manager algorithm."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.location",
                     info.getProperty("ignite.client.ssl.keystore.location", ""),
@@ -497,7 +501,7 @@ public class IgniteJdbcDriver implements Driver {
                     info.getProperty("ignite.client.ssl.keystore.password", ""),
                     "Key store password."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.type",
-                    info.getProperty("ignite.client.ssl.keystore.type", "jks"),
+                    info.getProperty("ignite.client.ssl.keystore.type", DFLT_STORE_TYPE),
                     "Key store type."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.location",
                     info.getProperty("ignite.client.ssl.truststore.location", ""),
@@ -506,7 +510,7 @@ public class IgniteJdbcDriver implements Driver {
                     info.getProperty("ignite.client.ssl.truststore.password", ""),
                     "Trust store password."),
                 new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.type",
-                    info.getProperty("ignite.client.ssl.truststore.type", "jks"),
+                    info.getProperty("ignite.client.ssl.truststore.type", DFLT_STORE_TYPE),
                     "Trust store type."),
                 new JdbcDriverPropertyInfo("ignite.client.credentials",
                     info.getProperty("ignite.client.credentials", ""),

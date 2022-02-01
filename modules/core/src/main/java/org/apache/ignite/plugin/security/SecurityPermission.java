@@ -73,7 +73,25 @@ public enum SecurityPermission {
     CACHE_DESTROY,
 
     /** Join as server node permission. */
-    JOIN_AS_SERVER;
+    JOIN_AS_SERVER,
+
+    /** Administration operation with cluster metadata (REMOVE, UPDATE). */
+    ADMIN_METADATA_OPS,
+
+    /** Administration operation: read distributed properties values. */
+    ADMIN_READ_DISTRIBUTED_PROPERTY,
+
+    /** Administration operation: write distributed properties values. */
+    ADMIN_WRITE_DISTRIBUTED_PROPERTY,
+
+    /** Administration operation with cluster snapshots (create, cancel, check). */
+    ADMIN_SNAPSHOT,
+
+    /** Permission to execute REFRESH STATISTICS command. */
+    REFRESH_STATISTICS,
+
+    /** Permission to execute ANALYZE and DROP STATISTICS command. */
+    CHANGE_STATISTICS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

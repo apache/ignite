@@ -46,6 +46,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -165,7 +166,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                 final long totAcked0 = totAcked;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    GridNioServer<?> srv = U.field(spi, "nioSrvr");
+                    GridNioServer<?> srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
                     final Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
@@ -273,7 +274,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         ClusterNode node0 = nodes.get(0);
         ClusterNode node1 = nodes.get(1);
 
-        final GridNioServer<?> srv1 = U.field(spi1, "nioSrvr");
+        final GridNioServer<?> srv1 = ((GridNioServerWrapper)U.field(spi1, "nioSrvWrapper")).nio();
 
         int msgId = 0;
 
@@ -333,7 +334,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private GridNioSession communicationSession(TcpCommunicationSpi spi) throws Exception {
-        final GridNioServer<?> srv = U.field(spi, "nioSrvr");
+        final GridNioServer<?> srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -420,13 +421,13 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             spi.setListener(new TestListener());
 
-            node.setAttributes(spi.getNodeAttributes());
-
             node.order(i);
 
             nodes.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
+
+            node.setAttributes(spi.getNodeAttributes());
 
             spis.add(spi);
 

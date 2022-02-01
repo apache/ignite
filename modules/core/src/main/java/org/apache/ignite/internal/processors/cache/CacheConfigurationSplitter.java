@@ -18,15 +18,24 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.SerializeSeparately;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- *
+ * Splits cache configuration into two parts that can be serialized, deserialized separately.
+ * This eliminates the need to deserialize part of the configuration and therefore,
+ * it does not require user classes on non-affinity nodes.
  */
 public interface CacheConfigurationSplitter {
     /**
+     * Splits cache configuration associated with the given {@code desc} into two parts
+     * {@link CacheConfiguration} and {@link CacheConfigurationEnrichment} that are serialized separately.
+     * The fields marked with {@link SerializeSeparately} are placed into {@link CacheConfigurationEnrichment},
+     * the corresponding values into {@link CacheConfiguration} are changed with the default ones.
      *
-     * @param desc Description.
+     * @param desc Cache group description to split.
+     * @return Split cache configuration.
+     * @see SerializeSeparately
      */
     default T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheGroupDescriptor desc) {
         if (desc.isConfigurationEnriched())
@@ -36,7 +45,14 @@ public interface CacheConfigurationSplitter {
     }
 
     /**
-     * @param desc Description.
+     * Splits cache configuration associated with the given {@code desc} into two parts
+     * {@link CacheConfiguration} and {@link CacheConfigurationEnrichment} that are serialized separately.
+     * The fields marked with {@link SerializeSeparately} are placed into {@link CacheConfigurationEnrichment},
+     * the corresponding values into {@link CacheConfiguration} are changed with the default ones.
+     *
+     * @param desc Cache description to split.
+     * @return Split cache configuration.
+     * @see SerializeSeparately
      */
     default T2<CacheConfiguration, CacheConfigurationEnrichment> split(DynamicCacheDescriptor desc) {
         if (desc.isConfigurationEnriched())
@@ -46,7 +62,14 @@ public interface CacheConfigurationSplitter {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * Splits the given cache configuration into two parts
+     * {@link CacheConfiguration} and {@link CacheConfigurationEnrichment} that are serialized separately.
+     * The fields marked with {@link SerializeSeparately} are placed into {@link CacheConfigurationEnrichment},
+     * the corresponding values into {@link CacheConfiguration} are changed with the default ones.
+     *
+     * @param ccfg Cache configuration to split.
+     * @return Split cache configuration.
+     * @see SerializeSeparately
      */
     T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg);
 }

@@ -32,6 +32,7 @@ public class IllegalFeatureTypeException extends IgniteException {
      * @param desiredCls The desired type.
      */
     public IllegalFeatureTypeException(Class illegalCls, Object illegalVal, Class desiredCls) {
-        super("The type of feature " + illegalCls + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredCls);
+        super("The type of feature " + illegalCls + " is illegal. " +
+            "The found value is: " + illegalVal + " The type of label should be " + desiredCls);
     }
 }

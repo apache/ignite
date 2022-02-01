@@ -71,7 +71,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @return Query result. If the iterator implements {@link AutoCloseable} it will be correctly closed.
      * @throws IgniteSpiException If failed.
      */
-    public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
+    public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**

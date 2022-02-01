@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientServices;
 
 /**
  * Defines supported bitmask features for thin client.
@@ -32,13 +33,27 @@ public enum ProtocolBitmaskFeature {
     EXECUTE_TASK_BY_NAME(1),
 
     /**
-     * Cluster operations (state and WAL). In addition to {@link ProtocolVersionFeature#CLUSTER_API} this feature
-     * also allows to use other cluster states beside ACTIVE and INACTIVE.
+     * Adds cluster states besides ACTIVE and INACTIVE.
      */
-    CLUSTER_API(2),
+    CLUSTER_STATES(2),
 
     /** Cluster groups. */
-    CLUSTER_GROUPS(4);
+    CLUSTER_GROUPS(4),
+
+    /** Invoke service methods. */
+    SERVICE_INVOKE(5),
+
+    /** Feature for use default query timeout if the qry timeout isn't set explicitly. */
+    DEFAULT_QRY_TIMEOUT(6),
+
+    /** Additional SqlFieldsQuery properties: partitions, updateBatchSize */
+    QRY_PARTITIONS_BATCH_SIZE(7),
+
+    /** Handle of {@link ClientServices#serviceDescriptors()}. */
+    GET_SERVICE_DESCRIPTORS(9),
+
+    /** Invoke service methods with caller context. */
+    SERVICE_INVOKE_CALLCTX(10);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

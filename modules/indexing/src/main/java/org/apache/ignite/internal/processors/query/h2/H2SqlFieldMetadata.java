@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Field descriptor.
@@ -52,6 +51,9 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** Scale. */
     private int scale;
 
+    /** Nullability. See {@link java.sql.ResultSetMetaData#isNullable(int)} */
+    private int nullability;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -68,7 +70,7 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
      * @param scale Scale.
      */
     H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type,
-        int precision, int scale) {
+        int precision, int scale, int nullability) {
         assert name != null && type != null : schemaName + " | " + typeName + " | " + name + " | " + type;
 
         this.schemaName = schemaName;
@@ -77,6 +79,7 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
         this.type = type;
         this.precision = precision;
         this.scale = scale;
+        this.nullability = nullability;
     }
 
     /** {@inheritDoc} */
@@ -107,6 +110,11 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** {@inheritDoc} */
     @Override public int scale() {
         return scale;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int nullability() {
+        return nullability;
     }
 
     /** {@inheritDoc} */

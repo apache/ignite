@@ -29,12 +29,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,7 +43,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -72,6 +73,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -96,6 +98,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     @GridToStringInclude(sensitive = true)
     private final String clause;
+
+    /** Description of IndexQuery. */
+    private final IndexQueryDesc idxQryDesc;
 
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
@@ -134,9 +139,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private boolean keepBinary;
 
     /** */
-    private UUID subjId;
-
-    /** */
     private int taskHash;
 
     /** */
@@ -146,6 +148,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private Boolean dataPageScanEnabled;
 
     /**
+     * Cache query adapter for SCAN query.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param filter Scan filter.
@@ -182,9 +186,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = false;
         this.clsName = null;
         this.clause = null;
+        this.idxQryDesc = null;
     }
 
     /**
+     * Cache query adapter for SET, SPI, TEXT queries.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param clsName Class name.
@@ -221,9 +228,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
+
+        this.idxQryDesc = null;
     }
 
     /**
+     * Cache query adapter for local query processing.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param log Logger.
@@ -239,7 +250,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param limit Response limit. Set to 0 for no limits.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
-     * @param subjId Security subject ID.
      * @param taskHash Task hash.
      * @param mvccSnapshot Mvcc version.
      * @param dataPageScanEnabled Flag to enable data page scan.
@@ -257,10 +267,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         @Nullable String clsName,
         String clause,
+        IndexQueryDesc idxQryDesc,
         int limit,
         boolean incMeta,
         boolean keepBinary,
-        UUID subjId,
         int taskHash,
         MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
@@ -277,13 +287,41 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.clsName = clsName;
         this.clause = clause;
+        this.idxQryDesc = idxQryDesc;
         this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
-        this.subjId = subjId;
         this.taskHash = taskHash;
         this.mvccSnapshot = mvccSnapshot;
         this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * Cache query adapter for INDEX query.
+     *
+     * @param cctx Context.
+     * @param type Query type.
+     * @param idxQryDesc Index query descriptor.
+     * @param clsName Class name.
+     * @param filter Index query remote filter.
+     */
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
+        GridCacheQueryType type,
+        IndexQueryDesc idxQryDesc,
+        @Nullable String clsName,
+        @Nullable IgniteBiPredicate<Object, Object> filter
+    ) {
+        this.cctx = cctx;
+        this.type = type;
+        this.clsName = clsName;
+        this.idxQryDesc = idxQryDesc;
+        this.filter = filter;
+
+        log = cctx.logger(getClass());
+
+        clause = null;
+        incMeta = false;
     }
 
     /**
@@ -352,24 +390,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * @return Security subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
      * @return Task hash.
      */
     public int taskHash() {
         return taskHash;
-    }
-
-    /**
-     * @param subjId Security subject ID.
-     */
-    public void subjectId(UUID subjId) {
-        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -482,10 +506,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Index query description.
+     */
+    @Nullable public IndexQueryDesc idxQryDesc() { return idxQryDesc; }
+
+    /**
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET && type != SPI) && !QueryUtils.isEnabled(cctx.config()))
+        if ((type != SCAN && type != SET && type != SPI && type != INDEX)
+            && !QueryUtils.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
@@ -535,9 +565,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             }
         }
 
-        if (subjId == null)
-            subjId = cctx.localNodeId();
-
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
@@ -558,6 +585,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
+        if (!cctx.isLocal()) {
+            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+
+            if (!lostParts.isEmpty()) {
+                if (part == null || lostParts.contains(part)) {
+                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                        "has been lostParts [cacheName=" + cctx.name() +
+                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
+                }
+            }
+        }
+
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
@@ -567,12 +608,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             if (part != null) {
                 if (forceLocal) {
                     throw new IgniteCheckedException("No queryable nodes for partition " + part
-                        + " [forced local query=" + this + "]");
-                }
-
-                if (isSafeLossPolicy()) {
-                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
-                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                            + " [forced local query=" + this + "]");
                 }
             }
 
@@ -584,9 +620,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (cctx.deploymentEnabled())
             cctx.deploy().registerClasses(filter);
-
-        if (subjId == null)
-            subjId = cctx.localNodeId();
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
@@ -620,16 +653,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
-    }
-
-    /**
-     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
-     */
-    private boolean isSafeLossPolicy() {
-        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
-
-        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
-            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**
@@ -783,7 +806,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 throw new ClusterTopologyException("Failed to execute the query " +
                     "(all affinity nodes left the grid) [cache=" + cctx.name() +
                     ", qry=" + qry +
-                    ", startTopVer=" + cctx.versions().last().topologyVersion() +
                     ", curTopVer=" + qryMgr.queryTopologyVersion().topologyVersion() + ']');
 
             init();
@@ -885,7 +907,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                         return (cur = convert(fut.next())) != null;
 
                     try {
-                        fut.awaitFirstPage();
+                        fut.awaitFirstItemAvailable();
 
                         firstItemReturned = true;
 

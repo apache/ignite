@@ -43,6 +43,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -134,7 +135,7 @@ public class ExchangeLatchManager {
 
                 // Do not process from discovery thread.
                 // TODO: Should use queue to guarantee the order of processing left nodes.
-                ctx.closure().runLocalSafe(() -> processNodeLeft(cache.version(), e.eventNode()));
+                ctx.closure().runLocalSafe((GridPlainRunnable)() -> processNodeLeft(cache.version(), e.eventNode()));
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
@@ -161,7 +162,7 @@ public class ExchangeLatchManager {
         serverLatches.put(latchUid, latch);
 
         if (log.isDebugEnabled())
-            log.debug("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + "]");
+            log.debug("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + ']');
 
         if (pendingAcks.containsKey(latchUid)) {
             Set<UUID> acks = pendingAcks.get(latchUid);
@@ -195,7 +196,7 @@ public class ExchangeLatchManager {
         if (log.isDebugEnabled())
             log.debug("Client latch is created [latch=" + latchUid
                 + ", crd=" + coordinator
-                + ", participantsSize=" + participants.size() + "]");
+                + ", participantsSize=" + participants.size() + ']');
 
         clientLatches.put(latchUid, latch);
 
@@ -392,9 +393,14 @@ public class ExchangeLatchManager {
 
             if (message.isFinal()) {
                 if (log.isDebugEnabled())
-                    log.debug("Process final ack [latch=" + latchUid + ", from=" + from + "]");
+                    log.debug("Process final ack [latch=" + latchUid + ", from=" + from + ']');
 
-                assert serverLatches.containsKey(latchUid) || clientLatches.containsKey(latchUid);
+                if (!serverLatches.containsKey(latchUid) && !clientLatches.containsKey(latchUid)) {
+                    log.warning("Latch for this acknowledge is completed or never existed " +
+                        "[latch=" + latchUid + ", from=" + from + ']');
+
+                    return;
+                }
 
                 if (clientLatches.containsKey(latchUid)) {
                     ClientLatch latch = clientLatches.get(latchUid);
@@ -404,7 +410,7 @@ public class ExchangeLatchManager {
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Process ack [latch=" + latchUid + ", from=" + from + "]");
+                    log.debug("Process ack [latch=" + latchUid + ", from=" + from + ']');
 
                 if (serverLatches.containsKey(latchUid)) {
                     ServerLatch latch = serverLatches.get(latchUid);
@@ -516,7 +522,7 @@ public class ExchangeLatchManager {
 
                 if (latch.hasParticipant(left.id()) && !latch.hasAck(left.id())) {
                     if (log.isDebugEnabled())
-                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + "]");
+                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + ']');
 
                     latch.ack(left.id());
                 }
@@ -553,7 +559,7 @@ public class ExchangeLatchManager {
                 );
 
                 if (log.isDebugEnabled())
-                    log.debug("Ack has sent [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId + "]");
+                    log.debug("Ack has sent [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId + ']');
             }
         }
         catch (IgniteCheckedException e) {
@@ -612,7 +618,7 @@ public class ExchangeLatchManager {
          */
         private void ack(UUID from) {
             if (log.isDebugEnabled())
-                log.debug("Ack is accepted [latch=" + latchId() + ", from=" + from + "]");
+                log.debug("Ack is accepted [latch=" + latchId() + ", from=" + from + ']');
 
             countDown0(from);
         }
@@ -631,7 +637,7 @@ public class ExchangeLatchManager {
             int remaining = permits.decrementAndGet();
 
             if (log.isDebugEnabled())
-                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
+                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + ']');
 
             if (remaining == 0) {
                 complete();
@@ -700,7 +706,7 @@ public class ExchangeLatchManager {
             synchronized (this) {
                 if (log.isDebugEnabled())
                     log.debug("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() +
-                        ", ackSent=" + ackSent + "]");
+                        ", ackSent=" + ackSent + ']');
 
                 this.coordinator = coordinator;
 

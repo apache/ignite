@@ -52,7 +52,6 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -61,6 +60,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
+import static java.util.Collections.unmodifiableCollection;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
@@ -88,14 +90,14 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Ignite instance name. */
     private String igniteInstanceName;
 
-    /** Subject ID. */
-    protected UUID subjId;
-
     /** Cluster group predicate. */
     protected IgnitePredicate<ClusterNode> p;
 
     /** Node IDs. */
     private Set<UUID> ids;
+
+    /** */
+    private transient volatile ClusterGroupState state;
 
     /**
      * Required by {@link Externalizable}.
@@ -105,17 +107,14 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @param subjId Subject ID.
      * @param ctx Kernal context.
      * @param p Predicate.
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
-        @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
-        this.subjId = subjId;
         this.p = p;
 
         ids = null;
@@ -123,37 +122,31 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      * @param ctx Kernal context.
-     * @param subjId Subject ID.
      * @param ids Node IDs.
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
-        @Nullable UUID subjId,
         Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
         assert ids != null;
 
-        this.subjId = subjId;
         this.ids = ids;
 
         p = F.nodeForNodeIds(ids);
     }
 
     /**
-     * @param subjId Subject ID.
      * @param ctx Grid kernal context.
      * @param p Predicate.
      * @param ids Node IDs.
      */
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
-        @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
         Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
-        this.subjId = subjId;
         this.p = p;
         this.ids = ids;
 
@@ -214,7 +207,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, subjId);
+            compute = new IgniteComputeImpl(ctx, this);
         }
 
         return compute;
@@ -285,43 +278,45 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes() {
-        guard();
+        return unmodifiableCollection(ensureLastTopologyState().nodes);
+    }
 
-        try {
-            if (ids != null) {
-                if (ids.isEmpty())
-                    return Collections.emptyList();
-                else if (ids.size() == 1) {
-                    ClusterNode node = ctx.discovery().node(F.first(ids));
+    /** */
+    protected Collection<ClusterNode> resolveCurrentNodes() {
+        assert Thread.holdsLock(this);
 
-                    return node != null ? Collections.singleton(node) : Collections.<ClusterNode>emptyList();
-                }
-                else {
-                    Collection<ClusterNode> nodes = new ArrayList<>(ids.size());
+        if (ids != null) {
+            if (ids.isEmpty())
+                return Collections.emptyList();
+            else if (ids.size() == 1) {
+                ClusterNode node = ctx.discovery().node(F.first(ids));
 
-                    for (UUID id : ids) {
-                        ClusterNode node = ctx.discovery().node(id);
-
-                        if (node != null)
-                            nodes.add(node);
-                    }
-
-                    return nodes;
-                }
+                return node != null ? singleton(node) : emptySet();
             }
             else {
-                Collection<ClusterNode> all;
+                ArrayList<ClusterNode> nodes = new ArrayList<>(ids.size());
 
-                if (p instanceof DaemonFilter)
-                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
-                else
-                    all = ctx.discovery().allNodes();
+                for (UUID id : ids) {
+                    ClusterNode node = ctx.discovery().node(id);
 
-                return p != null ? F.view(all, p) : all;
+                    if (node != null)
+                        nodes.add(node);
+                }
+
+                nodes.trimToSize();
+
+                return nodes;
             }
         }
-        finally {
-            unguard();
+        else {
+            Collection<ClusterNode> all;
+
+            if (p instanceof DaemonFilter)
+                all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+            else
+                all = ctx.discovery().allNodes();
+
+            return p != null ? F.view(all, p) : all;
         }
     }
 
@@ -375,7 +370,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             if (p != null)
                 ctx.resource().injectGeneric(p);
 
-            return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+            return new ClusterGroupAdapter(ctx, this.p != null ? F.and(p, this.p) : p);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -412,7 +407,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             Set<UUID> nodeIds;
 
             if (F.isEmpty(nodes))
-                nodeIds = contains(node) ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
+                nodeIds = contains(node) ? singleton(node.id()) : emptySet();
             else {
                 nodeIds = U.newHashSet(nodes.length + 1);
 
@@ -424,7 +419,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(node.id());
             }
 
-            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, nodeIds);
         }
         finally {
             unguard();
@@ -444,7 +439,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 if (contains(n))
                     nodeIds.add(n.id());
 
-            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, nodeIds);
         }
         finally {
             unguard();
@@ -461,7 +456,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             Set<UUID> nodeIds;
 
             if (F.isEmpty(ids))
-                nodeIds = contains(id) ? Collections.singleton(id) : Collections.<UUID>emptySet();
+                nodeIds = contains(id) ? singleton(id) : emptySet();
             else {
                 nodeIds = U.newHashSet(ids.length + 1);
 
@@ -474,7 +469,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, nodeIds);
         }
         finally {
             unguard();
@@ -495,7 +490,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                     nodeIds.add(id);
             }
 
-            return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+            return new ClusterGroupAdapter(ctx, nodeIds);
         }
         finally {
             unguard();
@@ -526,7 +521,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                         nodeIds.add(id);
                 }
 
-                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(ctx, nodeIds);
             }
             finally {
                 unguard();
@@ -538,7 +533,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forRemotes() {
-        return forOthers(Collections.singleton(ctx.localNodeId()));
+        return forOthers(singleton(ctx.localNodeId()));
     }
 
     /**
@@ -559,7 +554,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                         nodeIds.add(id);
                 }
 
-                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+                return new ClusterGroupAdapter(ctx, nodeIds);
             }
             finally {
                 unguard();
@@ -615,13 +610,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
-        assert metaCacheName != null;
-
-        return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
-    }
-
-    /** {@inheritDoc} */
     @Override public final ClusterGroup forHost(ClusterNode node) {
         A.notNull(node, "node");
 
@@ -667,22 +655,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         return new AgeClusterGroup(this, false);
     }
 
-    /** {@inheritDoc} */
-    @Override public ClusterGroupEx forSubjectId(UUID subjId) {
-        if (subjId == null)
-            return this;
-
-        guard();
-
-        try {
-            return ids != null ? new ClusterGroupAdapter(ctx, subjId, ids) :
-                new ClusterGroupAdapter(ctx, subjId, p);
-        }
-        finally {
-            unguard();
-        }
-    }
-
     /**
      * @param n Node.
      * @return Whether node belongs to this cluster group.
@@ -709,10 +681,49 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         }
     }
 
+    /** */
+    protected final ClusterGroupState ensureLastTopologyState() {
+        ClusterGroupState state = this.state;
+
+        GridDiscoveryManager discoMgr = ctx.discovery();
+
+        long lastTopVer = discoMgr.topologyVersion();
+        long startTime = discoMgr.gridStartTime();
+
+        if (state == null || state.lastTopVer < lastTopVer || state.startTime != startTime)
+            return resetState();
+
+        return state;
+    }
+
+    /** */
+    protected synchronized ClusterGroupState resetState() {
+        guard();
+
+        try {
+            ClusterGroupState state = this.state;
+
+            GridDiscoveryManager discoMgr = ctx.discovery();
+
+            long lastTopVer = discoMgr.topologyVersion();
+            long startTime = discoMgr.gridStartTime();
+
+            // Double check in synchronized context.
+            if (state != null && state.lastTopVer == lastTopVer && state.startTime == startTime)
+                return state;
+
+            Collection<ClusterNode> nodes = resolveCurrentNodes();
+
+            return this.state = new ClusterGroupState(nodes, lastTopVer, startTime);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName);
-        U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
 
@@ -725,7 +736,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         igniteInstanceName = U.readString(in);
-        subjId = U.readUuid(in);
 
         if (in.readBoolean())
             ids = (Set<UUID>)in.readObject();
@@ -743,11 +753,42 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         try {
             IgniteKernal g = IgnitionEx.localIgnite();
 
-            return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :
-                new ClusterGroupAdapter(g.context(), subjId, p);
+            return ids != null ? new ClusterGroupAdapter(g.context(), ids) :
+                new ClusterGroupAdapter(g.context(), p);
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+    }
+
+    /**
+     * Container for cluster group state.
+     */
+    private static class ClusterGroupState {
+        /** Calculated nodes. */
+        public final Collection<ClusterNode> nodes;
+
+        /** Last topology version. */
+        public final long lastTopVer;
+
+        /**
+         * Start time of first node in grid. Required for cases like in
+         * {@code GridServiceProxyClientReconnectSelfTest#testClientReconnect()} test. In that scenario we have one
+         * server and one client. Topology version is {@code 2} and after server restart and client reconnect we have
+         * basically new server but with the same topology version. This situation can be caught if we have additional
+         * counter.
+         */
+        public final long startTime;
+
+        /**
+         * @param nodes Calculated nodes.
+         * @param lastTopVer Last topology version.
+         * @param startTime Start time of first node in grid.
+         */
+        public ClusterGroupState(Collection<ClusterNode> nodes, long lastTopVer, long startTime) {
+            this.nodes = nodes;
+            this.lastTopVer = lastTopVer;
+            this.startTime = startTime;
         }
     }
 
@@ -907,7 +948,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         private boolean isOldest;
 
         /** State. */
-        private volatile AgeClusterGroupState state;
+        private volatile IgnitePredicate<ClusterNode> ageP;
 
         /**
          * Required for {@link Externalizable}.
@@ -921,27 +962,40 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
          * @param isOldest Oldest flag.
          */
         private AgeClusterGroup(ClusterGroupAdapter parent, boolean isOldest) {
-            super(parent.ctx, parent.subjId, parent.p, parent.ids);
+            super(parent.ctx, parent.p, parent.ids);
 
             this.isOldest = isOldest;
-
-            reset();
         }
 
-        /**
-         * Resets node.
-         */
-        private synchronized void reset() {
+        /** {@inheritDoc} */
+        @Override protected Set<ClusterNode> resolveCurrentNodes() {
+            Collection<ClusterNode> nodes = super.resolveCurrentNodes();
+
+            ClusterNode node = isOldest ? U.oldest(nodes, null) : U.youngest(nodes, null);
+
+            if (node == null) {
+                ageP = F.alwaysFalse();
+
+                return emptySet();
+            }
+            else {
+                ageP = F.nodeForNodes(node);
+
+                return singleton(node);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<ClusterNode> nodes() {
             guard();
 
             try {
-                long lastTopVer = ctx.discovery().topologyVersion();
+                ClusterNode node = F.first(ensureLastTopologyState().nodes);
 
-                ClusterNode node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
+                if (node != null)
+                    node = ctx.discovery().node(node.id());
 
-                IgnitePredicate<ClusterNode> p = F.nodeForNodes(node);
-
-                state = new AgeClusterGroupState(node, p, lastTopVer);
+                return node == null ? emptySet() : singleton(node);
             }
             finally {
                 unguard();
@@ -949,29 +1003,10 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode node() {
-            if (ctx.discovery().topologyVersion() != state.lastTopVer)
-                reset();
-
-            return state.node;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> nodes() {
-            if (ctx.discovery().topologyVersion() != state.lastTopVer)
-                reset();
-
-            ClusterNode node = state.node;
-
-            return node == null ? Collections.<ClusterNode>emptyList() : Collections.singletonList(node);
-        }
-
-        /** {@inheritDoc} */
         @Override public IgnitePredicate<ClusterNode> predicate() {
-            if (ctx.discovery().topologyVersion() != state.lastTopVer)
-                reset();
+            ensureLastTopologyState();
 
-            return state.p;
+            return ageP;
         }
 
         /** {@inheritDoc} */
@@ -984,7 +1019,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 if (p != null)
                     ctx.resource().injectGeneric(p);
 
-                return new ClusterGroupAdapter(ctx, this.subjId, new GroupPredicate(this, p));
+                return new ClusterGroupAdapter(ctx, new GroupPredicate(this, p));
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -1018,31 +1053,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             ClusterGroupAdapter parent = (ClusterGroupAdapter)super.readResolve();
 
             return new AgeClusterGroup(parent, isOldest);
-        }
-    }
-
-    /**
-     * Container for age-based cluster group state.
-     */
-    private static class AgeClusterGroupState {
-        /** Selected node. */
-        private final ClusterNode node;
-
-        /** Node predicate. */
-        private final IgnitePredicate<ClusterNode> p;
-
-        /** Last topology version. */
-        private final long lastTopVer;
-
-        /**
-         * @param node Node.
-         * @param p Predicate.
-         * @param lastTopVer Last topology version.
-         */
-        public AgeClusterGroupState(ClusterNode node, IgnitePredicate<ClusterNode> p, long lastTopVer) {
-            this.node = node;
-            this.p = p;
-            this.lastTopVer = lastTopVer;
         }
     }
 

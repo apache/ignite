@@ -29,6 +29,5 @@ cd ../../..
 mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
 
-# Build .NET
-cd Apache.Ignite.Core.Tests.DotNetCore
-dotnet build
+# Build .NET.
+dotnet build Apache.Ignite.DotNetCore.sln

@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IPlatformTargetInternal target, IClusterGroup clusterGroup) 
+        public Events(IPlatformTargetInternal target, IClusterGroup clusterGroup)
             : base(target)
         {
             Debug.Assert(clusterGroup != null);
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
             params int[] types) where T : IEvent
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
@@ -113,14 +113,14 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+        public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
             IEnumerable<int> types = null) where T : IEvent
         {
             return RemoteQuery(filter, timeout, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
-        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
             IEnumerable<int> types = null) where T : IEvent
         {
             return RemoteQueryAsync(filter, timeout, TypesToArray(types));
@@ -308,9 +308,9 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             lock (_localFilters)
             {
-                Dictionary<int, LocalHandledEventFilter> filters;
+                Dictionary<int, LocalHandledEventFilter> unused;
 
-                if (_localFilters.TryGetValue(listener, out filters))
+                if (_localFilters.TryGetValue(listener, out unused))
                 {
                     var success = false;
 
@@ -390,8 +390,8 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         private long? GetFilterHandle<T>(IEventFilter<T> filter) where T : IEvent
         {
-            return filter != null 
-                ? Ignite.HandleRegistry.Allocate(new LocalEventFilter<T>(Marshaller, filter)) 
+            return filter != null
+                ? Ignite.HandleRegistry.Allocate(new LocalEventFilter<T>(Marshaller, filter))
                 : (long?) null;
         }
 
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="timeout">The timeout.</param>
         /// <param name="types">The types.</param>
         /// <param name="writer">The writer.</param>
-        private static void WriteRemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout, int[] types, 
+        private static void WriteRemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout, int[] types,
             IBinaryRawWriter writer)
             where T : IEvent
         {
@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Impl.Events
             /// <param name="invokeFunc">The invoke function.</param>
             /// <param name="releaseAction">The release action.</param>
             public LocalHandledEventFilter(
-                Func<IBinaryStream, bool> invokeFunc, Action<Func<IBinaryStream, bool>> releaseAction) 
+                Func<IBinaryStream, bool> invokeFunc, Action<Func<IBinaryStream, bool>> releaseAction)
                 : base(invokeFunc, releaseAction)
             {
                 // No-op.

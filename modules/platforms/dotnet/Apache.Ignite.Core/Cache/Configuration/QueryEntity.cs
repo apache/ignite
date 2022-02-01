@@ -156,14 +156,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the name of the field that is used to denote the entire key.
         /// <para />
-        /// By default, entite key can be accessed with a special "_key" field name.
+        /// By default, entity key can be accessed with a special "_key" field name.
         /// </summary>
         public string KeyFieldName { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the field that is used to denote the entire value.
         /// <para />
-        /// By default, entite value can be accessed with a special "_val" field name.
+        /// By default, entity value can be accessed with a special "_val" field name.
         /// </summary>
         public string ValueFieldName { get; set; }
 

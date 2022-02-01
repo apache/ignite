@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestIisBehavior()
         {
             var ignite = Ignition.Start(GetConfig());
-            
+
             var cache = ignite.CreateCache<int, int>(new CacheConfiguration
             {
                 Name =  CacheName,
@@ -142,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration GetConfig()
         {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration(noLogger: true))
             {
                 AutoGenerateIgniteInstanceName = true
             };
@@ -162,10 +163,11 @@ namespace Apache.Ignite.Core.Tests
 
                 // No need to stop: this will happen on domain unload.
                 var ignite = Ignition.Start(cfg);
-                
+
                 var cache = ignite.GetCache<int, int>(CacheName);
                 Assert.AreEqual(1, cache[1]);
             }
         }
     }
 }
+#endif

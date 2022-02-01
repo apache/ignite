@@ -19,10 +19,7 @@ package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -45,22 +42,11 @@ public class IpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
-
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-
-        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
-
-        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
-        endpointCfg.setPort(10500);
-
-        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
-
-        igfsCfg.setName("igfs");
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
@@ -79,11 +65,6 @@ public class IpcSharedMemoryNodeStartup {
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setEvictionPolicy(null);
         dataCacheCfg.setBackups(0);
-
-        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
-        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
-
-        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 

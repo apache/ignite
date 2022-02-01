@@ -19,9 +19,11 @@ package org.apache.ignite.events;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid discovery event.
@@ -43,7 +45,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method
+ * {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -51,8 +54,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  * @see EventType#EVT_NODE_METRICS_UPDATED
  * @see EventType#EVT_NODE_FAILED
@@ -74,6 +77,12 @@ public class DiscoveryEvent extends EventAdapter {
 
     /** Collection of nodes corresponding to topology version. */
     private Collection<ClusterNode> topSnapshot;
+
+    /** Template to generate {@link #message()} lazily. Will be joined with {@link #eventNode()} converted to string. */
+    private volatile String msgTemplate;
+
+    /** Span. */
+    private transient Span span;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -152,6 +161,57 @@ public class DiscoveryEvent extends EventAdapter {
     public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
+    }
+
+    /**
+     * Template to generate {@link #message()} lazily. Will be joined with {@link #eventNode()} converted to string.
+     *
+     * @param msgTemplate Template.
+     */
+    public void messageTemplate(String msgTemplate) {
+        this.msgTemplate = msgTemplate;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String message() {
+        String msg = super.message();
+
+        if (msg != null)
+            return msg;
+
+        if (msgTemplate == null)
+            return null;
+
+        synchronized (this) {
+            msg = super.message();
+
+            if (msg != null)
+                return msg;
+
+            msg = msgTemplate + eventNode();
+
+            message(msg);
+        }
+
+        return msg;
+    }
+
+    /**
+     * Gets span instance.
+     *
+     * @return Span.
+     */
+    public Span span() {
+        return span;
+    }
+
+    /**
+     * Set span.
+     *
+     * @param span Span.
+     */
+    public void span(Span span) {
+        this.span = span;
     }
 
     /** {@inheritDoc} */

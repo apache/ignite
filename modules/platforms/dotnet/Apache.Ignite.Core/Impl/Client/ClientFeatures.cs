@@ -45,17 +45,20 @@ namespace Apache.Ignite.Core.Impl.Client
                 {ClientOp.ClusterChangeState, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterChangeWalState, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGroupGetNodeIds, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGroupGetNodesInfo, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxStart, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxEnd, new ClientProtocolVersion(1, 5, 0)},
             };
-        
+
         /** */
-        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature = 
+        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature =
             new Dictionary<ClientOp, ClientBitmaskFeature>
-        {
-            {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints}
-        };
-        
+            {
+                {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints},
+                {ClientOp.ComputeTaskExecute, ClientBitmaskFeature.ExecuteTaskByName},
+                {ClientOp.ClusterGroupGetNodeIds, ClientBitmaskFeature.ClusterGroups},
+                {ClientOp.ClusterGroupGetNodesInfo, ClientBitmaskFeature.ClusterGroups}
+            };
+
         /** */
         private readonly ClientProtocolVersion _protocolVersion;
 
@@ -63,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly BitArray _features;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="ClientFeatures"/>. 
+        /// Initializes a new instance of <see cref="ClientFeatures"/>.
         /// </summary>
         public ClientFeatures(ClientProtocolVersion protocolVersion, BitArray features)
         {
@@ -90,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Checks whether WithExpiryPolicy request flag is supported. Throws an exception when not supported. 
+        /// Checks whether WithExpiryPolicy request flag is supported. Throws an exception when not supported.
         /// </summary>
         public void ValidateWithExpiryPolicyFlag()
         {
@@ -110,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             return _protocolVersion >= ClientSocket.Ver120;
         }
-        
+
         /// <summary>
         /// Returns a value indicating whether <see cref="CacheConfiguration.ExpiryPolicyFactory"/> is supported.
         /// </summary>
@@ -118,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             return _protocolVersion >= ClientSocket.Ver160;
         }
-        
+
         /// <summary>
         /// Gets minimum protocol version that is required to perform specified operation.
         /// </summary>
@@ -127,9 +130,9 @@ namespace Apache.Ignite.Core.Impl.Client
         public static ClientProtocolVersion GetMinVersion(ClientOp op)
         {
             ClientProtocolVersion minVersion;
-            
-            return OpVersion.TryGetValue(op, out minVersion) 
-                ? minVersion 
+
+            return OpVersion.TryGetValue(op, out minVersion)
+                ? minVersion
                 : ClientSocket.Ver100;
         }
 
@@ -141,14 +144,14 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             ValidateOp(operation, true);
         }
-        
+
         /// <summary>
         /// Validates specified op code against current protocol version and features.
         /// </summary>
         private bool ValidateOp(ClientOp operation, bool shouldThrow)
         {
             var requiredProtocolVersion = GetMinVersion(operation);
-            
+
             if (_protocolVersion < requiredProtocolVersion)
             {
                 if (shouldThrow)
@@ -161,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var requiredFeature = GetFeature(operation);
 
-            if (_features != null && requiredFeature != null && !_features.Get((int) requiredFeature.Value))
+            if (requiredFeature != null && (_features == null || !_features.Get((int) requiredFeature.Value)))
             {
                 if (shouldThrow)
                 {
@@ -211,14 +214,16 @@ namespace Apache.Ignite.Core.Impl.Client
                 .Cast<int>()
                 .ToArray();
 
-            var bits = new BitArray(values.Max() + 1);
+            var max = values.Max();
+
+            var bits = new BitArray(max + 1);
 
             foreach (var feature in values)
             {
                 bits.Set(feature, true);
             }
-            
-            var bytes = new byte[1 + values.Length / 8];
+
+            var bytes = new byte[1 + max / 8];
             bits.CopyTo(bytes, 0);
 
             return bytes;

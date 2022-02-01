@@ -94,6 +94,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests put/get with array keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetArrayKey()
+        {
+            var cache = GetClientCache<object, object>();
+
+            var key1 = new[] {1, 2};
+            var key2 = new byte[] {3, 4};
+
+            cache.Put(key1, 1);
+            cache.Put(key2, 1);
+
+            Assert.AreEqual(1, cache.Get(key1));
+            Assert.AreEqual(1, cache.Get(key2));
+        }
+
+        /// <summary>
         /// Tests the cache put / get with user data types.
         /// </summary>
         [Test]
@@ -818,7 +836,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
-            const int count = 5000;
+            const int count = 1000;
 
             var cache = GetClientCache<string>();
             var key = 0;
@@ -989,7 +1007,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.IsTrue(cache.ContainsKey(val));
 
             Thread.Sleep(50);
-            
+
             // Expiry policies should be applied, no cache item exists.
             Assert.IsFalse(cacheWithExpiryPolicy.ContainsKey(val));
             Assert.IsFalse(cache.ContainsKey(val));
@@ -1042,7 +1060,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cacheWithExpiryPolicy.Put(val + 1, val);
 
             Thread.Sleep(200);
-            
+
             // Both caches contains the original value.
             Assert.IsTrue(cache.ContainsKey(val));
             Assert.IsTrue(cacheWithExpiryPolicy.ContainsKey(val));
@@ -1051,7 +1069,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.IsFalse(cache.ContainsKey(val + 1));
             Assert.IsFalse(cacheWithExpiryPolicy.ContainsKey(val + 1));
         }
-        
+
         /// <summary>
         /// Test cache with expiration does not modify keepBinary flag.
         /// </summary>
@@ -1068,7 +1086,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             AssertExtensions.ReflectionEqual(person, cacheWithKeepBinary.Get(key).Deserialize<Person>());
 
             var expiryPolicy = new ExpiryPolicy(null, null, TimeSpan.FromMilliseconds(100));
-            
+
             var cacheWithExpiryPolicy = cacheWithKeepBinary.WithExpiryPolicy(expiryPolicy);
             AssertExtensions.ReflectionEqual(person, cacheWithExpiryPolicy.Get(key).Deserialize<Person>());
 

@@ -1562,14 +1562,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> rebalance();
 
     /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Client ID.
-     * @return Internal projection.
-     */
-    public IgniteInternalCache<K, V> forSubjectId(UUID subjId);
-
-    /**
      * Store DR data.
      *
      * @param drMap DR map.
@@ -1640,20 +1632,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for getAllOutTx operation.
      */
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys);
-
-    /**
-     * Checks whether this cache is IGFS data cache.
-     *
-     * @return {@code True} in case this cache is IGFS data cache.
-     */
-    public boolean isIgfsDataCache();
-
-    /**
-     * Get current amount of used IGFS space in bytes.
-     *
-     * @return Amount of used IGFS space in bytes.
-     */
-    public long igfsDataSpaceUsed();
 
     /**
      * @param keepBinary Keep binary flag.

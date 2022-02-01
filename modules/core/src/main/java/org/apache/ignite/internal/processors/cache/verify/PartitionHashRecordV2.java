@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -70,8 +71,15 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param size Size.
      * @param partitionState Partition state.
      */
-    public PartitionHashRecordV2(PartitionKeyV2 partKey, boolean isPrimary,
-        Object consistentId, int partHash, long updateCntr, long size, PartitionState partitionState) {
+    public PartitionHashRecordV2(
+        PartitionKeyV2 partKey,
+        boolean isPrimary,
+        Object consistentId,
+        int partHash,
+        long updateCntr,
+        long size,
+        PartitionState partitionState
+    ) {
         this.partKey = partKey;
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
@@ -179,17 +187,19 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PartitionHashRecordV2 record = (PartitionHashRecordV2)o;
+        PartitionHashRecordV2 v2 = (PartitionHashRecordV2)o;
 
-        return consistentId.equals(record.consistentId);
+        return partHash == v2.partHash && updateCntr == v2.updateCntr && size == v2.size && partKey.equals(v2.partKey) &&
+            consistentId.equals(v2.consistentId) && partitionState == v2.partitionState;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return consistentId.hashCode();
+        return Objects.hash(partKey, consistentId, partHash, updateCntr, size, partitionState);
     }
 
     /** **/

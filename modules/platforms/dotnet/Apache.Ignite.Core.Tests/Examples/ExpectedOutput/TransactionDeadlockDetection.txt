@@ -1,0 +1,17 @@
+>>> Transaction deadlock detection example started.
+
+>>> Transaction deadlock in thread *
+Deadlock detected:
+
+K1: TX1 holds lock, TX2 waits lock.
+K2: TX2 holds lock, TX1 waits lock.
+
+Transactions:
+
+TX1 [txId=GridCacheVersion [topVer=*
+TX2 [txId=GridCacheVersion [topVer=*
+
+Keys:
+
+K1 [key=*
+K2 [key=*

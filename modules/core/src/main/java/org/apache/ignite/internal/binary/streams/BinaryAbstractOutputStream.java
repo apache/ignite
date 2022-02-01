@@ -292,10 +292,10 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     protected static int capacity(int curCap, int reqCap) {
         int newCap;
 
-        if (reqCap < MIN_CAP)
-            newCap = MIN_CAP;
-        else if (reqCap > MAX_ARRAY_SIZE)
+        if (reqCap > MAX_ARRAY_SIZE || reqCap <= 0)
             throw new IllegalArgumentException("Required capacity exceeds allowed. Required:" + reqCap);
+        else if (reqCap < MIN_CAP)
+            newCap = MIN_CAP;
         else {
             newCap = Math.max(curCap, MIN_CAP);
 

@@ -20,12 +20,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheEntriesExpirationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationEncryptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationRandomLruEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelperTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.HeapArrayLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
@@ -61,10 +66,17 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(PageLockTrackerManagerTest.class);
         ignoredTests.add(SharedPageLockTrackerTest.class);
         ignoredTests.add(ToFileDumpProcessorTest.class);
+        ignoredTests.add(ToStringDumpHelperTest.class);
         ignoredTests.add(HeapArrayLockLogTest.class);
         ignoredTests.add(HeapArrayLockStackTest.class);
         ignoredTests.add(OffHeapLockLogTest.class);
         ignoredTests.add(OffHeapLockStackTest.class);
+        ignoredTests.add(IgnitePdsCacheEntriesExpirationTest.class);
+
+        // Defragmentation.
+        ignoredTests.add(IgnitePdsDefragmentationTest.class);
+        ignoredTests.add(IgnitePdsDefragmentationRandomLruEvictionTest.class);
+        ignoredTests.add(IgnitePdsDefragmentationEncryptionTest.class);
 
         return IgnitePdsTestSuite4.suite(ignoredTests);
     }

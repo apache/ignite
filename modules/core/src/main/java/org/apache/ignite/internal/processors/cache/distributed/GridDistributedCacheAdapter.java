@@ -461,13 +461,13 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 GridNearCacheAdapter<K, V> near = null;
 
                 if (cache instanceof GridNearCacheAdapter) {
-                    near = ((GridNearCacheAdapter<K, V>) cache);
+                    near = ((GridNearCacheAdapter<K, V>)cache);
                     dht = near.dht();
                 }
                 else
-                    dht = (GridDhtCacheAdapter<K, V>) cache;
+                    dht = (GridDhtCacheAdapter<K, V>)cache;
 
-                try (DataStreamerImpl dataLdr = (DataStreamerImpl) ignite.dataStreamer(cacheName)) {
+                try (DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
                     dataLdr.maxRemapCount(0);
 
                     dataLdr.skipStore(skipStore);
@@ -526,7 +526,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 }
 
                 if (near != null) {
-                    GridCacheVersion obsoleteVer = ctx.versions().next();
+                    GridCacheVersion obsoleteVer = cache.nextVersion();
 
                     for (GridCacheEntryEx e : near.allEntries()) {
                         if (!e.valid(topVer) && e.markObsolete(obsoleteVer))

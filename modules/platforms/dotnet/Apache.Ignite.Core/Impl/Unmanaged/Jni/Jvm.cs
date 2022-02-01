@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
+// ReSharper disable PartialTypeWithSinglePart
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// JVM holder. Should exist once per domain.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal sealed unsafe class Jvm
+    internal sealed unsafe partial class Jvm
     {
         /** */
         // ReSharper disable once InconsistentNaming
@@ -43,12 +43,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private const int JNI_VERSION_9 = 0x00090000;
 
         /** Options to enable startup on Java 9. */
-        private static readonly string[] Java9Options =
+        public static readonly string[] Java9Options =
         {
             "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
             "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
             "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
             "--illegal-access=permit"
         };
 
@@ -104,8 +105,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             _methodId = new MethodId(env);
 
-            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
-            // (which fails due to _AppDomain usage).
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core.
             _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
                 ? new Callbacks(env, this)
                 : GetCallbacksFromDefaultDomain();
@@ -114,29 +114,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
-            // JVM exists once per process, and JVM callbacks exist once per process.
-            // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
-            // Non-default appDomains should delegate this logic to the default one.
-            var defDomain = AppDomains.GetDefaultAppDomain();
-
-            // In some cases default AppDomain is not able to locate Apache.Ignite.Core assembly.
-            // First, use CreateInstanceFrom to set up the AssemblyResolve handler.
-            var resHelpType = typeof(AssemblyResolver);
-            var resHelp = (AssemblyResolver)defDomain.CreateInstanceFrom(resHelpType.Assembly.Location, resHelpType.FullName)
-                .Unwrap();
-            resHelp.TrackResolve(resHelpType.Assembly.FullName, resHelpType.Assembly.Location);
-
-            // Now use CreateInstance to get the domain helper of a properly loaded class.
-            var type = typeof(CallbackAccessor);
-            var helper = (CallbackAccessor)defDomain.CreateInstance(type.Assembly.FullName, type.FullName).Unwrap();
-
-            return helper.GetCallbacks();
-#else
-            throw new IgniteException("Multiple domains are not supported on .NET Core.");
-#endif
+            return GetCallbacksFromDefaultDomainImpl();
         }
 
         /// <summary>
@@ -265,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Determines whether we are on Java 9.
         /// </summary>
-        private static bool IsJava9()
+        public static bool IsJava9()
         {
             var args = new JvmInitArgs
             {
@@ -305,8 +286,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 fixed (JvmOption* optPtr = &opts[0])
                 {
                     args.options = optPtr;
-                    IntPtr env;
-                    res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+
+                    IntPtr unused;
+                    res = JvmDll.Instance.CreateJvm(out jvm, out unused, &args);
                 }
 
                 if (res != JniResult.Success)
@@ -346,47 +328,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private static void GetDelegate<T>(IntPtr ptr, out T del)
         {
             del = (T) (object) Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
-        }
-
-
-        /// <summary>
-        /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.
-        /// </summary>
-        private class CallbackAccessor : MarshalByRefObject
-        {
-            /// <summary>
-            /// Gets the callbacks.
-            /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-                Justification = "Only instance methods can be called across AppDomain boundaries.")]
-            public Callbacks GetCallbacks()
-            {
-                return GetOrCreate(null)._callbacks;
-            }
-        }
-
-        /// <summary>
-        /// Resolves Apache.Ignite.Core assembly in the default AppDomain when needed.
-        /// </summary>
-        private class AssemblyResolver : MarshalByRefObject
-        {
-            /// <summary>
-            /// Tracks the AssemblyResolve event.
-            /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-                Justification = "Only instance methods can be called across AppDomain boundaries.")]
-            public void TrackResolve(string name, string path)
-            {
-                AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-                {
-                    if (args.Name == name)
-                    {
-                        return Assembly.LoadFrom(path);
-                    }
-
-                    return null;
-                };
-            }
         }
     }
 }

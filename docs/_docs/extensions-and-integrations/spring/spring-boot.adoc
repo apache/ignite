@@ -1,0 +1,210 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite With Spring Boot
+
+== Overview
+
+https://spring.io/projects/spring-boot[Spring Boot, window="_blank"] is a widely used Java framework that makes it easy
+to create stand-alone Spring-based applications.
+
+Apache Ignite provides two extensions that automate Ignite configuration withing the Spring Boot environment:
+
+* `ignite-spring-boot-autoconfigure-ext` - autoconfigures ignite server and client nodes within Spring Boot.
+* `ignite-spring-boot-thin-client-autoconfigure-ext` - autoconfigures link:thin-clients/java-thin-client[Ignite Thin Client] with Spring Boot.
+
+== Autoconfiguration of Apache Ignite Servers and Clients
+
+You need to use `ignite-spring-boot-autoconfigure-ext` extension to autoconfigure Ignite servers or clients (aka. thick clients) with Spring Boot.
+
+The extension can be added with Maven as follows:
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-spring-boot-autoconfigure-ext</artifactId>
+   <version>1.0.0</version>
+</dependency>
+----
+--
+
+Once added, Spring will create an Ignite instance on start-up automatically.
+
+=== Set Ignite Up Via Spring Boot Configuration
+
+You can use a regular Spring Boot configuration to set Ignite-specific settings. Use `ignite` as a prefix:
+
+[tabs]
+--
+tab:application.yml[]
+[source,yaml]
+----
+ignite:
+  igniteInstanceName: properties-instance-name
+  communicationSpi:
+    localPort: 5555
+  dataStorageConfiguration:
+    defaultDataRegionConfiguration:
+      initialSize: 10485760 #10MB
+    dataRegionConfigurations:
+      - name: my-dataregion
+        initialSize: 104857600 #100MB
+  cacheConfiguration:
+    - name: accounts
+      queryEntities:
+      - tableName: ACCOUNTS
+        keyFieldName: ID
+        keyType: java.lang.Long
+        valueType: java.lang.Object
+        fields:
+          ID: java.lang.Long
+          amount: java.lang.Double
+          updateDate: java.util.Date
+    - name: my-cache2
+----
+--
+
+=== Set Ignite Up Programmatically
+
+There are two ways to configure Ignite programmatically.
+
+**1. Create IgniteConfiguration Bean**
+
+Just create a method that returns `IgniteConfiguration` bean that will be used to initialize an Ignite node with the settings you set:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Bean
+  public IgniteConfiguration igniteConfiguration() {
+     // If you provide a whole ClientConfiguration bean then configuration properties will not be used.
+    IgniteConfiguration cfg = new IgniteConfiguration();
+    cfg.setIgniteInstanceName("my-ignite");
+    return cfg;
+  }
+----
+--
+
+**2. Customize IgniteConfiguration Created With Spring Boot Configuration**
+
+If you want to customize `IgniteConfiguration` that was initially created with Spring Boot configuration file, then
+provide an implementation of `IgniteConfigurer` interface for your application context.
+
+First, `IgniteConfiguration` will be loaded from the Spring Boot configuration and then that instance will be passed to the configurer for extra settings.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Bean
+  public IgniteConfigurer nodeConfigurer() {
+    return cfg -> {
+      //Setting some property.
+      //Other will come from `application.yml`
+      cfg.setIgniteInstanceName("my-ignite");
+    };
+  }
+----
+--
+
+== Autoconfiguration of Apache Ignite Thin Client
+
+You need to use `ignite-spring-boot-thin-client-autoconfigure-ext` extension to autoconfigure Ignite Thin Client with Spring Boot.
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-spring-boot-thin-client-autoconfigure-ext</artifactId>
+  <version>1.0.0</version>
+</dependency>
+----
+--
+
+Once added, Spring will create an instance of Ignite Thin client connection on start-up automatically.
+
+=== Set Thin Client Up Via Spring Boot Configuration
+
+You can use a regular Spring Boot configuration to configure `IgniteClient` object. Use `ignite-client` for Ignite-specific settings:
+
+[tabs]
+--
+tab:application.yml[]
+[source,yaml]
+----
+ignite-client:
+  addresses: 127.0.0.1:10800 # this is mandatory property!
+  timeout: 10000
+  tcpNoDelay: false
+----
+--
+
+=== Set Thin Client Up Programmatically
+
+You can use two ways to configure `IgniteClient` object programmatically.
+
+**1. Create ClientConfiguration bean**
+
+Just create a method that returns `ClientConfiguration` bean. `IgniteClient` object will use that bean upon startup:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Bean
+  public ClientConfiguration clientConfiguration() {
+    // If you provide a whole ClientConfiguration bean then configuration properties will not be used.
+    ClientConfiguration cfg = new ClientConfiguration();
+    cfg.setAddresses("127.0.0.1:10800");
+    return cfg;
+  }
+----
+--
+
+**2. Customize ClientConfiguration Created With Spring Boot Configuration**
+
+If you want to customize `ClientConfiguration` bean created from the Spring Boot configuration file, then provide an
+implementation of `IgniteClientConfigurer` interface in your application context.
+
+First, `ClientConfiguration` will be loaded from the Spring Boot configuration and then an instance will be passed to the configurer.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Bean
+    IgniteClientConfigurer configurer() {
+        //Setting some property.
+        //Other will come from `application.yml`
+        return cfg -> cfg.setSendBufferSize(64*1024);
+    }
+----
+--
+
+== Examples
+
+Refer to several available https://github.com/apache/ignite-extensions/tree/master/modules/spring-boot-autoconfigure-ext/examples/main[examples, windows="_blank"]
+for more details.

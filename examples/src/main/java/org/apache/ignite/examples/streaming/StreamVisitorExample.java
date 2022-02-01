@@ -51,6 +51,7 @@ public class StreamVisitorExample {
     /** The list of initial instrument prices. */
     private static final double[] INITIAL_PRICES = {194.9, 893.49, 34.21, 23.24, 57.93, 45.03, 44.41, 28.44, 378.49, 69.50};
 
+    /** @param args Command line arguments. */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);

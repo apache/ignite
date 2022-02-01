@@ -70,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         /** */
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
+        // ReSharper disable once NotAccessedField.Local
         private readonly EnvDelegates.GetStringChars _getStringChars;
 
         /** */
@@ -83,6 +84,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         /** */
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
+        // ReSharper disable once NotAccessedField.Local
         private readonly EnvDelegates.ReleaseStringChars _releaseStringChars;
 
         /** */
@@ -228,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Calls the static object method.
         /// </summary>
-        private GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
+        public GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
         {
             var res = _callStaticObjectMethod(_envPtr, cls.Target, methodId, argsPtr);
 
@@ -414,7 +416,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 return IgniteUtils.Utf8UnmanagedToString((sbyte*) chars, len);
             }
-            finally 
+            finally
             {
                 ReleaseStringUtfChars(jstring, chars);
             }

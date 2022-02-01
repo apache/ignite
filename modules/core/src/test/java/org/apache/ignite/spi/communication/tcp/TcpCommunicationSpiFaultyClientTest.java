@@ -33,15 +33,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -226,7 +224,8 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             CommunicationSpi commSpi = grid(0).configuration().getCommunicationSpi();
 
-            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(commSpi, "clients");
+            ConnectionClientPool clientPool = U.field(commSpi, "clientPool");
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(clientPool, "clients");
 
             // Wait for write timeout and closing idle connections.
             assertTrue("Failed to wait for closing idle connections.",
@@ -243,12 +242,10 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    latch.countDown();
+            grid(0).events().localListen(evt -> {
+                latch.countDown();
 
-                    return true;
-                }
+                return true;
             }, EVT_NODE_FAILED);
 
             block = true;
@@ -256,10 +253,8 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             long t1 = U.currentTimeMillis();
 
             try {
-                grid(0).compute(grid(0).cluster().forClients()).withNoFailover().broadcast(new IgniteRunnable() {
-                    @Override public void run() {
-                        // No-op.
-                    }
+                grid(0).compute(grid(0).cluster().forClients()).withNoFailover().broadcast(() -> {
+                    // No-op.
                 });
             }
             catch (IgniteException ignored) {
@@ -272,11 +267,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             assertTrue(latch.await(expDelay + 1000, TimeUnit.MILLISECONDS));
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return grid(0).cluster().forClients().nodes().size() == 1;
-                }
-            }, 5000));
+            assertTrue(GridTestUtils.waitForCondition(() -> grid(0).cluster().forClients().nodes().size() == 1, 5000));
 
             for (int i = 0; i < 5; i++) {
                 U.sleep(1000);

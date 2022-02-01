@@ -43,6 +43,7 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
@@ -64,9 +65,7 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
 
         startGrids(gridCnt + 1);
 
-        grid(0).active(true);
-
-        stopGrid(gridCnt);
+        grid(0).cluster().active(true);
 
         startGrid(gridCnt + 1);
 

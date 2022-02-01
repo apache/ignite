@@ -190,7 +190,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      * @param c Cache.
      * @param client If it must be a client cache.
      */
-    private void assertClient(IgniteCache<?,?> c, boolean client) {
+    private void assertClient(IgniteCache<?, ?> c, boolean client) {
         assertTrue(((IgniteCacheProxy)c).context().affinityNode() == !client);
     }
 
@@ -228,7 +228,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
             int j = 0;
 
             for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
-                IgniteCache<?,?> cache = grid(i).cache(cacheName);
+                IgniteCache<?, ?> cache = grid(i).cache(cacheName);
 
                 assertClient(cache, false);
 
@@ -242,14 +242,14 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         int j = 0;
 
         for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
-            IgniteCache<?,?> cache = grid(GRID_CNT - 1).cache(cacheName);
+            IgniteCache<?, ?> cache = grid(GRID_CNT - 1).cache(cacheName);
 
             assertClient(cache, true);
 
             assertEquals(cacheSize.get(j++).intValue(), cache.size());
         }
 
-        final IgniteCache<?,?> clientCache = grid(GRID_CNT - 1).cache("pu");
+        final IgniteCache<?, ?> clientCache = grid(GRID_CNT - 1).cache("pu");
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
@@ -376,9 +376,11 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         Person(int id) {
             this.id = id;
         }
@@ -388,12 +390,15 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Purchase implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int personId;
 
+        /** */
         @QuerySqlField(index = true)
         int productId;
 
+        /** */
         Purchase(int personId, int productId) {
             this.personId = personId;
             this.productId = productId;
@@ -404,9 +409,11 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Company implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         Company(int id) {
             this.id = id;
         }
@@ -416,12 +423,15 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Product implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         @QuerySqlField(index = true)
         int companyId;
 
+        /** */
         Product(int id, int companyId) {
             this.id = id;
             this.companyId = companyId;

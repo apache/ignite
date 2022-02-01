@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
@@ -37,18 +44,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 /**
  * Wrapper for .NET cache store implementations.
@@ -216,7 +215,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
-                        loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                        loaded.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
                 }
             });
 
@@ -242,7 +241,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
-                        clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                        clo.apply((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
                 }
             });
         }
@@ -345,7 +344,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     // they share a single session, but sessionEnd is called on each store.
                     // Same thing happens on platform side: session is shared; each store must be notified,
                     // then session should be closed.
-                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                    Collection<Long> stores = (Collection<Long>)ses.properties().get(KEY_SES_STORES);
                     assert stores != null;
 
                     stores.remove(ptr);
@@ -443,7 +442,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         }
 
         // Keep track of all stores that use current session (cross-cache tx uses single session for all caches).
-        Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+        Collection<Long> stores = (Collection<Long>)ses.properties().get(KEY_SES_STORES);
 
         if (stores == null) {
             stores = new HashSet<>();

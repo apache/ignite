@@ -1,0 +1,96 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite Quick Start Guide for REST API
+
+This chapter explains system requirements for running Ignite, including how to install Ignite, start a cluster, and run a simple Hello World example using Ignite's REST API.
+
+
+== Prerequisites
+
+Ignite was tested on:
+
+include::includes/prereqs.adoc[]
+
+
+== Installing Ignite
+
+include::includes/install-ignite.adoc[]
+
+Once that's done, you will need to enable HTTP connectivity.
+To do this, copy the `ignite-rest-http` module from `{IGNITE_HOME}/libs/optional/` to the `{IGNITE_HOME}/libs` folder.
+
+== Starting a Node
+
+Before connecting to Ignite via the REST API, you must start at least one cluster node.
+
+include::includes/starting-node.adoc[]
+
+== Running Your First Application
+
+Once the cluster is started, you can use the Ignite REST API to perform cache operations.
+
+You don't need to explicitly configure anything because the connector is initialized automatically, listening on port 8080.
+
+To verify the connector is ready, use curl:
+
+[source,shell]
+----
+curl "http://localhost:8080/ignite?cmd=version"
+----
+
+You should see a message like this:
+
+
+[source, shell,subs="attributes,specialchars"]
+-------------------------------------------------------------------------------
+$ curl "http://localhost:8080/ignite?cmd=version"
+{"successStatus":0,"error":null,"sessionToken":null,"response":"{version}"}
+-------------------------------------------------------------------------------
+
+You can see in the result that Ignite version is {version}.
+
+Request parameters may be provided as either a part of URL or in a form data:
+
+[source,shell]
+----
+curl 'http://localhost:8080/ignite?cmd=put&cacheName=myCache' -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'key=testKey&val=testValue'
+----
+
+Assuming that the server node is running locally, here is a simple example that creates a cache (myCache) and then puts and gets the string "Hello_World!" from the cache via the REST API:
+
+Create a cache:
+
+[source,shell]
+----
+curl "http://localhost:8080/ignite?cmd=getorcreate&cacheName=myCache"
+----
+
+Put data into the cache. The default type is "string" but you can specify a link:restapi#data-types[data type] via the `keyType` parameter.
+[source,shell]
+----
+curl "http://localhost:8080/ignite?cmd=put&key=1&val="Hello_World!"&cacheName=myCache"
+----
+
+Get the data from the cache
+[source,shell]
+----
+curl "http://localhost:8080/ignite?cmd=get&key=1&cacheName=myCache"
+----
+
+Now that you've seen a very basic example of accessing Ignite clusters via the REST API, you should probably keep the following in mind:
+
+- This is a very basic example. You will want to read more on the REST API link:restapi[here,window=_blank]. That page includes a listing of the various API calls and also covers important subjects like Authentication.
+- The REST interface may not be suitable for all tasks. For example, you should use one of the language clients instead if you're trying to load bulk data, or perform mission critical tasks with millisecond latency.
+

@@ -49,7 +49,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;
 
     /** Cluster size. */
-    private static final int CLUSTER_SIZE = SF.applyLB(5,3 );
+    private static final int CLUSTER_SIZE = SF.applyLB(5, 3 );
 
     /**
      * @throws Exception When fails.

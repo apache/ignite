@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
 
     /// <summary>
     /// Defines grid projection which represents a common functionality over a group of nodes.
@@ -30,13 +32,13 @@ namespace Apache.Ignite.Core.Client
     /// shows how to create grid projections:
     /// <code>
     /// var g = Ignition.StartClient().GetCluster();
-    /// 
+    ///
     /// // Projection over .NET nodes.
     /// var remoteNodes = g.ForDotNet();
-    /// 
+    ///
     /// // Projection over server nodes.
     /// var randomNode = g.ForServers();
-    /// 
+    ///
     /// // Projection over all nodes that have user attribute "group" set to value "worker".
     /// var workerNodes = g.ForAttribute("group", "worker");
     /// </code>
@@ -82,7 +84,7 @@ namespace Apache.Ignite.Core.Client
         /// Gets a node for given ID from this grid projection.
         /// </summary>
         /// <param name="id">Node ID.</param>
-        /// <returns>Node with given ID from this projection or null if such node does not 
+        /// <returns>Node with given ID from this projection or null if such node does not
         /// exist in this projection.</returns>
         IClientClusterNode GetNode(Guid id);
 
@@ -92,5 +94,21 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClientClusterNode GetNode();
+
+        /// <summary>
+        /// Gets compute functionality over this grid projection. All operations
+        /// on the returned compute instance will only include nodes from this projection.
+        /// </summary>
+        /// <returns>Compute instance over this grid projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IComputeClient GetCompute();
+
+        /// <summary>
+        /// Gets services functionality over this grid projection. All operations
+        /// on the returned services instance will only include nodes from this projection.
+        /// </summary>
+        /// <returns>Services instance over this grid projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IServicesClient GetServices();
     }
 }

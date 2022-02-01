@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="assemblies">Assemblies to look in.</param>
         /// <param name="nameMapper">The name mapper.</param>
         /// <returns>
-        /// Resolved type. 
+        /// Resolved type.
         /// </returns>
         private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies,
             IBinaryNameMapper nameMapper)

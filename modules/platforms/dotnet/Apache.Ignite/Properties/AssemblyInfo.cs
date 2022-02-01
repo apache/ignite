@@ -20,17 +20,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite")]
 [assembly: AssemblyDescription("Apache Ignite.NET Executable")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2020")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
 
 [assembly: Guid("0f9702ec-da7d-4ce5-b4b7-73310c885355")]
-
-[assembly: AssemblyVersion("2.9.0.42453")]
-[assembly: AssemblyFileVersion("2.9.0.42453")]
-[assembly: AssemblyInformationalVersion("2.9.0")]
