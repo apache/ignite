@@ -696,7 +696,6 @@ public class SqlScriptRunner {
                     messageDigest.update(SqlScriptRunner.toString(col).getBytes(Charset.forName(UTF_8.name())));
                     messageDigest.update(NL_BYTES);
                 }
-
             }
 
             String res0 = byteArray2HexString(messageDigest.digest(), false);
