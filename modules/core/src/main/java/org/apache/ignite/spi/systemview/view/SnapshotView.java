@@ -35,7 +35,7 @@ public class SnapshotView {
     /** Node consistent ID. */
     private final String consistentId;
 
-    /** Baseline nodes affected by snapshot. */
+    /** Baseline nodes affected by the snapshot. */
     private final String baselineNodes;
 
     /** Cache group names that were included in the snapshot. */
@@ -76,7 +76,7 @@ public class SnapshotView {
     }
 
     /**
-     * @return Baseline nodes affected by snapshot.
+     * @return Baseline nodes affected by the snapshot.
      */
     @Order(2)
     public String baselineNodes() {
