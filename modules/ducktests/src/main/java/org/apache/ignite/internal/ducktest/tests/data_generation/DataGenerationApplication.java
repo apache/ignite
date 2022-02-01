@@ -20,7 +20,9 @@ package org.apache.ignite.internal.ducktest.tests.data_generation;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
@@ -75,6 +77,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
             streamers.add(stmr);
 
+            CompletionService<Void> ecs = new ExecutorCompletionService<>(executorSrvc);
+
             int cnt = (to - from) / threads;
             int end = from;
 
@@ -83,9 +87,15 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 end += cnt;
                 if (end > to)
                     end = to;
-                executorSrvc.submit(new GenerateCacheDataTask(stmr, entrySize, start, end));
+                ecs.submit(new GenerateCacheDataTask(stmr, entrySize, start, end), null);
             }
+
+            for (int j = 0; j < threads; j++)
+                ecs.take().get();
+
+            stmr.close(false);
         }
+
 
         executorSrvc.shutdown();
         try {
