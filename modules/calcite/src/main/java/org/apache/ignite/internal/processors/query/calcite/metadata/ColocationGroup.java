@@ -115,7 +115,15 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public boolean belongs(long sourceId) {
-        return sourceIds != null && Arrays.stream(sourceIds).anyMatch(v -> v == sourceId);
+        if (sourceIds == null)
+            return false;
+
+        for (long i : sourceIds) {
+            if (i == sourceId)
+                return true;
+        }
+
+        return false;
     }
 
     /**
