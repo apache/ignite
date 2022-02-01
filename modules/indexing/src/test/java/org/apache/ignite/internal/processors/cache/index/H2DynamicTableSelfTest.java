@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -45,6 +46,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -1806,6 +1808,32 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Create table with wrapped key and user value type and insert value by cache API.
+     * Check inserted value.
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void testWrappedKeyValidation() throws Exception {
+        IgniteCache c1 = ignite(0).getOrCreateCache("WRAP_KEYS");
+        c1.query(new SqlFieldsQuery("CREATE TABLE TestValues (\n" +
+                "  namePK varchar primary key,\n" +
+                "  notUniqueId int\n" +
+                ") WITH \"wrap_key=true," +
+                "value_type=" + TestValue.class.getName() + "\""))
+            .getAll();
+
+        IgniteCache<String, TestValue> values = ignite(0).cache(cacheName("TESTVALUES"));
+
+        TestValue v1 = new TestValue(1);
+
+        values.put("1", v1);
+
+        TestValue rv1 = values.get("1");
+
+        assertEquals(v1, rv1);
+    }
+
+    /**
      * Execute DDL statement on client node.
      *
      * @param sql Statement.
@@ -1951,5 +1979,39 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private static String cacheName(String tblName) {
         return QueryUtils.createTableCacheName("PUBLIC", tblName);
+    }
+
+    /**
+     * Test class for sql queryable test value
+     */
+    private static class TestValue {
+        /**
+         * Not unique id
+         */
+        @QuerySqlField
+        int notUniqueId;
+
+        /** */
+        public TestValue(int notUniqueId) {
+            this.notUniqueId = notUniqueId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestValue testValue = (TestValue)o;
+
+            return notUniqueId == testValue.notUniqueId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(notUniqueId);
+        }
     }
 }
