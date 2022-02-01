@@ -618,7 +618,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Gets a handle on remote or local service with the precified caller context. The proxy is dynamically created and
+     * Gets a handle on remote or local service with the specified caller context. The proxy is dynamically created and
      * provided for the specified service.
      *
      * @param name Service name.
