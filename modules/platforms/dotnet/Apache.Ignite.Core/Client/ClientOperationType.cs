@@ -93,72 +93,73 @@ namespace Apache.Ignite.Core.Client
         CacheReplace,
 
         /// <summary>
-        /// Remove entry from cache (<see cref="ICacheClient{TK,TV}.remove(Object)}, <see cref="ICacheClient{TK,TV}.remove(Object, Object)"/>).
+        /// Remove entry from cache (<see cref="ICacheClient{TK,TV}.Remove(TK)" />,
+        /// <see cref="ICacheClient{TK,TV}.Remove(TK,TV)"/>).
         /// </summary>
         CacheRemoveOne,
 
         /// <summary>
-        /// Remove entries from cache (<see cref="ICacheClient{TK,TV}.removeAll(Set)"/>).
+        /// Remove entries from cache (<see cref="ICacheClient{TK,TV}.RemoveAll(System.Collections.Generic.IEnumerable{TK})"/>).
         /// </summary>
         CacheRemoveMultiple,
 
         /// <summary>
-        /// Remove everyting from cache (<see cref="ICacheClient{TK,TV}.removeAll()"/>).
+        /// Remove everything from cache (<see cref="ICacheClient{TK,TV}.RemoveAll()"/>).
         /// </summary>
         CacheRemoveEverything,
 
         /// <summary>
-        /// Clear cache entry (<see cref="ICacheClient{TK,TV}.clear(Object)} ).
+        /// Clear cache entry (<see cref="ICacheClient{TK,TV}.Clear(TK)"/>).
         /// </summary>
         CacheClearOne,
 
         /// <summary>
-        /// Clear multiple cache entries (<see cref="ICacheClient{TK,TV}.clearAll(Set)"/>).
+        /// Clear multiple cache entries (<see cref="ICacheClient{TK,TV}.ClearAll"/>).
         /// </summary>
         CacheClearMultiple,
 
         /// <summary>
-        /// Clear entire cache (<see cref="ICacheClient{TK,TV}.clear()"/>).
+        /// Clear entire cache (<see cref="ICacheClient{TK,TV}.Clear()"/>).
         /// </summary>
         CacheClearEverything,
 
         /// <summary>
-        /// Get and put (<see cref="ICacheClient{TK,TV}.getAndPut(Object, Object)"/>).
+        /// Get and put (<see cref="ICacheClient{TK,TV}.GetAndPut(TK, TV)"/>).
         /// </summary>
         CacheGetAndPut,
 
         /// <summary>
-        /// Get and remove (<see cref="ICacheClient{TK,TV}.getAndRemove(Object)"/>).
+        /// Get and remove (<see cref="ICacheClient{TK,TV}.GetAndRemove(TK)"/>).
         /// </summary>
         CacheGetAndRemove,
 
         /// <summary>
-        /// Get and replace (<see cref="ICacheClient{TK,TV}.getAndReplace(Object, Object)"/>).
+        /// Get and replace (<see cref="ICacheClient{TK,TV}.GetAndReplace(TK, TV)"/>).
         /// </summary>
         CacheGetAndReplace,
 
         /// <summary>
-        /// Put if absent (<see cref="ICacheClient{TK,TV}.putIfAbsent(Object, Object)"/>).
+        /// Put if absent (<see cref="ICacheClient{TK,TV}.PutIfAbsent(TK, TV)"/>).
         /// </summary>
         CachePutIfAbsent,
 
         /// <summary>
-        /// Get and put if absent (<see cref="ICacheClient{TK,TV}.getAndPutIfAbsent(Object, Object)"/>).
+        /// Get and put if absent (<see cref="ICacheClient{TK,TV}.GetAndPutIfAbsent(TK, TV)"/>).
         /// </summary>
         CacheGetAndPutIfAbsent,
 
         /// <summary>
-        /// Scan query (<see cref="ICacheClient{TK,TV}.query(Query)"/>).
+        /// Scan query (<see cref="ICacheClient{TK,TV}.Query(Apache.Ignite.Core.Cache.Query.ScanQuery{TK,TV})"/>).
         /// </summary>
         QueryScan,
 
         /// <summary>
-        /// SQL query (<see cref="ICacheClient{TK,TV}.query(SqlFieldsQuery)"/>).
+        /// SQL query (<see cref="ICacheClient{TK,TV}.Query(Apache.Ignite.Core.Cache.Query.SqlFieldsQuery)"/>).
         /// </summary>
         QuerySql,
 
         /// <summary>
-        /// Continuous query (<see cref="ICacheClient{TK,TV}.query(ContinuousQuery, ClientDisconnectListener)"/>).
+        /// Continuous query (<see cref="ICacheClient{TK,TV}.QueryContinuous"/>).
         /// </summary>
         QueryContinuous,
 
