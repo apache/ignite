@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.snapshot;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
@@ -29,7 +28,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
  * Snapshot check sub-command.
  */
 public class SnapshotCheckCommand extends SnapshotSubcommand {
-    /** Default contructor. */
+    /** Default constructor. */
     protected SnapshotCheckCommand() {
         super("check", VisorSnapshotCheckTask.class);
     }
@@ -45,6 +44,6 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        usage(log, "Check snapshot:", SNAPSHOT, F.asMap("snapshot_name", "Snapshot name."), name, "snapshot_name");
+        usage(log, "Check snapshot:", SNAPSHOT, generalUsageOptions(), name(), SNAPSHOT_NAME_ARG);
     }
 }

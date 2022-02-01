@@ -21,17 +21,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.SYNC;
 
 /**
  * Snapshot create sub-command.
  */
 public class SnapshotCreateCommand extends SnapshotSubcommand {
-    /** Default contructor. */
+    /** Default constructor. */
     protected SnapshotCreateCommand() {
         super("create", VisorSnapshotCreateTask.class);
     }
@@ -42,10 +44,14 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
         boolean sync = false;
 
         if (argIter.hasNextSubArg()) {
-            String arg = argIter.nextArg("");
+            String arg = argIter.nextArg(null);
 
-            if (!"--sync".equals(arg))
-                throw new IllegalArgumentException("Invalid argument: " + arg + '.');
+            SnapshotCreateCommandOption option = CommandArgUtils.of(arg, SnapshotCreateCommandOption.class);
+
+            if (option == null)
+                throw new IllegalArgumentException("Invalid argument: " + arg + ". ");
+
+            assert option == SYNC;
 
             sync = true;
         }
@@ -55,12 +61,10 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Map<String, String> params = new LinkedHashMap<String, String>() {{
-            put("snapshot_name", "Snapshot name.");
-            put("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-                    "Otherwise, it will be performed in the background, and the command will immediately return control.");
-        }};
+        Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
-        usage(log, "Create cluster snapshot:", SNAPSHOT, params, name, "snapshot_name", optional("--sync"));
+        params.put(SYNC.optionName(), SYNC.description());
+
+        usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG, optional(SYNC.argName()));
     }
 }

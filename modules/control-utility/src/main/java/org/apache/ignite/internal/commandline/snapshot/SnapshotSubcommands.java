@@ -63,7 +63,7 @@ public enum SnapshotSubcommands {
     }
 
     /**
-     * @return Task class name to execute.
+     * @return Sub command.
      */
     public SnapshotSubcommand subCommand() {
         return subcmd;

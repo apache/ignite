@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
@@ -107,6 +108,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -3022,7 +3024,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah.");
 
-        List<String> args = new ArrayList<>(Arrays.asList("--snapshot", "create", snpName));
+        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName));
 
         if (syncMode)
             args.add("--sync");
@@ -3030,12 +3032,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
         LongMetric opEndTimeMetric = ig.context().metric().registry(SNAPSHOT_METRICS).findMetric("LastSnapshotEndTime");
+        BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
 
         if (syncMode)
-            assertTrue(opEndTimeMetric.value() > 0);
+            assertTrue(endTimeMetricPredicate.getAsBoolean());
         else {
             assertTrue("Waiting for snapshot operation end failed.",
-                waitForCondition(() -> opEndTimeMetric.value() > 0, getTestTimeout()));
+                waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
@@ -3168,6 +3171,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotRestore() throws Exception {
+        autoConfirmation = false;
+
         int keysCnt = 100;
         String snpName = "snapshot_02052020";
         String cacheName1 = "cache1";
@@ -3179,6 +3184,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cluster().state(ACTIVE);
 
         injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
 
         createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
         createCacheAndPreload(ig, cacheName2, keysCnt, 32, null);
@@ -3201,6 +3207,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(cacheName3));
 
         CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
+        assertContains(log, testOut.toString(), "Invalid argument: " + cacheName1 + ". One of [--groups, --sync] is expected.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheName1));
@@ -3256,8 +3265,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Restore all public cache groups.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+        String out = testOut.toString();
+        assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
+        assertContains(log, out, "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());

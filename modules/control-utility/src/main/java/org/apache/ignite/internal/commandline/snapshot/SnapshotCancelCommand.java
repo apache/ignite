@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import java.util.logging.Logger;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
@@ -27,13 +26,13 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
  * Snapshot cancel sub-command.
  */
 public class SnapshotCancelCommand extends SnapshotSubcommand {
-    /** Default contructor. */
+    /** Default constructor. */
     protected SnapshotCancelCommand() {
         super("cancel", VisorSnapshotCancelTask.class);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        usage(log, "Cancel running snapshot:", SNAPSHOT, F.asMap("snapshot_name", "Snapshot name."), name, "snapshot_name");
+        usage(log, "Cancel running snapshot:", SNAPSHOT, generalUsageOptions(), name(), SNAPSHOT_NAME_ARG);
     }
 }

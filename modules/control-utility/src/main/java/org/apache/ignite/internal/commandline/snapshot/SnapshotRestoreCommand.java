@@ -32,13 +32,15 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.GROUPS;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SYNC;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
 
 /**
  * Snapshot restore sub-command.
  */
 public class SnapshotRestoreCommand extends SnapshotSubcommand {
-    /** Default contructor. */
+    /** Default constructor. */
     protected SnapshotRestoreCommand() {
         super("restore", VisorSnapshotRestoreTask.class);
     }
@@ -79,7 +81,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                 if (grpNames.isEmpty())
                     throw new IllegalArgumentException("Expected " + argDesc);
             }
-            else if (option == SnapshotRestoreCommandOption.SYNC)
+            else if (option == SYNC)
                 sync = true;
         }
 
@@ -88,25 +90,24 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Map<String, String> params = F.asMap("snapshot_name", "Snapshot name.");
+        Map<String, String> params = generalUsageOptions();
         Map<String, String> startParams = new LinkedHashMap<String, String>(params) {{
-            put("group1,...groupN", "Cache group names.");
-            put("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-                    "Otherwise, it will be performed in the background, and the command will immediately return control.");
+            put(GROUPS.optionName(), GROUPS.description());
+            put(SYNC.optionName(), SYNC.description());
         }};
 
-        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            "snapshot_name", "--start", optional("--sync"), optional("--groups", "group1,...groupN"));
-        usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), "snapshot_name", "--status");
-        usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), "snapshot_name", "--cancel");
+        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
+            optional(GROUPS.argName(), GROUPS.optionName()), optional(SYNC.argName()));
+        usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
+        usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
 
-        return arg.jobAction() == VisorSnapshotRestoreTaskAction.START && arg.groupNames() != null ? null :
-            "Warning: command will restore ALL USER CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
+        return arg.jobAction() != VisorSnapshotRestoreTaskAction.START || arg.groupNames() != null ? null :
+            "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 
     /**

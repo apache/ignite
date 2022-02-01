@@ -20,44 +20,36 @@ package org.apache.ignite.internal.commandline.snapshot;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /**
- * Snapshot restore command options.
+ * Snapshot create command options.
  */
-public enum SnapshotRestoreCommandOption implements CommandArg {
-    /** Cache group names. */
-    GROUPS("--groups", "group1,...groupN", "Cache group names."),
-
+public enum SnapshotCreateCommandOption implements CommandArg {
     /** Synchronous execution flag. */
-    SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.optionName(),
-        SnapshotCreateCommandOption.SYNC.description());
-
-    /** Argument name. */
-    private final String argName;
+    SYNC("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
+        "Otherwise, it will be performed in the background, and the command will immediately return control.");
 
     /** Option name. */
-    private final String optionName;
+    private final String name;
 
     /** Option description. */
     private final String desc;
 
     /**
-     * @param argName Argument name.
-     * @param optionName Option name.
+     * @param name Option name.
      * @param desc Option description.
      */
-    SnapshotRestoreCommandOption(String argName, String optionName, String desc) {
-        this.argName = argName;
-        this.optionName = optionName;
+    SnapshotCreateCommandOption(String name, String desc) {
+        this.name = name;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
-        return argName;
+        return "--" + name;
     }
 
     /** @return Option name. */
     public String optionName() {
-        return optionName;
+        return name;
     }
 
     /** @return Option description. */

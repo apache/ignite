@@ -159,7 +159,7 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name --start [--sync] [--groups group1,...groupN]
+    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--sync]
 
     Parameters:
       snapshot_name     - Snapshot name.

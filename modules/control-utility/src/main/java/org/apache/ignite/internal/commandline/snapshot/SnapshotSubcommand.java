@@ -17,27 +17,32 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /**
- * Snapshot sub-command.
+ * Snapshot sub-command base.
  */
 public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
-    /** Snapshot visor task class. */
-    protected final Class<?> taskCls;
-
-    /** Sub-command name. */
-    protected final String name;
+    /** Snapshot argument name. */
+    protected static final String SNAPSHOT_NAME_ARG = "snapshot_name";
 
     /** Command argument. */
     protected Object cmdArg;
+
+    /** Sub-command name. */
+    private final String name;
+
+    /** Snapshot visor task class. */
+    private final Class<?> taskCls;
 
     /**
      * @param name Sub-command name.
@@ -51,13 +56,7 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
-                client,
-                taskCls.getName(),
-                arg(),
-                null,
-                clientCfg
-            );
+            return executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
         }
     }
 
@@ -77,5 +76,12 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /**
+     * @return General usage options.
+     */
+    protected Map<String, String> generalUsageOptions() {
+        return F.asMap(SNAPSHOT_NAME_ARG, "Snapshot name.");
     }
 }
