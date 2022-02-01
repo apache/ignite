@@ -942,7 +942,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     : BinaryNameMapperMode.BasicFull;
         }
 
-        private bool ShouldRetry(int attempt, IgniteClientException exception, ClientOp clientOp)
+        private bool ShouldRetry(int attempt, IgniteClientException exception, ClientOp op)
         {
             if (_config.RetryPolicy == null)
             {
@@ -954,7 +954,15 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            var ctx = new ClientRetryPolicyContext(_config, ClientOperationType.CacheCreate, attempt, exception);
+            var publicOpType = op.ToPublicOperationsType();
+
+            if (publicOpType == null)
+            {
+                // System operation.
+                return true;
+            }
+
+            var ctx = new ClientRetryPolicyContext(_config, publicOpType.Value, attempt, exception);
 
             return _config.RetryPolicy.ShouldRetry(ctx);
         }
