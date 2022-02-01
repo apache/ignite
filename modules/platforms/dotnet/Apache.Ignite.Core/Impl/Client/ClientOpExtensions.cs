@@ -32,117 +32,117 @@ namespace Apache.Ignite.Core.Impl.Client
                 case ClientOp.CacheGetOrCreateWithConfiguration:
                     return ClientOperationType.CacheGetOrCreate;
 
-                case CACHE_CREATE_WITH_CONFIGURATION:
-                case CACHE_CREATE_WITH_NAME:
+                case ClientOp.CACHE_CREATE_WITH_CONFIGURATION:
+                case ClientOp.CACHE_CREATE_WITH_NAME:
                     return ClientOperationType.CACHE_CREATE;
 
-                case CACHE_PUT:
+                case ClientOp.CACHE_PUT:
                     return ClientOperationType.CACHE_PUT;
 
-                case CACHE_GET:
+                case ClientOp.CACHE_GET:
                     return ClientOperationType.CACHE_GET;
 
-                case CACHE_GET_NAMES:
+                case ClientOp.CACHE_GET_NAMES:
                     return ClientOperationType.CACHE_GET_NAMES;
 
-                case CACHE_DESTROY:
+                case ClientOp.CACHE_DESTROY:
                     return ClientOperationType.CACHE_DESTROY;
 
-                case CACHE_CONTAINS_KEY:
+                case ClientOp.CACHE_CONTAINS_KEY:
                     return ClientOperationType.CACHE_CONTAINS_KEY;
 
-                case CACHE_CONTAINS_KEYS:
+                case ClientOp.CACHE_CONTAINS_KEYS:
                     return ClientOperationType.CACHE_CONTAINS_KEYS;
 
-                case CACHE_GET_CONFIGURATION:
+                case ClientOp.CACHE_GET_CONFIGURATION:
                     return ClientOperationType.CACHE_GET_CONFIGURATION;
 
-                case CACHE_GET_SIZE:
+                case ClientOp.CACHE_GET_SIZE:
                     return ClientOperationType.CACHE_GET_SIZE;
 
-                case CACHE_PUT_ALL:
+                case ClientOp.CACHE_PUT_ALL:
                     return ClientOperationType.CACHE_PUT_ALL;
 
-                case CACHE_GET_ALL:
+                case ClientOp.CACHE_GET_ALL:
                     return ClientOperationType.CACHE_GET_ALL;
 
-                case CACHE_REPLACE_IF_EQUALS:
-                case CACHE_REPLACE:
+                case ClientOp.CACHE_REPLACE_IF_EQUALS:
+                case ClientOp.CACHE_REPLACE:
                     return ClientOperationType.CACHE_REPLACE;
 
-                case CACHE_REMOVE_KEY:
-                case CACHE_REMOVE_IF_EQUALS:
+                case ClientOp.CACHE_REMOVE_KEY:
+                case ClientOp.CACHE_REMOVE_IF_EQUALS:
                     return ClientOperationType.CACHE_REMOVE_ONE;
 
-                case CACHE_REMOVE_KEYS:
+                case ClientOp.CACHE_REMOVE_KEYS:
                     return ClientOperationType.CACHE_REMOVE_MULTIPLE;
 
-                case CACHE_REMOVE_ALL:
+                case ClientOp.CACHE_REMOVE_ALL:
                     return ClientOperationType.CACHE_REMOVE_EVERYTHING;
 
-                case CACHE_GET_AND_PUT:
+                case ClientOp.CACHE_GET_AND_PUT:
                     return ClientOperationType.CACHE_GET_AND_PUT;
 
-                case CACHE_GET_AND_REMOVE:
+                case ClientOp.CACHE_GET_AND_REMOVE:
                     return ClientOperationType.CACHE_GET_AND_REMOVE;
 
-                case CACHE_GET_AND_REPLACE:
+                case ClientOp.CACHE_GET_AND_REPLACE:
                     return ClientOperationType.CACHE_GET_AND_REPLACE;
 
-                case CACHE_PUT_IF_ABSENT:
+                case ClientOp.CACHE_PUT_IF_ABSENT:
                     return ClientOperationType.CACHE_PUT_IF_ABSENT;
 
-                case CACHE_GET_AND_PUT_IF_ABSENT:
+                case ClientOp.CACHE_GET_AND_PUT_IF_ABSENT:
                     return ClientOperationType.CACHE_GET_AND_PUT_IF_ABSENT;
 
-                case CACHE_CLEAR:
+                case ClientOp.CACHE_CLEAR:
                     return ClientOperationType.CACHE_CLEAR_EVERYTHING;
 
-                case CACHE_CLEAR_KEY:
+                case ClientOp.CACHE_CLEAR_KEY:
                     return ClientOperationType.CACHE_CLEAR_ONE;
 
-                case CACHE_CLEAR_KEYS:
+                case ClientOp.CACHE_CLEAR_KEYS:
                     return ClientOperationType.CACHE_CLEAR_MULTIPLE;
 
-                case QUERY_SCAN:
+                case ClientOp.QUERY_SCAN:
                     return ClientOperationType.QUERY_SCAN;
 
-                case QUERY_SQL:
-                case QUERY_SQL_FIELDS:
+                case ClientOp.QUERY_SQL:
+                case ClientOp.QUERY_SQL_FIELDS:
                     return ClientOperationType.QUERY_SQL;
 
-                case QUERY_CONTINUOUS:
+                case ClientOp.QUERY_CONTINUOUS:
                     return ClientOperationType.QUERY_CONTINUOUS;
 
-                case TX_START:
+                case ClientOp.TX_START:
                     return ClientOperationType.TRANSACTION_START;
 
-                case CLUSTER_GET_STATE:
+                case ClientOp.CLUSTER_GET_STATE:
                     return ClientOperationType.CLUSTER_GET_STATE;
 
-                case CLUSTER_CHANGE_STATE:
+                case ClientOp.CLUSTER_CHANGE_STATE:
                     return ClientOperationType.CLUSTER_CHANGE_STATE;
 
-                case CLUSTER_GET_WAL_STATE:
+                case ClientOp.CLUSTER_GET_WAL_STATE:
                     return ClientOperationType.CLUSTER_GET_WAL_STATE;
 
-                case CLUSTER_CHANGE_WAL_STATE:
+                case ClientOp.CLUSTER_CHANGE_WAL_STATE:
                     return ClientOperationType.CLUSTER_CHANGE_WAL_STATE;
 
-                case CLUSTER_GROUP_GET_NODE_IDS:
-                case CLUSTER_GROUP_GET_NODE_INFO:
+                case ClientOp.CLUSTER_GROUP_GET_NODE_IDS:
+                case ClientOp.CLUSTER_GROUP_GET_NODE_INFO:
                     return ClientOperationType.CLUSTER_GROUP_GET_NODES;
 
-                case COMPUTE_TASK_EXECUTE:
+                case ClientOp.COMPUTE_TASK_EXECUTE:
                     return ClientOperationType.COMPUTE_TASK_EXECUTE;
 
-                case SERVICE_INVOKE:
+                case ClientOp.SERVICE_INVOKE:
                     return ClientOperationType.SERVICE_INVOKE;
 
-                case SERVICE_GET_DESCRIPTORS:
+                case ClientOp.SERVICE_GET_DESCRIPTORS:
                     return ClientOperationType.SERVICE_GET_DESCRIPTORS;
 
-                case SERVICE_GET_DESCRIPTOR:
+                case ClientOp.SERVICE_GET_DESCRIPTOR:
                     return ClientOperationType.SERVICE_GET_DESCRIPTOR;
 
                 default:
