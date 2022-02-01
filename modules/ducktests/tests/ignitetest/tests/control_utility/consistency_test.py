@@ -101,7 +101,7 @@ class ConsistencyTest(IgniteTest):
         except AssertionError:
             pass
 
-        control_utility.check_consistency(f"repair {self.CACHE_NAME} 0 LWW")  # checking/repairing
+        control_utility.check_consistency(f"repair --cache {self.CACHE_NAME} --partition 0 --strategy LWW")  # checking/repairing
 
         message = "Cache consistency violations recorded."
 

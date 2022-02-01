@@ -28,6 +28,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -206,7 +207,11 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-                execute("--consistency", "repair", "non-existent", String.valueOf(i), strategy.toString()));
+                execute("--consistency", "repair",
+                    ConsistencyCommand.CACHE, "non-existent",
+                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.STRATEGY, strategy.toString()));
+
             assertContains(log, testOut.toString(), "Cache not found");
         }
     }
@@ -216,7 +221,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
      */
     private void readRepair(AtomicInteger brokenParts, String cacheName, Integer fixesPerEntry) {
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i), strategy.toString()));
+            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
+                ConsistencyCommand.CACHE, cacheName,
+                ConsistencyCommand.PARTITION, String.valueOf(i),
+                ConsistencyCommand.STRATEGY, strategy.toString()));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, fixed=" + (fixesPerEntry != null ? fixesPerEntry.toString() : ""));
 

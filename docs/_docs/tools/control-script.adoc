@@ -1038,12 +1038,12 @@ The command allows to perform cache consistency check and repair (when possible)
 tab:Unix[]
 [source,shell]
 ----
-control.sh --enable-experimental --consistency repair cache-name partition strategy
+control.sh --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --enable-experimental --consistency repair cache-name partition strategy
+control.bat --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
 ----
 --
 Parameters:
