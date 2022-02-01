@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Client
 {
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Client operation type.
@@ -164,37 +167,37 @@ namespace Apache.Ignite.Core.Client
         QueryContinuous,
 
         /// <summary>
-        /// Start transaction ({@link ClientTransactions#txStart"/>).
+        /// Start transaction (<see cref="ITransactionsClient.TxStart()"/>).
         /// </summary>
         TransactionStart,
 
         /// <summary>
-        /// Get cluster state ({@link ClientCluster#state()"/>).
+        /// Get cluster state (<see cref="IClientCluster.IsActive"/>).
         /// </summary>
         ClusterGetState,
 
         /// <summary>
-        /// Change cluster state ({@link ClientCluster#state(ClusterState)"/>).
+        /// Change cluster state (<see cref="IClientCluster.SetActive"/>).
         /// </summary>
         ClusterChangeState,
 
         /// <summary>
-        /// Get cluster WAL state ({@link ClientCluster#isWalEnabled(String)"/>).
+        /// Get cluster WAL state (<see cref="IClientCluster.IsWalEnabled"/>).
         /// </summary>
         ClusterGetWalState,
 
         /// <summary>
-        /// Change cluster WAL state ({@link ClientCluster#enableWal(String)}, {@link ClientCluster#disableWal(String)"/>).
+        /// Change cluster WAL state (<see cref="IClientCluster.EnableWal"/>, <see cref="IClientCluster.DisableWal"/>).
         /// </summary>
         ClusterChangeWalState,
 
         /// <summary>
-        /// Get cluster nodes ({@link ClientCluster#nodes()"/>).
+        /// Get cluster nodes (<see cref="IClientClusterGroup.GetNodes"/>).
         /// </summary>
         ClusterGroupGetNodes,
 
         /// <summary>
-        /// Execute compute task ({@link ClientCompute#execute(String, Object)"/>).
+        /// Execute compute task (<see cref="IComputeClient.ExecuteJavaTask{TRes}"/>).
         /// </summary>
         ComputeTaskExecute,
 
@@ -204,12 +207,12 @@ namespace Apache.Ignite.Core.Client
         ServiceInvoke,
 
         /// <summary>
-        /// Get service descriptors ({@link ClientServices#serviceDescriptors()"/>).
+        /// Get service descriptors (<see cref="IServicesClient.GetServiceDescriptors"/>).
         /// </summary>
         ServiceGetDescriptors,
 
         /// <summary>
-        /// Get service descriptor ({@link ClientServices#serviceDescriptor(String)"/>).
+        /// Get service descriptor (<see cref="IServicesClient.GetServiceDescriptor"/>).
         /// </summary>
         ServiceGetDescriptor
     }
