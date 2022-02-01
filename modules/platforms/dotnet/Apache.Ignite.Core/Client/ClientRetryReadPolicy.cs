@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Client
 {
-    using System;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -32,82 +31,24 @@ namespace Apache.Ignite.Core.Client
 
             switch (context.Operation)
             {
-                case ClientOperationType.CacheCreate:
-                    break;
-                case ClientOperationType.CacheGetOrCreate:
-                    break;
                 case ClientOperationType.CacheGetNames:
-                    break;
-                case ClientOperationType.CacheDestroy:
-                    break;
                 case ClientOperationType.CacheGet:
-                    break;
-                case ClientOperationType.CachePut:
-                    break;
                 case ClientOperationType.CacheContainsKey:
-                    break;
                 case ClientOperationType.CacheContainsKeys:
-                    break;
                 case ClientOperationType.CacheGetConfiguration:
-                    break;
                 case ClientOperationType.CacheGetSize:
-                    break;
-                case ClientOperationType.CachePutAll:
-                    break;
                 case ClientOperationType.CacheGetAll:
-                    break;
-                case ClientOperationType.CacheReplace:
-                    break;
-                case ClientOperationType.CacheRemoveOne:
-                    break;
-                case ClientOperationType.CacheRemoveMultiple:
-                    break;
-                case ClientOperationType.CacheRemoveEverything:
-                    break;
-                case ClientOperationType.CacheClearOne:
-                    break;
-                case ClientOperationType.CacheClearMultiple:
-                    break;
-                case ClientOperationType.CacheClearEverything:
-                    break;
-                case ClientOperationType.CacheGetAndPut:
-                    break;
-                case ClientOperationType.CacheGetAndRemove:
-                    break;
-                case ClientOperationType.CacheGetAndReplace:
-                    break;
-                case ClientOperationType.CachePutIfAbsent:
-                    break;
-                case ClientOperationType.CacheGetAndPutIfAbsent:
-                    break;
                 case ClientOperationType.QueryScan:
-                    break;
-                case ClientOperationType.QuerySql:
-                    break;
                 case ClientOperationType.QueryContinuous:
-                    break;
-                case ClientOperationType.TransactionStart:
-                    break;
                 case ClientOperationType.ClusterGetState:
-                    break;
-                case ClientOperationType.ClusterChangeState:
-                    break;
                 case ClientOperationType.ClusterGetWalState:
-                    break;
-                case ClientOperationType.ClusterChangeWalState:
-                    break;
                 case ClientOperationType.ClusterGroupGetNodes:
-                    break;
-                case ClientOperationType.ComputeTaskExecute:
-                    break;
-                case ClientOperationType.ServiceInvoke:
-                    break;
                 case ClientOperationType.ServiceGetDescriptors:
-                    break;
                 case ClientOperationType.ServiceGetDescriptor:
-                    break;
+                    return true;
+
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return false;
             }
         }
     }
