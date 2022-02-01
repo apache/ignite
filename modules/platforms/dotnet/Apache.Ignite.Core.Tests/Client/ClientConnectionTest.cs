@@ -664,7 +664,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests automatic retry with multiple servers.
         /// </summary>
         [Test]
-        public void TestFailoverWithRetryPolicy()
+        public void TestFailoverWithRetryPolicy(
+            [Values(true, false)] bool async,
+            [Values(true, false)] bool partitionAware)
         {
             // Start 3 nodes.
             Ignition.Start(TestUtils.GetTestConfiguration(name: "0"));
@@ -680,13 +682,22 @@ namespace Apache.Ignite.Core.Tests.Client
                     "localhost",
                     string.Format("127.0.0.1:{0}..{1}", port + 1, port + 2)
                 },
-                RetryPolicy = new ClientRetryAllPolicy()
+                RetryPolicy = new ClientRetryAllPolicy(),
+                EnablePartitionAwareness = partitionAware
             };
 
             // ReSharper disable AccessToDisposedClosure
             using (var client = Ignition.StartClient(cfg))
             {
-                Action checkOperation = () => Assert.AreEqual(0, client.GetCacheNames().Count);
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                Action checkOperation = partitionAware
+                    ? async
+                        ? (Action)(() => Assert.IsFalse(cache.ContainsKey(1)))
+                        : () => Assert.IsFalse(cache.ContainsKeyAsync(1).Result)
+                    : async
+                        ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>("org.apache.ignite.internal.client.thin.TestTask", null).Result))
+                        : () => Assert.AreEqual(1, client.GetCacheNames().Count);
 
                 checkOperation();
 
