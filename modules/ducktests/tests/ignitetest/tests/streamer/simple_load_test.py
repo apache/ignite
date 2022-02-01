@@ -29,7 +29,7 @@ from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 NODE_COUNT = 48
 MAX_DATA_SEGMENT = 12_000_000_000
 # NODE_COUNT = 4
-# MAX_DATA_SEGMENT = 500_000_000
+# MAX_DATA_SEGMENT = 100_000_000
 
 class SimpleStreamerTest(IgniteTest):
     """
@@ -39,22 +39,24 @@ class SimpleStreamerTest(IgniteTest):
     @cluster(num_nodes=NODE_COUNT - 1)
     # @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(backups=[1], cache_count=[50], preloaders=[1, 3], threads=[4, 16, 64, 128])
+    @defaults(backups=[1], cache_count=[50], preloaders=[1, 3], threads=[4, 16, 64, 128],
+              jvm_opts=[['-Xmx10G'], ['-Xmx5G'], ['-Xmx3G']])
     @parametrize(entry_count=[int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 133)], entry_size=[133])
     @parametrize(entry_count=[int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 1057)], entry_size=[1057])
     @parametrize(entry_count=[int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 5047)], entry_size=[5047])
-    # @defaults(backups=[1], cache_count=[50], preloaders=[1], threads=[24])
+    # @defaults(backups=[1], cache_count=[10], preloaders=[1], threads=[2], jvm_opts=['-Xmx256m', '-Xms256m'])
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 133), entry_size=133)
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 1057), entry_size=1057)
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 5047), entry_size=5047)
-    def just_load_test(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders, threads):
+    def just_load_test(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders, threads,
+                       jvm_opts):
         """
         Basic streamer test.
         """
         data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
                                           entry_count=entry_count, entry_size=entry_size,
                                           preloaders=preloaders, threads=threads,
-                                          jvm_opts=['-Xmx256m', '-Xms256m'])
+                                          jvm_opts=jvm_opts)
         loader = DataLoader(self.test_context, data_load_params)
 
         version = IgniteVersion(ignite_version)
