@@ -942,8 +942,19 @@ namespace Apache.Ignite.Core.Impl.Client
                     : BinaryNameMapperMode.BasicFull;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether a failed operation should be retried.
+        /// </summary>
+        /// <param name="attempt">Current attempt.</param>
+        /// <param name="exception">Exception that caused the operation to fail.</param>
+        /// <param name="op">Operation code.</param>
+        /// <returns>
+        /// <c>true</c> if the operation should be retried on another connection, <c>false</c> otherwise.
+        /// </returns>
         private bool ShouldRetry(int attempt, IgniteClientException exception, ClientOp op)
         {
+            // TODO: Only connection errors should be retried - check inner exception.
+            // Do not retry failed serialization errors, failed compute tasks, etc.
             if (_config.RetryPolicy == null)
             {
                 return false;
