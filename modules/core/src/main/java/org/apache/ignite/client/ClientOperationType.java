@@ -55,7 +55,7 @@ public enum ClientOperationType {
     CACHE_GET,
 
     /**
-     * Get value from cache ({@link ClientCache#get(Object)}).
+     * Put value to cache ({@link ClientCache#put(Object, Object)}).
      */
     CACHE_PUT,
 

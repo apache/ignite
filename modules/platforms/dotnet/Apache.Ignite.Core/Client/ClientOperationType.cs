@@ -62,138 +62,138 @@ namespace Apache.Ignite.Core.Client
         CacheContainsKey,
 
         /// <summary>
-        /// Determines if the cache contains multiple keys ({@link ClientCache#containsKeys}).
+        /// Determines if the cache contains multiple keys (<see cref="ICacheClient{TK,TV}.ContainsKeys"/>).
         /// </summary>
         CacheContainsKeys,
 
         /// <summary>
-        /// Get cache configuration ({@link ClientCache#getConfiguration()}).
+        /// Get cache configuration (<see cref="ICacheClient{TK,TV}.GetConfiguration"/>).
         /// </summary>
         CacheGetConfiguration,
 
         /// <summary>
-        /// Get cache size ({@link ClientCache#size}).
+        /// Get cache size (<see cref="ICacheClient{TK,TV}.GetSize"/>).
         /// </summary>
         CacheGetSize,
 
         /// <summary>
-        /// Put values to cache ({@link ClientCache#putAll}).
+        /// Put values to cache (<see cref="ICacheClient{TK,TV}.PutAll"/>).
         /// </summary>
         CachePutAll,
 
         /// <summary>
-        /// Get values from cache ({@link ClientCache#getAll}).
+        /// Get values from cache (<see cref="ICacheClient{TK,TV}.GetAll"/>).
         /// </summary>
         CacheGetAll,
 
         /// <summary>
-        /// Replace cache value ({@link ClientCache#replace(Object, Object)},
-        /// {@link ClientCache#replace(Object, Object, Object)}).
+        /// Replace cache value (<see cref="ICacheClient{TK,TV}.Replace(TK,TV)"/>,
+        /// <see cref="ICacheClient{TK,TV}.Replace(TK,TV,TV)"/>).
         /// </summary>
         CacheReplace,
 
         /// <summary>
-        /// Remove entry from cache ({@link ClientCache#remove(Object)}, {@link ClientCache#remove(Object, Object)}).
+        /// Remove entry from cache (<see cref="ICacheClient{TK,TV}.remove(Object)}, <see cref="ICacheClient{TK,TV}.remove(Object, Object)"/>).
         /// </summary>
         CacheRemoveOne,
 
         /// <summary>
-        /// Remove entries from cache ({@link ClientCache#removeAll(Set)}).
+        /// Remove entries from cache (<see cref="ICacheClient{TK,TV}.removeAll(Set)"/>).
         /// </summary>
         CacheRemoveMultiple,
 
         /// <summary>
-        /// Remove everyting from cache ({@link ClientCache#removeAll()}).
+        /// Remove everyting from cache (<see cref="ICacheClient{TK,TV}.removeAll()"/>).
         /// </summary>
         CacheRemoveEverything,
 
         /// <summary>
-        /// Clear cache entry ({@link ClientCache#clear(Object)} ).
+        /// Clear cache entry (<see cref="ICacheClient{TK,TV}.clear(Object)} ).
         /// </summary>
         CacheClearOne,
 
         /// <summary>
-        /// Clear multiple cache entries ({@link ClientCache#clearAll(Set)}).
+        /// Clear multiple cache entries (<see cref="ICacheClient{TK,TV}.clearAll(Set)"/>).
         /// </summary>
         CacheClearMultiple,
 
         /// <summary>
-        /// Clear entire cache ({@link ClientCache#clear()}).
+        /// Clear entire cache (<see cref="ICacheClient{TK,TV}.clear()"/>).
         /// </summary>
         CacheClearEverything,
 
         /// <summary>
-        /// Get and put ({@link ClientCache#getAndPut(Object, Object)}).
+        /// Get and put (<see cref="ICacheClient{TK,TV}.getAndPut(Object, Object)"/>).
         /// </summary>
         CacheGetAndPut,
 
         /// <summary>
-        /// Get and remove ({@link ClientCache#getAndRemove(Object)}).
+        /// Get and remove (<see cref="ICacheClient{TK,TV}.getAndRemove(Object)"/>).
         /// </summary>
         CacheGetAndRemove,
 
         /// <summary>
-        /// Get and replace ({@link ClientCache#getAndReplace(Object, Object)}).
+        /// Get and replace (<see cref="ICacheClient{TK,TV}.getAndReplace(Object, Object)"/>).
         /// </summary>
         CacheGetAndReplace,
 
         /// <summary>
-        /// Put if absent ({@link ClientCache#putIfAbsent(Object, Object)}).
+        /// Put if absent (<see cref="ICacheClient{TK,TV}.putIfAbsent(Object, Object)"/>).
         /// </summary>
         CachePutIfAbsent,
 
         /// <summary>
-        /// Get and put if absent ({@link ClientCache#getAndPutIfAbsent(Object, Object)}).
+        /// Get and put if absent (<see cref="ICacheClient{TK,TV}.getAndPutIfAbsent(Object, Object)"/>).
         /// </summary>
         CacheGetAndPutIfAbsent,
 
         /// <summary>
-        /// Scan query ({@link ClientCache#query(Query)}).
+        /// Scan query (<see cref="ICacheClient{TK,TV}.query(Query)"/>).
         /// </summary>
         QueryScan,
 
         /// <summary>
-        /// SQL query ({@link ClientCache#query(SqlFieldsQuery)}).
+        /// SQL query (<see cref="ICacheClient{TK,TV}.query(SqlFieldsQuery)"/>).
         /// </summary>
         QuerySql,
 
         /// <summary>
-        /// Continuous query ({@link ClientCache#query(ContinuousQuery, ClientDisconnectListener)}).
+        /// Continuous query (<see cref="ICacheClient{TK,TV}.query(ContinuousQuery, ClientDisconnectListener)"/>).
         /// </summary>
         QueryContinuous,
 
         /// <summary>
-        /// Start transaction ({@link ClientTransactions#txStart}).
+        /// Start transaction ({@link ClientTransactions#txStart"/>).
         /// </summary>
         TransactionStart,
 
         /// <summary>
-        /// Get cluster state ({@link ClientCluster#state()}).
+        /// Get cluster state ({@link ClientCluster#state()"/>).
         /// </summary>
         ClusterGetState,
 
         /// <summary>
-        /// Change cluster state ({@link ClientCluster#state(ClusterState)}).
+        /// Change cluster state ({@link ClientCluster#state(ClusterState)"/>).
         /// </summary>
         ClusterChangeState,
 
         /// <summary>
-        /// Get cluster WAL state ({@link ClientCluster#isWalEnabled(String)}).
+        /// Get cluster WAL state ({@link ClientCluster#isWalEnabled(String)"/>).
         /// </summary>
         ClusterGetWalState,
 
         /// <summary>
-        /// Change cluster WAL state ({@link ClientCluster#enableWal(String)}, {@link ClientCluster#disableWal(String)}).
+        /// Change cluster WAL state ({@link ClientCluster#enableWal(String)}, {@link ClientCluster#disableWal(String)"/>).
         /// </summary>
         ClusterChangeWalState,
 
         /// <summary>
-        /// Get cluster nodes ({@link ClientCluster#nodes()}).
+        /// Get cluster nodes ({@link ClientCluster#nodes()"/>).
         /// </summary>
         ClusterGroupGetNodes,
 
         /// <summary>
-        /// Execute compute task ({@link ClientCompute#execute(String, Object)}).
+        /// Execute compute task ({@link ClientCompute#execute(String, Object)"/>).
         /// </summary>
         ComputeTaskExecute,
 
@@ -203,12 +203,12 @@ namespace Apache.Ignite.Core.Client
         ServiceInvoke,
 
         /// <summary>
-        /// Get service descriptors ({@link ClientServices#serviceDescriptors()}).
+        /// Get service descriptors ({@link ClientServices#serviceDescriptors()"/>).
         /// </summary>
         ServiceGetDescriptors,
 
         /// <summary>
-        /// Get service descriptor ({@link ClientServices#serviceDescriptor(String)}).
+        /// Get service descriptor ({@link ClientServices#serviceDescriptor(String)"/>).
         /// </summary>
         ServiceGetDescriptor
     }
