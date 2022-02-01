@@ -29,16 +29,16 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SnapshotViewWalker implements SystemViewRowAttributeWalker<SnapshotView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "snapshotName", String.class);
-        v.accept(1, "nodeId", String.class);
+        v.accept(0, "name", String.class);
+        v.accept(1, "consistentId", String.class);
         v.accept(2, "baselineNodes", String.class);
         v.accept(3, "cacheGroups", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SnapshotView row, AttributeWithValueVisitor v) {
-        v.accept(0, "snapshotName", String.class, row.snapshotName());
-        v.accept(1, "nodeId", String.class, row.nodeId());
+        v.accept(0, "name", String.class, row.name());
+        v.accept(1, "consistentId", String.class, row.consistentId());
         v.accept(2, "baselineNodes", String.class, row.baselineNodes());
         v.accept(3, "cacheGroups", String.class, row.cacheGroups());
     }

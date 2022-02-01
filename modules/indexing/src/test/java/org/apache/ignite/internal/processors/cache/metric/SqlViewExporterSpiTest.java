@@ -1182,7 +1182,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         ignite0.snapshot().createSnapshot(snap1).get();
 
         assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
-        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where snapshot_name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
         assertEquals(nodesCnt, execute(ignite0,
             "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
     }

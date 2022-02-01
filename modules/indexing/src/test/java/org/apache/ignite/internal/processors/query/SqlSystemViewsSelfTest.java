@@ -1095,7 +1095,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
 
-        res = execSql("SELECT BASELINE_NODES FROM " + systemSchemaName() + ".SNAPSHOT WHERE NODE_ID = ?", node0);
+        res = execSql("SELECT BASELINE_NODES FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
 
         assertEquals(1, res.size());
 
@@ -1111,12 +1111,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(res.stream().map(l -> l.get(2)).allMatch(expBltNodes::equals));
 
-        res = execSql("SELECT SNAPSHOT_NAME FROM " + systemSchemaName() + ".SNAPSHOT WHERE NODE_ID = ?", node0);
+        res = execSql("SELECT NAME FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
 
         assertEquals(2, res.size());
 
-        res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOT " +
-            "WHERE SNAPSHOT_NAME = ?", testSnapname0);
+        res = execSql("SELECT NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOT " +
+            "WHERE NAME = ?", testSnapname0);
 
         assertEquals(nodesCnt, res.size());
 

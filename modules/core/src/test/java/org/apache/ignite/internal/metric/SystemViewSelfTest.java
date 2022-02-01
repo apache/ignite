@@ -2079,8 +2079,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             SnapshotView view = F.first(views);
 
-            assertEquals(testSnap0, view.snapshotName());
-            assertEquals(ignite.localNode().consistentId().toString(), view.nodeId());
+            assertEquals(testSnap0, view.name());
+            assertEquals(ignite.localNode().consistentId().toString(), view.consistentId());
 
             Collection<?> constIds = F.nodeConsistentIds(ignite.cluster().nodes());
 
@@ -2097,7 +2097,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             List<String> exp = Lists.newArrayList(testSnap0, testSnap1);
 
-            views.forEach(v -> assertTrue(exp.remove(v.snapshotName())));
+            views.forEach(v -> assertTrue(exp.remove(v.name())));
 
             assertTrue(exp.isEmpty());
         }

@@ -33,7 +33,7 @@ public class SnapshotView {
     private final String name;
 
     /** Node consistent id. */
-    private final String nodeId;
+    private final String consistentId;
 
     /** Baseline nodes affected by snapshot. */
     private final String baselineNodes;
@@ -43,18 +43,18 @@ public class SnapshotView {
 
     /**
      * @param name Snapshot name.
-     * @param nodeId Node consistent id.
+     * @param consistentId Node consistent id.
      * @param baselineNodes Baseline nodes affected by snapshot.
      * @param cacheGrps Cache group names that were included in the snapshot.
      */
     public SnapshotView(
         String name,
-        String nodeId,
+        String consistentId,
         String baselineNodes,
         String cacheGrps
     ) {
         this.name = name;
-        this.nodeId = nodeId;
+        this.consistentId = consistentId;
         this.baselineNodes = baselineNodes;
         this.cacheGrps = cacheGrps;
     }
@@ -63,7 +63,7 @@ public class SnapshotView {
      * @return Snapshot name.
      */
     @Order
-    public String snapshotName() {
+    public String name() {
         return name;
     }
 
@@ -71,8 +71,8 @@ public class SnapshotView {
      * @return Node consistent id.
      */
     @Order(1)
-    public String nodeId() {
-        return nodeId;
+    public String consistentId() {
+        return consistentId;
     }
 
     /**
