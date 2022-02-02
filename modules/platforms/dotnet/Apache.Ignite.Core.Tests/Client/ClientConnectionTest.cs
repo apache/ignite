@@ -653,18 +653,20 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Tests automatic retry with retry limit.
+        /// Tests that operation fails with an exception when retry limit is reached.
         /// </summary>
         [Test]
         public void TestFailoverWithRetryPolicyThrowsOnRetryCountExceeded()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
 
+            var retryLimit = 4;
+
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new[] { "127.0.0.1" },
                 RetryPolicy = new ClientRetryAllPolicy(),
-                RetryLimit = 4
+                RetryLimit = retryLimit
             };
 
             using (var client = Ignition.StartClient(cfg))
@@ -674,7 +676,11 @@ namespace Apache.Ignite.Core.Tests.Client
                 Ignition.StopAll(true);
 
                 var ex = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
-                StringAssert.StartsWith("Operation failed after 4 retries", ex.Message);
+                StringAssert.StartsWith($"Operation failed after {retryLimit} retries", ex.Message);
+
+                Assert.IsNotNull(ex.InnerException);
+                Assert.IsInstanceOf<AggregateException>(ex.InnerException);
+                Assert.AreEqual(retryLimit, ((AggregateException)ex.InnerException).InnerExceptions.Count);
             }
         }
 
