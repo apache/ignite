@@ -25,3 +25,22 @@ SELECT COUNT(*), COUNT(i), COUNT(j), COUNT(COALESCE(i, j)), COUNT(null) FROM int
 4
 5
 0
+
+# Multiple arguments are not supported as it is not a part of SQL standard.
+statement error
+SELECT COUNT(null, null) FROM integers
+
+statement error
+SELECT COUNT(1, null) FROM integers
+
+statement error
+SELECT COUNT(i, null) FROM integers
+
+statement error
+SELECT COUNT(null, 1) FROM integers
+
+statement error
+SELECT COUNT(null, j) FROM integers
+
+statement error
+SELECT COUNT(i, j) FROM integers
