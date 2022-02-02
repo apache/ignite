@@ -143,6 +143,7 @@ namespace Apache.Ignite.Core.Impl.Client
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
             var attempt = 0;
+            List<Exception> errors = null;
 
             while (true)
             {
@@ -154,8 +155,25 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     if (!ShouldRetry(attempt, e, opId))
                     {
-                        // TODO: Throw with more details, like how many attempts were performed and all the errors?
-                        throw;
+                        if (errors == null)
+                        {
+                            throw;
+                        }
+
+                        var inner = new AggregateException(errors);
+
+                        throw new IgniteClientException(
+                            $"Operation failed after {attempt + 1} tries, examine InnerException for details.",
+                            inner);
+                    }
+
+                    if (errors == null)
+                    {
+                        errors = new List<Exception> { e };
+                    }
+                    else
+                    {
+                        errors.Add(e);
                     }
 
                     attempt++;

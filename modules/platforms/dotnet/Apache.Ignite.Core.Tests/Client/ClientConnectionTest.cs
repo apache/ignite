@@ -661,6 +661,15 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that failed operations not related to connection issues are not retried.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyDoesNotRetryUnrelatedErrors()
+        {
+            Assert.Fail("TODO");
+        }
+
+        /// <summary>
         /// Tests automatic retry with multiple servers.
         /// </summary>
         [Test]
