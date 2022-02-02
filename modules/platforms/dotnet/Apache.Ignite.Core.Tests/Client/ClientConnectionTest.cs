@@ -807,6 +807,32 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests custom retry policy.
+        /// </summary>
+        [Test]
+        public void TestCustomRetryPolicy()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new TestRetryPolicy(ClientOperationType.CacheGetNames),
+                RetryLimit = 2
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
+
+                Ignition.StopAll(true);
+
+                var errorWithRetry = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+                var errorWithoutRetry = Assert.Throws<IgniteClientException>(() => client.GetCluster().GetNodes());
+            }
+        }
+
+        /// <summary>
         /// Tests that client stops it's receiver thread upon disposal.
         /// </summary>
         [Test]
