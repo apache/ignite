@@ -702,8 +702,8 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Action checkOperation = partitionAware
                     ? async
-                        ? (Action)(() => Assert.IsFalse(cache.ContainsKey(1)))
-                        : () => Assert.IsFalse(cache.ContainsKeyAsync(1).Result)
+                        ? (Action)(() => Assert.IsFalse(cache.ContainsKeyAsync(1).Result))
+                        : () => Assert.IsFalse(cache.ContainsKey(1))
                     : async
                         ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>("org.apache.ignite.internal.client.thin.TestTask", null).Result))
                         : () => Assert.AreEqual(1, client.GetCacheNames().Count);
