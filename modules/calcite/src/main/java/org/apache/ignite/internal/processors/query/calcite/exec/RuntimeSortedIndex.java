@@ -158,7 +158,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < 0))
+            if (idx == rows.size() || (upper != null && comp.compare(rows.get(idx), upper) > 0))
                 return false;
 
             row = rows.get(idx++);

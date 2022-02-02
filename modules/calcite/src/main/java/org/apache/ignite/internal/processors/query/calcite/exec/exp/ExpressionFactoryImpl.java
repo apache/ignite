@@ -154,6 +154,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 Object obj1 = handler.get(x, o1);
                 Object obj2 = handler.get(x, o2);
 
+                // TODO Fix comparator.
+/*
+                if (obj2 == null)
+                    return 0;
+*/
+
                 boolean o1Comparable = obj1 instanceof Comparable;
                 boolean o2Comparable = obj2 instanceof Comparable;
 
@@ -178,6 +184,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return (o1, o2) -> {
             final Comparable c1 = (Comparable)handler.get(x, o1);
             final Comparable c2 = (Comparable)handler.get(x, o2);
+
+            // TODO Fix comparator.
+/*
+            if (c2 == null)
+                return 0;
+*/
+
             return RelFieldCollation.compare(c2, c1, -nullComparison);
         };
     }

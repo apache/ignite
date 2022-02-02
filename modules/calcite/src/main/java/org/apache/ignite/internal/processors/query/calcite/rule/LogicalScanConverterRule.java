@@ -107,7 +107,8 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     rel.projects(),
                     rel.condition(),
                     rel.indexConditions(),
-                    rel.requiredColumns()
+                    rel.requiredColumns(),
+                    idx.collation()
                 );
             }
         };
@@ -160,7 +161,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
     }
 
     /** */
-    private static Mappings.TargetMapping createMapping(
+    public static Mappings.TargetMapping createMapping(
         List<RexNode> projects,
         ImmutableBitSet requiredColumns,
         int tableRowSize

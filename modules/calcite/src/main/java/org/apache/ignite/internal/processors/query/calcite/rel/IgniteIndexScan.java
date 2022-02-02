@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rex.RexNode;
@@ -38,13 +39,18 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** */
     private final long sourceId;
 
+    /** Index collation. */
+    private final RelCollation collation;
+
     /**
      * Constructor used for deserialization.
      *
      * @param input Serialized representation.
      */
     public IgniteIndexScan(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE, input.getCollation()));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
+
+        collation = input.getCollation();
 
         Object srcIdObj = input.get("sourceId");
         if (srcIdObj != null)
@@ -62,6 +68,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param proj Projects.
      * @param cond Filters.
      * @param requiredCols Participating columns.
+     * @param collation Index collation.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
@@ -71,9 +78,10 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable IndexConditions idxCond,
-        @Nullable ImmutableBitSet requiredCols
+        @Nullable ImmutableBitSet requiredCols,
+        @Nullable RelCollation collation
     ) {
-        this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols);
+        this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols, collation);
     }
 
     /**
@@ -85,6 +93,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param proj Projects.
      * @param cond Filters.
      * @param requiredCols Participating colunms.
+     * @param collation Index collation.
      */
     private IgniteIndexScan(
         long sourceId,
@@ -95,11 +104,13 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable IndexConditions idxCond,
-        @Nullable ImmutableBitSet requiredCols
+        @Nullable ImmutableBitSet requiredCols,
+        @Nullable RelCollation collation
     ) {
         super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
 
         this.sourceId = sourceId;
+        this.collation = collation;
     }
 
     /** {@inheritDoc} */
@@ -122,12 +133,17 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns);
+            idxName, projects, condition, idxCond, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns);
+            idxName, projects, condition, idxCond, requiredColumns, collation);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelCollation collation() {
+        return collation;
     }
 }
