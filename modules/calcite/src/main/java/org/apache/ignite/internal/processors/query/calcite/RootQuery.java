@@ -67,7 +67,7 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** Parameters. */
     private final Object[] params;
 
-    /** Remote nodes unfinished fragments count. AtomicInteger here used just as int holder, no multithreading here. */
+    /** Remote nodes unfinished fragments count. AtomicInteger used just as int holder, there is no concurrency here. */
     private final Map<UUID, AtomicInteger> remoteFragments;
 
     /** Node to fragment. */
