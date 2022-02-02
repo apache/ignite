@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
-                catch (IgniteClientException e)
+                catch (Exception e)
                 {
                     if (!HandleOpError(e, opId, ref attempt, ref errors))
                     {
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
-                catch (IgniteClientException e)
+                catch (Exception e)
                 {
                     if (!HandleOpError(e, opId, ref attempt, ref errors))
                     {
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     return await socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc).ConfigureAwait(false);
                 }
-                catch (IgniteClientException e)
+                catch (Exception e)
                 {
                     if (!HandleOpError(e, opId, ref attempt, ref errors))
                     {
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     return await GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc)
                         .ConfigureAwait(false);
                 }
-                catch (IgniteClientException e)
+                catch (Exception e)
                 {
                     if (!HandleOpError(e, opId, ref attempt, ref errors))
                     {
@@ -999,10 +999,21 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>
         /// <c>true</c> if the operation should be retried on another connection, <c>false</c> otherwise.
         /// </returns>
-        private bool ShouldRetry(IgniteClientException exception, ClientOp op, int attempt)
+        private bool ShouldRetry(Exception exception, ClientOp op, int attempt)
         {
-            // TODO: Only connection errors should be retried - check inner exception.
-            // Do not retry failed serialization errors, failed compute tasks, etc.
+            var e = exception;
+
+            while (e != null && !(e is SocketException))
+            {
+                e = e.InnerException;
+            }
+
+            if (e == null)
+            {
+                // Only retry socket exceptions.
+                return false;
+            }
+
             if (_config.RetryPolicy == null)
             {
                 return false;
@@ -1035,7 +1046,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="errors">Previous errors.</param>
         /// <returns>True if the error was handled, false otherwise.</returns>
         private bool HandleOpError(
-            IgniteClientException exception,
+            Exception exception,
             ClientOp op,
             ref int attempt,
             ref List<Exception> errors)

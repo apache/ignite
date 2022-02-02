@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
+    using System;
     using Apache.Ignite.Core.Client;
 
     /// <summary>
@@ -35,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteClientConfiguration configuration,
             ClientOperationType operation,
             int iteration,
-            IgniteClientException exception)
+            Exception exception)
         {
             Configuration = configuration;
             Operation = operation;
@@ -53,6 +54,6 @@ namespace Apache.Ignite.Core.Impl.Client
         public int Iteration { get; }
 
         /** <inheritDoc /> */
-        public IgniteClientException Exception { get; }
+        public Exception Exception { get; }
     }
 }

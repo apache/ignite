@@ -692,6 +692,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     string.Format("127.0.0.1:{0}..{1}", port + 1, port + 2)
                 },
                 RetryPolicy = new ClientRetryAllPolicy(),
+                RetryLimit = 3,
                 EnablePartitionAwareness = partitionAware
             };
 

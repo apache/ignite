@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System;
+
     /// <summary>
     /// Retry policy context. See <see cref="IClientRetryPolicy.ShouldRetry"/>.
     /// </summary>
@@ -40,6 +42,6 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets the exception that caused current retry iteration.
         /// </summary>
-        IgniteClientException Exception { get; }
+        Exception Exception { get; }
     }
 }
