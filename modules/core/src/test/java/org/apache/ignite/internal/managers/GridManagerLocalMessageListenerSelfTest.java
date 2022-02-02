@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.managers;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -141,6 +148,22 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
         assertTrue(mgr.enabled());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLifecicleAwareListener() throws Exception {
+        TestLocalListener lsnr = new TestLocalListener();
+
+        IgniteConfiguration cfg = getConfiguration().setLocalEventListeners(Collections.singletonMap(lsnr, new int[]{1}));
+
+        try (Ignite ignite = startGrid(cfg)) {
+            assertTrue(lsnr.isStarted);
+        }
+
+        assertTrue(lsnr.isStoped);
+    }
+
     /** */
     private static class Manager extends GridManagerAdapter<IgniteSpi> {
         /**
@@ -225,6 +248,40 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
                     factory.register(DIRECT_TYPE, GridIoUserMessage::new);
                 }
             });
+        }
+    }
+
+    /** */
+    private static class TestLocalListener implements IgnitePredicate<Event>, LifecycleAware {
+        /** Is started. */
+        private boolean isStarted;
+
+        /** Is stoped. */
+        private boolean isStoped;
+
+        /** */
+        public boolean isStarted() {
+            return isStarted;
+        }
+
+        /** */
+        public boolean isStoped() {
+            return isStoped;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Event evt) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteException {
+            isStarted = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() throws IgniteException {
+            isStoped = true;
         }
     }
 }
