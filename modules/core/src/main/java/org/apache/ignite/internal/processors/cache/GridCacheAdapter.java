@@ -4577,12 +4577,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             else if (ctx.gate().isStopped())
                                 fut0 = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
                             else {
+                                ctx.operationContextPerCall(opCtx);
+                                ctx.shared().txContextReset();
+
                                 try {
-                                    fut0 = op.op(tx0, opCtx).chain(clo);
+                                    fut0 = op.op(tx0).chain(clo);
                                 }
                                 finally {
                                     // It is necessary to clear tx context in this thread as well.
                                     ctx.shared().txContextReset();
+                                    ctx.operationContextPerCall(null);
                                 }
                             }
 
@@ -4614,7 +4618,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             IgniteInternalFuture<T> f;
 
             try {
-                f = op.op(tx, opCtx).chain(clo);
+                f = op.op(tx).chain(clo);
             }
             finally {
                 // It is necessary to clear tx context in this thread as well.
@@ -5705,10 +5709,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param tx Transaction.
-         * @param opCtx Operation context.
          * @return Operation future.
          */
-        public IgniteInternalFuture<T> op(final GridNearTxLocal tx, CacheOperationContext opCtx) {
+        public IgniteInternalFuture<T> op(final GridNearTxLocal tx) {
             AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
             if (txTopVer != null)
@@ -5722,7 +5725,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (topFut == null || topFut.isDone())
                 return op(tx, topVer);
             else
-                return waitTopologyFuture(topFut, topVer, tx, opCtx);
+                return waitTopologyFuture(topFut, topVer, tx, ctx.operationContextPerCall());
         }
 
         /**
