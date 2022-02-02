@@ -658,7 +658,24 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailoverWithRetryPolicyThrowsOnRetryCountExceeded()
         {
-            Assert.Fail("TODO");
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryAllPolicy(),
+                RetryLimit = 4
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
+
+                Ignition.StopAll(true);
+
+                var ex = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+                StringAssert.StartsWith("Operation failed after 4 retries", ex.Message);
+            }
         }
 
         /// <summary>

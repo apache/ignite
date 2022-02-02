@@ -1061,7 +1061,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 var inner = new AggregateException(errors);
 
                 throw new IgniteClientException(
-                    $"Operation failed after {attempt + 1} tries, examine InnerException for details.",
+                    $"Operation failed after {attempt} retries, examine InnerException for details.",
                     inner);
             }
 
