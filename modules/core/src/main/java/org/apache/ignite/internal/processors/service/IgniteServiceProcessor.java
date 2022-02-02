@@ -1061,37 +1061,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
-        if (hasLocalNode(prj)) {
-            ServiceContextImpl ctx = serviceContext(name);
-
-            if (ctx != null && !ctx.isStatisticsEnabled()) {
-                Service srvc = ctx.service();
-
-                if (srvc != null && callAttrsProvider == null) {
-                    if (srvcCls.isAssignableFrom(srvc.getClass()))
-                        return (T)srvc;
-                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
-                        throw new IgniteException("Service does not implement specified interface [srvcCls="
-                                + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-                    }
-                }
-            }
-        }
-
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callAttrsProvider, keepBinary).proxy();
-    }
-
-    /**
-     * @param prj Grid nodes projection.
-     * @return Whether given projection contains any local node.
-     */
-    private boolean hasLocalNode(ClusterGroup prj) {
-        for (ClusterNode n : prj.nodes()) {
-            if (n.isLocal())
-                return true;
-        }
-
-        return false;
     }
 
     /**
