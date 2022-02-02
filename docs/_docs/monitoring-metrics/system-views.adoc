@@ -950,3 +950,16 @@ The STATISTICS_PARTITION_DATA view contains information about link:SQL/sql-stati
 |VERSION |BIGINT |Statistics version.
 |LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
 |===
+
+== SNAPSHOT
+
+The SNAPSHOT view exposes information about local snapshots.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NAME | VARCHAR | Snapshot name.
+| CONSISTENT_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
+| BASELINE_NODES | VARCHAR | Baseline nodes affected by the snapshot.
+| CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
+|===
