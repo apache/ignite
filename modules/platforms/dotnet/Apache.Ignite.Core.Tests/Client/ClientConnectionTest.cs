@@ -647,9 +647,31 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests automatic retry with one server.
         /// </summary>
         [Test]
-        public void TestFailoverWithRetryPolicyOneNode()
+        public void TestFailoverWithRetryPolicyReconnectsToNewNode()
         {
-            Assert.Fail("TODO");
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryReadPolicy()
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var restartTask = Task.Run(() =>
+                {
+                    Ignition.StopAll(true);
+                    Thread.Sleep(100);
+                    Ignition.Start(TestUtils.GetTestConfiguration());
+                });
+
+                while (!restartTask.IsCompleted)
+                {
+                    // Operations do not fail while the only node is being restarted.
+                    Assert.AreEqual(0, client.GetCacheNames().Count);
+                }
+            }
         }
 
         /// <summary>
