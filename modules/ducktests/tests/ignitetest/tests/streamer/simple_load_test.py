@@ -27,7 +27,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 
 NODE_COUNT = 48
-MAX_DATA_SEGMENT = 12_000_000_000
+MAX_DATA_SEGMENT = 10_000_000_000
 # NODE_COUNT = 4
 # MAX_DATA_SEGMENT = 100_000_000
 
@@ -40,11 +40,11 @@ class SimpleStreamerTest(IgniteTest):
     # @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[1], cache_count=[50], preloaders=[1, 3], threads=[4, 16, 64, 128],
-              jvm_opts=[['-Xmx10G'], ['-Xmx5G'], ['-Xmx3G']])
-    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 133), entry_size=133)
-    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 1057), entry_size=1057)
-    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 5047), entry_size=5047)
-    # @defaults(backups=[1], cache_count=[10], preloaders=[1], threads=[2], jvm_opts=['-Xmx256m', '-Xms256m'])
+              jvm_opts=[['-Xmx10G'], ['-Xmx5G'], ['-Xmx2G']])
+    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 133)), entry_size=133)
+    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 1057)), entry_size=1057)
+    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 5047)), entry_size=5047)
+    # @defaults(backups=[1], cache_count=[10], preloaders=[1], threads=[2], jvm_opts=['-Xmx256m'])
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 133), entry_size=133)
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 1057), entry_size=1057)
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 5047), entry_size=5047)
