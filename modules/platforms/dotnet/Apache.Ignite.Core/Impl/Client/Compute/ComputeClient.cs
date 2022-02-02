@@ -63,7 +63,21 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
-            return ExecuteJavaTaskAsync<TRes>(taskName, taskArg).Result;
+            try
+            {
+                return ExecuteJavaTaskAsync<TRes>(taskName, taskArg).GetAwaiter().GetResult();
+            }
+            catch (AggregateException e)
+            {
+                var inner = e.GetBaseException() as IgniteClientException;
+
+                if (inner == null)
+                {
+                    throw;
+                }
+
+                throw new IgniteClientException(inner.Message, e, inner.StatusCode);
+            }
         }
 
         /** <inheritdoc /> */
