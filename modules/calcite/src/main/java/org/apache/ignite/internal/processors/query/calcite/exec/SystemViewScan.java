@@ -118,7 +118,7 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
 
                 Object val = rowHnd.get(i, searchValues);
 
-                if (val != null) {
+                if (val != ectx.unspecifiedValue()) {
                     if (filterMap == null)
                         filterMap = new HashMap<>();
 

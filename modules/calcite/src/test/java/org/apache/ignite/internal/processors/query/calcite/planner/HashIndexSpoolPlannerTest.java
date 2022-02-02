@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
@@ -101,9 +99,9 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertNotNull(searchRow);
         assertEquals(3, searchRow.size());
 
-        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
-        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertNull(searchRow.get(0));
         assertTrue(searchRow.get(1) instanceof RexFieldAccess);
+        assertNull(searchRow.get(2));
     }
 
     /** */
@@ -159,15 +157,15 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteHashIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteHashIndexSpool.class));
 
-        List<RexNode> searcRow = idxSpool.searchRow();
+        List<RexNode> searchRow = idxSpool.searchRow();
 
-        assertNotNull(searcRow);
-        assertEquals(4, searcRow.size());
+        assertNotNull(searchRow);
+        assertEquals(4, searchRow.size());
 
-        assertTrue(((RexLiteral)searcRow.get(0)).isNull());
-        assertTrue(searcRow.get(1) instanceof RexFieldAccess);
-        assertTrue(searcRow.get(2) instanceof RexFieldAccess);
-        assertTrue(((RexLiteral)searcRow.get(3)).isNull());
+        assertNull(searchRow.get(0));
+        assertTrue(searchRow.get(1) instanceof RexFieldAccess);
+        assertTrue(searchRow.get(2) instanceof RexFieldAccess);
+        assertNull(searchRow.get(3));
     }
 
     /**
@@ -227,8 +225,8 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertNotNull(searchRow);
         assertEquals(3, searchRow.size());
 
-        assertTrue(((RexLiteral)searchRow.get(0)).isNull());
-        assertTrue(((RexLiteral)searchRow.get(2)).isNull());
+        assertNull(searchRow.get(0));
         assertTrue(searchRow.get(1) instanceof RexFieldAccess);
+        assertNull(searchRow.get(2));
     }
 }

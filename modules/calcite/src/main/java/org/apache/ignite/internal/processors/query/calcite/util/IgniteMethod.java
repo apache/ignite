@@ -39,6 +39,8 @@ public enum IgniteMethod {
         Object.class, Object.class),
     /** See {@link ExecutionContext#rowHandler()} */
     CONTEXT_ROW_HANDLER(ExecutionContext.class, "rowHandler"),
+    /** See {@link ExecutionContext#unspecifiedValue()} */
+    CONTEXT_UNSPECIFIED_VALUE(ExecutionContext.class, "unspecifiedValue"),
     /** See {@link ExecutionContext#getCorrelated(int)} */
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
     /** See {@link SingleScalar#execute(ExecutionContext, Object, Object)} */

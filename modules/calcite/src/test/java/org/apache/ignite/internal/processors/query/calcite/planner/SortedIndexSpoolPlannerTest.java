@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -99,18 +97,18 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertNotNull(lBound);
         assertEquals(3, lBound.size());
 
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertNull(lBound.get(0));
         assertTrue(lBound.get(1) instanceof RexFieldAccess);
+        assertNull(lBound.get(2));
 
         List<RexNode> uBound = idxSpool.indexCondition().upperBound();
 
         assertNotNull(uBound);
         assertEquals(3, uBound.size());
 
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
+        assertNull(uBound.get(0));
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
+        assertNull(uBound.get(2));
     }
 
     /**
@@ -176,19 +174,19 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertNotNull(lBound);
         assertEquals(4, lBound.size());
 
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(((RexLiteral)lBound.get(3)).isNull());
+        assertNull(lBound.get(0));
         assertTrue(lBound.get(1) instanceof RexFieldAccess);
+        assertNull(lBound.get(2));
+        assertNull(lBound.get(3));
 
         List<RexNode> uBound = idxSpool.indexCondition().upperBound();
 
         assertNotNull(uBound);
         assertEquals(4, uBound.size());
 
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
-        assertTrue(((RexLiteral)lBound.get(3)).isNull());
+        assertNull(uBound.get(0));
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
+        assertNull(uBound.get(2));
+        assertNull(uBound.get(3));
     }
 }
