@@ -810,14 +810,16 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests custom retry policy.
         /// </summary>
         [Test]
-        public void TestCustomRetryPolicy()
+        public void TestCustomRetryPolicyIsInvokedWithCorrectContext()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var retryPolicy = new TestRetryPolicy(ClientOperationType.CacheGetNames);
 
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new[] { "127.0.0.1" },
-                RetryPolicy = new TestRetryPolicy(ClientOperationType.CacheGetNames),
+                RetryPolicy = retryPolicy,
                 RetryLimit = 2
             };
 
@@ -832,6 +834,20 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 StringAssert.StartsWith("Client connection has failed", errorWithoutRetry.Message);
                 StringAssert.StartsWith("Operation failed after 2 retries", errorWithRetry.Message);
+
+                Assert.AreEqual(3, retryPolicy.Invocations.Count);
+
+                Assert.AreEqual(ClientOperationType.ClusterGroupGetNodes, retryPolicy.Invocations[0].Operation);
+                Assert.AreEqual(0, retryPolicy.Invocations[0].Iteration);
+                Assert.IsInstanceOf<IgniteClientException>(retryPolicy.Invocations[0].Exception);
+                Assert.AreSame(retryPolicy, retryPolicy.Invocations[0].Configuration.RetryPolicy);
+                Assert.AreEqual(2, retryPolicy.Invocations[0].Configuration.RetryLimit);
+
+                Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[1].Operation);
+                Assert.AreEqual(0, retryPolicy.Invocations[1].Iteration);
+
+                Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[2].Operation);
+                Assert.AreEqual(1, retryPolicy.Invocations[2].Iteration);
             }
         }
 

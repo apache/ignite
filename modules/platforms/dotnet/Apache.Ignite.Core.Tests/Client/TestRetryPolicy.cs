@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the invocations.
         /// </summary>
-        public IReadOnlyCollection<IClientRetryPolicyContext> Invocations => _invocations;
+        public IReadOnlyList<IClientRetryPolicyContext> Invocations => _invocations;
 
         /** <inheritDoc /> */
         public bool ShouldRetry(IClientRetryPolicyContext context)
