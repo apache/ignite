@@ -333,6 +333,11 @@
                     <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="retryLimit" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Operation retry limit when RetryPolicy is set.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
