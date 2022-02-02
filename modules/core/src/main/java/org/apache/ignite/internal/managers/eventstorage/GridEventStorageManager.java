@@ -274,7 +274,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null)
-            U.stopLifecycleAware(log, ctx.config().getLocalEventListeners().keySet());
+            U.stopLifecycleAware(log, evtLsnrs.keySet());
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
