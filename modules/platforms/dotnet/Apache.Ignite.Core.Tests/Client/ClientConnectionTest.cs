@@ -673,14 +673,26 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests automatic retry with multiple servers.
         /// </summary>
         [Test]
-        public void TestFailoverWithRetryPolicy(
+        public void TestFailoverWithRetryPolicyCompletesOperationWithoutException(
             [Values(true, false)] bool async,
             [Values(true, false)] bool partitionAware)
         {
             // Start 3 nodes.
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "0"));
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "1"));
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+            Func<string, IgniteConfiguration> getConfig = name =>
+                new IgniteConfiguration(TestUtils.GetTestConfiguration(name: name))
+                {
+                    ClientConnectorConfiguration = new ClientConnectorConfiguration
+                    {
+                        ThinClientConfiguration = new ThinClientConfiguration
+                        {
+                            MaxActiveComputeTasksPerConnection = 1
+                        }
+                    }
+                };
+
+            Ignition.Start(getConfig("0"));
+            Ignition.Start(getConfig("1"));
+            Ignition.Start(getConfig("2"));
 
             // Connect client.
             var port = IgniteClientConfiguration.DefaultPort;
@@ -701,12 +713,14 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var cache = client.GetOrCreateCache<int, int>("c");
 
+                // Check all DoOp overloads.
                 Action checkOperation = partitionAware
                     ? async
                         ? (Action)(() => Assert.IsFalse(cache.ContainsKeyAsync(1).Result))
                         : () => Assert.IsFalse(cache.ContainsKey(1))
                     : async
-                        ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>("org.apache.ignite.internal.client.thin.TestTask", null).Result))
+                        ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>(
+                            "org.apache.ignite.internal.client.thin.TestTask", null).Result))
                         : () => Assert.AreEqual(1, client.GetCacheNames().Count);
 
                 checkOperation();
