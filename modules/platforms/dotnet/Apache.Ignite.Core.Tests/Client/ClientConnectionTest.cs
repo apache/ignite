@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
+    using Apache.Ignite.Core.Tests.Client.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -666,7 +667,22 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailoverWithRetryPolicyDoesNotRetryUnrelatedErrors()
         {
-            Assert.Fail("TODO");
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryAllPolicy()
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var ex = Assert.Catch<Exception>(() =>
+                    client.GetCompute().ExecuteJavaTask<object>(ComputeClientTests.TestTask, null));
+
+                StringAssert.StartsWith(
+                    "Compute grid functionality is disabled for thin clients", ex.GetInnermostException().Message);
+            }
         }
 
         /// <summary>
@@ -720,7 +736,7 @@ namespace Apache.Ignite.Core.Tests.Client
                         : () => Assert.IsFalse(cache.ContainsKey(1))
                     : async
                         ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>(
-                            "org.apache.ignite.internal.client.thin.TestTask", null).Result))
+                            ComputeClientTests.TestTask, null).Result))
                         : () => Assert.AreEqual(1, client.GetCacheNames().Count);
 
                 checkOperation();
