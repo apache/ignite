@@ -43,6 +43,15 @@ import static org.apache.ignite.internal.commandline.consistency.ConsistencySubC
  *
  */
 public class ConsistencyCommand extends AbstractCommand<Object> {
+    /** Cache. */
+    public static final String CACHE = "--cache";
+
+    /** Partition. */
+    public static final String PARTITION = "--partition";
+
+    /** Strategy. */
+    public static final String STRATEGY = "--strategy";
+
     /** Command argument. */
     private VisorConsistencyRepairTaskArg cmdArg;
 
@@ -132,10 +141,48 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
         cmd = of(argIter.nextArg("Expected consistency action."));
 
         if (cmd == REPAIR) {
-            String cacheName = argIter.nextArg("Expected cache name.");
-            int part = argIter.nextNonNegativeIntArg("Expected partition.");
+            String cacheName = null;
+            int part = -1;
+            ReadRepairStrategy strategy = null;
 
-            ReadRepairStrategy strategy = ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy."));
+            while (argIter.hasNextArg()) {
+                String arg = argIter.peekNextArg();
+
+                if (CACHE.equals(arg) || PARTITION.equals(arg) || STRATEGY.equals(arg)) {
+                    arg = argIter.nextArg("Expected parameter key.");
+
+                    switch (arg) {
+                        case CACHE:
+                            cacheName = argIter.nextArg("Expected cache name.");
+
+                            break;
+
+                        case PARTITION:
+                            part = argIter.nextNonNegativeIntArg("Expected partition.");
+
+                            break;
+
+                        case STRATEGY:
+                            strategy = ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy."));
+
+                            break;
+
+                        default:
+                            throw new IllegalArgumentException("Illegal argument: " + arg);
+                    }
+                }
+                else
+                    break;
+            }
+
+            if (cacheName == null)
+                throw new IllegalArgumentException("Cache name argument missed.");
+
+            if (part == -1)
+                throw new IllegalArgumentException("Partition argument missed.");
+
+            if (strategy == null)
+                throw new IllegalArgumentException("Strategy argument missed.");
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
         }

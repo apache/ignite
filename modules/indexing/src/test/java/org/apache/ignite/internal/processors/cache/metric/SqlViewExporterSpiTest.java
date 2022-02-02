@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
@@ -416,6 +417,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
+            "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
             "VIEWS",
@@ -1159,6 +1161,30 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(waitForCondition(() -> execute(ignite1,
             "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?", name, val).size() == 1,
             getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        String snap0 = "testSnapshot0";
+        String snap1 = "testSnapshot1";
+
+        int nodesCnt = G.allGrids().size();
+
+        assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
+
+        ignite0.snapshot().createSnapshot(snap1).get();
+
+        assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0,
+            "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
     }
 
     /**

@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
@@ -314,7 +315,10 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-            execute("--consistency", "repair", consistencyCacheName, "0", ReadRepairStrategy.LWW.toString()));
+            execute("--consistency", "repair",
+                ConsistencyCommand.STRATEGY, ReadRepairStrategy.LWW.toString(),
+                ConsistencyCommand.PARTITION, "0",
+                ConsistencyCommand.CACHE, consistencyCacheName));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
         assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);
