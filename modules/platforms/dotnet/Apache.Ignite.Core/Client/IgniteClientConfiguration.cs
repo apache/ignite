@@ -253,8 +253,7 @@ namespace Apache.Ignite.Core.Client
         /// <para />
         /// Default is null: operations won't be retried.
         /// <para />
-        /// See also <see cref="ClientRetryAllPolicy"/>, <see cref="ClientRetryNonePolicy"/>,
-        /// <see cref="ClientRetryReadPolicy"/>, <see cref="RetryLimit"/>.
+        /// See also <see cref="ClientRetryAllPolicy"/>, <see cref="ClientRetryReadPolicy"/>, <see cref="RetryLimit"/>.
         /// </summary>
         public IClientRetryPolicy RetryPolicy { get; set; }
 
