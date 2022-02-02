@@ -153,30 +153,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
                 catch (IgniteClientException e)
                 {
-                    if (!ShouldRetry(attempt, e, opId))
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
                     {
-                        if (errors == null)
-                        {
-                            throw;
-                        }
-
-                        var inner = new AggregateException(errors);
-
-                        throw new IgniteClientException(
-                            $"Operation failed after {attempt + 1} tries, examine InnerException for details.",
-                            inner);
+                        throw;
                     }
-
-                    if (errors == null)
-                    {
-                        errors = new List<Exception> { e };
-                    }
-                    else
-                    {
-                        errors.Add(e);
-                    }
-
-                    attempt++;
                 }
             }
         }
@@ -964,13 +944,13 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets a value indicating whether a failed operation should be retried.
         /// </summary>
-        /// <param name="attempt">Current attempt.</param>
         /// <param name="exception">Exception that caused the operation to fail.</param>
         /// <param name="op">Operation code.</param>
+        /// <param name="attempt">Current attempt.</param>
         /// <returns>
         /// <c>true</c> if the operation should be retried on another connection, <c>false</c> otherwise.
         /// </returns>
-        private bool ShouldRetry(int attempt, IgniteClientException exception, ClientOp op)
+        private bool ShouldRetry(IgniteClientException exception, ClientOp op, int attempt)
         {
             // TODO: Only connection errors should be retried - check inner exception.
             // Do not retry failed serialization errors, failed compute tasks, etc.
@@ -995,6 +975,48 @@ namespace Apache.Ignite.Core.Impl.Client
             var ctx = new ClientRetryPolicyContext(_config, publicOpType.Value, attempt, exception);
 
             return _config.RetryPolicy.ShouldRetry(ctx);
+        }
+
+        /// <summary>
+        /// Handles operation error.
+        /// </summary>
+        /// <param name="exception">Error.</param>
+        /// <param name="op">Operation code.</param>
+        /// <param name="attempt">Current attempt.</param>
+        /// <param name="errors">Previous errors.</param>
+        /// <returns>True if the error was handled, false otherwise.</returns>
+        private bool HandleOpError(
+            IgniteClientException exception,
+            ClientOp op,
+            ref int attempt,
+            ref List<Exception> errors)
+        {
+            if (!ShouldRetry(exception, op, attempt))
+            {
+                if (errors == null)
+                {
+                    return false;
+                }
+
+                var inner = new AggregateException(errors);
+
+                throw new IgniteClientException(
+                    $"Operation failed after {attempt + 1} tries, examine InnerException for details.",
+                    inner);
+            }
+
+            if (errors == null)
+            {
+                errors = new List<Exception> { exception };
+            }
+            else
+            {
+                errors.Add(exception);
+            }
+
+            attempt++;
+
+            return true;
         }
     }
 }
