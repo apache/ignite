@@ -827,8 +827,11 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Ignition.StopAll(true);
 
-                var errorWithRetry = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
                 var errorWithoutRetry = Assert.Throws<IgniteClientException>(() => client.GetCluster().GetNodes());
+                var errorWithRetry = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+
+                StringAssert.StartsWith("Client connection has failed", errorWithoutRetry.Message);
+                StringAssert.StartsWith("Operation failed after 2 retries", errorWithRetry.Message);
             }
         }
 
