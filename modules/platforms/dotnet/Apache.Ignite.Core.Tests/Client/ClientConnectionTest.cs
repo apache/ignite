@@ -839,15 +839,17 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Assert.AreEqual(ClientOperationType.ClusterGroupGetNodes, retryPolicy.Invocations[0].Operation);
                 Assert.AreEqual(0, retryPolicy.Invocations[0].Iteration);
-                Assert.IsInstanceOf<IgniteClientException>(retryPolicy.Invocations[0].Exception);
                 Assert.AreSame(retryPolicy, retryPolicy.Invocations[0].Configuration.RetryPolicy);
                 Assert.AreEqual(2, retryPolicy.Invocations[0].Configuration.RetryLimit);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[0].Exception.GetBaseException());
 
                 Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[1].Operation);
                 Assert.AreEqual(0, retryPolicy.Invocations[1].Iteration);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[1].Exception.GetBaseException());
 
                 Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[2].Operation);
                 Assert.AreEqual(1, retryPolicy.Invocations[2].Iteration);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[2].Exception.GetBaseException());
             }
         }
 
