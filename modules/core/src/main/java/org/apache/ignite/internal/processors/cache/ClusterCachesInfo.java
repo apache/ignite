@@ -2300,7 +2300,7 @@ public class ClusterCachesInfo {
             walGloballyEnabled = ctx.cache().context().database().walEnabled(grpId, false);
         else {
             walGloballyEnabled = !CU.isSystemCache(startedCacheCfg.getName()) &&
-                CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getName()).isCdcEnabled();
+                CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getDataRegionName()).isCdcEnabled();
         }
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
