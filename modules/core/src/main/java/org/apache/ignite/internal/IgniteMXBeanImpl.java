@@ -331,8 +331,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
                 .forServers().nodes(), false).get();
         }
         catch (IgniteCheckedException e) {
-            // Convert to deserializable one.
-            throw new JMException(e.getMessage());
+            throw U.jmException(e);
         }
         finally {
             ctx.gateway().readUnlock();
