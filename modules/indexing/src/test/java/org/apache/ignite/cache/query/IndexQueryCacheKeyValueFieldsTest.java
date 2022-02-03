@@ -23,13 +23,16 @@ import javax.cache.Cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 
@@ -40,6 +43,17 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CNT = 10_000;
+
+    /** Whether to escape field names. */
+    protected boolean escape() {
+        return false;
+    }
+
+    /** */
+    @Parameterized.Parameters(name = "escape={0}")
+    public static Object[] params() {
+        return new Object[] { false, true };
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -73,8 +87,10 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
                 new QueryIndex("_VAL")));
 
         return cfg.setCacheConfiguration(
-            new CacheConfiguration<String, Integer>("TEST_CACHE")
-                .setQueryEntities(F.asList(qryEntity)));
+            new CacheConfiguration<String, Integer>(CACHE)
+                .setSqlEscapeAll(escape())
+                .setQueryEntities(F.asList(qryEntity))
+            );
     }
 
     /** */
@@ -85,8 +101,23 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testValueAliasUpperField() {
+        if (escape())
+            failOnEscape("F2", false);
+        else
+            check("F2", false);
+    }
+
+    /** */
+    @Test
     public void testValueField() {
         check("_VAL", false);
+    }
+
+    /** */
+    @Test
+    public void testValueLowerField() {
+        check("_val", false);
     }
 
     /** */
@@ -97,8 +128,23 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testKeyAliasUpperField() {
+        if (escape())
+            failOnEscape("F1", true);
+        else
+            check("F1", true);
+    }
+
+    /** */
+    @Test
     public void testKeyField() {
         check("_KEY", true);
+    }
+
+    /** */
+    @Test
+    public void testKeyLowerField() {
+        check("_key", true);
     }
 
     /** */
@@ -114,7 +160,16 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void failOnEscape(String fld, boolean key) {
+        GridTestUtils.assertThrows(null, () -> {
+            grid(0).cache(CACHE).query(
+                new IndexQuery<String, Integer>(Integer.class).setCriteria(gt(fld, key ? key(0) : 0))
+            ).getAll();
+        }, IgniteException.class, "Failed to parse IndexQuery. No index found for criteria.");
+    }
+
+    /** */
     private static String key(int val) {
-        return String.format("key_%1$" + 5 + "s", val).replace(' ', '0');
+        return String.format("key_%1$5s", val).replace(' ', '0');
     }
 }
