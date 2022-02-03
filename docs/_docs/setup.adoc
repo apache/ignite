@@ -152,7 +152,7 @@ You can enable modules or extensions one by one, as required.
 
 All modules are included in the binary distribution, but by default they
 are disabled (except for the `ignite-core`, `ignite-spring`, and
-`ignite-indexing` modules). Modules can be found in the `lib/optional`
+`ignite-indexing` modules). Modules can be found in the `libs/optional`
 directory of the distribution package (each module is located in a
 separate sub-directory).
 
@@ -162,9 +162,9 @@ Depending on how you use Ignite, you can enable modules or extensions using one 
 the following methods:
 
 * If you use the binary distribution, move the
-`lib/optional/{module-dir}` to the `libs` directory before starting the
+`libs/optional/{module-dir}` to the `libs` directory before starting the
 node.
-* Add libraries from `lib/optional/{module-dir}` to the classpath of
+* Add libraries from `libs/optional/{module-dir}` to the classpath of
 your application.
 * Add a module as a Maven dependency to your project.
 +
