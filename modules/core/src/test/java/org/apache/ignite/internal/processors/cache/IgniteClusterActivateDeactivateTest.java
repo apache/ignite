@@ -1457,6 +1457,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
                 return null;
             }, JMException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                assertNull("A JMX exception should not contain any cause. JMX client might be launched with " +
+                        "other class path witout remote class loading and won't be able to deserialize teh stacktrace.",
+                    e.getCause());
+            }
         }
 
         assertEquals(ACTIVE, ignite.cluster().state());
