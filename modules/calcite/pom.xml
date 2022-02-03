@@ -35,7 +35,7 @@
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
         <!--        <javassist.version>3.28.0-GA</javassist.version>-->
         <jsonpath.version>2.4.0</jsonpath.version>
-        <reflections.version>0.9.10</reflections.version>
+        <reflections.version>0.10.2</reflections.version>
     </properties>
 
     <parent>

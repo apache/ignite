@@ -18,7 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.UUID;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Query mapping context.
@@ -29,6 +34,9 @@ public class MappingQueryContext {
 
     /** */
     private final AffinityTopologyVersion topVer;
+
+    /** */
+    private RelOptCluster cluster;
 
     /** */
     public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
@@ -44,5 +52,17 @@ public class MappingQueryContext {
     /** */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** Creates a cluster. */
+    RelOptCluster cluster() {
+        if (cluster == null) {
+            cluster = RelOptCluster.create(Commons.emptyCluster().getPlanner(), Commons.emptyCluster().getRexBuilder());
+            cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER,
+                Commons.emptyCluster().getPlanner()));
+            cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+        }
+
+        return cluster;
     }
 }

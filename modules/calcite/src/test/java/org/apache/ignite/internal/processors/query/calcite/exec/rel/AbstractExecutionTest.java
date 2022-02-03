@@ -39,6 +39,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -181,6 +182,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
             exchangeSvc.init();
 
             exchangeServices.put(uuid, exchangeSvc);

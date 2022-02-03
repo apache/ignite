@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -45,6 +46,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     /** */
     private String root;
 
+    /** Total count of fragments in query for this node. */
+    private int totalFragmentsCnt;
+
     /** */
     @GridDirectTransient
     private Object[] params;
@@ -54,14 +58,24 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public QueryStartRequest(UUID qryId, String schema, String root, AffinityTopologyVersion ver,
-        FragmentDescription fragmentDesc, Object[] params) {
+    public QueryStartRequest(
+        UUID qryId,
+        String schema,
+        String root,
+        AffinityTopologyVersion ver,
+        FragmentDescription fragmentDesc,
+        int totalFragmentsCnt,
+        Object[] params,
+        @Nullable byte[] paramsBytes
+    ) {
         this.qryId = qryId;
         this.schema = schema;
         this.root = root;
         this.ver = ver;
         this.fragmentDesc = fragmentDesc;
+        this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
+        this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
     }
 
     /** */
@@ -106,11 +120,26 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
+     * @return Total count of fragments in query for this node.
+     */
+    public int totalFragmentsCount() {
+        return totalFragmentsCnt;
+    }
+
+    /**
      * @return Query parameters.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Object[] parameters() {
         return params;
+    }
+
+    /**
+     * @return Query parameters marshalled.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public byte[] parametersMarshalled() {
+        return paramsBytes;
     }
 
     /** {@inheritDoc} */
@@ -177,6 +206,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 writer.incrementState();
 
+            case 6:
+                if (!writer.writeInt("totalFragmentsCnt", totalFragmentsCnt))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -238,6 +272,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 reader.incrementState();
 
+            case 6:
+                totalFragmentsCnt = reader.readInt("totalFragmentsCnt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);
@@ -250,6 +291,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 }

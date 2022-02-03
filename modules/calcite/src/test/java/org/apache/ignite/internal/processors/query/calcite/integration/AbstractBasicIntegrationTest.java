@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -37,6 +36,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -55,9 +55,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
+        // can get control earlier than query leave the running queries registry (need some time for async message
+        // exchange), but eventually, all queries should be closed.
+        assertTrue("Not finished queries found on client", waitForCondition(
+            () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
+
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
+
+            assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
+                0, queryProcessor((IgniteEx)ign).queryRegistry().runningQueries().size());
         }
 
         awaitPartitionMapExchange();
