@@ -35,7 +35,7 @@ access modes (`READ_ONLY`, `READ_WRITE`, `NONSTRICT_READ_WRITE`, and `TRANSACTIO
 * cache transactions, that make `TRANSACTIONAL` mode possible.
 * clustering, with 2 different replication modes: `REPLICATED` and `PARTITIONED`
 
-To start using GridGain as a Hibernate L2 cache, you need to perform 3 simple steps:
+To start using Ignite as a Hibernate L2 cache, you need to perform 3 simple steps:
 
 * Add Ignite libraries to your application's classpath.
 * Enable L2 cache and specify Ignite implementation class in L2 cache configuration.
@@ -233,7 +233,7 @@ $IGNITE_HOME\bin\ignite.bat my-config-folder\my-ignite-configuration.xml
 [NOTE]
 ====
 The nodes may be started on other hosts as well, forming a distributed caching cluster.
-Be sure to specify the right network settings in GridGain configuration file for that.
+Be sure to specify the right network settings in Ignite configuration file for that.
 ====
 
 == Query Cache
