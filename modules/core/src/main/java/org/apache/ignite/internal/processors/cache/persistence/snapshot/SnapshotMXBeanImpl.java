@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
@@ -46,5 +50,21 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public void cancelSnapshot(String snpName) {
         mgr.cancelSnapshot(snpName).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restoreSnapshot(String name, String grpNames) {
+        Set<String> grpNamesSet = F.isEmpty(grpNames) ? null :
+            Arrays.stream(grpNames.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+
+        IgniteFuture<Void> fut = mgr.restoreSnapshot(name, grpNamesSet);
+
+        if (fut.isDone())
+            fut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelSnapshotRestore(String name) {
+        mgr.cancelSnapshotRestore(name).get();
     }
 }

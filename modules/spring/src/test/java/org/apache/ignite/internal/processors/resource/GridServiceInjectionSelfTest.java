@@ -109,9 +109,6 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @Override public Object call() throws Exception {
                 assertNotNull(svc);
 
-                // Ensure proxy instance.
-                assertTrue(svc instanceof Service);
-
                 svc.noop();
 
                 return null;
@@ -204,9 +201,6 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @ServiceResource(serviceName = SERVICE_NAME1, proxyInterface = DummyService.class)
             private void service(DummyService svc) {
                 assertNotNull(svc);
-
-                // Ensure proxy instance.
-                assertTrue(svc instanceof Service);
 
                 this.svc = svc;
             }

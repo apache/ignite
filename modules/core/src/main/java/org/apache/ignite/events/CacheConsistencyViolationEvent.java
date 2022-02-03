@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.util.Map;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -67,28 +68,39 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    final Map<Object, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<Object, Map<ClusterNode, EntryInfo>> entries;
+
+    /** Fixed entries. */
+    private final Map<Object, Object> fixed;
 
     /** Cache name. */
-    final String cacheName;
+    private final String cacheName;
+
+    /** Strategy. */
+    private final ReadRepairStrategy strategy;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
-     *
      * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
+     * @param fixed Collection of fixed entries.
+     * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
         String cacheName,
         ClusterNode node,
         String msg,
-        Map<Object, Map<ClusterNode, EntryInfo>> entries) {
+        Map<Object, Map<ClusterNode, EntryInfo>> entries,
+        Map<Object, Object> fixed,
+        ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
         this.entries = entries;
+        this.fixed = fixed;
+        this.strategy = strategy;
     }
 
     /**
@@ -101,12 +113,30 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     }
 
     /**
+     * Returns a mapping of keys to a collection of fixed entries.
+     *
+     * @return Collection of fixed entries.
+     */
+    public Map<Object, Object> getFixedEntries() {
+        return fixed;
+    }
+
+    /**
      * Returns cache name.
      *
      * @return Cache name.
      */
     public String getCacheName() {
         return cacheName;
+    }
+
+    /**
+     * Returns strategy.
+     *
+     * @return Strategy.
+     */
+    public ReadRepairStrategy getStrategy() {
+        return strategy;
     }
 
     /**

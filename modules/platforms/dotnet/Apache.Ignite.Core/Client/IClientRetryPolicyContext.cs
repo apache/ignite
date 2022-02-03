@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+namespace Apache.Ignite.Core.Client
+{
+    using System;
 
-import org.apache.ignite.cache.CacheMode;
+    /// <summary>
+    /// Retry policy context. See <see cref="IClientRetryPolicy.ShouldRetry"/>.
+    /// </summary>
+    public interface IClientRetryPolicyContext
+    {
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        IgniteClientConfiguration Configuration { get; }
 
-/**
- *
- */
-public class ReplicatedExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+        /// <summary>
+        /// Gets the operation type.
+        /// </summary>
+        ClientOperationType Operation { get; }
+
+        /// <summary>
+        /// Gets the current iteration.
+        /// </summary>
+        int Iteration { get; }
+
+        /// <summary>
+        /// Gets the exception that caused current retry iteration.
+        /// </summary>
+        Exception Exception { get; }
     }
 }

@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.compute;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobAdapter;
 
 /**
  *
  */
-public class ReplicatedImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
+class NoopJob extends ComputeJobAdapter {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @Override public Object execute() throws IgniteException {
+        return null;
     }
 }

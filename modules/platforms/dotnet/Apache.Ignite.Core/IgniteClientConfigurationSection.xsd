@@ -282,6 +282,18 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="retryPolicy" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Retry policy for failed operations.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>
@@ -331,6 +343,11 @@
             <xs:attribute name="password" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="retryLimit" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Operation retry limit when RetryPolicy is set.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>
