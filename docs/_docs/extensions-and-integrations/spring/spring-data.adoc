@@ -287,7 +287,7 @@ System.out.println("\n>>> Top Person with surname 'Smith': " +
 
 == Example
 
-The complete example is available on link: https://github.com/apache/ignite-extensions/tree/master/modules/spring-data-2.0-ext/examples/main[GitHub, windows="_blank"]
+The complete example is available on link:https://github.com/apache/ignite-extensions/tree/master/modules/spring-data-2.0-ext/examples[GitHub, windows="_blank"]
 
 == Tutorial
 
