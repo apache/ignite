@@ -178,13 +178,6 @@ namespace ignite
              */
             SP_WinAsyncClient FindClientLocked(uint64_t id) const;
 
-            /**
-             * Throw window specific error with error code.
-             *
-             * @param msg Error message.
-             */
-            static void ThrowSystemError(const std::string& msg);
-
             /** Flag indicating that pool is stopping. */
             volatile bool stopping;
 

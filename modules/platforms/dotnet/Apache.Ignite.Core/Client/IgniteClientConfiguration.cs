@@ -131,6 +131,9 @@ namespace Apache.Ignite.Core.Client
             {
                 TransactionConfiguration = new TransactionClientConfiguration(cfg.TransactionConfiguration);
             }
+
+            RetryLimit = cfg.RetryLimit;
+            RetryPolicy = cfg.RetryPolicy;
         }
 
         /// <summary>
@@ -243,6 +246,25 @@ namespace Apache.Ignite.Core.Client
         /// See <see cref="ITransactionsClient"/>, <see cref="IIgniteClient.GetTransactions"/>.
         /// </summary>
         public TransactionClientConfiguration TransactionConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the retry policy. When a request fails due to a connection error,
+        /// Ignite will retry the request if the specified policy allows it.
+        /// <para />
+        /// Default is null: operations won't be retried.
+        /// <para />
+        /// See also <see cref="ClientRetryAllPolicy"/>, <see cref="ClientRetryReadPolicy"/>, <see cref="RetryLimit"/>.
+        /// </summary>
+        public IClientRetryPolicy RetryPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the retry limit. When a request fails due to a connection error,
+        /// Ignite will retry the request if the specified <see cref="RetryPolicy"/> allows it. When this property is
+        /// greater than <c>0</c>, Ignite will limit the number of retries.
+        /// <para />
+        /// Default is <c>0</c>: no limit on retries.
+        /// </summary>
+        public int RetryLimit { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

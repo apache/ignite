@@ -283,10 +283,12 @@ tab:C++[]
 ====
 You should be aware:
 
-1. Overloaded service methods have the same metric by the method name.
-2. Service statistics do not take in account serialization and network issues.
-3. Service statistics slows down the invocations of service methods. Probably it's not
-an issue for slow-by-nature jobs like working with a DB.
+1. Direct references to the services like `IgniteServices.service(name)` corrupt the statistics. Use the proxies
+instead (`IgniteServices.serviceProxy(...)`).
+2. Overloaded service methods have the same metric by the method name.
+3. Service statistics do not take in account serialization and network issues.
+4. Service statistics slows down the invocations of service methods. It's not
+an issue for real jobs like working with a DB or a cache.
 ====
 
 // TODO: add how to  call java services from .NET
