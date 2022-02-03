@@ -2039,6 +2039,9 @@ public class GridCacheUtils {
      * @return {@code True} if {@link DataRecord} should be logged into WAL.
      */
     public static boolean isDataRecordsEnabled(CacheGroupContext ctx) {
+        if (ctx.dataRegion() == null)
+            return false;
+
         if (ctx.persistenceEnabled())
             return ctx.walEnabled();
 
