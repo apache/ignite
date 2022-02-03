@@ -57,60 +57,62 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        List<IgniteDataStreamer<Integer, BinaryObject>> streamers = new LinkedList<>();
+//        List<IgniteDataStreamer<Integer, BinaryObject>> streamers = new LinkedList<>();
 
-        CountDownLatch streamersLatch = new CountDownLatch(cacheCnt);
+//        CountDownLatch streamersLatch = new CountDownLatch(cacheCnt);
 
         ExecutorService executorSrvc = Executors.newFixedThreadPool(threads);
 
         for (int i = 1; i <= cacheCnt; i++) {
+            String cacheName = "test-cache-" + i;
+            log.info("Start with " + cacheName);
             IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
-                new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
+                new CacheConfiguration<Integer, BinaryObject>(cacheName)
                     .setBackups(backups));
 
-            IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cache.getName());
-            stmr.future().listen(new IgniteInClosure<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> fut) {
-                    streamersLatch.countDown();
+            try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cache.getName())) {
+//            stmr.future().listen(new IgniteInClosure<IgniteFuture<?>>() {
+//                @Override public void apply(IgniteFuture<?> fut) {
+//                    streamersLatch.countDown();
+//                }
+//            });
+
+//            streamers.add(stmr);
+
+                CompletionService<Void> ecs = new ExecutorCompletionService<>(executorSrvc);
+
+                int cnt = (to - from) / threads;
+                int end = from;
+
+                for (int j = 0; j < threads; j++) {
+                    int start = end;
+                    end += cnt;
+                    if (end > to)
+                        end = to;
+                    ecs.submit(new GenerateCacheDataTask(stmr, entrySize, start, end), null);
                 }
-            });
 
-            streamers.add(stmr);
-
-            CompletionService<Void> ecs = new ExecutorCompletionService<>(executorSrvc);
-
-            int cnt = (to - from) / threads;
-            int end = from;
-
-            for (int j = 0; j < threads; j++) {
-                int start = end;
-                end += cnt;
-                if (end > to)
-                    end = to;
-                ecs.submit(new GenerateCacheDataTask(stmr, entrySize, start, end), null);
+                for (int j = 0; j < threads; j++)
+                    ecs.take().get();
             }
-
-            for (int j = 0; j < threads; j++)
-                ecs.take().get();
-
-            stmr.close(false);
         }
 
+        recordPeakMemory();
         executorSrvc.shutdown();
         try {
             if (executorSrvc.awaitTermination(timeoutSecs, TimeUnit.SECONDS)) {
-                for (IgniteDataStreamer<Integer, BinaryObject> streamer: streamers)
-                    streamer.close(false);
-                streamersLatch.await(timeoutSecs, TimeUnit.SECONDS);
-                recordPeakMemory();
+//                for (IgniteDataStreamer<Integer, BinaryObject> streamer: streamers)
+//                    streamer.close(false);
+//                streamersLatch.await(timeoutSecs, TimeUnit.SECONDS);
+//                recordPeakMemory();
                 markFinished();
             } else {
-                recordPeakMemory();
+//                recordPeakMemory();
                 markBroken(new RuntimeException(String.format("timeout elapsed: %d secs", timeoutSecs)));
             }
         }
         catch (Throwable ex) {
-            recordPeakMemory();
+//            recordPeakMemory();
             markBroken(new RuntimeException(String.format("error occured during execution: %s", ex.getMessage()), ex));
         }
     }

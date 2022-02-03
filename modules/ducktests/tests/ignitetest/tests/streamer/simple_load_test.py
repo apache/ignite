@@ -39,10 +39,11 @@ class SimpleStreamerTest(IgniteTest):
     @cluster(num_nodes=NODE_COUNT - 1)
     # @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(backups=[1], cache_count=[50], preloaders=[1, 3], threads=[4, 16, 64, 128],
+    @defaults(backups=[1], cache_count=[50], preloaders=[3], threads=[4, 16, 64],
               jvm_opts=[['-Xmx10G'], ['-Xmx5G'], ['-Xmx2G']])
     # @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 133)), entry_size=133)
     @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 1057)), entry_size=1057)
+    @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 1057) / 2), entry_size=1057)
     # @parametrize(entry_count=int((NODE_COUNT - 4) * MAX_DATA_SEGMENT / (1.2 * 50 * 2 * 5047)), entry_size=5047)
     # @defaults(backups=[1], cache_count=[10], preloaders=[1], threads=[2], jvm_opts=['-Xmx256m'])
     # @parametrize(entry_count=int((NODE_COUNT - 2) * MAX_DATA_SEGMENT * 0.8 / 50 / 2 / 133), entry_size=133)

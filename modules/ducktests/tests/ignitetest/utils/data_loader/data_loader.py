@@ -103,7 +103,10 @@ class DataLoader:
         :return: Time taken for data preloading.
         """
 
-        config = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
+        config = ignites.config._replace(
+            client_mode=True,
+            discovery_spi=from_ignite_cluster(ignites),
+            data_streamer_thread_pool_size=self.data_load_params.threads)
         if len(self.apps) == 0:
             self.__create_apps(config)
 

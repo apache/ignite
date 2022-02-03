@@ -57,6 +57,10 @@
             <property name="rebalanceThrottle" value="{{ config.rebalance_throttle }}"/>
         {% endif %}
 
+        {% if config.data_streamer_thread_pool_size %}
+            <property name="dataStreamerThreadPoolSize" value="{{ config.data_streamer_thread_pool_size }}"/>
+        {% endif %}
+
         {% if config.metric_exporter %}
             <property name="metricExporterSpi">
                 <bean class="{{ config.metric_exporter }}"/>
