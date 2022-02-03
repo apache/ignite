@@ -64,7 +64,7 @@ public class ScriptTestRunner extends Runner {
             log = new GridTestLog4jLogger();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
 
             log = null;
 
@@ -126,7 +126,8 @@ public class ScriptTestRunner extends Runner {
                     return;
                 }
 
-                runTest(p, notifier);
+                if (Files.isRegularFile(p))
+                    runTest(p, notifier);
             });
         }
         catch (Exception e) {
@@ -147,6 +148,14 @@ public class ScriptTestRunner extends Runner {
 
         String fileName = test.getFileName().toString();
 
+        Description desc = Description.createTestDescription(dirName, fileName);
+
+        if (fileName.endsWith(".test_ignore")) {
+            notifier.fireTestIgnored(desc);
+
+            return;
+        }
+
         if (
             (!fileName.endsWith(".test") && !fileName.endsWith(".test_slow") && testRegex == null)
                 || (testRegex != null && !testRegex.matcher(test.toString()).find())
@@ -154,8 +163,6 @@ public class ScriptTestRunner extends Runner {
             return;
 
         beforeTest();
-
-        Description desc = Description.createTestDescription(dirName, fileName);
 
         notifier.fireTestStarted(desc);
 
