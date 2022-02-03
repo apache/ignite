@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 /**
  *
  */
-public class SingleBackupExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
+public class SingleBackupImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
     @Override protected Integer backupsCount() {
         return 1; // Single backup possible optimisations check.

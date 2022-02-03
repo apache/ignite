@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.internal.processors.cache.consistency.persistence;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.consistency.inmem.AtomicReadRepairTest;
 
 /**
  *
  */
-public class ReplicatedExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
+public class PdsAtomicReadRepairTest extends AtomicReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @Override protected boolean persistenceEnabled() {
+        return true;
     }
 }

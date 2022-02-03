@@ -706,6 +706,55 @@ namespace ignite
             /** Sequence of fibonacci numbers */
             size_t sequence[size];
         };
+
+        /**
+         * Throw platform-specific error.
+         *
+         * @param msg Error message.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowSystemError(const std::string& msg);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description, const std::string& advice);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description);
+
+        /**
+         * Format error message.
+         *
+         * @param description Error description.
+         * @param description Error details.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT std::string FormatErrorMessage(const std::string& description, const std::string& details,
+            const std::string& advice);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description, const std::string& advice);
     }
 }
 

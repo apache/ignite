@@ -16,7 +16,9 @@
  */
 
 #include <iomanip>
+#include <sstream>
 
+#include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
 
 namespace ignite
@@ -227,6 +229,47 @@ namespace ignite
                 dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
             }
             return dump.str();
+        }
+
+        void ThrowSystemError(const std::string &msg)
+        {
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+        }
+
+        void ThrowLastSystemError(const std::string& description, const std::string& advice)
+        {
+            ThrowSystemError(GetLastSystemError(description, advice));
+        }
+
+        void ThrowLastSystemError(const std::string& description)
+        {
+            std::string empty;
+            ThrowLastSystemError(description, empty);
+        }
+
+        std::string FormatErrorMessage(const std::string &description, const std::string &details,
+            const std::string &advice)
+        {
+            std::stringstream messageBuilder;
+            messageBuilder << description;
+            if (!details.empty())
+                messageBuilder << ": " << details;
+
+            if (!advice.empty())
+                messageBuilder << ". " << advice;
+
+            return messageBuilder.str();
+        }
+
+        std::string GetLastSystemError(const std::string& description, const std::string& advice)
+        {
+            return FormatErrorMessage(description, GetLastSystemError(), advice);
+        }
+
+        std::string GetLastSystemError(const std::string &description)
+        {
+            std::string empty;
+            return GetLastSystemError(description, empty);
         }
 
     }
