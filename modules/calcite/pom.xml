@@ -218,7 +218,7 @@
                 <executions>
                     <execution>
                         <id>copy-fmpp-resources</id>
-                        <phase>validate</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
@@ -240,7 +240,7 @@
                 <executions>
                     <execution>
                         <id>unpack-parser-template</id>
-                        <phase>validate</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -270,7 +270,7 @@
                 <executions>
                     <execution>
                         <id>generate-fmpp-sources</id>
-                        <phase>validate</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -284,6 +284,7 @@
                 <executions>
                     <execution>
                         <id>javacc</id>
+                        <phase>process-sources</phase>
                         <goals>
                             <goal>javacc</goal>
                         </goals>
