@@ -44,10 +44,10 @@ public class LifecycleAwareListenerTest extends GridCommonAbstractTest {
 
         try (Ignite ignite = startGrid(cfg)) {
             assertTrue(lsnr.isStarted);
-            assertFalse(lsnr.isStoped);
+            assertFalse(lsnr.isStopped);
         }
 
-        assertTrue(lsnr.isStoped);
+        assertTrue(lsnr.isStopped);
     }
 
     /** */
@@ -55,12 +55,12 @@ public class LifecycleAwareListenerTest extends GridCommonAbstractTest {
         /** Is started. */
         private boolean isStarted;
 
-        /** Is stoped. */
-        private boolean isStoped;
+        /** Is stopped. */
+        private boolean isStopped;
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -72,9 +72,9 @@ public class LifecycleAwareListenerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteException {
-            assertFalse(isStoped);
+            assertFalse(isStopped);
 
-            isStoped = true;
+            isStopped = true;
         }
     }
 }
