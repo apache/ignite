@@ -126,8 +126,7 @@ public class ScriptTestRunner extends Runner {
                     return;
                 }
 
-                if (Files.isRegularFile(p))
-                    runTest(p, notifier);
+                runTest(p, notifier);
             });
         }
         catch (Exception e) {
