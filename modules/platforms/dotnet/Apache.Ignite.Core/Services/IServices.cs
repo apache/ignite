@@ -256,7 +256,8 @@ namespace Apache.Ignite.Core.Services
         ICollection<T> GetServices<T>(string name);
 
         /// <summary>
-        /// Gets a handle on the service.
+        /// Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified
+        /// service.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
@@ -264,7 +265,8 @@ namespace Apache.Ignite.Core.Services
         T GetServiceProxy<T>(string name) where T : class;
 
         /// <summary>
-        /// Gets a handle on the service.
+        /// Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified
+        /// service.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
@@ -274,7 +276,8 @@ namespace Apache.Ignite.Core.Services
         T GetServiceProxy<T>(string name, bool sticky) where T : class;
 
         /// <summary>
-        /// Gets a handle on the service with the specified caller context.
+        /// Gets a handle on remote or local service with the specified caller context. The proxy is dynamically
+        /// created and provided for the specified service.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
@@ -287,7 +290,8 @@ namespace Apache.Ignite.Core.Services
         T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class;
 
         /// <summary>
-        /// Gets a handle on the service as a dynamic object.
+        /// Gets a handle on remote or local service as a dynamic object. The proxy is dynamically created and provided
+        /// for the specified service.
         /// <para />
         /// This method utilizes <c>dynamic</c> feature of the language and does not require any
         /// service interfaces or classes. Java services can be accessed as well as .NET services.
@@ -297,7 +301,8 @@ namespace Apache.Ignite.Core.Services
         dynamic GetDynamicServiceProxy(string name);
 
         /// <summary>
-        /// Gets a handle on the service as a dynamic object.
+        /// Gets a handle on remote or local service as a dynamic object. The proxy is dynamically created and provided
+        /// for the specified service.
         /// <para />
         /// This method utilizes <c>dynamic</c> feature of the language and does not require any
         /// service interfaces or classes. Java services can be accessed as well as .NET services.
@@ -309,7 +314,8 @@ namespace Apache.Ignite.Core.Services
         dynamic GetDynamicServiceProxy(string name, bool sticky);
         
         /// <summary>
-        /// Gets a handle on the service with the specified caller context.
+        /// Gets a handle on remote or local service as a dynamic object with the specified caller context. The proxy
+        /// is dynamically created and provided for the specified service.
         /// <para />
         /// This method utilizes <c>dynamic</c> feature of the language and does not require any
         /// service interfaces or classes. Java services can be accessed as well as .NET services.
