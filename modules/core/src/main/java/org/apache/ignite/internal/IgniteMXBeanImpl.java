@@ -57,7 +57,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void active(boolean active) {
+    @Override public void active(boolean active) throws JMException {
         clusterState(active ? ACTIVE.toString() : INACTIVE.toString(), false);
     }
 
@@ -316,12 +316,12 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void clusterState(String state) {
+    @Override public void clusterState(String state) throws JMException {
         clusterState(state, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void clusterState(String state, boolean forceDeactivation) {
+    @Override public void clusterState(String state, boolean forceDeactivation) throws JMException {
         ClusterState newState = ClusterState.valueOf(state);
 
         ctx.gateway().readLock();
@@ -330,9 +330,9 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
             ctx.state().changeGlobalState(newState, forceDeactivation, ctx.cluster().get()
                 .forServers().nodes(), false).get();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             // Convert to deserializable one.
-            throw new RuntimeException("Unable to change cluster state to '" + state + "': " + e.getMessage());
+            throw new JMException(e.getMessage());
         }
         finally {
             ctx.gateway().readUnlock();

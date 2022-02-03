@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
@@ -390,7 +389,7 @@ public interface IgniteMXBean {
      *
      * @param active Activate/DeActivate flag.
      * @deprecated Use {@link #clusterState(String, boolean)} instead.
-     * @throws IgniteCheckedException if deactivation stopped.
+     * @throws JMException if deactivation is forbidden or stopped.
      */
     @Deprecated
     @MXBeanDescription(
@@ -399,7 +398,7 @@ public interface IgniteMXBean {
     @MXBeanParametersNames(
         "active"
     )
-    public void active(boolean active);
+    public void active(boolean active) throws JMException;
 
     /**
      * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
@@ -673,13 +672,13 @@ public interface IgniteMXBean {
      *
      * @param state String representation of new cluster state.
      * @deprecated Use {@link #clusterState(String, boolean)} instead.
-     * @throws IgniteCheckedException if deactivation stopped.
+     * @throws JMException if deactivation is forbidden or stopped.
      */
     @Deprecated
     @MXBeanDescription("Changes current cluster state.")
     public void clusterState(
         @MXBeanParameter(name = "state", description = "New cluster state.") String state
-    );
+    ) throws JMException;
 
     /**
      * Changes current cluster state.
@@ -689,14 +688,14 @@ public interface IgniteMXBean {
      *
      * @param state String representation of new cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     * @throws IgniteCheckedException if deactivation stopped.
+     * @throws JMException if deactivation is forbidden or stopped.
      */
     @MXBeanDescription("Changes current cluster state.")
     public void clusterState(
         @MXBeanParameter(name = "state", description = "New cluster state.") String state,
         @MXBeanParameter(name = "forceDeactivation",
             description = "If true, cluster deactivation will be forced.") boolean forceDeactivation
-    );
+    ) throws JMException;
 
     /**
      * Gets last cluster state change operation.

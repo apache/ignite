@@ -25,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.JMException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1435,11 +1436,16 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param deactivator Deactivation call to check. Assuming from the mx bean.
      * @param forceDeactivation {@code True} if {@code deactivator} is forced.
      */
-    private void checMXBeanDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation) {
+    private void checMXBeanDeactivation(Ignite ignite, MXAction deactivator, boolean forceDeactivation) {
         assertEquals(ACTIVE, ignite.cluster().state());
 
         if (persistenceEnabled() || forceDeactivation) {
-            deactivator.run();
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                throw new IllegalStateException("Unexpected exception on cluster deactivation.", e);
+            }
 
             assertEquals(INACTIVE, ignite.cluster().state());
 
@@ -1447,10 +1453,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
         else {
             assertThrows(log, () -> {
-                deactivator.run();
+                deactivator.action();
 
                 return null;
-            }, RuntimeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+            }, JMException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
         }
 
         assertEquals(ACTIVE, ignite.cluster().state());
@@ -1813,5 +1819,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 throw new IgniteException(e);
             }
         }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
+    }
+
+    /** An JMX bean call that can throw JMException. */
+    private interface MXAction {
+        /** */
+        void action() throws JMException;
     }
 }
