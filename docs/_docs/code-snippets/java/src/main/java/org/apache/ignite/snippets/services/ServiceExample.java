@@ -172,6 +172,7 @@ public class ServiceExample {
 
         ignite.services().deploy(serviceCfg);
 
+        // NOTE: work via proxy. Direct references like 'IgniteServices#service()' corrupt the statistics.
         MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
         //end::start-with-statistics[]
 

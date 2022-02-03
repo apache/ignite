@@ -165,8 +165,12 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            socket.reset(network::ssl::MakeSecureSocketClient(
-                config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
+            network::ssl::SecureConfiguration sslCfg;
+            sslCfg.certPath = config.GetSslCertFile();
+            sslCfg.keyPath = config.GetSslKeyFile();
+            sslCfg.caPath = config.GetSslCaFile();
+
+            socket.reset(network::ssl::MakeSecureSocketClient(sslCfg));
 
             return SqlResult::AI_SUCCESS;
         }

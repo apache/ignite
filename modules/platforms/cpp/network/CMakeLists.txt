@@ -32,6 +32,7 @@ set(SOURCES
         src/network/network.cpp
         src/network/ssl/secure_data_filter.cpp
         src/network/ssl/secure_socket_client.cpp
+        src/network/ssl/secure_utils.cpp
         src/network/ssl/ssl_gateway.cpp)
 
 if (WIN32)
@@ -83,7 +84,7 @@ foreach(_target_lib IN LISTS _target_libs)
     endif()
 
     if (WIN32)
-        target_link_libraries(${_target_lib} wsock32 ws2_32 iphlpapi)
+        target_link_libraries(${_target_lib} wsock32 ws2_32 iphlpapi crypt32)
     endif()
 
     target_include_directories(${_target_lib} INTERFACE include ${OS_INCLUDE})

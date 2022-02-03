@@ -64,13 +64,14 @@ namespace ignite
         {
             epoll = epoll_create(1);
             if (epoll < 0)
-                ThrowSystemError("Failed to create epoll instance");
+                common::ThrowLastSystemError("Failed to create epoll instance");
 
             stopEvent = eventfd(0, EFD_NONBLOCK);
             if (stopEvent < 0)
             {
+                std::string msg = common::GetLastSystemError("Failed to create stop event instance");
                 close(stopEvent);
-                ThrowSystemError("Failed to create stop event instance");
+                common::ThrowSystemError(msg);
             }
 
             epoll_event event;
@@ -81,9 +82,10 @@ namespace ignite
             int res = epoll_ctl(epoll, EPOLL_CTL_ADD, stopEvent, &event);
             if (res < 0)
             {
+                std::string msg = common::GetLastSystemError("Failed to create stop event instance");
                 close(stopEvent);
                 close(epoll);
-                ThrowSystemError("Failed to add stop event to epoll");
+                common::ThrowSystemError(msg);
             }
 
             stopping = false;
@@ -188,7 +190,7 @@ namespace ignite
             currentClient = currentConnection->ToClient(socketFd);
             bool ok = currentClient.Get()->StartMonitoring(epoll);
             if (!ok)
-                ThrowSystemError("Can not add file descriptor to epoll");
+                common::ThrowLastSystemError("Can not add file descriptor to epoll");
 
             // Connect to server.
             int res = connect(socketFd, addr->ai_addr, addr->ai_addrlen);
@@ -239,7 +241,7 @@ namespace ignite
                     HandleConnectionSuccess(client);
                 }
 
-                if (currentEvent.events & (EPOLLRDHUP | EPOLLERR))
+                if (currentEvent.events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP))
                 {
                     HandleConnectionClosed(client);
 
@@ -298,8 +300,7 @@ namespace ignite
 
             nonConnected.push_back(client->GetRange());
 
-            IgniteError err(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Connection closed");
-            clientPool.CloseAndRelease(client->GetId(), &err);
+            clientPool.CloseAndRelease(client->GetId(), 0);
         }
 
         void LinuxAsyncWorkerThread::HandleConnectionSuccess(LinuxAsyncClient* client)
@@ -342,15 +343,6 @@ namespace ignite
         bool LinuxAsyncWorkerThread::ShouldInitiateNewConnection() const
         {
             return !currentClient.Get() && nonConnected.size() > minAddrs;
-        }
-
-        void LinuxAsyncWorkerThread::ThrowSystemError(const std::string &msg)
-        {
-            std::stringstream buf;
-
-            buf << "Linux system error: " << msg << ", system error code: " << errno;
-
-            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
         }
     }
 }
