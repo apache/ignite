@@ -71,7 +71,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private static final VolcanoPlanner EMPTY_PLANNER;
 
     /** */
-    private static final RexBuilder DFLT_REX_BUILDER;
+    private static final RexBuilder REX_BUILDER;
 
     /** */
     public static final RelOptCluster CLUSTER;
@@ -104,9 +104,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
-        DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
+        REX_BUILDER = new RexBuilder(TYPE_FACTORY);
 
-        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, REX_BUILDER);
 
         // Forbid using the empty cluster in any planning or mapping procedures to prevent memory leaks.
         String cantBeUsedMsg = "Empty cluster can't be used for planning or mapping";
@@ -169,13 +169,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         this.log = log;
 
-        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
-
-        typeFactory = new IgniteTypeFactory(typeSys);
-
         qryCancel = unwrap(GridQueryCancel.class);
 
-        rexBuilder = new RexBuilder(typeFactory);
+        typeFactory = TYPE_FACTORY;
+
+        rexBuilder = REX_BUILDER;
     }
 
     /**

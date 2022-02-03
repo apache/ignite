@@ -37,6 +37,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -328,6 +329,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -385,6 +387,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -553,6 +556,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -609,6 +613,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
