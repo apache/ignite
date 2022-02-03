@@ -268,7 +268,7 @@ public class ServiceConfiguration implements Serializable {
      * {@link IgniteServiceProcessor#SERVICE_METRIC_REGISTRY} by service name.
      * <p>
      * <b>NOTE:</b> Statistics are collected only with service proxies obtaining by methods like
-     * {@link IgniteServices#serviceProxy(String, Class, boolean)} and won't work for direct referense of local
+     * {@link IgniteServices#serviceProxy(String, Class, boolean)} and won't work for direct reference of local
      * services which you can get by, for example, {@link IgniteServices#service(String)}.
      * <p>
      * <b>NOTE:</b> Statistics are collected only for all service's interfaces except {@link Service} and

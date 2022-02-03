@@ -17,9 +17,7 @@
 
 package org.apache.ignite.compatibility.clients;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
@@ -27,6 +25,7 @@ import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityN
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -38,6 +37,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_4_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Tests that current client version can connect to the server with specified version and
@@ -69,29 +72,10 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Version 2.13.0. */
     protected static final IgniteProductVersion VER_2_13_0 = IgniteProductVersion.fromString("2.13.0");
 
-    /** Ignite versions to test. Note: Only released versions or current version should be included to this list. */
-    protected static final String[] TESTED_IGNITE_VERSIONS = new String[] {
-        "2.4.0",
-        "2.5.0",
-        "2.6.0",
-        "2.7.0",
-        "2.7.5",
-        "2.7.6",
-        "2.8.0",
-        "2.8.1",
-        "2.9.0",
-        "2.9.1",
-        "2.10.0",
-        "2.11.0",
-        IgniteVersionUtils.VER_STR
-    };
-
     /** Parameters. */
     @Parameterized.Parameters(name = "Version {0}")
     public static Iterable<Object[]> versions() {
-        return Arrays.stream(TESTED_IGNITE_VERSIONS)
-            .map(v -> new Object[] {v})
-            .collect(Collectors.toList());
+        return cartesianProduct(F.concat(true, IgniteVersionUtils.VER_STR, since(VER_2_4_0)));
     }
 
     /** Old Ignite version. */
