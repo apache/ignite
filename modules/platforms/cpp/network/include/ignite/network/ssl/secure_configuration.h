@@ -15,14 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+#ifndef _IGNITE_NETWORK_SSL_SECURE_CONFIGURATION
+#define _IGNITE_NETWORK_SSL_SECURE_CONFIGURATION
 
-/**
- *
- */
-public class SingleBackupImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
-    /** {@inheritDoc} */
-    @Override protected Integer backupsCount() {
-        return 1; // Single backup possible optimisations check.
+#include <string>
+
+namespace ignite
+{
+    namespace network
+    {
+        namespace ssl
+        {
+            /**
+             * TLS/SSL configuration parameters.
+             */
+            struct SecureConfiguration
+            {
+                /** Path to file containing security certificate to use. */
+                std::string certPath;
+
+                /** Path to file containing private key to use. */
+                std::string keyPath;
+
+                /** Path to file containing Certificate authority to use. */
+                std::string caPath;
+            };
+        }
     }
 }
+
+#endif //_IGNITE_NETWORK_SSL_SECURE_CONFIGURATION

@@ -17,7 +17,7 @@
 
 #include "network/sockets.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #   include "network/win_async_client_pool.h"
 #else // Other. Assume Linux
 #   include "network/linux_async_client_pool.h"
@@ -41,12 +41,11 @@ namespace ignite
                 SslGateway::GetInstance().LoadAll();
             }
 
-            IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
-                const std::string& keyPath, const std::string& caPath)
+            IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const SecureConfiguration& cfg)
             {
                 EnsureSslLoaded();
 
-                return new SecureSocketClient(certPath, keyPath, caPath);
+                return new SecureSocketClient(cfg);
             }
         }
 
@@ -58,7 +57,7 @@ namespace ignite
         IGNITE_IMPORT_EXPORT SP_AsyncClientPool MakeAsyncClientPool(const std::vector<SP_DataFilter>& filters)
         {
             SP_AsyncClientPool platformPool = SP_AsyncClientPool(
-#ifdef WIN32
+#ifdef _WIN32
                 new WinAsyncClientPool()
 #else // Other. Assume Linux
                 new LinuxAsyncClientPool()

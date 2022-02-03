@@ -376,7 +376,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
                     ref.set(svc);
 
-                    return (withStat ? Proxy.isProxyClass(svc.getClass()) : svc instanceof Service) &&
+                    return (Proxy.isProxyClass(svc.getClass())) &&
                         Arrays.asList(svc.getClass().getInterfaces()).contains(MapService.class);
                 }
             }, 2000);

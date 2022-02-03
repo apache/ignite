@@ -102,6 +102,7 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -163,7 +164,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -212,6 +213,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW_DESC;
 
 /**
  * Internal implementation of snapshot operations over persistence caches.
@@ -490,6 +493,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtMgr);
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtMgr);
+
+        ctx.systemView().registerView(
+            SNAPSHOT_SYS_VIEW,
+            SNAPSHOT_SYS_VIEW_DESC,
+            new SnapshotViewWalker(),
+            () -> F.flatCollections(F.transform(localSnapshotNames(), this::readSnapshotMetadatas)),
+            this::snapshotViewSupplier);
     }
 
     /** {@inheritDoc} */
@@ -1917,6 +1927,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
 
         return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    }
+
+    /**
+     * @param meta Snapshot metadata.
+     * @return Snapshot view.
+     */
+    private SnapshotView snapshotViewSupplier(SnapshotMetadata meta) {
+        Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(meta.snapshotName(), meta.folderName()),
+            FilePageStoreManager::cacheGroupName);
+
+        return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
     }
 
     /** @return Snapshot handlers. */
