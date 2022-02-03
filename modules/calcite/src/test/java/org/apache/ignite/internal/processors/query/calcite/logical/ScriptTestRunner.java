@@ -61,7 +61,7 @@ public class ScriptTestRunner extends Runner {
 
     static {
         try {
-            log = new GridTestLog4jLogger("src/test/config/log4j-test.xml");
+            log = new GridTestLog4jLogger();
         }
         catch (Exception e) {
             e.printStackTrace();
