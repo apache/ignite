@@ -456,7 +456,7 @@ public class ColocationGroup implements MarshalableMessage {
                 int bitsToWrite = bitsPerItem;
                 int bitPos = this.bitPos;
 
-                while (bitsToWrite > 0) {
+                do {
                     int bitsToWriteCurBuf = Math.min(bitsToWrite, Integer.SIZE - (bitPos & BUF_POS_MASK));
 
                     int writeVal = (val & BIT_MASKS[bitsToWriteCurBuf]) << (bitPos & BUF_POS_MASK);
@@ -469,6 +469,7 @@ public class ColocationGroup implements MarshalableMessage {
 
                     bitsToWrite -= bitsToWriteCurBuf;
                 }
+                while (bitsToWrite > 0);
 
                 this.bitPos = bitPos;
 
