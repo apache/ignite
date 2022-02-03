@@ -202,7 +202,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     public void testReadFromNextEntry() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        IgniteEx ign = startGrid(0);
+        IgniteEx ign = startGrid(cfg);
 
         ign.cluster().state(ACTIVE);
 
@@ -222,7 +222,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         while (expKey.get() != KEYS_CNT) {
             String errMsg = "Expected fail";
 
-            CdcConsumer consumeOnce = new CdcConsumer() {
+            IgniteInternalFuture<?> fut = runAsync(createCdc(new CdcConsumer() {
                 boolean oneConsumed;
 
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -252,14 +252,14 @@ public class CdcSelfTest extends AbstractCdcTest {
                 @Override public void start(MetricRegistry mreg) {
                     // No-op.
                 }
-            };
-
-            IgniteInternalFuture<?> fut = runAsync(createCdc(consumeOnce, cfg));
+            }, cfg));
 
             assertTrue(waitForCondition(fut::isDone, getTestTimeout()));
 
+            if (!errMsg.equals(fut.error().getMessage()))
+                throw new RuntimeException(fut.error());
+
             assertEquals(1, expKey.get() - lastKey);
-            assertEquals(errMsg, fut.error().getMessage());
 
             lastKey = expKey.get();
         }
