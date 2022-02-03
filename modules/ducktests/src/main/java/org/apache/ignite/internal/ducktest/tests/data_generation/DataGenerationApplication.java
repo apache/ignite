@@ -96,7 +96,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             stmr.close(false);
         }
 
-
         executorSrvc.shutdown();
         try {
             if (executorSrvc.awaitTermination(timeoutSecs, TimeUnit.SECONDS)) {

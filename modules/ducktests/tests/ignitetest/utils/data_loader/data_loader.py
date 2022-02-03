@@ -130,32 +130,26 @@ class DataLoader:
 
     def get_summary_report(self):
         assert len(self.apps) > 0
-        if len(self.apps) == 1:
-            return {
-                "duration": (self.apps[0].get_finish_time() - self.apps[0].get_init_time()).total_seconds(),
-                "heap": sizeof_fmt(int(self.apps[0].extract_result("PEAK_HEAP_MEMORY")))
-            }
-        else:
-            heap_values = list(map(lambda _app: int(_app.extract_result("PEAK_HEAP_MEMORY")), self.apps))
-            duration_values = list(map(lambda _app: (_app.get_finish_time() - _app.get_init_time()).total_seconds(),
-                                       self.apps))
-            return {
-                "duration": {
-                    "max": max(duration_values),
-                    "min": min(duration_values),
-                    "total": (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
-                              min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds(),
-                    "mean": mean(duration_values),
-                    "median": median(duration_values)
+        heap_values = list(map(lambda _app: int(_app.extract_result("PEAK_HEAP_MEMORY")), self.apps))
+        duration_values = list(map(lambda _app: (_app.get_finish_time() - _app.get_init_time()).total_seconds(),
+                                   self.apps))
+        return {
+            "duration": {
+                "max": max(duration_values),
+                "min": min(duration_values),
+                "total": (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
+                          min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds(),
+                "mean": mean(duration_values),
+                "median": median(duration_values)
 
-                },
-                "heap": {
-                    "max": sizeof_fmt(max(heap_values)),
-                    "min": sizeof_fmt(min(heap_values)),
-                    "mean": sizeof_fmt(mean(heap_values)),
-                    "median": sizeof_fmt(median(heap_values))
-                }
+            },
+            "heap": {
+                "max": sizeof_fmt(max(heap_values)),
+                "min": sizeof_fmt(min(heap_values)),
+                "mean": sizeof_fmt(mean(heap_values)),
+                "median": sizeof_fmt(median(heap_values))
             }
+        }
 
     def __create_apps(self, config):
         for _ in range(self.data_load_params.preloaders):
