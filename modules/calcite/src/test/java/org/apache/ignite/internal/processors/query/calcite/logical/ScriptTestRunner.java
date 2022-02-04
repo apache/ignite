@@ -98,7 +98,7 @@ public class ScriptTestRunner extends Runner {
         assert !F.isEmpty(env.scriptsRoot());
 
         nodes = env.nodes();
-        scriptsRoot = FS.getPath(env.scriptsRoot());
+        scriptsRoot = FS.getPath(U.resolveIgnitePath(env.scriptsRoot()).getPath());
         testRegex = F.isEmpty(env.regex()) ? null : Pattern.compile(env.regex());
         restartCluster = env.restart();
         timeout = env.timeout();
