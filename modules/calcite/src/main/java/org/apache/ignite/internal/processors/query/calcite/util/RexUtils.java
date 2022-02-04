@@ -407,11 +407,6 @@ public class RexUtils {
     }
 
     /** */
-    private static List<RexNode> makeListOfNullLiterals(RexBuilder builder, List<RelDataType> types) {
-        return Commons.transform(types, builder::makeNullLiteral);
-    }
-
-    /** */
     public static boolean isNotNull(RexNode op) {
         if (op == null)
             return false;
@@ -427,7 +422,7 @@ public class RexUtils {
 
         RexBuilder builder = builder(cluster);
         List<RelDataType> types = RelOptUtil.getFieldTypeList(rowType);
-        List<RexNode> res = makeListOfNullLiterals(builder, types);
+        List<RexNode> res = Arrays.asList(new RexNode[types.size()]);
 
         for (RexNode pred : idxCond) {
             assert pred instanceof RexCall;

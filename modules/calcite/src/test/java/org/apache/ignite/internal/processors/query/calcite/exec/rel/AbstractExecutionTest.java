@@ -443,6 +443,21 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** */
+        public int rowsCount() {
+            int cnt = 0;
+
+            while (hasNext()) {
+                next();
+
+                cnt++;
+            }
+
+            rewind();
+
+            return cnt;
+        }
+
+        /** */
         public void closeRewindableRoot() {
             super.closeInternal();
         }

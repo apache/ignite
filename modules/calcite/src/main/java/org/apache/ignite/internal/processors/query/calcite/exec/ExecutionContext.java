@@ -49,6 +49,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
+    /** Placeholder for values, which expressions is not specified. */
+    private static final Object UNSPECIFIED_VALUE = new Object();
+
     /** */
     private final UUID qryId;
 
@@ -322,6 +325,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public boolean isCancelled() {
         return cancelFlag.get();
+    }
+
+    /** */
+    public Object unspecifiedValue() {
+        return UNSPECIFIED_VALUE;
     }
 
     /** {@inheritDoc} */

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -163,26 +162,15 @@ public class GridH2ValueCacheObject extends Value {
             return o1.getClass().getName().compareTo(o2.getClass().getName());
         }
 
-        return compareHashOrBytes(this, v, (v1, v2) -> Bits.compareNotNullSigned(((Value)v1).getBytesNoCopy(),
-            ((Value)v2).getBytesNoCopy()));
-    }
-
-    /** Compare hash codes. */
-    public static int compareHashOrBytes(Object o1, Object o2) {
-        return compareHashOrBytes(o1, o2, null);
-    }
-
-    /** Compare hash codes. */
-    private static int compareHashOrBytes(Object o1, Object o2, Comparator<Object> comp) {
-        int h1 = o1.hashCode();
-        int h2 = o2.hashCode();
+        // Compare hash codes.
+        int h1 = hashCode();
+        int h2 = v.hashCode();
 
         if (h1 == h2) {
             if (o1.equals(o2))
                 return 0;
 
-            return comp == null ? Bits.compareNotNullSigned(JdbcUtils.serialize(o1, null),
-                JdbcUtils.serialize(o2, null)) : comp.compare(o1, o2);
+            return Bits.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
         }
 
         return h1 > h2 ? 1 : -1;
