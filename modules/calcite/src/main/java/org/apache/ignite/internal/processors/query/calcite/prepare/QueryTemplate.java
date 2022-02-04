@@ -47,7 +47,7 @@ public class QueryTemplate {
     public QueryTemplate(List<Fragment> fragments) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
         for (Fragment fragment : fragments)
-            b.add(fragment.copy());
+            b.add(fragment.attach(Commons.emptyCluster()));
 
         this.fragments = b.build();
     }
@@ -59,7 +59,7 @@ public class QueryTemplate {
         if (executionPlan != null && Objects.equals(executionPlan.topologyVersion(), ctx.topologyVersion()))
             return executionPlan;
 
-        List<Fragment> fragments = Commons.transform(this.fragments, Fragment::copy);
+        List<Fragment> fragments = Commons.transform(this.fragments, f -> f.attach(ctx.cluster()));
 
         Exception ex = null;
         RelMetadataQuery mq = F.first(fragments).root().getCluster().getMetadataQuery();
@@ -96,7 +96,7 @@ public class QueryTemplate {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
 
         for (Fragment fragment : fragments)
-            b.add(fragment.map(mappingService, ctx, mq));
+            b.add(fragment.map(mappingService, ctx, mq).attach(Commons.emptyCluster()));
 
         return b.build();
     }

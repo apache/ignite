@@ -431,7 +431,7 @@ public final class Commons {
     }
 
     /** */
-    public static RelOptCluster cluster() {
+    public static RelOptCluster emptyCluster() {
         return BaseQueryContext.CLUSTER;
     }
 

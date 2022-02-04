@@ -550,7 +550,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
-        return TypeUtils.sqlType(factory, b.build());
+        return b.build();
     }
 
     /** {@inheritDoc} */
@@ -644,6 +644,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private final Class<?> storageType;
 
         /** */
+        private volatile RelDataType logicalType;
+
+        /** */
         private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
             this.name = name;
             this.isKey = isKey;
@@ -684,7 +687,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.toSql(f.createJavaType(storageType));
+            if (logicalType == null)
+                logicalType = TypeUtils.sqlType(f, f.createJavaType(storageType));
+
+            return logicalType;
         }
 
         /** {@inheritDoc} */
@@ -716,6 +722,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** */
         private final Class<?> storageType;
+
+        /** */
+        private volatile RelDataType logicalType;
 
         /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
@@ -758,7 +767,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.toSql(f.createJavaType(storageType));
+            if (logicalType == null)
+                logicalType = TypeUtils.sqlType(f, f.createJavaType(storageType));
+
+            return logicalType;
         }
 
         /** {@inheritDoc} */

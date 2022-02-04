@@ -361,7 +361,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             try {
                 if (qryList.size() == 1) {
                     plan = queryPlanCache().queryPlan(
-                        new CacheKey(schemaName, qry.sql()),
+                        new CacheKey(schemaName, sql), // Use source SQL to avoid redundant parsing next time.
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext()));
                 }
                 else

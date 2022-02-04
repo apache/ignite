@@ -95,12 +95,17 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final ExecutionContext<Row> ctx;
 
     /** */
-    public ExpressionFactoryImpl(ExecutionContext<Row> ctx, IgniteTypeFactory typeFactory, SqlConformance conformance) {
+    public ExpressionFactoryImpl(
+        ExecutionContext<Row> ctx,
+        IgniteTypeFactory typeFactory,
+        SqlConformance conformance,
+        RexBuilder rexBuilder
+    ) {
         this.ctx = ctx;
         this.typeFactory = typeFactory;
         this.conformance = conformance;
+        this.rexBuilder = rexBuilder;
 
-        rexBuilder = new RexBuilder(this.typeFactory);
         emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
     }
 

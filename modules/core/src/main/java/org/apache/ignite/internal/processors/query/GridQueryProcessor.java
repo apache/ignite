@@ -2896,8 +2896,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx), qry.getSchema(), qry.getSql(),
-                X.EMPTY_OBJECT_ARRAY);
+            return experimentalQueryEngine.query(
+                QueryContext.of(qry, cliCtx),
+                qry.getSchema() == null ? schemaName(cctx) : qry.getSchema(),
+                qry.getSql(),
+                qry.getArgs() == null ? X.EMPTY_OBJECT_ARRAY : qry.getArgs());
         }
 
         return executeQuerySafe(cctx, () -> {

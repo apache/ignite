@@ -40,7 +40,7 @@ SELECT DATE '-1992-01-01'
 
 # check intervals on negative dates
 statement ok
-CREATE TABLE bc_dates AS SELECT date '0020-01-01' - interval (i) years AS d from range(0, 40) tbl(i);
+CREATE TABLE bc_dates AS SELECT date '0020-01-01' - interval (i) years AS d from system_range(0, 39) tbl(i);
 
 query II
 SELECT d, d::VARCHAR FROM bc_dates ORDER BY 1

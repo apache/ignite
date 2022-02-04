@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
@@ -65,10 +67,10 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** Parameters. */
     private final Object[] params;
 
-    /** remote nodes */
-    private final Set<UUID> remotes;
+    /** Remote nodes unfinished fragments count. AtomicInteger used just as int holder, there is no concurrency here. */
+    private final Map<UUID, AtomicInteger> remoteFragments;
 
-    /** node to fragment */
+    /** Node to fragment. */
     private final Set<RemoteFragmentKey> waiting;
 
     /** */
@@ -96,13 +98,14 @@ public class RootQuery<RowT> extends Query<RowT> {
             qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null,
             exch,
             unregister,
-            log
+            log,
+            0 // Total fragments count not used for RootQuery.
         );
 
         this.sql = sql;
         this.params = params;
 
-        remotes = new HashSet<>();
+        remoteFragments = new HashMap<>();
         waiting = new HashSet<>();
 
         Context parent = Commons.convert(qryCtx);
@@ -184,7 +187,15 @@ public class RootQuery<RowT> extends Query<RowT> {
                 Fragment fragment = plan.fragments().get(i);
                 List<UUID> nodes = plan.mapping(fragment).nodeIds();
 
-                remotes.addAll(nodes);
+                nodes.forEach(n -> remoteFragments.compute(n, (id, cnt) -> {
+                    if (cnt == null)
+                        return new AtomicInteger(1);
+                    else {
+                        cnt.incrementAndGet();
+
+                        return cnt;
+                    }
+                }));
 
                 for (UUID node : nodes)
                     waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
@@ -225,14 +236,16 @@ public class RootQuery<RowT> extends Query<RowT> {
             try {
                 IgniteException wrpEx = null;
 
-                for (UUID nodeId : remotes) {
+                for (Map.Entry<UUID, AtomicInteger> entry : remoteFragments.entrySet()) {
                     try {
-                        if (!nodeId.equals(root.context().localNodeId()))
-                            exch.closeQuery(nodeId, id());
+                        // Don't send close message if all remote fragments are finished (query is self-closed on the
+                        // remote node in this case).
+                        if (!entry.getKey().equals(root.context().localNodeId()) && entry.getValue().get() > 0)
+                            exch.closeQuery(entry.getKey(), id());
                     }
                     catch (IgniteCheckedException e) {
                         if (wrpEx == null)
-                            wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                            wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + entry.getKey() + ']', e);
                         else
                             wrpEx.addSuppressed(e);
                     }
@@ -339,6 +352,30 @@ public class RootQuery<RowT> extends Query<RowT> {
         root.onError(error);
 
         tryClose();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onInboundExchangeStarted(UUID nodeId, long exchangeId) {
+        onResponse(nodeId, exchangeId, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onInboundExchangeFinished(UUID nodeId, long exchangeId) {
+        AtomicInteger cnt = remoteFragments.get(nodeId);
+
+        assert cnt != null : nodeId;
+
+        cnt.decrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onOutboundExchangeStarted(UUID nodeId, long exchangeId) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onOutboundExchangeFinished(long exchangeId) {
+        // No-op.
     }
 
     /** */
