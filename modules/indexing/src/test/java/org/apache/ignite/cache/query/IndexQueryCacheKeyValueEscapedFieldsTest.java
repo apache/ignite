@@ -17,30 +17,10 @@
 
 package org.apache.ignite.cache.query;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Suite with tests for {@link IndexQuery}.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IndexQueryAllTypesTest.class,
-    IndexQueryFailoverTest.class,
-    IndexQueryFilterTest.class,
-    IndexQueryInlineSizesTest.class,
-    IndexQueryKeepBinaryTest.class,
-    IndexQueryLocalTest.class,
-    IndexQueryQueryEntityTest.class,
-    IndexQueryAliasTest.class,
-    IndexQuerySqlIndexTest.class,
-    IndexQueryRangeTest.class,
-    IndexQueryCacheKeyValueFieldsTest.class,
-    IndexQueryCacheKeyValueEscapedFieldsTest.class,
-    IndexQueryWrongIndexTest.class,
-    MultifieldIndexQueryTest.class,
-    MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
-})
-public class IndexQueryTestSuite {
+/** */
+public class IndexQueryCacheKeyValueEscapedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {
+    /** {@inheritDoc} */
+    @Override protected boolean escape() {
+        return true;
+    }
 }

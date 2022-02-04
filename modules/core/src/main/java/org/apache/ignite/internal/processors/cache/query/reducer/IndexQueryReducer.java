@@ -138,12 +138,29 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
 
         /** */
         private IndexKey key(String key, int type, IgniteBiTuple<?, ?> entry) throws IgniteCheckedException {
-            GridQueryProperty prop = typeDesc.property(key);
+            Object o;
 
-            // PrimaryKey field.
-            Object o = prop == null ? entry.getKey() : prop.value(entry.getKey(), entry.getValue());
+            if (isKeyField(key))
+                o = entry.getKey();
+            else if (isValueField(key))
+                o = entry.getValue();
+            else {
+                GridQueryProperty prop = typeDesc.property(key);
+
+                o = prop.value(entry.getKey(), entry.getValue());
+            }
 
             return IndexKeyFactory.wrap(o, type, cctx.cacheObjectContext(), meta.keyTypeSettings());
+        }
+
+        /** */
+        private boolean isKeyField(String fld) {
+            return fld.equals(typeDesc.keyFieldAlias()) || fld.equals(QueryUtils.KEY_FIELD_NAME);
+        }
+
+        /** */
+        private boolean isValueField(String fld) {
+            return fld.equals(typeDesc.valueFieldAlias()) || fld.equals(QueryUtils.VAL_FIELD_NAME);
         }
     }
 }
