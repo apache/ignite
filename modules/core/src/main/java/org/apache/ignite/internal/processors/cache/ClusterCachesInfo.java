@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridCachePluginContext;
@@ -2299,8 +2300,14 @@ public class ClusterCachesInfo {
         else if (persistent)
             walGloballyEnabled = ctx.cache().context().database().walEnabled(grpId, false);
         else {
-            walGloballyEnabled = !CU.isSystemCache(startedCacheCfg.getName()) &&
-                CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getDataRegionName()).isCdcEnabled();
+            if (!CU.isSystemCache(startedCacheCfg.getName())) {
+                DataRegionConfiguration drCfg =
+                    CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getDataRegionName());
+
+                walGloballyEnabled = drCfg != null && drCfg.isCdcEnabled();
+            }
+            else
+                walGloballyEnabled = false;
         }
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
