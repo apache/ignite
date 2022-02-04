@@ -26,15 +26,16 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <calcite.version>1.29.0</calcite.version>
-        <janino.version>3.1.6</janino.version>
         <avatica.version>1.19.0</avatica.version>
+        <calcite.version>1.29.0</calcite.version>
+        <checker.version>3.10.0</checker.version>
+        <esri.geometry.version>2.2.0</esri.geometry.version>
+        <immutables.version>2.8.2</immutables.version>
+        <janino.version>3.1.6</janino.version>
+        <javacc-maven-plugin>2.4</javacc-maven-plugin>
+        <!--        <javassist.version>3.28.0-GA</javassist.version>-->
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
-        <javassist.version>3.28.0-GA</javassist.version>
-        <esri.geometry.version>2.2.0</esri.geometry.version>
-        <checker.version>3.10.0</checker.version>
-        <immutables.version>2.8.2</immutables.version>
     </properties>
 
     <parent>
@@ -165,6 +166,13 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
@@ -280,6 +288,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javacc-maven-plugin</artifactId>
+                <version>${javacc-maven-plugin}</version>
                 <executions>
                     <execution>
                         <id>javacc</id>
