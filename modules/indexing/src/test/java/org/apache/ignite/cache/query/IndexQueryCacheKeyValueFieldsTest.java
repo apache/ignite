@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 
@@ -47,12 +46,6 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
     /** Whether to escape field names. */
     protected boolean escape() {
         return false;
-    }
-
-    /** */
-    @Parameterized.Parameters(name = "escape={0}")
-    public static Object[] params() {
-        return new Object[] { false, true };
     }
 
     /** {@inheritDoc} */
