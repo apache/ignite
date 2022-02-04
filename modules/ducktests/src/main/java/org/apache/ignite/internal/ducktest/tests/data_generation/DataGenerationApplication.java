@@ -35,8 +35,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.ducktest.utils.metrics.MemoryUsageMetrics;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Application generates cache data by specified parameters.
@@ -178,7 +176,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                     log.debug("Streamed " + (i - from + 1) + " entries into " + stmr.cacheName());
 
                 if (i % flushEach == 0)
-                    stmr.flush();
+                    stmr.tryFlush();
             }
 
             log.info(stmr.cacheName() + " data generated [entryCnt=" + (to - from) + ", from=" + from +
