@@ -75,7 +75,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
     /** Keys count. */
-    public static final int KEYS_CNT = 50;
+    public static final int KEYS_CNT = 15;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
