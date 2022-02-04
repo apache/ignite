@@ -205,7 +205,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.ReconnectCount, resCom.ReconnectCount);
                 Assert.AreEqual(com.SelectorsCount, resCom.SelectorsCount);
                 Assert.AreEqual(com.SelectorSpins, resCom.SelectorSpins);
-                Assert.AreEqual(com.SharedMemoryPort, resCom.SharedMemoryPort);
                 Assert.AreEqual(com.SlowClientQueueLimit, resCom.SlowClientQueueLimit);
                 Assert.AreEqual(com.SocketReceiveBufferSize, resCom.SocketReceiveBufferSize);
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
@@ -821,7 +820,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450,
                     ConnectionsPerNode = 12,
                     UsePairedConnections = true,
-                    SharedMemoryPort = 1234,
                     SocketWriteTimeout = 2222,
                     SelectorSpins = 12,
                     FilterReachableAddresses = true

@@ -51,8 +51,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
-import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -65,10 +63,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
@@ -96,9 +90,6 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnecti
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationSpiMBeanImpl;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpHandshakeExecutor;
-import org.apache.ignite.spi.communication.tcp.internal.shmem.ShmemAcceptWorker;
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -206,10 +197,6 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
-    /** IPC error message. */
-    public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower).";
-
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -219,9 +206,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Node attribute that is mapped to node port number (value is <tt>comm.tcp.port</tt>). */
     public static final String ATTR_PORT = "comm.tcp.port";
 
-    /** Node attribute that is mapped to node port number (value is <tt>comm.shmem.tcp.port</tt>). */
-    public static final String ATTR_SHMEM_PORT = "comm.shmem.tcp.port";
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
@@ -230,9 +214,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
-
-    /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = -1;
 
     /** Default idle connection timeout (value is <tt>10</tt>min). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;
@@ -347,9 +328,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
-
-    /** Shared memory accept worker. */
-    private volatile ShmemAcceptWorker shmemAcceptWorker;
 
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping;
@@ -648,7 +626,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         attributeNames = new AttributeNames(
             createSpiAttributeName(ATTR_PAIRED_CONN),
-            createSpiAttributeName(ATTR_SHMEM_PORT),
             createSpiAttributeName(ATTR_ADDRS),
             createSpiAttributeName(ATTR_HOST_NAMES),
             createSpiAttributeName(ATTR_EXT_ADDRS),
@@ -772,13 +749,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         discoLsnr = new CommunicationDiscoveryEventListener(clientPool, metricsLsnr);
 
         try {
-            shmemSrv = resetShmemServer();
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to start shared memory communication server.", e);
-        }
-
-        try {
             // This method potentially resets local port to the value
             // local node was bound to.
             nioSrvWrapper.nio(nioSrvWrapper.resetNioServer());
@@ -810,7 +780,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             log.debug(configInfo("tcpNoDelay", cfg.tcpNoDelay()));
             log.debug(configInfo("sockSndBuf", cfg.socketSendBuffer()));
             log.debug(configInfo("sockRcvBuf", cfg.socketReceiveBuffer()));
-            log.debug(configInfo("shmemPort", cfg.shmemPort()));
             log.debug(configInfo("msgQueueLimit", cfg.messageQueueLimit()));
             log.debug(configInfo("connectionsPerNode", cfg.connectionsPerNode()));
 
@@ -841,67 +810,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             U.quietAndWarn(log, "Message queue limit is set to 0 which may lead to " +
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
-
-        if (shmemSrv != null) {
-
-            MessageFactory msgFactory = new MessageFactory() {
-                private MessageFactory impl;
-
-                @Nullable @Override public Message create(short type) {
-                    if (impl == null)
-                        impl = getSpiContext().messageFactory();
-
-                    assert impl != null;
-
-                    return impl.create(type);
-                }
-            };
-
-            GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
-                private MessageFormatter formatter;
-
-                @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
-                    if (formatter == null)
-                        formatter = getSpiContext().messageFormatter();
-
-                    assert formatter != null;
-
-                    ConnectionKey connKey = ses.meta(CONN_IDX_META);
-
-                    return connKey != null ? formatter.writer(connKey.nodeId()) : null;
-                }
-            };
-
-            GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
-                private MessageFormatter formatter;
-
-                @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
-                    throws IgniteCheckedException {
-                    if (formatter == null)
-                        formatter = getSpiContext().messageFormatter();
-
-                    assert formatter != null;
-
-                    ConnectionKey connKey = ses.meta(CONN_IDX_META);
-
-                    return connKey != null ? formatter.reader(connKey.nodeId(), msgFactory) : null;
-                }
-            };
-
-            shmemAcceptWorker = new ShmemAcceptWorker(
-                igniteInstanceName,
-                srvLsnr,
-                shmemSrv,
-                metricsLsnr,
-                log,
-                msgFactory,
-                writerFactory,
-                readerFactory,
-                tracing
-            );
-
-            new IgniteThread(shmemAcceptWorker).start();
-        }
 
         nioSrvWrapper.start();
 
@@ -939,10 +847,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (cfg.boundTcpPort() > 0)
             spiCtx.registerPort(cfg.boundTcpPort(), IgnitePortProtocol.TCP);
 
-        // SPI can start without shmem port.
-        if (cfg.boundTcpShmemPort() > 0)
-            spiCtx.registerPort(cfg.boundTcpShmemPort(), IgnitePortProtocol.TCP);
-
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
@@ -956,9 +860,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         srvLsnr.metricsListener(metricsLsnr);
         clientPool.metricsListener(metricsLsnr);
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
-
-        if (shmemAcceptWorker != null)
-            shmemAcceptWorker.metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();
     }
@@ -998,9 +899,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             U.cancel(commWorker);
             U.join(commWorker, log);
         }
-
-        U.cancel(shmemAcceptWorker);
-        U.join(shmemAcceptWorker, log);
 
         if (srvLsnr != null)
             srvLsnr.stop();

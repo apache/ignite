@@ -79,7 +79,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
         public const long DefaultSelectorSpins = 0;
 
-        /// <summary> Default value of <see cref="SharedMemoryPort"/> property. </summary>
+        /// <summary> Value of this property will be ignored. </summary>
+        [Obsolete]
         public const int DefaultSharedMemoryPort = -1;
 
         /// <summary> Default socket buffer size. </summary>
@@ -301,9 +302,10 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public bool UsePairedConnections { get; set; }
 
         /// <summary>
-        /// Gets or sets a local port to accept shared memory connections.
+        /// Value of this property will be ignored.
         /// </summary>
         [DefaultValue(DefaultSharedMemoryPort)]
+        [Obsolete]
         public int SharedMemoryPort { get; set; }
 
         /// <summary>

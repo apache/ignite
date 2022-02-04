@@ -73,13 +73,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     @MXBeanDescription("Connections per node.")
     public int getConnectionsPerNode();
 
-    /**
-     * Gets local port for shared memory communication.
-     *
-     * @return Port number.
-     */
-    @MXBeanDescription("Shared memory endpoint port number.")
-    public int getSharedMemoryPort();
 
     /**
      * Gets maximum number of local ports tried if all previously
