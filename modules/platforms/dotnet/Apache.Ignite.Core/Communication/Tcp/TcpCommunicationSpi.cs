@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
 {
     using System;
     using System.ComponentModel;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -78,10 +79,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
 
         /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
         public const long DefaultSelectorSpins = 0;
-
-        /// <summary> Value of this property will be ignored. </summary>
-        [Obsolete("Value of this const is ignored")]
-        public const int DefaultSharedMemoryPort = -1;
 
         /// <summary> Default socket buffer size. </summary>
         public const int DefaultSocketBufferSize = 32 * 1024;
@@ -305,6 +302,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         [DefaultValue(-1)]
         [Obsolete("Value of this property is ignored")]
+        [XmlIgnore]
         public int SharedMemoryPort { get; set; }
 
         /// <summary>
