@@ -46,4 +46,22 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, null)
             .check();
     }
+
+    /** */
+    @Test
+    public void testNullsInSearchRowMultipleColumns() {
+        executeSql("CREATE TABLE t0(i1 INTEGER, i2 INTEGER)");
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
+        executeSql("INSERT INTO t0 VALUES (null, 0), (1, null), (null, 2), (3, null), (1, 1)");
+        executeSql("INSERT INTO t1 VALUES (null, 0), (null, 1), (2, null), (3, null), (1, 1)");
+
+        String sql = "SELECT /*+ DISABLE_RULE ('MergeJoinConverter', 'NestedLoopJoinConverter', " +
+            "'FilterSpoolMergeToSortedIndexSpoolRule')*/ * " +
+            "FROM t0 JOIN t1 ON t0.i1=t1.i1 AND t0.i2=t1.i2";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
+            .returns(1, 1, 1, 1)
+            .check();
+    }
 }
