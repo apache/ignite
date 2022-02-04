@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public const long DefaultSelectorSpins = 0;
 
         /// <summary> Value of this property will be ignored. </summary>
-        [Obsolete]
+        [Obsolete("Value of this const is ignored")]
         public const int DefaultSharedMemoryPort = -1;
 
         /// <summary> Default socket buffer size. </summary>
@@ -112,7 +112,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
             MaxConnectTimeout = DefaultMaxConnectTimeout;
             MessageQueueLimit = DefaultMessageQueueLimit;
             ReconnectCount = DefaultReconnectCount;
-            SharedMemoryPort = DefaultSharedMemoryPort;
             SelectorsCount = DefaultSelectorsCount;
             SelectorSpins = DefaultSelectorSpins;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
@@ -143,7 +142,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
             ReconnectCount = reader.ReadInt();
             SelectorsCount = reader.ReadInt();
             SelectorSpins = reader.ReadLong();
-            SharedMemoryPort = reader.ReadInt();
+            reader.ReadInt();
             SlowClientQueueLimit = reader.ReadInt();
             SocketReceiveBufferSize = reader.ReadInt();
             SocketSendBufferSize = reader.ReadInt();
@@ -304,8 +303,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary>
         /// Value of this property will be ignored.
         /// </summary>
-        [DefaultValue(DefaultSharedMemoryPort)]
-        [Obsolete]
+        [DefaultValue(-1)]
+        [Obsolete("Value of this property is ignored")]
         public int SharedMemoryPort { get; set; }
 
         /// <summary>
@@ -351,7 +350,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
             writer.WriteInt(ReconnectCount);
             writer.WriteInt(SelectorsCount);
             writer.WriteLong(SelectorSpins);
-            writer.WriteInt(SharedMemoryPort);
+            writer.WriteInt(-1);
             writer.WriteInt(SlowClientQueueLimit);
             writer.WriteInt(SocketReceiveBufferSize);
             writer.WriteInt(SocketSendBufferSize);
