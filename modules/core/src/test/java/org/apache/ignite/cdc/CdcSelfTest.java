@@ -133,10 +133,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** Simplest CDC test. */
     @Test
-    public void testReadAllKeys() throws Exception {
+    public void testReadAllKeysCommitAll() throws Exception {
         // Read all records from iterator.
         readAll(new UserCdcConsumer(), true);
+    }
 
+    /** */
+    @Test
+    public void testReadAllKeysWithoutCommit() throws Exception {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -145,7 +149,11 @@ public class CdcSelfTest extends AbstractCdcTest {
                 return false;
             }
         }, false);
+    }
 
+    /** */
+    @Test
+    public void testReadAllKeysCommitEachEvent() throws Exception {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
