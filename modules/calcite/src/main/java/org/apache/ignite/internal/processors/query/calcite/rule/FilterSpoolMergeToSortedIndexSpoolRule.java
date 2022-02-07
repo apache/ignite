@@ -91,6 +91,8 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
             List<RexNode> lowerBound = idxCond.lowerBound();
             List<RexNode> upperBound = idxCond.upperBound();
 
+            assert lowerBound == null || upperBound == null || lowerBound.size() == upperBound.size();
+
             int cardinality = lowerBound != null ? lowerBound.size() : upperBound.size();
 
             List<Integer> equalsFields = new ArrayList<>(cardinality);
