@@ -243,11 +243,11 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals("Should be one running query",
             1,
-            ign.context().query().runningLocalQueries(-1).size());
+            ign.context().query().runningQueries(-1).size());
 
         ign.close();
 
-        Assert.assertEquals(0, ign.context().query().runningLocalQueries(-1).size());
+        Assert.assertEquals(0, ign.context().query().runningQueries(-1).size());
     }
 
     /**
@@ -266,7 +266,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         query.iterator().forEachRemaining((e) -> {
             Assert.assertEquals("Should be one running query",
                 1,
-                ignite.context().query().runningLocalQueries(-1).size());
+                ignite.context().query().runningQueries(-1).size());
         });
 
         assertNoRunningQueries();
@@ -284,7 +284,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < 100; i++) {
             FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE 1 = 1"));
 
-            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningLocalQueries(-1);
+            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
             assertEquals(1, runningQueries.size());
 
@@ -317,7 +317,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> barrier.getNumberWaiting() == 2, TIMEOUT_IN_MS));
 
-        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningLocalQueries(-1);
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
         assertEquals(2, runningQueries.size());
 
@@ -383,7 +383,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertWaitingOnBarrier();
 
-        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningLocalQueries(-1);
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
         assertEquals(1, runningQueries.size());
 
@@ -470,7 +470,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertWaitingOnBarrier();
 
-        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningLocalQueries(-1);
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
         assertEquals(1, runningQueries.size());
 
@@ -515,7 +515,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             for (int i = 0; i < BATCH_SIZE; i++) {
                 assertWaitingOnBarrier();
 
-                Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningLocalQueries(-1);
+                Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
                 assertEquals(1, runningQueries.size());
 
@@ -568,7 +568,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                 assertWaitingOnBarrier();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
-                    .runningLocalQueries(-1);
+                    .runningQueries(-1);
 
                 assertEquals(1, runningQueries.size());
 
@@ -609,7 +609,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
             assertWaitingOnBarrier();
 
-            List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningLocalQueries(-1);
+            List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
 
             assertEquals(1, runningQueries.size());
 
@@ -643,7 +643,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             IgniteEx node = (IgniteEx)g;
 
             if (!excludeIds.contains(node.localNode().id())) {
-                Collection<GridRunningQueryInfo> runningQueries = node.context().query().runningLocalQueries(-1);
+                Collection<GridRunningQueryInfo> runningQueries = node.context().query().runningQueries(-1);
 
                 Assert.assertEquals(0, runningQueries.size());
             }

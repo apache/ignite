@@ -81,7 +81,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
             cancelSQL(ids.get1(), ids.get2());
         }
         catch (IgniteException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -104,7 +104,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
      *
      */
     public void cancelSQL(UUID originNodeId, long qryId) {
-        ctx.query().getIndexing().cancelQuery(qryId, originNodeId, false);
+        ctx.query().cancelQuery(qryId, originNodeId, false);
     }
 
     /**

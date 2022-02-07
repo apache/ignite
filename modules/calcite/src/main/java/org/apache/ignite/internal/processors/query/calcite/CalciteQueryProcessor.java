@@ -311,13 +311,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> qryReg.unregister(q.id(), null),
+                (q) -> qryReg.unregister(q.id()),
                 log
             );
 
             qryReg.register(sql, schema.getName(), qry);
 
-            IgniteSQLException err = null;
             try {
                 return Collections.singletonList(executionSvc.executePlan(
                     qry,
@@ -329,7 +328,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 qry.cancel();
 
-                qryReg.unregister(qry.id(), null);
+                qryReg.unregister(qry.id());
 
                 if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
@@ -351,7 +350,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> qryReg.unregister(q.id(), null),
+                (q) -> qryReg.unregister(q.id()),
                 log
             );
 
@@ -375,7 +374,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 qrys.forEach(RootQuery::cancel);
 
-                qryReg.unregister(qry.id(), null);
+                qryReg.unregister(qry.id());
 
                 if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);

@@ -184,7 +184,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
                 TestSQLFunctions.cancelLatch.await();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)serverNode().context().query()
-                    .runningLocalQueries(-1);
+                    .runningQueries(-1);
 
                 assertEquals(1, runningQueries.size());
 

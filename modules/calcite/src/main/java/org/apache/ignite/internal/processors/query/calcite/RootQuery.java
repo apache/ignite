@@ -148,11 +148,6 @@ public class RootQuery<RowT> extends Query<RowT> {
     }
 
     /** */
-    public SchemaPlus schema() {
-        return schema;
-    }
-
-    /** */
     public Object[] parameters() {
         return params;
     }

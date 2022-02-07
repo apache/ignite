@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
@@ -75,24 +74,15 @@ public class SqlCommandProcessor {
     /** Schema manager. */
     protected final GridQuerySchemaManager schemaMgr;
 
-    /** Running query manager. */
-    protected final GridRunningQueryManager runningQryMgr;
-
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
-     * @param runningQryMgr Running query manager.
      */
-    public SqlCommandProcessor(
-        GridKernalContext ctx,
-        GridQuerySchemaManager schemaMgr,
-        GridRunningQueryManager runningQryMgr
-    ) {
+    public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
-        this.runningQryMgr = runningQryMgr;
         log = ctx.log(getClass());
     }
 
@@ -160,7 +150,7 @@ public class SqlCommandProcessor {
      * @param cmd Command.
      */
     private void processKillQueryCommand(SqlKillQueryCommand cmd) {
-        runningQryMgr.cancelQuery(cmd.nodeQueryId(), cmd.nodeId(), cmd.async());
+        ctx.query().runningQueryManager().cancelQuery(cmd.nodeQueryId(), cmd.nodeId(), cmd.async());
     }
 
     /**

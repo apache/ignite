@@ -329,12 +329,12 @@ public interface GridQueryIndexing {
     public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
-     * Collect local queries that already running more than specified duration.
+     * Collect queries that already running more than specified duration.
      *
      * @param duration Duration to check.
      * @return Collection of long running queries.
      */
-    public Collection<GridRunningQueryInfo> runningLocalQueries(long duration);
+    public Collection<GridRunningQueryInfo> runningQueries(long duration);
 
     /**
      * Cancel query running on remote or local Node.
@@ -351,6 +351,11 @@ public interface GridQueryIndexing {
      * @param queries Queries ID's to cancel.
      */
     public void cancelLocalQueries(Collection<Long> queries);
+
+    /**
+     * @return Running query manager.
+     */
+    public RunningQueryManager runningQueryManager();
 
     /**
      * Cancels all executing queries.

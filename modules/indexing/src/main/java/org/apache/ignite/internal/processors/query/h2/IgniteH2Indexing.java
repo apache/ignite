@@ -104,7 +104,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
@@ -2076,12 +2075,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return rdcQryExec;
     }
 
-    /**
-     * Return Running query manager.
-     *
-     * @return Running query manager.
-     */
-    public GridRunningQueryManager runningQueryManager() {
+    /** {@inheritDoc} */
+    @Override public RunningQueryManager runningQueryManager() {
         return runningQryMgr;
     }
 
@@ -2472,7 +2467,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningLocalQueries(long duration) {
+    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQryMgr.longRunningQueries(duration);
     }
 
@@ -2485,7 +2480,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void cancelLocalQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
             for (Long qryId : queries)
-                runningQryMgr.cancel(qryId);
+                runningQryMgr.cancelLocalQuery(qryId);
         }
     }
 

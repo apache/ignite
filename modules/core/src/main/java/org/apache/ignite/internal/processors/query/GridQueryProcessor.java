@@ -915,6 +915,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Running query manager.
+     * @throws IgniteException If module is not enabled.
+     */
+    public RunningQueryManager runningQueryManager() throws IgniteException {
+        checkxEnabled();
+
+        return idx.runningQueryManager();
+    }
+
+    /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
      * @param cacheInfo Cache context info.
@@ -3086,9 +3096,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param duration Duration to check.
      * @return Collection of long running queries.
      */
-    public Collection<GridRunningQueryInfo> runningLocalQueries(long duration) {
+    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         if (moduleEnabled())
-            return idx.runningLocalQueries(duration);
+            return idx.runningQueries(duration);
 
         return Collections.emptyList();
     }

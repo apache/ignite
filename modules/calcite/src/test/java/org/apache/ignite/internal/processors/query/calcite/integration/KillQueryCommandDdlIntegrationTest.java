@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,13 +39,17 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_QRY_VIEW;
 
 /**
  * Tests `KILL QUERY` command.
@@ -138,34 +141,19 @@ public class KillQueryCommandDdlIntegrationTest extends AbstractDdlIntegrationTe
         try {
             scanLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
-            Optional<String> srvQueryId = sql(srv, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME")
-                .stream()
-                .filter(q -> ((String)q.get(1)).contains("PERSON")).map(q -> (String)q.get(0))
-                .findFirst();
+            SystemView<SqlQueryView> srvView = srv.context().systemView().view(SQL_QRY_VIEW);
+            assertFalse(F.isEmpty(srvView));
 
-            assertTrue(srvQueryId.isPresent());
+            SystemView<SqlQueryView> clientView = client.context().systemView().view(SQL_QRY_VIEW);
+            assertFalse(F.isEmpty(clientView));
 
-            Optional<String> clientQueryId = sql(srv, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME")
-                .stream()
-                .filter(q -> ((String)q.get(1)).contains("PERSON")).map(q -> (String)q.get(0))
-                .findFirst();
-
-            assertTrue(clientQueryId.isPresent());
+            String clientQryId = F.first(clientView).queryId();
 
             GridTestUtils.runAsync(() -> sql(cancelOnClient ? client : srv,
-                "KILL QUERY" + (isAsync ? " ASYNC '" : " '") + clientQueryId.get() + "'"));
+                "KILL QUERY" + (isAsync ? " ASYNC '" : " '") + clientQryId + "'"));
 
-            Assert.assertTrue(GridTestUtils.waitForCondition(
-                () -> !sql(srv, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME")
-                    .stream()
-                    .filter(q -> ((String)q.get(1)).contains("PERSON")).map(q -> (String)q.get(0))
-                    .findAny().isPresent(), TIMEOUT));
-
-            Assert.assertTrue(GridTestUtils.waitForCondition(
-                () -> !sql(client, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME")
-                    .stream()
-                    .filter(q -> ((String)q.get(1)).contains("PERSON")).map(q -> (String)q.get(0))
-                    .findAny().isPresent(), TIMEOUT));
+            assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(srvView), TIMEOUT));
+            assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(clientView), TIMEOUT));
         }
         finally {
             stop.set(true);

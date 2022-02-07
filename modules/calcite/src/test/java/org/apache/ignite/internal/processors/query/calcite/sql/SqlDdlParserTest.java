@@ -730,7 +730,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertTrue(((IgniteSqlKillQuery)killTask).isAsync());
 
         assertParserThrows("kill query '1233415'", SqlParseException.class);
-        assertParserThrows("kill query '" + UUID.randomUUID() + "'_a1233415'", SqlParseException.class);
+        assertParserThrows("kill query '" + UUID.randomUUID() + "_a1233415'", SqlParseException.class);
         assertParserThrows("kill query '123' '123'", SqlParseException.class);
         assertParserThrows("kill query", SqlParseException.class);
     }

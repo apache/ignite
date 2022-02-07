@@ -24,8 +24,8 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -47,7 +47,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     private final AtomicBoolean unregistered = new AtomicBoolean(false);
 
     /** */
-    private GridRunningQueryManager runningQryMgr;
+    private RunningQueryManager runningQryMgr;
 
     /** */
     private Long qryId;
@@ -69,7 +69,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param qryId Registered running query id.
      * @param tracing Tracing processor.
      */
-    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, GridRunningQueryManager runningQryMgr,
+    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
         boolean lazy, Long qryId, Tracing tracing) {
         super(iterExec, cancel, true, lazy);
 

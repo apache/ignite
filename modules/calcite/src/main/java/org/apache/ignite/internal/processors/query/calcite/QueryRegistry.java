@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Collection;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Registry of the running queries.
@@ -48,9 +46,8 @@ public interface QueryRegistry extends Service {
      * Unregister query by identifier.
      *
      * @param id Query identifier.
-     * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
-    void unregister(UUID id, @Nullable Throwable failReason);
+    void unregister(UUID id);
 
     /** */
     Collection<? extends RunningQuery> runningQueries();

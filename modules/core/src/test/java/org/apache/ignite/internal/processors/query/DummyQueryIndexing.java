@@ -244,7 +244,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningLocalQueries(long duration) {
+    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return null;
     }
 
@@ -256,6 +256,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void cancelLocalQueries(Collection<Long> queries) {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public RunningQueryManager runningQueryManager() {
+        return null;
     }
 
     /** {@inheritDoc} */

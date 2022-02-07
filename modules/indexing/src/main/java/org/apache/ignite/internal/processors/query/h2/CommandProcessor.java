@@ -126,7 +126,7 @@ public class CommandProcessor extends SqlCommandProcessor {
      * @param schemaMgr Schema manager.
      */
     public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, IgniteH2Indexing idx) {
-        super(ctx, schemaMgr, idx.runningQueryManager());
+        super(ctx, schemaMgr);
 
         this.schemaMgr = schemaMgr;
         this.idx = idx;

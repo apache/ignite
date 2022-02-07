@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -54,7 +54,7 @@ public class BulkLoadProcessor implements AutoCloseable {
     private boolean isClosed;
 
     /** Running query manager. */
-    private final GridRunningQueryManager runningQryMgr;
+    private final RunningQueryManager runningQryMgr;
 
     /** Query id. */
     private final Long qryId;
@@ -80,7 +80,7 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param tracing Tracing processor.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, GridRunningQueryManager runningQryMgr, Long qryId, Tracing tracing) {
+        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId, Tracing tracing) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;

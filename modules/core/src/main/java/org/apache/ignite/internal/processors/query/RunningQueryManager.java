@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -68,7 +69,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 /**
  * Keep information about all running queries.
  */
-public class RunningQueryManager implements GridRunningQueryManager {
+public class RunningQueryManager {
     /** Name of the MetricRegistry which metrics measure stats of queries initiated by user. */
     public static final String SQL_USER_QUERIES_REG_NAME = "sql.queries.user";
 
@@ -127,7 +128,7 @@ public class RunningQueryManager implements GridRunningQueryManager {
     private GridSpinBusyLock busyLock;
 
     /** Cancellation runs. */
-    private final ConcurrentMap<Long, KillQueryRun> cancellationRuns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, CancelQueryFuture> cancellationRuns = new ConcurrentHashMap<>();
 
     /** Query cancel request counter. */
     private final AtomicLong qryCancelReqCntr = new AtomicLong();
@@ -195,13 +196,13 @@ public class RunningQueryManager implements GridRunningQueryManager {
                 lock.writeLock().lock();
 
                 try {
-                    Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
+                    Iterator<CancelQueryFuture> it = cancellationRuns.values().iterator();
 
                     while (it.hasNext()) {
-                        KillQueryRun qryRun = it.next();
+                        CancelQueryFuture fut = it.next();
 
-                        if (qryRun.nodeId().equals(nodeId)) {
-                            futs.add(qryRun.cancelFuture());
+                        if (fut.nodeId().equals(nodeId)) {
+                            futs.add(fut);
 
                             it.remove();
                         }
@@ -216,8 +217,17 @@ public class RunningQueryManager implements GridRunningQueryManager {
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
-    /** {@inheritDoc} */
-    @Override public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
+    /**
+     * Register running query.
+     *
+     * @param qry Query text.
+     * @param qryType Query type.
+     * @param schemaName Schema name.
+     * @param loc Local query flag.
+     * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
+     * @return Id of registered query.
+     */
+    public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
         String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
@@ -250,8 +260,13 @@ public class RunningQueryManager implements GridRunningQueryManager {
         return qryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void unregister(Long qryId, @Nullable Throwable failReason) {
+    /**
+     * Unregister running query.
+     *
+     * @param qryId id of the query, which is given by {@link #register register} method.
+     * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
+     */
+    public void unregister(Long qryId, @Nullable Throwable failReason) {
         if (qryId == null)
             return;
 
@@ -303,8 +318,8 @@ public class RunningQueryManager implements GridRunningQueryManager {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void trackRequestId(long reqId) {
+    /** @param reqId Request ID of query to track. */
+    public void trackRequestId(long reqId) {
         if (ctx.performanceStatistics().enabled()) {
             GridRunningQueryInfo info = currQryInfo.get();
 
@@ -363,7 +378,7 @@ public class RunningQueryManager implements GridRunningQueryManager {
      *
      * @param qryId Query id.
      */
-    public void cancel(Long qryId) {
+    public void cancelLocalQuery(Long qryId) {
         GridRunningQueryInfo run = runs.get(qryId);
 
         if (run != null)
@@ -394,9 +409,15 @@ public class RunningQueryManager implements GridRunningQueryManager {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+    /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        CancelQueryFuture fut;
 
         lock.readLock().lock();
 
@@ -408,17 +429,16 @@ public class RunningQueryManager implements GridRunningQueryManager {
             final ClusterNode node = nodeId != null ? ctx.discovery().node(nodeId) : ctx.discovery().localNode();
 
             if (node != null) {
-                KillQueryRun qryRun = new KillQueryRun(nodeId, queryId, fut);
+                fut = new CancelQueryFuture(nodeId, queryId);
 
                 long reqId = qryCancelReqCntr.incrementAndGet();
 
-                cancellationRuns.put(reqId, qryRun);
+                cancellationRuns.put(reqId, fut);
 
                 final GridQueryKillRequest request = new GridQueryKillRequest(reqId, queryId, async);
 
-                if (node.isLocal() && !async) {
+                if (node.isLocal() && !async)
                     locNodeMsgHnd.apply(node, request);
-                }
                 else {
                     try {
                         if (node.isLocal()) {
@@ -458,11 +478,12 @@ public class RunningQueryManager implements GridRunningQueryManager {
         }
 
         try {
-            String err = fut.get();
+            String err = fut != null ? fut.get() : null;
 
-            if (err != null)
+            if (err != null) {
                 throw new IgniteSQLException("Failed to cancel query [nodeId=" + nodeId + ", qryId="
                     + queryId + ", err=" + err + "]");
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to cancel query [nodeId=" + nodeId + ", qryId="
@@ -484,12 +505,12 @@ public class RunningQueryManager implements GridRunningQueryManager {
         lock.writeLock().lock();
 
         try {
-            Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
+            Iterator<CancelQueryFuture> it = cancellationRuns.values().iterator();
 
             while (it.hasNext()) {
-                KillQueryRun qryRun = it.next();
+                CancelQueryFuture fut = it.next();
 
-                qryRun.cancelFuture().onDone(err);
+                fut.onDone(err);
 
                 it.remove();
             }
@@ -503,7 +524,7 @@ public class RunningQueryManager implements GridRunningQueryManager {
      * @param nodeId Node ID.
      * @param msg Message.
      */
-    public void onMessage(UUID nodeId, Object msg) {
+    private void onMessage(UUID nodeId, Object msg) {
         assert msg != null;
 
         ClusterNode node = ctx.discovery().node(nodeId);
@@ -596,38 +617,87 @@ public class RunningQueryManager implements GridRunningQueryManager {
      * @param msg Message.
      */
     private void onQueryKillResponse(GridQueryKillResponse msg) {
-        KillQueryRun qryRun;
+        CancelQueryFuture fut;
 
         lock.readLock().lock();
 
         try {
-            qryRun = cancellationRuns.remove(msg.requestId());
+            fut = cancellationRuns.remove(msg.requestId());
         }
         finally {
             lock.readLock().unlock();
         }
 
-        if (qryRun != null)
-            qryRun.cancelFuture().onDone(msg.error());
+        if (fut != null)
+            fut.onDone(msg.error());
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<QueryHistoryKey, QueryHistory> queryHistoryMetrics() {
+    /**
+     * Gets query history statistics. Size of history could be configured via {@link
+     * SqlConfiguration#setSqlQueryHistorySize(int)}
+     *
+     * @return Queries history statistics aggregated by query text, schema and local flag.
+     */
+    public Map<QueryHistoryKey, QueryHistory> queryHistoryMetrics() {
         return qryHistTracker.queryHistory();
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public GridRunningQueryInfo runningQueryInfo(Long qryId) {
+    /**
+     * Gets info about running query by their id.
+     * @param qryId Query id.
+     * @return Running query info or {@code null} in case no running query for given id.
+     */
+    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
         return runs.get(qryId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void resetQueryHistoryMetrics() {
+    /**
+     * Reset query history.
+     */
+    public void resetQueryHistoryMetrics() {
         qryHistTracker = new QueryHistoryTracker(histSz);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(RunningQueryManager.class, this);
+    }
+
+    /**
+     * Query cancel future.
+     */
+    private static class CancelQueryFuture extends GridFutureAdapter<String> {
+        /** Node id. */
+        private final UUID nodeId;
+
+        /** Node query id. */
+        private final long nodeQryId;
+
+        /**
+         * Constructor.
+         *
+         * @param nodeId Node id.
+         * @param nodeQryId Query id.
+         */
+        public CancelQueryFuture(UUID nodeId, long nodeQryId) {
+            assert nodeId != null;
+
+            this.nodeId = nodeId;
+            this.nodeQryId = nodeQryId;
+        }
+
+        /**
+         * @return Node id.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Node query id.
+         */
+        public long nodeQryId() {
+            return nodeQryId;
+        }
     }
 }

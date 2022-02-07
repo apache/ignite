@@ -85,7 +85,7 @@ public class VisorRunningQueriesCollectorTask
             assert arg != null;
 
             Collection<GridRunningQueryInfo> queries = ignite.context().query()
-                .runningLocalQueries(arg.getDuration());
+                .runningQueries(arg.getDuration());
 
             Collection<VisorRunningQuery> res = new ArrayList<>(queries.size());
 

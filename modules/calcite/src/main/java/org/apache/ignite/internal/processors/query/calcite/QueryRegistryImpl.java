@@ -27,12 +27,10 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryManager;
 import org.apache.ignite.internal.processors.query.RunningQuery;
-import org.apache.ignite.internal.processors.query.calcite.exec.ddl.RunningQueryManagerWrapper;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Registry of the running queries.
@@ -42,13 +40,13 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     private final ConcurrentMap<UUID, Pair<Long, RunningQuery>> runningQrys = new ConcurrentHashMap<>();
 
     /** */
-    private final GridRunningQueryManager runningQryMgr;
+    protected final GridKernalContext kctx;
 
     /** */
     public QueryRegistryImpl(GridKernalContext ctx) {
         super(ctx);
 
-        runningQryMgr = new RunningQueryManagerWrapper(ctx);
+        kctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -60,7 +58,9 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
             else
                 nodeId = kctx.discovery().localNode().id().toString();
 
-            Long locId = runningQryMgr.register(sql, GridCacheQueryType.SQL_FIELDS, schema, false,
+            RunningQueryManager qryMgr = kctx.query().runningQueryManager();
+
+            Long locId = qryMgr.register(sql, GridCacheQueryType.SQL_FIELDS, schema, false,
                 createCancelToken(qry), nodeId);
 
             return Pair.of(locId, qry);
@@ -74,10 +74,10 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(UUID id, @Nullable Throwable failReason) {
+    @Override public void unregister(UUID id) {
         Pair<Long, RunningQuery> value = runningQrys.remove(id);
         if (value != null)
-            runningQryMgr.unregister(value.left, failReason);
+            kctx.query().runningQueryManager().unregister(value.left, null);
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
         try {
             token.add(qry::cancel);
         }
-        catch (QueryCancelledException e) {
+        catch (QueryCancelledException ignore) {
             // Ignore, since it is impossible;
         }
         return token;

@@ -381,7 +381,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Collection<GridRunningQueryInfo> qCol =
-                    grid(NODE_CLIENT).context().query().runningLocalQueries(0);
+                    grid(NODE_CLIENT).context().query().runningQueries(0);
 
                 if (qCol.isEmpty())
                     return false;

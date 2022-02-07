@@ -461,24 +461,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
-        IgniteSQLException err = null;
         try {
             ddlCmdHnd.handle(qry.id(), plan.command());
         }
         catch (IgniteCheckedException e) {
-            err = new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
                 ", err=" + e.getMessage() + ']', e);
-            throw err;
         }
         finally {
-            qryReg.unregister(qry.id(), err);
+            qryReg.unregister(qry.id());
         }
 
         if (plan.command() instanceof CreateTableCommand
             && ((CreateTableCommand)plan.command()).insertStatement() != null) {
             RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()));
 
-            qryReg.register(qry.sql(), qry.schema().getName(), insQry);
+            qryReg.register(qry.sql(), qry.context().schemaName(), insQry);
 
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
@@ -593,7 +591,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
-        qryReg.unregister(qry.id(), null);
+        qryReg.unregister(qry.id());
 
         return cur;
     }
@@ -647,7 +645,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     nodeId,
                     null,
                     exchangeSvc,
-                    (q) -> qryReg.unregister(q.id(), null),
+                    (q) -> qryReg.unregister(q.id()),
                     log,
                     msg.totalFragmentsCount()
                 )

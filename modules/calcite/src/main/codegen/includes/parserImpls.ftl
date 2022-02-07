@@ -578,12 +578,10 @@ SqlNode SqlKillQuery():
     <QUOTED_STRING> {
         String rawQueryId = SqlParserUtil.parseString(token.image);
         SqlCharStringLiteral queryIdLiteral = SqlLiteral.createCharString(rawQueryId, getPos());
-        try {
-            Pair<UUID, Long> id = IgniteSqlKill.parseGlobalQueryId(rawQueryId);
-            return IgniteSqlKill.createQueryKill(s.end(this), queryIdLiteral, id.getKey(), id.getValue(), isAsync);
-        }
-        catch (Exception e) {
+        Pair<UUID, Long> id = IgniteSqlKill.parseGlobalQueryId(rawQueryId);
+        if (id == null) {
             throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalGlobalQueryId(rawQueryId));
         }
+        return IgniteSqlKill.createQueryKill(s.end(this), queryIdLiteral, id.getKey(), id.getValue(), isAsync);
     }
 }
