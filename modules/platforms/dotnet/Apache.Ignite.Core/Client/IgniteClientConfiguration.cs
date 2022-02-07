@@ -65,6 +65,21 @@ namespace Apache.Ignite.Core.Client
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
+        /// Automatic heartbeat interval.
+        /// </summary>
+        public static readonly TimeSpan AutoHeartbeatInterval = TimeSpan.Zero;
+
+        /// <summary>
+        /// Disabled heartbeat interval.
+        /// </summary>
+        public static readonly TimeSpan DisabledHeartbeatInterval = TimeSpan.FromSeconds(-1);
+
+        /// <summary>
+        /// Default heartbeat interval.
+        /// </summary>
+        public static readonly TimeSpan DefaultHeartbeatInterval = AutoHeartbeatInterval;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
         /// </summary>
         public IgniteClientConfiguration()
@@ -267,7 +282,7 @@ namespace Apache.Ignite.Core.Client
         public int RetryLimit { get; set; }
 
         /// <summary>
-        /// TODO: Auto (0, default), Disabled (-1), manual (> 0).
+        /// TODO: Auto (0, default), Disabled (-1), manual (> 0). Explain the behavior.
         /// </summary>
         public TimeSpan HeartbeatInterval { get; set; }
 

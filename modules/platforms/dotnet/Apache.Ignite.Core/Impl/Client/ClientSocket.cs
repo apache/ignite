@@ -178,6 +178,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 var serverIdleTimeoutMs = DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
                 _serverIdleTimeout = TimeSpan.FromMilliseconds(serverIdleTimeoutMs);
             }
+            else if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
+            {
+                _logger.Warn("Custom HeartbeatInterval is configured, but server does not support heartbeat feature.");
+            }
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
