@@ -137,6 +137,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Features. */
         private readonly ClientFeatures _features;
 
+        /** Server idle timeout. */
+        private readonly TimeSpan _serverIdleTimeout;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -169,6 +172,12 @@ namespace Apache.Ignite.Core.Impl.Client
             Validate(clientConfiguration);
 
             _features = Handshake(clientConfiguration, ServerVersion);
+
+            if (_features.HasFeature(ClientBitmaskFeature.Heartbeat))
+            {
+                var serverIdleTimeoutMs = DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
+                _serverIdleTimeout = TimeSpan.FromMilliseconds(serverIdleTimeoutMs);
+            }
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
