@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Disabled heartbeat interval.
         /// </summary>
-        public static readonly TimeSpan DisabledHeartbeatInterval = TimeSpan.FromSeconds(-1);
+        public static readonly TimeSpan DisabledHeartbeatInterval = TimeSpan.FromMilliseconds(-1);
 
         /// <summary>
         /// Default heartbeat interval.
@@ -282,7 +282,14 @@ namespace Apache.Ignite.Core.Client
         public int RetryLimit { get; set; }
 
         /// <summary>
-        /// TODO: Auto (0, default), Disabled (-1), manual (> 0). Explain the behavior.
+        /// Sets the heartbeat message interval.
+        /// <para />
+        /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+        /// to keep the connection alive and detect potential half-open state.
+        /// <para />
+        /// TODO: Explain the behavior.
+        /// <para />
+        /// See <see cref="DefaultHeartbeatInterval"/>, <see cref="AutoHeartbeatInterval"/>, <see cref="DisabledHeartbeatInterval"/>.
         /// </summary>
         public TimeSpan HeartbeatInterval { get; set; }
 
