@@ -371,7 +371,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientRequest(reader);
 
             case OP_GET_IDLE_TIMEOUT:
-                return new ClientRequest(reader);
+                return new ClientGetIdleTimeoutRequest(reader);
 
             case OP_CACHE_CONTAINS_KEY:
                 return new ClientCacheContainsKeyRequest(reader);
