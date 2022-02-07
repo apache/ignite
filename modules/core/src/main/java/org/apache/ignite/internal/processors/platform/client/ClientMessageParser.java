@@ -364,6 +364,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_RESOURCE_CLOSE:
                 return new ClientResourceCloseRequest(reader);
 
+            case OP_HEARTBEAT:
+                return new ClientRequest(reader);
+
             case OP_CACHE_CONTAINS_KEY:
                 return new ClientCacheContainsKeyRequest(reader);
 
