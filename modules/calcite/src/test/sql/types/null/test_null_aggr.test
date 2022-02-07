@@ -1,7 +1,6 @@
 # name: test/sql/types/null/test_null_aggr.test
 # description: Test NULL handling in aggregations
 # group: [null]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15539
 
 statement ok
 CREATE TABLE test (a INTEGER, b INTEGER);
@@ -46,9 +45,8 @@ statement ok
 INSERT INTO test VALUES (NULL, NULL), (NULL, 22)
 
 query IIRII
-SELECT b, COUNT(a), SUM(a), MIN(a), MAX(a) FROM test GROUP BY b ORDER BY b NULLS LAST
+SELECT b, COUNT(a), SUM(a), MIN(a), MAX(a) FROM test GROUP BY b ORDER BY b NULLS LAST;
 ----
 21	0	NULL	NULL	NULL
 22	2	24.000000	11	13
 NULL	2	28.000000	12	16
-
