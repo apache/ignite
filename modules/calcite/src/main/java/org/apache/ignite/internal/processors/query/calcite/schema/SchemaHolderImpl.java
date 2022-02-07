@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -245,9 +246,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             boolean descending = idxDesc.descending(idxField);
             int fieldIdx = fieldDesc.fieldIndex();
 
-            collations.add(
-                createFieldCollation(fieldIdx, !descending)
-            );
+            collations.add(TraitUtils.createFieldCollation(fieldIdx, !descending));
         }
 
         return RelCollations.of(collations);
@@ -297,12 +296,5 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
         calciteSchema = newCalciteSchema;
-    }
-
-    /** */
-    private static RelFieldCollation createFieldCollation(int fieldIdx, boolean asc) {
-        return asc
-            ? new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST)
-            : new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.DESCENDING, RelFieldCollation.NullDirection.LAST);
     }
 }

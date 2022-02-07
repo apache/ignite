@@ -26,13 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -60,11 +58,11 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -182,8 +180,16 @@ public class RexUtils {
         List<RexNode> upper = new ArrayList<>();
 
         // Force collation for all fields of the condition.
-        if (collation == null || collation.isDefault())
-            collation = RelCollations.of(ImmutableIntList.copyOf(fieldsToPredicates.keySet()));
+        if (collation == null || collation.isDefault()) {
+            List<Integer> equalsFields = new ArrayList<>(fieldsToPredicates.size());
+            List<Integer> otherFields = new ArrayList<>(fieldsToPredicates.size());
+
+            // It's more effective to put equality conditions in the collation first.
+            fieldsToPredicates.forEach((idx, conds) ->
+                (F.exist(conds, call -> call.getOperator().getKind() == EQUALS) ? equalsFields : otherFields).add(idx));
+
+            collation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
+        }
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
             RelFieldCollation fc = collation.getFieldCollations().get(i);
@@ -236,10 +242,6 @@ public class RexUtils {
 
             if (bestLower == null && bestUpper == null)
                 break; // No bounds, so break the loop.
-
-            if (i > 0 && bestLower != bestUpper)
-                // Go behind the first index field only in the case of multiple "=" conditions on index fields.
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
 
             if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
                 upper.add(bestUpper);
