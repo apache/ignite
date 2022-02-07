@@ -87,6 +87,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Request timeout checker. */
         private readonly Timer _timeoutCheckTimer;
 
+        /** Heartbeat timer. */
+        private readonly Timer _heartbeatTimer;
+
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
 
@@ -137,8 +140,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Features. */
         private readonly ClientFeatures _features;
 
-        /** Server idle timeout. */
-        private readonly TimeSpan _serverIdleTimeout;
+        /** Effective heartbeat interval. */
+        private readonly TimeSpan _heartbeatInterval;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -173,10 +176,23 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _features = Handshake(clientConfiguration, ServerVersion);
 
-            if (_features.HasFeature(ClientBitmaskFeature.Heartbeat))
+            if (_features.HasFeature(ClientBitmaskFeature.Heartbeat) &&
+                clientConfiguration.HeartbeatInterval >= TimeSpan.Zero)
             {
                 var serverIdleTimeoutMs = DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
-                _serverIdleTimeout = TimeSpan.FromMilliseconds(serverIdleTimeoutMs);
+
+                _heartbeatInterval = clientConfiguration.HeartbeatInterval;
+
+                if (_heartbeatInterval == IgniteClientConfiguration.AutoHeartbeatInterval)
+                {
+                    // ReSharper disable once PossibleLossOfFraction
+                    _heartbeatInterval = serverIdleTimeoutMs > 0
+                        ? TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 2)
+                        : TimeSpan.FromMinutes(1);
+                }
+
+                _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
+                    period: TimeSpan.FromMilliseconds(-1));
             }
             else if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
             {
@@ -834,6 +850,8 @@ namespace Apache.Ignite.Core.Impl.Client
             try
             {
                 _stream.Write(buf, 0, len);
+
+                _heartbeatTimer?.Change(dueTime: _heartbeatInterval, period: TimeSpan.FromMilliseconds(-1));
             }
             catch (Exception e)
             {
@@ -948,6 +966,14 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 _checkingTimeouts = false;
             }
+        }
+
+        /// <summary>
+        /// Sends heartbeat message.
+        /// </summary>
+        private void SendHeartbeat(object unused)
+        {
+            DoOutInOp<object>(ClientOp.Heartbeat, null, null);
         }
 
         /// <summary>
