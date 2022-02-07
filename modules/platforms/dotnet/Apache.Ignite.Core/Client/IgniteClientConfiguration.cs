@@ -267,6 +267,11 @@ namespace Apache.Ignite.Core.Client
         public int RetryLimit { get; set; }
 
         /// <summary>
+        /// TODO: Auto (0, default), Disabled (-1), manual (> 0).
+        /// </summary>
+        public TimeSpan HeartbeatInterval { get; set; }
+
+        /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
         /// </summary>
         internal IBinaryProcessor BinaryProcessor { get; set; }
