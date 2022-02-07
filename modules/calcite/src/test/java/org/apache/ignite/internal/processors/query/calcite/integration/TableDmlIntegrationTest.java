@@ -250,6 +250,28 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
+     * Test insert/update/delete rows of a table with two or more fields in the primary key.
+     */
+    @Test
+    public void testInsertUpdateDeleteComplexKey() {
+        executeSql("CREATE TABLE t(id INT, val VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val))");
+        executeSql("INSERT INTO t(id, val, val2) VALUES (1, 'a', 'b')");
+
+        assertQuery("SELECT * FROM t").returns(1, "a", "b").check();
+
+        executeSql("UPDATE t SET val2 = 'c' WHERE id = 1");
+
+        // Can't update the part of the key field.
+        assertThrows("UPDATE t SET val = 'c' WHERE id = 1", IgniteSQLException.class, "Cannot update field \"VAL\".");
+
+        assertQuery("SELECT * FROM t").returns(1, "a", "c").check();
+
+        executeSql("DELETE FROM t WHERE id = 1");
+
+        assertQuery("SELECT COUNT(*) FROM t").returns(0L).check();
+    }
+
+    /**
      * Test full MERGE command.
      */
     @Test
