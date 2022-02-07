@@ -94,6 +94,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_RESOURCE_CLOSE = 0;
 
+    /** */
+    private static final short OP_HEARTBEAT = 1;
+
     /* Cache operations */
     /** */
     private static final short OP_CACHE_GET = 1000;
