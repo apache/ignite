@@ -25,6 +25,36 @@ SELECT COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings WHERE s IS NULL
 NULL
 NULL
 
+# more complex agg (groups)
+query IIITT
+SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings GROUP BY g ORDER BY g
+----
+0
+2
+1
+hello
+hello
+1
+2
+2
+r
+world
+
+# empty group
+query IIITT
+SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings WHERE s IS NULL OR s <> 'hello' GROUP BY g ORDER BY g
+----
+0
+1
+0
+NULL
+NULL
+1
+2
+2
+r
+world
+
 # unsupported aggregates
 statement error
 SELECT SUM(s) FROM strings GROUP BY g ORDER BY g
