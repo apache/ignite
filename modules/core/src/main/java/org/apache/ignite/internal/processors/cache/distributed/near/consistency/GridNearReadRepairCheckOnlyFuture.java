@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -49,6 +50,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
      *
+     * @param topVer Topology version.
      * @param ctx Cache context.
      * @param keys Keys.
      * @param strategy Read repair strategy.
@@ -63,6 +65,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     public GridNearReadRepairCheckOnlyFuture(
+        AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
         ReadRepairStrategy strategy,
@@ -89,8 +92,26 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         this.skipVals = skipVals;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+    }
 
-        init();
+    /** {@inheritDoc} */
+    @Override protected void remap(AffinityTopologyVersion topVer) {
+        GridNearReadRepairCheckOnlyFuture fut = new GridNearReadRepairCheckOnlyFuture(
+            topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            skipVals,
+            needVer,
+            keepCacheObjects,
+            tx);
+
+        fut.initOnRemap(this);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +122,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         catch (IgniteConsistencyViolationException e) {
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
-            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+            if (remapCnt >= MAX_REMAP_CNT) {
                 if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
                     recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
 
@@ -125,6 +146,8 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
+        init();
+
         return chain((fut) -> {
             try {
                 final Map<K, V> map = new IgniteBiTuple<>();
@@ -151,6 +174,8 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents entries map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
+        init();
+
         return chain((fut) -> {
             try {
                 final Map<K, V> map = U.newHashMap(keys.size());

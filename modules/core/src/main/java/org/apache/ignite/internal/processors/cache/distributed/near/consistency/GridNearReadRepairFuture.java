@@ -82,8 +82,32 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             tx);
 
         assert ctx.transactional() : "Atomic cache should not be recovered using this future";
+    }
 
+    /**
+     *
+     */
+    public GridNearReadRepairFuture prepared() {
         init();
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void remap(AffinityTopologyVersion topVer) {
+        GridNearReadRepairFuture fut = new GridNearReadRepairFuture(
+            topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            tx);
+
+        fut.initOnRemap(this);
     }
 
     /** {@inheritDoc} */

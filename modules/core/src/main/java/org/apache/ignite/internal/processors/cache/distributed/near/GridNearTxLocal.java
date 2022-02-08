@@ -2455,6 +2455,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepairStrategy != null) { // Checking and repairing each locked entry (if necessary).
+                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                            if (topVer == null)
+                                topVer = entryTopVer;
+
                             return new GridNearReadRepairFuture(
                                 topVer != null ? topVer : topologyVersion(),
                                 cacheCtx,
@@ -2466,6 +2471,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 recovery,
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
                                 GridNearTxLocal.this)
+                                .prepared()
                                 .chain((fut) -> {
                                         try {
                                             // For every fixed entry.
@@ -3187,6 +3193,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else if (cacheCtx.isColocated()) {
             if (readRepairStrategy != null) {
                 return new GridNearReadRepairCheckOnlyFuture(
+                    topVer,
                     cacheCtx,
                     keys,
                     readRepairStrategy,
