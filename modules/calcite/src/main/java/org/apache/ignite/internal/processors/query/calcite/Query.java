@@ -97,12 +97,12 @@ public class Query<RowT> implements RunningQuery {
         this.totalFragmentsCnt = totalFragmentsCnt;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public QueryState state() {
         return state;
     }
@@ -135,7 +135,7 @@ public class Query<RowT> implements RunningQuery {
         synchronized (mux) {
             if (state == QueryState.CLOSED)
                 return;
-            
+
             if (state == QueryState.INITED) {
                 state = QueryState.CLOSING;
 

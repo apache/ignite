@@ -188,7 +188,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
-        qryReg = new QueryRegistryImpl(ctx.log(QueryRegistry.class));
+        qryReg = new QueryRegistryImpl(ctx);
     }
 
     /**

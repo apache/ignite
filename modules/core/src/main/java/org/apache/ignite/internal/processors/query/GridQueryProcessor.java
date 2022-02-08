@@ -915,6 +915,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Running query manager.
+     * @throws IgniteException If module is not enabled.
+     */
+    public RunningQueryManager runningQueryManager() throws IgniteException {
+        checkxEnabled();
+
+        return idx.runningQueryManager();
+    }
+
+    /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
      * @param cacheInfo Cache context info.
@@ -3081,7 +3091,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Collect queries that already running more than specified duration.
+     * Collect local queries that already running more than specified duration.
      *
      * @param duration Duration to check.
      * @return Collection of long running queries.
@@ -3094,13 +3104,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        if (moduleEnabled())
+            idx.cancelQuery(queryId, nodeId, async);
+    }
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.
      */
-    public void cancelQueries(Collection<Long> queries) {
+    public void cancelLocalQueries(Collection<Long> queries) {
         if (moduleEnabled())
-            idx.cancelQueries(queries);
+            idx.cancelLocalQueries(queries);
     }
 
     /**

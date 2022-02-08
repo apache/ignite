@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoo
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
@@ -79,6 +80,7 @@ import org.junit.runners.Suite;
     IndexDdlIntegrationTest.class,
     UserDdlIntegrationTest.class,
     KillCommandDdlIntegrationTest.class,
+    KillQueryCommandDdlIntegrationTest.class,
     FunctionsTest.class,
     StdSqlOperatorsTest.class,
     TableDmlIntegrationTest.class,

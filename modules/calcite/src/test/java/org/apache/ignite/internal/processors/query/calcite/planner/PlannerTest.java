@@ -327,7 +327,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -385,7 +385,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -554,7 +554,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -611,7 +611,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(

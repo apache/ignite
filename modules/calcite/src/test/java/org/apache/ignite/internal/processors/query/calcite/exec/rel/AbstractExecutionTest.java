@@ -182,7 +182,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.queryRegistry(new QueryRegistryImpl(log));
+            exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
             exchangeSvc.init();
 
             exchangeServices.put(uuid, exchangeSvc);
