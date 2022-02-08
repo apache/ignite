@@ -25,6 +25,7 @@ set(SOURCES src/common/big_integer.cpp
         src/common/bits.cpp
         src/common/concurrent.cpp
         src/common/decimal.cpp
+        src/common/thread_pool.cpp
         src/common/utils.cpp
         src/date.cpp
         src/ignite_error.cpp

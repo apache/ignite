@@ -17,7 +17,6 @@
 
 package org.apache.ignite.services;
 
-import java.io.Externalizable;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -58,7 +57,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ServiceCallContextBuilder
  */
 @IgniteExperimental
-public interface ServiceCallContext extends Externalizable {
+public interface ServiceCallContext {
     /**
      * Create a context builder.
      *

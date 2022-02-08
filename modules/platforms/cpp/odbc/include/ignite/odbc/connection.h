@@ -99,7 +99,7 @@ namespace ignite
              *
              * @param cfg Configuration.
              */
-            void Establish(const config::Configuration cfg);
+            void Establish(const config::Configuration& cfg);
 
             /**
              * Release established connection.

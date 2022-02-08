@@ -72,6 +72,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.PlatformCacheConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -2088,6 +2089,9 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
 
+        if (in.readBoolean())
+            res.setSystemDataRegionConfiguration(readSystemDataRegionConfiguration(in));
+
         return res;
     }
 
@@ -2233,6 +2237,13 @@ public class PlatformConfigurationUtils {
             }
             else
                 w.writeBoolean(false);
+
+            if (cfg.getSystemDataRegionConfiguration() != null) {
+                w.writeBoolean(true);
+                writeSystemDataRegionConfiguration(w, cfg.getSystemDataRegionConfiguration());
+            }
+            else
+                w.writeBoolean(false);
         }
         else
             w.writeBoolean(false);
@@ -2260,6 +2271,20 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMetricsRateTimeInterval());
         w.writeLong(cfg.getCheckpointPageBufferSize());
         w.writeBoolean(cfg.isLazyMemoryAllocation());
+    }
+
+    /**
+     * Writes the system data region configuration.
+     *
+     * @param w Writer.
+     * @param cfg System data region configuration.
+     */
+    private static void writeSystemDataRegionConfiguration(BinaryRawWriter w, SystemDataRegionConfiguration cfg) {
+        assert w != null;
+        assert cfg != null;
+
+        w.writeLong(cfg.getInitialSize());
+        w.writeLong(cfg.getMaxSize());
     }
 
     /**
@@ -2318,6 +2343,19 @@ public class PlatformConfigurationUtils {
         cfg.setLazyMemoryAllocation(r.readBoolean());
 
         return cfg;
+    }
+
+    /**
+     * Reads the system data region configuration.
+     *
+     * @param r Reader.
+     */
+    private static SystemDataRegionConfiguration readSystemDataRegionConfiguration(BinaryRawReader r) {
+        assert r != null;
+
+        return new SystemDataRegionConfiguration()
+                .setInitialSize(r.readLong())
+                .setMaxSize(r.readLong());
     }
 
     /**

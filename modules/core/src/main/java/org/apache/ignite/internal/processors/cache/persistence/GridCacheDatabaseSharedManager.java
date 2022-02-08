@@ -499,8 +499,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
-        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(storageCfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(storageCfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -581,7 +581,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 kernalCtx.longJvmPauseDetector(),
                 kernalCtx.failure(),
                 kernalCtx.cache(),
-                () -> cpFreqDeviation.getOrDefault(DEFAULT_CHECKPOINT_DEVIATION)
+                () -> cpFreqDeviation.getOrDefault(DEFAULT_CHECKPOINT_DEVIATION),
+                kernalCtx.pools().getSystemExecutorService()
             );
 
             final NodeFileLockHolder preLocked = kernalCtx.pdsFolderResolver()
@@ -2583,7 +2584,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         try {
                             DataRecord dataRec = (DataRecord)rec;
 
-                            for (DataEntry dataEntry : dataRec.writeEntries()) {
+                            int entryCnt = dataRec.entryCount();
+
+                            for (int i = 0; i < entryCnt; i++) {
+                                DataEntry dataEntry = dataRec.get(i);
+
                                 if (entryPredicate.apply(dataEntry)) {
                                     checkpointReadLock();
 
@@ -2733,7 +2738,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case ENCRYPTED_DATA_RECORD_V3:
                         DataRecord dataRec = (DataRecord)rec;
 
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
+                        int entryCnt = dataRec.entryCount();
+
+                        for (int i = 0; i < entryCnt; i++) {
+                            DataEntry dataEntry = dataRec.get(i);
+
                             if (!restoreMeta && txManager.uncommitedTx(dataEntry))
                                 continue;
 
@@ -3248,7 +3257,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            CheckpointEntry lastCp = checkpointHistory().lastCheckpointMarkingAsInapplicable(grpId);
+            CheckpointEntry lastCp = checkpointManager.checkpointMarkerStorage().removeFromEarliestCheckpoints(grpId);
+
             long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
             if (lastCpTs != 0)

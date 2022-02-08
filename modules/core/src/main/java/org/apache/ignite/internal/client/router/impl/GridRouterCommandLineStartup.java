@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -49,8 +50,8 @@ public class GridRouterCommandLineStartup {
      *
      * @param beans Beans loaded from spring configuration file.
      */
-    public void start(Map<Class<?>, Object> beans) {
-        log = (IgniteLogger)beans.get(IgniteLogger.class);
+    public void start(Map<Class<?>, Collection> beans) {
+        log = F.<IgniteLogger>first(beans.get(IgniteLogger.class));
 
         if (log == null) {
             U.error(log, "Failed to find logger definition in application context. Stopping the router.");
@@ -58,7 +59,8 @@ public class GridRouterCommandLineStartup {
             return;
         }
 
-        GridTcpRouterConfiguration tcpCfg = (GridTcpRouterConfiguration)beans.get(GridTcpRouterConfiguration.class);
+        GridTcpRouterConfiguration tcpCfg =
+            F.<GridTcpRouterConfiguration>first(beans.get(GridTcpRouterConfiguration.class));
 
         if (tcpCfg == null)
             U.warn(log, "TCP router startup skipped (configuration not found).");
@@ -144,10 +146,10 @@ public class GridRouterCommandLineStartup {
         if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
 
-        Map<Class<?>, Object> beans;
+        Map<Class<?>, Collection> beans;
 
         try {
-            beans = spring.loadBeans(cfgUrl, IgniteLogger.class, GridTcpRouterConfiguration.class);
+            beans = spring.loadBeans(cfgUrl, IgniteLogger.class, GridTcpRouterConfiguration.class).get1();
         }
         finally {
             if (isLog4jUsed && t != null)

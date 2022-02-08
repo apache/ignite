@@ -30,6 +30,7 @@ set(SOURCES src/impl/data_channel.cpp
         src/impl/affinity/affinity_topology_version.cpp
         src/impl/affinity/affinity_assignment.cpp
         src/impl/affinity/affinity_manager.cpp
+        src/impl/cache/query/continuous/continuous_query_notification_handler.cpp
         src/impl/remote_type_updater.cpp
         src/impl/message.cpp
         src/impl/cache/cache_client_proxy.cpp

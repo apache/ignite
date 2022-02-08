@@ -65,12 +65,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1132,7 +1134,31 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
+    public static IgniteInternalFuture runAsync(final RunnableX task) {
+        return runAsync(task, "async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static IgniteInternalFuture runAsync(final RunnableX task, String threadName) {
         return runAsync(() -> {
             task.run();
 
@@ -2339,6 +2365,13 @@ public final class GridTestUtils {
      */
     public static void assertInactive(ClusterState state) {
         assertFalse(state + " isn't inactive state", state.active());
+    }
+
+    /** @return Cartesian product of collections. See {@link Lists#cartesianProduct(List)}. */
+    public static Collection<Object[]> cartesianProduct(Collection<?>... c) {
+        List<List<?>> lists = F.asList(c).stream().map(ArrayList::new).collect(Collectors.toList());
+
+        return F.transform(Lists.cartesianProduct(lists), List::toArray);
     }
 
     /** Test parameters scale factor util. */

@@ -300,7 +300,6 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
-#if !NETCOREAPP
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
@@ -324,7 +323,6 @@ namespace Apache.Ignite.Core.Tests.Client
                 "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration",
                 typeof(IgniteClientConfiguration));
         }
-#endif
 
         /// <summary>
         /// Tests <see cref="TransactionClientConfiguration"/> copy ctor.

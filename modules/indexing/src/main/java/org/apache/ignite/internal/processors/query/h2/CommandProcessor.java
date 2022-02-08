@@ -144,7 +144,7 @@ public class CommandProcessor extends SqlCommandProcessor {
      * @return Result.
      */
     public CommandResult runCommand(String sql, SqlCommand cmdNative, GridSqlStatement cmdH2,
-        QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
+        QueryParameters params, @Nullable SqlClientContext cliCtx, long qryId) throws IgniteCheckedException {
         assert cmdNative != null || cmdH2 != null;
 
         // Do execute.
@@ -842,7 +842,7 @@ public class CommandProcessor extends SqlCommandProcessor {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
+    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, long qryId)
         throws IgniteCheckedException {
         if (cmd.packetSize() == null)
             cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);

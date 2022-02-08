@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,6 +61,9 @@ public class ServiceContextImpl implements ServiceContext {
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
+    /** Invocation metrics. */
+    private ReadOnlyMetricRegistry metrics;
+
     /** Service. */
     @GridToStringExclude
     private volatile Service svc;
@@ -67,23 +71,29 @@ public class ServiceContextImpl implements ServiceContext {
     /** Cancelled flag. */
     private volatile boolean isCancelled;
 
+    /** Service statistics flag. */
+    private final boolean isStatisticsEnabled;
+
     /**
      * @param name Service name.
      * @param execId Execution ID.
      * @param cacheName Cache name.
      * @param affKey Affinity key.
      * @param exe Executor service.
+     * @param statisticsEnabled Service statistics flag.
      */
     ServiceContextImpl(String name,
         UUID execId,
         String cacheName,
         Object affKey,
-        ExecutorService exe) {
+        ExecutorService exe,
+        boolean statisticsEnabled) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.exe = exe;
+        this.isStatisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */
@@ -130,6 +140,29 @@ public class ServiceContextImpl implements ServiceContext {
      */
     ExecutorService executor() {
         return exe;
+    }
+
+    /**
+     * @return Invocation metrics.
+     */
+    @Nullable ReadOnlyMetricRegistry metrics() {
+        return metrics;
+    }
+
+    /**
+     * Sets the invocation metrics.
+     *
+     * @return {@code this}.
+     */
+    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
+        this.metrics = metrics;
+
+        return this;
+    }
+
+    /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
+    boolean isStatisticsEnabled() {
+        return isStatisticsEnabled;
     }
 
     /**

@@ -364,8 +364,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         if (qryCtx == null)
             return null;
 
-        IndexingQueryCacheFilter cacheFilter = qryCtx.filter() == null ? null
-            : qryCtx.filter().forCache(cctx.cache().name());
+        IndexingQueryCacheFilter cacheFilter = qryCtx.cacheFilter() == null ? null
+            : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
         MvccSnapshot v = qryCtx.mvccSnapshot();
 
@@ -375,7 +375,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return null;
 
         return new InlineTreeFilterClosure(
-            cacheFilter, v, cctx, cctx.kernalContext().config().getGridLogger());
+            cacheFilter, qryCtx.rowFilter(), v, cctx, cctx.kernalContext().config().getGridLogger());
     }
 
     /** {@inheritDoc} */

@@ -18,13 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
-import org.apache.ignite.internal.processors.cache.consistency.AtomicReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -207,16 +200,6 @@ import org.junit.runners.Suite;
     AtomicCacheAffinityConfigurationTest.class,
 
     IgniteCacheDataStructuresBinarySelfTestSuite.class,
-
-    ImplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class,
-    ReplicatedImplicitTransactionalReadRepairTest.class,
-
-    AtomicReadRepairTest.class,
-
-    ExplicitTransactionalReadRepairTest.class,
-    SingleBackupExplicitTransactionalReadRepairTest.class,
-    ReplicatedExplicitTransactionalReadRepairTest.class,
 
     IgniteAtomicLongClusterReadOnlyTest.class,
     IgniteAtomicReferenceClusterReadOnlyTest.class,

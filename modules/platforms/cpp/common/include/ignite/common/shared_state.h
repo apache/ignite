@@ -376,6 +376,180 @@ namespace ignite
             /** Lock that used to prevent double-set of the value. */
             mutable concurrent::CriticalSection mutex;
         };
+
+        /**
+         * Specialization for shared pointer type.
+         */
+        template<typename T>
+        class SharedState< concurrent::SharedPointer<T> >
+        {
+        public:
+            /** Template value type */
+            typedef T ValueType;
+
+            /**
+             * Default constructor.
+             * Constructs non-set SharedState instance.
+             */
+            SharedState() :
+                value(),
+                error()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~SharedState()
+            {
+                // No-op.
+            }
+
+            /**
+             * Checks if the value or error set for the state.
+             * @return True if the value or error set for the state.
+             */
+            bool IsSet() const
+            {
+                return value.IsValid() || error.GetCode() != IgniteError::IGNITE_SUCCESS;
+            }
+
+            /**
+             * Set value.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param val Value to set.
+             */
+            void SetValue(const concurrent::SharedPointer<ValueType>& val)
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (IsSet())
+                {
+                    if (value.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future value already set");
+
+                    if (error.GetCode() != IgniteError::IGNITE_SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future error already set");
+                }
+
+                value = val;
+
+                cond.NotifyAll();
+            }
+
+            /**
+             * Set error.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param err Error to set.
+             */
+            void SetError(const IgniteError& err)
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (IsSet())
+                {
+                    if (value.IsValid())
+                        throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future value already set");
+
+                    if (error.GetCode() != IgniteError::IGNITE_SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future error already set");
+                }
+
+                error = err;
+
+                cond.NotifyAll();
+            }
+
+            /**
+             * Wait for value to be set.
+             * Active thread will be blocked until value or error will be set.
+             */
+            void Wait() const
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                while (!IsSet())
+                    cond.Wait(mutex);
+            }
+
+            /**
+             * Wait for value to be set for specified time.
+             * Active thread will be blocked until value or error will be set or timeout will end.
+             *
+             * @param msTimeout Timeout in milliseconds.
+             * @return True if the object has been triggered and false in case of timeout.
+             */
+            bool WaitFor(int32_t msTimeout) const
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (IsSet())
+                    return true;
+
+                return cond.WaitFor(mutex, msTimeout);
+            }
+
+            /**
+             * Get the set value.
+             * Active thread will be blocked until value or error will be set.
+             *
+             * @throw IgniteError if error has been set.
+             * @return Value that has been set on success.
+             */
+            concurrent::SharedPointer<ValueType> GetValue() const
+            {
+                Wait();
+
+                if (value.IsValid())
+                    return value;
+
+                assert(error.GetCode() != IgniteError::IGNITE_SUCCESS);
+
+                throw error;
+            }
+
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                cancelTarget = target;
+            }
+
+            /**
+             * Cancel related operation.
+             */
+            void Cancel()
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (cancelTarget.get())
+                    cancelTarget->Cancel();
+            }
+
+        private:
+            IGNITE_NO_COPY_ASSIGNMENT(SharedState);
+
+            /** Cancel target. */
+            std::auto_ptr<Cancelable> cancelTarget;
+
+            /** Value. */
+            concurrent::SharedPointer<ValueType> value;
+
+            /** Error. */
+            IgniteError error;
+
+            /** Condition variable which serves to signal that value is set. */
+            mutable concurrent::ConditionVariable cond;
+
+            /** Lock that used to prevent double-set of the value. */
+            mutable concurrent::CriticalSection mutex;
+        };
     }
 }
 

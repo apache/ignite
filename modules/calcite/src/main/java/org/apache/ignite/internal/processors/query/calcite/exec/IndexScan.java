@@ -290,7 +290,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** {@inheritDoc} */
     @Override protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        return new IndexQueryContext(filter, mvccSnapshot);
+        return new IndexQueryContext(filter, null, mvccSnapshot);
     }
 
     /** */

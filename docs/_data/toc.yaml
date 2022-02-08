@@ -147,6 +147,8 @@
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+    - title: Change Data Capture
+      url: persistence/change-data-capture
 - title: Cluster Snapshots
   url: snapshots/snapshots
 - title: Configuring Caches

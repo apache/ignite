@@ -44,6 +44,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -59,6 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FI
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /** */
 public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRestoreBaseTest {
@@ -174,6 +177,44 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             msgs.addAll(TestRecordingCommunicationSpi.spi(g).recordedMessages(true));
 
         assertPartitionsDuplicates(msgs);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreFromAnEmptyNode() throws Exception {
+        startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        // Start a new node without snapshot working directory.
+        IgniteEx emptyNode = startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
+
+        emptyNode.cluster().state(ClusterState.ACTIVE);
+
+        emptyNode.cache(DEFAULT_CACHE_NAME).destroy();
+        awaitPartitionMapExchange();
+
+        // Ensure that the snapshot check command succeeds.
+        IdleVerifyResultV2 res =
+            emptyNode.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        StringBuilder buf = new StringBuilder();
+        res.print(buf::append, true);
+
+        assertTrue(F.isEmpty(res.exceptions()));
+        assertPartitionsSame(res);
+        assertContains(log, buf.toString(), "The check procedure has finished, no conflicts have been found");
+
+        // Restore all cache groups.
+        emptyNode.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        awaitPartitionMapExchange(true, true, null, true);
+
+        for (Ignite grid : G.allGrids()) {
+            assertCacheKeys(grid.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+            assertCacheKeys(grid.cache(CACHE1), CACHE_KEYS_RANGE);
+            assertCacheKeys(grid.cache(CACHE2), CACHE_KEYS_RANGE);
+        }
     }
 
     /** @throws Exception If failed. */

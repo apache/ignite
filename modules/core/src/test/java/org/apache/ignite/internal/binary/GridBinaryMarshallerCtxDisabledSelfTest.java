@@ -28,7 +28,6 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -52,7 +51,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", context, cfg);
+        marsh.setBinaryContext(context, cfg);
 
         SimpleObject simpleObj = new SimpleObject();
 

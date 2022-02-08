@@ -23,9 +23,12 @@
 
 #include <ignite/thin/cache/query/query_sql_fields.h>
 
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
+
 #include "impl/data_router.h"
 #include "impl/transactions/transactions_impl.h"
 #include "impl/cache/query/query_fields_cursor_impl.h"
+#include "impl/cache/query/continuous/continuous_query_handle_impl.h"
 
 namespace ignite
 {
@@ -298,6 +301,15 @@ namespace ignite
                      */
                     query::SP_QueryFieldsCursorImpl Query(const ignite::thin::cache::query::SqlFieldsQuery &qry);
 
+                    /**
+                     * Starts the continuous query execution
+                     *
+                     * @param continuousQuery Continuous query.
+                     * @return Query handle. Once all instances are destroyed query execution stopped.
+                     */
+                    query::continuous::SP_ContinuousQueryHandleClientImpl QueryContinuous(
+                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery);
+
                 private:
                     /**
                      * Synchronously send request message and receive response.
@@ -308,7 +320,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
+                    void SyncCacheKeyMessage(const WritableKey& key, ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send message and receive response.
@@ -319,7 +331,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    SP_DataChannel SyncMessage(const ReqT& req, RspT& rsp);
+                    SP_DataChannel SyncMessage(ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send message and receive response.
@@ -331,7 +343,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    SP_DataChannel SyncMessageSql(const ReqT& req, RspT& rsp);
+                    SP_DataChannel SyncMessageSql(ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send request message and receive response taking in account that it can be
