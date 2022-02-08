@@ -107,8 +107,8 @@ public class Query<RowT> implements RunningQuery {
         return state;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID initiatorNodeId() {
+    /** */
+    public UUID initiatorNodeId() {
         return initNodeId;
     }
 

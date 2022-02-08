@@ -30,8 +30,5 @@ public interface RunningQuery {
     QueryState state();
 
     /** */
-    UUID initiatorNodeId();
-
-    /** */
     void cancel();
 }
