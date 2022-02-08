@@ -57,7 +57,7 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
      */
     @Test
     public void testInsertKeyWithNullKeyParts() {
-        sql("CREATE TABLE test (id1 INT, id2 INT, val INT, CONSTRAINT PK PRIMARY KEY(id1, id2))");
+        sql("CREATE TABLE test (id1 INT, id2 INT, val INT, CONSTRAINT PK PRIMARY KEY(id2, id1))");
         sql("insert into test (id1, id2, val) values (1, null, 1);");
 
         assertThrows(log,

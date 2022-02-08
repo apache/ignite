@@ -224,6 +224,10 @@ public final class UpdatePlanBuilder {
 
         int[] colTypes = new int[cols.length];
 
+        GridQueryTypeDescriptor type = desc.type();
+
+        Set<String> rowKeys = new HashSet<>(type.primaryKeyFields());
+
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
@@ -232,6 +236,8 @@ public final class UpdatePlanBuilder {
             colNames[i] = colName;
 
             colTypes[i] = col.resultType().type();
+
+            rowKeys.remove(colName);
 
             int colId = col.column().getColumnId();
 
@@ -255,6 +261,28 @@ public final class UpdatePlanBuilder {
                 hasKeyProps = true;
             else
                 hasValProps = true;
+        }
+
+        if (hasKeyProps && !rowKeys.isEmpty()) {
+            String[] extendedColNames = new String[rowKeys.size() + colNames.length];
+            int[] extendedColTypes = new int[rowKeys.size() + colTypes.length];
+
+            System.arraycopy(colNames, 0, extendedColNames, 0, colNames.length);
+            System.arraycopy(colTypes, 0, extendedColTypes, 0, colTypes.length);
+
+            int currId = colNames.length;
+
+            for (String key : rowKeys) {
+                Column col = tbl.dataTable().getColumn(key);
+
+                extendedColNames[currId] = col.getName();
+                extendedColTypes[currId] = col.getType();
+
+                currId++;
+            }
+
+            colNames = extendedColNames;
+            colTypes = extendedColTypes;
         }
 
         verifyDmlColumns(tbl.dataTable(), F.viewReadOnly(Arrays.asList(cols), TO_H2_COL));
