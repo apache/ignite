@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.ducktest.utils.metrics.MemoryUsageMetrics;
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
     /** Max streamer data size. */
-    private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
+    private static final int MAX_STREAMER_DATA_SIZE = 500_000_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
@@ -50,6 +51,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int entrySize = jsonNode.get("entrySize").asInt();
         int from = jsonNode.get("from").asInt();
         int to = jsonNode.get("to").asInt();
+        int preloaders = Optional.ofNullable(jsonNode.get("preloaders")).map(JsonNode::asInt).orElse(1);
         int threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
         int timeoutSecs = Optional.ofNullable(jsonNode.get("timeoutSecs")).map(JsonNode::asInt).orElse(3600);
 
@@ -57,18 +59,28 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
 //        List<IgniteDataStreamer<Integer, BinaryObject>> streamers = new LinkedList<>();
 
-//        CountDownLatch streamersLatch = new CountDownLatch(cacheCnt);
+        IgniteCountDownLatch preloadersLatch = null;
+        if (preloaders > 1) {
+            preloadersLatch = ignite.countDownLatch("DataGenerationApplication-latch",
+                preloaders, true, true);
+        }
 
         ExecutorService executorSrvc = Executors.newFixedThreadPool(threads);
+        for (int i = 1; i <= cacheCnt; i++) {
+            String cacheName = "test-cache-" + i;
+            log.info("Create cache: " + cacheName);
+            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, BinaryObject>(cacheName)
+                    .setBackups(backups));
+            ignite.cluster().disableWal(cacheName);
+        }
 
         for (int i = 1; i <= cacheCnt; i++) {
             String cacheName = "test-cache-" + i;
             log.info("Start with " + cacheName);
-            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
-                new CacheConfiguration<Integer, BinaryObject>(cacheName)
-                    .setBackups(backups));
+//            IgniteCache<Integer, BinaryObject> cache = ignite.cache(cacheName);
 
-            try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cache.getName())) {
+            try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
 //            stmr.future().listen(new IgniteInClosure<IgniteFuture<?>>() {
 //                @Override public void apply(IgniteFuture<?> fut) {
 //                    streamersLatch.countDown();
@@ -93,6 +105,17 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 for (int j = 0; j < threads; j++)
                     ecs.take().get();
             }
+        }
+
+        if (preloadersLatch != null) {
+            preloadersLatch.countDown();
+            preloadersLatch.await(timeoutSecs, TimeUnit.SECONDS);
+        }
+
+        for (int i = 1; i <= cacheCnt; i++) {
+            String cacheName = "test-cache-" + i;
+            log.info("Enable WAL for cache: " + cacheName);
+            ignite.cluster().enableWal(cacheName);
         }
 
         recordPeakMemory();

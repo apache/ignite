@@ -35,5 +35,6 @@ class DataStorageConfiguration(NamedTuple):
     Ignite DataStorage configuration
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
+    checkpoint_threads: int = None
     max_wal_archive_size: int = None
     regions: list = []

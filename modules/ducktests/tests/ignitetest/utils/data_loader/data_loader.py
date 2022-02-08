@@ -72,7 +72,7 @@ class DataLoader:
 
         if self.data_load_params.persistent:
             data_storage = DataStorageConfiguration(
-                max_wal_archive_size=2 * self.data_load_params.data_region_max_size(node_count),
+                checkpoint_threads=self.data_load_params.threads,
                 default=DataRegionConfiguration(
                     persistent=True,
                     max_size=self.data_load_params.data_region_max_size(node_count),
@@ -171,6 +171,7 @@ class DataLoader:
             "cacheCount": self.data_load_params.cache_count,
             "entrySize": self.data_load_params.entry_size,
             "threads": self.data_load_params.threads,
+            "preloaders": self.data_load_params.preloaders,
             "timeoutSecs": timeout,
             "from": _from,
             "to": _to
