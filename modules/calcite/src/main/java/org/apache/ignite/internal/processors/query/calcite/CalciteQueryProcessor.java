@@ -315,7 +315,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 log
             );
 
-            qryReg.register(sql, schema.getName(), qry);
+            qryReg.register(qry);
 
             try {
                 return Collections.singletonList(executionSvc.executePlan(
@@ -356,7 +356,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
             qrys.add(qry);
 
-            qryReg.register(sql, schema.getName(), qry);
+            qryReg.register(qry);
 
             try {
                 if (qryList.size() == 1) {

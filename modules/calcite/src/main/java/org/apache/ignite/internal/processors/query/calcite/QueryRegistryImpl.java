@@ -50,18 +50,23 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     }
 
     /** {@inheritDoc} */
-    @Override public RunningQuery register(String sql, String schema, RunningQuery qry) {
+    @Override public RunningQuery register(RunningQuery qry) {
         return runningQrys.computeIfAbsent(qry.id(), k -> {
+            if (!(qry instanceof RootQuery))
+                return Pair.of(-1L, qry);
+
             String nodeId;
             if (qry.initiatorNodeId() != null)
                 nodeId = qry.initiatorNodeId().toString();
             else
-                nodeId = kctx.discovery().localNode().id().toString();
+                nodeId = kctx.localNodeId().toString();
+
+            RootQuery<?> rootQry = (RootQuery<?>)qry;
 
             RunningQueryManager qryMgr = kctx.query().runningQueryManager();
 
-            Long locId = qryMgr.register(sql, GridCacheQueryType.SQL_FIELDS, schema, false,
-                createCancelToken(qry), nodeId);
+            Long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
+                false, createCancelToken(qry), nodeId);
 
             return Pair.of(locId, qry);
         }).right;

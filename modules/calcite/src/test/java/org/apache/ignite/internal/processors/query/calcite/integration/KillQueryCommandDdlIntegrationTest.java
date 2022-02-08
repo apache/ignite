@@ -142,7 +142,7 @@ public class KillQueryCommandDdlIntegrationTest extends AbstractDdlIntegrationTe
             scanLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             SystemView<SqlQueryView> srvView = srv.context().systemView().view(SQL_QRY_VIEW);
-            assertFalse(F.isEmpty(srvView));
+            assertTrue(F.isEmpty(srvView)); // Register query in running query manager only on initiator.
 
             SystemView<SqlQueryView> clientView = client.context().systemView().view(SQL_QRY_VIEW);
             assertFalse(F.isEmpty(clientView));

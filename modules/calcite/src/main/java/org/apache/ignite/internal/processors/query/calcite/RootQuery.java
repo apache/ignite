@@ -64,9 +64,6 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** SQL query. */
     private final String sql;
 
-    /** Schema. */
-    private final SchemaPlus schema;
-
     /** Parameters. */
     private final Object[] params;
 
@@ -107,7 +104,6 @@ public class RootQuery<RowT> extends Query<RowT> {
 
         this.sql = sql;
         this.params = params;
-        this.schema = schema;
 
         remoteFragments = new HashMap<>();
         waiting = new HashSet<>();

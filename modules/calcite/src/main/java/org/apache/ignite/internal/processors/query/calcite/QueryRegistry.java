@@ -32,7 +32,7 @@ public interface QueryRegistry extends Service {
      * @param qry Query to register.
      * @return Registered query.
      */
-    RunningQuery register(String sql, String schema, RunningQuery qry);
+    RunningQuery register(RunningQuery qry);
 
     /**
      * Lookup query by identifier.
