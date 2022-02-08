@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
-
-import org.apache.ignite.cache.CacheMode;
+package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 /**
  *
  */
-public class ReplicatedExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
+public class SingleBackupExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @Override protected Integer backupsCount() {
+        return 1; // Single backup possible optimisations check.
     }
 }

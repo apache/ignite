@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
+    using Apache.Ignite.Core.Tests.Client.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -639,6 +640,216 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            }
+        }
+
+        /// <summary>
+        /// Tests automatic retry with one server.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyReconnectsToNewNode()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryReadPolicy()
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var restartTask = Task.Run(() =>
+                {
+                    Ignition.StopAll(true);
+                    Thread.Sleep(100);
+                    Ignition.Start(TestUtils.GetTestConfiguration());
+                });
+
+                while (!restartTask.IsCompleted)
+                {
+                    // Operations do not fail while the only node is being restarted.
+                    Assert.AreEqual(0, client.GetCacheNames().Count);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests that operation fails with an exception when retry limit is reached.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyThrowsOnRetryCountExceeded()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var retryLimit = 4;
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryAllPolicy(),
+                RetryLimit = retryLimit
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
+
+                Ignition.StopAll(true);
+
+                var ex = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+                StringAssert.StartsWith($"Operation failed after {retryLimit} retries", ex.Message);
+
+                Assert.IsNotNull(ex.InnerException);
+                Assert.IsInstanceOf<AggregateException>(ex.InnerException);
+                Assert.AreEqual(retryLimit, ((AggregateException)ex.InnerException).InnerExceptions.Count);
+            }
+        }
+
+        /// <summary>
+        /// Tests that failed operations not related to connection issues are not retried.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyDoesNotRetryUnrelatedErrors()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new ClientRetryAllPolicy()
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var ex = Assert.Catch<Exception>(() =>
+                    client.GetCompute().ExecuteJavaTask<object>(ComputeClientTests.TestTask, null));
+
+                StringAssert.StartsWith(
+                    "Compute grid functionality is disabled for thin clients", ex.GetInnermostException().Message);
+            }
+        }
+
+        /// <summary>
+        /// Tests automatic retry with multiple servers.
+        /// </summary>
+        [Test]
+        public void TestFailoverWithRetryPolicyCompletesOperationWithoutException(
+            [Values(true, false)] bool async,
+            [Values(true, false)] bool partitionAware)
+        {
+            // Start 3 nodes.
+            Func<string, IgniteConfiguration> getConfig = name =>
+                new IgniteConfiguration(TestUtils.GetTestConfiguration(name: name))
+                {
+                    ClientConnectorConfiguration = new ClientConnectorConfiguration
+                    {
+                        ThinClientConfiguration = new ThinClientConfiguration
+                        {
+                            MaxActiveComputeTasksPerConnection = 1
+                        }
+                    }
+                };
+
+            Ignition.Start(getConfig("0"));
+            Ignition.Start(getConfig("1"));
+            Ignition.Start(getConfig("2"));
+
+            // Connect client.
+            var port = IgniteClientConfiguration.DefaultPort;
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[]
+                {
+                    "localhost",
+                    string.Format("127.0.0.1:{0}..{1}", port + 1, port + 2)
+                },
+                RetryPolicy = new ClientRetryAllPolicy(),
+                RetryLimit = 3,
+                EnablePartitionAwareness = partitionAware
+            };
+
+            // ReSharper disable AccessToDisposedClosure
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                // Check all DoOp overloads.
+                Action checkOperation = partitionAware
+                    ? async
+                        ? (Action)(() => Assert.IsFalse(cache.ContainsKeyAsync(1).Result))
+                        : () => Assert.IsFalse(cache.ContainsKey(1))
+                    : async
+                        ? (Action)(() => Assert.IsNotNull(client.GetCompute().ExecuteJavaTaskAsync<object>(
+                            ComputeClientTests.TestTask, null).Result))
+                        : () => Assert.AreEqual(1, client.GetCacheNames().Count);
+
+                checkOperation();
+
+                // Stop first node.
+                var nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
+
+                checkOperation();
+
+                // Stop second node.
+                nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
+
+                checkOperation();
+
+                // Stop all nodes.
+                Ignition.StopAll(true);
+
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            }
+        }
+
+        /// <summary>
+        /// Tests custom retry policy.
+        /// </summary>
+        [Test]
+        public void TestCustomRetryPolicyIsInvokedWithCorrectContext()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var retryPolicy = new TestRetryPolicy(ClientOperationType.CacheGetNames);
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = retryPolicy,
+                RetryLimit = 2
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
+
+                Ignition.StopAll(true);
+
+                var errorWithoutRetry = GetSocketException(Assert.Catch(() => client.GetCluster().GetNodes()));
+                var errorWithRetry = Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+
+                Assert.IsNotNull(errorWithoutRetry);
+                StringAssert.StartsWith("Operation failed after 2 retries", errorWithRetry.Message);
+
+                Assert.AreEqual(3, retryPolicy.Invocations.Count);
+
+                Assert.AreEqual(ClientOperationType.ClusterGroupGetNodes, retryPolicy.Invocations[0].Operation);
+                Assert.AreEqual(0, retryPolicy.Invocations[0].Iteration);
+                Assert.AreSame(retryPolicy, retryPolicy.Invocations[0].Configuration.RetryPolicy);
+                Assert.AreEqual(2, retryPolicy.Invocations[0].Configuration.RetryLimit);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[0].Exception.GetBaseException());
+
+                Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[1].Operation);
+                Assert.AreEqual(0, retryPolicy.Invocations[1].Iteration);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[1].Exception.GetBaseException());
+
+                Assert.AreEqual(ClientOperationType.CacheGetNames, retryPolicy.Invocations[2].Operation);
+                Assert.AreEqual(1, retryPolicy.Invocations[2].Iteration);
+                Assert.IsInstanceOf<SocketException>(retryPolicy.Invocations[2].Exception.GetBaseException());
             }
         }
 

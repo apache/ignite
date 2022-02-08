@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistency;
+package org.apache.ignite.cache.query;
 
-/**
- *
- */
-public class SingleBackupImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
+/** */
+public class IndexQueryCacheKeyValueEscapedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {
     /** {@inheritDoc} */
-    @Override protected Integer backupsCount() {
-        return 1; // Single backup possible optimisations check.
+    @Override protected boolean escape() {
+        return true;
     }
 }
