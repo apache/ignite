@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryEntity;
