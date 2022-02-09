@@ -78,6 +78,11 @@ public class IndexQueryProcessor {
     ) throws IgniteCheckedException {
         InlineIndexImpl idx = (InlineIndexImpl)findSortedIndex(cctx, idxQryDesc);
 
+        if (idx.rebuildInProgress()) {
+            throw new IgniteCheckedException("Failed to run IndexQuery: index " + idx.name() + " isn't completed yet."
+                + " Query=" + idxQryDesc);
+        }
+
         IndexMultipleRangeQuery qry = prepareQuery(idx, idxQryDesc);
 
         GridCursor<IndexRow> cursor = queryMultipleRanges(idx, cacheFilter, qry);
