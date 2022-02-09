@@ -42,7 +42,7 @@ class DataLoadParams(NamedTuple):
         """
         Max size for DataRegionConfiguration.
         """
-        return int(max(self.cache_count * self.entry_count * (self.entry_size / 0.5) * (self.backups + 1) / node_count,
+        return int(max(self.cache_count * self.entry_count * (self.entry_size / 0.6) * (self.backups + 1) / node_count,
                        DEFAULT_DATA_REGION_SZ))
 
 
