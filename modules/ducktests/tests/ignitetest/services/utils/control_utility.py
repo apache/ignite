@@ -119,7 +119,7 @@ class ControlUtility:
         """
         Deactivate cluster.
         """
-        return self.__run("--deactivate --yes")
+        return self.__run("--deactivate --force --yes")
 
     def tx(self, **kwargs):
         """
