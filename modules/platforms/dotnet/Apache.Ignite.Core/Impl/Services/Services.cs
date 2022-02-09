@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -26,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -390,9 +392,10 @@ namespace Apache.Ignite.Core.Impl.Services
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, callCtx));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, callAttrs));
         }
 
         /** <inheritDoc /> */
@@ -428,9 +431,10 @@ namespace Apache.Ignite.Core.Impl.Services
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
 
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform, callCtx));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, callAttrs));
         }
 
         /// <summary>
@@ -441,12 +445,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
         /// <param name="platformType">The platform.</param>
-        /// <param name="callCtx">Service call context.</param>
+        /// <param name="callAttrs">Service call context attributes.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType, IServiceCallContext callCtx)
+            MethodBase method, object[] args, PlatformType platformType, IDictionary callAttrs)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
@@ -458,7 +462,7 @@ namespace Apache.Ignite.Core.Impl.Services
             try
             {
                 return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, callCtx),
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, callAttrs),
                     (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
                     proxy);
             }
@@ -487,6 +491,20 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
             return null;
+        }
+
+        /// <summary>
+        /// Gets the attributes of the service call context.
+        /// </summary>
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Service call context attributes.</returns>
+        private IDictionary GetCallerContextAttributes(IServiceCallContext callCtx)
+        {
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx", 
+                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
+
+            return callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
         }
 
         /// <summary>

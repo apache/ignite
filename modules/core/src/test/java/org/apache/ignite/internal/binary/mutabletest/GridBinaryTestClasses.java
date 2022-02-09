@@ -26,11 +26,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
 import com.google.common.base.Throwables;
@@ -375,20 +373,6 @@ public class GridBinaryTestClasses {
             this.streetNumber = streetNumber;
             this.flatNumber = flatNumber;
         }
-
-        /**  */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Address address = (Address)o;
-            return streetNumber == address.streetNumber && flatNumber == address.flatNumber
-                    && Objects.equals(city, address.city) && Objects.equals(street, address.street);
-        }
-
-        /**  */
-        @Override public int hashCode() {
-            return Objects.hash(city, street, streetNumber, flatNumber);
-        }
     }
 
     /**
@@ -510,33 +494,5 @@ public class GridBinaryTestClasses {
                 }
             });
         }
-    }
-
-    /**
-     *
-     */
-    public static class CollectionsHolder {
-        /** */
-        public Collection<Object> firstCol;
-
-        /** */
-        public Collection<Object> secondCol;
-
-        /** */
-        public Object obj;
-    }
-
-    /**
-     *
-     */
-    public static class MapsHolder {
-        /** */
-        public Map<Object, Object> firstMap;
-
-        /** */
-        public Map<Object, Object> secondMap;
-
-        /** */
-        public Object valObj;
     }
 }

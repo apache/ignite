@@ -567,7 +567,11 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type
      * @return Deployed service with specified name.
+     * @see ServiceConfiguration#setStatisticsEnabled(boolean)
+     * @deprecated Use the proxies like {@link #serviceProxy(String, Class, boolean)}. References to local services
+     * corrupt the service statistics and bring no real performance optimization.
      */
+    @Deprecated
     public <T> T service(String name);
 
     /**
@@ -576,28 +580,29 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type.
      * @return all deployed services with specified name.
+     * @see ServiceConfiguration#setStatisticsEnabled(boolean)
+     * @deprecated Use the proxies like {@link #serviceProxy(String, Class, boolean)}. References to local services
+     * corrupt the service statistics and bring no real performance optimization.
      */
+    @Deprecated
     public <T> Collection<T> services(String name);
 
     /**
-     * Gets a remote handle on the service. If service is available locally,
-     * then local instance is returned, otherwise, a remote proxy is dynamically
-     * created and provided for the specified service.
+     * Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
      * @param <T> Service type.
-     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @return Proxy over service.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 
     /**
-     * Gets a remote handle on the service with timeout. If service is available locally,
-     * then local instance is returned and timeout ignored, otherwise, a remote proxy is dynamically
-     * created and provided for the specified service.
+     * Gets a handle on remote or local service with the timeout. The proxy is dynamically created and provided for the
+     * specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
@@ -606,15 +611,15 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
      * @param <T> Service type.
-     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @return Proxy over service.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException;
 
     /**
-     * Gets a remote handle on the service with the specified caller context. The proxy
-     * is dynamically created and provided for the specified service.
+     * Gets a handle on remote or local service with the specified caller context. The proxy is dynamically created and
+     * provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
@@ -635,8 +640,8 @@ public interface IgniteServices extends IgniteAsyncSupport {
     ) throws IgniteException;
 
     /**
-     * Gets a remote handle on the service with the specified caller context and timeout.
-     * The proxy is dynamically created and provided for the specified service.
+     * Gets a handle on remote or local service with the specified caller context and the timeout. The proxy is
+     * dynamically created and provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.

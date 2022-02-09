@@ -207,6 +207,47 @@ namespace ignite
             {
                 TlsSetValue(winTlsIdx, ptr);
             }
+
+            Thread::Thread() :
+                handle(NULL)
+            {
+                // No-op.
+            }
+
+            Thread::~Thread()
+            {
+                if (handle)
+                    CloseHandle(handle);
+            }
+
+            DWORD Thread::ThreadRoutine(LPVOID lpParam)
+            {
+                Thread* self = static_cast<Thread*>(lpParam);
+
+                self->Run();
+
+                return 0;
+            }
+
+            void Thread::Start()
+            {
+                handle = CreateThread(NULL, 0, Thread::ThreadRoutine, this, 0, NULL);
+
+                assert(handle != NULL);
+            }
+
+            void Thread::Join()
+            {
+                WaitForSingleObject(handle, INFINITE);
+            }
+
+            uint32_t GetNumberOfProcessors()
+            {
+                SYSTEM_INFO info;
+                GetSystemInfo(&info);
+
+                return static_cast<uint32_t>(info.dwNumberOfProcessors < 0 ? 0 : info.dwNumberOfProcessors);
+            }
         }
     }
 }

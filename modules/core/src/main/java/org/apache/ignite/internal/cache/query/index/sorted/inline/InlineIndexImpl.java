@@ -83,14 +83,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment) throws IgniteCheckedException {
-        return find(lower, upper, segment, null);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> find(
         IndexRow lower,
         IndexRow upper,
+        boolean lowIncl,
+        boolean upIncl,
         int segment,
         IndexQueryContext qryCtx
     ) throws IgniteCheckedException {
@@ -106,7 +103,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return new SingleCursor<>(row);
         }
 
-        return segments[segment].find(lower, upper, closure, null);
+        return segments[segment].find(lower, upper, lowIncl, upIncl, closure, null);
     }
 
     /** {@inheritDoc} */
@@ -367,8 +364,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         if (qryCtx == null)
             return null;
 
-        IndexingQueryCacheFilter cacheFilter = qryCtx.filter() == null ? null
-            : qryCtx.filter().forCache(cctx.cache().name());
+        IndexingQueryCacheFilter cacheFilter = qryCtx.cacheFilter() == null ? null
+            : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
         MvccSnapshot v = qryCtx.mvccSnapshot();
 
@@ -378,7 +375,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             return null;
 
         return new InlineTreeFilterClosure(
-            cacheFilter, v, cctx, cctx.kernalContext().config().getGridLogger());
+            cacheFilter, qryCtx.rowFilter(), v, cctx, cctx.kernalContext().config().getGridLogger());
     }
 
     /** {@inheritDoc} */

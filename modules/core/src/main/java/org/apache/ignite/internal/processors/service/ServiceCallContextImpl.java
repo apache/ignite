@@ -17,30 +17,15 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceCallContext;
 
 /**
  * Service call context implementation.
  */
 public class ServiceCallContextImpl implements ServiceCallContext {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Service call context attributes. */
     private Map<String, Object> attrs;
-
-    /**
-     * Default contructor.
-     */
-    public ServiceCallContextImpl() {
-        attrs = new HashMap<>();
-    }
 
     /**
      * @param attrs Service call context attributes.
@@ -59,20 +44,10 @@ public class ServiceCallContextImpl implements ServiceCallContext {
         return (byte[])attrs.get(name);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeMap(out, attrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        attrs = U.readMap(in);
-    }
-
     /**
      * @return Service call context attributes.
      */
-    Map<String, Object> values() {
+    public Map<String, Object> values() {
         return attrs;
     }
 }

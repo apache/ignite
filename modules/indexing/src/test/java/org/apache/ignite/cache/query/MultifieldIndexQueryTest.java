@@ -35,6 +35,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -499,6 +501,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static class Person {
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = {
             @QuerySqlField.Group(name = INDEX, order = 0),
             @QuerySqlField.Group(name = DESC_INDEX, order = 0)}
@@ -506,10 +509,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         final int id;
 
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = INDEX, order = 1))
         final int secId;
 
         /** */
+        @GridToStringInclude
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = DESC_INDEX, order = 1, descending = true))
         final int descId;
 
@@ -543,6 +548,11 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(id, secId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Person.class, this);
         }
     }
 }

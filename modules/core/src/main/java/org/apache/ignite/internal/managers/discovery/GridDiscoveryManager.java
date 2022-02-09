@@ -1585,7 +1585,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         assert memCfg != null;
 
-        long res = memCfg.getSystemRegionMaxSize();
+        long res = memCfg.getSystemDataRegionConfiguration().getMaxSize();
 
         // Add memory policies.
         DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();

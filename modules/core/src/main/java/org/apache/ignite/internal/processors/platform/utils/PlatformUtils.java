@@ -1063,12 +1063,17 @@ public class PlatformUtils {
                     throw new IgniteException("Java object/factory class field is not found [" +
                         "className=" + clsName + ", fieldName=" + fieldName + ']');
 
+                Object val = prop.getValue();
+
                 try {
-                    field.set(obj, prop.getValue());
+                    field.set(
+                        obj,
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                    );
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                        ", fieldName=" + fieldName + ", fieldValue=" + val + ']', e);
                 }
             }
         }

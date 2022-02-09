@@ -692,6 +692,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHES.REBALANCE_ORDER.null.10",
                 "SYS.CACHES.EVICTION_FILTER.null.2147483647",
                 "SYS.CACHES.EVICTION_POLICY_FACTORY.null.2147483647",
+                "SYS.CACHES.CONFLICT_RESOLVER.null.2147483647",
                 "SYS.CACHES.IS_NEAR_CACHE_ENABLED.null.1",
                 "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
                 "SYS.CACHES.NEAR_CACHE_START_SIZE.null.10",

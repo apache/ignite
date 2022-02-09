@@ -94,7 +94,69 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
- * Abstract B+Tree.
+ * <h3>Abstract B+Tree.</h3>
+ *
+ * B+Tree is a block-based tree structure. Each block is represented with the page ({@link PageIO}) and contains a
+ * single tree node. There are two types of pages/nodes: {@link BPlusInnerIO} and {@link BPlusLeafIO}.
+ * <p/>
+ * Every page in the tree contains a list of <i>items</i>. Item is just a fixed-size binary payload.
+ * Inner nodes and leaves may have different item sizes. There's a limit on how many items each page can hold.
+ * It is defined by a {@link BPlusIO#getMaxCount(long, int)} method of the corresponding IO. There should be no empty
+ * pages in trees, so it's expected to have from {@code 1} to {@code max} items in every page.
+ * <p/>
+ * Items might have different meaning depending on the type of the page. In case of leaves, every item must describe a
+ * key and a value. In case of inner nodes, items describe only keys if {@link #canGetRowFromInner} is {@code false},
+ * or a key and a value otherwise. Items in every page are sorted according to the order dscribed by
+ * {@link #compare(BPlusIO, long, int, Object)} method. Specifics of the data stored in items are defined in the
+ * implementation and generally don't matter.
+ * <p/>
+ * All pages in the tree are divided into levels. Leaves are always at the level {@code 0}. Levels of inner pages are
+ * thus positive. Each level represents a singly linked list - each page has a link to the <i>forward</i> page at the
+ * same level. It can be retrieved by calling {@link BPlusIO#getForward(long)}. This link must be a zero if there's no
+ * forward page. Forward links on level {@code 0} allows iterating trees keys and values effectively without traversing
+ * any inner nodes ({@code AbstractForwardCursor}). Forward links in inner nodes have different purpose, more on that
+ * later.
+ * <p/>
+ * Leaves have no links other than forward links. But inner nodes also have links to their children nodes. Every inner
+ * node can be viewed like the following structure:
+ * <pre><code>
+ *       item(0)     item(1)        ...          item(N-1)
+ * link(0)     link(1)     link(2)  ...  link(N-1)       link(N)
+ * </code></pre>
+ * There are {@code N} items and {@code N+1} links. Each link points to page of a lower level. For example, pages on
+ * level {@code 2} always point to pages of level {@code 1}. For an item {@code i} left subtree is defined by
+ * {@code link(i)} and right subtree is defined by {@code link(i+1)} ({@link BPlusInnerIO#getLeft(long, int)} and
+ * {@link BPlusInnerIO#getRight(long, int)}). All items in the left subtree are less or equal to the original item
+ * (basic property for the trees).
+ * <p/>
+ * There's one more important property of these links: {@code forward(left(i)) == right(i)}. It is called a
+ * <i>triangle invariant</i>. More information on B+Tree structure can easily be found online. Following documentation
+ * concentrates more on specifics of this particular B+Tree implementation.
+ * <p/>
+ * <h3>General operations.</h3>
+ * This implementation allows for concurrent reads and update. Given that each page locks individually, there are
+ * general rules to avoid deadlocks.
+ * <ul>
+ *     <li>
+ *         Pages within a level always locked from left to right.
+ *     </li>
+ *     <li>
+ *         If there's already a lock on the page of level X then no locks should be acquired on levels less than X.
+ *         In other words, locks are aquired from the bottom to the top. The only exception to this rule is the
+ *         allocation of a new page on a lower level that no one sees yet.
+ *         </li>
+ * </ul>
+ * All basic operations fit into a similar pattern. First, the search is performed ({@link Get}). It goes recursively
+ * from the root to the leaf (if it's needed). On each level several outcomes are possible.
+ * <ul>
+ *     <li>Exact value is found and operation can be completed.</li>
+ *     <li>Insertion point is found and recursive procedure continues on the lower level.</li>
+ *     <li>Insertion point is not found due to concurrent modifications, but retry in the same node is possible.</li>
+ *     <li>Insertion point is not found due to concurrent modifications, but retry in the same node is impossible.</li>
+ * </ul>
+ * All these options, and more, are described in the class {@link Result}. Please refer to its usages for specifics of
+ * each operation. Once the path and the leaf for put/remove is found, the operation is then performed from the bottom
+ * to the top. Specifics are described in corresponding classes ({@link Put}, {@link Remove}).
  */
 @SuppressWarnings({"ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
@@ -614,8 +676,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** */
     private class LockTailExact extends GetPageHandler<Update> {
         /** {@inheritDoc} */
-        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Update u, int lvl)
-            throws IgniteCheckedException {
+        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Update u, int lvl) {
             // Check the triangle invariant.
             if (io.getForward(pageAddr) != u.fwdId)
                 return RETRY;
@@ -1038,13 +1099,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param upper Upper bound.
+     * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(null, upper, c, x);
+    private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, x);
 
         long firstPageId;
 
@@ -1107,13 +1169,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+        return find(lower, upper, true, true, c, x);
+    }
+
+    /**
+     * @param lower Lower bound or {@code null} if unbounded.
+     * @param upper Upper bound or {@code null} if unbounded.
+     * @param lowIncl {@code true} if lower bound is inclusive.
+     * @param upIncl {@code true} if upper bound is inclusive.
+     * @param c Filter closure.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCursor<T> find(
+        L lower,
+        L upper,
+        boolean lowIncl,
+        boolean upIncl,
+        TreeRowClosure<L, T> c,
+        Object x
+    ) throws IgniteCheckedException {
         checkDestroyed();
 
-        ForwardCursor cursor = new ForwardCursor(lower, upper, c, x);
+        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, x);
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper, c, x);
+                return findLowerUnbounded(upper, upIncl, c, x);
 
             cursor.find();
 
@@ -4450,7 +4533,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Remove operation.
      */
-    private final class Remove extends Update implements ReuseBag {
+    public final class Remove extends Update implements ReuseBag {
         /** */
         Bool needReplaceInner = FALSE;
 
@@ -5496,11 +5579,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         L lowerBound;
 
-        /** */
-        private int lowerShift = -1; // Initially it is -1 to handle multiple equal rows.
+        /** Handle multiple equal rows on lower side. */
+        private int lowerShift;
 
         /** */
         final L upperBound;
+
+        /** Handle multiple equal rows on upper side. */
+        private final int upperShift;
 
         /** Cached value for retrieving diagnosting info in case of failure. */
         public GetCursor getCursor;
@@ -5508,10 +5594,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
+         * @param lowIncl {@code true} if lower bound is inclusive.
+         * @param upIncl {@code true} if upper bound is inclusive.
          */
-        AbstractForwardCursor(L lowerBound, L upperBound) {
+        AbstractForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl) {
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
+
+            lowerShift = lowIncl ? -1 : 1;
+            upperShift = upIncl ? 1 : -1;
         }
 
         /**
@@ -5602,8 +5693,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Compare with the last row on the page.
             int cmp = compare(0, io, pageAddr, cnt - 1, upperBound);
 
-            if (cmp > 0) {
-                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upperBound, 1);
+            if (cmp > 0 || (cmp == 0 && upperShift == -1)) {
+                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upperBound, upperShift);
 
                 assert idx < 0;
 
@@ -5734,12 +5825,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private L lastRow;
 
         /**
-         * @param lowerBound Lower bound.
-         * @param upperBound Upper bound.
+         * @param lowerBound Lower bound inclusive.
+         * @param upperBound Upper bound inclusive.
          * @param p Row predicate.
          */
         ClosureCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> p) {
-            super(lowerBound, upperBound);
+            super(lowerBound, upperBound, true, true);
 
             assert lowerBound != null;
             assert upperBound != null;
@@ -5835,13 +5926,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private final TreeRowClosure<L, T> c;
 
         /**
-         * @param lowerBound Lower bound.
+         * Lower unbound cursor.
+         *
          * @param upperBound Upper bound.
+         * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> c, Object x) {
-            super(lowerBound, upperBound);
+        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+            this(null, upperBound, true, upIncl, c, x);
+        }
+
+        /**
+         * @param lowerBound Lower bound.
+         * @param upperBound Upper bound.
+         * @param lowIncl {@code true} if lower bound is inclusive.
+         * @param upIncl {@code true} if upper bound is inclusive.
+         * @param c Filter closure.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         */
+        ForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+            super(lowerBound, upperBound, lowIncl, upIncl);
 
             this.c = c;
             this.x = x;

@@ -123,7 +123,15 @@ namespace Apache.Ignite.Platform.Model
     // ReSharper disable once InconsistentNaming
     public enum ACL
     {
-        Allow, Deny
+        ALLOW, DENY
+    }
+    
+    /// <summary>
+    /// A enum is a clone of Java class AccessLevel with the same namespace.
+    /// </summary>
+    public enum AccessLevel
+    {
+        USER, SUPER
     }
 
     /// <summary>
@@ -132,6 +140,9 @@ namespace Apache.Ignite.Platform.Model
     public class Role
     {
         public String Name { get; set; }
+
+        /** Tests declaration as System.Enum. */
+        public Enum AccessLevel { get; set; }
     }
 
     /// <summary>

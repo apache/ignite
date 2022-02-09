@@ -53,6 +53,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -85,6 +86,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -1063,6 +1065,66 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("node0", res.get(0).get(0));
         assertEquals(customAttr, res.get(0).get(1));
         assertEquals("val0", res.get(0).get(2));
+    }
+
+    /**
+     * Test snapshots system view.
+     */
+    @Test
+    public void testSnapshotViews() throws Exception {
+        String node0 = "node0";
+        String node1 = "node1";
+
+        String testSnapname = "testSnapshot";
+        String testSnapname0 = "testSnapshot0";
+        String testCache = "testCache";
+
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration(node0));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration(node1));
+
+        int nodesCnt = G.allGrids().size();
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite.snapshot().createSnapshot(testSnapname).get();
+
+        List<List<?>> res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOT");
+
+        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
+
+        assertEquals(nodesCnt, res.size());
+
+        assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
+
+        res = execSql("SELECT BASELINE_NODES FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
+
+        assertEquals(1, res.size());
+
+        ignite.createCache(testCache);
+
+        ignite.snapshot().createSnapshot(testSnapname0).get();
+
+        res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOT");
+
+        assertEquals(nodesCnt * 2, res.size());
+
+        String expBltNodes = F.concat(asList(node0, node1), ",");
+
+        assertTrue(res.stream().map(l -> l.get(2)).allMatch(expBltNodes::equals));
+
+        res = execSql("SELECT NAME FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
+
+        assertEquals(2, res.size());
+
+        res = execSql("SELECT NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOT " +
+            "WHERE NAME = ?", testSnapname0);
+
+        assertEquals(nodesCnt, res.size());
+
+        assertEquals(testSnapname0, res.get(0).get(0));
+
+        String expCacheGrps = F.concat(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME), ",");
+
+        assertEquals(expCacheGrps, res.get(0).get(1));
     }
 
     /** {@inheritDoc} */

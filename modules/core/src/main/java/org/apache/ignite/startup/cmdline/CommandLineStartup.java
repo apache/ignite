@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
@@ -99,7 +100,8 @@ public final class CommandLineStartup {
         CacheContinuousQueryEventBuffer.class,
         CacheContinuousQueryHandler.class,
         OffheapReadWriteLock.class,
-        TcpCommunicationConfiguration.class
+        TcpCommunicationConfiguration.class,
+        BinaryArray.class
     ));
 
     static {

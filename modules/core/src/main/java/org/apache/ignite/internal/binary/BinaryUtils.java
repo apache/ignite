@@ -610,6 +610,12 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
                 GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
+        if (cls == BinaryArray.class)
+            return GridBinaryMarshaller.OBJ_ARR;
+
+        if (cls == BinaryEnumArray.class)
+            return GridBinaryMarshaller.ENUM_ARR;
+
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
 
@@ -1161,6 +1167,10 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryArray.class)
+            return BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryEnumArray.class)
+            return BinaryWriteMode.ENUM_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -1892,11 +1902,6 @@ public class BinaryUtils {
             }
 
             case GridBinaryMarshaller.OBJ: {
-                Object obj = handles.getHandle(start);
-
-                if (obj != null)
-                    return obj;
-
                 checkProtocolVersion(in.readByte());
 
                 int len = length(in, start);
@@ -2009,7 +2014,10 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+                if (BinaryArray.useBinaryArrays() && !deserialize)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, false);
+                else
+                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2025,9 +2033,13 @@ public class BinaryUtils {
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
-                doReadEnumType(in); // Simply skip this part as we do not need it.
+                if (BinaryArray.useBinaryArrays() && !deserialize)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, true);
+                else {
+                    doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadBinaryEnumArray(in, ctx);
+                    return doReadBinaryEnumArray(in, ctx);
+                }
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
@@ -2061,14 +2073,58 @@ public class BinaryUtils {
 
         int len = in.readInt();
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        Object[] arr = (deserialize && !BinaryObject.class.isAssignableFrom(compType))
+            ? (Object[])Array.newInstance(compType, len)
+            : new Object[len];
 
         handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++) {
+            Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            if (deserialize && BinaryArray.useBinaryArrays() && res instanceof BinaryObject)
+                arr[i] = ((BinaryObject)res).deserialize(ldr);
+            else
+                arr[i] = res;
+        }
+
+        return arr;
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
+        int hPos = positionForHandle(in);
+
+        int compTypeId = in.readInt();
+        String compClsName = null;
+
+        if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            compClsName = doReadClassName(in);
+
+        int len = in.readInt();
+
+        Object[] arr = new Object[len];
+
+        BinaryArray res = isEnumArray
+            ? new BinaryEnumArray(ctx, compTypeId, compClsName, arr)
+            : new BinaryArray(ctx, compTypeId, compClsName, arr);
+
+        handles.setHandle(res, hPos);
 
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return arr;
+        return res;
     }
 
     /**
@@ -2082,11 +2138,6 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        Object obj = handles.getHandle(hPos);
-
-        if (obj != null)
-            return (Collection<?>)obj;
 
         int size = in.readInt();
 
@@ -2159,11 +2210,6 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        Object obj = handles.getHandle(hPos);
-
-        if (obj != null)
-            return (Map<?, ?>)obj;
 
         int size = in.readInt();
 
@@ -2567,6 +2613,25 @@ public class BinaryUtils {
         }
 
         return mergedMap;
+    }
+
+    /**
+     * @param obj {@link BinaryArray} or {@code Object[]}.
+     * @return Objects array.
+     */
+    public static Object[] rawArrayFromBinary(Object obj) {
+        if (obj instanceof BinaryArray)
+            // We want raw data(no deserialization).
+            return ((BinaryArray)obj).array();
+        else
+            // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
+            // In case user pass special array type to arguments, String[], for example.
+            return (Object[])obj;
+    }
+
+    /** */
+    public static boolean isObjectArray(Class<?> cls) {
+        return Object[].class == cls || BinaryArray.class == cls || BinaryEnumArray.class == cls;
     }
 
     /**

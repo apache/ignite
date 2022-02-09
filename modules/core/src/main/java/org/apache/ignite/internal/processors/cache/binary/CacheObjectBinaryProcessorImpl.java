@@ -60,8 +60,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -97,7 +99,6 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -325,7 +326,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
-            IgniteUtils.invoke(BinaryMarshaller.class, bMarsh0, "setBinaryContext", binaryCtx, ctx.config());
+            bMarsh0.setBinaryContext(binaryCtx, ctx.config());
 
             binaryMarsh = new GridBinaryMarshaller(binaryCtx);
 
@@ -500,7 +501,36 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            return pArr;
+            if (!BinaryArray.useBinaryArrays())
+                return pArr;
+
+            Class<?> compCls = obj.getClass().getComponentType();
+
+            boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+            String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+            // In case of interface or multidimensional array rely on class name.
+            // Interfaces and array not registered as binary types.
+            BinaryClassDescriptor desc = binaryCtx.descriptorForClass(compCls);
+
+            if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+                return new BinaryEnumArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+            else {
+                return new BinaryArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+
         }
 
         if (obj instanceof IgniteBiTuple) {
