@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -63,7 +66,10 @@ public class GridH2RowDescriptor {
 
     /** */
     private volatile GridQueryProperty[] props;
-
+    
+    /** */
+    private volatile Set<String> rowKeyColumnNames;
+    
     /** Id of user-defined key column */
     private volatile int keyAliasColId;
 
@@ -131,6 +137,10 @@ public class GridH2RowDescriptor {
 
         valAliasColId = (type.valueFieldName() != null) ?
             QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
+    
+        rowKeyColumnNames = Arrays.stream(props).filter(GridQueryProperty::key)
+                .map(GridQueryProperty::name)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -417,5 +427,14 @@ public class GridH2RowDescriptor {
         }
 
         return colId;
+    }
+    
+    /**
+     * Gets a copy of a set of table key column names.
+     *
+     * @return Set of a table key column names.
+     */
+    public Set<String> getRowKeyColumnNames() {
+        return new HashSet<>(rowKeyColumnNames);
     }
 }

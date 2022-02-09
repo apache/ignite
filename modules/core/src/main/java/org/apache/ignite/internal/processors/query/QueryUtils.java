@@ -315,7 +315,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
+        QueryEntityEx normalEntity = new QueryEntityEx();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -375,6 +375,9 @@ public class QueryUtils {
         normalEntity.setIndexes(normalIdxs);
 
         validateQueryEntity(normalEntity);
+
+        if (entity instanceof QueryEntityEx)
+            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx) entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;
     }
@@ -472,6 +475,9 @@ public class QueryUtils {
         desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
+
+        if (qryEntity instanceof QueryEntityEx)
+            desc.setFillAbsentPKsWithDefaults(((QueryEntityEx)qryEntity).fillAbsentPKsWithDefaults());
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
