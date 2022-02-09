@@ -406,27 +406,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         }
     }
 
-    /** */
-    private SqlKind findBoundOperator(List<RexCall> fieldConditions, RexNode bound) {
-        if (bound == null)
-            return null;
-
-        EnumSet<SqlKind> operators = EnumSet.noneOf(SqlKind.class);
-
-        for (RexCall fieldContition : fieldConditions) {
-            assert fieldContition.getOperands().size() == 2;
-
-            // Bound should be on the left side of the condition.
-            if (bound.equals(fieldContition.getOperands().get(1)))
-                operators.add(fieldContition.getOperator().getKind());
-        }
-
-        if (operators != null && operators.size() == 1)
-            return F.first(operators);
-        else
-            return null;
-    }
-
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
