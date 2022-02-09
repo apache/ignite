@@ -65,10 +65,13 @@ public class CheckpointMarkersStorage {
     /** Checkpoint file name pattern. */
     public static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
+    /** Default threshold of the checkpoint quantity since the last earliest checkpoint map snapshot. */
+    public static final int DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD = 5;
+
     /** Earliest checkpoint map changes threshold. */
     private final int earliestCpChangesThreshold = IgniteSystemProperties.getInteger(
         IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD,
-        5
+        DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD
     );
 
     /** Earliest checkpoint map snapshot file name. */
