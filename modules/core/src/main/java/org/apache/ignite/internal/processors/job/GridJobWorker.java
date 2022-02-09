@@ -80,6 +80,12 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.QUEUED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.RUNNING;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.SUSPENDED;
 
 /**
  * Job worker.
@@ -178,6 +184,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** Security context. */
     private final SecurityContext secCtx;
+
+    /** Job status. */
+    private volatile ComputeJobStatusEnum status = QUEUED;
 
     /**
      * @param ctx Kernal context.
@@ -442,8 +451,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         boolean res;
 
-        if (res = holdLsnr.onHeld(this))
+        if (res = holdLsnr.onHeld(this)) {
             held.incrementAndGet();
+
+            status = SUSPENDED;
+        }
 
         return res;
     }
@@ -477,6 +489,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
+
+            // Event notification.
+            evtLsnr.onJobQueued(this);
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -512,6 +527,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         startTime = U.currentTimeMillis();
 
         isStarted = true;
+
+        status = RUNNING;
 
         // Event notification.
         evtLsnr.onJobStarted(this);
@@ -565,8 +582,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 super.cancel();
 
             if (!skipNtf) {
-                if (holdLsnr.onUnheld(this))
-                    held.decrementAndGet();
+                if (holdLsnr.onUnheld(this)) {
+                    if (held.decrementAndGet() == 0)
+                        status = RUNNING;
+                }
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Ignoring job execution (job was not held).");
@@ -753,11 +772,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug("Cancelling job: " + ses);
 
-                U.wrapThreadLoader(dep.classLoader(), new IgniteRunnable() {
-                    @Override public void run() {
-                        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
-                            job0.cancel();
-                        }
+                status = CANCELLED;
+
+                U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
+                    try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
+                        job0.cancel();
                     }
                 });
             }
@@ -814,9 +833,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param ex Error.
      * @param sndReply If {@code true}, reply will be sent.
      */
-    void finishJob(@Nullable Object res,
+    void finishJob(
+        @Nullable Object res,
         @Nullable IgniteException ex,
-        boolean sndReply) {
+        boolean sndReply
+    ) {
         finishJob(res, ex, sndReply, false);
     }
 
@@ -826,11 +847,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sndReply If {@code true}, reply will be sent.
      * @param retry If {@code true}, retry response will be sent.
      */
-    void finishJob(@Nullable Object res,
+    void finishJob(
+        @Nullable Object res,
         @Nullable IgniteException ex,
         boolean sndReply,
-        boolean retry)
-    {
+        boolean retry
+    ) {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -859,6 +881,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + taskNode.id() +
                             ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
 
+                        status = FAILED;
+
                         // Record job reply failure.
                         if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
                             evts = addEvent(evts, EVT_JOB_FAILED, "Job reply failed (task node left grid): " + job);
@@ -873,7 +897,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                             Map<Object, Object> attrs = jobCtx.getAttributes();
 
-                            // Try serialize response, and if exception - return to client.
+                            // Try to serialize response, and if exception - return to client.
                             if (!loc) {
                                 try {
                                     resBytes = U.marshal(marsh, res);
@@ -924,6 +948,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
 
                             if (ex != null) {
+                                status = FAILED;
+
                                 if (isStarted) {
                                     // Job failed.
                                     if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
@@ -934,8 +960,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     evts = addEvent(evts, EVT_JOB_REJECTED, "Job has not been started " +
                                         "[ex=" + ex + ", job=" + job + ']');
                             }
-                            else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
-                                evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                            else {
+                                status = FINISHED;
+
+                                if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
+                                    evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                            }
 
                             GridJobExecuteResponse jobRes = new GridJobExecuteResponse(
                                 ctx.localNodeId(),
@@ -1006,6 +1036,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 }
                 else {
                     if (ex != null) {
+                        status = FAILED;
+
                         if (isStarted) {
                             if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
                                 evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to exception [ex=" + ex +
@@ -1015,13 +1047,21 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             evts = addEvent(evts, EVT_JOB_REJECTED, "Job has not been started [ex=" + ex +
                                 ", job=" + job + ']');
                     }
-                    else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
-                        evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                    else {
+                        status = FINISHED;
+
+                        if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
+                            evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                    }
                 }
             }
-            // Job timed out.
-            else if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
-                evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to timeout: " + job);
+            else {
+                // Job timed out.
+                status = FAILED;
+
+                if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
+                    evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to timeout: " + job);
+            }
         }
         finally {
             if (evts != null) {
@@ -1101,6 +1141,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     private boolean isDeadNode(UUID uid) {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
+    }
+
+    /**
+     * @return Job status.
+     */
+    ComputeJobStatusEnum status() {
+        return status;
     }
 
     /** {@inheritDoc} */

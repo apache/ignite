@@ -213,6 +213,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
                     break;
                 case END:
                     it.remove();
+
+                    exchange.onInboundExchangeFinished(buf.nodeId, queryId(), exchangeId);
+
                     break;
                 case WAITING:
                     return false;
@@ -252,6 +255,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
                     case END:
                         buffers.remove(buf);
 
+                        exchange.onInboundExchangeFinished(buf.nodeId, queryId(), exchangeId);
+
                         break;
                     case READY:
                         heap.offer(Pair.of(buf.peek(), buf));
@@ -289,6 +294,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
                 switch (buf.check()) {
                     case END:
                         buffers.remove(idx--);
+
+                        exchange.onInboundExchangeFinished(buf.nodeId, queryId(), exchangeId);
 
                         break;
                     case READY:
@@ -491,11 +498,11 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
             Row row = curr.rows.set(curr.idx++, null);
 
-            if (curr.idx == curr.rows.size()) {
+            if (curr.idx == curr.rows.size() && !curr.last) {
+                // Don't send acknowledge for the last batch, since outbox already should be closed after the last batch.
                 acknowledge(nodeId, curr.batchId);
 
-                if (!isEnd())
-                    curr = pollBatch();
+                curr = pollBatch();
             }
 
             return row;

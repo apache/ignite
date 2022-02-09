@@ -101,6 +101,22 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
+     * Checks snapshot restore if not all "affinity" partitions have been physically created.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestoreWithEmptyPartitions() throws Exception {
+        int keysCnt = dfltCacheCfg.getAffinity().partitions() / 2;
+
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false);
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
      * Ensures that system partition verification task is invoked before restoring the snapshot.
      *
      * @throws Exception If failed.

@@ -713,8 +713,9 @@ public class SqlScriptRunner {
             }
 
             if (!res0.equals(expectedHash))
-                throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
-                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
+                throw new AssertionError("Unexpected hash result, error at: " + posDesc +
+                    ", expected=" + expectedHash + ", calculated=" + res0 +
+                    ", expectedRows=" + expectedRows + ", returnedRows=" + res.size() * res.get(0).size());
         }
 
         /** {@inheritDoc} */

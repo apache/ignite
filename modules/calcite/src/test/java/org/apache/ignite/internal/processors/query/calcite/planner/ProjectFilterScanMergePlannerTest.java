@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -87,7 +86,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     public void testProjectFilterMergeIndex() throws Exception {
         // Test project and filter merge into index scan.
         TestTable tbl = ((TestTable)publicSchema.getTable("TBL"));
-        tbl.addIndex(RelCollations.of(2), "IDX_C");
+        tbl.addIndex("IDX_C", 2);
 
         // Without index condition shift.
         assertPlan("SELECT a, b FROM tbl WHERE c = 0", publicSchema, isInstanceOf(IgniteIndexScan.class)
@@ -117,7 +116,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     public void testIdentityFilterMergeIndex() throws Exception {
         // Test project and filter merge into index scan.
         TestTable tbl = ((TestTable)publicSchema.getTable("TBL"));
-        tbl.addIndex(RelCollations.of(2), "IDX_C");
+        tbl.addIndex("IDX_C", 2);
 
         // Without index condition shift.
         assertPlan("SELECT a, b, c FROM tbl WHERE c = 0", publicSchema, isInstanceOf(IgniteIndexScan.class)

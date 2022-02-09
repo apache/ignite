@@ -80,4 +80,14 @@ public interface ExchangeService extends Service {
      * @return {@code true} if node is alive, {@code false} otherwise.
      */
     boolean alive(UUID nodeId);
+
+    /**
+     * Callback after the last batch of the query fragment is sent.
+     */
+    void onOutboundExchangeFinished(UUID qryId, long exchangeId);
+
+    /**
+     * Callback after the last batch of the query fragment from the node is processed.
+     */
+    void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId);
 }

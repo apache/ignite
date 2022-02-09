@@ -498,7 +498,20 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                             switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
                         }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Not enough space in wal segment to write segment switch");
+                        }
                     }
+                    else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Not enough space in wal segment to write segment switch, written="
+                                + written + ", switchSegmentRecSize=" + switchSegmentRecSize);
+                        }
+                    }
+
+                    // Unconditional flush (tail of the buffer)
+                    flushOrWait(null);
 
                     if (mmap) {
                         List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);

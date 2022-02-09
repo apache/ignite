@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -40,9 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 public class Query<RowT> implements RunningQuery {
-    /** Completable futures empty array. */
-    private static final CompletableFuture<?>[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture<?>[0];
-
     /** */
     private final UUID initNodeId;
 
@@ -67,6 +63,15 @@ public class Query<RowT> implements RunningQuery {
     /** */
     protected final ExchangeService exch;
 
+    /** */
+    protected final int totalFragmentsCnt;
+
+    /** */
+    protected final AtomicInteger finishedFragmentsCnt = new AtomicInteger();
+
+    /** */
+    protected final Set<Long> initNodeStartedExchanges = new HashSet<>();
+
     /** Logger. */
     protected final IgniteLogger log;
 
@@ -77,7 +82,8 @@ public class Query<RowT> implements RunningQuery {
         GridQueryCancel cancel,
         ExchangeService exch,
         Consumer<Query<RowT>> unregister,
-        IgniteLogger log
+        IgniteLogger log,
+        int totalFragmentsCnt
     ) {
         this.id = id;
         this.unregister = unregister;
@@ -88,14 +94,15 @@ public class Query<RowT> implements RunningQuery {
         this.cancel = cancel != null ? cancel : new GridQueryCancel();
 
         fragments = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        this.totalFragmentsCnt = totalFragmentsCnt;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public QueryState state() {
         return state;
     }
@@ -128,7 +135,7 @@ public class Query<RowT> implements RunningQuery {
         synchronized (mux) {
             if (state == QueryState.CLOSED)
                 return;
-            
+
             if (state == QueryState.INITED) {
                 state = QueryState.CLOSING;
 
@@ -179,6 +186,53 @@ public class Query<RowT> implements RunningQuery {
     public void onNodeLeft(UUID nodeId) {
         if (initNodeId.equals(nodeId))
             cancel();
+    }
+
+    /**
+     * Callback after the first batch of the query fragment from the node is received.
+     */
+    public void onInboundExchangeStarted(UUID nodeId, long exchangeId) {
+        // No-op.
+    }
+
+    /**
+     * Callback after the last batch of the query fragment from the node is processed.
+     */
+    public void onInboundExchangeFinished(UUID nodeId, long exchangeId) {
+        // No-op.
+    }
+
+    /**
+     * Callback after the first batch of the query fragment from the node is sent.
+     */
+    public void onOutboundExchangeStarted(UUID nodeId, long exchangeId) {
+        if (initNodeId.equals(nodeId))
+            initNodeStartedExchanges.add(exchangeId);
+    }
+
+    /**
+     * Callback after the last batch of the query fragment is sent to all nodes.
+     */
+    public void onOutboundExchangeFinished(long exchangeId) {
+        if (finishedFragmentsCnt.incrementAndGet() == totalFragmentsCnt) {
+            QueryState state0;
+
+            synchronized (mux) {
+                state0 = state;
+
+                if (state0 == QueryState.EXECUTING)
+                    state = QueryState.CLOSED;
+            }
+
+            if (state0 == QueryState.EXECUTING)
+                tryClose();
+        }
+    }
+
+    /** */
+    public boolean isExchangeWithInitNodeStarted(long fragmentId) {
+        // On remote node exchange ID is the same as fragment ID.
+        return initNodeStartedExchanges.contains(fragmentId);
     }
 
     /** {@inheritDoc} */

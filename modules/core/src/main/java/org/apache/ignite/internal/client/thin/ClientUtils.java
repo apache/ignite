@@ -75,7 +75,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Shared serialization/deserialization utils.
  */
-final class ClientUtils {
+public final class ClientUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -100,7 +100,7 @@ final class ClientUtils {
      * @param out Output stream.
      * @param elemWriter Collection element serializer
      */
-    static <E> void collection(
+    public static <E> void collection(
         Collection<E> col, BinaryOutputStream out,
         BiConsumer<BinaryOutputStream, E> elemWriter
     ) {

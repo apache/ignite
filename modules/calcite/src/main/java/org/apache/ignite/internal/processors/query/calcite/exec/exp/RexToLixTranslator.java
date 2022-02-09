@@ -70,6 +70,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -506,7 +507,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                     case VARBINARY:
                         convert = RexImpTable.optimize2(
                             operand,
-                            Expressions.call(IgniteBuiltInMethod.BYTESTRING_TO_STRING.method, operand));
+                            Expressions.call(IgniteMethod.BYTESTRING_TO_STRING.method(), operand));
                         break;
                 }
                 break;
@@ -528,8 +529,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                         SqlIntervalQualifier intervalQualifier = targetType.getIntervalQualifier();
 
                         Method method = intervalQualifier.isYearMonth() ?
-                            IgniteBuiltInMethod.PARSE_INTERVAL_YEAR_MONTH.method :
-                            IgniteBuiltInMethod.PARSE_INTERVAL_DAY_TIME.method;
+                            IgniteMethod.PARSE_INTERVAL_YEAR_MONTH.method() :
+                            IgniteMethod.PARSE_INTERVAL_DAY_TIME.method();
 
                         convert = Expressions.call(
                             method,
@@ -548,7 +549,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case VARBINARY:
                 switch (sourceType.getSqlTypeName().getFamily()) {
                     case CHARACTER:
-                        convert = Expressions.call(IgniteBuiltInMethod.STRING_TO_BYTESTRING.method, operand);
+                        convert = Expressions.call(IgniteMethod.STRING_TO_BYTESTRING.method(), operand);
                 }
                 break;
         }

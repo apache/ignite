@@ -18,14 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -76,7 +72,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.broadcast();
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
+                .addIndex("t1_jid_idx", 1, 0)
         );
 
         String sql = "select * " +
@@ -102,18 +98,18 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
         assertEquals(3, lBound.size());
 
-        assertTrue(((RexLiteral)lBound.get(0)).isNull());
-        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertNull(lBound.get(0));
         assertTrue(lBound.get(1) instanceof RexFieldAccess);
+        assertNull(lBound.get(2));
 
         List<RexNode> uBound = idxScan.upperBound();
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
         assertEquals(3, uBound.size());
 
-        assertTrue(((RexLiteral)uBound.get(0)).isNull());
-        assertTrue(((RexLiteral)uBound.get(2)).isNull());
+        assertNull(uBound.get(0));
         assertTrue(uBound.get(1) instanceof RexFieldAccess);
+        assertNull(uBound.get(2));
     }
 
     /**
@@ -138,7 +134,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.broadcast();
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
+                .addIndex("t0_jid_idx", 1, 0)
         );
 
         publicSchema.addTable(
@@ -154,7 +150,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                     return IgniteDistributions.broadcast();
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
+                .addIndex("t1_jid_idx", 1, 0)
         );
 
         String sql = "select * " +

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommen
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
@@ -90,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManage
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
@@ -1132,6 +1134,16 @@ public final class IgniteSystemProperties {
     @SystemProperty("Prefer historical rebalance if there's enough history regardless off all heuristics. " +
         "This property is intended for integration or performance tests")
     public static final String IGNITE_PREFER_WAL_REBALANCE = "IGNITE_PREFER_WAL_REBALANCE";
+
+    /**
+     * Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot.
+     * After this thresold is reached, a snapshot of the earliest checkpoint map will be captured.
+     * Default is {@link CheckpointMarkersStorage#DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD}.
+     */
+    @SystemProperty(value = "Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot. " +
+        "After this thresold is reached, a snapshot of the earliest checkpoint map will be captured",
+        type = Integer.class, defaults = "" + DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD)
+    public static final String IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD = "IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD";
 
     /** Ignite page memory concurrency level. */
     @SystemProperty(value = "Ignite page memory concurrency level", type = Integer.class)

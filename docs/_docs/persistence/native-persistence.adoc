@@ -33,6 +33,7 @@ The Native Persistence functionality is based on the following features:
 * Storing data partitions on disk
 * Write-ahead logging
 * Checkpointing
+* link:persistence/change-data-capture[Change Data Capture]
 * Usage of OS swap
 ////
 *TODO: diagram: update operation + wal + checkpointing*

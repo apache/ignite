@@ -41,6 +41,8 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
 
     /** {@inheritDoc} */
     @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+        assertPageType(pageAddr);
+
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++)
@@ -79,11 +81,15 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset(idx) + 32, lockCrd);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, offset(idx) + 40, lockCntr);
     }
 }

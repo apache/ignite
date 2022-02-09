@@ -20,11 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -65,7 +62,7 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
      */
     @Test
     public void mapReduceDistinctWithIndex() throws Exception {
-        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+        TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

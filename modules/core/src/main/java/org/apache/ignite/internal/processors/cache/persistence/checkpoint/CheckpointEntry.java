@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_GRP_STATE_LAZY_STORE;
@@ -74,7 +75,11 @@ public class CheckpointEntry {
         this.cpTs = cpTs;
         this.cpMark = cpMark;
         this.cpId = cpId;
-        this.grpStateLazyStore = new SoftReference<>(new GroupStateLazyStore(cacheGrpStates));
+
+        if (cacheGrpStates == null)
+            this.grpStateLazyStore = new SoftReference<>(new GroupStateLazyStore(null));
+        else
+            this.grpStateLazyStore = new SoftReference<>(new GroupStateLazyStore(GroupStateLazyStore.remap(cacheGrpStates)));
     }
 
     /**
@@ -129,6 +134,24 @@ public class CheckpointEntry {
     }
 
     /**
+     * @return Checkpoint entry's group states.
+     */
+    @Nullable Map<Integer, GroupState> groupStates() {
+        GroupStateLazyStore store = grpStateLazyStore.get();
+
+        return store != null ? store.groupStates() : null;
+    }
+
+    /**
+     * Sets up {@link #grpStateLazyStore} from group states map.
+     *
+     * @param groupStates Checkpoint entry's group states map.
+     */
+    void fillStore(Map<Integer, GroupState> groupStates) {
+        grpStateLazyStore = new SoftReference<>(new GroupStateLazyStore(groupStates));
+    }
+
+    /**
      * @param wal Write ahead log manager.
      * @param grpId Cache group ID.
      * @param part Partition ID.
@@ -151,10 +174,10 @@ public class CheckpointEntry {
      */
     public static class GroupState {
         /** Partition ids. */
-        private int[] parts;
+        private final int[] parts;
 
         /** Partition counters which corresponds to partition ids. */
-        private long[] cnts;
+        private final long[] cnts;
 
         /** Next index to insert to parts and cnts. */
         private int idx;
@@ -165,6 +188,31 @@ public class CheckpointEntry {
         private GroupState(int partsCnt) {
             parts = new int[partsCnt];
             cnts = new long[partsCnt];
+        }
+
+        /**
+         * @param parts Partitions' ids.
+         * @param cnts Partitions' counters.
+         * @param size Partitions count.
+         */
+        GroupState(int parts[], long[] cnts, int size) {
+            this.parts = parts;
+            this.cnts = cnts;
+            this.idx = size;
+        }
+
+        /**
+         * @return Partitions' ids.
+         */
+        int[] partitionIds() {
+            return parts;
+        }
+
+        /**
+         * @return Partitions' counters.
+         */
+        long[] partitionCounters() {
+            return cnts;
         }
 
         /**
@@ -244,7 +292,7 @@ public class CheckpointEntry {
             AtomicIntegerFieldUpdater.newUpdater(GroupStateLazyStore.class, "initGuard");
 
         /** Cache states. Initialized lazily. */
-        private volatile Map<Integer, GroupState> grpStates;
+        @Nullable private volatile Map<Integer, GroupState> grpStates;
 
         /** */
         private final CountDownLatch latch;
@@ -264,10 +312,12 @@ public class CheckpointEntry {
         }
 
         /**
-         * @param cacheGrpStates Cache group state.
+         * Constructor with group state map.
+         *
+         * @param stateMap Group state map.
          */
-        private GroupStateLazyStore(Map<Integer, CacheState> cacheGrpStates) {
-            if (cacheGrpStates != null) {
+        GroupStateLazyStore(@Nullable Map<Integer, GroupState> stateMap) {
+            if (stateMap != null) {
                 initGuard = 1;
 
                 latch = new CountDownLatch(0);
@@ -275,14 +325,14 @@ public class CheckpointEntry {
             else
                 latch = new CountDownLatch(1);
 
-            grpStates = remap(cacheGrpStates);
+            this.grpStates = stateMap;
         }
 
         /**
          * @param stateRec Cache group state.
          */
-        private Map<Integer, GroupState> remap(Map<Integer, CacheState> stateRec) {
-            if (stateRec == null)
+        private static Map<Integer, GroupState> remap(@NotNull Map<Integer, CacheState> stateRec) {
+            if (stateRec.isEmpty())
                 return Collections.emptyMap();
 
             Map<Integer, GroupState> grpStates = U.newHashMap(stateRec.size());
@@ -307,6 +357,13 @@ public class CheckpointEntry {
                 grpStates.put(grpId, grpState);
             }
 
+            return grpStates;
+        }
+
+        /**
+         * @return Partitions' states by group id.
+         */
+        @Nullable Map<Integer, GroupState> groupStates() {
             return grpStates;
         }
 

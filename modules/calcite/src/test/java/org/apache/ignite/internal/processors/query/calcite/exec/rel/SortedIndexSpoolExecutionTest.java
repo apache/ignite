@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
-
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
@@ -155,24 +157,73 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 System.arraycopy(bound.get2(), 0, lower, 0, lower.length);
                 System.arraycopy(bound.get3(), 0, upper, 0, upper.length);
 
-                int cnt = 0;
-
-                while (root.hasNext()) {
-                    root.next();
-
-                    cnt++;
-                }
-
-                assertEquals(
-                    "Invalid result size",
-                    (int)bound.get4(),
-                    cnt);
-
-                root.rewind();
+                assertEquals("Invalid result size", (int)bound.get4(), root.rowsCount());
             }
 
             root.closeRewindableRoot();
         }
+    }
+
+    /** */
+    @Test
+    public void testUnspecifiedValuesInSearchRow() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
+
+        ScanNode<Object[]> scan = new ScanNode<>(
+            ctx,
+            rowType,
+            new TestTable(100, rowType, rowId -> rowId / 10, rowId -> rowId % 10, rowId -> rowId)
+        );
+
+        Object[] lower = new Object[3];
+        Object[] upper = new Object[3];
+
+        RelCollation collation = RelCollations.of(ImmutableIntList.of(0, 1));
+
+        IndexSpoolNode<Object[]> spool = IndexSpoolNode.createTreeSpool(
+            ctx,
+            rowType,
+            collation,
+            ctx.expressionFactory().comparator(collation),
+            v -> true,
+            () -> lower,
+            () -> upper
+        );
+
+        spool.register(scan);
+
+        RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
+        root.register(spool);
+
+        Object x = ctx.unspecifiedValue(); // Unspecified filter value.
+
+        // Test tuple (lower, upper, expected result size).
+        List<T3<Object[], Object[], Integer>> testBounds = F.asList(
+            new T3<>(new Object[] {x, x, x}, new Object[] {x, x, x}, 100),
+            new T3<>(new Object[] {0, 0, x}, new Object[] {4, 9, x}, 50),
+            new T3<>(new Object[] {0, x, x}, new Object[] {4, 9, x}, 50),
+            new T3<>(new Object[] {0, 0, x}, new Object[] {4, x, x}, 50),
+            new T3<>(new Object[] {4, x, x}, new Object[] {4, x, x}, 10),
+            // This is a special case, we shouldn't compare the next field if current field bound value is null, or we
+            // can accidentally find wrong lower/upper row. So, {x, 4} bound must be converted to {x, x} and redunant
+            // rows must be filtered out by predicate.
+            new T3<>(new Object[] {x, 4, x}, new Object[] {x, 5, x}, 100)
+        );
+
+        for (T3<Object[], Object[], Integer> bound : testBounds) {
+            log.info("Check: lowerBound=" + Arrays.toString(bound.get1()) +
+                ", upperBound=" + Arrays.toString(bound.get2()));
+
+            // Set up bounds.
+            System.arraycopy(bound.get1(), 0, lower, 0, lower.length);
+            System.arraycopy(bound.get2(), 0, upper, 0, upper.length);
+
+            assertEquals("Invalid result size", (int)bound.get3(), root.rowsCount());
+        }
+
+        root.closeRewindableRoot();
     }
 
     /** */

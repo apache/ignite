@@ -30,12 +30,15 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Aggregate
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
@@ -78,11 +81,14 @@ import org.junit.runners.Suite;
     IndexDdlIntegrationTest.class,
     UserDdlIntegrationTest.class,
     KillCommandDdlIntegrationTest.class,
+    KillQueryCommandDdlIntegrationTest.class,
     FunctionsTest.class,
     StdSqlOperatorsTest.class,
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
     IndexSpoolIntegrationTest.class,
+    HashSpoolIntegrationTest.class,
+    IndexScanlIntegrationTest.class,
     SetOpIntegrationTest.class,
     UnstableTopologyTest.class,
     JoinCommuteRulesTest.class,

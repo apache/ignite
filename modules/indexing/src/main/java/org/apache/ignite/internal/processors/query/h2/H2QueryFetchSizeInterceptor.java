@@ -68,7 +68,7 @@ public class H2QueryFetchSizeInterceptor {
         ++fetchedSize;
 
         if (threshold > 0 && fetchedSize >= threshold) {
-            qryInfo.printLogMessage(log, "Query produced big result set. ",
+            qryInfo.printLogMessage(log, "Query produced big result set.",
                 "fetched=" + fetchedSize);
 
             if (thresholdMult > 1)
@@ -85,7 +85,7 @@ public class H2QueryFetchSizeInterceptor {
      */
     public void checkOnClose() {
         if (bigResults) {
-            qryInfo.printLogMessage(log, "Query produced big result set. ",
+            qryInfo.printLogMessage(log, "Query produced big result set.",
                 "fetched=" + fetchedSize);
         }
     }

@@ -31,6 +31,7 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -659,7 +660,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
         boolean needVer
     ) {
@@ -672,7 +673,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            readRepair,
+            readRepairStrategy,
             forcePrimary,
             null,
             skipVals,
@@ -711,7 +712,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            false,
+            null,
             /*need version*/true,
             txLbl,
             mvccSnapshot);

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -186,6 +188,9 @@ public class CacheGroupContext {
     /** Cache group metrics. */
     private final CacheGroupMetricsImpl metrics;
 
+    /** Topology validators. */
+    private final Collection<TopologyValidator> topValidators;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -261,6 +266,8 @@ public class CacheGroupContext {
         }
 
         hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
+
+        topValidators = Collections.unmodifiableCollection(topologyValidators(ccfg, ctx.kernalContext().plugins()));
     }
 
     /**
@@ -727,10 +734,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Configured topology validator.
+     * @return Configured topology validators.
      */
-    @Nullable public TopologyValidator topologyValidator() {
-        return ccfg.getTopologyValidator();
+    public Collection<TopologyValidator> topologyValidators() {
+        return topValidators;
     }
 
     /**
@@ -1296,5 +1303,37 @@ public class CacheGroupContext {
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
             ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param plugins Ignite plugin processor.
+     * @return Comprehensive collection of topology validators for the cache based on its configuration
+     * and plugin extensions.
+     */
+    private Collection<TopologyValidator> topologyValidators(
+        CacheConfiguration<?, ?> ccfg,
+        IgnitePluginProcessor plugins
+    ) {
+        List<TopologyValidator> res = new ArrayList<>();
+
+        TopologyValidator ccfgTopValidator = ccfg.getTopologyValidator();
+
+        if (ccfgTopValidator != null)
+            res.add(ccfgTopValidator);
+
+        CacheTopologyValidatorProvider[] topValidatorProviders = plugins.extensions(CacheTopologyValidatorProvider.class);
+
+        if (F.isEmpty(topValidatorProviders))
+            return res;
+
+        for (CacheTopologyValidatorProvider topValidatorProvider : topValidatorProviders) {
+            TopologyValidator validator = topValidatorProvider.topologyValidator(cacheOrGroupName());
+
+            if (validator != null)
+                res.add(validator);
+        }
+
+        return res;
     }
 }

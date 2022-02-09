@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -97,6 +98,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
@@ -496,6 +498,30 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Index scan with given name" condition.
+     */
+    protected <T extends RelNode> Predicate<IgniteIndexScan> isIndexScan(String tableName, String idxName) {
+        return isInstanceOf(IgniteIndexScan.class).and(
+            n -> {
+                String scanTableName = Util.last(n.getTable().getQualifiedName());
+
+                if (!tableName.equalsIgnoreCase(scanTableName)) {
+                    lastErrorMsg = "Unexpected table name [exp=" + tableName + ", act=" + scanTableName + ']';
+
+                    return false;
+                }
+
+                if (!idxName.equals(n.indexName())) {
+                    lastErrorMsg = "Unexpected index name [exp=" + idxName + ", act=" + n.indexName() + ']';
+
+                    return false;
+                }
+
+                return true;
+            });
+    }
+
+    /**
      * Predicate builder for "Any child satisfy predicate" condition.
      */
     protected <T extends RelNode> Predicate<RelNode> hasChildThat(Predicate<T> predicate) {
@@ -813,6 +839,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** */
         public TestTable addIndex(RelCollation collation, String name) {
             indexes.put(name, new CacheIndexImpl(collation, name, null, this));
+
+            return this;
+        }
+
+        /** */
+        public TestTable addIndex(String name, int... keys) {
+            addIndex(TraitUtils.createCollation(Arrays.stream(keys).boxed().collect(Collectors.toList())), name);
 
             return this;
         }
