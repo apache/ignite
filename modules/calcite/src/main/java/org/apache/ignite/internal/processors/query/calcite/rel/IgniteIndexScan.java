@@ -39,7 +39,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** */
     private final long sourceId;
 
-    /** Index collation. */
+    /** Index collation. Required only for rewriting index scan to table scan + sort in case of index rebuild. */
     private final RelCollation collation;
 
     /**
