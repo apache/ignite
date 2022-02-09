@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
@@ -49,7 +48,7 @@ public class QueryEntityTypeDescriptor {
 
     /** */
     @GridToStringInclude
-    private final Set<String> keyProps = new LinkedHashSet<>();
+    private final Set<String> keyProps = new HashSet<>();
 
     /** */
     @GridToStringInclude
@@ -272,4 +271,3 @@ public class QueryEntityTypeDescriptor {
         return S.toString(QueryEntityTypeDescriptor.class, this);
     }
 }
-

@@ -692,9 +692,11 @@ public class QueryUtils {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
         BinarySchema.Builder schemaBuiler = BinarySchema.Builder.newBuilder();
 
-        Collection<String> keyFileds = !F.isEmpty(qryEntity.getKeyFields())
-            ? qryEntity.getKeyFields()
-            : Collections.singleton(qryEntity.getKeyFieldName());
+        Collection<String> keyFileds = qryEntity.getFields().keySet().stream()
+            .filter(fldName -> !F.isEmpty(qryEntity.getKeyFields())
+                ? qryEntity.getKeyFields().contains(fldName)
+                : qryEntity.getKeyFieldName().equals(fldName))
+            .collect(Collectors.toList());
 
         Map<String, BinaryFieldMetadata> fields = new HashMap<>();
 
