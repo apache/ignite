@@ -25,6 +25,7 @@ from ignitetest.services.utils.ducktests_service import DucktestsService
 
 # globals:
 JFR_ENABLED = "jfr_enabled"
+JMX_ENABLED = "jmx_enabled"
 
 
 class IgniteTest(Test):

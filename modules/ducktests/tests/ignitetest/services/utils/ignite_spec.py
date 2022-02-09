@@ -119,6 +119,15 @@ class IgniteSpec(metaclass=ABCMeta):
                                                    "-XX:StartFlightRecording=dumponexit=true," +
                                                    f"filename={self.service.jfr_dir}/recording.jfr"])
 
+        if self.service.context.globals.get(JMX_ENABLED, False):
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts, [
+                "-Dcom.sun.management.jmxremote",
+                "-Dcom.sun.management.jmxremote.port=49100",
+                "-Dcom.sun.management.jmxremote.rmi.port=49100",
+                "-Dcom.sun.management.jmxremote.local.only=false",
+                "-Dcom.sun.management.jmxremote.authenticate=false",
+                "-Dcom.sun.management.jmxremote.ssl=false"])
+
         return default_jvm_opts
 
     def config_templates(self):
