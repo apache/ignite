@@ -265,15 +265,15 @@ public class QueryUtils {
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
-        CacheConfiguration<?, ?> cfg) {
+    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+        Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
         for (QueryEntity entity : entities) {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -287,7 +287,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -376,7 +376,9 @@ public class QueryUtils {
 
         validateQueryEntity(normalEntity);
 
-        if (entity instanceof QueryEntityEx)
+        if (!ctx.recoveryMode())
+            normalEntity.fillAbsentPKsWithDefaults(true);
+        else if (entity instanceof QueryEntityEx)
             normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx) entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;

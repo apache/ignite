@@ -205,7 +205,46 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertEquals(sql.get(1).get(1), 20);
         assertEquals(sql.get(1).get(2), 2);
     }
-    
+
+    /**
+     * Same test as above, but with table created by cache api.
+     */
+    @Test
+    public void testInsertKeyWithNullKeyParts2() {
+        Set<String> keyFields = new LinkedHashSet<>();
+        keyFields.add("ID1");
+        keyFields.add("ID2");
+
+        grid(0).getOrCreateCache(
+            new CacheConfiguration<>("test")
+                .setSqlSchema("PUBLIC")
+                .setQueryEntities(F.asList(
+                    new QueryEntity()
+                        .setTableName("TEST")
+                        .setKeyType("MY_KEY_TYPE")
+                        .setValueType("MY_VALUE_TYPE")
+                        .addQueryField("ID1", Integer.class.getName(), "ID1")
+                        .addQueryField("ID2", Integer.class.getName(), "ID2")
+                        .addQueryField("VAL", Integer.class.getName(), "VAL")
+                        .setKeyFields(keyFields)
+                ))
+        );
+
+        sql("insert into test (id1, id2, val) values (1, null, 1);");
+
+        assertThrows(log,
+            () -> sql("insert into test (id1, id2, val) values (1, null, 1);"),
+            TransactionDuplicateKeyException.class,
+            "Duplicate key during INSERT");
+
+        assertThrows(log,
+            () -> sql("insert into test (id1, val) values (1, 1);"),
+            TransactionDuplicateKeyException.class,
+            "Duplicate key during INSERT");
+
+        assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
+    }
+
     /**
      * @param sql SQL query.
      * @param args Query parameters.
