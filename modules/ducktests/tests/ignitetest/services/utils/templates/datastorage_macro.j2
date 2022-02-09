@@ -22,6 +22,9 @@
                 {% if config.max_wal_archive_size %}
                     <property name="maxWalArchiveSize" value="{{ config.max_wal_archive_size }}"/>
                 {% endif %}
+                {% if config.checkpoint_threads %}
+                    <property name="checkpointThreads" value="{{ config.checkpoint_threads }}"/>
+                {% endif %}
                 <property name="defaultDataRegionConfiguration">
                     {{ data_region(config.default) }}
                 </property>
