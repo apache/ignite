@@ -104,20 +104,6 @@ public class QueryEntity implements Serializable {
     private Map<String, Integer> fieldsScale = new HashMap<>();
 
     /**
-     * Used for composite primary key.
-     * {@code true} if the PK index is created on fields of PK.
-     * {@code false} in case the PK index is created on the whole key (composite binary object).
-     * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
-     */
-    private Boolean unwrapPk;
-
-    /** INLINE_SIZE for PK index. */
-    private Integer pkInlineSize;
-
-    /** INLINE_SIZE for affinity field index. */
-    private Integer affFieldInlineSize;
-
-    /**
      * Creates an empty query entity.
      */
     public QueryEntity() {
@@ -152,10 +138,6 @@ public class QueryEntity implements Serializable {
         fieldsPrecision = other.fieldsPrecision != null ? new HashMap<>(other.fieldsPrecision) : new HashMap<>();
 
         fieldsScale = other.fieldsScale != null ? new HashMap<>(other.fieldsScale) : new HashMap<>();
-
-        unwrapPk = other.unwrapPk;
-        pkInlineSize = other.pkInlineSize != null ? other.pkInlineSize : -1;
-        affFieldInlineSize = other.affFieldInlineSize != null ? other.affFieldInlineSize : -1;
     }
 
     /**
@@ -688,84 +670,6 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Returns INLINE_SIZE for PK index.
-     *
-     * @return INLINE_SIZE for PK index.
-     */
-    public Integer getPrimaryKeyInlineSize() {
-        return pkInlineSize;
-    }
-
-    /**
-     * Sets INLINE_SIZE for PK index.
-     *
-     * @param pkInlineSize INLINE_SIZE for PK index, when {@code null} - inline size is calculated automativally.
-     * @return {@code this} for chaining.
-     */
-    public QueryEntity setPrimaryKeyInlineSize(Integer pkInlineSize) {
-        if (pkInlineSize != null && pkInlineSize < 0) {
-            throw new CacheException("Inline size for sorted primary key cannot be negative. "
-                    + "[inlineSize=" + pkInlineSize + ']');
-        }
-
-        this.pkInlineSize = pkInlineSize;
-
-        return this;
-    }
-
-    /**
-     * Returns INLINE_SIZE for affinity field index.
-     *
-     * @return INLINE_SIZE for affinity field index.
-     */
-    public Integer getAffinityFieldInlineSize() {
-        return affFieldInlineSize;
-    }
-
-    /**
-     * Sets INLINE_SIZE for AFFINITY_KEY index.
-     *
-     * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index, when {@code null} - inline size is calculated automativally.
-     * @return {@code this} for chaining.
-     */
-    public QueryEntity setAffinityKeyInlineSize(Integer affFieldInlineSize) {
-        if (affFieldInlineSize != null && affFieldInlineSize < 0) {
-            throw new CacheException("Inline size for affinity filed index cannot be negative. "
-                    + "[inlineSize=" + affFieldInlineSize + ']');
-        }
-
-        this.affFieldInlineSize = affFieldInlineSize;
-
-        return this;
-    }
-
-    /**
-     * The property is used for sorted index and composite primary key.
-     *
-     * @return  {@code true} if the PK index is created on fields of PK.
-     * {@code false} in case the PK index is created on the whole key (composite binary object).
-     * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
-     */
-    public Boolean getUnwrapPrimaryKeyFieldsForSortedIndex() {
-        return unwrapPk;
-    }
-
-    /**
-     * The property is used for sorted index and composite primary key.
-     *
-     * @param unwrapPk {@code true} if the PK index is created on fields of PK.
-     *      {@code false} in case the PK index is created on the whole key (composite binary object).
-     *      {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key
-     *      for a table created by API).
-     * @return {@code this} for chaining.
-     */
-    public QueryEntity setUnwrapPrimaryKeyFieldsForSortedIndex(Boolean unwrapPk) {
-        this.unwrapPk = unwrapPk;
-
-        return this;
-    }
-
-    /**
      * @param desc Type descriptor.
      * @return Type metadata.
      */
@@ -1015,17 +919,13 @@ public class QueryEntity implements Serializable {
             F.eq(_notNullFields, entity._notNullFields) &&
             F.eq(defaultFieldValues, entity.defaultFieldValues) &&
             F.eq(fieldsPrecision, entity.fieldsPrecision) &&
-            F.eq(fieldsScale, entity.fieldsScale) &&
-            F.eq(unwrapPk, entity.unwrapPk) &&
-            F.eq(pkInlineSize, entity.pkInlineSize) &&
-            F.eq(affFieldInlineSize, entity.affFieldInlineSize);
+            F.eq(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues, fieldsPrecision, fieldsScale,
-            unwrapPk, pkInlineSize, affFieldInlineSize);
+            tableName, _notNullFields, defaultFieldValues, fieldsPrecision, fieldsScale);
     }
 
     /** {@inheritDoc} */

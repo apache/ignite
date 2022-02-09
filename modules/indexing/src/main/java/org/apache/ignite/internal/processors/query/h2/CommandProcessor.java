@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -1238,8 +1237,6 @@ public class CommandProcessor {
 
         if (!F.isEmpty(notNullFields))
             res.setNotNullFields(notNullFields);
-
-        res.setUnwrapPrimaryKeyFieldsForSortedIndex(createTbl.unwrapPrimaryKeyFields());
 
         if (Objects.nonNull(createTbl.primaryKeyInlineSize()))
             res.setPrimaryKeyInlineSize(createTbl.primaryKeyInlineSize());

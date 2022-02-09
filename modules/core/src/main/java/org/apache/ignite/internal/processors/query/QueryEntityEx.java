@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,6 +38,12 @@ public class QueryEntityEx extends QueryEntity {
 
     /** Whether to preserve order specified by {@link #getKeyFields()} or not. */
     private boolean preserveKeysOrder;
+
+    /** INLINE_SIZE for PK index. */
+    private Integer pkInlineSize;
+
+    /** INLINE_SIZE for affinity field index. */
+    private Integer affFieldInlineSize;
 
     /**
      * Default constructor.
@@ -58,6 +66,8 @@ public class QueryEntityEx extends QueryEntity {
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
 
             preserveKeysOrder = other0.preserveKeysOrder;
+            pkInlineSize = other0.pkInlineSize != null ? other0.pkInlineSize : -1;
+            affFieldInlineSize = other0.affFieldInlineSize != null ? other0.affFieldInlineSize : -1;
         }
     }
 
@@ -90,6 +100,58 @@ public class QueryEntityEx extends QueryEntity {
         return this;
     }
 
+    /**
+     * Returns INLINE_SIZE for PK index.
+     *
+     * @return INLINE_SIZE for PK index.
+     */
+    public Integer getPrimaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /**
+     * Sets INLINE_SIZE for PK index.
+     *
+     * @param pkInlineSize INLINE_SIZE for PK index, when {@code null} - inline size is calculated automativally.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setPrimaryKeyInlineSize(Integer pkInlineSize) {
+        if (pkInlineSize != null && pkInlineSize < 0) {
+            throw new CacheException("Inline size for sorted primary key cannot be negative. "
+                + "[inlineSize=" + pkInlineSize + ']');
+        }
+
+        this.pkInlineSize = pkInlineSize;
+
+        return this;
+    }
+
+    /**
+     * Returns INLINE_SIZE for affinity field index.
+     *
+     * @return INLINE_SIZE for affinity field index.
+     */
+    public Integer getAffinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /**
+     * Sets INLINE_SIZE for AFFINITY_KEY index.
+     *
+     * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index, when {@code null} - inline size is calculated automativally.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setAffinityKeyInlineSize(Integer affFieldInlineSize) {
+        if (affFieldInlineSize != null && affFieldInlineSize < 0) {
+            throw new CacheException("Inline size for affinity filed index cannot be negative. "
+                + "[inlineSize=" + affFieldInlineSize + ']');
+        }
+
+        this.affFieldInlineSize = affFieldInlineSize;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -101,7 +163,9 @@ public class QueryEntityEx extends QueryEntity {
         QueryEntityEx entity = (QueryEntityEx)o;
 
         return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
-            && preserveKeysOrder == entity.preserveKeysOrder;
+            && preserveKeysOrder == entity.preserveKeysOrder
+            && F.eq(pkInlineSize, entity.pkInlineSize)
+            && F.eq(affFieldInlineSize, entity.affFieldInlineSize);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +174,8 @@ public class QueryEntityEx extends QueryEntity {
 
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
         res = 31 * res + (preserveKeysOrder ? 1 : 0);
-
+        res = 31 * res + (pkInlineSize != null ? pkInlineSize.hashCode() : 0);
+        res = 31 * res + (affFieldInlineSize != null ? affFieldInlineSize.hashCode() : 0);
         return res;
     }
 

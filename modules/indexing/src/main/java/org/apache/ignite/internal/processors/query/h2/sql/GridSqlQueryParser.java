@@ -530,9 +530,6 @@ public class GridSqlQueryParser {
     private static final String PARAM_AFFINITY_INDEX_INLINE_SIZE = "AFFINITY_INDEX_INLINE_SIZE";
 
     /** */
-    private static final String PARAM_PK_INDEX_UNWRAP_FILEDS = "PK_INDEX_UNWRAP_FILEDS";
-
-    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1700,15 +1697,6 @@ public class GridSqlQueryParser {
 
                 break;
 
-            case PARAM_PK_INDEX_UNWRAP_FILEDS:
-                ensureNotEmpty(name, val);
-
-                boolean unwrapPk = parseBooleanParam(PARAM_PK_INDEX_UNWRAP_FILEDS, val);
-
-                res.unwrapPrimaryKeyFields(unwrapPk);
-
-                break;
-
             case PARAM_PK_INLINE_SIZE:
                 ensureNotEmpty(name, val);
 
@@ -1755,23 +1743,6 @@ public class GridSqlQueryParser {
         catch (NumberFormatException ignored) {
             throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
                 IgniteQueryErrorCode.PARSING);
-        }
-    }
-
-    /**
-     * Parse given value as boolean, or throw an {@link IgniteSQLException} if it's not of matching format.
-     * @param name param name.
-     * @param val param value.
-     * @return parsed int value.
-     */
-    private static boolean parseBooleanParam(String name, String val) {
-        if ("true".equalsIgnoreCase(val) || "1".equals(val))
-            return true;
-        else if ("false".equalsIgnoreCase(val) || "0".equals(val))
-            return false;
-        else {
-            throw new IgniteSQLException("Parameter value must be an boolean [name=" + name + ", value=" + val + ']',
-                    IgniteQueryErrorCode.PARSING);
         }
     }
 

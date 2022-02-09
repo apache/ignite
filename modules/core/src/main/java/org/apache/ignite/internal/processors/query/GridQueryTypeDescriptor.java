@@ -231,22 +231,4 @@ public interface GridQueryTypeDescriptor {
      * Sets affinity fields index INLINE_SIZE.
      */
     public void affinityFieldInlineSize(int affFieldInlineSize);
-
-    /**
-     * Sets property 'unwrap primary key fields'.
-     * Used for compisite primary key.
-     * {@code true} if the PK index is created on fields of PK;
-     * {@code false} in case the PK index is created on the whole key (composite binary object).
-     * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
-     */
-    public Boolean unwrapPrimaryKeyFields();
-
-    /**
-     * Gets property 'unwrap primary key fields'.
-     * Used for compisite primary key.
-     * {@code true} if the PK index is created on fields of PK;
-     * {@code false} in case the PK index is created on the whole key (composite binary object).
-     * {@code null} - compatible behavior (unwrap for a table created by SQL and wrapped key for a table created by API).
-     */
-    public void unwrapPrimaryKeyFields(Boolean unwrapPk);
 }

@@ -315,7 +315,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
+        QueryEntityEx normalEntity = new QueryEntityEx();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -328,9 +328,11 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
-        normalEntity.setUnwrapPrimaryKeyFieldsForSortedIndex(entity.getUnwrapPrimaryKeyFieldsForSortedIndex());
-        normalEntity.setPrimaryKeyInlineSize(entity.getPrimaryKeyInlineSize());
-        normalEntity.setAffinityKeyInlineSize(entity.getAffinityFieldInlineSize());
+
+        if (entity instanceof QueryEntityEx) {
+            normalEntity.setPrimaryKeyInlineSize(((QueryEntityEx)entity).getPrimaryKeyInlineSize());
+            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityFieldInlineSize());
+        }
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -601,9 +603,12 @@ public class QueryUtils {
 
         desc.typeId(valTypeId);
 
-        desc.unwrapPrimaryKeyFields(qryEntity.getUnwrapPrimaryKeyFieldsForSortedIndex());
-        desc.primaryKeyInlineSize(qryEntity.getPrimaryKeyInlineSize() != null ? qryEntity.getPrimaryKeyInlineSize() : -1);
-        desc.affinityFieldInlineSize(qryEntity.getAffinityFieldInlineSize() != null ? qryEntity.getAffinityFieldInlineSize() : -1);
+        if (qryEntity instanceof QueryEntityEx) {
+            QueryEntityEx qe = (QueryEntityEx)qryEntity;
+
+            desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
+            desc.affinityFieldInlineSize(qe.getAffinityFieldInlineSize() != null ? qe.getAffinityFieldInlineSize() : -1);
+        }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

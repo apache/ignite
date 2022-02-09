@@ -92,13 +92,10 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** See {@link CacheConfiguration#getQueryParallelism()}. */
     private Integer parallelism;
 
-    /** See {@link QueryEntity#getUnwrapPrimaryKeyFieldsForSortedIndex()}. */
-    private Boolean unwrapPk;
-
-    /** See {@link QueryEntity#getPrimaryKeyInlineSize()}. */
+    /** INLINE_SIZE for PK index. */
     private Integer pkInlineSize;
 
-    /** See {@link QueryEntity#getAffinityFieldInlineSize()}. */
+    /** INLINE_SIZE for affinity key index. */
     private Integer affInlineSize;
 
     /**
@@ -379,16 +376,6 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void parallelism(Integer parallelism) {
         this.parallelism = parallelism;
-    }
-
-    /** */
-    public Boolean unwrapPrimaryKeyFields() {
-        return unwrapPk;
-    }
-
-    /** */
-    public void unwrapPrimaryKeyFields(Boolean unwrapPk) {
-        this.unwrapPk = unwrapPk;
     }
 
     /** */

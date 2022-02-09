@@ -998,9 +998,9 @@ public class H2Utils {
     @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
         ArrayList<IndexColumn> keyCols = new ArrayList<>();
 
-        boolean isUnwrapPk = tbl.rowDescriptor().tableDescriptor().isUnwrapPrimaryKey();
+        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
 
-        if (!isUnwrapPk)
+        if (!isSql)
             return idxCols;
 
         GridQueryTypeDescriptor type = tbl.rowDescriptor().type();

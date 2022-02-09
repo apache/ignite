@@ -235,31 +235,6 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test to check validation of system indexes inline size.
-     */
-    @Test
-    public void testInlineSizeValidation() {
-        new QueryEntity().setPrimaryKeyInlineSize(0);
-        new QueryEntity().setAffinityKeyInlineSize(0);
-        new QueryEntity().setPrimaryKeyInlineSize(null);
-        new QueryEntity().setAffinityKeyInlineSize(null);
-
-        GridTestUtils.assertThrows(
-                log,
-                ()  -> new QueryEntity().setPrimaryKeyInlineSize(-1),
-                CacheException.class,
-                "Inline size for sorted primary key cannot be negative."
-        );
-
-        GridTestUtils.assertThrows(
-                log,
-                ()  -> new QueryEntity().setAffinityKeyInlineSize(-1),
-                CacheException.class,
-                "Inline size for affinity filed index cannot be negative."
-        );
-    }
-
-    /**
      * Test class for sql queryable test key with not unique annotation's name property.
      */
     private static class TestKeyWithNotUniqueName {

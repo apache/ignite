@@ -325,7 +325,7 @@ public class H2TableDescriptor {
     @NotNull private List<IndexColumn> extractKeyColumns(GridH2Table tbl, IndexColumn keyCol, IndexColumn affCol) {
         ArrayList<IndexColumn> keyCols;
 
-        if (isUnwrapPrimaryKey()) {
+        if (isSql) {
             keyCols = new ArrayList<>(type.fields().size() + 1);
 
             // Check if key is simple type.
@@ -402,7 +402,6 @@ public class H2TableDescriptor {
      * @param cacheVisitor Cache visitor.
      * @return Index.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc, @Nullable SchemaIndexCacheVisitor cacheVisitor) {
         IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
@@ -462,11 +461,6 @@ public class H2TableDescriptor {
         }
 
         return null;
-    }
-
-    /** */
-    public boolean isUnwrapPrimaryKey() {
-        return type().unwrapPrimaryKeyFields() != null ? type().unwrapPrimaryKeyFields() : isSql;
     }
 
     /**

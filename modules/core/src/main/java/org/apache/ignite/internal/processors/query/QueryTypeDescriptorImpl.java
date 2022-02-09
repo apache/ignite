@@ -144,9 +144,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private int affFieldInlineSize;
 
-    /** */
-    private Boolean unwrapPk;
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -792,15 +789,5 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
         this.affFieldInlineSize = affFieldInlineSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Boolean unwrapPrimaryKeyFields() {
-        return unwrapPk;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unwrapPrimaryKeyFields(Boolean unwrapPk) {
-        this.unwrapPk = unwrapPk;
     }
 }
