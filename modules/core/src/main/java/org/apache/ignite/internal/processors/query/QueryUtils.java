@@ -379,7 +379,7 @@ public class QueryUtils {
         if (!ctx.recoveryMode())
             normalEntity.fillAbsentPKsWithDefaults(true);
         else if (entity instanceof QueryEntityEx)
-            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx) entity).fillAbsentPKsWithDefaults());
+            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;
     }
