@@ -75,4 +75,6 @@ class SimpleStreamerTest(IgniteTest):
 
         loader.load_data(nodes)
 
+        control_utility.deactivate()
+
         return loader.get_summary_report()
