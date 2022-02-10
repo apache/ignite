@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using Apache.Ignite.Core.Client;
@@ -31,25 +32,33 @@ namespace Apache.Ignite.Core.Tests.Client
     public class ClientHeartbeatTest : ClientTestBase
     {
         /** */
-        private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(200);
+
+        /** GridNioServer has hardcoded 2000ms idle check interval. */
+        private static readonly TimeSpan IdleCheckInterval = TimeSpan.FromSeconds(2);
 
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
         {
-            using (var client = GetClient(TimeSpan.Zero))
-            {
-                Assert.AreEqual(1, client.GetCacheNames().Count);
+            using var client = GetClient(heartbeatInterval: TimeSpan.Zero);
 
-                Thread.Sleep(IdleTimeout * 2);
+            Assert.AreEqual(1, client.GetCacheNames().Count);
 
-                Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
-            }
+            Thread.Sleep(IdleCheckInterval * 2);
+
+            Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
         }
 
         [Test]
         public void TestServerDoesNotDisconnectIdleClientWithHeartbeats()
         {
-            Assert.Fail("TODO");
+            using var client = GetClient(heartbeatInterval: IdleTimeout / 2);
+
+            Assert.AreEqual(1, client.GetCacheNames().Count);
+
+            Thread.Sleep(IdleCheckInterval * 2);
+
+            Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
         }
 
         [Test]
