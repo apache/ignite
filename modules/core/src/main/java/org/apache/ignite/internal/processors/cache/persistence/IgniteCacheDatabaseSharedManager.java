@@ -184,7 +184,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dsCfg != null) {
             dsMetrics = new DataStorageMetricsImpl(
-                cctx.kernalContext().metric(),
+                ctx.metric(),
                 dsCfg.isMetricsEnabled(),
                 dsCfg.getMetricsRateTimeInterval(),
                 dsCfg.getMetricsSubIntervalCount()
@@ -192,7 +192,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
         else {
             dsMetrics = new DataStorageMetricsImpl(
-                cctx.kernalContext().metric(),
+                ctx.metric(),
                 DFLT_METRICS_ENABLED,
                 DFLT_RATE_TIME_INTERVAL_MILLIS,
                 DFLT_SUB_INTERVALS
