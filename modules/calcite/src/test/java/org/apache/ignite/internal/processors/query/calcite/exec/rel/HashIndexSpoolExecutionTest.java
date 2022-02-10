@@ -115,6 +115,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     ctx,
                     rowType,
                     ImmutableBitSet.of(0),
+                    null,
                     () -> searchRow
                 );
 
@@ -157,6 +158,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
             ctx,
             rowType,
             ImmutableBitSet.of(0, 1),
+            null,
             () -> searchRow
         );
 
