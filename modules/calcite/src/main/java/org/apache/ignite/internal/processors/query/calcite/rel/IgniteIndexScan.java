@@ -79,7 +79,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable RexNode cond,
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols,
-        @Nullable RelCollation collation
+        RelCollation collation
     ) {
         this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols, collation);
     }

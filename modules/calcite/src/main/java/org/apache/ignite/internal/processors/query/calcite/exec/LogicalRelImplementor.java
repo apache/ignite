@@ -330,6 +330,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 requiredColumns
             );
 
+            // If there are projects in the scan node - after the scan we already have target row type.
+            if (!spoolNodeRequired && projects != null)
+                rowType = rel.getRowType();
+
             Node<Row> node = new ScanNode<>(ctx, rowType, rowsIter);
 
             RelCollation collation = rel.collation();
@@ -345,9 +349,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             boolean sortNodeRequired = !collation.getFieldCollations().isEmpty();
 
             if (sortNodeRequired) {
-                if (!spoolNodeRequired && projects != null)
-                    rowType = rel.getRowType();
-
                 SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
 
                 sortNode.register(node);
