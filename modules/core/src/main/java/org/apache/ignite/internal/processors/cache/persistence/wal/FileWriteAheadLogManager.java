@@ -281,7 +281,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder). */
     private File walArchiveDir;
 
-    /** WAL CDC directory (including consistent ID as subfolder). */
+    /** WAL cdc directory (including consistent ID as subfolder) */
     private File walCdcDir;
 
     /** Serializer of latest version, used to read header record and for write records */
