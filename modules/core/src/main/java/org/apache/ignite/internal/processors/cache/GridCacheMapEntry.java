@@ -3350,7 +3350,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean logDataRecToWal = !cctx.isNear() && cctx.group().walEnabled(true);
+            boolean walEnabled = !cctx.isNear() && cctx.group().walEnabled(true);
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
@@ -3464,7 +3464,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!preload)
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
 
-                if (logDataRecToWal) {
+                if (walEnabled) {
                     if (cctx.mvccEnabled()) {
                         cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                             cctx.cacheId(),
@@ -6852,9 +6852,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean logDataRecToWal = cctx.group().walEnabled(true);
+            boolean walEnabled = cctx.group().walEnabled(true);
 
-            List<DataEntry> walEntries = logDataRecToWal ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
+            List<DataEntry> walEntries = walEnabled ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
 
             // Apply updates in reverse order (oldest is last) until any of previous versions found.
             // If we found prev version then it means history has been actualized either with previous update
@@ -6877,7 +6877,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     info.mvccTxState(),
                     info.newMvccTxState());
 
-                if (logDataRecToWal)
+                if (walEnabled)
                     walEntries.add(toMvccDataEntry(info, tx));
 
                 if (oldVal == null
@@ -6895,13 +6895,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheMvccEntryInfo last = (GridCacheMvccEntryInfo)entries.get(0);
 
-            if (logDataRecToWal)
+            if (walEnabled)
                 Collections.reverse(walEntries);
 
             if (op == DELETE) {
                 assert MvccUtils.compareNewVersion(last, mvccVer) == 0;
 
-                if (logDataRecToWal)
+                if (walEnabled)
                     walEntries.add(new MvccDataEntry(
                         cctx.cacheId(),
                         key,
@@ -6921,7 +6921,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = last.value();
             }
 
-            if (logDataRecToWal)
+            if (walEnabled)
                 logPtr = cctx.shared().wal().log(new MvccDataRecord(walEntries));
         }
         finally {
