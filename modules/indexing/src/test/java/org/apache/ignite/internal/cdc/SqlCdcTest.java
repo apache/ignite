@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.cdc;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.binary.BinaryObject;
@@ -66,15 +64,9 @@ public class SqlCdcTest extends AbstractCdcTest {
 
     /** */
     @Parameterized.Parameters(name = "persistence={0}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (boolean persistenceEnabled : new boolean[] {true, false})
-            params.add(new Object[] {persistenceEnabled});
-
-        return params;
+    public static Object[] parameters() {
+        return new Object[] {false, true};
     }
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -83,7 +75,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
+                .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
 
         return cfg;

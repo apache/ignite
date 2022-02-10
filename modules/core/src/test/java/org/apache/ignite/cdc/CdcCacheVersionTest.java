@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
@@ -54,6 +56,8 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
@@ -63,6 +67,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
+@RunWith(Parameterized.class)
 public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     public static final String FOR_OTHER_CLUSTER_ID = "for-other-cluster-id";
@@ -76,6 +81,22 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     public static final int KEY_TO_UPD = 42;
 
+    /** */
+    public static final String CDC_CACHE = "cdc-cache";
+
+    /** */
+    public static final String NOT_CDC_CACHE = "not-cdc-cache";
+
+    /** */
+    @Parameterized.Parameter
+    public boolean persistenceEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "persistence={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -83,8 +104,16 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
-                .setCdcEnabled(true)));
+                .setPersistenceEnabled(false))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName("cdc")
+                    .setPersistenceEnabled(persistenceEnabled)
+                    .setCdcEnabled(true),
+                new DataRegionConfiguration()
+                    .setName("not-cdc")
+                    .setPersistenceEnabled(false)
+                    .setCdcEnabled(false)));
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -121,14 +150,22 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         UserCdcConsumer cnsmr = new UserCdcConsumer() {
             @Override public void checkEvent(CdcEvent evt) {
+                assertEquals(CU.cacheId(FOR_OTHER_CLUSTER_ID), evt.cacheId());
                 assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
                 assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
             }
         };
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
+        IgniteCache<Integer, User> cdcCache =
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER_ID).setDataRegionName("cdc"));
 
-        addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
+        addConflictData(
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(NOT_CDC_CACHE).setDataRegionName("not-cdc")),
+            0,
+            10
+        );
+
+        addAndWaitForConsumption(cnsmr, cfg, cdcCache, null, this::addConflictData, 0, KEYS_CNT, true);
 
         assertEquals(
             DFLT_CLUSTER_ID,
@@ -168,6 +205,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 evts.forEachRemaining(evt -> {
+                    assertEquals(CU.cacheId(CDC_CACHE), evt.cacheId());
+
                     assertEquals(KEY_TO_UPD, evt.key());
 
                     assertTrue(evt.version().order() > order);
@@ -191,14 +230,20 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         CdcMain cdc = createCdc(cnsmr, cfg);
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
+        IgniteCache<Integer, User> cdcCache =
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(CDC_CACHE).setDataRegionName("cdc"));
+
+        IgniteCache<Integer, User> notCdcCache =
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(NOT_CDC_CACHE).setDataRegionName("not-cdc"));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         // Update the same key several time.
         // Expect {@link CacheEntryVersion#order()} will monotically increase.
-        for (int i = 0; i < KEYS_CNT; i++)
-            cache.put(KEY_TO_UPD, createUser(i));
+        for (int i = 0; i < KEYS_CNT; i++) {
+            cdcCache.put(KEY_TO_UPD, createUser(i));
+            notCdcCache.put(KEY_TO_UPD, createUser(i));
+        }
 
         assertTrue(waitForCondition(() -> updCntr.get() == KEYS_CNT, getTestTimeout()));
 

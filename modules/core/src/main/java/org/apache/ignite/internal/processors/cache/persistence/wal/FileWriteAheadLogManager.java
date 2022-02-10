@@ -284,9 +284,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL CDC directory (including consistent ID as subfolder). */
     private File walCdcDir;
 
-    /** CDC enabled flag. */
-    private final boolean cdcEnabled;
-
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
 
@@ -444,8 +441,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             / dsCfg.getWalSegmentSize());
 
         switchSegmentRecordOffset = isArchiverEnabled() ? new AtomicLongArray(dsCfg.getWalSegments()) : null;
-
-        cdcEnabled = CU.isCdcEnabled(dsCfg);
     }
 
     /**
@@ -481,7 +476,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            if (cdcEnabled) {
+            if (CU.isCdcEnabled(dsCfg)) {
                 walCdcDir = initDirectory(
                     dsCfg.getCdcWalPath(),
                     DataStorageConfiguration.DFLT_WAL_CDC_PATH,
@@ -2085,7 +2080,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (cdcEnabled)
+                if (walCdcDir != null)
                     Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
 
                 if (mode != WALMode.NONE) {

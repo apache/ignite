@@ -356,7 +356,7 @@ public class CdcMain implements Runnable {
             new PdsFolderResolver<>(igniteCfg, log, igniteCfg.getConsistentId(), this::tryLock).resolve();
 
         if (settings == null) {
-            throw new IgniteException("Can't find folder to read WAL segments from! " +
+            throw new IgniteException("Can't find the folder to read WAL segments from! " +
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
