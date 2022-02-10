@@ -187,7 +187,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (_heartbeatInterval > serverIdleTimeout)
                 {
                     _logger.Warn("Client HeartbeatInterval is greater than server idle timeout " +
-                                 $"({_heartbeatInterval} > {serverIdleTimeout}).");
+                                 $"({_heartbeatInterval} > {serverIdleTimeout}). " +
+                                 "Server will the client once it becomes idle.");
                 }
 
                 _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
