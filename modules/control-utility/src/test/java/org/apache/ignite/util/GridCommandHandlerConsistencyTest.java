@@ -37,7 +37,11 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,6 +52,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  *
@@ -65,6 +70,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
     /** Partitions. */
     private static final int PARTITIONS = 32;
+
+    /** */
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     @Parameterized.Parameters(name = "strategy={0}")
@@ -103,6 +111,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         cfg.setDataStorageConfiguration(null);
 
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
     }
 
@@ -138,6 +148,14 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         injectTestSystemOut();
 
+        LogListener lsnrUnmaskedKey = matches("Key: 0 (cache: ").build(); // Unmasked key.
+        LogListener lsnrMaskedKey = matches("Key: [HIDDEN_KEY#").build(); // Masked key.
+        LogListener lsnrMaskedVal = matches("Value: [HIDDEN_VALUE]").build(); // Masked value.
+
+        listeningLog.registerListener(lsnrUnmaskedKey);
+        listeningLog.registerListener(lsnrMaskedKey);
+        listeningLog.registerListener(lsnrMaskedVal);
+
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
@@ -153,6 +171,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         if (fixesPerEntry != null && fixesPerEntry > 0)
             assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
+
+        assertEquals(S.includeSensitive(), lsnrUnmaskedKey.check());
+        assertEquals(S.includeSensitive(), !lsnrMaskedKey.check());
+        assertEquals(S.includeSensitive(), !lsnrMaskedVal.check());
     }
 
     /**
@@ -212,6 +234,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                     ConsistencyCommand.PARTITION, String.valueOf(i),
                     ConsistencyCommand.STRATEGY, strategy.toString()));
 
+            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+
             assertContains(log, testOut.toString(), "Cache not found");
         }
     }
@@ -225,6 +249,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                 ConsistencyCommand.CACHE, cacheName,
                 ConsistencyCommand.PARTITION, String.valueOf(i),
                 ConsistencyCommand.STRATEGY, strategy.toString()));
+
+            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, fixed=" + (fixesPerEntry != null ? fixesPerEntry.toString() : ""));
 

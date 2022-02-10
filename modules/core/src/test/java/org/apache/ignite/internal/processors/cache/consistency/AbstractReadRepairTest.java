@@ -204,7 +204,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 assertEquals(atomicityMode() == TRANSACTIONAL ? data.strategy : ReadRepairStrategy.CHECK_ONLY, evt.getStrategy());
 
                 // Optimistic and read committed transactions produce per key fixes.
-                evtEntries.putAll(evt.getEntries());
+                for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet())
+                    evtEntries.put(entries.getKey(), entries.getValue().getMapping());
+
                 evtFixed.putAll(evt.getFixedEntries());
             }
         }

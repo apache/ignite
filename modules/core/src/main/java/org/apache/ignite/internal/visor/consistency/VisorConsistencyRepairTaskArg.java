@@ -92,22 +92,4 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     public ReadRepairStrategy strategy() {
         return strategy;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        VisorConsistencyRepairTaskArg arg = (VisorConsistencyRepairTaskArg)o;
-
-        return part == arg.part && Objects.equals(cacheName, arg.cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(cacheName, part);
-    }
 }
