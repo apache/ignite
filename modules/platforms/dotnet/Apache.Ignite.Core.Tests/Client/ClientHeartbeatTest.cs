@@ -89,6 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
+                // Keep default client alive.
                 HeartbeatInterval = IdleTimeout / 2
             };
         }
