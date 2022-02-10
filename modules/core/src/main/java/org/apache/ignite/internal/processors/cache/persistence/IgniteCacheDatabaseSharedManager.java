@@ -100,7 +100,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_METRICS_ENABLED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE_TIME_INTERVAL_MILLIS;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
@@ -164,6 +167,38 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
+    /** Data storege metrics. */
+    protected final DataStorageMetricsImpl dsMetrics;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public IgniteCacheDatabaseSharedManager(GridKernalContext ctx) {
+        if (!CU.isCdcEnabled(ctx.config().getDataStorageConfiguration()) && !CU.isPersistenceEnabled(ctx.config())) {
+            dsMetrics = null;
+
+            return;
+        }
+
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (dsCfg != null) {
+            dsMetrics = new DataStorageMetricsImpl(
+                cctx.kernalContext().metric(),
+                dsCfg.isMetricsEnabled(),
+                dsCfg.getMetricsRateTimeInterval(),
+                dsCfg.getMetricsSubIntervalCount()
+            );
+        }
+        else {
+            dsMetrics = new DataStorageMetricsImpl(
+                cctx.kernalContext().metric(),
+                DFLT_METRICS_ENABLED,
+                DFLT_RATE_TIME_INTERVAL_MILLIS,
+                DFLT_SUB_INTERVALS
+            );
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -902,6 +937,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public DataStorageMetrics persistentStoreMetrics() {
         return null;
+    }
+
+
+    /**
+     * @return Data storage metrics implementation.
+     */
+    public DataStorageMetricsImpl dataStorageMetricsImpl() {
+        return dsMetrics;
     }
 
     /**

@@ -489,28 +489,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             IgniteCacheDatabaseSharedManager dbMgr = cctx.database();
 
-            if (dbMgr instanceof GridCacheDatabaseSharedManager)
-                metrics = ((GridCacheDatabaseSharedManager)dbMgr).persistentStoreMetricsImpl();
-            else {
-                DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
-
-                if (dsCfg != null) {
-                    metrics = new DataStorageMetricsImpl(
-                        cctx.kernalContext().metric(),
-                        dsCfg.isMetricsEnabled(),
-                        dsCfg.getMetricsRateTimeInterval(),
-                        dsCfg.getMetricsSubIntervalCount()
-                    );
-                }
-                else {
-                    metrics = new DataStorageMetricsImpl(
-                        cctx.kernalContext().metric(),
-                        DFLT_METRICS_ENABLED,
-                        DFLT_RATE_TIME_INTERVAL_MILLIS,
-                        DFLT_SUB_INTERVALS
-                    );
-                }
-            }
+            metrics = dbMgr.dataStorageMetricsImpl();
 
             if (metrics != null) {
                 metrics.setWalSizeProvider(new CO<Long>() {

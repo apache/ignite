@@ -167,7 +167,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
-                new IgniteCacheDatabaseSharedManager() {
+                new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }

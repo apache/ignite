@@ -609,7 +609,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             mgr,
             new NoOpWALManager(),
             null,
-            new IgniteCacheDatabaseSharedManager(),
+            new IgniteCacheDatabaseSharedManager(kernalCtx),
             null,
             null,
             null,

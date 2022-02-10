@@ -397,7 +397,7 @@ public class IgniteWalIteratorFactory {
             iteratorParametersBuilder.marshallerMappingFileStoreDir
         );
 
-        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager(kernalCtx);
 
         dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
 

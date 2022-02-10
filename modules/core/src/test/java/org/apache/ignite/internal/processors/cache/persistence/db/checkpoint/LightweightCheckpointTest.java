@@ -151,7 +151,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
             grpId -> getPageMemoryForCacheGroup(grpId, db, context),
             PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY,
             context.cache().context().snapshot(),
-            db.persistentStoreMetricsImpl(),
+            db.dataStorageMetricsImpl(),
             context.longJvmPauseDetector(),
             context.failure(),
             context.cache()

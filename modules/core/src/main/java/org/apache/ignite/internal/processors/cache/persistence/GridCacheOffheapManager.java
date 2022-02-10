@@ -232,7 +232,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
+        persStoreMetrics = databaseSharedManager.dataStorageMetricsImpl();
 
         databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }

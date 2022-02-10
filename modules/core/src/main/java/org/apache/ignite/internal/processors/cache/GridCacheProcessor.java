@@ -3080,7 +3080,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " configuration will be ignored).");
             }
 
-            dbMgr = new IgniteCacheDatabaseSharedManager();
+            dbMgr = new IgniteCacheDatabaseSharedManager(ctx);
         }
 
         if ((CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config().getDataStorageConfiguration()))

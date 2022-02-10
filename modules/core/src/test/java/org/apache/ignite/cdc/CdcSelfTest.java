@@ -138,7 +138,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         readAll(new UserCdcConsumer(), true);
     }
 
-    /** */
+    /** Simplest CDC test but read one event at a time to check correct iterator work. */
     @Test
     public void testReadAllKeysWithoutCommit() throws Exception {
         // Read one record per call.
@@ -151,7 +151,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         }, false);
     }
 
-    /** */
+    /** Simplest CDC test but commit every event to check correct state restore. */
     @Test
     public void testReadAllKeysCommitEachEvent() throws Exception {
         // Read one record per call and commit.

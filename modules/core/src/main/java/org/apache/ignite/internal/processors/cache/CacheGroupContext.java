@@ -42,7 +42,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -1191,15 +1191,15 @@ public class CacheGroupContext {
     }
 
     /**
-     * WAL enabled flag.
+     * @return WAL enabled flag.
      */
     public boolean walEnabled() {
         return walEnabled(false);
     }
 
     /**
-     * @param forCdc {@code True} record can be consumed by {@link CdcConsumer}.
-     * @return {@code True} if {@link DataRecord} should be logged into WAL.
+     * @param forCdc {@code True} if record can be consumed by {@link CdcConsumer}.
+     * @return {@code True} if {@link WALRecord} should be logged into WAL.
      * @see CdcMain
      */
     public boolean walEnabled(boolean forCdc) {

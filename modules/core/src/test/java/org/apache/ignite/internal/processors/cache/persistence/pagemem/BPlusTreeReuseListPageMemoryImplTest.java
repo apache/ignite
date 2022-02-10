@@ -84,7 +84,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
             null,
-            new IgniteCacheDatabaseSharedManager(),
+            new IgniteCacheDatabaseSharedManager(cctx),
             null,
             null,
             null,
