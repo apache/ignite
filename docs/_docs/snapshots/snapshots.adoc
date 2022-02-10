@@ -253,7 +253,6 @@ The snapshot procedure has some limitations that you should be aware of before u
 
 * Snapshotting of specific caches/tables is unsupported. You always create a full cluster snapshot.
 * Caches/tables that are not persisted in Ignite Persistence are not included into the snapshot.
-* Encrypted caches are not included in the snapshot.
 * You can have only one snapshotting operation running at a time.
 * The snapshot procedure is interrupted if a server node leaves the cluster.
 
