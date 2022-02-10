@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
@@ -1192,23 +1193,30 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
-        return localWalEnabled && globalWalEnabled;
+        return walEnabled(false);
     }
 
     /**
+     * @param forCdc {@code True} record can be consumed by CDC.
      * @return {@code True} if {@link DataRecord} should be logged into WAL.
+     * @see CdcMain
      */
-    public boolean logDataRecordsToWal() {
+    public boolean walEnabled(boolean forCdc) {
+        boolean walEnabled = localWalEnabled && globalWalEnabled;
+
+        if (!forCdc)
+            return walEnabled;
+
         if (dataRegion == null)
             return false;
 
         if (persistenceEnabled)
-            return walEnabled();
+            return walEnabled;
 
         if (systemCache())
             return false;
 
-        return dataRegion.config().isCdcEnabled() && walEnabled();
+        return dataRegion.config().isCdcEnabled() && walEnabled;
     }
 
     /**

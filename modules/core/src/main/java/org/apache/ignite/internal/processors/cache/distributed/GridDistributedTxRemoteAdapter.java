@@ -615,7 +615,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                    if (!near() && cacheCtx.group().logDataRecordsToWal() &&
+                                    if (!near() && cacheCtx.group().walEnabled(true) &&
                                         op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
