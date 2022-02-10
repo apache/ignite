@@ -14,8 +14,6 @@
 // limitations under the License.
 = Transparent Data Encryption
 
-WARNING: This feature is in beta and not recommended for use in production environments.
-
 == Overview
 Transparent data encryption (TDE) allows users to encrypt their data at rest.
 
