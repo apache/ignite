@@ -352,7 +352,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
     /** Reference to the last added next timeout rollover object. */
-    @Nullable private volatile TimeoutRollover timeoutRollover;
+    @Nullable private TimeoutRollover timeoutRollover;
 
     /** Timeout rollover mutex. */
     @Nullable private final Object timeoutRolloverMux;
