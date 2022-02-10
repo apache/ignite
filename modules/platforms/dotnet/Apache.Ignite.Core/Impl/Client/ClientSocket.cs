@@ -177,18 +177,17 @@ namespace Apache.Ignite.Core.Impl.Client
             _features = Handshake(clientConfiguration, ServerVersion);
 
             if (_features.HasFeature(ClientBitmaskFeature.Heartbeat) &&
-                clientConfiguration.HeartbeatInterval >= TimeSpan.Zero)
+                clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
             {
-                var serverIdleTimeoutMs = DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
-
                 _heartbeatInterval = clientConfiguration.HeartbeatInterval;
 
-                if (_heartbeatInterval == IgniteClientConfiguration.AutoHeartbeatInterval)
+                var serverIdleTimeout = TimeSpan.FromMilliseconds(
+                    DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong()));
+
+                if (_heartbeatInterval > serverIdleTimeout)
                 {
-                    // ReSharper disable once PossibleLossOfFraction
-                    _heartbeatInterval = serverIdleTimeoutMs > 0
-                        ? TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 2)
-                        : TimeSpan.FromMinutes(1);
+                    _logger.Warn("Client HeartbeatInterval is greater than server idle timeout " +
+                                 $"({_heartbeatInterval} > {serverIdleTimeout}).");
                 }
 
                 _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,

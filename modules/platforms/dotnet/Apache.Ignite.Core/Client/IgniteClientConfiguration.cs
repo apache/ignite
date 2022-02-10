@@ -65,21 +65,6 @@ namespace Apache.Ignite.Core.Client
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
-        /// Automatic heartbeat interval.
-        /// </summary>
-        public static readonly TimeSpan AutoHeartbeatInterval = TimeSpan.Zero;
-
-        /// <summary>
-        /// Disabled heartbeat interval.
-        /// </summary>
-        public static readonly TimeSpan DisabledHeartbeatInterval = TimeSpan.FromMilliseconds(-1);
-
-        /// <summary>
-        /// Default heartbeat interval.
-        /// </summary>
-        public static readonly TimeSpan DefaultHeartbeatInterval = AutoHeartbeatInterval;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
         /// </summary>
         public IgniteClientConfiguration()
@@ -284,12 +269,10 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Sets the heartbeat message interval.
         /// <para />
+        /// Default is <see cref="TimeSpan.Zero"/> - heartbeats are disabled.
+        /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
-        /// <para />
-        /// TODO: Explain the behavior.
-        /// <para />
-        /// See <see cref="DefaultHeartbeatInterval"/>, <see cref="AutoHeartbeatInterval"/>, <see cref="DisabledHeartbeatInterval"/>.
         /// </summary>
         public TimeSpan HeartbeatInterval { get; set; }
 
