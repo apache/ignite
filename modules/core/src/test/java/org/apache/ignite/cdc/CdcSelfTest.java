@@ -381,7 +381,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         runAsync(() -> addData(cache, KEYS_CNT, KEYS_CNT * 2)).get(getTestTimeout());
 
-        // Wait while predicate will become true and state saved on the disk for both CDC.
+        // Wait while predicate will become true and state saved on the disk for both cdc.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
         checkMetrics(cdc1, keysCnt[0]);

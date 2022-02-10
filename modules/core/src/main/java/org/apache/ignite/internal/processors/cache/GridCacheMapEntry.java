@@ -1213,7 +1213,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (CU.logDataRecordsToWal(cctx.group())) {
+            if (cctx.group().logDataRecordsToWal()) {
                 logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                     cctx.cacheId(),
                     key,
@@ -1342,7 +1342,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (CU.logDataRecordsToWal(cctx.group()))
+            if (cctx.group().logDataRecordsToWal())
                 logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
 
             update(null, 0, 0, newVer, true);
@@ -1561,7 +1561,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && CU.logDataRecordsToWal(cctx.group()))
+            if (tx != null && cctx.group().logDataRecordsToWal())
                 logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
@@ -1786,7 +1786,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && CU.logDataRecordsToWal(cctx.group()))
+            if (tx != null && cctx.group().logDataRecordsToWal())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
@@ -3350,7 +3350,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean logDataRecToWal = !cctx.isNear() && CU.logDataRecordsToWal(cctx.group());
+            boolean logDataRecToWal = !cctx.isNear() && cctx.group().logDataRecordsToWal();
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
@@ -4330,7 +4330,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (CU.logDataRecordsToWal(cctx.group()))
+            if (cctx.group().logDataRecordsToWal())
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
@@ -5308,7 +5308,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (CU.logDataRecordsToWal(cctx.group()))
+                if (cctx.group().logDataRecordsToWal())
                     entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
@@ -5656,7 +5656,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (CU.logDataRecordsToWal(cctx.group()))
+                if (cctx.group().logDataRecordsToWal())
                     logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                         cctx.cacheId(),
                         entry.key(),
@@ -6852,7 +6852,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean logDataRecToWal = CU.logDataRecordsToWal(cctx.group());
+            boolean logDataRecToWal = cctx.group().logDataRecordsToWal();
 
             List<DataEntry> walEntries = logDataRecToWal ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
 
@@ -6961,7 +6961,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.offheap().mvccApplyHistoryIfAbsent(this, entryHist)) {
                 updated = true;
 
-                if (!cctx.isNear() && CU.logDataRecordsToWal(cctx.group())) {
+                if (!cctx.isNear() && cctx.group().logDataRecordsToWal()) {
                     MvccDataRecord rec;
 
                     if (entryHist.size() == 1) {

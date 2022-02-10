@@ -40,6 +40,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -1192,6 +1193,22 @@ public class CacheGroupContext {
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
+    }
+
+    /**
+     * @return {@code True} if {@link DataRecord} should be logged into WAL.
+     */
+    public boolean logDataRecordsToWal() {
+        if (dataRegion == null)
+            return false;
+
+        if (persistenceEnabled)
+            return walEnabled();
+
+        if (systemCache())
+            return false;
+
+        return dataRegion.config().isCdcEnabled() && walEnabled();
     }
 
     /**

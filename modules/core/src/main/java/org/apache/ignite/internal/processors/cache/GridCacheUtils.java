@@ -67,7 +67,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -2032,23 +2031,6 @@ public class GridCacheUtils {
         }
 
         return false;
-    }
-
-    /**
-     * @param ctx Group context.
-     * @return {@code True} if {@link DataRecord} should be logged into WAL.
-     */
-    public static boolean logDataRecordsToWal(CacheGroupContext ctx) {
-        if (ctx.dataRegion() == null)
-            return false;
-
-        if (ctx.persistenceEnabled())
-            return ctx.walEnabled();
-
-        if (ctx.systemCache())
-            return false;
-
-        return ctx.dataRegion().config().isCdcEnabled() && ctx.walEnabled();
     }
 
     /**
