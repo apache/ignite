@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -32,6 +33,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
@@ -40,12 +42,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
-import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -70,12 +70,17 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(tf);
 
+        RelDataType sqlTypeInt = tf.createSqlType(SqlTypeName.INTEGER);
+        RelDataType sqlTypeVarchar = tf.createSqlType(SqlTypeName.VARCHAR);
+
         b.add("_KEY", tf.createJavaType(Object.class));
         b.add("_VAL", tf.createJavaType(Object.class));
-        b.add("ID", tf.createSqlType(SqlTypeName.INTEGER));
-        b.add("VAL", tf.createSqlType(SqlTypeName.VARCHAR));
+        b.add("ID", sqlTypeInt);
+        b.add("VAL", sqlTypeVarchar);
 
-        ScanAwareTable tbl = new ScanAwareTable(b.build());
+        RelDataType rowType = b.build();
+
+        ScanAwareTable tbl = new ScanAwareTable(rowType);
 
         tbl.addIndex("IDX", 2);
 
@@ -117,33 +122,28 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null
         );
 
-        // Use serialized to JSON plan as donor of projects and filters (manual creation is not so handy).
-        // This plan contains only one relational operator: IgniteIndexScan.
-        // Corresponding SQL for this plan: "SELECT val, id, id + 1 FROM TBL WHERE id = 1"
-        IgniteRel rel = RelJsonReader.fromJson(qctx, "{\"rels\":[{\"id\":\"0\",\"relOp\":\"IgniteIndexScan\"," +
-            "\"table\":[\"PUBLIC\",\"TBL\"],\"index\":\"IDX\",\"filters\":{\"op\":{\"name\":\"=\",\"kind\":" +
-            "\"SqlKind#EQUALS\",\"syntax\":\"SqlSyntax#BINARY\"},\"operands\":[{\"input\":0,\"name\":\"$t0\"," +
-            "\"type\":{\"type\":\"SqlTypeName#INTEGER\"}},{\"literal\":1,\"type\":{\"type\":\"SqlTypeName#INTEGER\"" +
-            "}}]},\"projects\":[{\"input\":1,\"name\":\"$t1\",\"type\":{\"type\":\"SqlTypeName#VARCHAR\",\"precision\"" +
-            ":-1}},{\"input\":0,\"name\":\"$t0\",\"type\":{\"type\":\"SqlTypeName#INTEGER\"}},{\"op\":{\"name\":\"+\"," +
-            "\"kind\":\"SqlKind#PLUS\",\"syntax\":\"SqlSyntax#BINARY\"},\"operands\":[{\"input\":0,\"name\":\"$t0\"," +
-            "\"type\":{\"type\":\"SqlTypeName#INTEGER\"}},{\"literal\":1,\"type\":{\"type\":\"SqlTypeName#INTEGER\"" +
-            "}}]}],\"requiredColumns\":[2,3],\"lower\":[null,null,{\"literal\":1,\"type\":{\"type\":" +
-            "\"SqlTypeName#INTEGER\"}},null],\"upper\":[null,null,{\"literal\":1,\"type\":{\"type\":" +
-            "\"SqlTypeName#INTEGER\"}},null],\"collation\":[{\"field\":2,\"direction\":\"Direction#ASCENDING\"," +
-            "\"nulls\":\"NullDirection#LAST\"}],\"inputs\":[]}]}");
-
-        assert rel instanceof IgniteIndexScan;
-
-        IgniteIndexScan templateScan = (IgniteIndexScan)rel;
+        // Construct relational operator corresponding to SQL: "SELECT val, id, id + 1 FROM TBL WHERE id = 1"
+        RelOptCluster cluster = Commons.emptyCluster();
+        RexBuilder rexBuilder = cluster.getRexBuilder();
 
         // Projects, filters and required columns.
-        List<RexNode> project = templateScan.projects();
-        RexNode filter = templateScan.condition();
-        ImmutableBitSet requiredColumns = templateScan.requiredColumns();
+        List<RexNode> project = F.asList(
+            rexBuilder.makeLocalRef(sqlTypeVarchar, 1),
+            rexBuilder.makeLocalRef(sqlTypeInt, 0),
+            rexBuilder.makeCall(SqlStdOperatorTable.PLUS,
+                rexBuilder.makeLocalRef(sqlTypeInt, 0),
+                rexBuilder.makeLiteral(1, sqlTypeInt))
+        );
+
+        RexNode filter = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+            rexBuilder.makeLocalRef(sqlTypeInt, 0),
+            rexBuilder.makeLiteral(1, sqlTypeInt)
+        );
+
+        ImmutableBitSet requiredColumns = ImmutableBitSet.of(2, 3);
 
         // Collations.
-        RelCollation idxCollation = templateScan.collation();
+        RelCollation idxCollation = tbl.getIndex("IDX").collation();
 
         RelCollation colCollation = idxCollation.apply(Mappings.target(requiredColumns.asList(),
             tbl.getRowType(tf).getFieldCount()));
@@ -156,8 +156,6 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         // Correlated projects and filters.
         RexShuttle replaceLiteralToCorr = new RexShuttle() {
             @Override public RexNode visitLiteral(RexLiteral literal) {
-                RexBuilder rexBuilder = templateScan.getCluster().getRexBuilder();
-
                 return rexBuilder.makeFieldAccess(
                     rexBuilder.makeCorrel(tbl.getRowType(tf), new CorrelationId(0)), "ID", false);
             }
@@ -180,6 +178,18 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         Predicate<Node<Object[]>> isSort = node -> node instanceof SortNode;
         Predicate<Node<Object[]>> isSpool = node -> node instanceof IndexSpoolNode;
         Predicate<Node<Object[]>> isProj = node -> node instanceof ProjectNode;
+
+        IgniteIndexScan templateScan = new IgniteIndexScan(
+            cluster,
+            cluster.traitSet(),
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
+            "IDX",
+            project,
+            filter,
+            RexUtils.buildSortedIndexConditions(cluster, idxCollation, filter, rowType, requiredColumns),
+            requiredColumns,
+            idxCollation
+        );
 
         IgniteIndexScan scan;
 
@@ -313,7 +323,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         {
             lastScanHasFilter = filter != null;
             lastScanHasProject = transformer != null;
-            return null;
+            return Collections.emptyList();
         }
     }
 }
