@@ -75,11 +75,12 @@ namespace Apache.Ignite.Core.Tests.Client
             };
         }
 
-        private IIgniteClient GetClient(TimeSpan heartbeatInterval)
+        private static IIgniteClient GetClient(TimeSpan heartbeatInterval)
         {
             var cfg = new IgniteClientConfiguration
             {
-                Endpoints = new List<string> { IPAddress.Loopback.ToString() }
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() },
+                HeartbeatInterval = heartbeatInterval
             };
 
             return Ignition.StartClient(cfg);
