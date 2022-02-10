@@ -1059,10 +1059,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
 
-                if (_timeoutCheckTimer != null)
-                {
-                    _timeoutCheckTimer.Dispose();
-                }
+                _timeoutCheckTimer?.Dispose();
+                _heartbeatTimer?.Dispose();
             }
         }
 

@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections.Generic;
+    using System.Net;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -33,7 +36,14 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
         {
-            Assert.Fail("TODO");
+            using (var client = GetClient(TimeSpan.Zero))
+            {
+                Assert.AreEqual(1, client.GetCacheNames().Count);
+
+                Thread.Sleep(IdleTimeout * 2);
+
+                Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+            }
         }
 
         [Test]
@@ -63,6 +73,16 @@ namespace Apache.Ignite.Core.Tests.Client
                     IdleTimeout = IdleTimeout
                 }
             };
+        }
+
+        private IIgniteClient GetClient(TimeSpan heartbeatInterval)
+        {
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() }
+            };
+
+            return Ignition.StartClient(cfg);
         }
     }
 }
