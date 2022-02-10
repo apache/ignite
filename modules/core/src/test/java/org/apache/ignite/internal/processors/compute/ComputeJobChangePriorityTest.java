@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -47,6 +49,7 @@ import org.junit.Test;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -158,6 +161,8 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
         Object val,
         boolean expHandleCollisionOnChangeTaskAttrs
     ) throws Exception {
+        WaitJob.waitFut.reset();
+
         ComputeTaskFuture<Void> taskFut = CRD.compute().executeAsync(new NoopTask(), null);
 
         for (Ignite n : G.allGrids())
@@ -174,6 +179,8 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
                 PriorityQueueCollisionSpiEx.spiEx(n).waitJobFut.result()
                     .getTaskSession().waitForAttribute(key, getTestTimeout()));
         }
+
+        WaitJob.waitFut.onDone();
 
         for (Ignite n : G.allGrids()) {
             GridFutureAdapter<Void> fut = PriorityQueueCollisionSpiEx.spiEx(n).onChangeTaskAttrsFut;
@@ -205,7 +212,7 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
         @Override public void onCollision(CollisionContext ctx) {
             if (!waitJobFut.isDone()) {
                 ctx.waitingJobs().stream()
-                    .filter(collisionJobCtx -> collisionJobCtx.getJob() instanceof NoopJob)
+                    .filter(collisionJobCtx -> collisionJobCtx.getJob() instanceof WaitJob)
                     .findAny()
                     .ifPresent(waitJobFut::onDone);
             }
@@ -248,11 +255,29 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
             List<ClusterNode> subgrid,
             Void arg
         ) throws IgniteException {
-            return subgrid.stream().collect(toMap(n -> new NoopJob(), identity()));
+            return subgrid.stream().collect(toMap(n -> new WaitJob(), identity()));
         }
 
         /** {@inheritDoc} */
         @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
+            return null;
+        }
+    }
+
+    /** */
+    private static class WaitJob extends ComputeJobAdapter {
+        /** */
+        static final GridFutureAdapter<Void> waitFut = new GridFutureAdapter<>();
+
+        /** {@inheritDoc} */
+        @Override public Object execute() throws IgniteException {
+            try {
+                waitFut.get(DFLT_TEST_TIMEOUT);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
             return null;
         }
     }
