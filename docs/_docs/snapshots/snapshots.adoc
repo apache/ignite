@@ -155,7 +155,9 @@ See the link:tools/control-script#checking-snapshot-consistency[Control Script] 
 commands.
 
 == Restoring From Snapshot
-A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster. Both procedures are described below.
+
+A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster.
+Both procedures are described below, however, it is preferable to use the restore command from Control Script only.
 
 === Manual Snapshot Restore Procedure
 
