@@ -57,6 +57,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /** */
     private static final String VALUE = createValue();
 
+    /** */
     public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ALL};
 
     /** */

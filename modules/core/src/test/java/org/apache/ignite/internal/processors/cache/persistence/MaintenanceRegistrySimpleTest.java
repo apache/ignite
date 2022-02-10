@@ -302,6 +302,7 @@ public class MaintenanceRegistrySimpleTest {
         /** */
         private final List<MaintenanceAction<?>> actions = new ArrayList<>();
 
+        /** */
         SimpleMaintenanceCallback(List<MaintenanceAction<?>> actions) {
             this.actions.addAll(actions);
         }

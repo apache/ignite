@@ -22,16 +22,22 @@
 
 #include <memory>
 
+#include <ignite/future.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/common/thread_pool.h>
 #include <ignite/network/socket_client.h>
+#include <ignite/network/async_client_pool.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/protocol_version.h"
 #include "impl/ignite_node.h"
+#include "impl/response_status.h"
+#include "impl/channel_state_handler.h"
+#include "impl/notification_handler.h"
 
 namespace ignite
 {
@@ -45,6 +51,12 @@ namespace ignite
 
         namespace thin
         {
+            // Forward declaration.
+            class Request;
+
+            // Forward declaration.
+            class Response;
+
             /**
              * Data router.
              *
@@ -57,12 +69,21 @@ namespace ignite
                 /** Version set type. */
                 typedef std::set<ProtocolVersion> VersionSet;
 
+                /** Shared pointer to DataBuffer Promise. */
+                typedef common::concurrent::SharedPointer<common::Promise<network::DataBuffer> > SP_PromiseDataBuffer;
+
+                /** Response map. */
+                typedef std::map< int64_t, SP_PromiseDataBuffer> ResponseMap;
+
+                /** Notification handler map. */
+                typedef std::map< int64_t, NotificationHandlerHolder > NotificationHandlerMap;
+
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
 
                 /** Version 1.3.0. */
                 static const ProtocolVersion VERSION_1_3_0;
-                
+
                 /** Version 1.4.0. Added: Partition awareness support, IEP-23. */
                 static const ProtocolVersion VERSION_1_4_0;
 
@@ -72,32 +93,30 @@ namespace ignite
                 /** Version 1.6.0. Expiration Policy Configuration. */
                 static const ProtocolVersion VERSION_1_6_0;
 
-                /** Version 1.6.0. Features introduced. */
+                /** Version 1.7.0. Features introduced. */
                 static const ProtocolVersion VERSION_1_7_0;
 
                 /** Current version. */
                 static const ProtocolVersion VERSION_DEFAULT;
 
                 /**
-                 * Operation with timeout result.
-                 */
-                struct OperationResult
-                {
-                    enum T
-                    {
-                        SUCCESS,
-                        FAIL,
-                        TIMEOUT
-                    };
-                };
-
-                /**
                  * Constructor.
                  *
+                 * @param id Connection ID.
+                 * @param addr Address.
+                 * @param asyncPool Async pool for connection.
                  * @param cfg Configuration.
                  * @param typeMgr Type manager.
+                 * @param stateHandler State handler.
+                 * @param userThreadPool Thread pool to use to dispatch tasks that can run user code.
                  */
-                DataChannel(const ignite::thin::IgniteClientConfiguration& cfg, binary::BinaryTypeManager& typeMgr);
+                DataChannel(uint64_t id,
+                    const network::EndPoint& addr,
+                    const ignite::network::SP_AsyncClientPool& asyncPool,
+                    const ignite::thin::IgniteClientConfiguration& cfg,
+                    binary::BinaryTypeManager& typeMgr,
+                    ChannelStateHandler& stateHandler,
+                    common::ThreadPool& userThreadPool);
 
                 /**
                  * Destructor.
@@ -105,65 +124,50 @@ namespace ignite
                 ~DataChannel();
 
                 /**
-                 * Establish connection to cluster.
+                 * Perform handshake.
                  *
-                 * @param host Host.
-                 * @param port Port.
-                 * @param timeout Timeout.
                  * @return @c true on success.
                  */
-                bool Connect(const std::string& host, uint16_t port, int32_t timeout);
+                void StartHandshake();
 
                 /**
                  * Close connection.
+                 *
+                 * @param err Error.
                  */
-                void Close();
+                void Close(const IgniteError* err);
 
                 /**
-                 * Synchronously send request message and receive response.
-                 * Uses provided timeout. Does not try to restore connection on
-                 * fail.
+                 * Synchronously send request message and receive response. Uses provided timeout.
                  *
                  * @param req Request message.
                  * @param rsp Response message.
                  * @param timeout Timeout.
                  * @throw IgniteError on error.
                  */
-                template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
-                {
-                    // Allocating 64KB to lessen number of reallocations.
-                    enum { BUFFER_SIZE = 1024 * 64 };
-
-                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-
-                    int64_t id = GenerateRequestMessage(req, mem);
-
-                    InternalSyncMessage(mem, timeout);
-
-                    interop::InteropInputStream inStream(&mem);
-
-                    inStream.Position(4);
-
-                    int64_t rspId = inStream.ReadInt64();
-
-                    if (id != rspId)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Protocol error: Response message ID does not equal Request ID");
-
-                    binary::BinaryReaderImpl reader(&inStream);
-
-                    rsp.Read(reader, currentVersion);
-                }
+                void SyncMessage(Request& req, Response& rsp, int32_t timeout);
 
                 /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
+                 * Process received message.
                  *
-                 * @param mem Memory.
-                 * @param timeout Operation timeout.
+                 * @param msg Message.
                  */
-                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
+                void ProcessMessage(const network::DataBuffer& msg);
+
+                /**
+                 * Register handler for the notification.
+                 *
+                 * @param notId Notification ID.
+                 * @param handler Handler.
+                 */
+                void RegisterNotificationHandler(int64_t notId, const SP_NotificationHandler& handler);
+
+                /**
+                 * Deregister handler for the notification.
+                 *
+                 * @param notId Notification ID.
+                 */
+                void DeregisterNotificationHandler(int64_t notId);
 
                 /**
                  * Get remote node.
@@ -175,14 +179,34 @@ namespace ignite
                 }
 
                 /**
-                 * Check if the connection established.
-                 *
-                 * @return @true if connected.
+                 * Get connection ID.
+                 * @return Connection ID.
                  */
-                bool IsConnected() const
+                uint64_t GetId() const
                 {
-                    return socket.get() != 0;
+                    return id;
                 }
+
+                /**
+                 * Deserialize message received by this channel.
+                 * @param data Data.
+                 * @param msg Message.
+                 */
+                void DeserializeMessage(const network::DataBuffer& data, Response& msg);
+
+                /**
+                 * Fail all pending requests.
+                 *
+                 * @param err Error.
+                 */
+                void FailPendingRequests(const IgniteError* err);
+
+                /**
+                 * Close remote resource.
+                 *
+                 * @param resourceId Resource ID.
+                 */
+                void CloseResource(int64_t resourceId);
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
@@ -206,115 +230,40 @@ namespace ignite
                  * @param mem Memory to write request to.
                  * @return Message ID.
                  */
-                template<typename ReqT>
-                int64_t GenerateRequestMessage(const ReqT& req, interop::InteropUnpooledMemory& mem)
-                {
-                    interop::InteropOutputStream outStream(&mem);
-                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
-
-                    // Space for RequestSize + OperationCode + RequestID.
-                    outStream.Reserve(4 + 2 + 8);
-
-                    req.Write(writer, currentVersion);
-
-                    int64_t id = GenerateRequestId();
-
-                    outStream.WriteInt32(0, outStream.Position() - 4);
-                    outStream.WriteInt16(4, ReqT::GetOperationCode());
-                    outStream.WriteInt64(6, id);
-
-                    outStream.Synchronize();
-
-                    return id;
-                }
+                int64_t GenerateRequestMessage(Request& req, interop::InteropMemory& mem);
 
                 /**
-                 * Send data by established connection.
+                 * Asynchronously send request message and get a future for the response.
                  *
-                 * @param data Data buffer.
-                 * @param len Data length.
-                 * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
+                 * @param req Request message.
                  * @throw IgniteError on error.
                  */
-                bool Send(const int8_t* data, size_t len, int32_t timeout);
-
-                /**
-                 * Receive next message.
-                 *
-                 * @param msg Buffer for message.
-                 * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
-                 * @throw IgniteError on error.
-                 */
-                bool Receive(interop::InteropMemory& msg, int32_t timeout);
-
-                /**
-                 * Receive specified number of bytes.
-                 *
-                 * @param dst Buffer for data.
-                 * @param len Number of bytes to receive.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T ReceiveAll(void* dst, size_t len, int32_t timeout);
-
-                /**
-                 * Send specified number of bytes.
-                 *
-                 * @param data Data buffer.
-                 * @param len Data length.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T SendAll(const int8_t* data, size_t len, int32_t timeout);
+                Future<network::DataBuffer> AsyncMessage(Request &req);
 
                 /**
                  * Perform handshake request.
                  *
                  * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @param timeout Timeout.
                  * @return @c true on success and @c false otherwise.
                  */
-                bool MakeRequestHandshake(const ProtocolVersion& propVer, ProtocolVersion& resVer, int32_t timeout);
+                bool DoHandshake(const ProtocolVersion& propVer);
 
                 /**
-                 * Synchronously send handshake request message and receive
-                 * handshake response. Uses provided timeout. Does not try to
-                 * restore connection on fail.
+                 * Synchronously send handshake request message and receive handshake response. Uses provided timeout.
+                 * Does not try to restore connection on fail.
                  *
                  * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @param timeout Timeout.
                  * @return @c true if accepted.
                  * @throw IgniteError on error.
                  */
-                bool Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer, int32_t timeout);
+                bool Handshake(const ProtocolVersion& propVer);
 
                 /**
-                 * Ensure there is a connection to the cluster.
+                 * Handle handshake response.
                  *
-                 * @param timeout Timeout.
-                 * @return @c false on error.
+                 * @param msg Message.
                  */
-                bool EnsureConnected(int32_t timeout);
-
-                /**
-                 * Negotiate protocol version with current host
-                 *
-                 * @param timeout Timeout.
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool NegotiateProtocolVersion(int32_t timeout);
-
-                /**
-                 * Try to restore connection to the cluster.
-                 *
-                 * @param timeout Timeout.
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool TryRestoreConnection(int32_t timeout);
+                void OnHandshakeResponse(const network::DataBuffer& msg);
 
                 /**
                  * Check if the version is supported.
@@ -327,8 +276,17 @@ namespace ignite
                 /** Set of supported versions. */
                 const static VersionSet supportedVersions;
 
-                /** Sync IO mutex. */
-                common::concurrent::CriticalSection ioMutex;
+                /** State handler. */
+                ChannelStateHandler& stateHandler;
+
+                /** Indicates whether handshake has been performed. */
+                bool handshakePerformed;
+
+                /** Connection ID */
+                uint64_t id;
+
+                /** Async pool. */
+                ignite::network::SP_AsyncClientPool asyncPool;
 
                 /** Remote node data. */
                 IgniteNode node;
@@ -345,8 +303,20 @@ namespace ignite
                 /** Request ID counter. */
                 int64_t reqIdCounter;
 
-                /** Client Socket. */
-                std::auto_ptr<network::SocketClient> socket;
+                /** Response map mutex. */
+                common::concurrent::CriticalSection responseMutex;
+
+                /** Responses. */
+                ResponseMap responseMap;
+
+                /** Notification handlers mutex. */
+                common::concurrent::CriticalSection handlerMutex;
+
+                /** Notification handlers. */
+                NotificationHandlerMap handlerMap;
+
+                /** Thread pool to dispatch user code execution. */
+                common::ThreadPool& userThreadPool;
             };
 
             /** Shared pointer type. */

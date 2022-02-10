@@ -104,7 +104,7 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
             .collect(Collectors.toSet());
 
         for (Ignite ign : Ignition.allGrids()) {
-            IgniteMXBean igniteMXBean = (IgniteMXBean)ign;
+            IgniteMXBean igniteMXBean = getMxBean(ign.name(), "Kernal", "IgniteKernal", IgniteMXBean.class);
 
             assertEquals(cIds.contains(ign.cluster().localNode().consistentId()),
                 igniteMXBean.isNodeInBaseline());

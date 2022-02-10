@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,62 +31,61 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_STACK;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_STACK;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  *
  */
 @RunWith(Parameterized.class)
 public class SharedPageLockTrackerTest extends AbstractPageLockTest {
-
     /** Tracker types. */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter
     public int trackerType;
 
     /** */
-    private final int defaultType = LockTrackerFactory.DEFAULT_TYPE;
+    private final int defaultType = PageLockTrackerFactory.DEFAULT_TYPE;
 
     /**
      * @return Test parameters.
      */
     @Parameterized.Parameters(name = "trackerType={0}")
-    public static Collection<Object[]> getParameters() {
-        Collection<Object[]> params = new ArrayList<>();
+    public static Collection<Object> getParameters() {
+        return Arrays.asList(HEAP_STACK, HEAP_LOG, OFF_HEAP_STACK, OFF_HEAP_LOG);
+    }
 
-        params.add(new Object[]{HEAP_STACK});
-        params.add(new Object[]{HEAP_LOG});
-        params.add(new Object[]{OFF_HEAP_STACK});
-        params.add(new Object[]{OFF_HEAP_LOG});
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        return params;
+        PageLockTrackerFactory.DEFAULT_TYPE = trackerType;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-        LockTrackerFactory.DEFAULT_TYPE = defaultType;
+
+        PageLockTrackerFactory.DEFAULT_TYPE = defaultType;
     }
 
     /** */
     @Test
     public void testTakeDumpByCount() throws Exception {
-        LockTrackerFactory.DEFAULT_CAPACITY = 512;
-
-        LockTrackerFactory.DEFAULT_TYPE = trackerType;
-
         int dumps = SF.apply(5, 2, 10);
         doTestTakeDumpByCount(5, 1, dumps, 1);
 
@@ -101,10 +101,6 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
      */
     @Test
     public void testTakeDumpByTime() throws Exception {
-        LockTrackerFactory.DEFAULT_CAPACITY = 512;
-
-        LockTrackerFactory.DEFAULT_TYPE = trackerType;
-
         int time = SF.apply(3_000, 1_000, 5_000);
 
         doTestTakeDumpByTime(5, 1, time, 1);
@@ -137,7 +133,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         List<PageLockListener> pageLsnrs = new ArrayList<>();
 
         for (int i = 0; i < structuresCnt; i++)
-            pageLsnrs.add(sharedPageLockTracker.registrateStructure("my-structure-" + i));
+            pageLsnrs.add(sharedPageLockTracker.registerStructure("my-structure-" + i));
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -193,10 +189,10 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         for (int i = 0; i < dumpCnt; i++) {
             awaitRandom(1000);
 
-            ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
+            SharedPageLockTrackerDump dump = sharedPageLockTracker.dump();
 
-            assertEquals(threads, dump.threadStates.size());
-            assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());
+            assertEquals(threads, dump.threadPageLockStates.size());
+            assertEquals(0, dump.threadPageLockStates.stream().filter(e -> e.invalidContext != null).count());
         }
 
         stop.set(true);
@@ -225,7 +221,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         List<PageLockListener> pageLsnrs = new ArrayList<>();
 
         for (int i = 0; i < structuresCnt; i++)
-            pageLsnrs.add(sharedPageLockTracker.registrateStructure("my-structure-" + i));
+            pageLsnrs.add(sharedPageLockTracker.registerStructure("my-structure-" + i));
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -286,10 +282,10 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             while (!stop.get()) {
                 awaitRandom(20);
 
-                ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
+                SharedPageLockTrackerDump dump = sharedPageLockTracker.dump();
 
-                assertEquals(threads, dump.threadStates.size());
-                assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());
+                assertEquals(threads, dump.threadPageLockStates.size());
+                assertEquals(0, dump.threadPageLockStates.stream().filter(e -> e.invalidContext != null).count());
             }
         });
 
@@ -309,7 +305,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     public void testMemoryLeakOnThreadTerminates() throws Exception {
         int threadLimits = 1000;
         int timeOutWorkerInterval = 10_000;
-        Consumer<Set<SharedPageLockTracker.State>> handler = (threads) -> {
+        Consumer<Set<PageLockThreadState>> handler = (threads) -> {
         };
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
@@ -322,7 +318,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         long page = 3;
         long pageAdder = 4;
 
-        PageLockListener lt = sharedPageLockTracker.registrateStructure("test");
+        PageLockListener lt = sharedPageLockTracker.registerStructure("test");
 
         List<Thread> threadsList = new ArrayList<>(threads);
 
@@ -359,19 +355,19 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
         sharedPageLockTracker.start();
 
-        ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
+        SharedPageLockTrackerDump dump = sharedPageLockTracker.dump();
 
         assertTrue(dump.time > 0);
-        assertTrue(!dump.threadStates.isEmpty());
+        assertTrue(!dump.threadPageLockStates.isEmpty());
 
-        for (ThreadPageLocksDumpLock.ThreadState threadState : dump.threadStates) {
-            assertNull(threadState.invalidContext);
-            assertTrue(threadState.threadName.startsWith(threadNamePreffix));
-            assertSame(Thread.State.TERMINATED, threadState.state);
+        for (ThreadPageLockState threadPageLockState : dump.threadPageLockStates) {
+            assertNull(threadPageLockState.invalidContext);
+            assertTrue(threadPageLockState.threadName.startsWith(threadNamePreffix));
+            assertSame(Thread.State.TERMINATED, threadPageLockState.state);
 
         }
 
-        Assert.assertEquals(1, dump.structureIdToStrcutureName.size());
+        assertEquals(1, dump.structureIdToStructureName.size());
 
         synchronized (sharedPageLockTracker) {
             Map<Long, Thread> threadMap0 = U.field(sharedPageLockTracker, "threadIdToThreadRef");
@@ -394,10 +390,10 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             assertTrue(threadStacksMap1.isEmpty());
         }
 
-        ThreadPageLocksDumpLock dump1 = sharedPageLockTracker.dump();
+        SharedPageLockTrackerDump dump1 = sharedPageLockTracker.dump();
 
         assertTrue(dump1.time > 0);
-        assertTrue(dump1.threadStates.isEmpty());
+        assertTrue(dump1.threadPageLockStates.isEmpty());
     }
 
     /**
@@ -424,7 +420,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 }
 
                 // Checking threads.
-                for (SharedPageLockTracker.State state : hangsThreads) {
+                for (PageLockThreadState state : hangsThreads) {
                     String name = state.thread.getName();
 
                     if (name.equals(thInAwaitWithoutLocksName)) {
@@ -462,7 +458,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         long page = 3;
         long pageAdder = 4;
 
-        PageLockListener lt = sharedPageLockTracker.registrateStructure("test");
+        PageLockListener lt = sharedPageLockTracker.registerStructure("test");
 
         Thread thInWait = new Thread(() -> {
             lt.onBeforeReadLock(cacheId, pageId, page);
@@ -520,6 +516,27 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
         if (error.get() != null)
             throw error.get();
+    }
+
+    /**
+     * Tests that a structure gets unregistered when a listener gets closed.
+     */
+    @Test
+    public void testCloseListener() {
+        SharedPageLockTracker tracker = new SharedPageLockTracker();
+
+        PageLockListener foo = tracker.registerStructure("foo");
+        PageLockListener bar = tracker.registerStructure("bar");
+
+        assertThat(tracker.dump().structureIdToStructureName.values(), containsInAnyOrder("foo", "bar"));
+
+        IgniteUtils.closeQuiet(foo);
+
+        assertThat(tracker.dump().structureIdToStructureName.values(), containsInAnyOrder("bar"));
+
+        IgniteUtils.closeQuiet(bar);
+
+        assertThat(tracker.dump().structureIdToStructureName.values(), is(empty()));
     }
 
     /**

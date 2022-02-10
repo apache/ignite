@@ -535,10 +535,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public UUID subjectId() {
-        if (subjId != null)
-            return subjId;
-
-        return originatingNodeId();
+        return subjId;
     }
 
     /** {@inheritDoc} */
@@ -1662,7 +1659,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*read through*/false,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
-                    /*subjId*/subjId,
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
@@ -2215,6 +2211,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
+        /** {@inheritDoc} */
         @Override public byte ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }

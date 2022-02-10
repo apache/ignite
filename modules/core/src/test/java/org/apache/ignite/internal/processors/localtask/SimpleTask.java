@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Simple {@link DurableBackgroundTask} implementation for tests.
  */
-class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTask {
+class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTask<Void> {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
     final GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
 
     /** Future that will be returned from the {@link #executeAsync}. */
-    final GridFutureAdapter<DurableBackgroundTaskResult> taskFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<DurableBackgroundTaskResult<Void>> taskFut = new GridFutureAdapter<>();
 
     /** Future that will be completed at the beginning of the {@link #cancel}. */
     final GridFutureAdapter<Void> onCancelFut = new GridFutureAdapter<>();
@@ -73,7 +73,7 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
+    @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Void>> executeAsync(GridKernalContext ctx) {
         onExecFut.onDone();
 
         return taskFut;

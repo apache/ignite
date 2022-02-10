@@ -888,7 +888,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
-            marsh
+            marsh,
+            cacheId,
+            qry.getPartition() == null ? -1 : qry.getPartition()
         ));
     }
 

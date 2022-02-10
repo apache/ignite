@@ -28,7 +28,7 @@ public class TimestampIndexKey extends AbstractTimestampIndexKey implements H2Va
 
     /** */
     public TimestampIndexKey(Object obj) {
-        timestamp = (ValueTimestamp) wrapToValue(obj, type());
+        timestamp = (ValueTimestamp)wrapToValue(obj, type());
     }
 
     /** */

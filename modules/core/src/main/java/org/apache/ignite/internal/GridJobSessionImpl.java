@@ -299,11 +299,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID subjectId() {
-        return ses.subjectId();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteFuture<?> mapFuture() {
         return new IgniteFinishedFutureImpl<>(null);
     }

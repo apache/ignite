@@ -43,15 +43,22 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_VER_CLUSTER_ID;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -118,11 +125,30 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
-
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
+        addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
+
+        assertEquals(
+            DFLT_CLUSTER_ID,
+            ign.context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_VER_CLUSTER_ID).value()
+        );
+
+        boolean found = false;
+
+        SystemView<CacheView> caches = ign.context().systemView().view(CACHES_VIEW);
+
+        for (CacheView v : caches) {
+            if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
+                assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
+
+                found = true;
+            }
+            else
+                assertNull(v.conflictResolver());
+        }
+
+        assertTrue(found);
     }
 
     /** */
@@ -153,7 +179,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 return true;
             }
 
-            @Override public void start() {
+            @Override public void start(MetricRegistry mreg) {
                 // No-op.
             }
 
@@ -162,7 +188,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
 
@@ -223,6 +249,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     res.useNew();
 
                     return res;
+                }
+
+                @Override public String toString() {
+                    return "TestCacheConflictResolutionManager";
                 }
             };
         }

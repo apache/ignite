@@ -17,8 +17,8 @@
 package org.apache.ignite.internal.benchmarks.jmh.diagnostic.pagelocktracker;
 
 import org.apache.ignite.internal.benchmarks.jmh.diagnostic.pagelocktracker.stack.LockTrackerNoBarrier;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -34,10 +34,10 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_STACK;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_LOG;
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_LOG;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_STACK;
 
 /**
  * Benchmark PageLockTracker (factory LockTrackerFactory)
@@ -57,11 +57,14 @@ public class JmhPageLockTrackerBenchmark {
     /** */
     @State(Scope.Thread)
     public static class ThreadLocalState {
+        /** */
         PageLockListener pl;
 
+        /** */
         @Param({"2", "4", "8", "16"})
         int stackSize;
 
+        /** */
         @Param({
             "HeapArrayLockStack",
             "HeapArrayLockLog",
@@ -70,11 +73,14 @@ public class JmhPageLockTrackerBenchmark {
         })
         String type;
 
+        /** */
         @Param({"true", "false"})
         boolean barrier;
 
+        /** */
         int StructureId = 123;
 
+        /** */
         @Setup
         public void doSetup() {
             pl = create(Thread.currentThread().getName(), type, barrier);
@@ -122,17 +128,17 @@ public class JmhPageLockTrackerBenchmark {
 
         switch (type) {
             case "HeapArrayLockStack":
-                tracker = LockTrackerFactory.create(HEAP_STACK, name);
+                tracker = PageLockTrackerFactory.create(HEAP_STACK, name);
                 break;
             case "HeapArrayLockLog":
-                tracker = LockTrackerFactory.create(HEAP_LOG, name);
+                tracker = PageLockTrackerFactory.create(HEAP_LOG, name);
                 break;
             case "OffHeapLockStack":
-                tracker = LockTrackerFactory.create(OFF_HEAP_STACK, name);
+                tracker = PageLockTrackerFactory.create(OFF_HEAP_STACK, name);
                 break;
 
             case "OffHeapLockLog":
-                tracker = LockTrackerFactory.create(OFF_HEAP_LOG, name);
+                tracker = PageLockTrackerFactory.create(OFF_HEAP_LOG, name);
                 break;
             default:
                 throw new IllegalArgumentException("type:" + type);

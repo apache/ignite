@@ -62,7 +62,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param filter Optional filter for atomic check.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
@@ -75,7 +74,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         @Nullable CacheEntryPredicate[] filter,
-        @Nullable UUID subjId,
         int taskNameHash,
         byte flags,
         boolean addDepInfo
@@ -87,7 +85,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             topVer,
             syncMode,
             op,
-            subjId,
             taskNameHash,
             flags,
             addDepInfo
@@ -154,7 +151,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         }
 
         switch (writer.state()) {
-            case 13:
+            case 12:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
@@ -176,7 +173,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             return false;
 
         switch (reader.state()) {
-            case 13:
+            case 12:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
@@ -196,7 +193,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 13;
     }
 
     /** {@inheritDoc} */

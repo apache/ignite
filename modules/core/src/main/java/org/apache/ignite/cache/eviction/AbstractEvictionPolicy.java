@@ -125,6 +125,8 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
 
     /**
      * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum allowed cache size in bytes.
      * @return {@code this} for chaining.
      */
     public AbstractEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {

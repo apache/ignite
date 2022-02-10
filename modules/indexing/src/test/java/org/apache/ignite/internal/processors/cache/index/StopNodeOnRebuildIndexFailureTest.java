@@ -90,7 +90,7 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
         exceptionWasThrown.set(false);
 
         BPlusTree.testHndWrapper = (tree, hnd) -> {
-            if (tree.getName().toUpperCase().contains(INDEX_NAME)) {
+            if (tree.name().toUpperCase().contains(INDEX_NAME)) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
                 return new PageHandler<Object, BPlusTree.Result>() {
@@ -113,10 +113,10 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
                                 throw (Error)t;
 
                             if (t instanceof RuntimeException)
-                                throw (RuntimeException) t;
+                                throw (RuntimeException)t;
 
                             if (t instanceof IgniteCheckedException)
-                                throw (IgniteCheckedException) t;
+                                throw (IgniteCheckedException)t;
                         }
                         catch (Throwable t) {
                             exceptionWasThrown.set(true);

@@ -406,11 +406,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
             kernalCtx, null, null, false, false, false, false, false);
 
-        final List<DataEntry> entries = dataRec.writeEntries();
-        final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
+        final int entryCnt = dataRec.entryCount();
+        final List<DataEntry> postProcessedEntries = new ArrayList<>(entryCnt);
 
-        for (DataEntry dataEntry : entries) {
-            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataEntry);
+        for (int i = 0; i < entryCnt; i++) {
+            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataRec.get(i));
 
             postProcessedEntries.add(postProcessedEntry);
         }
@@ -517,8 +517,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
-
-        sharedCtx.kernalContext().cacheObjects().stop(true);
     }
 
     /** {@inheritDoc} */

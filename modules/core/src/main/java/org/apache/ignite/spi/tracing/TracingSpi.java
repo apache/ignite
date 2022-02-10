@@ -40,6 +40,7 @@ public interface TracingSpi<S extends SpiSpecificSpan> extends IgniteSpi {
      *
      * @param name Name of span to create.
      * @param parentSpan Parent span.
+     * @return Span instance.
      */
     @NotNull S create(
         @NotNull String name,
@@ -49,6 +50,7 @@ public interface TracingSpi<S extends SpiSpecificSpan> extends IgniteSpi {
      * Serializes span to byte array to send context over network.
      *
      * @param span Span.
+     * @return Span instance.
      */
     byte[] serialize(@NotNull S span);
 

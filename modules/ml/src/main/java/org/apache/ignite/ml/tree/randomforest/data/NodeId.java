@@ -45,6 +45,7 @@ public class NodeId implements Serializable {
         this.nodeId = nodeId;
     }
 
+    /** */
     public NodeId() {
     }
 

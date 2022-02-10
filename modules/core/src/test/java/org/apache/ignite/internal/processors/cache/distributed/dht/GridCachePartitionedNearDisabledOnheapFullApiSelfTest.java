@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+/** */
 public class GridCachePartitionedNearDisabledOnheapFullApiSelfTest
     extends GridCachePartitionedNearDisabledFullApiSelfTest {
     /** {@inheritDoc} */

@@ -263,6 +263,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     /**
      */
     private static class TestTopologyValidator extends TestLifecycleAware implements TopologyValidator {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -277,6 +278,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public void start() {
             super.start();
 

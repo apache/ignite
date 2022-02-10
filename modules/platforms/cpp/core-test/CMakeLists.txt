@@ -28,7 +28,8 @@ find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread sy
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 include_directories(include)
 
-set(SOURCES src/reference_test.cpp
+set(SOURCES
+        src/reference_test.cpp
         src/bits_test.cpp
         src/binary_identity_resolver_test.cpp
         src/cache_test.cpp
@@ -37,6 +38,7 @@ set(SOURCES src/reference_test.cpp
         src/continuous_query_test.cpp
         src/concurrent_test.cpp
         src/compute_test.cpp
+        src/compute_java_test.cpp
         src/ignition_test.cpp
         src/interop_memory_test.cpp
         src/interop_test.cpp
@@ -76,5 +78,9 @@ set(TEST_TARGET IgniteCoreTest)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} --catch_system_errors=no --log_level=all)
 
-set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
-        IGNITE_NATIVE_TEST_CPP_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
+list(APPEND ENV_VARIABLES "IGNITE_NATIVE_TEST_CPP_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config")
+if (${WITH_SANITIZERS})
+    list(APPEND ENV_VARIABLES ${SANITIZERS_ENV})
+endif()
+
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT "${ENV_VARIABLES}")

@@ -27,13 +27,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -320,7 +320,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean readRepair) throws IgniteCheckedException {
+        ReadRepairStrategy readRepairStrategy) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -339,11 +339,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -384,8 +383,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             return Collections.emptyMap();
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
         Map<K, V> vals = U.newHashMap(keys.size());
 
@@ -437,7 +434,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     null,
                                     null,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }
@@ -465,7 +461,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                         null,
                                         /*update-metrics*/false,
                                         /*event*/evt,
-                                        subjId,
                                         null,
                                         taskName,
                                         expiry,
@@ -493,7 +488,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                         /*read-through*/false,
                                         /*update-metrics*/true,
                                         /*event*/evt,
-                                        subjId,
                                         null,
                                         taskName,
                                         expiry,
@@ -549,11 +543,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             null,
             opCtx == null || !opCtx.skipStore(),
             false,
-            subjId,
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            false,
+            null,
             /*force primary*/false,
             expiry,
             skipVals,
@@ -589,7 +582,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 invokeMap.keySet(),
                 invokeMap.values(),
@@ -695,7 +688,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 map.keySet(),
                 map.values(),
@@ -873,8 +866,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         GridCacheVersion ver = nextVersion();
 
-        UUID subjId = ctx.subjectIdPerCall(null);
-
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
         IgniteBiTuple<Boolean, ?> res = null;
@@ -895,7 +886,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     ver,
                     filters,
                     keepBinary,
-                    subjId,
                     taskName);
             }
 
@@ -942,7 +932,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             true,
                             filters,
                             intercept,
-                            subjId,
                             taskName,
                             false);
 
@@ -1021,7 +1010,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param expiryPlc Expiry policy.
      * @param ver Cache version.
      * @param filter Optional filter.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @return Results map for invoke operation.
      * @throws CachePartialUpdateCheckedException If update failed.
@@ -1036,7 +1024,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         GridCacheVersion ver,
         @Nullable CacheEntryPredicate[] filter,
         boolean keepBinary,
-        UUID subjId,
         String taskName
     ) throws IgniteCheckedException {
         List<GridCacheEntryEx> locked = lockEntries(keys);
@@ -1102,7 +1089,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             /*read-through*/true,
                             /*update-metrics*/true,
                             /*event*/true,
-                            subjId,
                             entryProcessor,
                             taskName,
                             null,
@@ -1177,7 +1163,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     expiryPlc,
                                     keepBinary,
                                     err,
-                                    subjId,
                                     taskName,
                                     true);
 
@@ -1216,7 +1201,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     expiryPlc,
                                     keepBinary,
                                     err,
-                                    subjId,
                                     taskName,
                                     true);
 
@@ -1244,7 +1228,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /*update-metrics*/true,
                                 /*event*/true,
-                                subjId,
                                 null,
                                 taskName,
                                 null,
@@ -1279,7 +1262,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /*update-metrics*/true,
                                 /*event*/true,
-                                subjId,
                                 null,
                                 taskName,
                                 null,
@@ -1322,7 +1304,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     expiryPlc,
                     keepBinary,
                     err,
-                    subjId,
                     taskName,
                     op == TRANSFORM);
             }
@@ -1347,7 +1328,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param rmvKeys Keys to remove.
      * @param expiryPlc Expiry policy.
      * @param err Optional partial update exception.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
@@ -1362,7 +1342,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         boolean keepBinary,
         @Nullable CachePartialUpdateCheckedException err,
-        UUID subjId,
         String taskName,
         boolean transformed) {
         assert putMap == null ^ rmvKeys == null;
@@ -1439,7 +1418,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     true,
                     null,
                     false,
-                    subjId,
                     taskName,
                     transformed);
 

@@ -102,6 +102,7 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
     }
 
     // TODO create Ignite mirror ticket and set it here
+    /** */
     @Ignore("https://ggsystems.atlassian.net/browse/GG-31183")
     @Test
     public void selectNotNullCond() {
@@ -132,6 +133,7 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"SIZED_SMALL_NULLS"}, sql2, new String[1][]);
     }
 
+    /** */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-14813")
     @Test
     public void selectWithValueSizeCond() {

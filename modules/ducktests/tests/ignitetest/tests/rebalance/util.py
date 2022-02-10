@@ -22,10 +22,8 @@ from enum import IntEnum
 from itertools import chain, product
 from typing import NamedTuple
 
-# pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
-# pylint: disable=too-many-arguments
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
@@ -90,7 +88,6 @@ class RebalanceMetrics(NamedTuple):
     node: str = None
 
 
-# pylint: disable=too-many-arguments, too-many-locals
 def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceParams) -> IgniteService:
     """
     Start IgniteService:
@@ -132,7 +129,6 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
     return ignites
 
 
-# pylint: disable=R0914
 def preload_data(context, config, rebalance_params: RebalanceParams, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
@@ -206,7 +202,6 @@ def await_rebalance_start(service: IgniteService, timeout: int = 30):
     raise RuntimeError("Rebalance start was not detected on any node")
 
 
-# pylint: disable=W0640
 def aggregate_rebalance_stats(nodes, cache_count):
     """
     Aggregates rebalance stats for specified nodes and cache count.
@@ -280,7 +275,6 @@ def to_time_format(timestamp: int, fmt: str = '%Y-%m-%d %H:%M:%S'):
     return datetime.fromtimestamp(int(timestamp) // 1000).strftime(fmt)
 
 
-# pylint: disable=too-many-arguments, too-many-locals
 def get_result(rebalance_nodes: list, preload_time: int, cache_count: int, entry_count: int, entry_size: int) -> dict:
     """
 

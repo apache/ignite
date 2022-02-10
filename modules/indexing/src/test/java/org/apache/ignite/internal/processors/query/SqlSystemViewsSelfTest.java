@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -84,6 +86,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -299,7 +302,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", false, false, 10},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 10},
+                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 20},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "SCAN", null, false, false, null},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
@@ -307,9 +310,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", false, true, null},
 
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", false, false, 10},
+                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "BTREE",
-                    "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 10},
+                    "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "__SCAN_", "SCAN", null, false, false, null},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
@@ -332,7 +335,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], resRow.get(j));
+                assertEquals("expRow: [" + Arrays.toString(expRow) + "]", expRow[j], resRow.get(j));
         }
     }
 
@@ -1064,6 +1067,66 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("val0", res.get(0).get(2));
     }
 
+    /**
+     * Test snapshots system view.
+     */
+    @Test
+    public void testSnapshotViews() throws Exception {
+        String node0 = "node0";
+        String node1 = "node1";
+
+        String testSnapname = "testSnapshot";
+        String testSnapname0 = "testSnapshot0";
+        String testCache = "testCache";
+
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration(node0));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration(node1));
+
+        int nodesCnt = G.allGrids().size();
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite.snapshot().createSnapshot(testSnapname).get();
+
+        List<List<?>> res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOT");
+
+        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
+
+        assertEquals(nodesCnt, res.size());
+
+        assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
+
+        res = execSql("SELECT BASELINE_NODES FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
+
+        assertEquals(1, res.size());
+
+        ignite.createCache(testCache);
+
+        ignite.snapshot().createSnapshot(testSnapname0).get();
+
+        res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOT");
+
+        assertEquals(nodesCnt * 2, res.size());
+
+        String expBltNodes = F.concat(asList(node0, node1), ",");
+
+        assertTrue(res.stream().map(l -> l.get(2)).allMatch(expBltNodes::equals));
+
+        res = execSql("SELECT NAME FROM " + systemSchemaName() + ".SNAPSHOT WHERE CONSISTENT_ID = ?", node0);
+
+        assertEquals(2, res.size());
+
+        res = execSql("SELECT NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOT " +
+            "WHERE NAME = ?", testSnapname0);
+
+        assertEquals(nodesCnt, res.size());
+
+        assertEquals(testSnapname0, res.get(0).get(0));
+
+        String expCacheGrps = F.concat(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME), ",");
+
+        assertEquals(expCacheGrps, res.get(0).get(1));
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration()
@@ -1740,7 +1803,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         fld.setAccessible(true);
 
-        return (T) fld.get(target);
+        return (T)fld.get(target);
     }
 
     /**
@@ -1842,19 +1905,25 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
         private final int attemptsBeforeException;
 
+        /** */
         private volatile int attempts;
 
+        /** */
         public CustomNodeFilter(int attemptsBeforeException) {
             this.attemptsBeforeException = attemptsBeforeException;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             if (attempts++ > attemptsBeforeException)
                 throw new NullPointerException("Oops... incorrect customer realization.");

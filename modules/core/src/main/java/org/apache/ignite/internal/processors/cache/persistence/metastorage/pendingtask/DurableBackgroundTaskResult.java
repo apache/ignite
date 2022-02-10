@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,8 +29,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #completed Completed} - the task has completed its execution and should be deleted.</li>
  *   <li>{@link #restart Restart} - the task has not yet completed its execution and must be restarted.</li>
  * </ul>
+ * @param <R> Type of the result of the task.
  */
-public class DurableBackgroundTaskResult {
+public class DurableBackgroundTaskResult<R> {
     /** Completed state. */
     private static final Object COMPLETED = new Object();
 
@@ -42,15 +44,21 @@ public class DurableBackgroundTaskResult {
     /** An error occurred while executing the task. */
     @Nullable private final Throwable err;
 
+    /** Result of the task. */
+    @GridToStringInclude
+    @Nullable private final R res;
+
     /**
      * Constructor.
      *
-     * @param res Execution state.
+     * @param state Execution state.
      * @param err An error occurred while executing the task.
+     * @param res Result of the task.
      */
-    private DurableBackgroundTaskResult(Object res, @Nullable Throwable err) {
-        this.state = res;
+    private DurableBackgroundTaskResult(Object state, @Nullable Throwable err, @Nullable R res) {
+        this.state = state;
         this.err = err;
+        this.res = res;
     }
 
     /**
@@ -59,8 +67,27 @@ public class DurableBackgroundTaskResult {
      * @param err An error occurred while executing the task.
      * @return Result of executing a durable background task.
      */
-    public static DurableBackgroundTaskResult complete(@Nullable Throwable err) {
-        return new DurableBackgroundTaskResult(COMPLETED, err);
+    public static <R> DurableBackgroundTaskResult<R> complete(@Nullable Throwable err) {
+        return new DurableBackgroundTaskResult<>(COMPLETED, err, null);
+    }
+
+    /**
+     * Creation of a completed task execution result that does not require restarting it.
+     *
+     * @param res Result of the task.
+     * @return Result of executing a durable background task.
+     */
+    public static <R> DurableBackgroundTaskResult<R> complete(@Nullable R res) {
+        return new DurableBackgroundTaskResult<>(COMPLETED, null, res);
+    }
+
+    /**
+     * Creation of a completed task execution result that does not require restarting it.
+     *
+     * @return Result of executing a durable background task.
+     */
+    public static <R> DurableBackgroundTaskResult<R> complete() {
+        return new DurableBackgroundTaskResult<>(COMPLETED, null, null);
     }
 
     /**
@@ -69,8 +96,8 @@ public class DurableBackgroundTaskResult {
      * @param err An error occurred while executing the task.
      * @return Result of executing a durable background task.
      */
-    public static DurableBackgroundTaskResult restart(@Nullable Throwable err) {
-        return new DurableBackgroundTaskResult(RESTART, err);
+    public static <R> DurableBackgroundTaskResult<R> restart(@Nullable Throwable err) {
+        return new DurableBackgroundTaskResult<>(RESTART, err, null);
     }
 
     /**
@@ -98,6 +125,15 @@ public class DurableBackgroundTaskResult {
      */
     @Nullable public Throwable error() {
         return err;
+    }
+
+    /**
+     * Getting the result of the task.
+     *
+     * @return Result of the task.
+     */
+    @Nullable public R result() {
+        return res;
     }
 
     /** {@inheritDoc} */

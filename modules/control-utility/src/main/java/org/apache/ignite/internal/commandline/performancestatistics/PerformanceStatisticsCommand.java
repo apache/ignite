@@ -87,16 +87,16 @@ public class PerformanceStatisticsCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Start collecting performance statistics in the cluster:",
+        usage(log, "Start collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, START.toString());
 
-        Command.usage(log, "Stop collecting performance statistics in the cluster:",
+        usage(log, "Stop collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, STOP.toString());
 
-        Command.usage(log, "Rotate collecting performance statistics in the cluster:",
+        usage(log, "Rotate collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, ROTATE.toString());
 
-        Command.usage(log, "Get status of collecting performance statistics in the cluster:",
+        usage(log, "Get status of collecting performance statistics in the cluster:",
             PERFORMANCE_STATISTICS, STATUS.toString());
     }
 

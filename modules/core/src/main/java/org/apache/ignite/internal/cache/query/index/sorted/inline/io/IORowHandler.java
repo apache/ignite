@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 /**
  * Class provide a common logic for storing an index row.
  */
-class IORowHandler {
+public class IORowHandler {
     /** */
-    static void store(long pageAddr, int off, IndexRow row, boolean storeMvccInfo) {
+    public static void store(long pageAddr, int off, IndexRow row, boolean storeMvccInfo) {
         // Write link after all inlined idx keys.
         PageUtils.putLong(pageAddr, off, row.link());
 

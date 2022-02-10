@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -140,7 +141,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withReadRepair() {
+    @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -258,6 +259,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
@@ -267,6 +269,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }

@@ -84,7 +84,7 @@ public class BaselineTopologyUpdater {
         this.baselineAutoAdjustScheduler = new BaselineAutoAdjustScheduler(ctx.timeout(), new BaselineAutoAdjustExecutor(
             ctx.log(BaselineAutoAdjustExecutor.class),
             cluster,
-            ctx.getSystemExecutorService(),
+            ctx.pools().getSystemExecutorService(),
             this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();

@@ -730,7 +730,7 @@ public class StripedExecutor implements ExecutorService {
 
                         while (true) {
                             if (cur != idx) {
-                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
+                                Deque<Runnable> queue = (Deque<Runnable>)((StripeConcurrentQueue)others[cur]).queue;
 
                                 if (queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
                                     return r;

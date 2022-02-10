@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -90,40 +89,27 @@ public interface IgniteCacheOffheapManager {
     public void stop();
 
     /**
-     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     * Pre-create single partition that resides in page memory or WAL and restores their state.
      *
-     * @param partRecoveryStates Partition recovery states.
-     * @return Processed partitions: partition id -> processing time in millis.
+     * @param p Partition id.
+     * @param recoveryState Partition recovery state.
+     * @return Processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
-    Map<Integer, Long> restorePartitionStates(
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException;
+    long restoreStateOfPartition(int p, @Nullable Integer recoveryState) throws IgniteCheckedException;
 
     /**
-     * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
-     * @param part Partition.
-     * @param cntr Partition counter.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onPartitionCounterUpdated(int part, long cntr);
+    void restorePartitionStates() throws IgniteCheckedException;
 
     /**
-     * Initial counter will be updated on state restore only
-     *
-     * @param part Partition
-     * @param start Start.
-     * @param delta Delta.
+     * Confirm that partition states are restored. This method should be called after restoring state of all partitions
+     * in group using {@link #restoreStateOfPartition(int, Integer)}.
      */
-    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
-
-    /**
-     * Partition counter provider. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition ID.
-     * @return Last updated counter.
-     */
-    public long lastUpdatedPartitionCounter(int part);
+    void confirmPartitionStatesRestored();
 
     /**
      * @param entry Cache entry.
@@ -153,10 +139,10 @@ public interface IgniteCacheOffheapManager {
     public Iterable<CacheDataStore> cacheDataStores();
 
     /**
-     * @param part Partition.
-     * @return Data store.
+     * @param part Local partition or {@code null} if a related cache group is <tt>LOCAL</tt>.
+     * @return Cache data store associated with given partition or the cache data store for a <tt>LOCAL</tt> cache group.
      */
-    public CacheDataStore dataStore(GridDhtLocalPartition part);
+    public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part);
 
     /**
      * @param store Data store.
@@ -513,12 +499,12 @@ public interface IgniteCacheOffheapManager {
     /**
      * Store entries.
      *
-     * @param partId Partition number.
+     * @param part Local partition.
      * @param infos Entry infos.
      * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
      * @throws IgniteCheckedException If failed.
      */
-    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+    public void storeEntries(GridDhtLocalPartition part, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**
@@ -563,11 +549,32 @@ public interface IgniteCacheOffheapManager {
     public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
+     * Dropping the root page of the index tree.
+     *
      * @param cacheId Cache ID.
      * @param idxName Index name.
+     * @param segment Segment index.
+     * @return Dropped root page of the index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+    @Nullable RootPage dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
+     * Renaming the root page of the index tree.
+     *
+     * @param cacheId Cache id.
+     * @param oldIdxName Old name of the index tree.
+     * @param newIdxName New name of the index tree.
+     * @param segment Segment index.
+     * @return Renamed root page of the index tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable RootPage renameRootPageForIndex(
+        int cacheId,
+        String oldIdxName,
+        String newIdxName,
+        int segment
+    ) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
@@ -583,18 +590,12 @@ public interface IgniteCacheOffheapManager {
     public long cacheEntriesCount(int cacheId);
 
     /**
-     * @param part Partition.
-     * @return Number of entries.
-     */
-    public long totalPartitionEntriesCount(int part);
-
-    /**
      * Preload a partition. Must be called under partition reservation for DHT caches.
      *
-     * @param part Partition.
+     * @param pardId Partition id.
      * @throws IgniteCheckedException If failed.
      */
-    public void preloadPartition(int part) throws IgniteCheckedException;
+    public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
      *
@@ -1065,6 +1066,11 @@ public interface IgniteCacheOffheapManager {
          * Mark store as destroyed.
          */
         public void markDestroyed() throws IgniteCheckedException;
+
+        /**
+         * @return {@code true} If marked as destroyed.
+         */
+        public boolean destroyed();
 
         /**
          * Clears all the records associated with logical cache with given ID.

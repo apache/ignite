@@ -2341,7 +2341,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            BadHashKeyObject keyObj = (BadHashKeyObject) o;
+            BadHashKeyObject keyObj = (BadHashKeyObject)o;
 
             return str.equals(keyObj.str);
         }
@@ -2426,6 +2426,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return store;
         }

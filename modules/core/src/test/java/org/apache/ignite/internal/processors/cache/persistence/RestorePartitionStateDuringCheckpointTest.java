@@ -31,7 +31,6 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,8 +102,10 @@ public class RestorePartitionStateDuringCheckpointTest extends GridCommonAbstrac
         AtomicBoolean checkpointTriggered = new AtomicBoolean(false);
 
         doAnswer(invocation -> {
-            IgniteCacheOffheapManager.CacheDataStore partDataStore = ((IgniteCacheOffheapManagerImpl)cacheProcessor
-                .cacheGroup(grpId).offheap()).dataStore(partId);
+            IgniteCacheOffheapManager.CacheDataStore partDataStore = cacheProcessor.cacheGroup(grpId).topology()
+                .localPartition(partId).dataStore();
+
+            assertNotNull(partDataStore);
 
             if (partDataStore.rowStore() != null && checkpointTriggered.compareAndSet(false, true)) {
                 info("Before write lock will be gotten on the partition meta page [pageId=" + invocation.getArgument(2) + ']');

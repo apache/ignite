@@ -167,6 +167,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private volatile MvccCoordinator curCrd = MvccCoordinator.UNASSIGNED_COORDINATOR;
 
     /** */
+    @Nullable
     private TxLog txLog;
 
     /** */
@@ -356,6 +357,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void stopTxLog() {
         stopVacuumWorkers();
+
+        if (txLog != null)
+            txLog.close();
 
         txLog = null;
 
@@ -598,7 +602,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevQueries.init(nodes, ctx.discovery()::alive);
         }
         else if (sndQrys) {
-            ctx.getSystemExecutorService().submit(() -> {
+            ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
                     sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
                 }
@@ -971,8 +975,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(TX_LOG_CACHE_NAME);
-        cfg.setInitialSize(dscfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(dscfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(dscfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(dscfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(CU.isPersistenceEnabled(dscfg));
         cfg.setLazyMemoryAllocation(false);
 
@@ -2165,7 +2169,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 }
                 catch (Throwable e) {
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
 
                     if (log.isDebugEnabled())
                         U.warn(log, "Failed to perform vacuum.", e);
@@ -2237,7 +2241,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
 
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
                 }
             }
         }
@@ -2430,7 +2434,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                         if (rest != null) {
                             if (rest.getClass() == ArrayList.class) {
-                                for (MvccDataRow row : ((List<MvccDataRow>) rest))
+                                for (MvccDataRow row : ((List<MvccDataRow>)rest))
                                     part.dataStore().updateTxState(cctx, row);
                             }
                             else

@@ -67,7 +67,7 @@ class PathAware:
         After changing to property based logs, will be removed.
         """
         setattr(self, 'logs', {
-            "logs": {
+            "log": {
                 "path": self.log_dir,
                 "collect_default": True
             },
@@ -185,7 +185,7 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     IGNITE_THIN_CLIENT_CONFIG_NAME = "ignite-thin-config.xml"
 
-    IGNITE_LOG_CONFIG_NAME = "ignite-log4j.xml"
+    IGNITE_LOG_CONFIG_NAME = "ignite-ducktape-log4j.xml"
 
     @property
     def config_file(self):

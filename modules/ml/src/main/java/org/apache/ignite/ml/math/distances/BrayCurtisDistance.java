@@ -52,6 +52,7 @@ public class BrayCurtisDistance implements DistanceMeasure {
     return getClass().hashCode();
   }
 
+  /** {@inheritDoc} */
   @Override public String toString() {
     return "BrayCurtisDistance{}";
   }

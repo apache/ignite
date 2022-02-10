@@ -29,6 +29,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -204,7 +205,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     expireTime,
                     req.keepBinary(),
                     req.nodeId(),
-                    req.subjectId(),
                     taskName,
                     req.operation() == TRANSFORM);
             }
@@ -221,7 +221,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @param nodeId Node ID.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param transformedValue {@code True} if transformed value.
      * @throws IgniteCheckedException If failed.
@@ -234,7 +233,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         long expireTime,
         boolean keepBinary,
         UUID nodeId,
-        UUID subjId,
         String taskName,
         boolean transformedValue) throws IgniteCheckedException {
         try {
@@ -272,7 +270,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        subjId,
                         taskName,
                         null,
                         null,
@@ -376,7 +373,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             null,
                             false,
                             intercept,
-                            req.subjectId(),
                             taskName,
                             null,
                             null,
@@ -416,11 +412,10 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
         boolean needVer
     ) {
@@ -433,12 +428,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,

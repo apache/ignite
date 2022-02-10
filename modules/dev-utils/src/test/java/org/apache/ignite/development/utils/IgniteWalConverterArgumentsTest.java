@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,9 +35,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageId;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageIds;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -443,6 +445,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             assertThrows(log, () -> parsePageId(v), IllegalArgumentException.class, null);
 
         assertEquals(new T2<>(1, 1L), parsePageId("1:1"));
+        assertEquals(new T2<>(-1, 1L), parsePageId("-1:1"));
+        assertEquals(new T2<>(1, -1L), parsePageId("1:-1"));
+        assertEquals(new T2<>(-1, -1L), parsePageId("-1:-1"));
     }
 
     /**
@@ -472,6 +477,15 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
 
             U.writeStringToFile(f, U.nl() + "2:2", defaultCharset().toString(), true);
             assertEqualsCollections(F.asList(new T2<>(1, 1L), new T2<>(2, 2L)), parsePageIds(f));
+
+            U.writeStringToFile(f, U.nl() + "-1:1", defaultCharset().toString(), true);
+            U.writeStringToFile(f, U.nl() + "1:-1", defaultCharset().toString(), true);
+            U.writeStringToFile(f, U.nl() + "-1:-1", defaultCharset().toString(), true);
+
+            assertEqualsCollections(
+                F.asList(new T2<>(1, 1L), new T2<>(2, 2L), new T2<>(-1, 1L), new T2<>(1, -1L), new T2<>(-1, -1L)),
+                parsePageIds(f)
+            );
         }
         finally {
             assertTrue(U.delete(f));
@@ -489,7 +503,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
         assertThrows(log, () -> parsePageIds("1:1", "a:b"), IllegalArgumentException.class, null);
 
         assertEqualsCollections(F.asList(new T2<>(1, 1L)), parsePageIds("1:1"));
-        assertEqualsCollections(F.asList(new T2<>(1, 1L), new T2<>(2, 2L)), parsePageIds("1:1", "2:2"));
+
+        assertEqualsCollections(
+            F.asList(new T2<>(1, 1L), new T2<>(2, 2L), new T2<>(-1, 1L), new T2<>(1, -1L), new T2<>(-1, -1L)),
+            parsePageIds("1:1", "2:2", "-1:1", "1:-1", "-1:-1")
+        );
     }
 
     /**
@@ -546,9 +564,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), getName());
 
         try {
-            T2<Integer, Long>[] pages = new T2[] {new T2<>(10, 20L), new T2(30, 40L)};
+            int grpId = 10;
+            long[] pageIds = {20, 40};
 
-            File f = DiagnosticProcessor.corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), pages);
+            File f = corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), grpId, pageIds);
+
             assertTrue(f.exists());
             assertTrue(f.isFile());
             assertTrue(f.length() > 0);
@@ -560,7 +580,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 parse(ps, "walDir=" + tmpDir.getAbsolutePath(), "pages=" + f.getAbsolutePath());
 
             assertNotNull(args.getPages());
-            assertEqualsCollections(F.asList(pages), args.getPages());
+
+            assertEqualsCollections(
+                LongStream.of(pageIds).mapToObj(pageId -> new T2<>(grpId, pageId)).collect(toList()),
+                args.getPages()
+            );
         }
         finally {
             if (tmpDir.exists())

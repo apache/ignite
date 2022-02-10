@@ -147,6 +147,8 @@
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+    - title: Change Data Capture
+      url: persistence/change-data-capture
 - title: Cluster Snapshots
   url: snapshots/snapshots
 - title: Configuring Caches
@@ -177,8 +179,8 @@
       url: key-value-api/basic-cache-operations
     - title: Working with Binary Objects
       url: key-value-api/binary-objects
-    - title: Using Scan Queries
-      url: key-value-api/using-scan-queries
+    - title: Using Cache Queries
+      url: key-value-api/using-cache-queries
     - title: Read Repair
       url: read-repair
 - title: Performing Transactions
@@ -195,8 +197,6 @@
       url: SQL/sql-api
     - title: Distributed Joins
       url: SQL/distributed-joins
-    - title: SQL Transactions
-      url: SQL/sql-transactions
     - title: Custom SQL Functions
       url: SQL/custom-sql-func
     - title: JDBC Driver
@@ -219,6 +219,8 @@
           url: SQL/ODBC/error-codes
     - title: Multiversion Concurrency Control
       url: transactions/mvcc
+    - title: SQL Statistics
+      url: SQL/sql-statistics
 - title: SQL Reference
   url: sql-reference/sql-reference-overview
   items:

@@ -35,6 +35,7 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/config/connection_string_parser.h"
+#include "ignite/odbc/system/system_dsn.h"
 
 // Uncomment for per-byte debug.
 //#define PER_BYTE_DEBUG
@@ -103,18 +104,27 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& connectStr)
+        void Connection::Establish(const std::string& connectStr, void* parentWindow)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr));
+            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr, parentWindow));
         }
 
-        SqlResult::Type Connection::InternalEstablish(const std::string& connectStr)
+        SqlResult::Type Connection::InternalEstablish(const std::string& connectStr, void* parentWindow)
         {
             config::Configuration config;
-
             config::ConnectionStringParser parser(config);
-
             parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+
+            if (parentWindow)
+            {
+                LOG_MSG("Parent window is passed. Creating configuration window.");
+                if (!DisplayConnectionWindow(parentWindow, config))
+                {
+                    AddStatusRecord(odbc::SqlState::SHY008_OPERATION_CANCELED, "Connection canceled by user");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
 
             if (config.IsDsnSet())
             {
@@ -126,7 +136,7 @@ namespace ignite
             return InternalEstablish(config);
         }
 
-        void Connection::Establish(const config::Configuration cfg)
+        void Connection::Establish(const config::Configuration& cfg)
         {
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
@@ -137,7 +147,7 @@ namespace ignite
 
             if (sslMode == ssl::SslMode::DISABLE)
             {
-                socket.reset(network::ssl::MakeTcpSocketClient());
+                socket.reset(network::MakeTcpSocketClient());
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -155,8 +165,12 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            socket.reset(network::ssl::MakeSecureSocketClient(
-                config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
+            network::ssl::SecureConfiguration sslCfg;
+            sslCfg.certPath = config.GetSslCertFile();
+            sslCfg.keyPath = config.GetSslKeyFile();
+            sslCfg.caPath = config.GetSslCaFile();
+
+            socket.reset(network::ssl::MakeSecureSocketClient(sslCfg));
 
             return SqlResult::AI_SUCCESS;
         }
@@ -278,7 +292,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << common::HexDump(msg.GetData(), msg.GetSize()));
 #endif //PER_BYTE_DEBUG
 
             return true;
@@ -347,7 +361,7 @@ namespace ignite
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
 
 #ifdef PER_BYTE_DEBUG
-            LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+            LOG_MSG("Message received: " << common::HexDump(&msg[0], msg.size()));
 #endif //PER_BYTE_DEBUG
 
             return true;

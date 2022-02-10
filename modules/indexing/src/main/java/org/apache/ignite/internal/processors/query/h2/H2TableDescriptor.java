@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2TableDescriptor {
     /** PK index name. */
-    public static final String PK_IDX_NAME = "_key_PK";
+    public static final String PK_IDX_NAME = QueryUtils.PRIMARY_KEY_INDEX;
 
     /** PK hash index name. */
     public static final String PK_HASH_IDX_NAME = "_key_PK_hash";
@@ -245,7 +245,8 @@ public class H2TableDescriptor {
 
         idxs.add(pkIdx);
 
-        if (type().valueClass() == String.class) {
+        if (type().valueClass() == String.class
+            && !idx.distributedConfiguration().isDisableCreateLuceneIndexForStringValueType()) {
             try {
                 luceneIdx = new GridLuceneIndex(idx.kernalContext(), tbl.cacheName(), type);
             }

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <sys/sysinfo.h>
+
 #include "ignite/common/concurrent_os.h"
 
 namespace ignite
@@ -202,6 +204,46 @@ namespace ignite
                 pthread_once(&tlsKeyInit, AllocateTlsKey);
 
                 pthread_setspecific(tlsKey, ptr);
+            }
+
+            Thread::Thread() :
+                thread()
+            {
+                // No-op.
+            }
+
+            Thread::~Thread()
+            {
+                // No-op.
+            }
+
+            void* Thread::ThreadRoutine(void* arg)
+            {
+                Thread* self = static_cast<Thread*>(arg);
+
+                self->Run();
+
+                return 0;
+            }
+
+            void Thread::Start()
+            {
+                int res = pthread_create(&thread, NULL, Thread::ThreadRoutine, this);
+
+                IGNITE_UNUSED(res);
+                assert(res == 0);
+            }
+
+            void Thread::Join()
+            {
+                pthread_join(thread, 0);
+            }
+
+            uint32_t GetNumberOfProcessors()
+            {
+                int res = get_nprocs();
+
+                return static_cast<uint32_t>(res < 0 ? 0 : res);
             }
         }
     }

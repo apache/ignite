@@ -41,10 +41,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -196,7 +199,10 @@ public class H2Utils {
      * @return SQL.
      */
     public static String tableCreateSql(H2TableDescriptor tbl) {
-        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
+        String keyFieldName = tbl.type().keyFieldName();
+        GridQueryProperty keyByNameProp = (keyFieldName == null) ? null : tbl.type().property(keyFieldName);
+        GridQueryProperty keyProp = (keyByNameProp == null) ? tbl.type().property(KEY_FIELD_NAME) : keyByNameProp;
+
         GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
 
         String keyType = dbTypeFromClass(tbl.type().keyClass(),
@@ -325,7 +331,7 @@ public class H2Utils {
 
             Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
 
-            return (GridH2IndexBase) fctMethod.invoke(null, tbl, idxName, cols);
+            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxName, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
@@ -631,7 +637,7 @@ public class H2Utils {
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
-                Object[] arr = (Object[])obj;
+                Object[] arr = BinaryUtils.rawArrayFromBinary(obj);
 
                 Value[] valArr = new Value[arr.length];
 
@@ -694,7 +700,8 @@ public class H2Utils {
 
         if (precision != -1 && (
                 dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString())
-                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())))
+                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.BINARY.dBTypeAsString())))
             return dbType + '(' + precision + ')';
 
         return dbType;
@@ -832,6 +839,8 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
+            else if (obj instanceof BinaryArray)
+                stmt.setObject(idx, BinaryUtils.rawArrayFromBinary(obj));
             else
                 stmt.setObject(idx, obj);
         }
@@ -908,7 +917,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (i == 0) {
                 mvccEnabled = cctx.mvccEnabled();
@@ -944,7 +956,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (!cctx.isPartitioned())
                 continue;

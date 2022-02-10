@@ -40,6 +40,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
     /** Number of features expected to exist. */
     private static final int EXPECTED_FEATURES = 25;
 
+    /** */
     private static final String CAMEL_REPO_URI = "mvn:org.apache.camel.karaf/apache-camel/" +
         System.getProperty("camelVersion") + "/xml/features";
 

@@ -61,7 +61,6 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);

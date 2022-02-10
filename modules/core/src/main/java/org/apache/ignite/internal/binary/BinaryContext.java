@@ -268,6 +268,8 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
+        registerPredefinedType(BinaryArray.class, 0);
+        registerPredefinedType(BinaryEnumArray.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
@@ -601,7 +603,7 @@ public class BinaryContext {
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
      */
-    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+    @NotNull public BinaryClassDescriptor descriptorForClass(Class<?> cls) {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
@@ -1409,6 +1411,9 @@ public class BinaryContext {
             if (e.getValue().userType())
                 it.remove();
         }
+
+        // Unregister Serializable and Externalizable type descriptors.
+        optmMarsh.clearClassDescriptorsCache();
     }
 
     /**
@@ -1437,6 +1442,8 @@ public class BinaryContext {
                     it.remove();
             }
         }
+
+        optmMarsh.onUndeploy(ldr);
 
         U.clearClassCache(ldr);
     }

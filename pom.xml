@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.11.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -60,14 +60,11 @@
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        <module>modules/aws</module>
         <module>modules/log4j</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/gce</module>
-        <module>modules/azure</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/yarn</module>
@@ -102,6 +99,7 @@
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
                 <module>modules/hibernate-5.3</module>
+                <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
             </modules>
@@ -130,6 +128,13 @@
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>numa-allocator</id>
+            <modules>
+                <module>modules/numa-allocator</module>
             </modules>
         </profile>
 
@@ -210,7 +215,7 @@
                                     parent configuration to -tagletpath javadoc parameter.
                                     -->
                                     <tagletArtifact>
-                                        <groupId>org.apache.ignite</groupId>
+                                        <groupId>${project.groupId}</groupId>
                                         <artifactId>ignite-tools</artifactId>
                                         <version>${project.version}</version>
                                     </tagletArtifact>
@@ -228,7 +233,7 @@
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>${project.groupId}</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -313,7 +318,7 @@
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>${project.groupId}</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -667,8 +672,7 @@
                                             <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -676,8 +680,7 @@
                                             <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
                                             <substitution expression="\1${new.ignite.version.fixed}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -824,7 +827,7 @@
                         <version>1.3.2</version>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>${project.groupId}</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>

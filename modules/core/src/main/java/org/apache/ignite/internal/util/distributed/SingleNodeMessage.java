@@ -135,18 +135,22 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 2:
-                resp = U.fromBytes(reader.readByteArray("data"));
+                byte[] dataBytes = reader.readByteArray("data");
 
                 if (!reader.isLastRead())
                     return false;
+
+                resp = U.fromBytes(dataBytes);
 
                 reader.incrementState();
 
             case 3:
-                err = U.fromBytes(reader.readByteArray("err"));
+                byte[] errBytes = reader.readByteArray("err");
 
                 if (!reader.isLastRead())
                     return false;
+
+                err = U.fromBytes(errBytes);
 
                 reader.incrementState();
         }

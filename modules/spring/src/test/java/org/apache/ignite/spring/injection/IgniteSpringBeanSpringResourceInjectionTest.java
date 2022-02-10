@@ -195,7 +195,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
-                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
+                        ((IgniteEx)G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }

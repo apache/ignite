@@ -65,12 +65,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -473,6 +475,22 @@ public final class GridTestUtils {
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
+        return assertThrows(log, call, cls, msg, null);
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -506,7 +524,9 @@ public final class GridTestUtils {
             return e;
         }
 
-        throw new AssertionError("Exception has not been thrown.");
+        String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
+
+        throw new AssertionError(asrtMsg);
     }
 
     /**
@@ -1112,7 +1132,31 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
+    public static IgniteInternalFuture runAsync(final RunnableX task) {
+        return runAsync(task, "async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static IgniteInternalFuture runAsync(final RunnableX task, String threadName) {
         return runAsync(() -> {
             task.run();
 
@@ -1777,10 +1821,10 @@ public final class GridTestUtils {
                     Throwable cause = e.getCause();
 
                     if (cause instanceof Error)
-                        throw (Error) cause;
+                        throw (Error)cause;
 
                     if (cause instanceof Exception)
-                        throw (Exception) cause;
+                        throw (Exception)cause;
 
                     throw new RuntimeException("Failed to invoke method)" +
                         " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
@@ -1858,7 +1902,7 @@ public final class GridTestUtils {
         assert file.exists();
         assert file.length() < Integer.MAX_VALUE;
 
-        byte[] bytes = new byte[(int) file.length()];
+        byte[] bytes = new byte[(int)file.length()];
 
         try (FileInputStream fis = new FileInputStream(file)) {
             int readBytesCnt = fis.read(bytes);
@@ -2021,10 +2065,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2125,7 +2171,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }
@@ -2315,6 +2363,13 @@ public final class GridTestUtils {
      */
     public static void assertInactive(ClusterState state) {
         assertFalse(state + " isn't inactive state", state.active());
+    }
+
+    /** @return Cartesian product of collections. See {@link Lists#cartesianProduct(List)}. */
+    public static Collection<Object[]> cartesianProduct(Collection<?>... c) {
+        List<List<?>> lists = F.asList(c).stream().map(ArrayList::new).collect(Collectors.toList());
+
+        return F.transform(Lists.cartesianProduct(lists), List::toArray);
     }
 
     /** Test parameters scale factor util. */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -45,14 +47,19 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
 /**
  * Security utilities.
@@ -162,6 +169,51 @@ public class SecurityUtils {
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
         }
+    }
+
+    /** 
+     * @return Current security context if it is different from local node security context, otherwise {@code null}. 
+     * @see #withRemoteSecurityContext(GridKernalContext, SecurityContext)
+     */
+    public static SecurityContext remoteSecurityContext(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        if (!security.enabled() || security.isDefaultContext())
+            return null;
+
+        return security.securityContext();
+    }
+
+    /** @return Current security subject ID if security is enabled, otherwise null. */
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        IgniteSecurity security = ctx.security();
+
+        return security.enabled() ? security.securityContext().subject().id() : null;
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /** @return Current security subject id if security is enabled otherwise null. */
+    public static UUID securitySubjectId(GridCacheSharedContext<?, ?> cctx) {
+        return securitySubjectId(cctx.kernalContext());
+    }
+
+    /**
+     * Sets specified security context as current if it differs from the {@code null}.
+     * {@code null} means that security context of the local node is specified or security is disabled so no security
+     * context change is needed.
+     * Note that this method is safe to use only when it is known to be called in the security context of the local node
+     * (e.g. in system workers).
+     * @return {@link OperationSecurityContext} instance if new security context is set, otherwise {@code null}.
+     */
+    public static OperationSecurityContext withRemoteSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
+        if (secCtx == null)
+            return null;
+
+        return ctx.security().withContext(secCtx);
     }
 
     /**
@@ -284,5 +336,53 @@ public class SecurityUtils {
                 }
             });
         }
+    }
+
+    /**
+     * Marshals specified security context and adds it to the node attributes.
+     *
+     * @param secCtx Security context to be added.
+     * @param nodeAttrs Cluster node attributes to which security context attribute is to be added.
+     * @param marsh Marshaller.
+     * @return New copy of node attributes with security context attribute added.
+     * @throws IgniteCheckedException If security context serialization exception occurs.
+     */
+    public static Map<String, Object> withSecurityContext(
+        SecurityContext secCtx,
+        Map<String, Object> nodeAttrs,
+        Marshaller marsh
+    ) throws IgniteCheckedException {
+        if (!(secCtx instanceof Serializable))
+            throw new IgniteSpiException("Authentication subject is not serializable.");
+
+        Map<String, Object> res = new HashMap<>(nodeAttrs);
+
+        res.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, secCtx));
+
+        return res;
+    }
+
+    /**
+     * Performs local node authentication.
+     *
+     * @param node Cluster node to authenticate.
+     * @param cred Node credentials.
+     * @param nodeAuth Node authenticator.
+     * @return {@link SecurityContext} instance as authentication result.
+     */
+    public static SecurityContext authenticateLocalNode(
+        ClusterNode node,
+        SecurityCredentials cred,
+        DiscoverySpiNodeAuthenticator nodeAuth
+    ) {
+        assert nodeAuth != null;
+        assert cred != null || node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED) != null;
+
+        SecurityContext secCtx = nodeAuth.authenticateNode(node, cred);
+
+        if (secCtx == null)
+            throw new IgniteSpiException("Authentication failed for local node: " + node.id());
+
+        return secCtx;
     }
 }

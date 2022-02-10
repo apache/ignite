@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.lang.System.setProperty;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_SEGMENT_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
@@ -40,25 +44,67 @@ public class IgniteCacheDatabaseSharedManagerSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, value = "-1")
     public void testCheckMinWalArchiveSize() throws Exception {
         DataStorageConfiguration cfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
-
-        cfg.setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE);
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE);
 
         for (long i : F.asList(10L, 100L, HALF_MAX_WAL_ARCHIVE_SIZE))
             checkWalArchiveSizeConfiguration(cfg.setMinWalArchiveSize(i), log);
 
-        cfg.setMaxWalArchiveSize(DFLT_WAL_SEGMENT_SIZE);
+        int max = DFLT_WAL_SEGMENT_SIZE;
+        cfg.setMaxWalArchiveSize(max);
 
-        for (long i : F.asList(1L, 10L, HALF_MAX_WAL_ARCHIVE_SIZE, (long)DFLT_WAL_SEGMENT_SIZE))
+        for (long i : F.asList(1L, 10L, HALF_MAX_WAL_ARCHIVE_SIZE, (long)max))
             checkWalArchiveSizeConfiguration(cfg.setMinWalArchiveSize(i), log);
 
-        for (long i : F.asList(DFLT_WAL_SEGMENT_SIZE * 2, DFLT_WAL_SEGMENT_SIZE * 3)) {
+        for (long i : F.asList(max * 2, max * 3)) {
             assertThrows(
                 log,
                 () -> {
                     checkWalArchiveSizeConfiguration(cfg.setMinWalArchiveSize(i), log);
+
+                    return null;
+                },
+                IgniteCheckedException.class,
+                null
+            );
+        }
+    }
+
+    /**
+     * Checking the correctness of validation
+     * {@link IgniteSystemProperties#IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCheckIgniteThresholdWalArchiveSizePercentage() throws Exception {
+        DataStorageConfiguration cfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE)
+            .setMinWalArchiveSize(HALF_MAX_WAL_ARCHIVE_SIZE);
+
+        for (double i : F.asList(0.1d, 1d, (double)HALF_MAX_WAL_ARCHIVE_SIZE)) {
+            setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(i));
+            checkWalArchiveSizeConfiguration(cfg, log);
+        }
+
+        cfg.setMaxWalArchiveSize(DFLT_WAL_SEGMENT_SIZE);
+
+        for (double i : F.asList(0.1d, 1d)) {
+            setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(i));
+            checkWalArchiveSizeConfiguration(cfg, log);
+        }
+
+        for (double i : F.asList(2d, 3d)) {
+            setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(i));
+
+            assertThrows(
+                log,
+                () -> {
+                    checkWalArchiveSizeConfiguration(cfg, log);
 
                     return null;
                 },

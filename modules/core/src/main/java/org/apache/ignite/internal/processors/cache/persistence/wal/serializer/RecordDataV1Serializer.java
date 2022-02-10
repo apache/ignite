@@ -39,12 +39,14 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -565,6 +567,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case REENCRYPTION_START_RECORD:
                 return ((ReencryptionStartRecord)record).dataSize();
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                return ((IndexRenameRootPageRecord)record).dataSize();
+
+            case PARTITION_CLEARING_START_RECORD:
+                return 4 + 4 + 8;
+
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -673,12 +681,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
 
-                List<DataEntry> entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readPlainDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readPlainDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
@@ -687,12 +699,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
 
-                entries = new ArrayList<>(entryCnt);
+                if (entryCnt == 1)
+                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L);
+                else {
+                    List<DataEntry> entries = new ArrayList<>(entryCnt);
 
-                for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type));
+                    for (int i = 0; i < entryCnt; i++)
+                        entries.add(readEncryptedDataEntry(in, type));
 
-                res = new DataRecord(entries, 0L);
+                    res = new DataRecord(entries, 0L);
+                }
 
                 break;
 
@@ -1269,6 +1285,20 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                res = new IndexRenameRootPageRecord(in);
+
+                break;
+
+            case PARTITION_CLEARING_START_RECORD:
+                int partId0 = in.readInt();
+                int grpId = in.readInt();
+                long clearVer = in.readLong();
+
+                res = new PartitionClearingStartRecord(partId0, grpId, clearVer);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1359,15 +1389,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
-                buf.putInt(dataRec.writeEntries().size());
+                int entryCnt = dataRec.entryCount();
+
+                buf.putInt(entryCnt);
 
                 boolean encrypted = isDataRecordEncrypted(dataRec);
 
-                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                for (int i = 0; i < entryCnt; i++) {
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataEntry);
+                        putEncryptedDataEntry(buf, dataRec.get(i));
                     else
-                        putPlainDataEntry(buf, dataEntry);
+                        putPlainDataEntry(buf, dataRec.get(i));
                 }
 
                 break;
@@ -1810,7 +1842,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
                 MetaPageUpdateLastAllocatedIndex mpUpdateLastAllocatedIdx =
-                        (MetaPageUpdateLastAllocatedIndex) rec;
+                        (MetaPageUpdateLastAllocatedIndex)rec;
 
                 buf.putInt(mpUpdateLastAllocatedIdx.groupId());
                 buf.putLong(mpUpdateLastAllocatedIdx.pageId());
@@ -1820,7 +1852,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PART_META_UPDATE_STATE:
-                PartitionMetaStateRecord partMetaStateRecord = (PartitionMetaStateRecord) rec;
+                PartitionMetaStateRecord partMetaStateRecord = (PartitionMetaStateRecord)rec;
 
                 buf.putInt(partMetaStateRecord.groupId());
 
@@ -1833,7 +1865,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PAGE_LIST_META_RESET_COUNT_RECORD:
-                PageListMetaResetCountRecord pageListMetaResetCntRecord = (PageListMetaResetCountRecord) rec;
+                PageListMetaResetCountRecord pageListMetaResetCntRecord = (PageListMetaResetCountRecord)rec;
 
                 buf.putInt(pageListMetaResetCntRecord.groupId());
                 buf.putLong(pageListMetaResetCntRecord.pageId());
@@ -1841,7 +1873,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case ROTATED_ID_PART_RECORD:
-                RotatedIdPartRecord rotatedIdPartRecord = (RotatedIdPartRecord) rec;
+                RotatedIdPartRecord rotatedIdPartRecord = (RotatedIdPartRecord)rec;
 
                 buf.putInt(rotatedIdPartRecord.groupId());
                 buf.putLong(rotatedIdPartRecord.pageId());
@@ -1893,6 +1925,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     buf.putInt(e.getKey());
                     buf.put(e.getValue());
                 }
+
+                break;
+
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                ((IndexRenameRootPageRecord)rec).writeRecord(buf);
+
+                break;
+
+            case PARTITION_CLEARING_START_RECORD:
+                PartitionClearingStartRecord partitionClearingStartRecord = (PartitionClearingStartRecord)rec;
+
+                buf.putInt(partitionClearingStartRecord.partitionId());
+
+                buf.putInt(partitionClearingStartRecord.groupId());
+
+                buf.putLong(partitionClearingStartRecord.clearVersion());
 
                 break;
 
@@ -2142,7 +2190,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encryptionDisabled)
             return false;
 
-        for (DataEntry e : rec.writeEntries()) {
+        int entryCnt = rec.entryCount();
+
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry e = rec.get(i);
+
             if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
@@ -2215,8 +2267,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
+        int entryCnt = dataRec.entryCount();
 
-        for (DataEntry entry : dataRec.writeEntries()) {
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry entry = dataRec.get(i);
+
             int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))

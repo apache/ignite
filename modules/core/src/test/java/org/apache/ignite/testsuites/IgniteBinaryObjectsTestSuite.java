@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
+import org.apache.ignite.internal.binary.BinaryArraySelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSel
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataInMemoryTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataMoveLegacyFolderTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegisterClassTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
@@ -93,6 +95,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    BinaryMetadataRegisterClassTest.class,
     BinaryMetadataRemoveTest.class,
     BinaryMetadataRemoveWithPersistenceTest.class,
 
@@ -120,6 +123,7 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsHeapSelfTest.class,
     BinaryFooterOffsetsOffheapSelfTest.class,
     BinaryEnumsSelfTest.class,
+    BinaryArraySelfTest.class,
     GridDefaultBinaryMappersBinaryMetaDataSelfTest.class,
     GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class,
     GridBinaryAffinityKeySelfTest.class,

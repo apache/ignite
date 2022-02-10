@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Runs operations of a thin client to check that thin client security context is
@@ -26,16 +27,18 @@ import org.apache.ignite.configuration.CacheConfiguration;
  */
 public class ThinClientSecurityContextOnRemoteNodeTest extends ThinClientPermissionCheckTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration[] cacheConfigurations() {
-        return new CacheConfiguration[] {
-            new CacheConfiguration().setName(CACHE).setCacheMode(CacheMode.REPLICATED),
-            new CacheConfiguration().setName(FORBIDDEN_CACHE).setCacheMode(CacheMode.REPLICATED)
-        };
+    @Override protected CacheConfiguration<?, ?>[] cacheConfigurations() {
+        CacheConfiguration<?, ?>[] ccfgs = super.cacheConfigurations();
+
+        for (CacheConfiguration<?, ?> ccfg : ccfgs)
+            ccfg.setCacheMode(REPLICATED);
+
+        return ccfgs;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll("srv");
+        startGrid(getConfiguration(0));
 
         super.beforeTestsStarted();
     }

@@ -27,7 +27,6 @@ class CheckJVMSettings:
     Checks behavior of various tools.
     """
 
-    # pylint: disable=R0201
     def check_list(self):
         """
         Checks list representation of JVM settings.

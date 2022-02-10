@@ -154,6 +154,9 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      * @param mreg Metric registry.
      */
     private void unregister(ReadOnlyMetricRegistry mreg) {
+        if (filter != null && !filter.test(mreg))
+            return;
+
         MetricName n = parse(mreg.name());
 
         try {

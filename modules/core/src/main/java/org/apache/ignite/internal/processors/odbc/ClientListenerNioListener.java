@@ -84,10 +84,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final IgniteLogger log;
 
     /** Client connection config. */
-    private ClientConnectorConfiguration cliConnCfg;
+    private final ClientConnectorConfiguration cliConnCfg;
 
     /** Thin client configuration. */
     private final ThinClientConfiguration thinCfg;
+
+    /** Metrics. */
+    private final ClientListenerMetrics metrics;
 
     /**
      * Constructor.
@@ -109,6 +112,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
+
+        metrics = new ClientListenerMetrics(ctx);
     }
 
     /** {@inheritDoc} */
@@ -126,8 +131,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        if (connCtx != null)
+        if (connCtx != null) {
             connCtx.onDisconnected();
+
+            metrics.onDisconnect(connCtx.clientType());
+        }
 
         if (log.isDebugEnabled()) {
             if (e == null)
@@ -215,7 +223,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         catch (Throwable e) {
             handler.unregisterRequest(req.requestId());
 
-            U.error(log, "Failed to process client request [req=" + req + ']', e);
+            if (e instanceof Error)
+                U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
+            else
+                U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
 
@@ -246,6 +257,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         Closeable timeoutTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 ses.close();
+
+                metrics.onHandshakeTimeout();
 
                 U.warn(log, "Unable to perform handshake within timeout " +
                     "[timeout=" + handshakeTimeout + ", remoteAddr=" + ses.remoteAddress() + ']');
@@ -326,8 +339,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             cancelHandshakeTimeout(ses);
 
             connCtx.handler().writeHandshake(writer);
+
+            metrics.onHandshakeAccept(clientType);
         }
         catch (IgniteAccessControlException authEx) {
+            metrics.onFailedAuth();
+
             writer.writeBoolean(false);
 
             writer.writeShort((short)0);
@@ -341,6 +358,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
         catch (IgniteCheckedException e) {
             U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
+
+            metrics.onGeneralReject();
 
             ClientListenerProtocolVersion currVer;
 

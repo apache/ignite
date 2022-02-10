@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -194,36 +192,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 cache2.put(i, CACHE2 + "-" + i);
         }
 
-        final CountDownLatch startStopRebalanceLatch = new CountDownLatch(1);
-        final CountDownLatch finishStopRebalanceLatch = new CountDownLatch(1);
-        GridFutureAdapter<Void> stopRebalanceResFut = new GridFutureAdapter<>();
+        ignite = startGrid(1);
 
-        ignite = startGrid(1, cfg -> {
-            cfg.setLocalEventListeners(Collections.singletonMap(
-                (IgnitePredicate<Event>)evt -> {
-                    startStopRebalanceLatch.countDown();
-
-                    try {
-                        assertTrue(finishStopRebalanceLatch.await(getTestTimeout(), TimeUnit.SECONDS));
-
-                        stopRebalanceResFut.onDone();
-                    }
-                    catch (Throwable e) {
-                        stopRebalanceResFut.onDone(e);
-                    }
-
-                    return false;
-                },
-                new int[] {EventType.EVT_CACHE_REBALANCE_STOPPED}
-            ));
-        });
-
-        assertTrue(startStopRebalanceLatch.await(getTestTimeout(), TimeUnit.SECONDS));
+        awaitPartitionMapExchange(true, true, null, true);
 
         CacheMetrics metrics1 = ignite.cache(CACHE1).localMetrics();
         CacheMetrics metrics2 = ignite.cache(CACHE2).localMetrics();
-
-        finishStopRebalanceLatch.countDown();
 
         long rate1 = metrics1.getRebalancingKeysRate();
         long rate2 = metrics2.getRebalancingKeysRate();
@@ -234,8 +208,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertEquals(metrics1.getRebalancedKeys(), rate1);
         assertEquals(metrics2.getRebalancedKeys(), rate2);
-
-        stopRebalanceResFut.get(getTestTimeout());
     }
 
     /**
@@ -245,7 +217,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     public void testCacheGroupRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+        List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
         int allKeysCount = 0;
 
@@ -370,7 +342,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrid(0);
 
-        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+        List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
         for (String cacheName : cacheNames) {
             ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).distinct().boxed()

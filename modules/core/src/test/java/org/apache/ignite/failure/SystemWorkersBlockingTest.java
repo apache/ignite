@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -124,6 +125,57 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
             e -> CountDownLatch.class.getName().equals(e.getClassName())));
         assertTrue(Arrays.stream(blockedExeption.getStackTrace()).anyMatch(
             e -> LatchingGridWorker.class.getName().equals(e.getClassName())));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlockingSection() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch blockingSectionLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(1);
+
+        GridWorker worker = new GridWorker(ignite.name(), "test-worker", log) {
+            @Override protected void body() {
+                blockingSectionBegin();
+
+                try {
+                    startLatch.countDown();
+
+                    blockingSectionLatch.await();
+                }
+                catch (Exception ignore) {
+                    // No-op.
+                }
+                finally {
+                    blockingSectionEnd();
+
+                    endLatch.countDown();
+                }
+            }
+        };
+
+        runWorker(worker);
+
+        ignite.context().workersRegistry().register(worker);
+
+        startLatch.await();
+
+        // Check that concurrent heartbeat update doesn't affect the blocking section.
+        worker.updateHeartbeat();
+
+        Thread.sleep(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT);
+
+        blockingSectionLatch.countDown();
+
+        endLatch.await();
+
+        assertNull(failureError.get());
+
+        assertTrue(worker.heartbeatTs() <= U.currentTimeMillis());
     }
 
     /**

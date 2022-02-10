@@ -152,42 +152,41 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
 @Target({ElementType.METHOD})
 public @interface Gridify {
     /**
-     * Optional gridify task name. Note that either this name or {@link #taskClass()} must
+     * @return Optional gridify task name. Note that either this name or {@link #taskClass()} must
      * be specified - but not both. If neither one is specified tasks' fully qualified name
      * will be used as a default name.
      */
     String taskName() default "";
 
     /**
-     * Optional gridify task class. Note that either this name or {@link #taskName()} must
+     * @return Optional gridify task class. Note that either this name or {@link #taskName()} must
      * be specified - but not both. If neither one is specified tasks' fully qualified name
      * will be used as a default name.
      */
     Class<? extends ComputeTask<GridifyArgument, ?>> taskClass() default GridifyDefaultTask.class;
 
     /**
-     * Optional gridify task execution timeout. Default is {@code 0}
+     * @return Optional gridify task execution timeout. Default is {@code 0}
      * which indicates that task will not timeout.
      */
     long timeout() default 0;
 
     /**
-     * Optional interceptor class. Since {@code null} are not supported the value of
+     * @return Optional interceptor class. Since {@code null} are not supported the value of
      * {@code GridifyInterceptor.class} acts as a default value.
      */
     Class<? extends GridifyInterceptor> interceptor() default GridifyInterceptor.class;
 
     /**
-     * Name of the grid to use. By default, no-name default grid is used.
+     * @return Name of the grid to use. By default, no-name default grid is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
-     *
      * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
      */
     @Deprecated
     String gridName() default "";
 
     /**
-     * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
+     * @return Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
      */
     String igniteInstanceName() default "";

@@ -148,8 +148,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
@@ -1104,6 +1102,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         /** */
         private final String cacheName;
 
+        /** */
         public ManualRebalancer(String cacheName) {
             this.cacheName = cacheName;
         }
@@ -1879,6 +1878,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected static void assertEqualsMaps(Map<?, ?> exp, Map<?, ?> act) {
+        if (exp.size() != act.size())
+            fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        for (Map.Entry<?, ?> e : exp.entrySet()) {
+            if (!act.containsKey(e.getKey()))
+                fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
+            else if (!F.eq(e.getValue(), act.get(e.getKey())))
+                fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
+        }
+    }
+
+    /**
      * @param ignite Ignite instance.
      * @param clo Closure.
      * @return Result of closure execution.
@@ -2314,14 +2329,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
-     * otherwise {@code true}.
-     */
-    protected static boolean isEventDrivenServiceProcessorEnabled() {
-        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
-    }
-
-    /**
      * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
      *
      * @param countUpdate Number of events.
@@ -2616,7 +2623,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             assert dbMgr instanceof GridCacheDatabaseSharedManager;
 
-            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
+            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager)dbMgr;
 
             fut.add(dbMgr0.enableCheckpoints(enable));
         }

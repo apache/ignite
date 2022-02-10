@@ -229,6 +229,15 @@ public class IntHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void clear() {
+        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
+
+        compactThreshold = 0;
+        scaleThreshold = 0;
+        size = 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         String strEntries = Arrays.stream(entries)
             .filter(Objects::nonNull)

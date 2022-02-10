@@ -150,6 +150,19 @@ public class GridLogThrottle {
     }
 
     /**
+     * Logs warning if needed.
+     *
+     * @param log Logger.
+     * @param msg Message.
+     * @param e Error..
+     */
+    public static void warn(@Nullable IgniteLogger log, String msg, Throwable e) {
+        assert !F.isEmpty(msg);
+
+        log(log, e, msg, LogLevel.WARN, false, false);
+    }
+
+    /**
      * Logs info if needed.
      *
      * @param log Logger.
@@ -252,6 +265,7 @@ public class GridLogThrottle {
     private enum LogLevel {
         /** Error level. */
         ERROR {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (e != null)
                     U.error(log, msg, e);
@@ -262,6 +276,7 @@ public class GridLogThrottle {
 
         /** Warn level. */
         WARN {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
                     U.quietAndWarn(log, msg, e);
@@ -272,6 +287,7 @@ public class GridLogThrottle {
 
         /** Info level. */
         INFO {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
                     U.quietAndInfo(log, msg);

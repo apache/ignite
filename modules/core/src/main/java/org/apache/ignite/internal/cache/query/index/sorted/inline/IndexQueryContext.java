@@ -17,21 +17,31 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 
 /** */
 public class IndexQueryContext {
-    /** Cache entry filter. */
-    private final IndexingQueryFilter filter;
+    /** Cache filter. */
+    private final IndexingQueryFilter cacheFilter;
+
+    /** Index rows filter. */
+    private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
 
     /** */
     private final MvccSnapshot mvccSnapshot;
 
     /** */
-    public IndexQueryContext(IndexingQueryFilter filter, MvccSnapshot snapshot) {
-        this.filter = filter;
-        this.mvccSnapshot = snapshot;
+    public IndexQueryContext(
+        IndexingQueryFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        MvccSnapshot mvccSnapshot
+    ) {
+        this.cacheFilter = cacheFilter;
+        this.rowFilter = rowFilter;
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
@@ -42,9 +52,16 @@ public class IndexQueryContext {
     }
 
     /**
-     * @return Filter.
+     * @return Cache filter.
      */
-    public IndexingQueryFilter filter() {
-        return filter;
+    public IndexingQueryFilter cacheFilter() {
+        return cacheFilter;
+    }
+
+    /**
+     * @return Index row filter.
+     */
+    public BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter() {
+        return rowFilter;
     }
 }

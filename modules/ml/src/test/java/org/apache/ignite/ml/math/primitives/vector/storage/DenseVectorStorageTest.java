@@ -40,7 +40,7 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isRaw(VectorStorage storage) {
         try {
-            Serializable[] arr = ((DenseVectorStorage) storage).getRawData();
+            Serializable[] arr = ((DenseVectorStorage)storage).getRawData();
             return arr != null;
         }
         catch (Exception e) {

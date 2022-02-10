@@ -32,24 +32,34 @@ import java.nio.charset.UnsupportedCharsetException;
  */
 @SuppressWarnings("ALL")
 public class GridReversedLinesFileReader implements Closeable {
+    /** */
     private final int blockSize;
 
+    /** */
     private final Charset encoding;
 
+    /** */
     private final RandomAccessFile randomAccessFile;
 
+    /** */
     private final long totalByteLength;
 
+    /** */
     private final long totalBlockCount;
 
+    /** */
     private final byte[][] newLineSequences;
 
+    /** */
     private final int avoidNewlineSplitBufferSize;
 
+    /** */
     private final int byteDecrement;
 
+    /** */
     private FilePart currentFilePart;
 
+    /** */
     private boolean trailingNewlineOfFileSkipped = false;
 
     /**
@@ -83,7 +93,7 @@ public class GridReversedLinesFileReader implements Closeable {
 
         randomAccessFile = new RandomAccessFile(file, "r");
         totalByteLength = randomAccessFile.length();
-        int lastBlockLength = (int) (totalByteLength % blockSize);
+        int lastBlockLength = (int)(totalByteLength % blockSize);
         if (lastBlockLength > 0) {
             totalBlockCount = totalByteLength / blockSize + 1;
         } else {
@@ -181,13 +191,18 @@ public class GridReversedLinesFileReader implements Closeable {
         randomAccessFile.close();
     }
 
+    /** */
     private class FilePart {
+        /** */
         private final long no;
 
+        /** */
         private final byte[] data;
 
+        /** */
         private byte[] leftOver;
 
+        /** */
         private int currentLastBytePos;
 
         /**

@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -254,7 +253,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private DistributePropertyListener<Object> makeEventListener(int evtType) {
         //noinspection CodeBlock2Expr
         return (name, oldVal, newVal) -> {
-            ctx.getStripedExecutorService().execute(() -> {
+            ctx.pools().getStripedExecutorService().execute(() -> {
                 if (ctx.event().isRecordable(evtType)) {
                     ctx.event().record(new BaselineConfigurationChangedEvent(
                         ctx.discovery().localNode(),
@@ -498,7 +497,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         ctx.event().addLocalEventListener(
             event -> {
-                DiscoveryEvent discoEvt = (DiscoveryEvent) event;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)event;
 
                 if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
                     return;
@@ -787,7 +786,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 if (newState.state() != state.state()) {
                     if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
-                        ctx.getStripedExecutorService().execute(
+                        ctx.pools().getStripedExecutorService().execute(
                             () -> ctx.event().record(new ClusterStateChangeStartedEvent(
                                 state.state(),
                                 newState.state(),
@@ -1259,7 +1258,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState joiningNodeState;
 
         try {
-            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), Thread.currentThread().getContextClassLoader());
+            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), U.resolveClassLoader(ctx.config()));
         }
         catch (IgniteCheckedException e) {
             String msg = "Error on unmarshalling discovery data " +
@@ -1458,14 +1457,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 boolean client = ctx.clientNode();
 
                 try {
-                    if (ctx.service() instanceof GridServiceProcessor) {
-                        GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
-
-                        srvcProc.onUtilityCacheStarted();
-
-                        srvcProc.onActivate(ctx);
-                    }
-
                     ctx.dataStructures().onActivate(ctx);
 
                     ctx.task().onActivate(ctx);
@@ -1578,7 +1569,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 fut.initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         // initFut is completed from discovery thread, process response from other thread.
-                        ctx.getSystemExecutorService().execute(new Runnable() {
+                        ctx.pools().getSystemExecutorService().execute(new Runnable() {
                             @Override public void run() {
                                 fut.onResponse(nodeId, msg);
                             }

@@ -39,6 +39,8 @@ public interface ClientCompute {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <T> Type of the task argument.
+     * @param <R> Type of the task result.
      * @return Task result.
      * @throws ClientException If task failed.
      * @throws InterruptedException If the wait for task completion was interrupted.
@@ -52,6 +54,8 @@ public interface ClientCompute {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <T> Type of the task argument.
+     * @param <R> Type of the task result.
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
@@ -68,6 +72,8 @@ public interface ClientCompute {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <T> Type of the task argument.
+     * @param <R> Type of the task result.
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
@@ -77,6 +83,7 @@ public interface ClientCompute {
     /**
      * Sets timeout for tasks executed by returned {@code ClientCompute} instance.
      *
+     * @param timeout Task execution timeout.
      * @return {@code ClientCompute} instance with given timeout.
      */
     public ClientCompute withTimeout(long timeout);

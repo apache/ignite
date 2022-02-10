@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGES
  */
 public class GridPerformanceSuggestions {
     /** Link to article about Ignite performance tuning */
-    private static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
+    private static final String SUGGESTIONS_LINK = "https://ignite.apache.org/docs/latest/perf-and-troubleshooting/memory-tuning";
 
     /** */
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);

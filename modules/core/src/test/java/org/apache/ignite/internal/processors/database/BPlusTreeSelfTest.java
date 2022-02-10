@@ -168,7 +168,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
 
-        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager");
+        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager") {
+            @Override public PageLockListener createPageLockTracker(String name) {
+                return new TestPageLockListener(super.createPageLockTracker(name));
+            }
+        };
 
         lockTrackerManager.start();
     }
@@ -1082,6 +1086,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestMassivePut(true);
     }
 
+    /** */
     @Test
     public void testMassivePut2_false() throws Exception {
         MAX_PER_PAGE = 2;
@@ -1099,6 +1104,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestMassivePut(true);
     }
 
+    /** */
     @Test
     public void testMassivePut3_false() throws Exception {
         MAX_PER_PAGE = 3;
@@ -1253,6 +1259,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertNoLocks();
     }
 
+    /** */
     private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
@@ -1345,11 +1352,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         boolean DEBUG_PRINT = false;
 
-        int itemCnt = (int) Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
+        int itemCnt = (int)Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
 
         Long[] items = new Long[itemCnt];
         for (int i = 0; i < itemCnt; ++i)
-            items[i] = (long) i;
+            items[i] = (long)i;
 
         TestTree testTree = createTestTree(true);
         TreeMap<Long, Long> goldenMap = new TreeMap<>();
@@ -1437,6 +1444,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestSizeForRandomPutRmvMultithreaded(4);
     }
 
+    /** */
     @Test
     public void testSizeForRandomPutRmvMultithreaded_3_256() throws Exception {
         MAX_PER_PAGE = 3;
@@ -1527,8 +1535,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 
@@ -1705,9 +1713,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 
@@ -1842,8 +1850,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
 
         asyncRunFut.markInitialized();
 
@@ -1959,10 +1967,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) rmvFut);
-        asyncRunFut.add((IgniteInternalFuture) putFut);
-        asyncRunFut.add((IgniteInternalFuture) treePrintFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)rmvFut);
+        asyncRunFut.add((IgniteInternalFuture)putFut);
+        asyncRunFut.add((IgniteInternalFuture)treePrintFut);
 
         asyncRunFut.markInitialized();
 
@@ -2103,11 +2111,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) rmvFut);
-        asyncRunFut.add((IgniteInternalFuture) findFut);
-        asyncRunFut.add((IgniteInternalFuture) putFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)rmvFut);
+        asyncRunFut.add((IgniteInternalFuture)findFut);
+        asyncRunFut.add((IgniteInternalFuture)putFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 
@@ -2781,7 +2789,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                new TestPageLockListener(lockTrackerManager.createPageLockTracker("testTree"))
+                lockTrackerManager
             );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
@@ -3051,6 +3059,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class TestPageLockListener implements PageLockListener {
         /** */
         static ConcurrentMap<Object, Long> beforeReadLock = new ConcurrentHashMap<>();
@@ -3070,9 +3079,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /**
          * @param delegate Real implementation of page lock listener.
          */
-        private TestPageLockListener(
-            PageLockListener delegate) {
-
+        private TestPageLockListener(PageLockListener delegate) {
             this.delegate = delegate;
         }
 
@@ -3159,6 +3166,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
             assertEquals(Long.valueOf(pageId), locks(false).remove(pageId));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            delegate.close();
         }
 
         /**
