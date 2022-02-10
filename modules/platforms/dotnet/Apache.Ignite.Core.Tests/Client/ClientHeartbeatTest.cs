@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using Apache.Ignite.Core.Client;
@@ -52,8 +51,10 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDoesNotDisconnectIdleClientWithHeartbeats()
         {
-            using var client = GetClient(heartbeatInterval: IdleTimeout / 2);
+            var heartbeatInterval = IdleTimeout / 2;
+            using var client = GetClient(heartbeatInterval);
 
+            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().HeartbeatInterval);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
             Thread.Sleep(IdleCheckInterval * 2);
@@ -81,6 +82,14 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     IdleTimeout = IdleTimeout
                 }
+            };
+        }
+
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration(base.GetClientConfiguration())
+            {
+                HeartbeatInterval = IdleTimeout / 2
             };
         }
 

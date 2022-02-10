@@ -134,6 +134,7 @@ namespace Apache.Ignite.Core.Client
 
             RetryLimit = cfg.RetryLimit;
             RetryPolicy = cfg.RetryPolicy;
+            HeartbeatInterval = cfg.HeartbeatInterval;
         }
 
         /// <summary>
