@@ -352,7 +352,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
     /** Reference to the last added next timeout rollover object. */
-    @Nullable private TimeoutRollover timeoutRollover;
+    @Nullable private volatile TimeoutRollover timeoutRollover;
 
     /** Timeout rollover mutex. */
     @Nullable private final Object timeoutRolloverMux;
@@ -800,13 +800,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
                 : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
 
+            if (timeoutRollover != null)
+                return;
+
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
     }
 
     /** */
     private long nextTimeout(long lastEvt, long timeout) {
-        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
+        return (lastEvt <= 0 ? U.currentTimeMillis() : lastEvt) + timeout;
     }
 
     /** {@inheritDoc} */
@@ -3515,11 +3518,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {
+                timeoutRollover = null;
+
                 if (!cancel) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Checking if WAL rollover required (" +
-                            new Time(U.currentTimeMillis()).toString() + ")");
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()) + ")");
 
                     checkWalRolloverRequired();
 
