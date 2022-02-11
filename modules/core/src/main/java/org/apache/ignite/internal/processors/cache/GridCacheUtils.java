@@ -2009,31 +2009,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return {@code true} if CDC enabled.
-     */
-    public static boolean isCdcEnabled(DataStorageConfiguration cfg) {
-        if (cfg == null)
-            return false;
-
-        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
-
-        if (dfltReg != null && dfltReg.isCdcEnabled())
-            return true;
-
-        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
-
-        if (regCfgs == null)
-            return false;
-
-        for (DataRegionConfiguration regCfg : regCfgs) {
-            if (regCfg.isCdcEnabled())
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
      */
     public static boolean isPersistenceEnabled(DataStorageConfiguration cfg) {
@@ -2055,6 +2030,31 @@ public class GridCacheUtils {
 
         for (DataRegionConfiguration regCfg : regCfgs) {
             if (regCfg.isPersistenceEnabled())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return {@code true} if CDC enabled.
+     */
+    public static boolean isCdcEnabled(DataStorageConfiguration cfg) {
+        if (cfg == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
+
+        if (dfltReg != null && dfltReg.isCdcEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isCdcEnabled())
                 return true;
         }
 
