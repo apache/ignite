@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
-            Thread.Sleep(IdleTimeout * 2);
+            Thread.Sleep(IdleTimeout * 3);
 
             Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
         }
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var heartbeatInterval = IdleTimeout / 4;
             using var client = GetClient(heartbeatInterval);
 
-            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().HeartbeatInterval);
+            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().HeartbeatInterval.TotalMilliseconds);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
             Thread.Sleep(IdleTimeout * 3);
