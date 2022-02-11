@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Thread.Sleep(IdleTimeout * 3);
 
-            Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
+            Assert.Catch(() => client.GetCacheNames());
         }
 
         [Test]
