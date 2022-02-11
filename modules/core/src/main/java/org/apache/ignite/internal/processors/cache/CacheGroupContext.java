@@ -1205,11 +1205,11 @@ public class CacheGroupContext {
         if (dataRegion == null)
             return false;
 
-        if (persistenceEnabled)
-            return walEnabled();
-
         if (systemCache())
             return false;
+
+        if (persistenceEnabled)
+            return walEnabled();
 
         return dataRegion.config().isCdcEnabled() && walEnabled();
     }
