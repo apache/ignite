@@ -207,6 +207,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        forceArchiveSegmentMs = 0;
     }
 
     /**
@@ -380,71 +382,60 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         forceArchiveSegmentMs = 1000;
 
-        try {
+        Ignite ignite = startGrid();
 
-            Ignite ignite = startGrid();
+        ignite.cluster().state(ACTIVE);
 
-            ignite.cluster().state(ACTIVE);
+        IgniteEvents evts = ignite.events();
 
-            IgniteEvents evts = ignite.events();
+        evts.localListen(e -> {
+            if (waitingForEvt.get())
+                forceArchiveSegment.countDown();
 
-            evts.localListen(e -> {
-                if (waitingForEvt.get())
-                    forceArchiveSegment.countDown();
+            return true;
+        }, EVT_WAL_SEGMENT_ARCHIVED);
 
-                return true;
-            }, EVT_WAL_SEGMENT_ARCHIVED);
+        putDummyRecords(ignite, 100);
 
-            putDummyRecords(ignite, 100);
+        waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
 
-            waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
+        putDummyRecords(ignite, 1);
 
-            putDummyRecords(ignite, 1);
+        boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + getTestTimeout(), TimeUnit.MILLISECONDS);
 
-            boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + getTestTimeout(), TimeUnit.MILLISECONDS);
+        stopGrid();
 
-            stopGrid();
-
-            assertTrue(recordedAfterSleep);
-        }
-        finally {
-            forceArchiveSegmentMs = 0;
-        }
+        assertTrue(recordedAfterSleep);
     }
 
-    /** Tests force time out not applied without data records loged. */
+    /** Tests force time out not applied without data records logged. */
     @Test
     public void testSegmentNotArchivedWithoutDataRecord() throws Exception {
         AtomicLong forceArchiveSegment = new AtomicLong();
 
         forceArchiveSegmentMs = 1000;
 
-        try {
-            Ignite ignite = startGrid();
+        Ignite ignite = startGrid();
 
-            ignite.events().localListen(e -> {
-                forceArchiveSegment.incrementAndGet();
+        ignite.events().localListen(e -> {
+            forceArchiveSegment.incrementAndGet();
 
-                return true;
-            }, EVT_WAL_SEGMENT_ARCHIVED);
+            return true;
+        }, EVT_WAL_SEGMENT_ARCHIVED);
 
-            ignite.cluster().state(ACTIVE);
+        ignite.cluster().state(ACTIVE);
 
-            assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 0, 3L * forceArchiveSegmentMs));
+        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 0, 3L * forceArchiveSegmentMs));
 
-            assertEquals(0, forceArchiveSegment.get());
+        assertEquals(0, forceArchiveSegment.get());
 
-            putDummyRecords(ignite, 1);
+        putDummyRecords(ignite, 1);
 
-            assertTrue(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() == 1, getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() == 1, getTestTimeout()));
 
-            assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
+        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
 
-            stopGrid();
-        }
-        finally {
-            forceArchiveSegmentMs = 0;
-        }
+        stopGrid();
     }
 
     /**

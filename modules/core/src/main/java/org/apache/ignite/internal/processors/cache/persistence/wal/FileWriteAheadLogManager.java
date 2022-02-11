@@ -347,7 +347,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Container with last {@link DataRecord} logged timestamp.<br> Zero value means there was no records logged to current
      * segment, skip possible archiving for this case<br> Value is filled only for case {@link
-     * #walAutoArchiveAfterInactivity} > 0<br>
+     * #walAutoArchiveAfterInactivity} > 0
      */
     private final AtomicLong lastDataRecordLoggedMs = new AtomicLong();
 

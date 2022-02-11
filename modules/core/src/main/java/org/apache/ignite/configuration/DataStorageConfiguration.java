@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -295,7 +296,7 @@ public class DataStorageConfiguration implements Serializable {
      */
     private long walAutoArchiveAfterInactivity = -1;
 
-    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
     @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
@@ -1130,10 +1131,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
-     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
-     * negative  value disables auto archiving.
-     * @return current configuration instance for chaining
+     * @param walForceArchiveTimeout Time in millis after last data change logged to run segment auto archivation
+     * (even if incomplete).<br> Positive value enables incomplete segment archivation after timeout.<br>
+     * Zero or negative value disables forcefull auto archiving.
+     * @return current configuration instance for chaining.
      */
     @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
@@ -1143,7 +1144,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     * @return time interval (in milliseconds) after last log of data change
+     * for force archiving of incompletely WAL segment.
      */
     @IgniteExperimental
     public long getWalForceArchiveTimeout() {
