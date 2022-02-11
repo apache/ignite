@@ -31,6 +31,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -55,6 +56,9 @@ public final class PlanningContext implements Context {
     /** */
     private IgnitePlanner planner;
 
+    /** */
+    private final long startTs;
+
     /**
      * Private constructor, used by a builder.
      */
@@ -67,6 +71,7 @@ public final class PlanningContext implements Context {
         this.parameters = parameters;
 
         this.parentCtx = parentCtx;
+        startTs = U.currentTimeMillis();
     }
 
     /**
@@ -97,6 +102,23 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
+    }
+
+    /**
+     * @return Start timestamp in millis.
+     */
+    public long getStartTs() {
+        return startTs;
+    }
+
+
+    /**
+     * @return Start timestamp in millis.
+     */
+    public long getPlannerTimeout() {
+        BaseQueryContext ctx = parentCtx.unwrap(BaseQueryContext.class);
+
+        return ctx != null ? ctx.plannerTimeout() : 0;
     }
 
     /**
@@ -189,7 +211,7 @@ public final class PlanningContext implements Context {
     /**
      * Planner context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private Context parentCtx = Contexts.empty();

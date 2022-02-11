@@ -154,13 +154,17 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final GridQueryCancel qryCancel;
 
+    /** */
+    private final long plannerTimeout;
+
     /**
      * Private constructor, used by a builder.
      */
     private BaseQueryContext(
         FrameworkConfig cfg,
         Context parentCtx,
-        IgniteLogger log
+        IgniteLogger log,
+        long plannerTimeout
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -174,6 +178,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         typeFactory = TYPE_FACTORY;
 
         rexBuilder = REX_BUILDER;
+
+        this.plannerTimeout = plannerTimeout;
     }
 
     /**
@@ -251,6 +257,14 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return qryCancel;
     }
 
+
+    /**
+     * @return Planner timeout;
+     */
+    public long plannerTimeout() {
+        return plannerTimeout;
+    }
+
     /**
      * @return Context builder.
      */
@@ -266,7 +280,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /**
      * Query context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private static final FrameworkConfig EMPTY_CONFIG =
@@ -282,6 +296,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         /** */
         private IgniteLogger log = new NullLogger();
+
+        /** */
+        private long plannerTimeout = 0L;
 
         /**
          * @param frameworkCfg Framework config.
@@ -311,12 +328,21 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param timeout Planner timeout
+         * @return Builder for chaining.
+         */
+        public Builder plannerTimeout(long timeout) {
+            plannerTimeout = timeout;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, plannerTimeout);
         }
     }
 }

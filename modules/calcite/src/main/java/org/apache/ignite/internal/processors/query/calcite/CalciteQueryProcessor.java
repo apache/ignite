@@ -40,6 +40,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -88,8 +89,23 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getLong;
+
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
+    /**
+     * Default planner timeout, in ms.
+     */
+    private static final long DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT = 15000;
+
+    /**
+     * Determines whether to use the experimental sql, calcite based, engine.
+     */
+    @SystemProperty(value = "Timeout of experimental sql engine planner timeout, in ms", type = Long.class,
+        defaults = "" + DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT)
+    public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT =
+        "IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT";
+
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
@@ -134,6 +150,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             CorrelationTraitDef.INSTANCE,
         })
         .build();
+
+    /** Query planner timeout. */
+    private final long queryPlannerTimeout = getLong(IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT,
+        DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT);
 
     /** */
     private final QueryPlanCache qryPlanCache;
@@ -312,7 +332,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 qryCtx,
                 exchangeSvc,
                 (q) -> qryReg.unregister(q.id()),
-                log
+                log,
+                queryPlannerTimeout
             );
 
             qryReg.register(qry);
@@ -351,7 +372,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 qryCtx,
                 exchangeSvc,
                 (q) -> qryReg.unregister(q.id()),
-                log
+                log,
+                queryPlannerTimeout
             );
 
             qrys.add(qry);

@@ -90,7 +90,8 @@ public class RootQuery<RowT> extends Query<RowT> {
         QueryContext qryCtx,
         ExchangeService exch,
         Consumer<Query<RowT>> unregister,
-        IgniteLogger log
+        IgniteLogger log,
+        long plannerTimeout
     ) {
         super(
             UUID.randomUUID(),
@@ -117,6 +118,7 @@ public class RootQuery<RowT> extends Query<RowT> {
                     .defaultSchema(schema)
                     .build()
             )
+            .plannerTimeout(plannerTimeout)
             .logger(log)
             .build();
     }
@@ -130,7 +132,8 @@ public class RootQuery<RowT> extends Query<RowT> {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log,
+            context().plannerTimeout());
     }
 
     /** */
