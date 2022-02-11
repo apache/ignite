@@ -2017,28 +2017,28 @@ public final class IgniteSystemProperties {
     /**
      * Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes.
      */
-    @SystemProperty(value = "Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes.",
+    @SystemProperty(value = "Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes",
         type = Integer.class)
     public static final String IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE = "IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE";
 
     /**
      * Calcite-based SQL engine. Batch size (count of rows) for cache modify execution nodes.
      */
-    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for cache modify execution nodes.",
+    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for cache modify execution nodes",
         type = Integer.class)
     public static final String IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE = "IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE";
 
     /**
      * Calcite-based SQL engine. Batch size (count of rows) for outgoing data message.
      */
-    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for outgoing data message.",
+    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for outgoing data message",
         type = Integer.class)
     public static final String IGNITE_CALCITE_EXEC_IO_BATCH_SIZE = "IGNITE_CALCITE_EXEC_IO_BATCH_SIZE";
 
     /**
      * Calcite-based SQL engine. Maximum number of pending data messages for each outbox.
      */
-    @SystemProperty(value = "Calcite-based SQL engine. Maximum number of pending data messages for each outbox.",
+    @SystemProperty(value = "Calcite-based SQL engine. Maximum number of pending data messages for each outbox",
         type = Integer.class)
     public static final String IGNITE_CALCITE_EXEC_IO_BATCH_CNT = "IGNITE_CALCITE_EXEC_IO_BATCH_CNT";
 
@@ -2046,7 +2046,7 @@ public final class IgniteSystemProperties {
      * Calcite-based SQL engine. Pretty print serialized to JSON plan, when sending it to remote nodes.
      */
     @SystemProperty(value = "Calcite-based SQL engine. Pretty print serialized to JSON plan, when sending it to " +
-        "remote nodes.")
+        "remote nodes")
     public static final String IGNITE_CALCITE_REL_JSON_PRETTY_PRINT = "IGNITE_CALCITE_REL_JSON_PRETTY_PRINT";
 
     /**
