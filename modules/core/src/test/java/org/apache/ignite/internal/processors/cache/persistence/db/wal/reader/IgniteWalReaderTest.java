@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -79,6 +80,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -378,31 +380,73 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         forceArchiveSegmentMs = 1000;
 
-        Ignite ignite = startGrid();
+        try {
 
-        ignite.cluster().state(ACTIVE);
+            Ignite ignite = startGrid();
 
-        IgniteEvents evts = ignite.events();
+            ignite.cluster().state(ACTIVE);
 
-        evts.localListen(e -> {
-            if (waitingForEvt.get())
-                forceArchiveSegment.countDown();
+            IgniteEvents evts = ignite.events();
 
-            return true;
-        }, EVT_WAL_SEGMENT_ARCHIVED);
+            evts.localListen(e -> {
+                if (waitingForEvt.get())
+                    forceArchiveSegment.countDown();
 
-        putDummyRecords(ignite, 100);
+                return true;
+            }, EVT_WAL_SEGMENT_ARCHIVED);
 
-        waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
+            putDummyRecords(ignite, 100);
 
-        putDummyRecords(ignite, 1);
+            waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
 
-        boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + getTestTimeout(), TimeUnit.MILLISECONDS);
+            putDummyRecords(ignite, 1);
 
-        stopGrid();
+            boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        assertTrue(recordedAfterSleep);
+            stopGrid();
+
+            assertTrue(recordedAfterSleep);
+        }
+        finally {
+            forceArchiveSegmentMs = 0;
+        }
     }
+
+    /** Tests force time out not applied without data records loged. */
+    @Test
+    public void testSegmentNotArchivedWithoutDataRecord() throws Exception {
+        AtomicLong forceArchiveSegment = new AtomicLong();
+
+        forceArchiveSegmentMs = 1000;
+
+        try {
+            Ignite ignite = startGrid();
+
+            ignite.events().localListen(e -> {
+                forceArchiveSegment.incrementAndGet();
+
+                return true;
+            }, EVT_WAL_SEGMENT_ARCHIVED);
+
+            ignite.cluster().state(ACTIVE);
+
+            assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 0, 3L * forceArchiveSegmentMs));
+
+            assertEquals(0, forceArchiveSegment.get());
+
+            putDummyRecords(ignite, 1);
+
+            assertTrue(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() == 1, getTestTimeout()));
+
+            assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
+
+            stopGrid();
+        }
+        finally {
+            forceArchiveSegmentMs = 0;
+        }
+    }
+
 
     /**
      * Tests time out based WAL segment archiving.
