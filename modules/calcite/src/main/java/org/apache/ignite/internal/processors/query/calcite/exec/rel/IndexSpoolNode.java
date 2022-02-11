@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import jdk.internal.jline.internal.Nullable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -189,7 +190,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         ExecutionContext<Row> ctx,
         RelDataType rowType,
         ImmutableBitSet keys,
-        Predicate<Row> filter,
+        @Nullable Predicate<Row> filter,
         Supplier<Row> searchRow
     ) {
         RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys);

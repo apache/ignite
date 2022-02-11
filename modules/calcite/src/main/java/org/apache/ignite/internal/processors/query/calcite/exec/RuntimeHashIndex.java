@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime hash index based on on-heap hash map.
@@ -82,7 +83,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public Iterable<Row> scan(Supplier<Row> searchRow, Predicate<Row> filter) {
+    public Iterable<Row> scan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
         return new IndexScan(searchRow, filter);
     }
 
