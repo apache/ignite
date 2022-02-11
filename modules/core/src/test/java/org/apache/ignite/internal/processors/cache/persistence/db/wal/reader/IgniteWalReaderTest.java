@@ -447,7 +447,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * Tests time out based WAL segment archiving.
      *
