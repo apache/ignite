@@ -796,12 +796,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert timeoutRolloverMux != null;
 
         synchronized (timeoutRolloverMux) {
+            if (timeoutRollover != null)
+                return;
+
             long nextEndTime = walForceArchiveTimeout > 0
                 ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
                 : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
-
-            if (timeoutRollover != null)
-                return;
 
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
