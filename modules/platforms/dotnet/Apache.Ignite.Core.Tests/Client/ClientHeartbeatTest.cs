@@ -19,10 +19,12 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,11 +33,8 @@ namespace Apache.Ignite.Core.Tests.Client
     [Category(TestUtils.CategoryIntensive)]
     public class ClientHeartbeatTest : ClientTestBase
     {
-        /** */
-        private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(200);
-
-        /** GridNioServer has hardcoded 2000ms idle check interval. */
-        private static readonly TimeSpan IdleCheckInterval = TimeSpan.FromSeconds(2);
+        /** GridNioServer has hardcoded 2000ms idle check interval, so a smaller idle timeout does not make sense. */
+        private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(2000);
 
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
@@ -44,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
-            Thread.Sleep(IdleCheckInterval * 2);
+            Thread.Sleep(IdleTimeout * 2);
 
             Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
         }
@@ -52,33 +51,29 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDoesNotDisconnectIdleClientWithHeartbeats()
         {
-            var heartbeatInterval = IdleTimeout / 2;
+            var heartbeatInterval = IdleTimeout / 4;
             using var client = GetClient(heartbeatInterval);
 
             Assert.AreEqual(heartbeatInterval, client.GetConfiguration().HeartbeatInterval);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
-            Thread.Sleep(IdleCheckInterval * 2);
+            Thread.Sleep(IdleTimeout * 3);
 
             Assert.DoesNotThrow(() => client.GetCacheNames());
         }
 
         [Test]
-        public void TestServerDisconnectsIdleClientWithLongHeartbeatInterval()
-        {
-            using var client = GetClient(heartbeatInterval: IdleCheckInterval / 2);
-
-            Assert.AreEqual(1, client.GetCacheNames().Count);
-
-            Thread.Sleep(IdleCheckInterval * 2);
-
-            Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
-        }
-
-        [Test]
         public void TestHeartbeatIntervalLongerThanIdleTimeoutLogsWarning()
         {
-            Assert.Fail("TODO");
+            using var client = GetClient(heartbeatInterval: IdleTimeout * 3);
+
+            var logger = (ListLogger)client.GetConfiguration().Logger;
+            var logs = logger.Entries.Select(e => e.Message).ToArray();
+
+            Assert.Contains(
+                "Client heartbeat interval is greater than server idle timeout (00:00:06 > 00:00:02). " +
+                "Server will disconnect idle client.",
+                logs);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -106,7 +101,8 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new List<string> { IPAddress.Loopback.ToString() },
-                HeartbeatInterval = heartbeatInterval
+                HeartbeatInterval = heartbeatInterval,
+                Logger = new ListLogger()
             };
 
             return Ignition.StartClient(cfg);
