@@ -947,6 +947,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     lastRecordLoggedMs.set(millis);
 
+                    // Only data records handled by CDC.
+                    // No need to forcefully rollover for other record types.
                     if (walForceArchiveTimeout > 0 && rec.type() == DATA_RECORD_V2)
                         lastDataRecordLoggedMs.set(millis);
                 }
