@@ -971,9 +971,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Sends heartbeat message.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void SendHeartbeat(object unused)
         {
-            DoOutInOp<object>(ClientOp.Heartbeat, null, null);
+            try
+            {
+                DoOutInOp<object>(ClientOp.Heartbeat, null, null);
+            }
+            catch (Exception e)
+            {
+                _exception = e;
+                Dispose();
+            }
         }
 
         /// <summary>
@@ -1050,6 +1060,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Set disposed state before ending requests so that request continuations see disconnected socket.
                 _isDisposed = true;
 
+                // Stop heartbeat timer before closing the socket.
+                _heartbeatTimer?.Dispose();
+
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
 
@@ -1060,7 +1073,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 _listenerEvent.Dispose();
 
                 _timeoutCheckTimer?.Dispose();
-                _heartbeatTimer?.Dispose();
             }
         }
 
