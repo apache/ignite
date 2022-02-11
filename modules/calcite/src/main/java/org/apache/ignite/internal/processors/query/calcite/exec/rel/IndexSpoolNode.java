@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import jdk.internal.jline.internal.Nullable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Index spool node.
