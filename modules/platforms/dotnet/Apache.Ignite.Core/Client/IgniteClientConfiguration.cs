@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Client
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
@@ -274,6 +275,9 @@ namespace Apache.Ignite.Core.Client
         /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
+        /// <para />
+        /// Can be used together with server-side idle timeout (<see cref="ClientConnectorConfiguration.IdleTimeout"/>)
+        /// to detect half-open connections on the server.
         /// </summary>
         public TimeSpan HeartbeatInterval { get; set; }
 
