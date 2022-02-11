@@ -3561,6 +3561,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     timeoutRollover.cancel();
 
                     cctx.time().removeTimeoutObject(timeoutRollover);
+
+                    this.timeoutRollover = null;
                 }
             }
         }
