@@ -83,7 +83,7 @@ class CheckIgniteSpec:
         assert spec.jvm_opts.index("-XX:-UnlockCommercialFeatures") >\
                spec.jvm_opts.index("-XX:+UnlockCommercialFeatures")
 
-    def check_colon_options__goes_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(self):
+    def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(self):
         service = mock_service()
         service.log_dir = "/default-path"
         spec = IgniteApplicationSpec(service, jvm_opts=["-Xloggc:/some-non-default-path/gc.log"])
