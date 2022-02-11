@@ -20,7 +20,6 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
