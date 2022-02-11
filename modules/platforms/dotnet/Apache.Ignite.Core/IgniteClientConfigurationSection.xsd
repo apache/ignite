@@ -350,6 +350,11 @@
                     <xs:documentation>Operation retry limit when RetryPolicy is set.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="heartbeatInterval" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Heartbeat interval.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
