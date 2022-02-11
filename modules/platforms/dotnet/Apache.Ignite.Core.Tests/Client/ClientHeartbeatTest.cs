@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests client heartbeat functionality (<see cref="IgniteClientConfiguration.HeartbeatInterval"/>).
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ClientHeartbeatTest : ClientTestBase
     {
         /** */
@@ -65,7 +66,13 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDisconnectsIdleClientWithLongHeartbeatInterval()
         {
-            Assert.Fail("TODO");
+            using var client = GetClient(heartbeatInterval: IdleCheckInterval / 2);
+
+            Assert.AreEqual(1, client.GetCacheNames().Count);
+
+            Thread.Sleep(IdleCheckInterval * 2);
+
+            Assert.Throws<IgniteClientException>(() => client.GetCacheNames());
         }
 
         [Test]
