@@ -34,12 +34,12 @@ namespace Apache.Ignite.Core.Tests.Client
     public class ClientHeartbeatTest : ClientTestBase
     {
         /** GridNioServer has hardcoded 2000ms idle check interval, so a smaller idle timeout does not make sense. */
-        private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(2000);
+        private static readonly int IdleTimeout = 2000;
 
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
         {
-            using var client = GetClient(heartbeatInterval: TimeSpan.Zero);
+            using var client = GetClient(heartbeatInterval: 0);
 
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
-                    IdleTimeout = IdleTimeout
+                    IdleTimeout = TimeSpan.FromMilliseconds(IdleTimeout)
                 }
             };
         }
@@ -92,16 +92,17 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
                 // Keep default client alive.
-                HeartbeatInterval = IdleTimeout / 2
+                // ReSharper disable once PossibleLossOfFraction
+                HeartbeatInterval = TimeSpan.FromMilliseconds(IdleTimeout / 4)
             };
         }
 
-        private static IIgniteClient GetClient(TimeSpan heartbeatInterval)
+        private static IIgniteClient GetClient(int heartbeatInterval)
         {
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new List<string> { IPAddress.Loopback.ToString() },
-                HeartbeatInterval = heartbeatInterval,
+                HeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
                 Logger = new ListLogger()
             };
 
