@@ -796,6 +796,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert timeoutRolloverMux != null;
 
         synchronized (timeoutRolloverMux) {
+            if (timeoutRollover != null)
+                return;
+
             long nextEndTime = walForceArchiveTimeout > 0
                 ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
                 : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
@@ -806,7 +809,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** */
     private long nextTimeout(long lastEvt, long timeout) {
-        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
+        return (lastEvt <= 0 ? U.currentTimeMillis() : lastEvt) + timeout;
     }
 
     /** {@inheritDoc} */
@@ -3515,11 +3518,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {
+                timeoutRollover = null;
+
                 if (!cancel) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Checking if WAL rollover required (" +
-                            new Time(U.currentTimeMillis()).toString() + ")");
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()) + ")");
 
                     checkWalRolloverRequired();
 
