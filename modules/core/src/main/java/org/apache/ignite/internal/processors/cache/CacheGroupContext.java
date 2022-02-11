@@ -1202,14 +1202,14 @@ public class CacheGroupContext {
      * @see CdcMain
      */
     public boolean walOrCdcEnabled() {
-        if (dataRegion == null)
-            return false;
+        if (persistenceEnabled)
+            return walEnabled();
 
         if (systemCache())
             return false;
 
-        if (persistenceEnabled)
-            return walEnabled();
+        if (dataRegion == null)
+            return false;
 
         return dataRegion.config().isCdcEnabled() && walEnabled();
     }
