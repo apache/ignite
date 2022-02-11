@@ -16,11 +16,10 @@
 """
 Checks Spec class that describes config and command line to start Ignite-aware service.
 """
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import Mock
 
 from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec
+from ignitetest.utils.ignite_test import JFR_ENABLED
 
 
 def mock_service():
@@ -39,88 +38,56 @@ class CheckIgniteSpec:
     """
     Checks that the JVM options passed via constructor are not overriden by the default ones.
     """
-
-    def check_exception__raised__if_both_jvm_and_full_jvm_opts_passed(self):
-        service = mock_service()
-        with pytest.raises(AssertionError):
-            IgniteApplicationSpec(service, jvm_opts="-Xmx256m", full_jvm_opts="-ea")
-
-    def check_default_options__are_used__if_none_jvm_or_full_jvm_opts_passed(self):
-        def default_opts():
-            return ['-XX:ErrorFile=default-filename', '-Xmx512m']
+    def check_default_options__are_used__if_jvm_opts_is_not_passed(self):
         service = mock_service()
         spec = IgniteApplicationSpec(service)
-        with patch.object(spec, 'get_default_jvm_opts', new=default_opts):
-            assert "-XX:ErrorFile=default-filename" in spec.final_jvm_opts()
-            assert "-Xmx512m" in spec.final_jvm_opts()
-
-    def check_default_options_from_root_class__are_used__if_none_jvm_or_full_jvm_opts_passed(self):
-        # May fail if set of default options in the IgniteSpec will be changed. In this case change the test as well.
-        # Live with it since there is no way to mock root abstract IgniteSpec class here.
-        service = mock_service()
-        spec = IgniteApplicationSpec(service)
-        assert "-Dlog4j.configDebug=true" in spec.final_jvm_opts()
+        assert "-DIGNITE_NO_SHUTDOWN_HOOK=true" in spec.jvm_opts
+        assert "-Dlog4j.configDebug=true" in spec.jvm_opts
 
     def check_default_options__are_overriden__if_passed_as_jvm_opts_string(self):
-        def default_opts():
-            return ['-XX:ErrorFile=default-filename', '-Xmx512m', '-Xms256m']
         service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts="-Xmx256m -Xms128m -XX:ErrorFile=test-specific-filename",
-                                     full_jvm_opts=None)
-        with patch.object(spec, 'get_default_jvm_opts', new=default_opts):
-            assert "-XX:ErrorFile=test-specific-filename" in spec.final_jvm_opts()
-            assert "-Xmx256m" in spec.final_jvm_opts()
-            assert "-Xms128m" in spec.final_jvm_opts()
-            assert "-XX:ErrorFile=default-filename" not in spec.final_jvm_opts()
-            assert "-Xmx512m" not in spec.final_jvm_opts()
-            assert "-Xms256m" not in spec.final_jvm_opts()
+        spec_with_default = IgniteApplicationSpec(service)
+        spec_with_default_overriden = IgniteApplicationSpec(service, jvm_opts="-Dlog4j.configDebug=false")
+        assert "-Dlog4j.configDebug=true" in spec_with_default.jvm_opts
+        assert "-Dlog4j.configDebug=true" not in spec_with_default_overriden.jvm_opts
+
+        assert "-Dlog4j.configDebug=false" not in spec_with_default.jvm_opts
+        assert "-Dlog4j.configDebug=false" in spec_with_default_overriden.jvm_opts
 
     def check_default_options__are_overriden__if_passed_as_jvm_opts_list(self):
-        def default_opts():
-            return ['-XX:ErrorFile=default-filename', '-Xss512m', '-Xmn512m']
         service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts=["-Xss256m", "-Xmn256m", "-XX:ErrorFile=test-specific-filename"],
-                                     full_jvm_opts=None)
-        with patch.object(spec, 'get_default_jvm_opts', new=default_opts):
-            assert "-XX:ErrorFile=test-specific-filename" in spec.final_jvm_opts()
-            assert "-Xss256m" in spec.final_jvm_opts()
-            assert "-Xmn256m" in spec.final_jvm_opts()
-            assert "-XX:ErrorFile=default-filename" not in spec.final_jvm_opts()
-            assert "-Xss512m" not in spec.final_jvm_opts()
-            assert "-Xmn512m" not in spec.final_jvm_opts()
+        spec_with_default = IgniteApplicationSpec(service)
+        spec_with_default_overriden = IgniteApplicationSpec(service, jvm_opts=["-Dlog4j.configDebug=false"])
+        assert "-Dlog4j.configDebug=true" in spec_with_default.jvm_opts
+        assert "-Dlog4j.configDebug=true" not in spec_with_default_overriden.jvm_opts
 
-    def check_default_jvm_options__are_not_used__if_full_jvm_opts_is_passed_as_string(self):
-        service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts=None, full_jvm_opts="-Xmx256m -ea")
-        assert "-Xmx256m" in spec.final_jvm_opts()
-        assert "-ea" in spec.final_jvm_opts()
-        assert len(spec.final_jvm_opts()) == 2
+        assert "-Dlog4j.configDebug=false" not in spec_with_default.jvm_opts
+        assert "-Dlog4j.configDebug=false" in spec_with_default_overriden.jvm_opts
 
-    def check_default_jvm_options__are_not_used__if_full_jvm_opts_is_passed_as_list(self):
+    def check_default_jvm_options__are_not_used__if_merge_with_default_is_false(self):
         service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts=None, full_jvm_opts=["-Xmx256m", "-ea"])
-        assert "-Xmx256m" in spec.final_jvm_opts()
-        assert "-ea" in spec.final_jvm_opts()
-        assert len(spec.final_jvm_opts()) == 2
+        spec = IgniteApplicationSpec(service, jvm_opts="-Xmx256m -ea", merge_with_default=False)
+        assert "-Xmx256m" in spec.jvm_opts
+        assert "-ea" in spec.jvm_opts
+        assert len(spec.jvm_opts) == 2
+
+        spec = IgniteApplicationSpec(service, merge_with_default=False)
+        assert len(spec.jvm_opts) == 0
 
     def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(self):
-        def default_opts():
-            return ['-XX:+ExtensiveErrorReports']
         service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts="-XX:-ExtensiveErrorReports")
-        with patch.object(spec, 'get_default_jvm_opts', new=default_opts):
-            assert "-XX:-ExtensiveErrorReports" in spec.final_jvm_opts()
-            assert "-XX:+ExtensiveErrorReports" in spec.final_jvm_opts()
-            assert spec.final_jvm_opts().index("-XX:-ExtensiveErrorReports") >\
-                   spec.final_jvm_opts().index("-XX:+ExtensiveErrorReports")
+        service.context.globals[JFR_ENABLED] = True
+        spec = IgniteApplicationSpec(service, jvm_opts="-XX:-UnlockCommercialFeatures")
+        assert "-XX:-UnlockCommercialFeatures" in spec.jvm_opts
+        assert "-XX:-UnlockCommercialFeatures" in spec.jvm_opts
+        assert spec.jvm_opts.index("-XX:-UnlockCommercialFeatures") >\
+               spec.jvm_opts.index("-XX:+UnlockCommercialFeatures")
 
     def check_colon_options__goes_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(self):
-        def default_opts():
-            return ['-Xshare:on']
         service = mock_service()
-        spec = IgniteApplicationSpec(service, jvm_opts="-Xshare:off")
-        with patch.object(spec, 'get_default_jvm_opts', new=default_opts):
-            assert "-Xshare:on" in spec.final_jvm_opts()
-            assert "-Xshare:off" in spec.final_jvm_opts()
-            assert spec.final_jvm_opts().index("-Xshare:off") > \
-                   spec.final_jvm_opts().index("-Xshare:on")
+        service.log_dir = "/default-path"
+        spec = IgniteApplicationSpec(service, jvm_opts=["-Xloggc:/some-non-default-path/gc.log"])
+        assert "-Xloggc:/some-non-default-path/gc.log" in spec.jvm_opts
+        assert "-Xloggc:/default-path/gc.log" in spec.jvm_opts
+        assert spec.jvm_opts.index("-Xloggc:/some-non-default-path/gc.log") > \
+               spec.jvm_opts.index("-Xloggc:/default-path/gc.log")

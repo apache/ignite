@@ -76,30 +76,21 @@ class IgniteSpec(metaclass=ABCMeta):
     This class is a basic Spec
     """
 
-    def __init__(self, service, jvm_opts=None, full_jvm_opts=None):
+    def __init__(self, service, jvm_opts=None, merge_with_default=True):
         """
-        Only one of the jvm_opts or full_jvm_opts may be passed.
-
         :param service: Service
-        :param jvm_opts: If passed will be added or overwrite the default ones.
-        :param full_jvm_opts: If passed will be used 'as is'. None of the default ones will be applied.
+        :param jvm_opts: If passed will be added with higher priority to or overwrite completely the default options
+                         depending on the merge_with_default. Either string or list of strings is allowed.
+        :param merge_with_default: If False jvm_opts will overide the default options completely. None of the
+                         default options will be applied.
         """
-
-        assert (jvm_opts and not full_jvm_opts) or \
-               (not jvm_opts and full_jvm_opts) or \
-               (not jvm_opts and not full_jvm_opts)
-
         self.service = service
-        self.external_jvm_opts = jvm_opts
-        self.external_full_jvm_opts = full_jvm_opts
+        self.jvm_opts = merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
+                                           jvm_opts if jvm_opts else [])
 
-    def get_default_jvm_opts(self):
+    def __get_default_jvm_opts(self):
         """
         Return a set of default JVM options.
-
-        The subclass willing to add its own default options or overwrite the parent's ones should implement this method.
-        Before actual execution options are merged in a way that ones goes from the most specific subclass have higher
-        priority and overwrite ones come from parent. See final_jvm_opts() and __merge_default_jvm_opts() for details.
         """
         default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
                                                oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"))
@@ -225,47 +216,11 @@ class IgniteSpec(metaclass=ABCMeta):
         self._runcmd(f"chmod a+x {local_dir}/*.sh")
         self._runcmd(f"{local_dir}/mkcerts.sh")
 
-    def final_jvm_opts(self):
-        """
-        Return final set of JVM options used to run service. Function takes into account both default options specified
-        in each subclass in a hierarhy and options passed from the outside via the constructor.
-
-        The external jvm_opts passed via the constructor have the higher priority than any default options.
-
-        The external full_jvm_opts passed via the constructor have the absolute priority and none of the default options
-        or jvm_opts passed via construction are used at all.
-
-        :return: list of strings containing JVM options
-        """
-        return merge_jvm_settings(self.external_full_jvm_opts, []) \
-            if self.external_full_jvm_opts \
-            else merge_jvm_settings(self.__merge_default_jvm_opts(),
-                                    self.external_jvm_opts if self.external_jvm_opts else [])
-
-    def __merge_default_jvm_opts(self):
-        """
-        Merge default JVM options through the whole classes hierarhy. Options from the subclasses have higher priority
-        and overwrite ones from the parents.
-
-        :return: merged set of default JVM options specified in all subclasses
-        """
-
-        # Start from the most specific subclass and go up until the root class (IgniteSpec)
-        merged_default_jvm_opts = self.get_default_jvm_opts()
-        clazz = type(self)
-        while clazz != __class__:
-            # noinspection PyUnresolvedReferences
-            parent_default_jvm_opt = super(clazz, self).get_default_jvm_opts()
-            merged_default_jvm_opts = merge_jvm_settings(parent_default_jvm_opt, merged_default_jvm_opts)
-            clazz = clazz.__base__
-
-        return merged_default_jvm_opts
-
     def _jvm_opts(self):
         """
         :return: line with extra JVM params for ignite.sh script: -J-Dparam=value -J-ea
         """
-        opts = ["-J%s" % o for o in self.final_jvm_opts()]
+        opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
 
     def _runcmd(self, cmd):
@@ -297,12 +252,20 @@ class IgniteApplicationSpec(IgniteSpec):
     """
     Spec to run ignite application
     """
+    def __init__(self, service, jvm_opts=None, merge_with_default=True):
+        super().__init__(
+            service,
+            merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
+                               jvm_opts if jvm_opts else []),
+            merge_with_default)
 
-    def get_default_jvm_opts(self):
-        return ["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows performing operations on app termination.
-                "-Xmx1G",
-                "-ea",
-                "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"]
+    def __get_default_jvm_opts(self):
+        return [
+            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows performing operations on app termination.
+            "-Xmx1G",
+            "-ea",
+            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
+        ]
 
     def command(self, node):
         args = [
