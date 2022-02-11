@@ -331,7 +331,7 @@ public class QueryUtils {
 
         if (entity instanceof QueryEntityEx) {
             normalEntity.setPrimaryKeyInlineSize(((QueryEntityEx)entity).getPrimaryKeyInlineSize());
-            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityFieldInlineSize());
+            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityKeyInlineSize());
         }
 
         // Normalize table name.
@@ -607,7 +607,7 @@ public class QueryUtils {
             QueryEntityEx qe = (QueryEntityEx)qryEntity;
 
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
-            desc.affinityFieldInlineSize(qe.getAffinityFieldInlineSize() != null ? qe.getAffinityFieldInlineSize() : -1);
+            desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
         }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);

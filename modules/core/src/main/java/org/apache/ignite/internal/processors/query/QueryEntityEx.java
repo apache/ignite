@@ -42,7 +42,7 @@ public class QueryEntityEx extends QueryEntity {
     private Integer pkInlineSize;
 
     /** INLINE_SIZE for affinity field index. */
-    private Integer affFieldInlineSize;
+    private Integer affKeyInlineSize;
 
     /**
      * Default constructor.
@@ -66,7 +66,7 @@ public class QueryEntityEx extends QueryEntity {
 
             preserveKeysOrder = other0.preserveKeysOrder;
             pkInlineSize = other0.pkInlineSize != null ? other0.pkInlineSize : -1;
-            affFieldInlineSize = other0.affFieldInlineSize != null ? other0.affFieldInlineSize : -1;
+            affKeyInlineSize = other0.affKeyInlineSize != null ? other0.affKeyInlineSize : -1;
         }
     }
 
@@ -130,23 +130,23 @@ public class QueryEntityEx extends QueryEntity {
      *
      * @return INLINE_SIZE for affinity field index.
      */
-    public Integer getAffinityFieldInlineSize() {
-        return affFieldInlineSize;
+    public Integer getAffinityKeyInlineSize() {
+        return affKeyInlineSize;
     }
 
     /**
      * Sets INLINE_SIZE for AFFINITY_KEY index.
      *
-     * @param affFieldInlineSize INLINE_SIZE for AFFINITY_KEY index, when {@code null} - inline size is calculated automativally.
+     * @param affKeyInlineSize INLINE_SIZE for AFFINITY_KEY index, when {@code null} - inline size is calculated automativally.
      * @return {@code this} for chaining.
      */
-    public QueryEntity setAffinityKeyInlineSize(Integer affFieldInlineSize) {
-        if (affFieldInlineSize != null && affFieldInlineSize < 0) {
-            throw new CacheException("Inline size for affinity filed index cannot be negative. "
-                + "[inlineSize=" + affFieldInlineSize + ']');
+    public QueryEntity setAffinityKeyInlineSize(Integer affKeyInlineSize) {
+        if (affKeyInlineSize != null && affKeyInlineSize < 0) {
+            throw new CacheException("Inline size for affinity fieled index cannot be negative. "
+                + "[inlineSize=" + affKeyInlineSize + ']');
         }
 
-        this.affFieldInlineSize = affFieldInlineSize;
+        this.affKeyInlineSize = affKeyInlineSize;
 
         return this;
     }
@@ -164,7 +164,7 @@ public class QueryEntityEx extends QueryEntity {
         return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
             && preserveKeysOrder == entity.preserveKeysOrder
             && F.eq(pkInlineSize, entity.pkInlineSize)
-            && F.eq(affFieldInlineSize, entity.affFieldInlineSize);
+            && F.eq(affKeyInlineSize, entity.affKeyInlineSize);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +174,7 @@ public class QueryEntityEx extends QueryEntity {
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
         res = 31 * res + (preserveKeysOrder ? 1 : 0);
         res = 31 * res + (pkInlineSize != null ? pkInlineSize.hashCode() : 0);
-        res = 31 * res + (affFieldInlineSize != null ? affFieldInlineSize.hashCode() : 0);
+        res = 31 * res + (affKeyInlineSize != null ? affKeyInlineSize.hashCode() : 0);
         return res;
     }
 
