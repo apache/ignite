@@ -240,7 +240,7 @@ public class CdcMain implements Runnable {
     public void runX() throws Exception {
         ackAsciiLogo();
 
-        if (!CU.isCdcEnabled(igniteCfg.getDataStorageConfiguration())) {
+        if (!CU.isCdcEnabled(igniteCfg)) {
             log.error(ERR_MSG);
 
             throw new IllegalArgumentException(ERR_MSG);

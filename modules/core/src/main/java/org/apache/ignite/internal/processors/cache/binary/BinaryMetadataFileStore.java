@@ -90,8 +90,7 @@ class BinaryMetadataFileStore {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
-        enabled = CU.isPersistenceEnabled(ctx.config())
-            || CU.isCdcEnabled(ctx.config().getDataStorageConfiguration());
+        enabled = CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
 
         this.log = log;
 

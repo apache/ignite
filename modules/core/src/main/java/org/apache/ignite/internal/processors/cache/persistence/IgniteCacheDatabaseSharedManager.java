@@ -174,7 +174,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param ctx Kernal context.
      */
     public IgniteCacheDatabaseSharedManager(GridKernalContext ctx) {
-        if (!CU.isCdcEnabled(ctx.config().getDataStorageConfiguration()) && !CU.isPersistenceEnabled(ctx.config())) {
+        if (!CU.isCdcEnabled(ctx.config()) && !CU.isPersistenceEnabled(ctx.config())) {
             dsMetrics = null;
 
             return;
@@ -1137,7 +1137,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If fails.
      */
     public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
-        if (!CU.isCdcEnabled(kctx.config().getDataStorageConfiguration()))
+        if (!CU.isCdcEnabled(kctx.config()))
             return;
 
         WALIterator iter = cctx.wal().replay(null, (type, ptr) -> true);

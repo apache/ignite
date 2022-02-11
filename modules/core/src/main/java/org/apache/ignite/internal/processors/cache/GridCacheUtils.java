@@ -2037,18 +2037,21 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cfg Ignite configuration.
      * @return {@code true} if CDC enabled.
      */
-    public static boolean isCdcEnabled(DataStorageConfiguration cfg) {
-        if (cfg == null)
+    public static boolean isCdcEnabled(IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        if (dsCfg == null)
             return false;
 
-        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
+        DataRegionConfiguration dfltReg = dsCfg.getDefaultDataRegionConfiguration();
 
         if (dfltReg != null && dfltReg.isCdcEnabled())
             return true;
 
-        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
+        DataRegionConfiguration[] regCfgs = dsCfg.getDataRegionConfigurations();
 
         if (regCfgs == null)
             return false;

@@ -141,9 +141,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WOR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.IgniteSystemProperties.getDouble;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_METRICS_ENABLED;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE_TIME_INTERVAL_MILLIS;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -476,7 +473,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            if (CU.isCdcEnabled(dsCfg)) {
+            if (CU.isCdcEnabled(igCfg)) {
                 walCdcDir = initDirectory(
                     dsCfg.getCdcWalPath(),
                     DataStorageConfiguration.DFLT_WAL_CDC_PATH,

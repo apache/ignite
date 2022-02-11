@@ -1194,30 +1194,24 @@ public class CacheGroupContext {
      * @return WAL enabled flag.
      */
     public boolean walEnabled() {
-        return walEnabled(false);
+        return localWalEnabled && globalWalEnabled;
     }
 
     /**
-     * @param forCdc {@code True} if record can be consumed by {@link CdcConsumer}.
      * @return {@code True} if {@link WALRecord} should be logged into WAL.
      * @see CdcMain
      */
-    public boolean walEnabled(boolean forCdc) {
-        boolean walEnabled = localWalEnabled && globalWalEnabled;
-
-        if (!forCdc)
-            return walEnabled;
-
+    public boolean walOrCdcEnabled() {
         if (dataRegion == null)
             return false;
 
         if (persistenceEnabled)
-            return walEnabled;
+            return walEnabled();
 
         if (systemCache())
             return false;
 
-        return dataRegion.config().isCdcEnabled() && walEnabled;
+        return dataRegion.config().isCdcEnabled() && walEnabled();
     }
 
     /**

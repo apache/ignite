@@ -3083,7 +3083,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dbMgr = new IgniteCacheDatabaseSharedManager(ctx);
         }
 
-        if ((CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config().getDataStorageConfiguration()))
+        if ((CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config()))
             && !ctx.clientNode()) {
             walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 
