@@ -84,6 +84,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -415,7 +416,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         forceArchiveSegmentMs = 1000;
 
-        Ignite ignite = startGrid();
+        IgniteEx ignite = startGrid();
 
         ignite.events().localListen(e -> {
             forceArchiveSegment.incrementAndGet();
@@ -433,9 +434,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() == 1, getTestTimeout()));
 
-        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
+        // Log some record to check only DataRecord force rollover.
+        ignite.context().cache().context().wal().log(RecordUtils.buildWalRecord(WALRecord.RecordType.PAGE_RECORD));
 
-        stopGrid();
+        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
     }
 
     /**
