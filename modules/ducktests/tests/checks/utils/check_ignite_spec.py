@@ -40,10 +40,13 @@ def service():
 """
 Checks that the JVM options passed via constructor are not overriden by the default ones.
 """
+
+
 def check_default_options__are_used__if_jvm_opts_is_not_passed(service):
     spec = IgniteApplicationSpec(service)
     assert "-DIGNITE_NO_SHUTDOWN_HOOK=true" in spec.jvm_opts
     assert "-Dlog4j.configDebug=true" in spec.jvm_opts
+
 
 def check_default_options__are_overriden__if_passed_as_jvm_opts_string(service):
     spec_with_default = IgniteApplicationSpec(service)
@@ -54,6 +57,7 @@ def check_default_options__are_overriden__if_passed_as_jvm_opts_string(service):
     assert "-Dlog4j.configDebug=false" not in spec_with_default.jvm_opts
     assert "-Dlog4j.configDebug=false" in spec_with_default_overriden.jvm_opts
 
+
 def check_default_options__are_overriden__if_passed_as_jvm_opts_list(service):
     spec_with_default = IgniteApplicationSpec(service)
     spec_with_default_overriden = IgniteApplicationSpec(service, jvm_opts=["-Dlog4j.configDebug=false"])
@@ -62,6 +66,7 @@ def check_default_options__are_overriden__if_passed_as_jvm_opts_list(service):
 
     assert "-Dlog4j.configDebug=false" not in spec_with_default.jvm_opts
     assert "-Dlog4j.configDebug=false" in spec_with_default_overriden.jvm_opts
+
 
 def check_default_jvm_options__are_not_used__if_merge_with_default_is_false(service):
     spec = IgniteApplicationSpec(service, jvm_opts="-Xmx256m -ea", merge_with_default=False)
@@ -72,6 +77,7 @@ def check_default_jvm_options__are_not_used__if_merge_with_default_is_false(serv
     spec = IgniteApplicationSpec(service, merge_with_default=False)
     assert len(spec.jvm_opts) == 0
 
+
 def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.context.globals[JFR_ENABLED] = True
     spec = IgniteApplicationSpec(service, jvm_opts="-XX:-UnlockCommercialFeatures")
@@ -79,6 +85,7 @@ def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_v
     assert "-XX:-UnlockCommercialFeatures" in spec.jvm_opts
     assert spec.jvm_opts.index("-XX:-UnlockCommercialFeatures") >\
            spec.jvm_opts.index("-XX:+UnlockCommercialFeatures")
+
 
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.log_dir = "/default-path"
