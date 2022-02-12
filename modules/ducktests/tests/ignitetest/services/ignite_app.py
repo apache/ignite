@@ -36,9 +36,9 @@ class IgniteApplicationService(IgniteAwareService):
 
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 full_jvm_opts=None):
+                 merge_with_default=True):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
-                         modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
+                         modules, jvm_opts=jvm_opts, merge_with_default=merge_with_default)
 
         self.java_class_name = java_class_name
         self.params = params
