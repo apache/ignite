@@ -36,7 +36,10 @@ public class QueryEntityEx extends QueryEntity {
 
     /** Whether to preserve order specified by {@link #getKeyFields()} or not. */
     private boolean preserveKeysOrder;
-
+    
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+    
     /**
      * Default constructor.
      */
@@ -58,6 +61,8 @@ public class QueryEntityEx extends QueryEntity {
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
 
             preserveKeysOrder = other0.preserveKeysOrder;
+            
+            fillAbsentPKsWithDefaults = other0.fillAbsentPKsWithDefaults;
         }
     }
 
@@ -87,6 +92,23 @@ public class QueryEntityEx extends QueryEntity {
     public QueryEntity setPreserveKeysOrder(boolean preserveKeysOrder) {
         this.preserveKeysOrder = preserveKeysOrder;
 
+        return this;
+    }
+    
+    /**
+     * @return {@code true} if absent PK parts should be filled with defaults, {@code false} otherwise.
+     */
+    public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+    
+    /**
+     * @param fillAbsentPKsWithDefaults Whether absent PK parts should be filled with defaults or not.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity fillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+        
         return this;
     }
 

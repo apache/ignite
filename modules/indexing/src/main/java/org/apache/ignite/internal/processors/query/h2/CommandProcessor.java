@@ -1238,6 +1238,9 @@ public class CommandProcessor {
         if (!F.isEmpty(notNullFields))
             res.setNotNullFields(notNullFields);
 
+        // Fill key object with all fields for new tables.
+        res.fillAbsentPKsWithDefaults(true);
+    
         return res;
     }
 
