@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
@@ -42,6 +45,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 
 /**
  * Keep information about all running queries.
@@ -61,6 +66,9 @@ public class RunningQueryManager {
 
     /** */
     public static final String SQL_QRY_HIST_VIEW_DESC = "SQL queries history.";
+
+    /** Undefined query ID value. */
+    public static final long UNDEFINED_QUERY_ID = 0L;
 
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
@@ -89,12 +97,20 @@ public class RunningQueryManager {
      */
     private final AtomicLongMetric canceledQrsCnt;
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /** Current running query info. */
+    private final ThreadLocal<GridRunningQueryInfo> currQryInfo = new ThreadLocal<>();
+
     /**
      * Constructor.
      *
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
+        this.ctx = ctx;
+
         localNodeId = ctx.localNodeId();
 
         histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
@@ -124,33 +140,44 @@ public class RunningQueryManager {
     }
 
     /**
-     * Register running query.
+     * Registers running query and returns an id associated with the query.
      *
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
-     * @return Id of registered query.
+     * @return Id of registered query. Id is a positive number.
      */
-    public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
-        @Nullable GridQueryCancel cancel) {
+    public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
 
-        GridRunningQueryInfo run = new GridRunningQueryInfo(
+        if (qryInitiatorId == null)
+            qryInitiatorId = SqlFieldsQuery.threadedQueryInitiatorId();
+
+        final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
             localNodeId,
             qry,
             qryType,
             schemaName,
             System.currentTimeMillis(),
+            ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
-            loc
+            loc,
+            qryInitiatorId
         );
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
 
+        if (ctx.performanceStatistics().enabled())
+            currQryInfo.set(run);
+
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
+
+        run.span().addTag(SQL_QRY_ID, run::globalQueryId);
 
         return qryId;
     }
@@ -161,8 +188,8 @@ public class RunningQueryManager {
      * @param qryId id of the query, which is given by {@link #register register} method.
      * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
-    public void unregister(Long qryId, @Nullable Throwable failReason) {
-        if (qryId == null)
+    public void unregister(long qryId, @Nullable Throwable failReason) {
+        if (qryId <= 0)
             return;
 
         boolean failed = failReason != null;
@@ -173,23 +200,53 @@ public class RunningQueryManager {
         if (qry == null)
             return;
 
-        //We need to collect query history and metrics only for SQL queries.
-        if (isSqlQuery(qry)) {
-            qry.runningFuture().onDone();
+        Span qrySpan = qry.span();
 
-            qryHistTracker.collectHistory(qry, failed);
+        try {
+            if (failed)
+                qrySpan.addTag(ERROR, failReason::getMessage);
 
-            if (!failed)
-                successQrsCnt.increment();
-            else {
-                failedQrsCnt.increment();
+            //We need to collect query history and metrics only for SQL queries.
+            if (isSqlQuery(qry)) {
+                qry.runningFuture().onDone();
 
-                // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                // right when query failed due to some other reason.
-                if (QueryUtils.wasCancelled(failReason))
-                    canceledQrsCnt.increment();
+                qryHistTracker.collectHistory(qry, failed);
+
+                if (!failed)
+                    successQrsCnt.increment();
+                else {
+                    failedQrsCnt.increment();
+
+                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                    // right when query failed due to some other reason.
+                    if (QueryUtils.wasCancelled(failReason))
+                        canceledQrsCnt.increment();
+                }
             }
+
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                ctx.performanceStatistics().query(
+                    qry.queryType(),
+                    qry.query(),
+                    qry.requestId(),
+                    qry.startTime(),
+                    System.nanoTime() - qry.startTimeNanos(),
+                    !failed);
+            }
+        }
+        finally {
+            qrySpan.end();
+        }
+    }
+
+    /** @param reqId Request ID of query to track. */
+    public void trackRequestId(long reqId) {
+        if (ctx.performanceStatistics().enabled()) {
+            GridRunningQueryInfo info = currQryInfo.get();
+
+            if (info != null)
+                info.requestId(reqId);
         }
     }
 
@@ -243,7 +300,7 @@ public class RunningQueryManager {
      *
      * @param qryId Query id.
      */
-    public void cancel(Long qryId) {
+    public void cancel(long qryId) {
         GridRunningQueryInfo run = runs.get(qryId);
 
         if (run != null)
@@ -282,10 +339,11 @@ public class RunningQueryManager {
 
     /**
      * Gets info about running query by their id.
-     * @param qryId
+     *
+     * @param qryId Query Id.
      * @return Running query info or {@code null} in case no running query for given id.
      */
-    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
+    public @Nullable GridRunningQueryInfo runningQueryInfo(long qryId) {
         return runs.get(qryId);
     }
 

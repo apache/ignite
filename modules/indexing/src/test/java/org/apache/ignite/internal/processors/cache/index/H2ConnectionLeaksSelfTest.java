@@ -196,7 +196,7 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         sql(grid(0), "CREATE TABLE TEST_F(ID INT PRIMARY KEY, TS TIMESTAMP)");
 
-        sql(grid(0),"INSERT INTO TEST_F VALUES (?, CURRENT_TIMESTAMP())", 0);
+        sql(grid(0), "INSERT INTO TEST_F VALUES (?, CURRENT_TIMESTAMP())", 0);
 
         checkThereAreNotUsedConnections();
 

@@ -23,12 +23,14 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
@@ -50,6 +52,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
+import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
@@ -69,12 +72,15 @@ import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGl
  * @see ComputeMXBean
  * @see TransactionsMXBean
  */
-public class KillCommand implements Command<Object> {
+public class KillCommand extends AbstractCommand<Object> {
     /** Command argument. */
     private Object taskArgs;
 
     /** Task name. */
     private String taskName;
+
+    /** Node id. */
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
@@ -83,7 +89,7 @@ public class KillCommand implements Command<Object> {
                 client,
                 taskName,
                 taskArgs,
-                null,
+                nodeId,
                 clientCfg
             );
         }
@@ -118,12 +124,16 @@ public class KillCommand implements Command<Object> {
 
                 taskName = VisorComputeCancelSessionTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SERVICE:
                 taskArgs = new VisorCancelServiceTaskArg(argIter.nextArg("Expected service name."));
 
                 taskName = VisorCancelServiceTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -134,6 +144,8 @@ public class KillCommand implements Command<Object> {
                     null, null);
 
                 taskName = VisorTxTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -146,6 +158,8 @@ public class KillCommand implements Command<Object> {
                 taskArgs = new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2());
 
                 taskName = VisorQueryCancelOnInitiatorTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -162,6 +176,8 @@ public class KillCommand implements Command<Object> {
 
                 taskName = VisorScanQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case CONTINUOUS:
@@ -171,12 +187,25 @@ public class KillCommand implements Command<Object> {
 
                 taskName = VisorContinuousQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SNAPSHOT:
                 taskArgs = argIter.nextArg("Expected snapshot name.");
 
                 taskName = VisorSnapshotCancelTask.class.getName();
+
+                nodeId = null;
+
+                break;
+
+            case CONSISTENCY:
+                taskName = VisorConsistencyCancelTask.class.getName();
+
+                taskArgs = null;
+
+                nodeId = BROADCAST_UUID;
 
                 break;
 
@@ -187,16 +216,16 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
+        usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
             COMPUTE.toString(), "session_id");
 
-        Command.usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
+        usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
             SERVICE.toString(), "name");
 
-        Command.usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
+        usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
             TRANSACTION.toString(), "xid");
 
-        Command.usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
+        usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
             SQL.toString(), "query_id");
 
         Map<String, String> params = new HashMap<>();
@@ -205,17 +234,17 @@ public class KillCommand implements Command<Object> {
         params.put("cache_name", "Cache name.");
         params.put("query_id", "Query identifier.");
 
-        Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
-            params, SCAN.toString(),"origin_node_id", "cache_name", "query_id");
+        usage(log, "Kill scan query by node id, cache name and query id:", KILL,
+            params, SCAN.toString(), "origin_node_id", "cache_name", "query_id");
 
         params.clear();
         params.put("origin_node_id", "Originating node id.");
         params.put("routine_id", "Routine identifier.");
 
-        Command.usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
+        usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
 
-        Command.usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
+        usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
             SNAPSHOT.toString(), "snapshot_name");
     }
 

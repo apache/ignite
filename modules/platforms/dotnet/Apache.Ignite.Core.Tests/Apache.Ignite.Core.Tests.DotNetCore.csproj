@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
 
     <StartupObject>Apache.Ignite.Core.Tests.TestRunner</StartupObject>
 
@@ -11,6 +12,7 @@
 
     <OutputType>Exe</OutputType>
     <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -31,8 +33,8 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
-    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj" />
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" />
   </ItemGroup>
 
@@ -41,7 +43,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Deployment\**" />
-    <None Remove="Examples\**" />
 
     <None Update="Config\ignite-halthandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\native-client-test-cache-affinity.xml" CopyToOutputDirectory="PreserveNewest" />
@@ -89,22 +90,36 @@
     <None Update="Config\Cache\Store\cache-store-session-shared-factory.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function2.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-attribute-node-filter.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Compute\Forked\**" />
-
+    <None Update="Config\query-entity-metadata-registration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\binary-custom-name-mapper.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\binary-custom-name-mapper2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Examples\ExpectedOutput\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\Client\server-with-ssl-no-client-auth.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Remove="Deployment\**" />
-    <Compile Remove="Examples\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Deployment\**" />
-    <EmbeddedResource Remove="Examples\**" />
     <EmbeddedResource Remove="Compute\Forked\**" />
   </ItemGroup>
 

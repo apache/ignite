@@ -24,7 +24,9 @@ namespace Apache.Ignite.Core.Client
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -113,6 +115,14 @@ namespace Apache.Ignite.Core.Client
         IBinary GetBinary();
 
         /// <summary>
+        /// Gets Ignite transactions facade <see cref="ITransactionsClient"/>.
+        /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+        /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
+        /// <para /> Should not be used with async calls.
+        /// </summary>
+        ITransactionsClient GetTransactions();
+
+        /// <summary>
         /// Gets the configuration.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
@@ -147,5 +157,37 @@ namespace Apache.Ignite.Core.Client
         /// Gets the services API.
         /// </summary>
         IServicesClient GetServices();
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions options);
+
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions<TK, TV> options);
     }
 }

@@ -79,6 +79,11 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasSubQries;
 
+    /** Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient boolean treatPartitionedAsReplicated;
+
     /**
      * For {@link Message}.
      */
@@ -359,12 +364,34 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @param hasSubQries Flag indicating that query contains sub-queries.
+     * @param hasSubQries Flag indicating that the query contains sub-queries.
      *
      * @return {@code this}.
      */
     public GridCacheSqlQuery hasSubQueries(boolean hasSubQries) {
         this.hasSubQries = hasSubQries;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} if the query contains an OUTER JOIN from REPLICATED to PARTITIONED, or
+     * outer query over REPLICATED cache has a subquery over PARTIITIONED.
+     */
+    public boolean treatReplicatedAsPartitioned() {
+        return treatPartitionedAsReplicated;
+    }
+
+    /**
+     * Set flag to {@code true} when query contains an OUTER JOIN from REPLICATED to PARTITIONED, or
+     * outer query over REPLICATED cache has a subquery over PARTIITIONED.
+     *
+     * @param trearPartitionedAsReplicated Flag indicating that the replicated cache in outer query must be treat
+     * as partitioned.
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery treatReplicatedAsPartitioned(boolean trearPartitionedAsReplicated) {
+        this.treatPartitionedAsReplicated = trearPartitionedAsReplicated;
 
         return this;
     }

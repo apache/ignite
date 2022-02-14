@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     /// Tests client cluster discovery with baseline topology.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ClientClusterDiscoveryTestsBaselineTopology : ClientClusterDiscoveryTests
     {
         /** <inheritdoc /> */

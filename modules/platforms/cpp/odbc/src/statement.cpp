@@ -46,10 +46,10 @@ namespace ignite
             connection(parent),
             columnBindings(),
             currentQuery(),
-            rowBindType(SQL_BIND_BY_COLUMN),
             rowsFetched(0),
             rowStatuses(0),
             columnBindOffset(0),
+            rowArraySize(1),
             parameters(),
             timeout(0)
         {
@@ -137,11 +137,7 @@ namespace ignite
             const meta::ColumnMetaVector* meta = GetMeta();
 
             if (!meta)
-            {
-                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
-
                 return SqlResult::AI_ERROR;
-            }
 
             res = static_cast<int32_t>(meta->size());
 
@@ -209,7 +205,7 @@ namespace ignite
             if (!buffer && !resLen)
             {
                 AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER,
-                    "ParameterValuePtr and StrLen_or_IndPtr are both null pointers.");
+                    "ParameterValuePtr and StrLen_or_IndPtr are both null pointers");
 
                 return SqlResult::AI_ERROR;
             }
@@ -228,7 +224,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
         }
 
-        SqlResult::Type Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        SqlResult::Type Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER)
         {
             switch (attr)
             {
@@ -238,10 +234,27 @@ namespace ignite
 
                     LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
-                    if (val != 1)
+                    if (val < 1)
+                    {
+                        AddStatusRecord(SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE,
+                            "Array size value can not be less than 1");
+
+                        return SqlResult::AI_ERROR;
+                    }
+
+                    rowArraySize = val;
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_BIND_TYPE:
+                {
+                    SqlUlen rowBindType = reinterpret_cast<SqlUlen>(value);
+
+                    if (rowBindType != SQL_BIND_BY_COLUMN)
                     {
                         AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                            "Fetching of more than one row by call is not supported.");
+                            "Only binding by column is currently supported");
 
                         return SqlResult::AI_ERROR;
                     }
@@ -249,23 +262,31 @@ namespace ignite
                     break;
                 }
 
-                case SQL_ATTR_ROW_BIND_TYPE:
-                {
-                    rowBindType = reinterpret_cast<SqlUlen>(value);
-
-                    break;
-                }
-
                 case SQL_ATTR_ROWS_FETCHED_PTR:
                 {
-                    SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
+                    SetRowsFetchedPtr(reinterpret_cast<SQLINTEGER*>(value));
 
                     break;
                 }
 
                 case SQL_ATTR_ROW_STATUS_PTR:
                 {
-                    SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+                    SetRowStatusesPtr(reinterpret_cast<SQLUSMALLINT*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_BIND_TYPE:
+                {
+                    SqlUlen paramBindType = reinterpret_cast<SqlUlen>(value);
+
+                    if (paramBindType != SQL_PARAM_BIND_BY_COLUMN)
+                    {
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Only binding by column is currently supported");
+
+                        return SqlResult::AI_ERROR;
+                    }
 
                     break;
                 }
@@ -354,11 +375,11 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
         }
 
-        SqlResult::Type Statement::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        SqlResult::Type Statement::InternalGetAttribute(int attr, void* buf, SQLINTEGER, SQLINTEGER* valueLen)
         {
             if (!buf)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
+                AddStatusRecord("Data buffer is NULL.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -384,7 +405,7 @@ namespace ignite
                 {
                     SqlUlen* val = reinterpret_cast<SqlUlen*>(buf);
 
-                    *val = rowBindType;
+                    *val = SQL_BIND_BY_COLUMN;
 
                     break;
                 }
@@ -421,6 +442,15 @@ namespace ignite
 
                     if (valueLen)
                         *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_BIND_TYPE:
+                {
+                    SqlUlen* val = reinterpret_cast<SqlUlen*>(buf);
+
+                    *val = SQL_PARAM_BIND_BY_COLUMN;
 
                     break;
                 }
@@ -889,7 +919,7 @@ namespace ignite
             {
                 case SQL_DROP:
                 {
-                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Deprecated, call SQLFreeHandle instead");
+                    AddStatusRecord("Deprecated, call SQLFreeHandle instead");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -960,7 +990,9 @@ namespace ignite
 
             if (orientation != SQL_FETCH_NEXT)
             {
-                AddStatusRecord(SqlState::SHY106_FETCH_TYPE_OUT_OF_RANGE, "The value specified for the argument FetchOrientation was not SQL_FETCH_NEXT.");
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Only SQL_FETCH_NEXT FetchOrientation type is supported");
+
                 return SqlResult::AI_ERROR;
             }
 
@@ -979,8 +1011,7 @@ namespace ignite
 
             if (!currentQuery.get())
             {
-                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
-                    "Cursor is not in the open state.");
+                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE, "Cursor is not in the open state");
 
                 return SqlResult::AI_ERROR;
             }
@@ -991,26 +1022,44 @@ namespace ignite
                     it->second.SetByteOffset(*columnBindOffset);
             }
 
-            SqlResult::Type res = currentQuery->FetchNextRow(columnBindings);
+            SQLINTEGER fetched = 0;
+            SQLINTEGER errors = 0;
 
-            if (res == SqlResult::AI_SUCCESS)
+            for (SqlUlen i = 0; i < rowArraySize; ++i)
             {
-                if (rowsFetched)
-                    *rowsFetched = 1;
+                for (app::ColumnBindingMap::iterator it = columnBindings.begin(); it != columnBindings.end(); ++it)
+                    it->second.SetElementOffset(i);
+
+                SqlResult::Type res = currentQuery->FetchNextRow(columnBindings);
+
+                if (res == SqlResult::AI_SUCCESS || res == SqlResult::AI_SUCCESS_WITH_INFO)
+                    ++fetched;
+                else if (res != SqlResult::AI_NO_DATA)
+                    ++errors;
 
                 if (rowStatuses)
-                    rowStatuses[0] = SQL_ROW_SUCCESS;
+                    rowStatuses[i] = SqlResultToRowResult(res);
             }
 
-            return res;
+            if (rowsFetched)
+                *rowsFetched = fetched < 0 ? static_cast<SQLINTEGER>(rowArraySize) : fetched;
+
+            if (fetched > 0)
+                return errors == 0 ? SqlResult::AI_SUCCESS : SqlResult::AI_SUCCESS_WITH_INFO;
+
+            return errors == 0 ? SqlResult::AI_NO_DATA : SqlResult::AI_ERROR;
         }
 
-        const meta::ColumnMetaVector* Statement::GetMeta() const
+        const meta::ColumnMetaVector* Statement::GetMeta()
         {
             if (!currentQuery.get())
-                return 0;
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-            return &currentQuery->GetMeta();
+                return 0;
+            }
+
+            return currentQuery->GetMeta();
         }
 
         bool Statement::DataAvailable() const
@@ -1042,20 +1091,17 @@ namespace ignite
                 strbuf, buflen, reslen, numbuf));
         }
 
-        SqlResult::Type Statement::InternalGetColumnAttribute(uint16_t colIdx,
-            uint16_t attrId, char* strbuf, int16_t buflen, int16_t* reslen,
-            SqlLen* numbuf)
+        SqlResult::Type Statement::InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
+            int16_t buflen, int16_t* reslen, SqlLen* numbuf)
         {
             const meta::ColumnMetaVector *meta = GetMeta();
 
+            LOG_MSG("Collumn ID: " << colIdx << ", Attribute ID: " << attrId);
+
             if (!meta)
-            {
-                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
-
                 return SqlResult::AI_ERROR;
-            }
 
-            if (colIdx > meta->size() + 1 || colIdx < 1)
+            if (colIdx > meta->size() || colIdx < 1)
             {
                 AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Column index is out of range.", 0, colIdx);
@@ -1119,22 +1165,22 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        void Statement::SetRowsFetchedPtr(size_t* ptr)
+        void Statement::SetRowsFetchedPtr(SQLINTEGER* ptr)
         {
             rowsFetched = ptr;
         }
 
-        size_t* Statement::GetRowsFetchedPtr()
+        SQLINTEGER* Statement::GetRowsFetchedPtr()
         {
             return rowsFetched;
         }
 
-        void Statement::SetRowStatusesPtr(uint16_t* ptr)
+        void Statement::SetRowStatusesPtr(SQLUSMALLINT* ptr)
         {
             rowStatuses = ptr;
         }
 
-        uint16_t * Statement::GetRowStatusesPtr()
+        SQLUSMALLINT * Statement::GetRowStatusesPtr()
         {
             return rowStatuses;
         }
@@ -1309,7 +1355,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -1331,6 +1377,24 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
+        }
+
+        uint16_t Statement::SqlResultToRowResult(SqlResult::Type value)
+        {
+            switch (value)
+            {
+                case SqlResult::AI_NO_DATA:
+                    return SQL_ROW_NOROW;
+
+                case SqlResult::AI_SUCCESS:
+                    return SQL_ROW_SUCCESS;
+
+                case SqlResult::AI_SUCCESS_WITH_INFO:
+                    return SQL_ROW_SUCCESS_WITH_INFO;
+
+                default:
+                    return SQL_ROW_ERROR;
+            }
         }
     }
 }

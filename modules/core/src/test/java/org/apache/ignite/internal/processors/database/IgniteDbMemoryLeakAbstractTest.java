@@ -254,7 +254,10 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         long pagesAllowed = pagesMax();
 
-        assertTrue("Allocated pages count is more than expected [allowed=" + pagesAllowed + ", actual=" + pagesActual + "]", pagesActual < pagesAllowed);
+        assertTrue(
+            "Allocated pages count is more than expected [allowed=" + pagesAllowed + ", actual=" + pagesActual + "]",
+            pagesActual < pagesAllowed
+        );
 
         loadedPages = pagesActual;
     }

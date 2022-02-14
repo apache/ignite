@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 public class IgniteCacheFutureImplTest extends IgniteFutureImplTest {
     /** {@inheritDoc} */
     @Override protected <V> IgniteFutureImpl<V> createFuture(IgniteInternalFuture<V> fut) {
-        return new IgniteCacheFutureImpl<>(fut);
+        return new IgniteCacheFutureImpl<>(fut, Runnable::run);
     }
 
     /** {@inheritDoc} */

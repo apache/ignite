@@ -622,7 +622,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key in " +
-                "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
+                "(select abs(_key) from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
@@ -1034,7 +1034,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, () -> {
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery("select * from Integer where _key in " +
-                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()")
+                    "(select abs(_key) from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()")
                     .setPartitions(partitions)
             ).getAll();
 
@@ -1063,7 +1063,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * no queries are executed at the moment; {@code false} otherwise.
      */
     private boolean queryPoolIsEmpty(IgniteEx node) {
-        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().getQueryExecutorService();
+        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().pools().getQueryExecutorService();
 
         return qryPool.getQueue().isEmpty() && qryPool.getActiveCount() == 0;
     }

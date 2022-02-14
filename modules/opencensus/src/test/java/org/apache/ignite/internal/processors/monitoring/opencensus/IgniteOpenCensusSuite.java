@@ -36,7 +36,9 @@ import org.junit.runners.Suite;
     OpenCensusTracingConfigurationGetAllTest.class,
     OpenCensusTracingConfigurationResetTest.class,
     OpenCensusTracingConfigurationResetAllTest.class,
-    OpenCensusDiscoveryTracingTest.class
+    OpenCensusDiscoveryTracingTest.class,
+    OpenCensusSqlJdbcTracingTest.class,
+    OpenCensusSqlNativeTracingTest.class
 })
 public class IgniteOpenCensusSuite {
 }

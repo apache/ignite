@@ -239,11 +239,14 @@ namespace ignite
 
                 /** Type manager. */
                 BinaryTypeManager* metaMgr;
+
+                /** If object is in binary wrapper. */
+                bool binary;
             };
 
             /* Specialization */
             template<>
-            BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const;
+            IGNITE_IMPORT_EXPORT BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const;
         }
     }
 }

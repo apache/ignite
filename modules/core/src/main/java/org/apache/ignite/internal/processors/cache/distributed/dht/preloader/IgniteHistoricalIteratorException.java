@@ -45,4 +45,13 @@ public class IgniteHistoricalIteratorException extends IgniteException {
     public IgniteHistoricalIteratorException(String msg, Throwable cause) {
         super(msg, cause);
     }
+
+    /**
+     * Creates a new exception with the specified message.
+     *
+     * @param msg Detail message.
+     */
+    public IgniteHistoricalIteratorException(String msg) {
+        super(msg);
+    }
 }

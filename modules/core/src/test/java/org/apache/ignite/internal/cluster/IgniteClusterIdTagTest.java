@@ -237,7 +237,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
         cl1.cluster().tag(CLIENT_CUSTOM_TAG_1);
 
         //tag set from client is applied on other client nodes
-        assertEquals(CLIENT_CUSTOM_TAG_1, cl0.cluster().tag());
+        assertTrue(GridTestUtils.waitForCondition(() -> CLIENT_CUSTOM_TAG_1.equals(cl0.cluster().tag()), 5_000));
     }
 
     /**

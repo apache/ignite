@@ -32,7 +32,7 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// <summary>
         /// Gets Ignite config.
         /// </summary>
-        public static IgniteConfiguration GetIgniteConfiguration()
+        public static IgniteConfiguration GetIgniteConfiguration(bool client = false)
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
             Environment.SetEnvironmentVariable("IGNITE_NET_SUPPRESS_JAVA_ILLEGAL_ACCESS_WARNINGS", "true");
@@ -60,7 +60,9 @@ namespace Apache.Ignite.BenchmarkDotNet
                     {
                         MaxActiveComputeTasksPerConnection = 100
                     }
-                }
+                },
+                AutoGenerateIgniteInstanceName = true,
+                ClientMode = client
             };
         }
 
@@ -69,7 +71,10 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// </summary>
         public static IgniteClientConfiguration GetIgniteClientConfiguration()
         {
-            return new IgniteClientConfiguration("127.0.0.1");
+            return new IgniteClientConfiguration("127.0.0.1")
+            {
+                EnablePartitionAwareness = true
+            };
         }
     }
 }

@@ -39,6 +39,9 @@ namespace ignite
         class IgniteClientConfiguration
         {
         public:
+            /** Connection operation timeout in milliseconds. */
+            enum { DEFAULT_CONNECTION_TIMEOUT = 20000 };
+
             /**
              * Default constructor.
              *
@@ -46,7 +49,9 @@ namespace ignite
              */
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
-                partitionAwareness(false)
+                partitionAwareness(true),
+                connectionsLimit(0),
+                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
             {
                 // No-op.
             }
@@ -69,7 +74,7 @@ namespace ignite
              *
              * For example: "localhost,example.com:12345,127.0.0.1:10800..10900,192.168.3.80:5893".
              *
-             *  @param endPoints Addressess of the remote servers to connect.
+             *  @param endPoints Addresses of the remote servers to connect.
              */
             void SetEndPoints(const std::string& endPoints)
             {
@@ -230,6 +235,65 @@ namespace ignite
                 return partitionAwareness;
             }
 
+            /**
+             * Get connection limit.
+             *
+             * By default, C++ thin client establishes a connection to every server node listed in @c endPoints. Use
+             * this setting to limit the number of active connections. This reduces initial connection time and the
+             * resource usage, but can have a negative effect on cache operation performance, especially if partition
+             * awareness is used.
+             *
+             * Zero value means that number of active connections is not limited.
+             *
+             * The default value is zero.
+             *
+             * @return Active connection limit.
+             */
+            uint32_t GetConnectionsLimit() const
+            {
+                return connectionsLimit;
+            }
+
+            /**
+             * Set connection limit.
+             *
+             * @see GetConnectionsLimit for details.
+             *
+             * @param connectionsLimit Connections limit to set.
+             */
+            void SetConnectionsLimit(uint32_t limit)
+            {
+                connectionsLimit = limit;
+            }
+
+            /**
+             * Get connection timeout.
+             *
+             * Used as a timeout for any operation performed over TCP sockets.
+             *
+             * Zero value means that there is no timeout.
+             *
+             * The default value is @c DEFAULT_CONNECTION_TIMEOUT.
+             *
+             * @return Connection timeout in milliseconds.
+             */
+            int32_t GetConnectionTimeout() const
+            {
+                return connectionTimeout;
+            }
+
+            /**
+             * Set connection timeout.
+             *
+             * @see GetConnectionTimeout for details.
+             *
+             * @param timeout Connection timeout in milliseconds to set.
+             */
+            void SetConnectionTimeout(int32_t timeout)
+            {
+                connectionTimeout = timeout;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -254,6 +318,12 @@ namespace ignite
 
             /** Partition awareness. */
             bool partitionAwareness;
+
+            /** Active connections limit. */
+            uint32_t connectionsLimit;
+
+            /** Connection timeout in milliseconds. */
+            int32_t connectionTimeout;
         };
     }
 }

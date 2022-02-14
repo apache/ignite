@@ -106,7 +106,7 @@ public class IgniteDataIntegrityTests {
             checkIntegrity();
 
             fail();
-        } catch (IgniteDataIntegrityViolationException ex) {
+        } catch (IgniteDataIntegrityViolationException ignore) {
             //success
         }
     }
@@ -122,7 +122,7 @@ public class IgniteDataIntegrityTests {
             checkIntegrity();
 
             fail();
-        } catch (EOFException ex) {
+        } catch (EOFException ignore) {
             //success
         }
     }

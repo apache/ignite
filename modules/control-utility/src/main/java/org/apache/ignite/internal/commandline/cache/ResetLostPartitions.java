@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
@@ -28,13 +29,12 @@ import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheR
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.RESET_LOST_PARTITIONS;
 
 /**
  * Command for reseting lost partition state.
  */
-public class ResetLostPartitions implements Command<Set<String>> {
+public class ResetLostPartitions extends AbstractCommand<Set<String>> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";

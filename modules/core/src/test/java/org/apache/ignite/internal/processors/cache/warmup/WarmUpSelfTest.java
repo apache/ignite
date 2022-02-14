@@ -202,10 +202,10 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
      * Test checks that strategies are executed according to configuration.
      * <p>
      * Steps:
-     * 1)Starting a node with a single region that has been configured for {@link SimpleObservableWarmUp};
+     * 1)Starting a node with a single region that has been configured for {@link SimpleObservableWarmUpStrategy};
      * 2)Check that strategy was executed only for it region;
      * 3)Restarting node with default {@link SimpleObservableWarmUpConfiguration};
-     * 4)Checks that {@link SimpleObservableWarmUp} was only executed for persistent regions
+     * 4)Checks that {@link SimpleObservableWarmUpStrategy} was only executed for persistent regions
      * that were not configured by {@link SimpleObservableWarmUpConfiguration}.
      *
      * @throws Exception If failed.
@@ -226,7 +226,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         startGrid(cfg);
 
         WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
-        SimpleObservableWarmUp observableWarmUp = (SimpleObservableWarmUp)pluginProvider.strats.get(0);
+        SimpleObservableWarmUpStrategy observableWarmUp = (SimpleObservableWarmUpStrategy)pluginProvider.strats.get(0);
 
         assertEquals(1, observableWarmUp.visitRegions.size());
         assertTrue(observableWarmUp.visitRegions.containsKey("2"));
@@ -251,7 +251,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         startGrid(cfg);
 
         pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
-        observableWarmUp = (SimpleObservableWarmUp)pluginProvider.strats.get(0);
+        observableWarmUp = (SimpleObservableWarmUpStrategy)pluginProvider.strats.get(0);
 
         assertEquals(2, observableWarmUp.visitRegions.size());
 
@@ -349,7 +349,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<IgniteEx> stratFut = GridTestUtils.runAsync(() -> startGrid(cfg));
 
         WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
-        BlockedWarmUp strat = (BlockedWarmUp)pluginProvider.strats.get(1);
+        BlockedWarmUpStrategy strat = (BlockedWarmUpStrategy)pluginProvider.strats.get(1);
 
         strat.startLatch.await(1, TimeUnit.MINUTES);
 

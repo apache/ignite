@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +43,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,11 +98,18 @@ public class GridToStringBuilder {
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
+    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
+
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
+    public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
+
     /** Supplier for {@link #includeSensitive} with default behavior. */
     private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
         new AtomicReference<>(new Supplier<Boolean>() {
             /** Value of "IGNITE_TO_STRING_INCLUDE_SENSITIVE". */
-            final boolean INCLUDE_SENSITIVE = getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+            final boolean INCLUDE_SENSITIVE =
+                getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
             /** {@inheritDoc} */
             @Override public Boolean get() {
@@ -108,9 +117,12 @@ public class GridToStringBuilder {
             }
         });
 
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT */
+    public static final int DFLT_TO_STRING_COLLECTION_LIMIT = 100;
+
     /** */
     private static final int COLLECTION_LIMIT =
-        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /** Every thread has its own string builder. */
     private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
@@ -130,11 +142,8 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects = new ThreadLocal<IdentityHashMap<Object, EntryReference>>() {
-        @Override protected IdentityHashMap<Object, EntryReference> initialValue() {
-            return new IdentityHashMap<>();
-        }
-    };
+    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects =
+        ThreadLocal.withInitial(() -> new IdentityHashMap<>());
 
     /**
      * Implementation of the <a href=
@@ -893,9 +902,9 @@ public class GridToStringBuilder {
             if (cls.isArray())
                 addArray(buf, cls, val);
             else if (val instanceof Collection)
-                addCollection(buf, (Collection) val);
+                addCollection(buf, (Collection)val);
             else if (val instanceof Map)
-                addMap(buf, (Map<?, ?>) val);
+                addMap(buf, (Map<?, ?>)val);
             else
                 buf.a(val);
         }
@@ -918,7 +927,7 @@ public class GridToStringBuilder {
             return;
         }
 
-        Object[] arr = (Object[]) obj;
+        Object[] arr = (Object[])obj;
 
         buf.a(arrType.getSimpleName()).a(" [");
 
@@ -1669,6 +1678,52 @@ public class GridToStringBuilder {
     }
 
     /**
+     * Produces uniformed output of string with context properties
+     *
+     * @param str Output prefix or {@code null} if empty.
+     * @param triplets Triplets {@code {name, value, sencitivity}}.
+     * @return String presentation.
+     */
+    public static String toString(String str, Object... triplets) {
+        if (triplets.length % 3 != 0)
+            throw new IllegalArgumentException("Array length must be a multiple of 3");
+
+        int propCnt = triplets.length / 3;
+
+        Object[] propNames = new Object[propCnt];
+        Object[] propVals = new Object[propCnt];
+        boolean[] propSens = new boolean[propCnt];
+
+        for (int i = 0; i < propCnt; i++) {
+            Object name = triplets[i * 3];
+
+            assert name != null;
+
+            propNames[i] = name;
+
+            propVals[i] = triplets[i * 3 + 1];
+
+            Object sens = triplets[i * 3 + 2];
+
+            assert sens instanceof Boolean;
+
+            propSens[i] = (Boolean)sens;
+        }
+
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
+
+        try {
+            return toStringImpl(str, sb, propNames, propVals, propSens, propCnt);
+        }
+        finally {
+            if (newStr)
+                sb.reset();
+        }
+    }
+
+    /**
      * Creates an uniformed string presentation for the binary-like object.
      *
      * @param str Output prefix or {@code null} if empty.
@@ -1890,6 +1945,47 @@ public class GridToStringBuilder {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Creates a string from the elements separated using <code>separator</code>.
+     *
+     * @param list Elements.
+     * @param separator Separator.
+     * @param truncSuffix String suffix in case of string truncation.
+     * @param maxLen Max length of the output string at which it will be truncated (<code>0</code> - unlimited).
+     * @param maxCnt Max number of added elements at which the string will be truncated (<code>0</code> - unlimited).
+     * @return Result string.
+     */
+    public static <T> String joinToString(
+        @Nullable Iterable<T> list,
+        @Nullable String separator,
+        @Nullable String truncSuffix,
+        int maxLen,
+        int maxCnt
+    ) {
+        if (F.isEmpty(list))
+            return "";
+
+        SB buf = new SB();
+
+        for (Iterator<T> itr = list.iterator(); itr.hasNext(); ) {
+            T obj = itr.next();
+
+            if (separator != null && buf.length() > 0)
+                buf.a(separator);
+
+            buf.a(obj);
+
+            if (itr.hasNext() && (--maxCnt == 0 || maxLen > 0 && buf.length() >= maxLen)) {
+                if (truncSuffix != null)
+                    buf.a(truncSuffix);
+
+                break;
+            }
+        }
+
+        return buf.toString();
     }
 
     /**

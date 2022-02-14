@@ -135,9 +135,12 @@ public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 
+    /** @see IgniteSystemProperties#IGNITE_TTL_EXPIRE_BATCH_SIZE */
+    public static final int DFLT_TTL_EXPIRE_BATCH_SIZE = 5;
+
     /** Each cache operation removes this amount of entries with expired TTL. */
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, 5);
+        IgniteSystemProperties.IGNITE_TTL_EXPIRE_BATCH_SIZE, DFLT_TTL_EXPIRE_BATCH_SIZE);
 
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
@@ -176,6 +179,9 @@ public class GridCacheUtils {
 
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
+
+    /** System cache group id. */
+    public static final int UTILITY_CACHE_GROUP_ID = cacheGroupId(UTILITY_CACHE_NAME, null);
 
     /** Reserved cache names */
     public static final String[] RESERVED_NAMES = new String[] {
@@ -840,6 +846,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param tx Transaction.
+     * @return {@code True} if transaction is on primary node.
+     */
+    public static boolean txOnPrimary(IgniteInternalTx tx) {
+        if (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped())
+            return true;
+
+        return tx.dht() && tx.local();
+    }
+
+    /**
      * Alias for {@link #txString(IgniteInternalTx)}.
      */
     public static String txDump(@Nullable IgniteInternalTx tx) {
@@ -1049,22 +1066,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache key object has overridden equals and hashCode methods.
-     * Will also check that a BinaryObject has a hash code set.
-     *
-     * @param key Key.
-     * @throws IllegalArgumentException If equals or hashCode is not implemented.
-     */
-    public static void validateCacheKey(@Nullable Object key) {
-        if (key == null)
-            return;
-
-        if (!U.overridesEqualsAndHashCode(key))
-            throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
-                key.getClass().getName());
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
@@ -1106,6 +1107,22 @@ public class GridCacheUtils {
         assert cacheName != null;
 
         return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(CacheConfiguration<?, ?> ccfg) {
+        return CU.cacheId(cacheOrGroupName(ccfg));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? ccfg.getName() : ccfg.getGroupName();
     }
 
     /**
@@ -1162,21 +1179,6 @@ public class GridCacheUtils {
 
             tx.commit();
         }
-    }
-
-    /**
-     * Gets subject ID by transaction.
-     *
-     * @param tx Transaction.
-     * @return Subject ID.
-     */
-    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
-        if (tx == null)
-            return ctx.localNodeId();
-
-        UUID subjId = tx.subjectId();
-
-        return subjId != null ? subjId : tx.originatingNodeId();
     }
 
     /**
@@ -1841,7 +1843,8 @@ public class GridCacheUtils {
                             true,
                             topVer,
                             GridDrType.DR_BACKUP,
-                            true);
+                            true,
+                            false);
 
                         break;
                     }
@@ -2018,9 +2021,13 @@ public class GridCacheUtils {
      * @return Page size without encryption overhead.
      */
     public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        // If encryption is enabled, a space of one encryption block is reserved to store CRC and encryption key ID.
+        // If encryption is disabled, NoopEncryptionSPI with a zero encryption block size is used.
+        assert encSpi.blockSize() >= /* CRC */ 4 + /* Key ID */ 1 || encSpi.blockSize() == 0;
+
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize(); /* For CRC. */
+            - encSpi.blockSize(); /* For CRC and encryption key ID. */
     }
 
     /**

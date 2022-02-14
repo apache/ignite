@@ -224,7 +224,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testVal = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
             return val.equals(testVal.val);
 

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
@@ -62,6 +63,8 @@ import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -78,6 +81,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** History size for to track stale messages. */
     private static final int HIST_SIZE = 1000;
+
+    /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING */
+    public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
 
     /** ID history for discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<T2<UUID, Boolean>> discoMsgIdHist =
@@ -151,7 +157,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             ioLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof WalStateAckMessage) {
-                        WalStateAckMessage msg0 = (WalStateAckMessage) msg;
+                        WalStateAckMessage msg0 = (WalStateAckMessage)msg;
 
                         msg0.senderNodeId(nodeId);
 
@@ -198,27 +204,29 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             // Process top pending requests.
             for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
-                WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+                CacheGroupContext cctx = cacheProcessor().cacheGroup(grpDesc.groupId());
 
-                if (msg != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Processing WAL state message on start: " + msg);
+                if (cctx != null)
+                    cctx.globalWalEnabled(grpDesc.walEnabled());
 
-                    boolean enabled = grpDesc.walEnabled();
+                for (WalStateProposeMessage msg : grpDesc.walChangeRequests()) {
+                    if (msg != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Processing WAL state message on start: " + msg);
 
-                    WalStateResult res;
+                        boolean enabled = grpDesc.walEnabled();
 
-                    if (F.eq(enabled, msg.enable()))
-                        res = new WalStateResult(msg, false);
-                    else {
-                        res = new WalStateResult(msg, true);
+                        WalStateResult res;
 
-                        grpDesc.walEnabled(!enabled);
+                        if (F.eq(enabled, msg.enable()))
+                            res = new WalStateResult(msg, false);
+                        else
+                            res = new WalStateResult(msg, true);
+
+                        initialRess.add(res);
+
+                        addResult(res);
                     }
-
-                    initialRess.add(res);
-
-                    addResult(res);
                 }
             }
         }
@@ -235,8 +243,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return;
 
         synchronized (mux) {
-            for (WalStateResult res : initialRess)
+            for (WalStateResult res : initialRess) {
                 onCompletedLocally(res);
+
+                if (res.changed()) {
+                    WalStateProposeMessage propMsg = res.message();
+
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(propMsg.groupId());
+
+                    if (grpCtx != null)
+                        grpCtx.globalWalEnabled(propMsg.enable());
+                }
+            }
 
             initialRess.clear();
         }
@@ -298,6 +316,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         cctx.tm().checkEmptyTransactions(() ->
             String.format("Cache WAL mode cannot be changed within lock or transaction " +
                     "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        LT.warn(log, "Cache WAL mode may only be changed on stable topology: see https://issues.apache.org/jira/browse/IGNITE-13976");
+        LT.warn(log, "  ^-- No nodes may leave or join cluster while changing WAL mode.");
+        LT.warn(log, "  ^-- All baseline nodes should be present.");
+        LT.warn(log, "  ^-- Failure to observe these conditions may cause cache to be stuck in inconsistent state.");
+        LT.warn(log, "  ^-- You may need to destroy affected cache if that happens.");
 
         return init(cacheNames, enabled);
     }
@@ -402,18 +426,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Change local WAL state before exchange is done. This method will disable WAL for groups without partitions
      * in OWNING state if such feature is enabled.
      *
-     * @param topVer Topology version.
      * @param fut Exchange future.
      */
-    public void disableGroupDurabilityForPreloading(AffinityTopologyVersion topVer, GridDhtPartitionsExchangeFuture fut) {
+    public void disableGroupDurabilityForPreloading(GridDhtPartitionsExchangeFuture fut) {
         if (fut.changedBaseline()
-            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
-            || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
+            && IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED)
+            || !IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, DFLT_DISABLE_WAL_DURING_REBALANCING))
             return;
 
         Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();
-
-        List<String> names = new ArrayList<>(grpContexts.size());
 
         for (CacheGroupContext grp : grpContexts) {
             if (grp.isLocal() || !grp.affinityNode() || !grp.persistenceEnabled() || !grp.localWalEnabled()
@@ -429,11 +450,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     cnt++;
             }
 
-            if (!locParts.isEmpty() && cnt == locParts.size()) {
+            if (!locParts.isEmpty() && cnt == locParts.size())
                 grp.localWalEnabled(false, true);
-
-                names.add(grp.cacheOrGroupName());
-            }
         }
     }
 

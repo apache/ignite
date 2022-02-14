@@ -27,6 +27,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.client.ClientTestRestServer.FIRST_SERVER_PORT;
+import static org.apache.ignite.internal.client.ClientTestRestServer.SERVERS_CNT;
+
 /**
  *
  */
@@ -35,7 +38,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     public static final String HOST = "127.0.0.1";
 
     /** */
-    private ClientTestRestServer[] srvs = new ClientTestRestServer[ClientTestRestServer.SERVERS_CNT];
+    private ClientTestRestServer[] srvs = new ClientTestRestServer[SERVERS_CNT];
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -71,7 +74,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
 
         Collection<String> addrs = new ArrayList<>();
 
-        for (int port = ClientTestRestServer.FIRST_SERVER_PORT; port < ClientTestRestServer.FIRST_SERVER_PORT + ClientTestRestServer.SERVERS_CNT; port++)
+        for (int port = FIRST_SERVER_PORT; port < FIRST_SERVER_PORT + SERVERS_CNT; port++)
             addrs.add(host + ":" + port);
 
         cfg.setServers(addrs);
@@ -86,14 +89,14 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoFailedReconnection() throws Exception {
-        for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
+        for (int i = 0; i < SERVERS_CNT; i++)
             runServer(i, false);
 
         try (GridClient client = client()) { // Here client opens initial connection and fetches topology.
             // Only first server in list should be contacted.
             assertEquals(1, srvs[0].getConnectCount());
 
-            for (int i = 1; i < ClientTestRestServer.SERVERS_CNT; i++)
+            for (int i = 1; i < SERVERS_CNT; i++)
                 assertEquals(0, srvs[i].getConnectCount());
 
             srvs[0].resetCounters();
@@ -119,7 +122,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
                 // Check which servers where contacted,
                 int connects = 0;
 
-                for (int srv = 0; srv < ClientTestRestServer.SERVERS_CNT; srv++) {
+                for (int srv = 0; srv < SERVERS_CNT; srv++) {
                     if (srvs[srv].getSuccessfulConnectCount() > 0) {
                         assertTrue("Failed server was contacted: " + srv, srv != failed);
 
@@ -144,7 +147,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorrectInit() throws Exception {
-        for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
+        for (int i = 0; i < SERVERS_CNT; i++)
             runServer(i, i == 0);
 
         try (GridClient ignored = client()) { // Here client opens initial connection and fetches topology.
@@ -152,7 +155,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 2; i++)
                 assertEquals("Iteration: " + i, 1, srvs[i].getConnectCount());
 
-            for (int i = 2; i < ClientTestRestServer.SERVERS_CNT; i++)
+            for (int i = 2; i < SERVERS_CNT; i++)
                 assertEquals(0, srvs[i].getConnectCount());
         }
     }
@@ -162,7 +165,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedInit() throws Exception {
-        for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
+        for (int i = 0; i < SERVERS_CNT; i++)
             runServer(i, true);
 
         GridClient c = client();
@@ -177,7 +180,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
                 X.hasCause(e, GridClientConnectionResetException.class, ClosedChannelException.class));
         }
 
-        for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
+        for (int i = 0; i < SERVERS_CNT; i++)
             // Connection manager does 3 attempts to get topology before failure.
             assertEquals("Server: " + i, 3, srvs[i].getConnectCount());
     }
@@ -232,7 +235,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private ClientTestRestServer runServer(int idx, boolean failOnConnect) throws IgniteCheckedException {
-        ClientTestRestServer srv = new ClientTestRestServer(ClientTestRestServer.FIRST_SERVER_PORT + idx, failOnConnect, log());
+        ClientTestRestServer srv = new ClientTestRestServer(FIRST_SERVER_PORT + idx, failOnConnect, log());
 
         srv.start();
 

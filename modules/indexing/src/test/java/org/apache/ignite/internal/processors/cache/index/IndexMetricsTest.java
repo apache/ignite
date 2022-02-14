@@ -31,11 +31,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
@@ -76,7 +76,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         cleanPersistenceDir();
 
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /**
@@ -137,7 +137,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         n = startGrid(0);
 
@@ -204,7 +204,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexing)n.context().query().getIndexing()).stopBlock(cacheName1);
+        ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
@@ -216,7 +216,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexing)n.context().query().getIndexing()).stopBlock(cacheName2);
+        ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName2);
 
         n.cache(cacheName2).indexReadyFuture().get(30_000);
 
@@ -265,7 +265,11 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @param cls Cache metrics MXBean implementation.
      * @return Cache metrics MXBean.
      */
-    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(IgniteEx n, String cacheName, Class<? super T> cls) {
+    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(
+        IgniteEx n,
+        String cacheName,
+        Class<? super T> cls
+    ) {
         requireNonNull(n);
         requireNonNull(cacheName);
         requireNonNull(cls);

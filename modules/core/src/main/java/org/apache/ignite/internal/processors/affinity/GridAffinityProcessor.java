@@ -413,6 +413,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         assert cacheName != null;
 
+        if (topVer == null)
+            topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
         IgniteInternalFuture<AffinityInfo> locFetchFut = localAffinityInfo(cacheName, topVer);
 
         if (locFetchFut != null)
@@ -432,10 +435,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<AffinityInfo> localAffinityInfo(
         String cacheName,
-        @Nullable AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        if (topVer == null)
-            topVer = ctx.cache().context().exchange().readyAffinityVersion();
+        assert topVer != null;
 
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
@@ -496,10 +498,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<AffinityInfo> remoteAffinityInfo(
         String cacheName,
-        @Nullable AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) {
-        if (topVer == null)
-            topVer = ctx.discovery().topologyVersionEx();
+        assert topVer != null;
 
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
@@ -613,24 +614,27 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut = ctx.closure()
             .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/, 0, false);
 
-        return fut.chain(new CX1<IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, AffinityInfo>() {
-            @Override public AffinityInfo applyx(IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut) throws IgniteCheckedException {
-                GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = fut.get();
+        return fut.chain(
+            new CX1<IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, AffinityInfo>() {
+                @Override public AffinityInfo applyx(
+                    IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut
+                ) throws IgniteCheckedException {
+                    GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = fut.get();
 
-                AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
-                AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
+                    AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
+                    AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
 
-                assert m != null;
+                    assert m != null;
 
-                // Bring to initial state.
-                f.reset();
-                m.reset();
+                    // Bring to initial state.
+                    f.reset();
+                    m.reset();
 
-                CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
+                    CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-                return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(ccfg));
-            }
-        });
+                    return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(ccfg));
+                }
+            });
     }
 
     /**

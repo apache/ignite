@@ -458,8 +458,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer,Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                 return evt.getValue() % 2 == 0;
             }
         });
@@ -562,6 +562,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
         }

@@ -186,7 +186,8 @@ public class LoadAllWarmUpStrategySelfTest extends GridCommonAbstractTest {
 
         dr_0 = n.context().cache().context().database().dataRegion("dr_0");
 
-        long warmUpPageCnt = loadDataInfoMap.get("dr_0").values().stream().flatMap(Collection::stream).mapToLong(LoadPartition::pages).sum();
+        long warmUpPageCnt =
+            loadDataInfoMap.get("dr_0").values().stream().flatMap(Collection::stream).mapToLong(LoadPartition::pages).sum();
         long maxLoadPages = minMemSize / dr_0.pageMemory().systemPageSize();
         long minLoadPages = maxLoadPages - 100;
         long loadPages = dr_0.pageMemory().loadedPages();

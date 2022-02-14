@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
@@ -164,7 +166,7 @@ public class IgniteConfiguration {
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default limit of threads used for rebalance. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
 
     /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
     public static final long DFLT_REBALANCE_TIMEOUT = 10000;
@@ -223,8 +225,11 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
-    /** Default relative working directory path for snapshot operation result. */
+    /** Default relative working directory path for snapshot operation result. The default directory is <tt>snapshots</tt>. */
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
+    /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
+    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default value for late affinity assignment flag. */
     @Deprecated
@@ -562,6 +567,9 @@ public class IgniteConfiguration {
      */
     private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
 
+    /** Total number of threads to perform snapshot operation. By default, the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used. */
+    private int snapshotThreadPoolSize = DFLT_SNAPSHOT_THREAD_POOL_SIZE;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -606,6 +614,9 @@ public class IgniteConfiguration {
 
     /** SQL configuration. */
     private SqlConfiguration sqlCfg = new SqlConfiguration();
+
+    /** Executor for async operations continuations. */
+    private Executor asyncContinuationExecutor;
 
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
@@ -718,6 +729,7 @@ public class IgniteConfiguration {
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         snapshotPath = cfg.getSnapshotPath();
+        snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -738,6 +750,7 @@ public class IgniteConfiguration {
         warmupClos = cfg.getWarmupClosure();
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
+        asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
     }
 
     /**
@@ -1671,10 +1684,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Compression level for internal network messages.
+     * Sets compression level for internal network messages.
+     * @param netCompressionLevel Compression level for internal network messages.
      * <p>
      * If not provided, then default value
-     * Deflater.BEST_SPEED is used.
+     * {@link Deflater#BEST_SPEED} is used.
      *
      */
     public void setNetworkCompressionLevel(int netCompressionLevel) {
@@ -1735,6 +1749,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
+
+        return this;
+    }
+
+    /**
+     * @return Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     */
+    public int getSnapshotThreadPoolSize() {
+        return snapshotThreadPoolSize;
+    }
+
+    /**
+     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
+        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
 
         return this;
     }
@@ -1924,6 +1957,7 @@ public class IgniteConfiguration {
      * Sets SSL context factory that will be used for creating a secure socket  layer.
      *
      * @param sslCtxFactory Ssl context factory.
+     * @return {@code this} for chaining.
      * @see SslContextFactory
      */
     public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
@@ -2169,7 +2203,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * IgniteConfiguration.getPublicThreadPoolSize() configuration property.
+     * {@link IgniteConfiguration#getPublicThreadPoolSize()} configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -2593,6 +2627,7 @@ public class IgniteConfiguration {
      * Sets cache configurations.
      *
      * @param cacheCfg Cache configurations.
+     * @return {@code this} for chaining.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public IgniteConfiguration setCacheConfiguration(CacheConfiguration... cacheCfg) {
@@ -2638,6 +2673,7 @@ public class IgniteConfiguration {
      * Cache key configuration defines
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
@@ -2658,6 +2694,7 @@ public class IgniteConfiguration {
      * Sets configuration for Ignite Binary objects.
      *
      * @param binaryCfg Binary configuration object.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -3149,7 +3186,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * @return By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
      * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
      * the value can be represented as an absolute snapshot working path.
      */
@@ -3158,9 +3195,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * @param snapshotPath By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
      * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
      * or the value can be represented as an absolute snapshot working path instead.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
         this.snapshotPath = snapshotPath;
@@ -3637,6 +3675,37 @@ public class IgniteConfiguration {
         A.ensure(sqlCfg != null, "SQL configuration cannot be null");
 
         this.sqlCfg = sqlCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets the continuation executor for cache async APIs.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor.
+     *
+     * @return Executor for async continuations.
+     */
+    public Executor getAsyncContinuationExecutor() {
+        return asyncContinuationExecutor;
+    }
+
+    /**
+     * Sets the continuation executor for cache async APIs.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor.
+     *
+     * @param asyncContinuationExecutor Executor for async continuations.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
 
         return this;
     }

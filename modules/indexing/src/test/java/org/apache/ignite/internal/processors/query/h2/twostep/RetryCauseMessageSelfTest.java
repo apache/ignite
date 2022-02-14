@@ -116,7 +116,10 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             personCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
+            assertTrue(
+                e.getMessage(),
+                e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) [")
+            );
 
             return;
         }
@@ -206,7 +209,9 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             orgCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state) ["));
+            assertTrue(
+                e.getMessage().contains("Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state) [")
+            );
 
             return;
         }

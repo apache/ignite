@@ -26,7 +26,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
 /**
  * Class represents statistics aggregator for regression estimation.
  */
-public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
+public class RegressionMetricStatsAggregator
+    implements MetricStatsAggregator<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
     /**
      * Serial version uid.
      */

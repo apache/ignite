@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 /**
  * Command to access cluster ID and tag functionality.
  */
-public class ClusterChangeTagCommand implements Command<String> {
+public class ClusterChangeTagCommand extends AbstractCommand<String> {
     /** */
     private static final String ERR_NO_NEW_TAG_PROVIDED = "Please provide new tag.";
 
@@ -83,7 +83,7 @@ public class ClusterChangeTagCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
+        usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
             "newTagValue", optional(CMD_AUTO_CONFIRMATION));
     }
 

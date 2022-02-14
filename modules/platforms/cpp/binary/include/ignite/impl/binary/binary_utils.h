@@ -250,7 +250,7 @@ namespace ignite
                  * @param pos Position in memory.
                  * @return Value.
                  */
-                static int32_t ReadInt32(interop::InteropMemory& mem, int32_t pos);
+                static int32_t ReadInt32(const interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to read signed 32-bit integer from memory.
@@ -260,7 +260,7 @@ namespace ignite
                  * @param pos Position in memory.
                  * @return Value.
                  */
-                static int32_t UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos);
+                static int32_t UnsafeReadInt32(const interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 32-bit integer to stream.

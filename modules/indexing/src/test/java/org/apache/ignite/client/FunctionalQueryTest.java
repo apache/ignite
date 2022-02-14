@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertNotNull;
 public class FunctionalQueryTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * Tested API:
@@ -152,7 +153,8 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testSql() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration()); Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
             client.query(
@@ -267,6 +269,32 @@ public class FunctionalQueryTest {
 
             assertEquals("Person 2", client.query(
                 new SqlFieldsQuery("SELECT name FROM PUBLIC.Person WHERE key = 2")).getAll().get(0).get(0));
+        }
+    }
+
+    /** Tests {@link SqlFieldsQuery} parameter validation. */
+    @Test
+    public void testSqlParameterValidation() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            // Set fields with reflection to bypass client-side validation and verify server-side check.
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Person");
+
+            Field updateBatchSize = SqlFieldsQuery.class.getDeclaredField("updateBatchSize");
+            updateBatchSize.setAccessible(true);
+            updateBatchSize.setInt(qry, -1);
+
+            GridTestUtils.assertThrowsAnyCause(null, () -> client.query(qry).getAll(),
+                    ClientException.class, "updateBatchSize cannot be lower than 1");
+
+            Field parts = SqlFieldsQuery.class.getDeclaredField("parts");
+            parts.setAccessible(true);
+            parts.set(qry, new int[] {-1});
+            qry.setUpdateBatchSize(2);
+
+            GridTestUtils.assertThrowsAnyCause(null, () -> client.query(qry).getAll(),
+                    ClientException.class, "Illegal partition");
         }
     }
 

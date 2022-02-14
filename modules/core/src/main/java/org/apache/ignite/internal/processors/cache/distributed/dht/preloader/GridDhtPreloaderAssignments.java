@@ -186,4 +186,20 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
             }
         }
     }
+
+    /**
+     * Gets a supplier node for a partition.
+     *
+     * @param part Partition.
+     * @return Supplier node for a partition or null if not found.
+     */
+    public ClusterNode supplier(int part) {
+        for (Entry<ClusterNode, GridDhtPartitionDemandMessage> entry : entrySet()) {
+            IgniteDhtDemandedPartitionsMap parts = entry.getValue().partitions();
+            if (parts.hasHistorical(part) || parts.hasFull(part))
+                return entry.getKey();
+        }
+
+        return null;
+    }
 }

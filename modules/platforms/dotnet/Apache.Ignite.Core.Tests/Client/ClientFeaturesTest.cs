@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Client
             foreach (ClientOp clientOp in Enum.GetValues(typeof(ClientOp)))
             {
                 var minVersion = ClientFeatures.GetMinVersion(clientOp);
-                
+
                 Assert.IsTrue(minVersion >= ClientSocket.Ver100);
                 Assert.IsTrue(minVersion <= ClientSocket.CurrentProtocolVersion);
             }
@@ -66,8 +66,13 @@ namespace Apache.Ignite.Core.Tests.Client
             var expected = Enum.GetValues(typeof(ClientBitmaskFeature))
                 .Cast<int>()
                 .Aggregate(0, (a, b) => a | (1 << b));
-            
-            Assert.AreEqual(expected, ClientFeatures.AllFeatures.Single());
+
+            var actual = ClientFeatures.AllFeatures
+                // ReSharper disable once RedundantCast
+                .Select((x, i) => (int) x << i * 8)
+                .Aggregate(0, (a, b) => a | b);
+
+            Assert.AreEqual(expected, actual);
         }
 
         /// <summary>
@@ -77,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestHasFeature()
         {
             var features = ClientFeatures.CurrentFeatures;
-            
+
             Assert.IsTrue(features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints));
             Assert.IsFalse(features.HasFeature((ClientBitmaskFeature) (-1)));
             Assert.IsFalse(features.HasFeature((ClientBitmaskFeature) 12345));

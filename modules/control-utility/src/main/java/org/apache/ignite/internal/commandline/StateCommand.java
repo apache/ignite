@@ -29,10 +29,10 @@ import static org.apache.ignite.internal.commandline.CommandList.STATE;
 /**
  * Command to print cluster state.
  */
-public class StateCommand implements Command<Void> {
+public class StateCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print current cluster state:", STATE);
+        usage(logger, "Print current cluster state:", STATE);
     }
 
     /**

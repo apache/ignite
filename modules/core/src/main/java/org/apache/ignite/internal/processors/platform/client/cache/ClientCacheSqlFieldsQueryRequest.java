@@ -48,6 +48,12 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
     /** Include field names flag. */
     private final boolean includeFieldNames;
 
+    /** Partitions. */
+    private final int[] partitions;
+
+    /** Update batch size. */
+    private final Integer updateBatchSize;
+
     /**
      * Ctor.
      *
@@ -71,12 +77,12 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         boolean lazy = reader.readBoolean();
-        int timeout = (int) reader.readLong();
+        int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
                 ? new SqlFieldsQuery(sql)
-                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+                : new SqlFieldsQueryEx(sql, stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
 
         qry.setSchema(schema)
                 .setPageSize(pageSize)
@@ -95,13 +101,38 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
             QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
 
         this.qry = qry;
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
+            // Set qry values in process method so that validation errors are reported to the client.
+            int partCnt = reader.readInt();
+
+            if (partCnt >= 0) {
+                partitions = new int[partCnt];
+
+                for (int i = 0; i < partCnt; i++)
+                    partitions[i] = reader.readInt();
+            } else
+                partitions = null;
+
+            updateBatchSize = reader.readInt();
+        } else {
+            partitions = null;
+            updateBatchSize = null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        qry.setPartitions(partitions);
+
+        if (updateBatchSize != null)
+            qry.setUpdateBatchSize(updateBatchSize);
+
         ctx.incrementCursors();
 
         try {
+            qry.setQueryInitiatorId(ctx.clientDescriptor());
+
             // If cacheId is provided, we must check the cache for existence.
             if (cacheId() != 0) {
                 DynamicCacheDescriptor desc = cacheDescriptor(ctx);

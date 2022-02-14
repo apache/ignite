@@ -317,7 +317,8 @@ public class IgniteNativeIoLib {
     /**
      * Synchronize a file's in-core state with storage device. See "man 2 fsync".
      *
-     * Similar to {@link #fsync(int)}, but does not flush modified metadata unless that metadata is needed in order to allow a subsequent data retrieval to be correctly handled
+     * Similar to {@link #fsync(int)}, but does not flush modified metadata unless that metadata is needed in order to allow a subsequent
+     * data retrieval to be correctly handled.
      *
      * @param fd file descriptor.
      * @return On success return zero. On error, -1 is returned, and errno is set appropriately.

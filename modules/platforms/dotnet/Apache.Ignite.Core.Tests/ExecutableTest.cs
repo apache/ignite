@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
@@ -428,11 +429,13 @@ namespace Apache.Ignite.Core.Tests
             // Put resulting DLLs to the random temp dir to make sure they are not resolved from current dir.
             var resPath = randomPath ? Path.Combine(_tempDir, outputPath) : outputPath;
 
+            var netstandard = Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
+
             var parameters = new CompilerParameters
             {
                 GenerateExecutable = false,
                 OutputAssembly = resPath,
-                ReferencedAssemblies = { typeof(IIgnite).Assembly.Location }
+                ReferencedAssemblies = { typeof(IIgnite).Assembly.Location, netstandard.Location }
             };
 
             var src = code ?? "namespace Apache.Ignite.Client.Test { public class Foo {}}";

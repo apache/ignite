@@ -445,7 +445,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionTopology remoteTop = remoteDht.topology();
 
-                        GridDhtPartitionMap pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).getLocalNodeId());
+                        GridDhtPartitionMap pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).localNodeId());
 
                         assertEquals(pMap.size(), locs.size());
 
@@ -569,7 +569,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         };
 
         t1.start();
-        t2.start();// Should cancel t1 rebalancing.
+        t2.start(); // Should cancel t1 rebalancing.
         t3.start();
 
         t1.join();

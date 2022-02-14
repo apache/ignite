@@ -1195,6 +1195,14 @@ namespace ignite
                 return ApplyOffset(reslen, sizeof(*reslen));
             }
 
+
+            template<typename T, typename V>
+            inline V LoadPrimitive(const void* data) {
+                T res = T();
+                std::memcpy(&res, data, sizeof(res));
+                return static_cast<V>(res);
+            }
+
             template<typename T>
             T ApplicationDataBuffer::GetNum() const
             {
@@ -1235,62 +1243,62 @@ namespace ignite
 
                     case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed char*>(GetData()));
+                        res = LoadPrimitive<int8_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_BIT:
                     case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned char*>(GetData()));
+                        res = LoadPrimitive<uint8_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed short*>(GetData()));
+                        res = LoadPrimitive<int16_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned short*>(GetData()));
+                        res = LoadPrimitive<uint16_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed long*>(GetData()));
+                        res = LoadPrimitive<int32_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned long*>(GetData()));
+                        res = LoadPrimitive<uint32_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const int64_t*>(GetData()));
+                        res = LoadPrimitive<int64_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const uint64_t*>(GetData()));
+                        res = LoadPrimitive<uint64_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_FLOAT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const float*>(GetData()));
+                        res = LoadPrimitive<float, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_DOUBLE:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
+                        res = LoadPrimitive<double, T>(GetData());
                         break;
                     }
 
@@ -1318,7 +1326,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 switch (type)
                 {
@@ -1390,7 +1400,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 int32_t nanos = 0;
 
@@ -1466,7 +1478,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 tmTime.tm_year = 70;
                 tmTime.tm_mon = 0;
@@ -1701,27 +1715,35 @@ namespace ignite
                         return buflen;
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
+                        return static_cast<SqlLen>(sizeof(SQLSMALLINT));
+
                     case OdbcNativeType::AI_UNSIGNED_SHORT:
-                        return static_cast<SqlLen>(sizeof(short));
+                        return static_cast<SqlLen>(sizeof(SQLUSMALLINT));
 
                     case OdbcNativeType::AI_SIGNED_LONG:
+                        return static_cast<SqlLen>(sizeof(SQLUINTEGER));
+
                     case OdbcNativeType::AI_UNSIGNED_LONG:
-                        return static_cast<SqlLen>(sizeof(long));
+                        return static_cast<SqlLen>(sizeof(SQLINTEGER));
 
                     case OdbcNativeType::AI_FLOAT:
-                        return static_cast<SqlLen>(sizeof(float));
+                        return static_cast<SqlLen>(sizeof(SQLREAL));
 
                     case OdbcNativeType::AI_DOUBLE:
-                        return static_cast<SqlLen>(sizeof(double));
+                        return static_cast<SqlLen>(sizeof(SQLDOUBLE));
+
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                        return static_cast<SqlLen>(sizeof(SQLSCHAR));
 
                     case OdbcNativeType::AI_BIT:
-                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     case OdbcNativeType::AI_UNSIGNED_TINYINT:
-                        return static_cast<SqlLen>(sizeof(char));
+                        return static_cast<SqlLen>(sizeof(SQLCHAR));
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
-                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                         return static_cast<SqlLen>(sizeof(SQLBIGINT));
+
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                        return static_cast<SqlLen>(sizeof(SQLUBIGINT));
 
                     case OdbcNativeType::AI_TDATE:
                         return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
@@ -1753,7 +1775,7 @@ namespace ignite
                 {
                     const SqlLen *len = GetResLen();
 
-                    return len ? *len : SQL_DEFAULT_PARAM;
+                    return len ? *len : SQL_NTS;
                 }
 
                 return GetDataAtExecSize();

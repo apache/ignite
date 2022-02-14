@@ -172,7 +172,7 @@ public class CacheMvccClientTopologyTest extends GridCommonAbstractTest {
             .setClusterStateOnStart(ClusterState.INACTIVE);
 
         // when
-        final IgniteEx crd = (IgniteEx) startGrid(getTestIgniteInstanceName(clientModeIdx), crdCfg);
+        final IgniteEx crd = (IgniteEx)startGrid(getTestIgniteInstanceName(clientModeIdx), crdCfg);
 
         checkTopology(1);
         crd.cluster().state(ClusterState.ACTIVE);

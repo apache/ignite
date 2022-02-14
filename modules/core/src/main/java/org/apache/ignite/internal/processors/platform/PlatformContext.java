@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -317,4 +318,18 @@ public interface PlatformContext {
      * Disables thread-local optimization for platform cache update.
      */
     void disableThreadLocalForPlatformCacheUpdate();
+
+    /**
+     * Gets platform binary type metadata.
+     *
+     * @param typeName Type name.
+     * @return Metadata when type exists; null otherwise.
+     */
+    @Nullable BinaryMetadata getBinaryType(String typeName);
+
+    /**
+     * Gets marshaller platform id (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     * @return Marshaller platform id.
+     */
+    byte getMarshallerPlatformId();
 }

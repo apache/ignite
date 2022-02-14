@@ -22,7 +22,7 @@
 
 #include <map>
 
-#include "ignite/odbc/diagnostic/diagnosable.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/row.h"
@@ -120,7 +120,12 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
+                virtual const meta::ColumnMetaVector* GetMeta()
+                {
+                    static const meta::ColumnMetaVector empty;
+
+                    return &empty;
+                }
 
                 /**
                  * Check if data is available.
@@ -157,7 +162,7 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                Query(diagnostic::Diagnosable& diag, QueryType::Type type) :
+                Query(diagnostic::DiagnosableAdapter& diag, QueryType::Type type) :
                     diag(diag),
                     type(type)
                 {
@@ -165,7 +170,7 @@ namespace ignite
                 }
 
                 /** Diagnostics collector. */
-                diagnostic::Diagnosable& diag;
+                diagnostic::DiagnosableAdapter& diag;
 
                 /** Query type. */
                 QueryType::Type type;

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -41,10 +41,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -64,13 +67,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -105,6 +106,7 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.sql.ResultSetMetaData.columnNullableUnknown;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
@@ -114,7 +116,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class H2Utils {
     /** Query context H2 variable name. */
-    static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
+    public static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
 
     /**
      * The default precision for a char/varchar value.
@@ -136,27 +138,19 @@ public class H2Utils {
 
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
-        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1,
+                columnNullableUnknown));
 
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
 
+    /** Spatial index factory class name. */
+    private static final String SPATIAL_IDX_FACTORY_CLS =
+        "org.apache.ignite.internal.processors.query.h2.opt.GeoSpatialUtils";
+
     /** Quotation character. */
     private static final char ESC_CH = '\"';
-
-    /** Empty cursor. */
-    public static final GridCursor<H2Row> EMPTY_CURSOR = new GridCursor<H2Row>() {
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public H2Row get() {
-            return null;
-        }
-    };
 
     /**
      * @param c1 First column.
@@ -205,7 +199,10 @@ public class H2Utils {
      * @return SQL.
      */
     public static String tableCreateSql(H2TableDescriptor tbl) {
-        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
+        String keyFieldName = tbl.type().keyFieldName();
+        GridQueryProperty keyByNameProp = (keyFieldName == null) ? null : tbl.type().property(keyFieldName);
+        GridQueryProperty keyProp = (keyByNameProp == null) ? tbl.type().property(KEY_FIELD_NAME) : keyByNameProp;
+
         GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
 
         String keyType = dbTypeFromClass(tbl.type().keyClass(),
@@ -328,22 +325,13 @@ public class H2Utils {
      * @param cols Columns.
      */
     @SuppressWarnings("ConstantConditions")
-    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
+    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         try {
-            Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
+            Class<?> fctCls = Class.forName(SPATIAL_IDX_FACTORY_CLS);
 
-            Constructor<?> ctor = cls.getConstructor(
-                GridH2Table.class,
-                String.class,
-                Integer.TYPE,
-                IndexColumn[].class);
+            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
 
-            if (!ctor.isAccessible())
-                ctor.setAccessible(true);
-
-            final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
-
-            return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
+            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxName, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
@@ -375,11 +363,12 @@ public class H2Utils {
             String type = rsMeta.getColumnClassName(i);
             int precision = rsMeta.getPrecision(i);
             int scale = rsMeta.getScale(i);
+            int nullability = rsMeta.isNullable(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale, nullability));
         }
 
         return meta;
@@ -648,7 +637,7 @@ public class H2Utils {
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
-                Object[] arr = (Object[])obj;
+                Object[] arr = BinaryUtils.rawArrayFromBinary(obj);
 
                 Value[] valArr = new Value[arr.length];
 
@@ -706,8 +695,14 @@ public class H2Utils {
     private static String dbTypeFromClass(Class<?> cls, int precision, int scale) {
         String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
 
-        if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
-            return dbType + "(" + precision + ")";
+        if (precision != -1 && scale != -1 && dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString()))
+            return dbType + "(" + precision + ", " + scale + ')';
+
+        if (precision != -1 && (
+                dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.BINARY.dBTypeAsString())))
+            return dbType + '(' + precision + ')';
 
         return dbType;
     }
@@ -844,6 +839,8 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
+            else if (obj instanceof BinaryArray)
+                stmt.setObject(idx, BinaryUtils.rawArrayFromBinary(obj));
             else
                 stmt.setObject(idx, obj);
         }
@@ -920,7 +917,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (i == 0) {
                 mvccEnabled = cctx.mvccEnabled();
@@ -956,7 +956,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (!cctx.isPartitioned())
                 continue;
@@ -992,7 +995,6 @@ public class H2Utils {
      *
      * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
         ArrayList<IndexColumn> keyCols = new ArrayList<>();
 

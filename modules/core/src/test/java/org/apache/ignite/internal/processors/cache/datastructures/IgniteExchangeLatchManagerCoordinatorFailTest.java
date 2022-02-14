@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,6 +43,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.EXCHANGE_LATCH_ID;
 
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
@@ -253,7 +256,9 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * @param nodeScenarios Node scenarios.
      * @throws Exception If failed.
      */
-    private void doTestCoordinatorFail(List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
+    private void doTestCoordinatorFail(
+        List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios
+    ) throws Exception {
         IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
 
         // Latch to synchronize node states.
@@ -313,15 +318,6 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      */
     @Test
     public void testCoordinatorFailoverAfterServerLatchCompleted() throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            for (int i = 0; i < 5; i++) {
-                if (!grid(0).context().cache().context().exchange().readyAffinityVersion().equals(latchTopVer))
-                    return false;
-            }
-
-            return true;
-        }, getTestTimeout()));
-
         Latch[] latches = new Latch[5];
 
         for (int i = 0; i < 5; i++) {
@@ -347,6 +343,39 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
 
             latches[i].await(10_000, TimeUnit.MILLISECONDS);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCoordinatorFailoverDuringPMEAfterServerLatchCompleted() throws Exception {
+        TestRecordingCommunicationSpi.spi(grid(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (msg instanceof LatchAckMessage && node.order() == 3) {
+                    LatchAckMessage ackMsg = (LatchAckMessage)msg;
+
+                    return ackMsg.topVer().equals(new AffinityTopologyVersion(6, 0)) &&
+                        ackMsg.latchId().equals(EXCHANGE_LATCH_ID);
+                }
+
+                return false;
+            }
+        });
+
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(5);
+
+                return null;
+            }
+        });
+
+        TestRecordingCommunicationSpi.spi(grid(0)).waitForBlocked();
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
     }
 
     /**

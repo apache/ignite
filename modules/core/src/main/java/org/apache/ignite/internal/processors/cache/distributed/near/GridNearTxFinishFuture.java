@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -58,11 +59,16 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static java.util.Collections.emptySet;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -72,6 +78,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     implements GridCacheFuture<IgniteInternalTx>, NearTxFinishFuture {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** All owners left grid message. */
+    public static final String ALL_PARTITION_OWNERS_LEFT_GRID_MSG =
+        "Failed to commit a transaction (all partition owners have left the grid, partition data has been lost)";
 
     /** Tracing span. */
     private Span span;
@@ -198,7 +208,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (!isDone()) {
             FinishMiniFuture finishFut = null;
 
-            synchronized (this) {
+            compoundsReadLock();
+
+            try {
                 int size = futuresCountNoLock();
 
                 for (int i = 0; i < size; i++) {
@@ -216,6 +228,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         }
                     }
                 }
+            }
+            finally {
+                compoundsReadUnlock();
             }
 
             if (finishFut != null)
@@ -769,7 +784,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             tx.size(),
-            tx.subjectId(),
             tx.taskNameHash(),
             tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()
@@ -903,7 +917,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             0,
-            null,
             0,
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
@@ -979,6 +992,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         /** {@inheritDoc} */
         @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
+            if (tx.state() == COMMITTING || tx.state() == COMMITTED) {
+                if (concat(of(m.primary().id()), tx.transactionNodes().getOrDefault(m.primary().id(), emptySet()).stream())
+                    .noneMatch(uuid -> cctx.discovery().alive(uuid))) {
+                    onDone(new CacheInvalidStateException(ALL_PARTITION_OWNERS_LEFT_GRID_MSG +
+                        m.entries().stream().map(e -> " [cacheName=" + e.cached().context().name() +
+                            ", partition=" + e.key().partition() +
+                            (S.includeSensitive() ? ", key=" + e.key() : "") +
+                            "]").findFirst().orElse("")));
+
+                    return true;
+                }
+            }
+
             if (nodeId.equals(m.primary().id())) {
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, mini future node left [txId=" + tx.nearXidVersion() +
@@ -992,15 +1018,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         Collection<UUID> backups = txNodes.get(nodeId);
 
                         if (!F.isEmpty(backups)) {
-                            final CheckRemoteTxMiniFuture mini;
-
-                            synchronized (GridNearTxFinishFuture.this) {
+                            CheckRemoteTxMiniFuture mini = (CheckRemoteTxMiniFuture)compoundsLockedExclusively(() -> {
                                 int futId = Integer.MIN_VALUE + futuresCountNoLock();
 
-                                mini = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));
+                                CheckRemoteTxMiniFuture miniFut = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));
 
-                                add(mini);
-                            }
+                                add(miniFut);
+
+                                return miniFut;
+                            });
 
                             GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId(), true);
 

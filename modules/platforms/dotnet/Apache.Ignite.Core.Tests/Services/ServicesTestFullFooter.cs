@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Services
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Services test with compact footers disabled.
     /// </summary>
+    [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ServicesTestFullFooter : ServicesTest
     {
         /// <summary>
@@ -28,6 +32,28 @@ namespace Apache.Ignite.Core.Tests.Services
         protected override bool CompactFooter
         {
             get { return false; }
+        }
+
+        /** */
+        public ServicesTestFullFooter()
+        {
+            // No-op.
+        }
+
+        /** */
+        public ServicesTestFullFooter(bool useBinaryArray) : base(useBinaryArray)
+        {
+            // No-op.
+        }
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class ServicesTestFullFooterBinaryArrays : ServicesTestFullFooter
+    {
+        /** */
+        public ServicesTestFullFooterBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }

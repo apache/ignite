@@ -60,10 +60,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -213,12 +211,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }, 3000);
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernalContext ctx = grid(i).context();
-            GridContinuousProcessor proc = ctx.continuous();
+            GridContinuousProcessor proc = grid(i).context().continuous();
 
-            final int locInfosCnt = ctx.service() instanceof GridServiceProcessor ? 1 : 0;
-
-            assertEquals(String.valueOf(i), locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "stopFuts")).size());
@@ -340,9 +335,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cachePut(cache,1, 1);
-            cachePut(cache,2, 2);
-            cachePut(cache,3, 3);
+            cachePut(cache, 1, 1);
+            cachePut(cache, 2, 2);
+            cachePut(cache, 3, 3);
 
             cacheRemove(cache, 2);
 
@@ -568,8 +563,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer,Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -621,9 +616,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -1375,6 +1370,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
         }

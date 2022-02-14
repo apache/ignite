@@ -155,7 +155,7 @@ namespace Apache.Ignite.Benchmarks.Result
         /// <param name="text">Text.</param>
         private void Write0(string path, string text)
         {
-            _writer.Add(new WriteTask(path, text).Run);
+            _writer.Add(_ => new WriteTask(path, text).Run());
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <summary>
             /// Runner.
             /// </summary>
-            public void Run(Writer writer)
+            public void Run()
             {
                 File.AppendAllText(_fileName, _text + "\n");
             }

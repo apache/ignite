@@ -17,38 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.cluster.ClusterNode;
+
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.h2.index.Cursor;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Unsorted merge index.
  */
-public class UnsortedReducer extends AbstractReducer {
-    /** */
-    private final PollableQueue<ReduceResultPage> queue = new PollableQueue<>();
-
-    /** */
-    private final AtomicInteger activeSourcesCnt = new AtomicInteger(-1);
-
-    /** */
-    private Iterator<Value[]> iter = Collections.emptyIterator();
-
+public class UnsortedReducer extends UnsortedBaseReducer {
     /**
      * Constructor.
      *
@@ -56,60 +40,6 @@ public class UnsortedReducer extends AbstractReducer {
      */
     public UnsortedReducer(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * @param ctx Context.
-     * @return Dummy index instance.
-     */
-    public static UnsortedReducer createDummy(GridKernalContext ctx) {
-        return new UnsortedReducer(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
-
-        int x = srcNodes.size() * segmentsCnt;
-
-        assert x > 0 : x;
-
-        activeSourcesCnt.set(x);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean fetchedAll() {
-        int x = activeSourcesCnt.get();
-
-        assert x >= 0 : x; // This method must not be called if the sources were not set.
-
-        return x == 0 && queue.isEmpty();
-    }
-
-    /**
-     * @param page Page.
-     */
-    @Override protected void addPage0(ReduceResultPage page) {
-        assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
-
-        // Do not add empty page to avoid premature stream termination.
-        if (page.rowsInPage() != 0 || page.isFail())
-            queue.add(page);
-
-        if (page.isLast()) {
-            int x = activeSourcesCnt.decrementAndGet();
-
-            assert x >= 0 : x;
-
-            if (x == 0) // Always terminate with empty iterator.
-                queue.add(createDummyLastPage(page));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
-        // This index is unsorted: have to ignore bounds.
-        return new GridH2Cursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
@@ -209,12 +139,5 @@ public class UnsortedReducer extends AbstractReducer {
             // Should never be called.
             throw DbException.getUnsupportedException("previous");
         }
-    }
-
-    /**
-     *
-     */
-    private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements AbstractReducer.Pollable<X> {
-        // No-op.
     }
 }

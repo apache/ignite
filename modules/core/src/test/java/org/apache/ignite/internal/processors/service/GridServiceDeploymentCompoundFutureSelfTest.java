@@ -59,7 +59,8 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
         List<GridFutureAdapter<Object>> futs = new ArrayList<>(completingFutsNum);
 
         for (int i = 0; i < completingFutsNum; i++) {
-            GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(config(String.valueOf(i)), IgniteUuid.randomUuid());
+            GridServiceDeploymentFuture<IgniteUuid> fut =
+                new GridServiceDeploymentFuture<>(config(String.valueOf(i)), IgniteUuid.randomUuid());
 
             futs.add(fut);
 

@@ -116,12 +116,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Property for update policy of shutdown. */
     private DistributedEnumProperty<ShutdownPolicy> shutdown = new DistributedEnumProperty<>(
         "shutdown.policy",
-        (ordinal) -> {
-            return ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal);
-        },
-        (policy) -> {
-            return policy == null ? null : policy.index();
-        }
+        (ordinal) -> ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal),
+        (policy) -> policy == null ? null : policy.index(),
+        ShutdownPolicy.class
     );
 
     /**
@@ -135,7 +132,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param ctx Kernal context.
      */
     public IgniteClusterImpl(GridKernalContext ctx) {
-        super(ctx, null, (IgnitePredicate<ClusterNode>)null);
+        super(ctx, (IgnitePredicate<ClusterNode>)null);
 
         cfg = ctx.config();
 
@@ -161,7 +158,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new ClusterGroupAdapter(ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(ctx, Collections.singleton(ctx.discovery().localNode().id()));
         }
         finally {
             unguard();
@@ -732,8 +729,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 " symbols.");
         }
 
-        if (!ctx.state().publicApiActiveState(true))
-            throw new IgniteCheckedException("Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true).");
+        if (!ctx.state().publicApiActiveState(true)) {
+            throw new IgniteCheckedException(
+                "Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true)."
+            );
+        }
 
         ctx.cluster().updateTag(tag);
     }

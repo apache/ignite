@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests cache operations with async/await.
+    /// Tests thin cache operations with async/await.
     /// </summary>
     public class CacheTestAsyncAwait : ClientTestBase
     {

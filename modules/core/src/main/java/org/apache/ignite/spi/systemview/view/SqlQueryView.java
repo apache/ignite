@@ -72,6 +72,12 @@ public class SqlQueryView {
         return U.currentTimeMillis() - qry.startTime();
     }
 
+    /** @return Query initiator ID. */
+    @Order(7)
+    public String initiatorId() {
+        return qry.queryInitiatorId();
+    }
+
     /** @return {@code True} if query is local. */
     public boolean local() {
         return qry.local();

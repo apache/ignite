@@ -59,10 +59,10 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
         /** Policy: flush. */
         internal const int PlcFlush = 3;
-        
+
         /** Operation: update. */
         private const int OpUpdate = 1;
-        
+
         /** Operation: set receiver. */
         private const int OpReceiver = 2;
 
@@ -109,23 +109,22 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly string _cacheName;
 
         /** Lock. */
-        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
-
-        /** Closed event. */
-        private readonly ManualResetEventSlim _closedEvt = new ManualResetEventSlim(false);
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "WaitHandle is not used in ReaderWriterLockSlim, no need to dispose.")]
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         /** Close future. */
-        private readonly Future<object> _closeFut = new Future<object>();
+        private readonly TaskCompletionSource<object> _closeFut = new TaskCompletionSource<object>();
 
         /** GC handle to this streamer. */
         private readonly long _hnd;
-                
+
         /** Topology version. */
         private long _topVer;
 
         /** Topology size. */
         private int _topSize = 1;
-        
+
         /** Buffer send size. */
         private volatile int _bufSndSize;
 
@@ -223,8 +222,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                _rwLock.EnterReadLock(); 
-                
+                _rwLock.EnterReadLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -238,8 +237,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                _rwLock.EnterWriteLock(); 
-                
+                _rwLock.EnterWriteLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -258,8 +257,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                _rwLock.EnterReadLock(); 
-                
+                _rwLock.EnterReadLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -273,8 +272,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                _rwLock.EnterWriteLock(); 
-                
+                _rwLock.EnterWriteLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -289,14 +288,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
             }
         }
-        
+
         /** <inheritDoc /> */
         public int PerThreadBufferSize
         {
             get
             {
-                _rwLock.EnterReadLock(); 
-                
+                _rwLock.EnterReadLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -310,8 +309,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                _rwLock.EnterWriteLock(); 
-                
+                _rwLock.EnterWriteLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -330,8 +329,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                _rwLock.EnterReadLock(); 
-                
+                _rwLock.EnterReadLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -346,8 +345,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                _rwLock.EnterWriteLock(); 
-                
+                _rwLock.EnterWriteLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -367,8 +366,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                _rwLock.EnterReadLock(); 
-                
+                _rwLock.EnterReadLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -383,8 +382,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                _rwLock.EnterWriteLock(); 
-                
+                _rwLock.EnterWriteLock();
+
                 try
                 {
                     ThrowIfDisposed();
@@ -399,12 +398,35 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        public TimeSpan AutoFlushInterval
+        {
+            get
+            {
+                return TimeSpan.FromMilliseconds(AutoFlushFrequency);
+            }
+            set
+            {
+                AutoFlushFrequency = (long) value.TotalMilliseconds;
+            }
+        }
+
+        /** <inheritDoc /> */
         public Task Task
         {
             get
             {
                 return _closeFut.Task;
             }
+        }
+
+        /** <inheritDoc /> */
+        public Task GetCurrentBatchTask()
+        {
+            var batch = _batch;
+
+            return batch != null
+                ? batch.GetThisAndPreviousCompletionTask()
+                : Task; // Streamer is closing. Wait for close to complete.
         }
 
         /** <inheritDoc /> */
@@ -469,8 +491,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public Task AddData(TK key, TV val)
         {
-            ThrowIfDisposed(); 
-            
+            ThrowIfDisposed();
+
             IgniteArgumentCheck.NotNull(key, "key");
 
             return Add0(new DataStreamerEntry<TK, TV>(key, val), 1);
@@ -483,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             return Add0(new DataStreamerEntry<TK, TV>(pair.Key, pair.Value), 1);
         }
-        
+
         /** <inheritDoc /> */
         public Task AddData(ICollection<KeyValuePair<TK, TV>> entries)
         {
@@ -505,30 +527,57 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        public void Add(TK key, TV val)
+        {
+            AddData(key, val);
+        }
+
+        /** <inheritDoc /> */
+        public void Add(KeyValuePair<TK, TV> pair)
+        {
+            AddData(pair);
+        }
+
+        /** <inheritDoc /> */
+        public void Add(ICollection<KeyValuePair<TK, TV>> entries)
+        {
+            AddData(entries);
+        }
+
+        /** <inheritDoc /> */
+        public void Remove(TK key)
+        {
+            RemoveData(key);
+        }
+
+        /** <inheritDoc /> */
         public void TryFlush()
         {
-            ThrowIfDisposed();
-
-            DataStreamerBatch<TK, TV> batch0 = _batch;
-
-            if (batch0 != null)
-                Flush0(batch0, false, PlcFlush);
+            FlushAsync();
         }
 
         /** <inheritDoc /> */
         public void Flush()
         {
+            FlushAsync().Wait();
+        }
+
+        /** <inheritDoc /> */
+        public Task FlushAsync()
+        {
             ThrowIfDisposed();
 
-            DataStreamerBatch<TK, TV> batch0 = _batch;
+            var batch0 = _batch;
 
             if (batch0 != null)
-                Flush0(batch0, true, PlcFlush);
-            else 
             {
-                // Batch is null, i.e. data streamer is closing. Wait for close to complete.
-                _closedEvt.Wait();
+                Flush0(batch0, false, PlcFlush);
+
+                return batch0.GetThisAndPreviousCompletionTask();
             }
+
+            // Batch is null, i.e. data streamer is closing. Wait for close to complete.
+            return Task;
         }
 
         /** <inheritDoc /> */
@@ -543,34 +592,37 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (batch0 == null)
                 {
                     // Wait for concurrent close to finish.
-                    _closedEvt.Wait();
-
+                    _closeFut.Task.Wait();
                     return;
                 }
 
-                if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
+                _rwLock.EnterWriteLock();
+
+                try
                 {
-                    _closeFut.OnDone(null, null);
-
-                    _rwLock.EnterWriteLock(); 
-                    
-                    try
+                    if (!Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                     {
-                        base.Dispose(true);
-
-                        if (_rcv != null)
-                            Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
-
-                        _closedEvt.Set();
-                    }
-                    finally
-                    {
-                        _rwLock.ExitWriteLock();
+                        // Retry flushing.
+                        continue;
                     }
 
-                    Marshaller.Ignite.HandleRegistry.Release(_hnd);
+                    base.Dispose(true);
+                    ReleaseHandles();
+                    ThreadPool.QueueUserWorkItem(_ =>_closeFut.TrySetResult(null));
 
-                    break;
+                    return;
+                }
+                catch (Exception e)
+                {
+                    base.Dispose(true);
+                    ReleaseHandles();
+                    ThreadPool.QueueUserWorkItem(_ =>_closeFut.TrySetException(e));
+
+                    throw;
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
@@ -648,11 +700,21 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Finalizers should never throw
                 }
 
-                Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
-                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
+                ReleaseHandles();
             }
 
-            base.Dispose(false);
+            base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Releases the handles.
+        /// </summary>
+        private void ReleaseHandles()
+        {
+            Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
+
+            if (_rcv != null)
+                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
         }
 
         /** <inheritDoc /> */
@@ -664,8 +726,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public void TopologyChange(long topVer, int topSize)
         {
-            _rwLock.EnterWriteLock(); 
-            
+            _rwLock.EnterWriteLock();
+
             try
             {
                 ThrowIfDisposed();
@@ -690,7 +752,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         /// <param name="val">Value.</param>
         /// <param name="cnt">Items count.</param>
-        /// <returns>Future.</returns>
+        /// <returns>Task for the current batch.</returns>
         private Task Add0(object val, int cnt)
         {
             int bufSndSize0 = _bufSndSize;
@@ -731,9 +793,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <returns>Whether this call was able to CAS previous batch</returns>
         private bool Flush0(DataStreamerBatch<TK, TV> curBatch, bool wait, int plc)
         {
-            // 1. Try setting new current batch to help further adders. 
-            bool res = Interlocked.CompareExchange(ref _batch, 
-                (plc == PlcContinue || plc == PlcFlush) ? 
+            // 1. Try setting new current batch to help further adders.
+            bool res = Interlocked.CompareExchange(ref _batch,
+                (plc == PlcContinue || plc == PlcFlush) ?
                 new DataStreamerBatch<TK, TV>(curBatch) : null, curBatch) == curBatch;
 
             // 2. Perform actual send.
@@ -742,7 +804,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             if (wait)
                 // 3. Wait for all futures to finish.
-                curBatch.AwaitCompletion();
+                curBatch.GetThisAndPreviousCompletionTask().Wait();
 
             return res;
         }
@@ -817,7 +879,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 bool force = false;
                 long curFreq = 0;
-                
+
                 try
                 {
                     while (true)
@@ -875,7 +937,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                                     force = true;
 
                                 curFreq = _freq;
-                            } 
+                            }
                         }
                     }
                 }
@@ -890,7 +952,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     }
                 }
             }
-            
+
             /// <summary>
             /// Frequency.
             /// </summary>

@@ -40,6 +40,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -82,7 +83,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of platform context.
  */
-@SuppressWarnings("TypeMayBeWeakened")
+@SuppressWarnings({"TypeMayBeWeakened", "rawtypes"})
 public class PlatformContextImpl implements PlatformContext, PartitionsExchangeAware {
     /** Supported event types. */
     private static final Set<Integer> evtTyps;
@@ -106,7 +107,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     private final CacheObjectBinaryProcessorImpl cacheObjProc;
 
     /** Node ids that has been sent to native platform. */
-    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
+    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Platform name. */
     private final String platform;
@@ -376,7 +377,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         else {
             writer.writeBoolean(true);
 
-            BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
+            BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
 
             PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
@@ -606,7 +607,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
-            long cacheIdAndPartition = ((long)part << 32) + cacheId;
+            long cacheIdAndPartition = ((long)part << 32) | cacheId;
 
             gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
@@ -653,7 +654,34 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public @Nullable BinaryMetadata getBinaryType(String typeName) {
+        try (PlatformMemory mem0 = mem.allocate()) {
+            PlatformOutputStream out = mem0.output();
+            BinaryRawWriterEx writer = writer(out);
+
+            writer.writeString(typeName);
+            out.synchronize();
+
+            if (gateway().binaryTypeGet(mem0.pointer()) == 0)
+                return null;
+
+            PlatformInputStream in = mem0.input();
+            in.synchronize();
+
+            return PlatformUtils.readBinaryMetadata(reader(in));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getMarshallerPlatformId() {
+        // Only .NET has a specific marshaller ID, C++ does not have it.
+        return platform.equals(PlatformUtils.PLATFORM_DOTNET)
+                ? MarshallerPlatformIds.DOTNET_ID
+                : MarshallerPlatformIds.JAVA_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion ver = fut.topologyVersion();
 
         if (ver != null) {

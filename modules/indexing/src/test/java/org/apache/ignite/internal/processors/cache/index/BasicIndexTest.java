@@ -25,13 +25,17 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -43,7 +47,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,8 +62,8 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
@@ -316,6 +322,59 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Checks that fields in primary index have correct order after node restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectPkFieldsSequenceAfterRestart() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            GridQueryProcessor qryProc = ig0.context().query();
+
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC." + tblName + " (F1 VARCHAR, F2 VARCHAR, F3 VARCHAR, " +
+                "CONSTRAINT PK PRIMARY KEY (F2, F1))"), true).getAll();
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
+
+        stopAllGrids();
+
+        ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
+    }
+
+    /**
      * Fields correctness checker.
      *
      * @param tblName Table name.
@@ -518,7 +577,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         System.err.println(plan);
 
-        return idxName != null ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase())) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
+        return idxName != null
+            ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase()))
+            : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
     }
 
     /** */
@@ -977,6 +1038,52 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
+    /**
+     * Tests that it's forbidden to create index with duplicated columns from SQL.
+     */
+    @Test
+    public void testFailToCreateSqlIndexWithDuplicatedColumn() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 1, "ID", "NAME");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME ASC, NAME DESC)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME DESC, ID, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME DESC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(ID, ID)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: ID");
+    }
+
     /** */
     @Test
     public void testNoIndexesWithPersistence() throws Exception {
@@ -1351,11 +1458,11 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        sql("CREATE TABLE TEST (ID INT PRIMARY KEY, val_int INT, VAL_OBJ OTHER)");
+        sql("CREATE TABLE TEST (ID INT PRIMARY KEY, val_int INT, VAL_OBJ LONG)");
         sql("CREATE INDEX TEST_VAL_INT ON TEST(VAL_INT)");
         sql("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)");
 
-        sql("INSERT INTO TEST VALUES (0, 0, ?)", new Pojo(0));
+        sql("INSERT INTO TEST VALUES (0, 0, ?)", 0L);
 
         GridTestUtils.assertThrows(log, () -> {
             sql("SELECT * FROM TEST WHERE VAL_OBJ < CURRENT_TIMESTAMP()").getAll();
@@ -1370,6 +1477,114 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         }, CacheException.class, null);
 
         assertFalse(grid().context().isStopping());
+    }
+
+    /** */
+    @Test
+    public void testOpenRangePredicateOnCompoundPk() throws Exception {
+        inlineSize = 10;
+
+        startGrid();
+
+        sql("create table test (id1 int, id2 int, val int, constraint pk primary key (id1, id2))");
+
+        for (int i = 1; i <= 5; i++)
+            sql("insert into test (id1, id2, val) values (?, ?, ?)", 0, i, i);
+
+        assertEquals(5, sql("select * from test where id1 = 0 and id2 > 0").getAll().size());
+    }
+
+    /** */
+    @Test
+    public void testCreateLuceneIndex() throws Exception {
+        inlineSize = 10;
+
+        startGrid();
+
+        sql("create table test0(id1 int primary key, val varchar) " +
+            "WITH \"WRAP_VALUE=false\"");
+
+        IgniteH2Indexing idx = ((IgniteH2Indexing)grid().context().query().getIndexing());
+
+        H2TableDescriptor tblDesc0 = idx.schemaManager().dataTable("PUBLIC", "TEST0")
+            .rowDescriptor().tableDescriptor();
+
+        assertNotNull(GridTestUtils.getFieldValue(tblDesc0, "luceneIdx"));
+
+        idx.distributedConfiguration().disableCreateLuceneIndexForStringValueType(true).get();
+
+        sql("create table test1(id1 int primary key, val varchar) " +
+            "WITH \"WRAP_VALUE=false\"");
+
+        H2TableDescriptor tblDesc1 = idx.schemaManager().dataTable("PUBLIC", "TEST1")
+            .rowDescriptor().tableDescriptor();
+
+        assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
+    }
+    
+    /**
+     * Checks that part of the composite key assembled in BinaryObjectBuilder can pass the validation correctly
+     * if you specify Object type when creating the index.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheSecondaryCompositeIndex() throws Exception {
+        inlineSize = 70;
+        
+        startGrid();
+        
+        String cacheName = "TEST";
+
+        List<QueryIndex> indexes = Collections.singletonList(
+            new QueryIndex("val_obj", QueryIndexType.SORTED).setInlineSize(inlineSize)
+        );
+
+        grid().createCache(new CacheConfiguration<>()
+            .setName(cacheName)
+            .setSqlSchema(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(cacheName)
+                .setKeyType(Integer.class.getName())
+                .setKeyFieldName("id")
+                .setValueType("TEST_VAL_SECONDARY_COMPOSITE")
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("val_obj", Object.class.getName(), null)
+                .setIndexes(indexes)
+            ))
+        );
+        
+        BinaryObjectBuilder bob = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder bobInner = grid().binary().builder("inner");
+        
+        bobInner.setField("inner_k", 0);
+        bobInner.setField("inner_uuid", UUID.randomUUID());
+        
+        bob.setField("val_obj", bobInner.build());
+        
+        IgniteCache<Object, Object> cache = grid().cache(cacheName);
+
+        cache.put(0, bob.build());
+
+        BinaryObjectBuilder alice = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder aliceInner = grid().binary().builder("inner2");
+
+        aliceInner.setField("inner_k2", 0);
+        aliceInner.setField("inner_uuid2", UUID.randomUUID());
+
+        alice.setField("val_obj", aliceInner.build());
+
+        cache.put(1, alice.build());
+
+        List<List<?>> rows = execSql(cache.withKeepBinary(), "SELECT id, val_obj FROM " + cacheName);
+
+        assertEquals(2, rows.size());
+
+        for (List<?> row : rows) {
+            assertNotNull(row.get(0));
+            assertNotNull("id = " + row.get(0), row.get(1));
+        }
     }
 
     /** */
@@ -1428,9 +1643,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(100, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1487,9 +1702,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1515,9 +1730,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1618,7 +1833,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Key key = (Key) o;
+            Key key = (Key)o;
 
             return keyLong == key.keyLong &&
                 Objects.equals(keyStr, key.keyStr) &&
@@ -1668,7 +1883,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Val val = (Val) o;
+            Val val = (Val)o;
 
             return valLong == val.valLong &&
                 Objects.equals(valStr, val.valStr) &&
@@ -1710,7 +1925,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Pojo pojo = (Pojo) o;
+            Pojo pojo = (Pojo)o;
 
             return pojoLong == pojo.pojoLong;
         }

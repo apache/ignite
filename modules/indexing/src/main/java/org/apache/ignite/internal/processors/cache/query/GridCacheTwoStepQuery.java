@@ -69,8 +69,10 @@ public class GridCacheTwoStepQuery {
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
+    /** True if need to treat replicated as partitioned (for outer joins). */
+    private final boolean treatReplicatedAsPartitioned;
+
     /**
-     *
      * @param originalSql Original SQL.
      * @param paramsCnt Parameters count.
      * @param tbls Tables.
@@ -84,6 +86,7 @@ public class GridCacheTwoStepQuery {
      * @param cacheIds Cache ids.
      * @param mvccEnabled Mvcc flag.
      * @param locSplit Local split flag.
+     * @param treatReplicatedAsPartitioned Treat replicated as partitioned flag.
      */
     public GridCacheTwoStepQuery(
         String originalSql,
@@ -98,7 +101,8 @@ public class GridCacheTwoStepQuery {
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
-        boolean locSplit
+        boolean locSplit,
+        boolean treatReplicatedAsPartitioned
     ) {
         assert !F.isEmpty(mapQrys);
 
@@ -115,6 +119,7 @@ public class GridCacheTwoStepQuery {
         this.locSplit = locSplit;
         this.mapQrys = mapQrys;
         this.replicatedOnly = replicatedOnly;
+        this.treatReplicatedAsPartitioned = treatReplicatedAsPartitioned;
     }
 
     /**
@@ -231,6 +236,13 @@ public class GridCacheTwoStepQuery {
      */
     public int parametersCount() {
         return paramsCnt;
+    }
+
+    /**
+     * @return {@code true} if need to treat replicated as partitioned (for outer joins).
+     */
+    public boolean treatReplicatedAsPartitioned() {
+        return treatReplicatedAsPartitioned;
     }
 
     /** {@inheritDoc} */

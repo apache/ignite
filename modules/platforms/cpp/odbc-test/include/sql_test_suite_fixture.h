@@ -71,7 +71,7 @@ namespace ignite
          * @param expected Expected result.
          */
         template<typename T>
-        void CheckSingleResult(const char* request, const T& expected)
+        void CheckSingleResult(const char*, const T&)
         {
             BOOST_FAIL("Function is not defined for the type.");
         }
@@ -82,7 +82,7 @@ namespace ignite
          * @param request SQL request.
          */
         template<typename T>
-        void CheckSingleResult(const char* request)
+        void CheckSingleResult(const char*)
         {
             BOOST_FAIL("Function is not defined for the type.");
         }

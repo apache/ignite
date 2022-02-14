@@ -81,8 +81,38 @@ public class SpanTags {
     /** */
     public static final String MESSAGE = "message";
 
+    /** Number of bytes that were written to the socket. */
+    public static final String SOCKET_WRITE_BYTES = "socket.write.bytes";
+
     /** */
     public static final String MESSAGE_CLASS = "message.class";
+
+    /** Text of SQL query. */
+    public static final String SQL_QRY_TEXT = "sql.query.text";
+
+    /** SQL schema. */
+    public static final String SQL_SCHEMA = "sql.schema";
+
+    /** Number of rows that result page contains. */
+    public static final String SQL_PAGE_ROWS = "sql.page.rows";
+
+    /** Number of rows that index range request contains. */
+    public static final String SQL_IDX_RANGE_ROWS = "sql.index.range.rows";
+
+    /** Name of SQL table. */
+    public static final String SQL_TABLE = "sql.table";
+
+    /** Name of SQL index. */
+    public static final String SQL_IDX = "sql.index";
+
+    /** Number of cache entries to be updated as a result of DML query. */
+    public static final String SQL_CACHE_UPDATES = "sql.cache.updates";
+
+    /** Whether parsing of the SQL query was skipped due to the cached result. */
+    public static final String SQL_PARSER_CACHE_HIT = "sql.parser.cache.hit";
+
+    /** Query identifier. */
+    public static final String SQL_QRY_ID = "sql.query.id";
 
     /** */
     private SpanTags() {}

@@ -49,6 +49,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
@@ -73,7 +75,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Shared serialization/deserialization utils.
  */
-final class ClientUtils {
+public final class ClientUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -98,7 +100,7 @@ final class ClientUtils {
      * @param out Output stream.
      * @param elemWriter Collection element serializer
      */
-    static <E> void collection(
+    public static <E> void collection(
         Collection<E> col, BinaryOutputStream out,
         BiConsumer<BinaryOutputStream, E> elemWriter
     ) {
@@ -164,7 +166,7 @@ final class ClientUtils {
 
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
             int typeId = reader.readInt();
             String typeName = reader.readString();
             String affKeyFieldName = reader.readString();
@@ -380,7 +382,7 @@ final class ClientUtils {
     /** Deserialize configuration from stream. */
     ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
-        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
@@ -522,6 +524,17 @@ final class ClientUtils {
         out.writeBoolean(qry.isLazy());
         out.writeLong(qry.getTimeout());
         out.writeBoolean(true); // include column names
+
+        if (qry.getPartitions() != null) {
+            out.writeInt(qry.getPartitions().length);
+
+            for (int part : qry.getPartitions())
+                out.writeInt(part);
+        }
+        else
+            out.writeInt(-1);
+
+        out.writeInt(qry.getUpdateBatchSize());
     }
 
     /** Write Ignite binary object to output stream. */
@@ -534,6 +547,21 @@ final class ClientUtils {
      */
     BinaryRawWriterEx createBinaryWriter(BinaryOutputStream out) {
         return new BinaryWriterExImpl(marsh.context(), out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param in Input stream.
+     */
+    BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+        return createBinaryReader(marsh.context(), in);
+    }
+
+    /**
+     * @param binaryCtx Binary context.
+     * @param in Input stream.
+     */
+    static BinaryReaderExImpl createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
+        return new BinaryReaderExImpl(binaryCtx, in, null, null, true, true);
     }
 
     /** Read Ignite binary object from input stream. */
@@ -721,37 +749,98 @@ final class ClientUtils {
 
     /** Thin client protocol cache configuration item codes. */
     private enum CfgItem {
-        /** Name. */NAME(0),
-        /** Cache mode. */CACHE_MODE(1),
-        /** Atomicity mode. */ATOMICITY_MODE(2),
-        /** Backups. */BACKUPS(3),
-        /** Write synchronization mode. */WRITE_SYNC_MODE(4),
-        /** Read from backup. */READ_FROM_BACKUP(6),
-        /** Eager ttl. */EAGER_TTL(405),
-        /** Group name. */GROUP_NAME(400),
-        /** Default lock timeout. */DEFAULT_LOCK_TIMEOUT(402),
-        /** Partition loss policy. */PART_LOSS_POLICY(404),
-        /** Rebalance batch size. */REBALANCE_BATCH_SIZE(303),
-        /** Rebalance batches prefetch count. */REBALANCE_BATCHES_PREFETCH_COUNT(304),
-        /** Rebalance delay. */REBALANCE_DELAY(301),
-        /** Rebalance mode. */REBALANCE_MODE(300),
-        /** Rebalance order. */REBALANCE_ORDER(305),
-        /** Rebalance throttle. */REBALANCE_THROTTLE(306),
-        /** Rebalance timeout. */REBALANCE_TIMEOUT(302),
-        /** Copy on read. */COPY_ON_READ(5),
-        /** Data region name. */DATA_REGION_NAME(100),
-        /** Stats enabled. */STATS_ENABLED(406),
-        /** Max async ops. */MAX_ASYNC_OPS(403),
-        /** Max query iterators. */MAX_QUERY_ITERATORS(206),
-        /** Onheap cache enabled. */ONHEAP_CACHE_ENABLED(101),
-        /** Query metric size. */QUERY_METRIC_SIZE(202),
-        /** Query parallelism. */QUERY_PARALLELISM(201),
-        /** Sql escape all. */SQL_ESCAPE_ALL(205),
-        /** Sql index max inline size. */SQL_IDX_MAX_INLINE_SIZE(204),
-        /** Sql schema. */SQL_SCHEMA(203),
-        /** Key configs. */KEY_CONFIGS(401),
-        /** Key entities. */QUERY_ENTITIES(200),
-        /** Expire policy. */EXPIRE_POLICY(407);
+        /** Name. */
+        NAME(0),
+
+        /** Cache mode. */
+        CACHE_MODE(1),
+
+        /** Atomicity mode. */
+        ATOMICITY_MODE(2),
+
+        /** Backups. */
+        BACKUPS(3),
+
+        /** Write synchronization mode. */
+        WRITE_SYNC_MODE(4),
+
+        /** Read from backup. */
+        READ_FROM_BACKUP(6),
+
+        /** Eager ttl. */
+        EAGER_TTL(405),
+
+        /** Group name. */
+        GROUP_NAME(400),
+
+        /** Default lock timeout. */
+        DEFAULT_LOCK_TIMEOUT(402),
+
+        /** Partition loss policy. */
+        PART_LOSS_POLICY(404),
+
+        /** Rebalance batch size. */
+        REBALANCE_BATCH_SIZE(303),
+
+        /** Rebalance batches prefetch count. */
+        REBALANCE_BATCHES_PREFETCH_COUNT(304),
+
+        /** Rebalance delay. */
+        REBALANCE_DELAY(301),
+
+        /** Rebalance mode. */
+        REBALANCE_MODE(300),
+
+        /** Rebalance order. */
+        REBALANCE_ORDER(305),
+
+        /** Rebalance throttle. */
+        REBALANCE_THROTTLE(306),
+
+        /** Rebalance timeout. */
+        REBALANCE_TIMEOUT(302),
+
+        /** Copy on read. */
+        COPY_ON_READ(5),
+
+        /** Data region name. */
+        DATA_REGION_NAME(100),
+
+        /** Stats enabled. */
+        STATS_ENABLED(406),
+
+        /** Max async ops. */
+        MAX_ASYNC_OPS(403),
+
+        /** Max query iterators. */
+        MAX_QUERY_ITERATORS(206),
+
+        /** Onheap cache enabled. */
+        ONHEAP_CACHE_ENABLED(101),
+
+        /** Query metric size. */
+        QUERY_METRIC_SIZE(202),
+
+        /** Query parallelism. */
+        QUERY_PARALLELISM(201),
+
+        /** Sql escape all. */
+        SQL_ESCAPE_ALL(205),
+
+        /** Sql index max inline size. */
+        SQL_IDX_MAX_INLINE_SIZE(204),
+
+        /** Sql schema. */
+        SQL_SCHEMA(203),
+
+        /** Key configs. */
+        KEY_CONFIGS(401),
+
+        /** Key entities. */
+        QUERY_ENTITIES(200),
+
+        /** Expire policy. */
+        EXPIRE_POLICY(407);
 
         /** Code. */
         private final short code;

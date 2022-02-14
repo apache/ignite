@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
         public static readonly long DefaultMaxSize =
-            (long) ((long) MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
+            (long) ((long) (MemoryInfo.MemoryLimit ?? 2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.
@@ -187,13 +187,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public TimeSpan RateTimeInterval { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of sub intervals to split <see cref="RateTimeInterval"/> into to calculate 
+        /// Gets or sets the number of sub intervals to split <see cref="RateTimeInterval"/> into to calculate
         /// <see cref="IMemoryMetrics.AllocationRate"/> and <see cref="IMemoryMetrics.EvictionRate"/>.
         /// <para />
         /// Bigger value results in more accurate metrics.
         /// </summary>
         [DefaultValue(DefaultSubIntervals)]
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", 
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with Java config")]
         public int SubIntervals { get; set; }
     }

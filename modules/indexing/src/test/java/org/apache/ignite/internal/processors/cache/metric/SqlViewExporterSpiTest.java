@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.metric;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +56,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
@@ -62,13 +65,15 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -81,11 +86,12 @@ import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFOR
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -112,13 +118,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
-
-        SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
-
-        if (igniteInstanceName.endsWith("1"))
-            sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
-
-        cfg.setMetricExporterSpi(sqlSpi);
 
         return cfg;
     }
@@ -185,29 +184,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String attr : EXPECTED_ATTRIBUTES)
             assertTrue(attr + " should be exported via SQL view", names.contains(attr));
-    }
-
-    /** */
-    @Test
-    public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite1);
-
-        List<List<?>> res = execute(ignite1,
-            "SELECT name, value, description FROM SYS.METRICS " +
-                "WHERE name LIKE 'other.prefix%' OR name LIKE '" + FILTERED_PREFIX + "%'");
-
-        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
-            t("other.prefix.test", "42"),
-            t("other.prefix.test2", "43"),
-            t("other.prefix2.test3", "44")
-        ));
-
-        Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
-
-        for (List<?> row : res)
-            vals.add(t((String)row.get(0), (String)row.get(1)));
-
-        assertEquals(expVals, vals);
     }
 
     /** */
@@ -405,7 +381,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
             Set<String> schemaFromSysView = new HashSet<>();
 
-            schemasSysView.forEach(v -> schemaFromSysView.add(v.name()));
+            schemasSysView.forEach(v -> schemaFromSysView.add(v.schemaName()));
 
             HashSet<String> expSchemas = new HashSet<>(asList("MY_SCHEMA", "ANOTHER_SCHEMA", "SYS", "PUBLIC"));
 
@@ -435,11 +411,13 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
+            "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
             "VIEWS",
@@ -451,7 +429,22 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DATASTREAM_THREADPOOL_QUEUE",
             "DATA_REGION_PAGE_LISTS",
             "CACHE_GROUP_PAGE_LISTS",
-            "PARTITION_STATES"
+            "PARTITION_STATES",
+            "BINARY_METADATA",
+            "METASTORAGE",
+            "DISTRIBUTED_METASTORAGE",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_ATOMICSEQUENCES",
+            "DS_COUNTDOWNLATCHES",
+            "DS_REENTRANTLOCKS",
+            "DS_SETS",
+            "DS_SEMAPHORES",
+            "DS_QUEUES"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -475,20 +468,22 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(1, res.size());
 
-        List tbl = res.get(0);
+        List<?> tbl = res.get(0);
 
         int cacheId = cacheId("SQL_PUBLIC_T1");
         String cacheName = "SQL_PUBLIC_T1";
 
-        assertEquals("T1", tbl.get(0)); // TABLE_NAME
-        assertEquals(DFLT_SCHEMA, tbl.get(1)); // SCHEMA_NAME
-        assertEquals(cacheName, tbl.get(2)); // CACHE_NAME
-        assertEquals(cacheId, tbl.get(3)); // CACHE_ID
-        assertNull(tbl.get(4)); // AFFINITY_KEY_COLUMN
-        assertEquals("ID", tbl.get(5)); // KEY_ALIAS
-        assertNull(tbl.get(6)); // VALUE_ALIAS
-        assertEquals("java.lang.Long", tbl.get(7)); // KEY_TYPE_NAME
-        assertNotNull(tbl.get(8)); // VALUE_TYPE_NAME
+        assertEquals(cacheId, tbl.get(0)); // CACHE_GROUP_ID
+        assertEquals(cacheName, tbl.get(1)); // CACHE_GROUP_NAME
+        assertEquals(cacheId, tbl.get(2)); // CACHE_ID
+        assertEquals(cacheName, tbl.get(3)); // CACHE_NAME
+        assertEquals(DFLT_SCHEMA, tbl.get(4)); // SCHEMA_NAME
+        assertEquals("T1", tbl.get(5)); // TABLE_NAME
+        assertNull(tbl.get(6)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(7)); // KEY_ALIAS
+        assertNull(tbl.get(8)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(9)); // KEY_TYPE_NAME
+        assertNotNull(tbl.get(10)); // VALUE_TYPE_NAME
 
         execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 
@@ -816,7 +811,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getStripedExecutorService(),
             "STRIPED_THREADPOOL_QUEUE",
             "sys");
     }
@@ -824,7 +819,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerExecutor() throws Exception {
-        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite0.context().pools().getDataStreamerExecutorService(),
             "DATASTREAM_THREADPOOL_QUEUE",
             "data-streamer");
     }
@@ -1071,6 +1066,127 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
+    /** */
+    @Test
+    public void testBinaryMeta() {
+        IgniteCache<Integer, TestObjectAllTypes> c1 = ignite0.createCache("test-cache");
+        IgniteCache<Integer, TestObjectEnum> c2 = ignite0.createCache("test-enum-cache");
+
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40), ACCOUNT BIGINT)");
+        execute(ignite0, "INSERT INTO T1(ID, NAME, ACCOUNT) VALUES(1, 'test', 1)");
+
+        c1.put(1, new TestObjectAllTypes());
+        c2.put(1, TestObjectEnum.A);
+
+        List<List<?>> view =
+            execute(ignite0, "SELECT TYPE_NAME, FIELDS_COUNT, FIELDS, IS_ENUM FROM SYS.BINARY_METADATA");
+
+        assertNotNull(view);
+        assertEquals(3, view.size());
+
+        for (List<?> meta : view) {
+            if (TestObjectEnum.class.getName().contains( meta.get(0).toString())) {
+                assertTrue((Boolean)meta.get(3));
+
+                assertEquals(0, meta.get(1));
+            }
+            else if (TestObjectAllTypes.class.getName().contains(meta.get(0).toString())) {
+                assertFalse((Boolean)meta.get(3));
+
+                Field[] fields = TestObjectAllTypes.class.getDeclaredFields();
+
+                assertEquals(fields.length, meta.get(1));
+
+                for (Field field : fields)
+                    assertTrue(meta.get(2).toString().contains(field.getName()));
+            }
+            else {
+                assertFalse((Boolean)meta.get(3));
+
+                assertEquals(2, meta.get(1));
+
+                assertTrue(meta.get(2).toString().contains("NAME"));
+                assertTrue(meta.get(2).toString().contains("ACCOUNT"));
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMetastorage() throws Exception {
+        IgniteCacheDatabaseSharedManager db = ignite0.context().cache().context().database();
+
+        SystemView<MetastorageView> metaStoreView = ignite0.context().systemView().view(METASTORE_VIEW);
+
+        assertNotNull(metaStoreView);
+
+        String name = "test-key";
+        String val = "test-value";
+        String unmarshalledName = "unmarshalled-key";
+        String unmarshalledVal = "[Raw data. 0 bytes]";
+
+        db.checkpointReadLock();
+
+        try {
+            db.metaStorage().write(name, val);
+            db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
+        } finally {
+            db.checkpointReadUnlock();
+        }
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            name, val).size());
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.METASTORAGE WHERE name = ? AND value = ?",
+            unmarshalledName, unmarshalledVal).size());
+    }
+
+    /** */
+    @Test
+    public void testDistributedMetastorage() throws Exception {
+        DistributedMetaStorage dms = ignite0.context().distributedMetastorage();
+
+        SystemView<MetastorageView> distributedMetaStoreView = ignite0.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
+
+        assertNotNull(distributedMetaStoreView);
+
+        String name = "test-distributed-key";
+        String val = "test-distributed-value";
+
+        dms.write(name, val);
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?",
+            name, val).size());
+
+        assertTrue(waitForCondition(() -> execute(ignite1,
+            "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?", name, val).size() == 1,
+            getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        String snap0 = "testSnapshot0";
+        String snap1 = "testSnapshot1";
+
+        int nodesCnt = G.allGrids().size();
+
+        assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
+
+        ignite0.snapshot().createSnapshot(snap1).get();
+
+        assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0,
+            "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
+    }
+
     /**
      * Execute query on given node.
      *
@@ -1088,14 +1204,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /**
      * Affinity function with fixed partition allocation.
      */
-    private static class TestAffinityFunction implements AffinityFunction {
+    public static class TestAffinityFunction implements AffinityFunction {
         /** Partitions to nodes map. */
         private final String[][] partMap;
 
         /**
          * @param partMap Parition allocation map, contains nodes consistent ids for each partition.
          */
-        private TestAffinityFunction(String[][] partMap) {
+        public TestAffinityFunction(String[][] partMap) {
             this.partMap = partMap;
         }
 

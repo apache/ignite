@@ -53,7 +53,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      * @param topVer Topology version.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
@@ -65,7 +64,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         @NotNull AffinityTopologyVersion topVer,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        @Nullable UUID subjId,
         int taskNameHash,
         byte flags,
         boolean addDepInfo
@@ -76,7 +74,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             topVer,
             syncMode,
             op,
-            subjId,
             taskNameHash,
             flags,
             addDepInfo);

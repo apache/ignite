@@ -52,7 +52,8 @@ public class CheckIndexesInlineSizeOnNodeJoinMultiJvmTest extends GridCommonAbst
     private static final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /** */
-    private static final String INDEXES_WARN_MSG_FORMAT = "PUBLIC#TEST_TABLE#L_IDX(%d,%d),PUBLIC#TEST_TABLE#S1_IDX(%d,%d),PUBLIC#TEST_TABLE#I_IDX(%d,%d)";
+    private static final String INDEXES_WARN_MSG_FORMAT =
+        "PUBLIC#TEST_TABLE#L_IDX(%d,%d),PUBLIC#TEST_TABLE#S1_IDX(%d,%d),PUBLIC#TEST_TABLE#I_IDX(%d,%d)";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -209,7 +210,15 @@ public class CheckIndexesInlineSizeOnNodeJoinMultiJvmTest extends GridCommonAbst
 
     /** */
     private String generateIndexesWarnMessage(UUID nodeId, int payloadSize1, int payloadSize2) {
-        String indexesInfo = format(INDEXES_WARN_MSG_FORMAT, payloadSize1, payloadSize2, payloadSize1, payloadSize2, payloadSize1, payloadSize2);
+        String indexesInfo = format(
+            INDEXES_WARN_MSG_FORMAT,
+            payloadSize1,
+            payloadSize2,
+            payloadSize1,
+            payloadSize2,
+            payloadSize1,
+            payloadSize2
+        );
 
         return format(INLINE_SIZES_DIFFER_WARN_MSG_FORMAT, nodeId, indexesInfo);
     }

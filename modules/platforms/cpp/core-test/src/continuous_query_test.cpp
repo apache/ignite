@@ -133,8 +133,9 @@ public:
      * @param key Key.
      * @param oldVal Old value.
      * @param val Current value.
+     * @param eType Evenet type.
      */
-    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val)
+    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val, CacheEntryEventType::T eType)
     {
         CacheEntryEvent<K, V> event;
         bool success = eventQueue.Pull(event, boost::chrono::seconds(1));
@@ -144,6 +145,7 @@ public:
         BOOST_CHECK_EQUAL(event.GetKey(), key);
         BOOST_CHECK_EQUAL(event.HasOldValue(), oldVal.is_initialized());
         BOOST_CHECK_EQUAL(event.HasValue(), val.is_initialized());
+        BOOST_CHECK_EQUAL(event.GetEventType(), eType);
 
         if (oldVal && event.HasOldValue())
             BOOST_CHECK_EQUAL(event.GetOldValue().value, oldVal->value);
@@ -274,11 +276,6 @@ namespace ignite
             }
         };
 
-        namespace
-        {
-            extern const char typeName[] = "RangeFilter";
-        }
-
         template<typename K, typename V>
         struct BinaryType< RangeFilter<K,V> > : BinaryTypeDefaultAll< RangeFilter<K,V> >
         {
@@ -339,16 +336,16 @@ struct ContinuousQueryTestSuiteFixture
 void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 {
     cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10), CacheEntryEventType::CREATE);
 
     cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20), CacheEntryEventType::UPDATE);
 
     cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20), CacheEntryEventType::CREATE);
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20), CacheEntryEventType::REMOVE);
 }
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
@@ -615,7 +612,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
 
     ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr));
 
-    BOOST_CHECK_EQUAL(qry.GetBufferSize(), QueryType::DEFAULT_BUFFER_SIZE);
+    BOOST_CHECK_EQUAL(qry.GetBufferSize(), (int32_t) QueryType::DEFAULT_BUFFER_SIZE);
 
     qry.SetBufferSize(2 * QueryType::DEFAULT_BUFFER_SIZE);
 
@@ -689,14 +686,14 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
     cache.Put(150, TestEntry(1502));
     cache.Remove(150);
 
-    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
-    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010), CacheEntryEventType::CREATE);
 
-    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
-    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421), CacheEntryEventType::UPDATE);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421), CacheEntryEventType::REMOVE);
 
-    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490), CacheEntryEventType::CREATE);
 }
 
 BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
@@ -739,14 +736,14 @@ BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
     for (int i = 200; i < 250; ++i)
         cache2.Put(i, TestEntry(i * 10));
 
-    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
-    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010), CacheEntryEventType::CREATE);
 
-    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
-    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421), CacheEntryEventType::UPDATE);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421), CacheEntryEventType::REMOVE);
 
-    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490), CacheEntryEventType::CREATE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

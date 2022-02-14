@@ -83,7 +83,7 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         Integer zeroCentre = mdl.predict(VectorUtils.num2Vec(0.0));
 
-        assertTrue(mdl.getCenters()[zeroCentre].get(0) == 0);
+        assertTrue(mdl.centers()[zeroCentre].get(0) == 0);
     }
 
     /**

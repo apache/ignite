@@ -63,12 +63,12 @@ namespace ignite
                 // No-op.
             }
 
-            PointerType Allocate(SizeType len, void* hint = 0)
+            PointerType Allocate(SizeType len, void* = 0)
             {
                 return static_cast<PointerType>(::operator new(len * sizeof(ValueType)));
             }
 
-            void Deallocate(PointerType ptr, SizeType len)
+            void Deallocate(PointerType ptr, SizeType)
             {
                 ::operator delete(ptr);
             }

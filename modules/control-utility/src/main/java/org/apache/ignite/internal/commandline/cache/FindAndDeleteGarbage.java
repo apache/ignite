@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -38,13 +39,12 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
 
 /**
  * Command to find and delete garbage which could left after destroying caches in shared group.
  */
-public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Arguments> {
+public class FindAndDeleteGarbage extends AbstractCommand<FindAndDeleteGarbage.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String GROUPS = "groupName1,...,groupNameN";

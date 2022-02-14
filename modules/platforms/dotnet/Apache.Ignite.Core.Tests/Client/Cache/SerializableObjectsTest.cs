@@ -35,7 +35,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         /** */
         private static readonly int[] Keys = Enumerable.Range(0, EntryCount).ToArray();
-        
+
+        public SerializableObjectsTest() : base(1, enableServerListLogging: true)
+        {
+        }
+
         /// <summary>
         /// Tests DateTime metadata caching.
         /// </summary>
@@ -44,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var requestName = scanQuery ? "ClientCacheScanQuery" : "ClientCacheGetAll";
             var cache = GetPopulatedCache();
-            
+
             var res = scanQuery
                 ? cache.Query(new ScanQuery<int, DateTimeTest>()).GetAll()
                 : cache.GetAll(Keys);
@@ -69,29 +73,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Retrieve data from a different client which does not yet have cached meta.
             var requestName = scanQuery ? "ClientCacheScanQuery" : "ClientCacheGetAll";
             var cache = GetClient().GetCache<int, DateTimeTest>(GetPopulatedCache().Name);
-            
+
             var res = scanQuery
                 ? cache.Query(new ScanQuery<int, DateTimeTest>()).GetAll()
                 : cache.GetAll(Keys);
-            
+
             var requests = GetAllServerRequestNames().ToArray();
 
             // Verify that only one BinaryTypeGet request per type is sent to the server.
             var expectedRequests = new[]
             {
-                requestName, 
+                requestName,
                 "ClientBinaryTypeNameGet",
                 "ClientBinaryTypeGet",
                 "ClientBinaryTypeNameGet",
                 "ClientBinaryTypeGet"
             };
             Assert.AreEqual(expectedRequests, requests);
-            
+
             // Verify results.
             Assert.AreEqual(EntryCount, res.Count);
             Assert.AreEqual(DateTimeTest.DefaultDateTime, res.Min(x => x.Value.Date));
         }
-        
+
         /// <summary>
         /// Gets the populated cache.
         /// </summary>
@@ -125,10 +129,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             /** */
             public static readonly DateTime DefaultDateTime = new DateTime(2002, 2, 2);
-            
+
             /** */
             public int Id { get; set; }
-            
+
             /** */
             public DateTime Date { get; set; }
         }

@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -43,6 +45,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for validation of inserts sql queries.
  */
 public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingCommonTest {
+    /** Name of the class that actually not in class path. */
+    private static final String TEST_CLASS_NAME = "MyClass";
+
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
 
@@ -101,7 +106,9 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
                         .addQueryField("fv2", "java.lang.Long", null)
                         .setTableName("INT_KEY_TAB"),
                     new QueryEntity(SuperKey.class, String.class)
-                        .setTableName("SUPER_TAB")
+                        .setTableName("SUPER_TAB"),
+                    new QueryEntity(String.class.getName(), TEST_CLASS_NAME)
+                        .setTableName("MY_CLASS")
                 )), "testCache");
     }
 
@@ -204,6 +211,44 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
     }
 
     /**
+     * Check we can't insert null as column value of a compound PK that has NOT NULL constraint.
+     */
+    @Test
+    public void testValidationOfCompoundKey() {
+        execute("CREATE TABLE PUBLIC.TBL (id1 BIGINT, id2 BIGINT NOT NULL, val BIGINT, PRIMARY KEY(id1, id2))");
+
+        GridTestUtils.assertThrows(log(),
+            () -> execute("INSERT INTO PUBLIC.TBL VALUES (1, null, 3)"),
+            IgniteSQLException.class,
+            "Null value is not allowed for column 'ID2'");
+    }
+
+    /**
+     * Check that raw _KEY and _VAL skipped on validation, hence exception
+     * is not thrown when their classes is not in class path.
+     */
+    @Test
+    public void testValidationSkippedForRawKeyVal() {
+        String key = "foo";
+
+        BinaryObject bo = grid(0).binary().builder(TEST_CLASS_NAME)
+            .setField(key, "bar")
+            .build();
+
+        IgniteCache<Object, Object> binCache = cache.withKeepBinary();
+
+        binCache.put(key, bo);
+
+        List<List<?>> res = binCache.query(new SqlFieldsQuery("SELECT _val FROM MY_CLASS WHERE _key = ?")
+            .setArgs(key)).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertTrue(res.get(0).get(0) instanceof BinaryObject);
+        assertEquals(bo.field(key), ((BinaryObject)res.get(0).get(0)).field(key));
+    }
+
+    /**
      * Execute native sql.
      *
      * @param sql query.
@@ -228,16 +273,21 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
         return cache;
     }
 
+    /** */
     private static class Key {
+        /** */
         private long fk1;
 
+        /** */
         private long fk2;
 
+        /** */
         public Key(long fk1, long fk2) {
             this.fk1 = fk1;
             this.fk2 = fk2;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -248,49 +298,65 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
                 fk2 == key.fk2;
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(fk1, fk2);
         }
     }
 
+    /** */
     private static class SuperKey {
+        /** */
         @QuerySqlField
         private long superKeyId;
 
+        /** */
         @QuerySqlField
         private NestedKey nestedKey;
 
+        /** */
         public SuperKey(long superKeyId, NestedKey nestedKey) {
             this.superKeyId = superKeyId;
             this.nestedKey = nestedKey;
         }
     }
 
+    /** */
     private static class NestedKey {
+        /** */
         @QuerySqlField
         private String name;
 
+        /** */
         public NestedKey(String name) {
             this.name = name;
         }
     }
 
+    /** */
     private static class Val {
+        /** */
         private long fv1;
 
+        /** */
         private long fv2;
 
+        /** */
         public Val(long fv1, long fv2) {
             this.fv1 = fv1;
             this.fv2 = fv2;
         }
     }
 
+    /** */
     private static class Val2 {
+        /** */
         private long fv1;
 
+        /** */
         private long fv2;
 
+        /** */
         public Val2(long fv1, long fv2) {
             this.fv1 = fv1;
             this.fv2 = fv2;

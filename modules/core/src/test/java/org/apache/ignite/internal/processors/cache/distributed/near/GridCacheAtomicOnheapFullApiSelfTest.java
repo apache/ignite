@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 
+/** */
 public class GridCacheAtomicOnheapFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {

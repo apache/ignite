@@ -96,20 +96,18 @@ public interface IgniteFuture<V> {
     public boolean isDone();
 
     /**
-     * Registers listener closure to be asynchronously notified whenever future completes.
-     * Closure will be processed in thread that completes this future or (if future already
-     * completed) immediately in current thread.
+     * Registers a callback to be invoked when the future completes.
+     * If the future is already completed, callback will be invoked immediately in the current thread.
      *
      * @param lsnr Listener closure to register. Cannot be {@code null}.
      */
     public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr);
 
     /**
-     * Registers listener closure to be asynchronously notified whenever future completes.
-     * Closure will be processed in specified executor.
+     * Registers a callback to be invoked with the specified executor when the future completes.
      *
      * @param lsnr Listener closure to register. Cannot be {@code null}.
-     * @param exec Executor to run listener. Cannot be {@code null}.
+     * @param exec Executor to invoke the listener. Cannot be {@code null}.
      */
     public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, Executor exec);
 
@@ -118,6 +116,7 @@ public interface IgniteFuture<V> {
      * It is guaranteed that done callback will be called only ONCE.
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param <T> Type of the converted result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb);
@@ -128,6 +127,7 @@ public interface IgniteFuture<V> {
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @param exec Executor to run done callback. Cannot be {@code null}.
+     * @param <T> Type of the converted result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec);

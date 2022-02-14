@@ -28,7 +28,7 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorize
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer}.
@@ -75,7 +75,7 @@ public class DecisionTreeClassificationTrainerExample {
 
                 // Train decision tree model.
                 LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     ignite,
                     trainingSet,
                     vectorizer

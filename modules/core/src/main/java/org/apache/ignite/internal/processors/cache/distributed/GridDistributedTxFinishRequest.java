@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -93,9 +92,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /** IO policy. */
     private byte plc;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -146,7 +142,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        @Nullable UUID subjId,
         int taskNameHash,
         int txSize,
         boolean addDepInfo
@@ -166,7 +161,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.plc = plc;
         this.syncMode = syncMode;
         this.baseVer = baseVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.txSize = txSize;
 
@@ -198,13 +192,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      */
     protected final boolean isFlag(int mask) {
         return (flags & mask) != 0;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public final UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -368,42 +355,36 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -482,14 +463,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 reader.incrementState();
 
             case 15:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -501,7 +474,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -509,7 +482,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -517,7 +490,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -525,7 +498,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -533,7 +506,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -553,7 +526,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */

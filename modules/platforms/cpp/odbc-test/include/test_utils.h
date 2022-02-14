@@ -58,6 +58,25 @@
     }
 
 /**
+ * Copy std::string to buffer.
+ *
+ * @param dst Destination buffer.
+ * @param src Source std::string.
+ * @param n Copy at most n bytes of src.
+ */
+inline void CopyStringToBuffer(char *dst, const std::string& src, size_t n) {
+    if (n == 0) {
+        return;
+    }
+
+    using std::min;
+    size_t size = min(src.size(), n - 1);
+
+    memset(dst + size, '\0', n - size);
+    memcpy(dst, src.c_str(), size);
+}
+
+/**
  * Client ODBC erorr.
  */
 class OdbcClientError : public std::exception
@@ -121,18 +140,20 @@ namespace ignite_test
      *
      * @param handleType Type of the handle.
      * @param handle Handle.
+     * @param idx Error record index.
      * @return Error state.
      */
-    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle);
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle, int idx = 1);
 
     /**
      * Extract error message.
      *
      * @param handleType Type of the handle.
      * @param handle Handle.
+     * @param idx Error record index.
      * @return Error message.
      */
-    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
+    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle, int idx = 1);
 
     /**
      * @return Test config directory path.

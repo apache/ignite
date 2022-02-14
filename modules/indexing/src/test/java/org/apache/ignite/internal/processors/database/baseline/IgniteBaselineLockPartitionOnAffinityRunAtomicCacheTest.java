@@ -43,6 +43,7 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 

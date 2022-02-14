@@ -73,6 +73,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
         /** Stream ptr. */
         private final long ptr;
 
+        /** */
         private final ClusterNode node;
 
         /**
@@ -99,7 +100,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
 
                 ctx.writeEvent(writer, new CacheEvent("cacheName", node, node, "msg", evtType, 1, true, 2,
-                    igniteUuid, "txLabel",3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
+                    igniteUuid, "txLabel", 3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
 
                 //noinspection unchecked
                 ctx.writeEvent(writer, new CacheQueryExecutedEvent(node, msg, evtType, "qryType", "cacheName",

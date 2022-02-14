@@ -1,0 +1,299 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Binary Marshaller
+
+== Basic Concepts
+
+Binary Marshaller is a component of Ignite that is responsible for data serialization. It has the advantages:
+
+* It enables you to read an arbitrary field from an object's serialized form without full object deserialization.
+This ability completely removes the requirement to have the cache key and value classes deployed on the server node's classpath.
+* It enables you to add and remove fields from objects of the same type. Given that server nodes do not have model classes
+definitions, this ability allows dynamic change to an object's structure, and even allows multiple clients with different versions of class definitions to co-exist.
+* It enables you to construct new objects based on a type name without having class definitions at all, hence
+allowing dynamic type creation.
+
+Binary objects can be used only when the default binary marshaller is used (i.e. no other marshaller is set to the configuration explicitly).
+
+[NOTE]
+====
+[discrete]
+=== Restrictions
+There are several restrictions that are implied by the BinaryObject format implementation:
+
+* Internally, Ignite does not write field and type names but uses a lower-case name hash to identify a field or a type.
+It means that fields or types with the same name hash are not allowed. Even though serialization will not work out-of-the-box
+in the case of hash collision, Ignite provides a way to resolve this collision at the configuration level.
+* For the same reason, BinaryObject format does not allow identical field names on different levels of a class hierarchy.
+* If a class implements `Externalizable` interface, Ignite will use `OptimizedMarshaller` instead of the binary one.
+The `OptimizedMarshaller` uses `writeExternal()` and `readExternal()` methods to serialize and deserialize objects of
+this class which requires adding classes of `Externalizable` objects to the classpath of server nodes.
+====
+
+The `IgniteBinary` facade, which can be obtained from an instance of Ignite, contains all the necessary methods to work with binary objects.
+
+[NOTE]
+====
+[discrete]
+=== Automatic Hash Code Calculation and Equals Implementation
+There are several restrictions that are implied by the BinaryObject format implementation:
+
+If an object can be serialized into a binary form, then Ignite will calculate its hash code during serialization and
+write it to the resulting binary array. Also, Ignite provides a custom implementation of the equals method for the binary
+object's comparison needs. This means that you do not need to override the GetHashCode and Equals methods of your custom
+keys and values in order for them to be used in Ignite, unless they can not be serialized into the binary form.
+For instance, objects of `Externalizable` type cannot be serialized into the binary form and require you to implement
+the `hashCode` and `equals` methods manually. See Restrictions section above for more details.
+====
+
+== Configuring Binary Objects
+
+In the vast majority of use cases, there is no need to additionally configure binary objects.
+
+However, in a case when you need to override the default type and field IDs calculation, or to plug in `BinarySerializer`,
+a `BinaryConfiguration` object should be defined in `IgniteConfiguration`. This object allows specifying a global
+name mapper, a global ID mapper, and a global binary serializer as well as per-type mappers and serializers. Wildcards
+are supported for per-type configuration, in which case, the provided configuration will be applied to all types
+that match the type name template.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="binaryConfiguration">
+    <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+
+      <property name="nameMapper" ref="globalNameMapper"/>
+      <property name="idMapper" ref="globalIdMapper"/>
+
+      <property name="typeConfigurations">
+        <list>
+          <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+            <property name="typeName" value="org.apache.ignite.examples.*"/>
+            <property name="serializer" ref="exampleSerializer"/>
+          </bean>
+        </list>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+--
+
+== BinaryObject API
+
+By default, Ignite works with deserialized values as it is the most common use case. To enable `BinaryObject`
+processing, a user needs to obtain an instance of `IgniteCache` using the `withKeepBinary()` method. When enabled,
+this flag will ensure that objects returned from the cache will be in `BinaryObject` format, when possible. The same
+applies to values being passed to the `EntryProcessor` and `CacheInterceptor`.
+
+[NOTE]
+====
+[discrete]
+=== Platform Types
+Note that not all types will be represented as `BinaryObject` when the `withKeepBinary()` flag is enabled. There is a
+set of 'platform' types that includes primitive types, String, UUID, Date, Timestamp, BigDecimal, Collections,
+Maps and arrays of these that will never be represented as a `BinaryObject`.
+
+Note that in the example below key type Integer does not change because it is a platform type.
+====
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+// Create a regular Person object and put it to the cache.
+Person person = buildPerson(personId);
+ignite.cache("myCache").put(personId, person);
+
+// Get an instance of binary-enabled cache.
+IgniteCache<Integer, BinaryObject> binaryCache = ignite.cache("myCache").withKeepBinary();
+
+// Get the above person object in the BinaryObject format.
+BinaryObject binaryPerson = binaryCache.get(personId);
+----
+--
+
+== Modifying Binary Objects Using BinaryObjectBuilder
+
+`BinaryObject` instances are immutable. An instance of `BinaryObjectBuilder` must be used in order to update fields and
+create a new `BinaryObject`.
+
+An instance of `BinaryObjectBuilder` can be obtained from `IgniteBinary` facade. The builder may be created using a type
+name, in this case the returned builder will contain no fields, or it may be created using an existing `BinaryObject`,
+in this case the returned builder will copy all the fields from the given `BinaryObject`.
+
+Another way to get an instance of `BinaryObjectBuilder` is to call `toBuilder()` on an existing instance of a `BinaryObject`.
+This will also copy all data from the `BinaryObject` to the created builder.
+
+[NOTE]
+====
+[discrete]
+=== Limitations
+
+* You cannot change the types of existing fields.
+* You cannot change the order of enum values or add new constants at the beginning or in the middle of the list of enum's
+values. You can add new constants to the end of the list though.
+====
+
+Below is an example of using the `BinaryObject` API to process data on server nodes without having user classes deployed
+on servers and without actual data deserialization.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+// The EntryProcessor is to be executed for this key.
+int key = 101;
+
+cache.<Integer, BinaryObject>withKeepBinary().invoke(
+  key, new CacheEntryProcessor<Integer, BinaryObject, Object>() {
+    public Object process(MutableEntry<Integer, BinaryObject> entry,
+                          Object... objects) throws EntryProcessorException {
+            // Create builder from the old value.
+        BinaryObjectBuilder bldr = entry.getValue().toBuilder();
+
+        //Update the field in the builder.
+        bldr.setField("name", "Ignite");
+
+        // Set new value to the entry.
+        entry.setValue(bldr.build());
+
+        return null;
+     }
+  });
+----
+--
+
+== BinaryObject Type Metadata
+
+As it was mentioned above, binary object structure may be changed at runtime hence it may also be useful to get
+information about a particular type that is stored in a cache such as field names, field type names, and affinity
+field name. Ignite facilitates this requirement via the `BinaryType` interface.
+
+This interface also introduces a faster version of field getter called `BinaryField`. The concept is similar to java
+reflection and allows to cache certain information about the field being read in the `BinaryField` instance, which is
+useful when reading the same field from a large collection of binary objects.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+Collection<BinaryObject> persons = getPersons();
+
+BinaryField salary = null;
+
+double total = 0;
+int cnt = 0;
+
+for (BinaryObject person : persons) {
+    if (salary == null)
+        salary = person.type().field("salary");
+
+    total += salary.value(person);
+    cnt++;
+}
+
+double avg = total / cnt;
+----
+--
+
+== BinaryObject and CacheStore
+
+Setting `withKeepBinary()` on the cache API does not affect the way user objects are passed to a `CacheStore`. This is
+intentional because in most cases a single `CacheStore` implementation works either with deserialized classes, or with
+`BinaryObject` representations. To control the way objects are passed to the store, the `storeKeepBinary` flag on
+`CacheConfiguration` should be used. When this flag is set to `false`, deserialized values will be passed to the store,
+otherwise `BinaryObject` representations will be used.
+
+Below is an example pseudo-code implementation of a store working with `BinaryObject`:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+public class CacheExampleBinaryStore extends CacheStoreAdapter<Integer, BinaryObject> {
+    @IgniteInstanceResource
+    private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject load(Integer key) {
+        IgniteBinary binary = ignite.binary();
+
+        List<?> rs = loadRow(key);
+
+        BinaryObjectBuilder bldr = binary.builder("Person");
+
+        for (int i = 0; i < rs.size(); i++)
+            bldr.setField(name(i), rs.get(i));
+
+        return bldr.build();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(Cache.Entry<? extends Integer, ? extends BinaryObject> entry) {
+        BinaryObject obj = entry.getValue();
+
+        BinaryType type = obj.type();
+
+        Collection<String> fields = type.fieldNames();
+
+        List<Object> row = new ArrayList<>(fields.size());
+
+        for (String fieldName : fields)
+            row.add(obj.field(fieldName));
+
+        saveRow(entry.getKey(), row);
+    }
+}
+----
+--
+
+== Binary Name Mapper and Binary ID Mapper
+
+Internally, Ignite never writes full strings for field or type names. Instead, for performance reasons, Ignite writes
+integer hash codes for type and field names. Testing has indicated that hash code conflicts for the type names or the
+field names within the same type are virtually non-existent and, to gain performance, it is safe to work with hash codes.
+For the cases when hash codes for different types or fields actually do collide, `BinaryNameMapper` and `BinaryIdMapper`
+support overriding the automatically generated hash code IDs for the type and field names.
+
+`BinaryNameMapper` - maps type/class and field names to different names.
+`BinaryIdMapper` - maps given from `BinaryNameMapper` type and field name to ID that will be used by Ignite in internals.
+
+Ignite provides the following out-of-the-box mappers implementation:
+
+* `BinaryBasicNameMapper` - a basic implementation of `BinaryNameMapper` that returns a full or a simple name of a given
+class depending on whether the `setSimpleName(boolean useSimpleName)` property is set.
+* `BinaryBasicIdMapper` - a basic implementation of `BinaryIdMapper`. It has a configuration property called
+`setLowerCase(boolean isLowerCase)`. If the property is set to `false` then a hash code of given type or field name
+will be returned. If the property is set to `true` then a hash code of given type or field name in lower case will be returned.
+
+If you are using Java or .NET clients and do not specify mappers in `BinaryConfiguration`, then Ignite will use
+`BinaryBasicNameMapper` and the `simpleName` property will be set to `false`, and `BinaryBasicIdMapper` and the
+`lowerCase` property will be set to `true`.
+
+If you are using the C{pp} client and do not specify mappers in `BinaryConfiguration`, then Ignite will use
+`BinaryBasicNameMapper` and the `simpleName` property will be set to `true`, and `BinaryBasicIdMapper` and the
+`lowerCase` property will be set to `true`.
+
+By default, there is no need to configure anything if you use Java, .NET or C{pp}. Mappers need to be configured if
+there is a tricky name conversion when platform interoperability is needed.

@@ -274,6 +274,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that fair lock favors granting access to the longest-waiting thread
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestFairLockGuaranteesOrder()
         {
             const int count = 20;

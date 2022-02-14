@@ -80,13 +80,13 @@ public class VariationsIteratorTest {
     @Test
     public void test4() throws Exception {
         Object[][] arr = new Object[][]{
-            {0,1,2},
-            {0,1},
-            {0,1,2,4},
-            {0,1},
+            {0, 1, 2},
+            {0, 1},
+            {0, 1, 2, 4},
+            {0, 1},
             {0},
             {0},
-            {0,1,2,4},
+            {0, 1, 2, 4},
         };
 
         checkIterator(arr);

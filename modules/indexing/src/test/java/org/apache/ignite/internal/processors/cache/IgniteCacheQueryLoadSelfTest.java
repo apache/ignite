@@ -148,7 +148,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
-        cache.loadCache(new P2<Integer,ValueObject>() {
+        cache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }

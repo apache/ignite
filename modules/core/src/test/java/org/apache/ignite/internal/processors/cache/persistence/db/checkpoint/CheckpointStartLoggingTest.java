@@ -44,7 +44,7 @@ public class CheckpointStartLoggingTest extends GridCommonAbstractTest {
         "walCpRecordFsyncDuration=" + VALID_MS_PATTERN + ", " +
         "writeCheckpointEntryDuration=" + VALID_MS_PATTERN + ", " +
         "splitAndSortCpPagesDuration=" + VALID_MS_PATTERN + ", " +
-        ".* pages=[1-9][0-9]*, " +
+        ".*pages=[1-9][0-9]*, " +
         "reason=.*";
 
     /** */

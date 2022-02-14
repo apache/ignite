@@ -22,6 +22,7 @@ import org.apache.ignite.tests.CassandraDirectPersistenceTest;
 import org.apache.ignite.tests.CassandraSessionImplTest;
 import org.apache.ignite.tests.DDLGeneratorTest;
 import org.apache.ignite.tests.DatasourceSerializationTest;
+import org.apache.ignite.tests.IgnitePersistentStorePrimitiveTest;
 import org.apache.ignite.tests.IgnitePersistentStoreTest;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
@@ -44,7 +45,8 @@ import org.junit.runners.Suite.SuiteClasses;
     CassandraSessionImplTest.class,
     DatasourceSerializationTest.class,
     DDLGeneratorTest.class,
-    IgnitePersistentStoreTest.class})
+    IgnitePersistentStoreTest.class,
+    IgnitePersistentStorePrimitiveTest.class})
 public class IgniteCassandraStoreTestSuite {
     /** */
     private static final Logger LOGGER = Logger.getLogger(IgniteCassandraStoreTestSuite.class.getName());

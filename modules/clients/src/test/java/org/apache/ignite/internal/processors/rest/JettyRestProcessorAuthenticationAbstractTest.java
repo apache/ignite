@@ -23,12 +23,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 
 /**
  * Test REST with enabled authentication.
@@ -112,9 +112,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         assertTrue(res.asBoolean());
 
-        IgniteAuthenticationProcessor auth = grid(0).context().authentication();
-
-        assertNotNull(auth.authenticate("user1", "password1"));
+        assertNotNull(authenticate(grid(0), "user1", "password1"));
 
         // Update user password.
         ret = content(null, GridRestCommand.UPDATE_USER,
@@ -125,7 +123,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         assertTrue(res.asBoolean());
 
-        assertNotNull(auth.authenticate("user1", "password2"));
+        assertNotNull(authenticate(grid(0), "user1", "password2"));
 
         // Remove user.
         ret = content(null, GridRestCommand.REMOVE_USER,
@@ -137,7 +135,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                grid(0).context().authentication().authenticate("user1", "password1");
+                authenticate(grid(0), "user1", "password1");
 
                 return null;
             }

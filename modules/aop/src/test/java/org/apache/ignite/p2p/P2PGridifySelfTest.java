@@ -28,12 +28,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 @GridCommonTest(group = "P2P")
 public class P2PGridifySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */

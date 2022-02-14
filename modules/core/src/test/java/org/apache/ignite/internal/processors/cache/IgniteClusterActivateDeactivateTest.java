@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -66,8 +67,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -1404,6 +1407,53 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Test
     public void testDeactivateFromReadOnlyFailover3() throws Exception {
         stateChangeFailover3(ACTIVE_READ_ONLY, INACTIVE);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testDeactivateMXBean() throws Exception {
+        Ignite ignite = startGrid();
+
+        IgniteMXBean mxBean = getMxBean(ignite.name(), "Kernal", "IgniteKernal", IgniteMXBean.class);
+
+        if (persistenceEnabled())
+            ignite.cluster().state(ACTIVE);
+
+        checkDeactivation(ignite, () -> mxBean.active(false), false);
+
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
+
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
+
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
+    }
+
+    /**
+     * Checks that not forced deactivation fails only if cluster has in-memory caches.
+     *
+     * @param ignite Ignite instance.
+     * @param deactivator Deactivation call to check.
+     * @param forceDeactivation {@code True} if {@code deactivator} is forced.
+     */
+    private void checkDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation) {
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        if (persistenceEnabled() || forceDeactivation) {
+            deactivator.run();
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(ACTIVE);
+        }
+        else {
+            assertThrows(log, () -> {
+                deactivator.run();
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+        }
+
+        assertEquals(ACTIVE, ignite.cluster().state());
     }
 
     /**

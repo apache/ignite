@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
@@ -70,6 +71,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         executeSql(ignite, "CREATE TABLE " + tblName + " (id int, name varchar, age int, city varchar, " +
             "primary key (id, name)) WITH \"cache_name=" + tblName + "\"");
         executeSql(ignite, "CREATE INDEX ON " + tblName + "(city, age)");
+
+        forceCheckpoint();
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
@@ -109,7 +112,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         forceCheckpoint();
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false,
+            new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
             0, 0, false, true);
 
         for (Ignite node : G.allGrids()) {
@@ -153,8 +157,14 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
 
+        for (Ignite ig : G.allGrids()) {
+            GridTestUtils.waitForCondition(
+                () -> ((IgniteEx)ig).context().cache().publicCaches().stream().allMatch(c -> c.indexReadyFuture().isDone()),
+                TIMEOUT);
+        }
+
         List<String> currIdxNames = executeSql(snp, "SELECT * FROM SYS.INDEXES").stream().
-            map(l -> (String)l.get(0))
+            map(l -> (String)l.get(6))
             .collect(Collectors.toList());
 
         assertTrue("Concurrently created indexes must not exist in the snapshot: " + currIdxNames,

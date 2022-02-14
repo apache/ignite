@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
@@ -42,6 +43,7 @@ import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationConnectOnIn
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitSslTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationHandshakeTimeoutTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
@@ -107,9 +109,10 @@ import org.junit.runners.Suite;
 
     GridTcpCommunicationInverseConnectionEstablishingTest.class,
     GridTotallyUnreachableClientTest.class,
-    GridSandboxedClientWithoutNetworkTest.class
+    GridSandboxedClientWithoutNetworkTest.class,
 
-    //GridCacheDhtLockBackupSelfTest.class,
+    GridCacheDhtLockBackupSelfTest.class,
+    TcpCommunicationHandshakeTimeoutTest.class,
 })
 public class IgniteSpiCommunicationSelfTestSuite {
 }

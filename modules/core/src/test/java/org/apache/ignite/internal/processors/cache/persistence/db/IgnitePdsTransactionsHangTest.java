@@ -228,7 +228,9 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                     max = Math.max(max, sum);
                     min = Math.min(min, sum);
 
-                    log.info("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
+                    log.info(
+                        "Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD)
+                    );
                 }
             }
 
@@ -290,7 +292,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         private static TestEntity newTestEntity(Random random) {
             TestEntity entity = new TestEntity();
 
-            entity.setLongVal((long) random.nextInt(1_000));
+            entity.setLongVal((long)random.nextInt(1_000));
             entity.setIntVal(random.nextInt(1_000));
             entity.setStrVal("test" + random.nextInt(1_000));
 

@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class FullPageIdTableTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** */
     private static final int CACHE_ID_RANGE = 1;

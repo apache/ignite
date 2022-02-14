@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-#include "impl/message.h"
 #include "impl/transactions/transactions_impl.h"
-#include "impl/transactions/transaction_impl.h"
-#include "impl/response_status.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::impl::thin;
@@ -32,20 +29,10 @@ namespace ignite
         {
             namespace transactions
             {
-                ThreadLocalInstance<SP_TransactionImpl> TransactionImpl::threadTx;
-
                 TransactionsImpl::TransactionsImpl(const SP_DataRouter& router) :
                     router(router)
                 {
-                }
-
-                template<typename ReqT, typename RspT>
-                void TransactionsImpl::SendTxMessage(const ReqT& req, RspT& rsp)
-                {
-                    router.Get()->SyncMessage(req, rsp);
-
-                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX, rsp.GetError().c_str());
+                    // No-op.
                 }
 
                 SharedPointer<TransactionImpl> TransactionsImpl::TxStart(
@@ -55,158 +42,35 @@ namespace ignite
                         int32_t txSize,
                         SharedPointer<common::FixedSizeArray<char> > label)
                 {
-                    SP_TransactionImpl tx = TransactionImpl::Create(*this, concurrency, isolation, timeout, txSize, label);
+                    SP_TransactionImpl tx = TransactionImpl::Create(*this, router, concurrency, isolation, timeout, txSize, label);
 
                     return tx;
                 }
 
-                SP_TransactionImpl TransactionImpl::Create(
-                    TransactionsImpl& txs,
-                    TransactionConcurrency::Type concurrency,
-                    TransactionIsolation::Type isolation,
-                    int64_t timeout,
-                    int32_t txSize,
-                    SharedPointer<common::FixedSizeArray<char> > label)
+                SP_TransactionImpl TransactionsImpl::GetCurrent()
                 {
                     SP_TransactionImpl tx = threadTx.Get();
 
                     TransactionImpl* ptr = tx.Get();
 
-                    if (ptr && !ptr->IsClosed())
+                    if (ptr && ptr->IsClosed())
                     {
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
-                    }
+                        threadTx.Remove();
 
-                    TxStartRequest req(concurrency, isolation, timeout, txSize, label);
-
-                    Int32Response rsp;
-
-                    txs.SendTxMessage(req, rsp);
-
-                    int32_t curTxId = rsp.GetValue();
-
-                    tx = SP_TransactionImpl(new TransactionImpl(txs, curTxId, concurrency, isolation, timeout, txSize));
-
-                    threadTx.Set(tx);
-
-                    return tx;
-                }
-
-                SP_TransactionImpl TransactionImpl::GetCurrent()
-                {
-                    SP_TransactionImpl tx = threadTx.Get();
-
-                    TransactionImpl* ptr = tx.Get();
-
-                    if (ptr)
-                    {
-                        if (ptr->IsClosed())
-                        {
-                            tx = SP_TransactionImpl();
-
-                            threadTx.Remove();
-                        }
-                    }
-                    else
-                    {
                         tx = SP_TransactionImpl();
                     }
 
                     return tx;
                 }
 
-                bool TransactionImpl::IsClosed() const
+                void TransactionsImpl::SetCurrent(const SP_TransactionImpl& impl)
                 {
-                    return closed;
+                    threadTx.Set(impl);
                 }
 
-                SP_TransactionImpl TransactionsImpl::GetCurrent()
+                void TransactionsImpl::ResetCurrent()
                 {
-                    return TransactionImpl::GetCurrent();
-                }
-
-                int32_t TransactionsImpl::TxCommit(int32_t txId)
-                {
-                    TxEndRequest req(txId, true);
-
-                    Response rsp;
-
-                    SendTxMessage(req, rsp);
-
-                    return rsp.GetStatus();
-                }
-
-                int32_t TransactionsImpl::TxRollback(int32_t txId)
-                {
-                    TxEndRequest req(txId, false);
-
-                    Response rsp;
-
-                    SendTxMessage(req, rsp);
-
-                    return rsp.GetStatus();
-                }
-
-                int32_t TransactionsImpl::TxClose(int32_t txId)
-                {
-                    return TxRollback(txId);
-                }
-
-                void TransactionImpl::Commit()
-                {
-                    txThreadCheck(*this);
-
-                    txs.TxCommit(txId);
-
-                    txThreadEnd(*this);
-                }
-
-                void TransactionImpl::Rollback()
-                {
-                    txThreadCheck(*this);
-
-                    txs.TxRollback(txId);
-
-                    txThreadEnd(*this);
-                }
-
-                void TransactionImpl::Close()
-                {
-                    txThreadCheck(*this);
-
-                    if (IsClosed())
-                    {
-                        return;
-                    }
-
-                    txs.TxClose(txId);
-
-                    txThreadEnd(*this);
-                }
-
-                void TransactionImpl::Closed()
-                {
-                    closed = true;
-                }
-
-                void TransactionImpl::txThreadEnd(TransactionImpl& tx)
-                {
-                    tx.Closed();
-
-                    threadTx.Set(0);
-                }
-
-                void TransactionImpl::txThreadCheck(const TransactionImpl& inTx)
-                {
-                    SP_TransactionImpl tx = threadTx.Get();
-
-                    TransactionImpl* ptr = tx.Get();
-
-                    if (!ptr)
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_CLOSED);
-
-                    if (ptr->TxId() != inTx.TxId())
-                        throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_DIFFERENT_THREAD);
+                    threadTx.Remove();
                 }
             }
         }

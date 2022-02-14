@@ -146,6 +146,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Empty cache version array. */
     private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
 
+    /** @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING */
+    public static final boolean DFLT_READ_LOAD_BALANCING = true;
+
     /** Kernal context. */
     private GridKernalContext ctx;
 
@@ -273,7 +276,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     private volatile boolean statisticsEnabled;
 
     /** Whether to enable read load balancing. */
-    private final boolean readLoadBalancingEnabled = IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, true);
+    private final boolean readLoadBalancingEnabled =
+        IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, DFLT_READ_LOAD_BALANCING);
 
     /** Flag indicating whether data can be read from backup. */
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
@@ -1378,36 +1382,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId) {
-        if (subjId != null)
-            return subjId;
-
-        return subjectIdPerCall(subjId, operationContextPerCall());
-    }
-
-    /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @param opCtx Optional thread local operation context.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable CacheOperationContext opCtx) {
-        if (opCtx != null)
-            subjId = opCtx.subjectId();
-
-        if (subjId == null)
-            subjId = ctx.localNodeId();
-
-        return subjId;
-    }
-
-    /**
      * @return {@code true} if the skip store flag is set.
      */
     public boolean skipStore() {
@@ -1680,6 +1654,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         return conflictRslvr != null;
     }
 
+    /** @return Conflict resolver. */
+    public CacheVersionConflictResolver conflictResolver() {
+        return conflictRslvr;
+    }
+
     /**
      * Resolve DR conflict.
      *
@@ -1792,7 +1771,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<?> col, boolean keepBinary) {
         return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
     }
 
@@ -1801,10 +1780,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
+     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
-        return unwrapBinaryIfNeeded(o, keepBinary, true);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, @Nullable ClassLoader ldr) {
+        return unwrapBinaryIfNeeded(o, keepBinary, true, ldr);
     }
 
     /**
@@ -1813,10 +1793,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
+     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
-        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy, @Nullable ClassLoader ldr) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy, ldr);
     }
 
     /**
@@ -1832,7 +1813,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                     if (invokeRes.result() != null)
                         res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
-                            keepBinary, false));
+                            keepBinary, false, null));
                 }
 
                 return res;
@@ -1920,6 +1901,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
+     * @param ldr Class loader, used for deserialization from binary representation.
      */
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
@@ -1930,10 +1912,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean cpy,
         final GridCacheVersion ver,
         final long expireTime,
-        final long ttl) {
+        final long ttl,
+        @Nullable ClassLoader ldr) {
         // Creates EntryGetResult
         addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null,
-            ver, expireTime, ttl, ver != null);
+            ver, expireTime, ttl, ver != null, ldr);
     }
 
     /**
@@ -1956,7 +1939,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean needVer) {
         // Uses getRes as result.
         addResult(map, key, getRes.<CacheObject>value(), skipVals, keepCacheObjects, deserializeBinary, cpy, getRes,
-            null, 0, 0, needVer);
+            null, 0, 0, needVer, null);
     }
 
     /**
@@ -1972,6 +1955,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param expireTime Entry expire time.
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
+     * @param ldr Class loader, used for deserialization from binary representation.
      */
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
@@ -1984,14 +1968,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         final GridCacheVersion ver,
         final long expireTime,
         final long ttl,
-        boolean needVer) {
+        boolean needVer,
+        @Nullable ClassLoader ldr) {
         assert key != null;
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy, ldr);
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy, ldr);
 
             assert key0 != null : key;
             assert val0 != null : val;
@@ -2029,7 +2014,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final V1 v;
 
         if (!needVer)
-            v = (V1) val;
+            v = (V1)val;
         else if (getRes == null) {
             v = expireTime != 0 || ttl != 0
                 ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)
@@ -2160,7 +2145,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
+        return mvccEnabled()
+                || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null);
     }
 
     /**

@@ -297,7 +297,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
         {
-#if !NETCOREAPP
             if (!Os.IsWindows)
             {
                 yield break;
@@ -333,9 +332,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     }
                 }
             }
-#else
-            yield break;
-#endif
         }
 
         /// <summary>
@@ -354,8 +350,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield break;
             }
 
-            var file = Shell.BashExecute("readlink -f /usr/bin/java");
+            var file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                yield break;
+            }
 
             var dir = Path.GetDirectoryName(file);
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin

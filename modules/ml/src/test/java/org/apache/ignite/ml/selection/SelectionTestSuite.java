@@ -22,9 +22,12 @@ import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluatorTest;
+import org.apache.ignite.ml.selection.scoring.evaluator.RegressionEvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.RegressionMetricStatsAggregatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.BinaryClassificationEvaluationContextTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricsTest;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricsTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
@@ -42,9 +45,12 @@ import org.junit.runners.Suite;
     TrainTestDatasetSplitterTest.class,
     CacheBasedLabelPairCursorTest.class,
     BinaryClassificationEvaluatorTest.class,
+    RegressionEvaluatorTest.class,
     BinaryClassificationPointwiseMetricStatsAggregatorTest.class,
     RegressionMetricStatsAggregatorTest.class,
-    BinaryClassificationEvaluationContextTest.class
+    BinaryClassificationEvaluationContextTest.class,
+    BinaryClassificationMetricsTest.class,
+    RegressionMetricsTest.class
 })
 public class SelectionTestSuite {
 }

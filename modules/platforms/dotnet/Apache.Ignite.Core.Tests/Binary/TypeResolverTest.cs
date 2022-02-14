@@ -19,9 +19,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Reflection;
+    using System.Reflection.Emit;
 #if !NETCOREAPP
     using System.Linq;
-    using System.Reflection;
 #endif
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -171,6 +172,27 @@ namespace Apache.Ignite.Core.Tests.Binary
                 resolver.ResolveType("TestGenericBinarizable`1[[TypeResolverTest]][]", nameMapper: mapper));
         }
 
+        /// <summary>
+        /// Tests that types from dynamic assemblies can be resolved.
+        /// </summary>
+        [Test]
+        public void TestDynamicallyGeneratedType()
+        {
+            var typeName = nameof(TestDynamicallyGeneratedType) + new Random().Next();
+
+            var assemblyName = new AssemblyName("DynamicAssembly1");
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule1");
+            var typeAttributes = TypeAttributes.Public | TypeAttributes.Class;
+            var typeBuilder = moduleBuilder.DefineType(typeName, typeAttributes);
+            var generatedType = typeBuilder.CreateType();
+
+            var resolver = new TypeResolver();
+            var resolvedType = resolver.ResolveType(typeName);
+
+            Assert.AreEqual(generatedType, resolvedType);
+        }
+
 #if !NETCOREAPP
         /// <summary>
         /// Tests loading a type from referenced assembly that is not yet loaded.
@@ -178,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestReferencedAssemblyLoading()
         {
-            const string dllName = "Apache.Ignite.Core.Tests.TestDll";
+            const string dllName = "Apache.Ignite.Core.Tests.TestDll,";
 
             const string typeName = "Apache.Ignite.Core.Tests.TestDll.TestClass";
 

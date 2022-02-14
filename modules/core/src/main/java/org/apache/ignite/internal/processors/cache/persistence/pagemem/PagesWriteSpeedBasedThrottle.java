@@ -347,7 +347,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         boolean throttleBySizeAndMarkSpeed = dirtyPagesRatio > targetDirtyRatio && markingTooFast;
 
         //for case of speedForMarkAll >> markDirtySpeed, allow write little bit faster than CP average
-        double allowWriteFasterThanCp = (speedForMarkAll > 0 && markDirtySpeed > 0 && speedForMarkAll > markDirtySpeed)
+        double allowWriteFasterThanCp = (markDirtySpeed > 0 && speedForMarkAll > markDirtySpeed)
             ? (0.1 * speedForMarkAll / markDirtySpeed)
             : (dirtyPagesRatio > targetDirtyRatio ? 0.0 : 0.1);
 
@@ -356,7 +356,15 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             : 1.0 + allowWriteFasterThanCp;
         boolean throttleByCpSpeed = curCpWriteSpeed > 0 && markDirtySpeed > (fasterThanCpWriteSpeed * curCpWriteSpeed);
 
-        long delayByCpWrite = throttleByCpSpeed ? calcDelayTime(curCpWriteSpeed, nThreads, slowdown) : 0;
+        long delayByCpWrite;
+        if (throttleByCpSpeed) {
+            long nanosecPerDirtyPage = TimeUnit.SECONDS.toNanos(1) * nThreads / (markDirtySpeed);
+
+            delayByCpWrite = calcDelayTime(curCpWriteSpeed, nThreads, slowdown) - nanosecPerDirtyPage;
+        }
+        else
+            delayByCpWrite = 0;
+
         long delayByMarkAllWrite = throttleBySizeAndMarkSpeed ? calcDelayTime(speedForMarkAll, nThreads, slowdown) : 0;
         return Math.max(delayByCpWrite, delayByMarkAllWrite);
     }

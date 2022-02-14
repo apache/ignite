@@ -39,12 +39,6 @@ namespace ignite
             /** Buffers size */
             enum { BUFFER_SIZE = 0x10000 };
 
-            /** The time in seconds the connection needs to remain idle before starts sending keepalive probes. */
-            enum { KEEP_ALIVE_IDLE_TIME = 60 };
-
-            /** The time in seconds between individual keepalive probes. */
-            enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
-
             /**
              * Constructor.
              */
@@ -105,11 +99,6 @@ namespace ignite
             void InternalClose();
 
             /**
-             * Tries set socket options.
-             */
-            void TrySetOptions();
-
-            /**
              * Wait on the socket for any event for specified time.
              * This function uses poll to achive timeout functionality
              * for every separate socket operation.
@@ -127,7 +116,7 @@ namespace ignite
             /** Blocking flag. */
             bool blocking;
 
-            IGNITE_NO_COPY_ASSIGNMENT(TcpSocketClient)
+            IGNITE_NO_COPY_ASSIGNMENT(TcpSocketClient);
         };
     }
 }

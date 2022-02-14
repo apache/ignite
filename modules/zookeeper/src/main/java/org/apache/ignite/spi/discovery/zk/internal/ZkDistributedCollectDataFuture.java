@@ -130,6 +130,7 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         client.createIfNeeded(futResPath, data, CreateMode.PERSISTENT);
     }
 
+    /** */
     static byte[] readResult(ZookeeperClient client, ZkIgnitePaths paths, UUID futId) throws Exception {
         return client.getData(paths.distributedFutureResultPath(futId));
     }

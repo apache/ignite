@@ -76,6 +76,7 @@ public class IgniteTask {
         return disk;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "IgniteTask " +
             "host: [" + host + ']' +

@@ -177,7 +177,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             checkNodes(1, 1);
 
             Ignite srvNode = G.ignite("server-0");
-            final TcpDiscoverySpi srvSpi = (TcpDiscoverySpi) srvNode.configuration().getDiscoverySpi();
+            final TcpDiscoverySpi srvSpi = (TcpDiscoverySpi)srvNode.configuration().getDiscoverySpi();
 
             Ignite clientNode = G.ignite("client-0");
             final TcpDiscoverySpi clientSpi = (TcpDiscoverySpi)clientNode.configuration().getDiscoverySpi();
@@ -390,7 +390,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                     DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
 
                     if (disoEvt.eventNode().id().equals(srvNodeId)) {
-                        info("Expected node failed event: " + ((DiscoveryEvent) evt).eventNode());
+                        info("Expected node failed event: " + ((DiscoveryEvent)evt).eventNode());
 
                         latch.countDown();
                     }
@@ -443,6 +443,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private volatile long readDelay;
 
+        /** */
         private volatile long writeToSocketDelay;
 
         /** */
@@ -484,7 +485,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -507,7 +508,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -531,7 +532,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -565,7 +566,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                     try {
                         Thread.sleep(2000);
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException ignore) {
                         // No-op.
                     }
 

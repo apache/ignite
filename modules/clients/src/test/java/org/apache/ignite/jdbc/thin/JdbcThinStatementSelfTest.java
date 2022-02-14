@@ -64,7 +64,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -1115,6 +1115,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     @SuppressWarnings("unused")
     public static class Test {
+        /** */
         @QuerySqlField
         private int val;
 

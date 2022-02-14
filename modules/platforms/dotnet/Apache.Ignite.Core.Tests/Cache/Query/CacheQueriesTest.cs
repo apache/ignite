@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 });
             }
         }
-        
+
         /// <summary>
         /// Gets the name mapper.
         /// </summary>
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [SetUp]
         public void BeforeTest()
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [TearDown]
         public void AfterTest()
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         private static ICache<int, QueryPerson> Cache()
@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL query.
         /// </summary>
         [Test]
-        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary, 
+        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary,
             [Values(true, false)] bool distrJoin)
         {
             var cache = Cache();
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL fields query.
         /// </summary>
         [Test]
-        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
+        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin,
             [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
         {
             int cnt = MaxItemCnt;
@@ -609,7 +609,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Exception
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
             qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV> {ThrowErr = true});
-            
+
             var ex = Assert.Throws<IgniteException>(() => ValidateQueryResults(cache, qry, exp, keepBinary));
             Assert.AreEqual(ScanQueryFilter<TV>.ErrMessage, ex.Message);
         }
@@ -658,7 +658,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
-            
+
         }
 
         /// <summary>
@@ -791,7 +791,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             cache[1] = new QueryPerson("John", 33);
 
             row = cache.Query(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
-            
+
             Assert.AreEqual(3, row.Count);
             Assert.AreEqual(33, row[0]);
             Assert.AreEqual(1, row[1]);
@@ -861,7 +861,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var names = cur.FieldNames;
 
             Assert.AreEqual(new[] {"AGE", "NAME" }, names);
-            
+
             cur.Dispose();
             Assert.AreSame(names, cur.FieldNames);
 
@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             qry.Sql = "SELECT 1, AGE FROM QueryPerson";
             cur = cache.Query(qry);
             cur.Dispose();
-            
+
             Assert.AreEqual(new[] { "1", "AGE" }, cur.FieldNames);
         }
 
@@ -931,6 +931,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 new[] {typeof(int), typeof(int)},
                 new[] {"java.lang.Integer", "java.lang.Integer"}
             );
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.Partitions"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestPartitionsValidation()
+        {
+            var cache = Cache();
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { Partitions = new int[0] };
+
+            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Partitions must not be empty.", ex.Message);
+
+            qry.Partitions = new[] {-1, -2};
+            ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Illegal partition", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.UpdateBatchSize"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestUpdateBatchSizeValidation()
+        {
+            var cache = Cache();
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { UpdateBatchSize = -1 };
+
+            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("updateBatchSize cannot be lower than 1", ex.Message);
         }
 
         /// <summary>
@@ -1045,7 +1075,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Asserts that all expected entries have been received.
         /// </summary>
-        private static void AssertMissingExpectedKeys(ICollection<int> exp, ICache<int, QueryPerson> cache, 
+        private static void AssertMissingExpectedKeys(ICollection<int> exp, ICache<int, QueryPerson> cache,
             IList<ICacheEntry<int, object>> all)
         {
             if (exp.Count == 0)
@@ -1058,7 +1088,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 var part = aff.GetPartition(key);
                 sb.AppendFormat(
-                    "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ", 
+                    "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ",
                     key, cache.Get(key) != null, part);
 
                 var partNodes = aff.MapPartitionToPrimaryAndBackups(part);
@@ -1072,7 +1102,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             sb.Append("Returned keys: ");
 
             foreach (var e in all)
-                sb.Append(e.Key).Append(" ");
+                sb.Append(e.Key).Append(' ');
 
             sb.AppendLine(";");
 

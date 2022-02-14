@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
@@ -38,10 +37,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -57,11 +54,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
@@ -84,17 +80,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Cancel counter. For testing purposes only. */
     public static final AtomicLong CANCEL_COUNTER = new AtomicLong(0);
 
-    /** Default number of selectors. */
-    private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
-
     /** Default TCP direct buffer flag. */
-    private static final boolean DFLT_TCP_DIRECT_BUF = false;
+    private static final boolean DFLT_TCP_DIRECT_BUF = true;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** TCP Server. */
-    private GridNioServer<byte[]> srv;
+    private GridNioServer<ClientMessage> srv;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -142,15 +135,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to resolve client connector host: " + host, e);
                 }
 
-                execSvc = new IgniteThreadPoolExecutor(
-                    "client-connector",
-                    cfg.getIgniteInstanceName(),
-                    cliConnCfg.getThreadPoolSize(),
-                    cliConnCfg.getThreadPoolSize(),
-                    0,
-                    new LinkedBlockingQueue<Runnable>(),
-                    GridIoPolicy.UNDEFINED,
-                    new OomExceptionHandler(ctx));
+                execSvc = ctx.pools().getThinClientExecutorService();
 
                 Exception lastErr = null;
 
@@ -163,14 +148,18 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 long idleTimeout = cliConnCfg.getIdleTimeout();
 
+                int selectorCnt = cliConnCfg.getSelectorCount();
+
+                ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
+                        srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
                             .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg))
                             .logger(log)
-                            .selectorCount(DFLT_SELECTOR_CNT)
+                            .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
                             .serverName("client-listener")
                             .tcpNoDelay(cliConnCfg.isTcpNoDelay())
@@ -179,11 +168,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .socketSendBufferSize(cliConnCfg.getSocketSendBufferSize())
                             .socketReceiveBufferSize(cliConnCfg.getSocketReceiveBufferSize())
                             .filters(filters)
-                            .directMode(false)
+                            .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
+                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRICS))
                             .build();
-
-                        srv = srv0;
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
@@ -206,7 +194,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (lastErr != null)
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
                         "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
-                        ", lastErr=" + lastErr + ']');
+                        ", lastErr=" + lastErr + ']', lastErr);
 
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
@@ -294,14 +282,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
                 if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
-                    byte[] inMsg;
+                    ClientMessage inMsg;
 
                     int cmdType;
 
                     long reqId;
 
                     try {
-                        inMsg = (byte[])msg;
+                        inMsg = (ClientMessage)msg;
 
                         cmdType = connCtx.parser().decodeCommandType(inMsg);
 
@@ -331,7 +319,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
         };
 
-        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
+        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerNioMessageParser(log), log, true);
 
         if (cliConnCfg.isSslEnabled()) {
             Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
@@ -342,9 +330,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log);
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
-            sslFilter.directMode(false);
+            sslFilter.directMode(true);
 
             boolean auth = cliConnCfg.isSslClientAuth();
 
@@ -373,11 +361,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             ctx.ports().deregisterPorts(getClass());
 
-            if (execSvc != null) {
-                U.shutdownNow(getClass(), execSvc, log);
-
-                execSvc = null;
-            }
+            execSvc = null;
 
             if (!U.IGNITE_MBEANS_DISABLED)
                 unregisterMBean();
@@ -418,10 +402,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     private static String clientConnectionDescription(
         GridNioSession ses,
         ClientListenerConnectionContext ctx
-    )
-    {
-        AuthorizationContext authCtx = ctx.authorizationContext();
-
+    ) {
         StringBuilder sb = new StringBuilder();
 
         if (ctx instanceof JdbcConnectionContext)
@@ -440,14 +421,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
         String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
 
-        String login;
-
-        if (authCtx != null)
-            login = authCtx.userName();
-        else if (ctx.securityContext() != null)
-            login = "@" + ctx.securityContext().subject().login();
-        else
-            login = "<anonymous>";
+        String login = ctx.securityContext() == null ? "<anonymous>" : "@" + ctx.securityContext().subject().login();
 
         sb.append("id=" + ctx.connectionId());
         sb.append(", user=").append(login);

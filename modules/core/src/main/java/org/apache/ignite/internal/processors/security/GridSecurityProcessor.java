@@ -133,4 +133,36 @@ public interface GridSecurityProcessor extends GridProcessor {
     public default boolean sandboxEnabled() {
         return false;
     }
+
+    /**
+     * Creates user with the specified login and password.
+     *
+     * @param login Login of the user to be created.
+     * @param pwd User password.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void createUser(String login, char[] pwd) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Alters password of user with the specified login.
+     *
+     * @param login Login of the user which password should be altered.
+     * @param pwd User password to alter.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void alterUser(String login, char[] pwd) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Drops user with the specified login.
+     *
+     * @param login Login of the user to be dropped.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public default void dropUser(String login) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
 }

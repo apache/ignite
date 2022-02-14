@@ -180,6 +180,17 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
         return distanceMeasure;
     }
 
+    /** */
+    public int getK() {
+        return k;
+    }
+
+    /** */
+    public boolean isWeighted() {
+        return weighted;
+    }
+
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 1;

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.commandline.meta.subcommands;
 
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 
 /** */
-public class MetadataHelpCommand implements Command<Void> {
+public class MetadataHelpCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         throw new UnsupportedOperationException("printUsage");
@@ -35,11 +35,6 @@ public class MetadataHelpCommand implements Command<Void> {
         new MetadataCommand().printUsage(log);
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimentalEnabled() {
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -51,7 +51,7 @@ public class CircularStringBuilder {
      * Reset internal builder state
      */
     public void reset() {
-        Arrays.fill(value,(char)0);
+        Arrays.fill(value, (char)0);
         finishAt = -1;
         full = false;
         skipped = 0;

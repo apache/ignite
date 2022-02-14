@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -52,7 +53,7 @@ import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcess
 /**
  *
  */
-public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
+public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments> {
     /** */
     private Arguments arguments;
 
@@ -210,6 +211,7 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
         }
     }
 
+    /** */
     enum PageLocksCommandArg implements CommandArg {
         /** */
         DUMP("dump"),

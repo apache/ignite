@@ -152,8 +152,15 @@ public class GridConcurrentLinkedHashMapBenchmark {
         for (TestThread th : threads)
             iters += th.iterations();
 
-        System.out.printf("%8s, %8d, %12d, %12d, %12d, %8.3f, %8.2f\n",
-            readOp.toString(), threadCnt, 1000 * iters / time, 1000 * iters / (time * threadCnt), iters, time / (double)1000, writeProportion);
+        System.out.printf(
+            "%8s, %8d, %12d, %12d, %12d, %8.3f, %8.2f\n",
+            readOp.toString(),
+            threadCnt,
+            1000 * iters / time,
+            1000 * iters / (time * threadCnt),
+            iters, time / (double)1000,
+            writeProportion
+        );
     }
 
     /**

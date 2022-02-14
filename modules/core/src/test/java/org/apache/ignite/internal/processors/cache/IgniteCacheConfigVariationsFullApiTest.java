@@ -2472,7 +2472,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
+            assertEquals(1, (int)cache.getAndPutIfAbsentAsync("key2", 3).get());
 
             if (tx != null)
                 tx.commit();
@@ -6605,16 +6605,19 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      */
     private static class CheckEntriesDeletedTask extends TestIgniteIdxRunnable {
+        /** */
         private final int cnt;
 
         /** */
         private String cacheName;
 
+        /** */
         public CheckEntriesDeletedTask(int cnt, String cacheName) {
             this.cnt = cnt;
             this.cacheName = cacheName;
         }
 
+        /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);

@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -58,7 +59,9 @@ import org.junit.runners.Suite;
     // Local Message Listener tests.
     GridManagerLocalMessageListenerSelfTest.class,
 
-    KeystoreEncryptionSpiSelfTest.class
+    KeystoreEncryptionSpiSelfTest.class,
+
+    JmxMetricExporterSpiTest.class
 })
 public class IgniteSpiTestSuite {
 }

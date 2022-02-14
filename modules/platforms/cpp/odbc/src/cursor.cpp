@@ -21,8 +21,11 @@ namespace ignite
 {
     namespace odbc
     {
-        Cursor::Cursor(int64_t queryId) : queryId(queryId), currentPage(),
-            currentPagePos(0), currentRow()
+        Cursor::Cursor(int64_t queryId) :
+            queryId(queryId),
+            currentPage(),
+            currentPagePos(0),
+            currentRow()
         {
             // No-op.
         }

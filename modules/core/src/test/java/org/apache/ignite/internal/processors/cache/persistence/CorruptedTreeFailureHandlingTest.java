@@ -25,10 +25,12 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -51,9 +53,12 @@ import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -116,7 +121,12 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
         return new StopNodeFailureHandler();
     }
 
-    /** */
+    /**
+     * Check that if a corrupted page exists, an {@link CorruptedTreeException}
+     * will be thrown and a diagnostic file will be generated.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testCorruptedPage() throws Exception {
         IgniteEx srv = startGrid(0);
@@ -125,7 +135,7 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
 
         FileUtils.deleteDirectory(diagnosticDir);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -174,7 +184,12 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
             fileIO.writeFully(pageBuf);
         }
 
-        srv = startGrid(0);
+        LogListener logLsnr = LogListener.matches("CorruptedTreeException has occurred. " +
+            "To diagnose it, make a backup of the following directories: ").build();
+
+        srv = startGrid(0, cfg -> {
+            cfg.setGridLogger(new ListeningTestLogger(cfg.getGridLogger(), logLsnr));
+        });
 
         // Add modified page to WAL so it won't be restored to previous (valid) state.
         pageBuf.rewind();
@@ -203,13 +218,13 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
         assertTrue(diagnosticDir.exists());
         assertTrue(diagnosticDir.isDirectory());
 
-        File[] txtFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".txt"));
+        Pattern corruptedPagesFileNamePtrn = corruptedPagesFileNamePattern();
+        File[] txtFiles = diagnosticDir.listFiles((dir, name) -> corruptedPagesFileNamePtrn.matcher(name).matches());
 
-        assertTrue(txtFiles != null && txtFiles.length == 1);
+        assertFalse(F.isEmpty(txtFiles));
+        assertEquals(1, txtFiles.length);
 
-        File[] rawFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".raw"));
-
-        assertTrue(rawFiles != null && rawFiles.length == 1);
+        assertTrue(logLsnr.check());
     }
 
     /** */
@@ -252,5 +267,14 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
                 }
             };
         }
+    }
+
+    /**
+     * Getting pattern corrupted pages file name.
+     *
+     * @return Pattern.
+     */
+    private Pattern corruptedPagesFileNamePattern() {
+        return Pattern.compile("corruptedPages_\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}_\\d{3}\\.txt");
     }
 }

@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     public class ComputeClientTests : ClientTestBase
     {
         /** */
-        private const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
+        public const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
 
         /** */
         private const string TestResultCacheTask = "org.apache.ignite.internal.client.thin.TestResultCacheTask";
@@ -409,9 +409,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}(string,object)"/> from multiple threads.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            var count = 10000;
+            var count = 5000;
             var compute = Client.GetCompute().WithKeepBinary();
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             cache[1] = 1;
@@ -513,7 +514,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                SocketTimeout = TimeSpan.FromSeconds(3),
+                SocketTimeout = TimeSpan.FromSeconds(5),
                 EnablePartitionAwareness = false
             };
         }

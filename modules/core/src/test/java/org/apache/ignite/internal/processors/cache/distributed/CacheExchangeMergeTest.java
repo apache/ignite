@@ -625,7 +625,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         for (Ignite node : nodes) {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
-                    ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
+                ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
             assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
         }
@@ -855,7 +855,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void mergeServersFail1(boolean waitRebalance, boolean delayRebalance, int mergeTopVer) throws Exception {
         testSpi = true;
 
-        final Ignite srv0 = startGrids(5);
+        final IgniteEx srv0 = startGrids(5);
 
         if (waitRebalance)
             awaitPartitionMapExchange();
@@ -882,7 +882,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         if (mergeTopVer == 7) {
             waitForReadyTopology(grid(0).cachex(cacheNames[0]).context().topology(),
-                    new AffinityTopologyVersion(7, 0));
+                new AffinityTopologyVersion(7, 0));
         }
 
         stopGrid(getTestIgniteInstanceName(2), true, false);
@@ -905,7 +905,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         checkCaches0();
 
         assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(),
-                mergedEvts.size() == mergeTopVer - 6);
+            mergedEvts.size() == mergeTopVer - 6);
 
         for (DiscoveryEvent discoEvt : mergedEvts) {
             ClusterNode evtNode = discoEvt.eventNode();
@@ -1358,11 +1358,11 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
             ClusterNode locNode = node.cluster().localNode();
 
             if (crdNode == null || locNode.order() < crdNode.localNode().order())
-                crdNode = (IgniteEx) node;
+                crdNode = (IgniteEx)node;
         }
 
         for (Ignite node : nodes) {
-            IgniteEx node0 = (IgniteEx) node;
+            IgniteEx node0 = (IgniteEx)node;
 
             if (node0.localNode().id().equals(crdNode.localNode().id()))
                 continue;
@@ -1458,15 +1458,21 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 @Override public void run() {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+                    CacheConfiguration cCfg = cache.getConfiguration(CacheConfiguration.class);
+
+                    boolean isTxCacheWithouBackups = cCfg.getCacheMode() == PARTITIONED &&
+                        cCfg.getAtomicityMode() == TRANSACTIONAL &&
+                        cCfg.getBackups() == 0;
+
                     assertNotNull("No cache [node=" + node.name() +
-                            ", client=" + node.configuration().isClientMode() +
-                            ", order=" + node.cluster().localNode().order() +
-                            ", cache=" + cacheName + ']', cache);
+                        ", client=" + node.configuration().isClientMode() +
+                        ", order=" + node.cluster().localNode().order() +
+                        ", cache=" + cacheName + ']', cache);
 
                     String err = "Invalid value [node=" + node.name() +
-                            ", client=" + node.configuration().isClientMode() +
-                            ", order=" + node.cluster().localNode().order() +
-                            ", cache=" + cacheName + ']';
+                        ", client=" + node.configuration().isClientMode() +
+                        ", order=" + node.cluster().localNode().order() +
+                        ", cache=" + cacheName + ']';
 
                     for (int i = 0; i < 5; i++) {
                         Integer key = rnd.nextInt(20_000);
@@ -1475,7 +1481,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
                         Object val = cache.get(key);
 
-                        assertEquals(err, i, val);
+                        if (isTxCacheWithouBackups)
+                            assertTrue(err, val == null || val.equals(i));
+                        else
+                            assertEquals(err, i, val);
                     }
 
                     for (int i = 0; i < 5; i++) {
@@ -1491,8 +1500,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
                         Map<Object, Object> res = cache.getAll(map.keySet());
 
-                        for (Map.Entry<Integer, Integer> e : map.entrySet())
-                            assertEquals(err, e.getValue(), res.get(e.getKey()));
+                        for (Map.Entry<Integer, Integer> e : map.entrySet()) {
+                            if (isTxCacheWithouBackups)
+                                assertTrue(err, res.get(e.getKey()) == null || e.getValue().equals(res.get(e.getKey())));
+                            else
+                                assertEquals(err, e.getValue(), res.get(e.getKey()));
+                        }
                     }
 
                     if (atomicityMode(cache) == TRANSACTIONAL) {

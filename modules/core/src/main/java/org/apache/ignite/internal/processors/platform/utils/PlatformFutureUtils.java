@@ -225,37 +225,37 @@ public class PlatformFutureUtils {
                     else {
                         switch (typ) {
                             case TYP_BYTE:
-                                gate.futureByteResult(futPtr, (byte) res);
+                                gate.futureByteResult(futPtr, (byte)res);
 
                                 break;
 
                             case TYP_BOOL:
-                                gate.futureBoolResult(futPtr, (boolean) res ? 1 : 0);
+                                gate.futureBoolResult(futPtr, (boolean)res ? 1 : 0);
 
                                 break;
 
                             case TYP_SHORT:
-                                gate.futureShortResult(futPtr, (short) res);
+                                gate.futureShortResult(futPtr, (short)res);
 
                                 break;
 
                             case TYP_CHAR:
-                                gate.futureCharResult(futPtr, (char) res);
+                                gate.futureCharResult(futPtr, (char)res);
 
                                 break;
 
                             case TYP_INT:
-                                gate.futureIntResult(futPtr, (int) res);
+                                gate.futureIntResult(futPtr, (int)res);
 
                                 break;
 
                             case TYP_FLOAT:
-                                gate.futureFloatResult(futPtr, Float.floatToIntBits((float) res));
+                                gate.futureFloatResult(futPtr, Float.floatToIntBits((float)res));
 
                                 break;
 
                             case TYP_LONG:
-                                gate.futureLongResult(futPtr, (long) res);
+                                gate.futureLongResult(futPtr, (long)res);
 
                                 break;
 

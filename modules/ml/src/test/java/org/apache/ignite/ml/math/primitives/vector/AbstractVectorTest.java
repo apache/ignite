@@ -265,7 +265,11 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++)
             testVal.append(data0[i] + data1[i]);
 
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string + xi.toString(), Functions.PLUS, ""), testVal.toString());
+        assertEquals(
+            MathTestConstants.VAL_NOT_EQUALS,
+            testVector.foldMap(testVector1, (string, xi) -> string + xi.toString(), Functions.PLUS, ""),
+            testVal.toString()
+        );
     }
 
     /** */
@@ -277,11 +281,19 @@ public class AbstractVectorTest {
 
         assertNotNull(MathTestConstants.NULL_VAL, testVector.nonZeroes());
 
-        Assert.assertEquals(MathTestConstants.VAL_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
+        Assert.assertEquals(
+            MathTestConstants.VAL_NOT_EQUALS,
+            StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(),
+            Arrays.stream(data).filter(x -> x != 0d).count()
+        );
 
         addNilValues(data);
 
-        Assert.assertEquals(MathTestConstants.VAL_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
+        Assert.assertEquals(
+            MathTestConstants.VAL_NOT_EQUALS,
+            StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(),
+            Arrays.stream(data).filter(x -> x != 0d).count()
+        );
     }
 
     /** */
@@ -319,7 +331,12 @@ public class AbstractVectorTest {
     public void dotSelf() {
         double[] data = initVector();
 
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), MathTestConstants.NIL_DELTA);
+        assertEquals(
+            MathTestConstants.VAL_NOT_EQUALS,
+            testVector.dotSelf(),
+            Arrays.stream(data).reduce(0, (x, y) -> x + y * y),
+            MathTestConstants.NIL_DELTA
+        );
     }
 
     /** */

@@ -390,7 +390,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V4;
+        return V5;
     }
 
     /** {@inheritDoc} */
@@ -450,7 +450,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         binaryCfg = (VisorBinaryConfiguration)in.readObject();
         cacheKeyCfgs = U.readList(in);
         hadoopCfg = (VisorHadoopConfiguration)in.readObject();
-        sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
+        sqlConnCfg = (VisorSqlConnectorConfiguration)in.readObject();
         srvcCfgs = U.readList(in);
 
         if (protoVer > V1)

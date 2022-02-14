@@ -39,7 +39,8 @@ class IgniteTxTestSuiteFixture
 public:
     IgniteTxTestSuiteFixture()
     {
-        serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
+        node1 = ignite_test::StartCrossPlatformServerNode("cache.xml", "node1");
+        node2 = ignite_test::StartCrossPlatformServerNode("cache.xml", "node2");
     }
 
     ~IgniteTxTestSuiteFixture()
@@ -47,9 +48,24 @@ public:
         ignite::Ignition::StopAll(false);
     }
 
+    /**
+     * Start client.
+     */
+    static IgniteClient StartClient()
+    {
+        IgniteClientConfiguration cfg;
+
+        cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111");
+
+        return IgniteClient::Start(cfg);
+    }
+
 private:
-    /** Server node. */
-    ignite::Ignite serverNode;
+    /** Server node #1. */
+    ignite::Ignite node1;
+
+    /** Server node #2. */
+    ignite::Ignite node2;
 };
 
 BOOST_FIXTURE_TEST_SUITE(IgniteTxTestSuite, IgniteTxTestSuiteFixture)
@@ -75,11 +91,7 @@ bool checkTxTimeoutMessage(const ignite::IgniteError& ex)
 
 BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 {
-    IgniteClientConfiguration cfg;
-
-    cfg.SetEndPoints("127.0.0.1:11110");
-
-    IgniteClient client = IgniteClient::Start(cfg);
+    IgniteClient client = StartClient();
 
     cache::CacheClient<int, int> cache =
         client.GetCache<int, int>("partitioned");
@@ -190,7 +202,7 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 
     tx.Rollback();
 
-    BOOST_CHECK_EQUAL(cache.GetSize(cache::CachePeekMode::ALL), 1);
+    BOOST_CHECK_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 1);
 
     //---
 
@@ -241,11 +253,7 @@ BOOST_AUTO_TEST_CASE(TestCacheOpsWithTx)
 
 void startAnotherClientAndTx(SharedPointer<SingleLatch>& l)
 {
-    IgniteClientConfiguration cfg;
-
-    cfg.SetEndPoints("127.0.0.1:11110");
-
-    IgniteClient client = IgniteClient::Start(cfg);
+    IgniteClient client = IgniteTxTestSuiteFixture::StartClient();
 
     cache::CacheClient<int, int> cache =
         client.GetCache<int, int>("partitioned");
@@ -263,11 +271,7 @@ void startAnotherClientAndTx(SharedPointer<SingleLatch>& l)
 
 BOOST_AUTO_TEST_CASE(TestTxOps)
 {
-    IgniteClientConfiguration cfg;
-
-    cfg.SetEndPoints("127.0.0.1:11110");
-
-    IgniteClient client = IgniteClient::Start(cfg);
+    IgniteClient client = StartClient();
 
     cache::CacheClient<int, int> cache =
         client.GetCache<int, int>("partitioned");
@@ -347,11 +351,7 @@ bool checkTxLabel1Message(const ignite::IgniteError& ex)
 
 BOOST_AUTO_TEST_CASE(TestTxWithLabel)
 {
-    IgniteClientConfiguration cfg;
-
-    cfg.SetEndPoints("127.0.0.1:11110");
-
-    IgniteClient client = IgniteClient::Start(cfg);
+    IgniteClient client = StartClient();
 
     cache::CacheClient<int, int> cache =
         client.GetCache<int, int>("partitioned");
@@ -395,6 +395,43 @@ BOOST_AUTO_TEST_CASE(TestTxWithLabel)
     BOOST_CHECK_EXCEPTION(tx.Commit(), ignite::IgniteError, checkTxLabel1Message);
 
     tx.Close();
+}
+
+BOOST_AUTO_TEST_CASE(ManyTransactions)
+{
+    IgniteClient client = StartClient();
+
+    cache::CacheClient<int, int> cache =
+            client.GetCache<int, int>("partitioned");
+
+    transactions::ClientTransactions transactions = client.ClientTransactions();
+    const int32_t key = 42;
+
+    for (int32_t val = 0; val < 100; ++val) {
+        transactions::ClientTransaction tx = transactions.TxStart();
+
+        cache.Put(key, val);
+
+        tx.Commit();
+
+        BOOST_CHECK_EQUAL(val, cache.Get(key));
+    }
+
+    const int32_t expected = -42;
+
+    cache.Put(key, expected);
+
+    BOOST_CHECK_EQUAL(expected, cache.Get(key));
+
+    for (int32_t val = 0; val < 100; ++val) {
+        transactions::ClientTransaction tx = transactions.TxStart();
+
+        cache.Put(key, val);
+
+        tx.Rollback();
+
+        BOOST_CHECK_EQUAL(expected, cache.Get(key));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

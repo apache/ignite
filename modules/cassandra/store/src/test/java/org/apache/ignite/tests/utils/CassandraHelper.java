@@ -56,7 +56,8 @@ public class CassandraHelper {
     private static final String EMBEDDED_CASSANDRA_YAML = "org/apache/ignite/tests/cassandra/embedded-cassandra.yaml";
 
     /** */
-    private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
+    private static final ApplicationContext connectionContext =
+        new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
 
     /** */
     private static DataSource adminDataSrc;

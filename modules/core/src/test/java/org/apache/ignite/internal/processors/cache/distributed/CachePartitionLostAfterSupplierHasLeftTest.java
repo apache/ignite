@@ -339,7 +339,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
         TestRecordingCommunicationSpi.spi(grid(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
                 }
@@ -348,9 +348,23 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
             }
         });
 
-        IgniteEx g1 = startGrid(idx1);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx1));
+
+        ((TestRecordingCommunicationSpi)cfg.getCommunicationSpi()).blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
+
+                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
+            }
+
+            return false;
+        });
+
+        IgniteEx g1 = startGrid(optimize(cfg));
 
         stopGrid(idx0); // Stop supplier in the middle of rebalancing.
+
+        TestRecordingCommunicationSpi.spi(g1).stopBlock();
 
         final GridDhtLocalPartition part = g1.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(partId);
 
@@ -397,7 +411,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
             // Puts done concurrently with clearing after reset should not be lost.
             g1.cache(DEFAULT_CACHE_NAME).putAll(keys.stream().collect(Collectors.toMap(k -> k, v -> -1)));
 
-            g1.context().cache().context().evict().awaitFinishAll();
+            GridTestUtils.waitForCondition(() -> g1.context().cache().context().evict().total() == 0, 30_000);
 
             for (Integer key : keys)
                 assertEquals("key=" + key.toString(), -1, g1.cache(DEFAULT_CACHE_NAME).get(key));

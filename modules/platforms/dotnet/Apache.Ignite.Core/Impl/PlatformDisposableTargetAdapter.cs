@@ -39,17 +39,9 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void Dispose()
         {
-            lock (this)
-            {
-                if (_disposed)
-                    return;
+            Dispose(true);
 
-                Dispose(true);
-
-                GC.SuppressFinalize(this);
-
-                _disposed = true;
-            }
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -60,7 +52,15 @@ namespace Apache.Ignite.Core.Impl
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            Target.Dispose();
+            lock (this)
+            {
+                if (_disposed)
+                    return;
+
+                Target.Dispose();
+
+                _disposed = true;
+            }
         }
 
         /// <summary>

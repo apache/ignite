@@ -337,7 +337,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
 
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeAfter));
 
-                    checkContains(cache1, true,allKeys);
+                    checkContains(cache1, true, allKeys);
 
                     tx.commit();
                 }

@@ -442,6 +442,32 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
+     * @param path Path.
+     * @param data Data.
+     * @param createMode Create mode.
+     * @return Created path.
+     * @throws KeeperException In case of zookeeper error.
+     * @throws InterruptedException If interrupted.
+     */
+    String createIfNeededNoRetry(String path, byte[] data, CreateMode createMode)
+        throws KeeperException, InterruptedException {
+        assert !createMode.isSequential() : createMode;
+
+        if (data == null)
+            data = EMPTY_BYTES;
+
+        try {
+            return zk.create(path, data, ZK_ACL, createMode);
+        }
+        catch (KeeperException.NodeExistsException e) {
+            if (log.isDebugEnabled())
+                log.debug("Node already exists: " + path);
+
+            return path;
+        }
+    }
+
+    /**
      * @param checkPrefix Unique prefix to check in case of retry.
      * @param parentPath Parent node path.
      * @param path Node to create.
@@ -1138,6 +1164,7 @@ public class ZookeeperClient implements Watcher {
             this.op = op;
         }
 
+        /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, String name) {
             if (closing)
                 return;

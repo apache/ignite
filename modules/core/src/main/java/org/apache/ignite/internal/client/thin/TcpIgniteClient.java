@@ -23,9 +23,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -41,6 +42,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -82,6 +85,9 @@ public class TcpIgniteClient implements IgniteClient {
     /** Services facade. */
     private final ClientServicesImpl services;
 
+    /** Registered entry listeners for all caches. */
+    private final ClientCacheEntryListenersRegistry lsnrsRegistry;
+
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -100,12 +106,13 @@ public class TcpIgniteClient implements IgniteClient {
      * Constructor with custom channel factory.
      */
     TcpIgniteClient(
-        Function<ClientChannelConfiguration, ClientChannel> chFactory,
-        ClientConfiguration cfg
+            BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
+            ClientConfiguration cfg
     ) throws ClientException {
-        final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
+        final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
-        marsh = new ClientBinaryMarshaller(metadataHandler, new ClientMarshallerContext());
+        ClientMarshallerContext marshCtx = new ClientMarshallerContext();
+        marsh = new ClientBinaryMarshaller(metadataHnd, marshCtx);
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -115,20 +122,40 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch = new ReliableChannel(chFactory, cfg, binary);
 
-        ch.addChannelFailListener(() -> metadataHandler.onReconnect());
+        try {
+            ch.channelsInit();
 
-        transactions = new TcpClientTransactions(ch, marsh,
-            new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
+            // Metadata, binary descriptors and user types caches must be cleared so that the
+            // client will register all the user types within the cluster once again in case this information
+            // was lost during the cluster failover.
+            ch.addChannelFailListener(() -> {
+                metadataHnd.onReconnect();
+                marshCtx.clearUserTypesCache();
+                marsh.context().unregisterUserTypeDescriptors();
+            });
 
-        cluster = new ClientClusterImpl(ch, marsh);
+            // Send postponed metadata after channel init.
+            metadataHnd.sendAllMeta();
 
-        compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+            transactions = new TcpClientTransactions(ch, marsh,
+                    new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
 
-        services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+            cluster = new ClientClusterImpl(ch, marsh);
+
+            compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+
+            lsnrsRegistry = new ClientCacheEntryListenersRegistry();
+        }
+        catch (Exception e) {
+            ch.close();
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         ch.close();
     }
 
@@ -138,7 +165,16 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()))
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -149,19 +185,37 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
+            ClientCacheConfiguration cfg) throws ClientException {
+        ensureCacheConfiguration(cfg);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
+                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> cache(String name) {
         ensureCacheName(name);
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() throws ClientException {
-        return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
+        return ch.service(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException {
+        return ch.serviceAsync(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
     }
 
     /** {@inheritDoc} */
@@ -172,12 +226,28 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> createCache(String name) throws ClientException {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()))
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -187,7 +257,18 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
+            throws ClientException {
+        ensureCacheConfiguration(cfg);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
+                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -282,7 +363,7 @@ public class TcpIgniteClient implements IgniteClient {
     /** Deserialize string. */
     private String readString(BinaryInputStream in) throws BinaryObjectException {
         try {
-            try (BinaryReaderExImpl r = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+            try (BinaryReaderExImpl r = serDes.createBinaryReader(in)) {
                 return r.readString();
             }
         }
@@ -308,10 +389,12 @@ public class TcpIgniteClient implements IgniteClient {
             // If type wasn't registered before or metadata changed, send registration request.
             if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
-                    ch.request(
-                        ClientOperation.PUT_BINARY_TYPE,
-                        req -> serDes.binaryMetadata(newMeta, req.out())
-                    );
+                    if (ch != null) { // Postpone binary type registration requests to server before channels initiated.
+                        ch.request(
+                            ClientOperation.PUT_BINARY_TYPE,
+                            req -> serDes.binaryMetadata(newMeta, req.out())
+                        );
+                    }
                 }
                 catch (ClientException e) {
                     throw new BinaryObjectException(e);
@@ -319,6 +402,24 @@ public class TcpIgniteClient implements IgniteClient {
             }
 
             cache.addMeta(typeId, meta, failIfUnregistered); // merge
+        }
+
+        /** Send registration requests to the server for all collected metadata. */
+        public void sendAllMeta() {
+            try {
+                CompletableFuture.allOf(cache.metadata().stream()
+                    .map(type -> sendMetaAsync(((BinaryTypeImpl)type).metadata()).toCompletableFuture())
+                    .toArray(CompletableFuture[]::new)
+                ).get();
+            }
+            catch (Exception e) {
+                throw new ClientException(e);
+            }
+        }
+
+        /** Send metadata registration request to the server. */
+        private IgniteClientFuture<Void> sendMetaAsync(BinaryMetadata meta) {
+            return ch.requestAsync(ClientOperation.PUT_BINARY_TYPE, req -> serDes.binaryMetadata(meta, req.out()));
         }
 
         /** {@inheritDoc} */
@@ -428,7 +529,7 @@ public class TcpIgniteClient implements IgniteClient {
      */
     private class ClientMarshallerContext implements MarshallerContext {
         /** Type ID -> class name map. */
-        private Map<Integer, String> cache = new ConcurrentHashMap<>();
+        private final Map<Integer, String> cache = new ConcurrentHashMap<>();
 
         /** System types. */
         private final Collection<String> sysTypes = new HashSet<>();
@@ -531,6 +632,9 @@ public class TcpIgniteClient implements IgniteClient {
                 catch (ClientException e) {
                     throw new IgniteCheckedException(e);
                 }
+
+                if (clsName != null)
+                    cache.putIfAbsent(typeId, clsName);
             }
 
             if (clsName == null)
@@ -552,6 +656,15 @@ public class TcpIgniteClient implements IgniteClient {
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
             return new JdkMarshaller();
+        }
+
+        /**
+         * Clear the user types cache on reconnect so that the client will register all
+         * the types once again after reconnect.
+         * See the comment in constructor of the TcpIgniteClient.
+         */
+        void clearUserTypesCache() {
+            cache.clear();
         }
     }
 }

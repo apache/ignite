@@ -202,9 +202,7 @@ public class GridCommandHandlerIndexingUtils {
 
         GridCacheContext<K, V> cacheCtx = internalCache.context();
 
-        GridDhtLocalPartition dhtLocPart = cacheCtx.dht().topology().localPartition(partId);
-
-        CacheDataStore cacheDataStore = cacheCtx.group().offheap().dataStore(dhtLocPart);
+        CacheDataStore cacheDataStore = cacheCtx.dht().topology().localPartition(partId).dataStore();
 
         String delegate = "delegate";
         if (hasField(cacheDataStore, delegate))

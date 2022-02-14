@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterErrorWrapper;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
 import org.apache.ignite.internal.util.typedef.X;
@@ -404,10 +405,14 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
             PartitionUpdateCounter cntr = counter(0, grid0.name());
 
+            assertTrue(cntr instanceof PartitionUpdateCounterErrorWrapper);
+
+            PartitionUpdateCounter delegate = U.field(cntr, "delegate");
+
             if (mode == CacheAtomicityMode.TRANSACTIONAL)
-                assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+                assertTrue(delegate instanceof PartitionUpdateCounterTrackingImpl);
             else if (mode == CacheAtomicityMode.ATOMIC)
-                assertTrue(cntr instanceof PartitionUpdateCounterVolatileImpl);
+                assertTrue(delegate instanceof PartitionUpdateCounterVolatileImpl);
 
             assertEquals(cntr.initial(), cntr.get());
         }

@@ -36,9 +36,9 @@ namespace ignite
              *
              * This is an entry point for Thin C++ Ignite transactions.
              *
-             * This class implemented as a reference to an implementation so copying of this class instance will only
-             * create another reference to the same underlying object. Underlying object released automatically once all
-             * the instances are destructed.
+             * This class is implemented as a reference to an implementation so copying of this class instance will only
+             * create another reference to the same underlying object. Underlying object will be released automatically
+             * once all the instances are destructed.
              */
             class ClientTransactions {
             public:
@@ -116,7 +116,8 @@ namespace ignite
                 ClientTransactions(ignite::impl::thin::transactions::TransactionsProxy& impl, const std::string& lbl) :
                     proxy(impl)
                 {
-                    ignite::common::FixedSizeArray<char> *label0 = new ignite::common::FixedSizeArray<char>(lbl.size() + 1);
+                    ignite::common::FixedSizeArray<char> *label0 =
+                        new ignite::common::FixedSizeArray<char>(static_cast<int32_t>(lbl.size()) + 1);
 
                     strcpy(label0->GetData(), lbl.c_str());
 

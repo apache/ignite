@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
             // Check stopped grid.
             grid.Dispose();
 
-            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+            Assert.Throws<IgniteIllegalStateException>(() => grid.GetCache<object, object>("cache1"));
         }
 
         /// <summary>

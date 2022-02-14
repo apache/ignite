@@ -1,0 +1,145 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cache encryption key rotation
+
+== Overview
+
+Cache group encryption key is used to encrypt cache data on the disk.
+When a user creates a new encrypted cache, a new encryption key is generated and propagated to all server nodes in the cluster. So, each node has the same cache encryption key for the same cache group.
+See link:security/tde[Transparent Data Encryption] for more detail.
+
+Ignite 2.10 introduces a feature for changing the cache encryption key.
+It allows to change the cache group encryption key and re-encrypt existing data at runtime.
+
+Rotation of the cache encryption key is required when the key is compromised or the crypto period (key validity period) is ended.
+
+The process of changing the cache encryption key includes two sequential stages:
+
+1. Rotate cache group key. This process adds a new encryption key for the specified cache group or groups on each server node and sets it to write new data.
+
+    Node join during this stage is prohibited and will be rejected.
+
+2. Re-encrypt existing (archived) cache data with the new encryption key.
+
+The second stage can take a while. It depends on the amount of existing data. During this period, the old key is kept to read the archived data.
+To understand what key the data is encrypted with, each encryption key has an _identifier_. By default, it is equal to zero. The identifier value of the new key increases with each new rotation.
+The encryption key (as well as encryption key ID) is the same for all nodes in a cache group.
+
+NOTE: Secondary rotation of the cache encryption key is possible only after a complete change of the encryption key for a cache group (both stages).
+
+== Prerequisites
+
+The cluster should be active.
+
+== Changing the Encryption Key
+
+Ignite provides the ability to change the cache encryption key using the following interfaces:
+
+- link:#command-line-tool[command line tool]
+- link:#jmx[JMX]
+- link:#from-code[from code]
+
+=== Command Line Tool
+
+Ignite shipment includes `control.sh|bat` script, located in the `$IGNITE_HOME/bin` folder, that acts as a tool to manage the
+cache encryption key change process from the command line. The following commands are used with `control.sh|bat`:
+
+[source,shell]
+----
+# View the cache group encryption key identifiers.
+control.sh|bat --encryption cache_key_ids cacheGroupName
+
+# Change the cache encryption key.
+control.sh|bat --encryption change_cache_key cacheGroupName
+----
+
+=== JMX
+
+You can also change the cache encryption key via the `EncryptionMXBean` interface:
+
+[cols="1,1",opts="header"]
+|===
+|Method | Description
+|changeCacheGroupKey(String cacheOrGrpName) | Starts cache encryption key change process.
+|===
+
+=== From Code
+
+The cache encryption key change process can also be managed directly in the code:
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/TDE.java[tags=cache-group-key-rotation, indent=0]
+----
+--
+
+== Managing Re-encryption
+
+Re-encrypting existing data can take a while. This is a fault-tolerant operation that automatically continues after a node restart.
+The previous encryption key is automatically removed when all local partitions are encrypted with the new key, and the last link:persistence/native-persistence#write-ahead-log[Write-Ahead Log] segment, which may contain entries encrypted with the previous key, is removed from disk.
+
+NOTE: Re-encryption uses link:persistence/native-persistence#write-ahead-log[Write-Ahead Log] for physical recovery and may affect performance of cache operations.
+
+There are several options to manage the performance impact of re-encryption:
+
+* Limit the re-encryption rate using a configuration parameter or CLI at runtime.
+* Temporarily suspend re-encryption using CLI command.
+
+Ignite 2.10 introduces a new configuration section `EncryptionConfiguration`, that is a part of `DatastorageConfiguration`.
+[cols="1,1,1",opts="header"]
+|===
+|Property | Default value | Description
+|reencryptionRateLimit | 0 (unlimited) | Re-encryption rate limit in megabytes per second.
+|reencryptionBatchSize | 100 | The number of pages scanned during re-encryption under checkpoint lock.
+|===
+
+=== Using XML Configuration to Limit the Re-encryption Rate
+[source, xml]
+----
+include::code-snippets/xml/tde.xml[tags=ignite-config;!discovery;!encryption;!cache;!discovery, indent=0]
+----
+
+=== Using CLI to Control Re-encryption Process
+
+The `control.sh|bat` script provides the ability to change the re-encryption rate as well as suspend and resume background re-encryption at runtime.
+
+NOTE: After the node restarts, the suspended background re-encryption is continued automatically, and the rate limit is set to 'unlimited' (by default), or taken from the local XML configuration (if any).
+
+[source,shell]
+----
+# View the cache group re-encryption status.
+control.sh|bat --encryption reencryption_status cacheGroupName
+
+# Suspend re-encryption of the cache group.
+control.sh|bat --encryption suspend_reencryption cacheGroupName
+
+# Resume (suspended) re-encryption of the cache group.
+control.sh|bat --encryption resume_reencryption cacheGroupName
+
+# View the re-encryption rate limit.
+control.sh|bat --encryption reencryption_rate_limit
+
+# Set the re-encryption rate limit to 2.5 MB/s.
+control.sh|bat --encryption reencryption_rate_limit 2.5
+
+# Set re-encryption rate to 'unlimited' ('0').
+control.sh|bat --encryption reencryption_rate_limit 0
+----
+
+The re-encryption status can be also obtained using JMX metrics described in the link:monitoring-metrics/new-metrics#cache-groups[Cache group metrics] section.

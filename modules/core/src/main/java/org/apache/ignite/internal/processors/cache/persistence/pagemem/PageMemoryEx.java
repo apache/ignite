@@ -66,23 +66,13 @@ public interface PageMemoryEx extends PageMemory {
         boolean dirtyFlag, boolean restore);
 
     /**
-     * Gets or allocates metadata page for specified grpId.
-     *
-     * @param grpId Group ID.
-     * @return Meta page for grpId.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long metaPageId(int grpId) throws IgniteCheckedException;
-
-    /**
-     * Gets or allocates partition metadata page for specified grpId and partId.
+     * Gets partition metadata page for specified grpId and partId.
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @return Meta page for grpId and partId.
-     * @throws IgniteCheckedException If failed.
      */
-    public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException;
+    public long partitionMetaPageId(int grpId, int partId);
 
     /**
      * @see #acquirePage(int, long)
@@ -153,6 +143,9 @@ public interface PageMemoryEx extends PageMemory {
          PageStoreWriter pageWriter,
          CheckpointMetricsTracker tracker
      ) throws IgniteCheckedException;
+
+     /** */
+     public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

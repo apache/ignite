@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Persistence Defragmentation
+
+== Overview
+
+Apache Ignite memory management mechanism can only create or reuse pages for user data, but it never frees them. So the files, where Ignite persists data, can only grow and never shrink.
+
+In most use cases, it does not cause any problem as once created page can be reused multiple times. However, in certain cases, it is possible that cache contains very little data but occupies large chunks of disk space because a significant volume of data was removed from the cache.
+
+Defragmentation enables a user to shrink data files and claim back disk space.
+
+[NOTE]
+====
+Defragmentation can only be used with historical rebalance enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
+====
+
+== Performing Defragmentation
+
+Defragmentation is a costly operation in terms of disk IO. To avoid slowing down user operations, note that defragmentation cannot be executed on a regular node joined to the cluster. To perform defragmentation, you need to request it first on a particular node or set of nodes and then restart them.
+
+=== Starting Defragmentation
+
+To request defragmentation, use the following command:
+[source,shell]
+----
+control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
+----
+
+After the manual restart, the node with the requested defragmentation enters a special mode called maintenance mode. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
+
+[NOTE]
+====
+Nodes in maintenance mode do not participate in serving the regular workload. It is not recommended to execute defragmentation on several nodes simultaneously as it reduces the number of backups, thus increasing the risk of partition loss.
+====
+
+=== Stopping Defragmentation
+
+When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility:
+[source,shell]
+----
+control.(sh|bat) --defragmentation cancel --host --port
+----
+
+[NOTE]
+====
+To reduce disk space requirements during defragmentation, caches are defragmented one by one (if a defragmentation of more than one cache is requested). To calculate additional required space, find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
+====
+
+== Conclusion
+In most situations, defragmentation is not necessary as existing memory management mechanism effectively reuses memory left after data deletion. But in rare cases, it may be necessary to employ it to free up disk space up.
+
+Persistence defragmentation requires taking nodes out of their normal operations, so a careful planning is recommended.

@@ -19,17 +19,19 @@ project(ignite-odbc-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
-
 if (WIN32)
     set(Boost_USE_STATIC_LIBS ON)
 endif()
 
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
+
 find_package(ODBC REQUIRED)
 
-include_directories(include ../odbc/include ../network/include ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(include ../odbc/include ../network/include ../network/src)
 
-set(SOURCES src/teamcity/teamcity_boost.cpp
+set(SOURCES
+        src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
         src/parser_test.cpp
         src/cursor_test.cpp
@@ -65,6 +67,9 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
+        src/cursor_binding_test.cpp
+        src/sql_schema_test.cpp
+        src/test_server.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp
@@ -101,4 +106,9 @@ set(TEST_TARGET IgniteOdbcTest)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} --catch_system_errors=no --log_level=all)
 
-set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
+list(APPEND ENV_VARIABLES "IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config")
+if (${WITH_SANITIZERS})
+    list(APPEND ENV_VARIABLES ${SANITIZERS_ENV})
+endif()
+
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT "${ENV_VARIABLES}")

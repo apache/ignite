@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -115,7 +116,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
             obj = isKeyProp ? key : val;
 
         if (obj instanceof BinaryObject) {
-            BinaryObject obj0 = (BinaryObject) obj;
+            BinaryObject obj0 = (BinaryObject)obj;
 
             return fieldValue(obj0);
         }
@@ -123,6 +124,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
             BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
 
             return obj0.getField(propName);
+        }
+        else if (obj instanceof KeyCacheObjectImpl) {
+            KeyCacheObjectImpl obj0 = (KeyCacheObjectImpl)obj;
+
+            return obj0.value(null, false);
         }
         else
             throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');
@@ -157,15 +163,15 @@ public class QueryBinaryProperty implements GridQueryProperty {
         if (!(obj instanceof BinaryObjectBuilder))
             throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-        setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
+        setValue0((BinaryObjectBuilder)obj, propName, propVal, type());
 
         if (needsBuild) {
-            obj = ((BinaryObjectBuilder) obj).build();
+            obj = ((BinaryObjectBuilder)obj).build();
 
             assert parent != null;
 
             // And now let's set this newly constructed object to parent
-            setValue0((BinaryObjectBuilder) srcObj, parent.propName, obj, obj.getClass());
+            setValue0((BinaryObjectBuilder)srcObj, parent.propName, obj, obj.getClass());
         }
     }
 

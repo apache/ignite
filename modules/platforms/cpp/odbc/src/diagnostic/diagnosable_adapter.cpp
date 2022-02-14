@@ -48,6 +48,11 @@ namespace ignite
                 AddStatusRecord(sqlState, message, 0, 0);
             }
 
+            void DiagnosableAdapter::AddStatusRecord(const std::string& message)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, message);
+            }
+
             void DiagnosableAdapter::AddStatusRecord(const OdbcError& err)
             {
                 AddStatusRecord(err.GetStatus(), err.GetErrorMessage(), 0, 0);

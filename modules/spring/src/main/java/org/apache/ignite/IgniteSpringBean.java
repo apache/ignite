@@ -507,6 +507,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.atomicLong(name, initVal, create);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         checkIgnite();
@@ -543,6 +544,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.atomicStamped(name, initVal, initStamp, create);
     }
 
+    /** {@inheritDoc} */
     @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
         @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         checkIgnite();

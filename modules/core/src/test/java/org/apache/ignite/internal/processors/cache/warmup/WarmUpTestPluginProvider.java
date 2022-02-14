@@ -28,11 +28,11 @@ import org.apache.ignite.plugin.PluginContext;
 /**
  * Test plugin provider for test strategies.
  */
-class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
+public class WarmUpTestPluginProvider extends AbstractTestPluginProvider {
     /** Collection of strategies. */
-    final List<WarmUpStrategy<?>> strats = new ArrayList<>(Arrays.asList(
-        new SimpleObservableWarmUp(),
-        new BlockedWarmUp()
+    public final List<WarmUpStrategy<?>> strats = new ArrayList<>(Arrays.asList(
+        new SimpleObservableWarmUpStrategy(),
+        new BlockedWarmUpStrategy()
     ));
 
     /** {@inheritDoc} */

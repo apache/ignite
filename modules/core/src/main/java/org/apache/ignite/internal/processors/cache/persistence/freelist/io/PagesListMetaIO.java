@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridLongList;
@@ -56,8 +57,8 @@ public class PagesListMetaIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setCount(pageAddr, 0);
         setNextMetaPageId(pageAddr, 0L);
@@ -77,6 +78,7 @@ public class PagesListMetaIO extends PageIO {
      */
     private void setCount(long pageAddr, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
+        assertPageType(pageAddr);
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
     }
@@ -94,6 +96,8 @@ public class PagesListMetaIO extends PageIO {
      * @param metaPageId Next meta page ID.
      */
     public void setNextMetaPageId(long pageAddr, long metaPageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, NEXT_META_PAGE_OFF, metaPageId);
     }
 
@@ -114,6 +118,7 @@ public class PagesListMetaIO extends PageIO {
      */
     public int addTails(int pageSize, long pageAddr, int bucket, PagesList.Stripe[] tails, int tailsOff) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
+        assertPageType(pageAddr);
 
         int cnt = getCount(pageAddr);
         int cap = getCapacity(pageSize, pageAddr);

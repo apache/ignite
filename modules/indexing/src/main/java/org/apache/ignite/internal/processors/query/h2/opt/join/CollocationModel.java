@@ -804,7 +804,7 @@ public final class CollocationModel {
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
         // other than index condition masks and sort order, but in our case it can depend on order
         // of previous table filters.
-        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
+        Map<Object, ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
 
         if (!viewIdxCache.isEmpty())
             viewIdxCache.clear();

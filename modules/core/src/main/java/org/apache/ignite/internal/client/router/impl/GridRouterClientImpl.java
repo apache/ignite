@@ -77,7 +77,7 @@ public class GridRouterClientImpl implements GridClient {
 
         this.cliCfg = cliCfg;
 
-        clientImpl = new GridClientImpl(id, cliCfg, true);
+        clientImpl = new GridClientImpl(id, cliCfg, true, false);
 
         if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());

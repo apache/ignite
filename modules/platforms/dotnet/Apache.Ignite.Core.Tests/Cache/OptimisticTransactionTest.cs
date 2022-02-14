@@ -81,10 +81,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(TransactionIsolation.Serializable, transactions.Tx.Isolation);
 
             Task.Factory.StartNew(() =>
-            {
-                Assert.IsNull(transactions.Tx);
-                cache[1] = -1;
-            }).Wait();
+                {
+                    Assert.IsNull(transactions.Tx);
+                    cache[1] = -1;
+                }, TaskCreationOptions.LongRunning)
+                .Wait();
 
             Assert.AreEqual(old, cache[1]);
             cache[1] = old + 1;

@@ -321,8 +321,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridCacheContext cacheCtx = entry.context();
 
-        if (!cacheCtx.isNear())
-            cacheCtx = cacheCtx.dht().near().context();
+        assert cacheCtx.isNear() : entry;
 
         GridNearCacheEntry cached = cacheCtx.near().peekExx(entry.key());
 
@@ -333,7 +332,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         }
         else {
             try {
-                cached.unswap();
+                // Unswap is no-op for near cache.
 
                 CacheObject val = cached.peek();
 

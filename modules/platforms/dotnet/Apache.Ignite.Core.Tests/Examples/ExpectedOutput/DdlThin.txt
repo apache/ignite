@@ -1,0 +1,13 @@
+>>> Cache query DDL example started.
+
+>>> Created database objects.
+
+>>> Populated data.
+
+>>> Query results:
+Mary Major, Forest Hill
+Jane Roe, Denver
+Richard Miles, Denver
+John Doe, St. Petersburg
+
+>>> Dropped database objects.

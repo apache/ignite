@@ -35,8 +35,7 @@
                     <!--
                         Enables Kubernetes IP finder with default settings.
                     -->
-                    <bean
-                        class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder"/>
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder" />
                 </property>
             </bean>
         </property>

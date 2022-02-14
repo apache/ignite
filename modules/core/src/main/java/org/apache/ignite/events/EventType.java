@@ -22,9 +22,13 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
@@ -65,37 +69,52 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
  */
 public interface EventType {
     /**
-     * Built-in event type: checkpoint was saved.
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was saved.
+     * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#saveCheckpoint(String, Object)
      */
     public static final int EVT_CHECKPOINT_SAVED = 1;
 
     /**
-     * Built-in event type: checkpoint was loaded.
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was loaded.
+     * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#loadCheckpoint(String)
      */
     public static final int EVT_CHECKPOINT_LOADED = 2;
 
     /**
-     * Built-in event type: checkpoint was removed. Reasons are:
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was removed. Reasons are:
      * <ul>
      * <li>timeout expired, or
      * <li>or it was manually removed, or
      * <li>it was automatically removed by the task session
      * </ul>
      * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
+     * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#removeCheckpoint(String)
      */
     public static final int EVT_CHECKPOINT_REMOVED = 3;
 
@@ -878,6 +897,134 @@ public interface EventType {
      * @see IgniteCluster#baselineAutoAdjustTimeout(long)
      */
     public static final int EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED = 148;
+
+    /**
+     * Built-in event type: Cluster snapshot has been started event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_STARTED = 149;
+
+    /**
+     * Built-in event type: Cluster snapshot has been finished event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_FINISHED = 150;
+
+    /**
+     * Built-in event type: Cluster snapshot has been failed event.
+     *
+     * <p>
+     * Fired when new tag is successfully set on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#cancelSnapshot(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_FAILED = 151;
+
+    /**
+     * Built-in event type: query execution.
+     * This event is triggered after a corresponding SQL query validated and before it is executed.
+     * Unlike {@link #EVT_CACHE_QUERY_EXECUTED}, {@code EVT_SQL_QUERY_EXECUTION} is fired only once for a request
+     * and does not relate to a specific cache.
+     * Enet includes the following information: qurey text and its arguments, security subject id.
+     *
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see SqlQueryExecutionEvent
+     */
+    public static final int EVT_SQL_QUERY_EXECUTION = 160;
+
+    /**
+     * Built-in event type: node validation failed.
+     * <br>
+     * This event is triggered if a node join fails due to a node validation failure.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see NodeValidationFailedEvent
+     * @see GridComponent#validateNode
+     */
+    public static final int EVT_NODE_VALIDATION_FAILED = 170;
+
+    /**
+     * Built-in event type: Cluster snapshot restore has been started event.
+     *
+     * <p>
+     * Fired on the initiator node when a snapshot restore operation is started.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     * @see IgniteSnapshot#cancelSnapshotRestore(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED = 171;
+
+    /**
+     * Built-in event type: Cluster snapshot restore has been finished event.
+     *
+     * <p>
+     * Fired on the initiator node when the snapshot restore operation has completed on all nodes.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     * @see IgniteSnapshot#cancelSnapshotRestore(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED = 172;
+
+    /**
+     * Built-in event type: Cluster snapshot restore has been failed event.
+     *
+     * <p>
+     * Fired on the initiator node when the snapshot restore operation failed.
+     * </p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     * @see IgniteSnapshot#cancelSnapshotRestore(String)
+     */
+    public static final int EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED = 173;
+
+    /**
+     * All cluster snapshot events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all cluster snapshot events.
+     *
+     * @see SnapshotEvent
+     */
+    public static final int[] EVTS_CLUSTER_SNAPSHOT = {
+        EVT_CLUSTER_SNAPSHOT_STARTED,
+        EVT_CLUSTER_SNAPSHOT_FINISHED,
+        EVT_CLUSTER_SNAPSHOT_FAILED,
+        EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED,
+        EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED,
+        EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
+    };
 
     /**
      * All checkpoint events. This array can be directly passed into

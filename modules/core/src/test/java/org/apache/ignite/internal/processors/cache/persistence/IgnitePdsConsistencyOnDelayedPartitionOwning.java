@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -111,7 +112,7 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
     /** */
     @Test
     public void checkConsistencyNodeLeft() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(4);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(4);
         crd.cluster().active(true);
 
         for (int i = 0; i < PARTS; i++)
@@ -159,9 +160,9 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         CountDownLatch delayedOnwningLatch = new CountDownLatch(1);
 
         GridCacheDatabaseSharedManager dbMgr =
-            (GridCacheDatabaseSharedManager) grid(1).context().cache().context().database();
+            (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
 
-        dbMgr.addCheckpointListener(new DbCheckpointListener() {
+        dbMgr.addCheckpointListener(new CheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                 // No-op.
             }
@@ -190,7 +191,7 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         TestRecordingCommunicationSpi.spi(grid(1)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionDemandMessage) {
-                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
 
                     return msg0.topologyVersion().equals(new AffinityTopologyVersion(7, 0));
                 }

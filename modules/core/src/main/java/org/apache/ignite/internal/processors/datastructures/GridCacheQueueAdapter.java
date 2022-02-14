@@ -436,13 +436,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         opCtx = opCtx == null ? new CacheOperationContext(
             false,
-            null,
             true,
             null,
             false,
             null,
             false,
-            false,
+            null,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX)
             : opCtx.keepBinary();
 

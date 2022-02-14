@@ -78,6 +78,8 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
+        cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_LOCKED);
+
         return cfg;
     }
 

@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
+import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -33,13 +38,13 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private Runnable run;
 
     /** */
     private IgniteInternalFuture<?> fut;
+
+    /** Local node page stream with single page. */
+    private final NodePageStream<R> stream;
 
     /**
      * @param ctx Context.
@@ -49,6 +54,10 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         super(ctx, qry, true);
 
         run = new LocalQueryRunnable();
+
+        stream = new NodePageStream<>(ctx.localNodeId(), () -> {}, () -> {});
+
+        reducer = new UnsortedCacheQueryReducer<>(F.asMap(stream.nodeId(), stream));
     }
 
     /**
@@ -59,29 +68,27 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void cancelQuery() throws IgniteCheckedException {
+    @Override protected void cancelQuery(Throwable err) throws IgniteCheckedException {
         if (fut != null)
             fut.cancel();
+
+        stream.cancel(err);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onPage(UUID nodeId, boolean last) {
-        return last;
+    @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
+        CacheQueryReducer.get(stream.headPage());
     }
 
     /** {@inheritDoc} */
-    @Override protected void loadPage() {
-        // No-op.
+    @Override protected void onError(Throwable err) {
+        if (onDone(err))
+            stream.cancel(err);
     }
 
     /** {@inheritDoc} */
-    @Override protected void loadAllPages() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void awaitFirstPage() throws IgniteCheckedException {
-        get();
+    @Override protected void onPage(UUID nodeId, Collection<R> data, boolean lastPage) {
+        stream.addPage(data, lastPage);
     }
 
     /** */

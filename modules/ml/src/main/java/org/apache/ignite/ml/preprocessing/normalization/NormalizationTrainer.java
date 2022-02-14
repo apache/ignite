@@ -56,7 +56,7 @@ public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V> {
      */
     public NormalizationTrainer<K, V> withP(double p) {
         assert p > 0;
-        this.p = (int) p;
+        this.p = (int)p;
         return this;
     }
 }

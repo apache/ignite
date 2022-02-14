@@ -133,7 +133,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @param colIdx Column index.
      * @return Value.
      */
-    private Value getCached(int colIdx) {
+    public Value getCached(int colIdx) {
         return valCache != null ? valCache[colIdx] : null;
     }
 
@@ -180,6 +180,13 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap object into H2 Value.", e);
         }
+    }
+
+    /**
+     * @return Cache data row.
+     */
+    public CacheDataRow getRow() {
+        return row;
     }
 
     /**
@@ -344,5 +351,12 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         sb.a(" ]");
 
         return sb.toString();
+    }
+
+    /**
+     * @return H2 row descriptor.
+     */
+    public GridH2RowDescriptor getDesc() {
+        return desc;
     }
 }

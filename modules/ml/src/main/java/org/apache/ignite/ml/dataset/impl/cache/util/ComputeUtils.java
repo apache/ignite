@@ -56,7 +56,14 @@ import org.apache.ignite.ml.util.Utils;
 /**
  * Util class that provides common methods to perform computations on top of the Ignite Compute Grid.
  */
-public class ComputeUtils {
+public final class ComputeUtils {
+    /**
+     *
+     */
+    private ComputeUtils() {
+        // No-op.
+    }
+
     /** Template of the key used to store partition {@code data} in local storage. */
     private static final String DATA_STORAGE_KEY_TEMPLATE = "part_data_storage_%s";
 
@@ -110,11 +117,11 @@ public class ComputeUtils {
                 }
 
             // Collects results.
-            for (int part : futures.keySet())
+            for (Map.Entry<Integer, IgniteFuture<R>> entry : futures.entrySet())
                 try {
-                    R res = futures.get(part).get();
+                    R res = entry.getValue().get();
                     results.add(res);
-                    completionFlags.set(part);
+                    completionFlags.set(entry.getKey());
                 }
                 catch (IgniteException ignore) {
                 }

@@ -53,7 +53,8 @@ public class SimpleLabeledDatasetTest {
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
 
         PatchedPreprocessor<Integer, Vector, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, vectorizer);
 

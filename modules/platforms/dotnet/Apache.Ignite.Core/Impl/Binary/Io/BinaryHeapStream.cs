@@ -41,9 +41,6 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /** Position. */
         private int _pos;
 
-        /** Disposed flag. */
-        private bool _disposed;
-
         /** Data array. */
         private byte[] _data;
 
@@ -207,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
                     short val0 = val[i];
 
                     byte* valPtr = (byte*)&(val0);
-                    
+
                     *curPos++ = valPtr[1];
                     *curPos++ = valPtr[0];
                 }
@@ -370,7 +367,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
                 valPtr[2] = data[1];
                 valPtr[3] = data[0];
             }
-            
+
             return val;
         }
 
@@ -824,7 +821,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /// <inheritdoc />
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// Unsupported seek origin:  + origin
         /// or
         /// Seek before origin:  + newPos
@@ -870,14 +867,11 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            if (_disposed)
-                return;
-
-            GC.SuppressFinalize(this);
-
-            _disposed = true;
+            // No-op.
         }
 
         /// <summary>

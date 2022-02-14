@@ -136,8 +136,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -362,8 +362,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)164, MvccRecoveryFinishedMessage::new);
-        factory.register((short)165, PartitionCountersNeighborcastRequest::new);
-        factory.register((short)166, PartitionCountersNeighborcastResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new);
@@ -375,6 +373,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new);
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new);
+        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
+        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR

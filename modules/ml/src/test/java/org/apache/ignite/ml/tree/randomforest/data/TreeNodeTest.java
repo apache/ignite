@@ -38,8 +38,8 @@ public class TreeNodeTest {
         TreeNode node = new TreeNode(5, 1);
 
         assertEquals(TreeNode.Type.UNKNOWN, node.getType());
-        assertEquals(5, node.predictNextNodeKey(features1).nodeId());
-        assertEquals(5, node.predictNextNodeKey(features2).nodeId());
+        assertEquals(5, node.predictNextNodeKey(features1).getNodeId());
+        assertEquals(5, node.predictNextNodeKey(features2).getNodeId());
     }
 
     /** */
@@ -49,8 +49,8 @@ public class TreeNodeTest {
         node.toLeaf(0.5);
 
         assertEquals(TreeNode.Type.LEAF, node.getType());
-        assertEquals(5, node.predictNextNodeKey(features1).nodeId());
-        assertEquals(5, node.predictNextNodeKey(features2).nodeId());
+        assertEquals(5, node.predictNextNodeKey(features1).getNodeId());
+        assertEquals(5, node.predictNextNodeKey(features2).getNodeId());
     }
 
     /** */
@@ -60,8 +60,8 @@ public class TreeNodeTest {
         root.toConditional(0, 0.1);
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
-        assertEquals(2, root.predictNextNodeKey(features1).nodeId());
-        assertEquals(3, root.predictNextNodeKey(features2).nodeId());
+        assertEquals(2, root.predictNextNodeKey(features1).getNodeId());
+        assertEquals(3, root.predictNextNodeKey(features2).getNodeId());
     }
 
     /** */
@@ -69,7 +69,7 @@ public class TreeNodeTest {
     public void testPredictProba() {
         TreeNode root = new TreeNode(1, 1);
         List<TreeNode> leaves = root.toConditional(0, 0.1);
-        leaves.forEach(leaf -> leaf.toLeaf(leaf.getId().nodeId() % 2));
+        leaves.forEach(leaf -> leaf.toLeaf(leaf.getId().getNodeId() % 2));
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
         assertEquals(0.0, root.predict(features1), 0.001);

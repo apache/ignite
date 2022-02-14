@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -47,7 +48,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Initializes a new instance of <see cref="ContinuousQueryTest"/>.
         /// </summary>
-        public ContinuousQueryTest() : base(2)
+        public ContinuousQueryTest()
+            : base(
+                gridCount: 2,
+                enableServerListLogging: true,
+                serverListLoggerLevels: new [] { LogLevel.Error, LogLevel.Warn })
         {
             // No-op.
         }
@@ -137,6 +142,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// - Update cache and verify that continuous query listeners receive correct events
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestComputeWorksWhenContinuousQueryIsActive()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
@@ -266,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestClientContinuousQueryReceivesEventsFromServerCache()
         {
-            const int count = 10000;
+            const int count = 100;
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
@@ -540,6 +546,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// - Versify that results are correct
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestMultipleQueriesMultithreaded()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
@@ -636,6 +643,76 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 CollectionAssert.AreEquivalent(keys.Take(2), res.Single());
             });
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> is false by default
+        /// and expiration events are not delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with default settings
+        /// - Check that Created events are delivered, but Expired events are not
+        /// </summary>
+        [Test]
+        public void TestIncludeExpiredIsFalseByDefaultAndExpiredEventsAreSkipped()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
+                .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+
+            var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue));
+            Assert.IsFalse(qry.IncludeExpired);
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = 2;
+
+                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1), 5000);
+
+                cache[2] = 3;
+            }
+
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events.Last().EventType);
+        }
+
+        /// <summary>
+        /// Tests that enabling <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> causes
+        /// <see cref="CacheEntryEventType.Expired"/> events to be delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> set to <c>true</c>
+        /// - Check that Expired events are delivered
+        /// </summary>
+        [Test]
+        public void TestExpiredEventsAreDeliveredWhenIncludeExpiredIsTrue()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
+                .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+
+            var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue))
+            {
+                IncludeExpired = true
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = 2;
+
+                TestUtils.WaitForTrueCondition(() => events.Count == 2, 5000);
+            }
+
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
+            Assert.AreEqual(CacheEntryEventType.Expired, events.Last().EventType);
+
+            Assert.IsTrue(events.Last().HasValue);
+            Assert.IsTrue(events.Last().HasOldValue);
+            Assert.AreEqual(2, events.Last().Value);
+            Assert.AreEqual(2, events.Last().OldValue);
+            Assert.AreEqual(1, events.Last().Key);
         }
 
         /// <summary>

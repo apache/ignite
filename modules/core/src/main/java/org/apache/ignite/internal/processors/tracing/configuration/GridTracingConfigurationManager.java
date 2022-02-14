@@ -80,6 +80,10 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
             new TracingConfigurationCoordinates.Builder(Scope.DISCOVERY).build(),
             TracingConfigurationManager.DEFAULT_DISCOVERY_CONFIGURATION);
 
+        tmpDfltConfigurationMap.put(
+            new TracingConfigurationCoordinates.Builder(Scope.SQL).build(),
+            TracingConfigurationManager.DEFAULT_SQL_CONFIGURATION);
+
         DEFAULT_CONFIGURATION_MAP = Collections.unmodifiableMap(tmpDfltConfigurationMap);
     }
 
@@ -167,8 +171,12 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
 
         if (coordinates.label() != null)
             newTracingConfiguration.remove(coordinates);
-        else
-            newTracingConfiguration.put(coordinates, DEFAULT_CONFIGURATION_MAP.get(new TracingConfigurationCoordinates.Builder(coordinates.scope()).build()));
+        else {
+            newTracingConfiguration.put(
+                coordinates,
+                DEFAULT_CONFIGURATION_MAP.get(new TracingConfigurationCoordinates.Builder(coordinates.scope()).build())
+            );
+        }
 
         try {
             distributedTracingConfiguration.propagate(newTracingConfiguration);

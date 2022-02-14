@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,18 +34,25 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests H2RowCacheRegistry.
  */
+@RunWith(Parameterized.class)
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
@@ -51,16 +61,43 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
+    /** */
+    @Parameterized.Parameters(name = "persistenceEnabled={0}")
+    public static Collection<Object[]> testParams() {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
+
+    /** */
+    @Parameterized.Parameter
+    public boolean persistenceEnabled;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrid();
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrid();
+
+        if (persistenceEnabled)
+            ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        cleanPersistenceDir();
+
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled)
+                )
+            );
     }
 
     /**
@@ -169,7 +206,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < maxSize / 2; i++)
             cache.put(i, new Value(1));
 
-        H2RowCache rowCache = rowCache(grid(), grpId);
+        IndexRowCache rowCache = rowCache(grid(), grpId);
 
         assertEquals(0, rowCache.size());
 
@@ -237,7 +274,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
                 streamer.addData(i, new Value(i));
         }
 
-        H2RowCache rowCache = rowCache(grid(), grpId);
+        IndexRowCache rowCache = rowCache(grid(), grpId);
 
         assertNotNull(rowCache);
 
@@ -277,7 +314,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         fillCache(cacheName);
 
-        H2RowCache rowCache = rowCache(grid(), grpId);
+        IndexRowCache rowCache = rowCache(grid(), grpId);
 
         fillRowCache(cacheName);
 
@@ -319,7 +356,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         fillCache(cacheName);
 
-        H2RowCache rowCache = rowCache(grid(), grpId);
+        IndexRowCache rowCache = rowCache(grid(), grpId);
 
         fillRowCache(cacheName);
 
@@ -356,16 +393,16 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
      * @param key Key to find.
      * @return Row's link.
      */
-    private long getLinkForKey(String cacheName, H2RowCache rowCache, int key) {
+    private long getLinkForKey(String cacheName, IndexRowCache rowCache, int key) {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentLinkedHashMap<Long, H2CacheRow> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, IndexRowImpl> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
-        for (Map.Entry<Long, H2CacheRow> e : rowsMap.entrySet()) {
-            H2CacheRow val = e.getValue();
+        for (Map.Entry<Long, IndexRowImpl> e : rowsMap.entrySet()) {
+            IndexRowImpl val = e.getValue();
 
-            KeyCacheObject rowKey = val.key();
+            KeyCacheObject rowKey = val.cacheDataRow().key();
 
             if ((Integer)rowKey.value(null, false) == key)
                 return e.getKey();
@@ -381,8 +418,8 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
      * @param grpId Cache group ID.
      * @return H2RowCache for checks.
      */
-    private H2RowCache rowCache(IgniteEx ig, int grpId) {
-        return (H2RowCache)ig.context().query().getIndexing().rowCacheCleaner(grpId);
+    private IndexRowCache rowCache(IgniteEx ig, int grpId) {
+        return (IndexRowCache)ig.context().indexProcessor().rowCacheCleaner(grpId);
     }
 
     /**

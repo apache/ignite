@@ -36,6 +36,11 @@ namespace Apache.Ignite.Core.Cache.Event
         /// <summary>
         /// An event type indicating that the cache entry was removed.
         /// </summary>
-        Removed
+        Removed,
+
+        /// <summary>
+        /// An event type indicating that the cache entry was removed by expiration policy.
+        /// </summary>
+        Expired
     }
 }

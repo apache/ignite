@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -51,10 +50,10 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
+import org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -261,7 +260,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         AtomicBoolean timeoutReached = new AtomicBoolean(false);
 
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        CheckpointManager checkpointManager = U.field(ig0.context().cache().context().database(), "checkpointManager");
 
         IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
             while (!timeoutReached.get()) {
@@ -282,7 +281,11 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         }, WORKLOAD_THREADS_CNT, "updater");
 
         IgniteInternalFuture<?> cpWriteLockUnlockFut = runAsync(() -> {
-            ReentrantReadWriteLock lock = U.field(db, "checkpointLock");
+            Object checkpointReadWriteLock = U.field(
+                checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+            );
+
+            ReentrantReadWriteLockWithTracking lock = U.field(checkpointReadWriteLock, "checkpointLock");
 
             while (!timeoutReached.get()) {
                 try {
@@ -494,7 +497,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         assertFalse("Failure handler should not be triggered.", failureHndTriggered);
     }
 
-    /** */
+    /**
+     *
+     */
     protected void fillCache(IgniteCache<Integer, byte[]> cache) {
         cache.putAll(new TreeMap<Integer, byte[]>() {{
             for (int i = 0; i < ENTRIES; i++)
@@ -508,7 +513,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         printStatistics((IgniteCacheProxy)cache, "After cache puts");
     }
 
-    /** */
+    /**
+     *
+     */
     protected void waitAndCheckExpired(
         IgniteEx srv,
         final IgniteCache<Integer, byte[]> cache
@@ -533,10 +540,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             if (locPart == null)
                 continue;
 
-            IgniteCacheOffheapManager.CacheDataStore dataStore =
-                ctx.cache().cacheGroup(CU.cacheId(CACHE_NAME_ATOMIC)).offheap().dataStore(locPart);
-
-            GridCursor cur = dataStore.cursor();
+            GridCursor cur = locPart.dataStore().cursor();
 
             assertFalse(cur.next());
             assertEquals(0, locPart.fullSize());
@@ -546,7 +550,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             assertNull(cache.get(i));
     }
 
-    /** */
+    /**
+     *
+     */
     private void printStatistics(IgniteCacheProxy cache, String msg) {
         System.out.println(msg + " {{");
         cache.context().printMemoryStats();

@@ -31,8 +31,11 @@ public interface ParallelismStrategy {
      * The type of parallelism.
      */
     public enum Type {
-        /** No parallelism. */NO_PARALLELISM,
-        /** On default pool. */ON_DEFAULT_POOL
+        /** No parallelism. */
+        NO_PARALLELISM,
+
+        /** On default pool. */
+        ON_DEFAULT_POOL
     }
 
     /**

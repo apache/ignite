@@ -509,7 +509,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     private UUID registerListener(ClusterGroup grp) throws Exception {
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        IgniteBiPredicate<UUID,Object> lsnr = new MessageListener();
+        IgniteBiPredicate<UUID, Object> lsnr = new MessageListener();
 
         return ignite.message(grp).remoteListen(MESSAGE_TOPIC, lsnr);
     }
@@ -517,7 +517,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * Ignite predicate.
      */
-    private static class MessageListener implements IgniteBiPredicate<UUID,Object> {
+    private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
         /**
          * Default constructor.
          */
@@ -536,7 +536,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * Ignite order predicate.
      */
-    private static class OrderedMessageListener implements IgniteBiPredicate<UUID,TestObject> {
+    private static class OrderedMessageListener implements IgniteBiPredicate<UUID, TestObject> {
         /**
          * Counter.
          */

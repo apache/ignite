@@ -50,6 +50,17 @@
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="name" value="default"/>
                 </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityTest+QueryEntityKey"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityTest+QueryEntityValue"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
 

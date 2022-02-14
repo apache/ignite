@@ -36,8 +36,6 @@ import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfig
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
-import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
@@ -52,28 +50,25 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
 /**
  * Commands associated with tracing configuration functionality.
  */
-public class TracingConfigurationCommand implements Command<TracingConfigurationArguments> {
+public class TracingConfigurationCommand extends AbstractCommand<TracingConfigurationArguments> {
     /** Arguments. */
     private TracingConfigurationArguments args;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        if (!experimentalEnabled())
-            return;
-
-        Command.usage(
+        usage(
             log,
             "Print tracing configuration: ",
             TRACING_CONFIGURATION);
 
-        Command.usage(
+        usage(
             log,
             "Print tracing configuration: ",
             TRACING_CONFIGURATION,
             TracingConfigurationSubcommand.GET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
 
-        Command.usage(
+        usage(
             log,
             "Print specific tracing configuration based on specified " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
@@ -83,7 +78,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command.usage(
+        usage(
             log,
             "Reset all specific tracing configuration the to default. If " +
                 TracingConfigurationCommandArg.SCOPE.argName() +
@@ -94,7 +89,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             RESET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
 
-        Command.usage(
+        usage(
             log,
             "Reset specific tracing configuration to the default. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
@@ -107,7 +102,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
             grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
-        Command.usage(
+        usage(
             log,
             "Set new tracing configuration. If both " +
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
@@ -134,38 +129,31 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
      * @throws Exception If failed to execute tracing-configuration action.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        if (experimentalEnabled()) {
-            try (GridClient client = Command.startClient(clientCfg)) {
-                UUID crdId = client.compute()
-                    //Only non client node can be coordinator.
-                    .nodes(node -> !node.isClient())
-                    .stream()
-                    .min(Comparator.comparingLong(GridClientNode::order))
-                    .map(GridClientNode::nodeId)
-                    .orElse(null);
+        try (GridClient client = Command.startClient(clientCfg)) {
+            UUID crdId = client.compute()
+                //Only non client node can be coordinator.
+                .nodes(node -> !node.isClient())
+                .stream()
+                .min(Comparator.comparingLong(GridClientNode::order))
+                .map(GridClientNode::nodeId)
+                .orElse(null);
 
-                VisorTracingConfigurationTaskResult res = executeTaskByNameOnNode(
-                    client,
-                    VisorTracingConfigurationTask.class.getName(),
-                    toVisorArguments(args),
-                    crdId,
-                    clientCfg
-                );
+            VisorTracingConfigurationTaskResult res = executeTaskByNameOnNode(
+                client,
+                VisorTracingConfigurationTask.class.getName(),
+                toVisorArguments(args),
+                crdId,
+                clientCfg
+            );
 
-                printResult(res, log::info);
+            printResult(res, log::info);
 
-                return res;
-            }
-            catch (Throwable e) {
-                log.severe("Failed to execute tracing-configuration command='" + args.command().text() + "'");
+            return res;
+        }
+        catch (Throwable e) {
+            log.severe("Failed to execute tracing-configuration command='" + args.command().text() + "'");
 
-                throw e;
-            }
-        } else {
-            log.warning(String.format("For use experimental command add %s=true to JVM_OPTS in %s",
-                IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME));
-
-            return null;
+            throw e;
         }
     }
 

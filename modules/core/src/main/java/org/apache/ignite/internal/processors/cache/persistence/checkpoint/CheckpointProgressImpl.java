@@ -77,7 +77,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /**
      * @param cpFreq Timeout until next checkpoint.
      */
-    public CheckpointProgressImpl(long cpFreq) {
+    CheckpointProgressImpl(long cpFreq) {
         // Avoid overflow on nextCpNanos.
         cpFreq = Math.min(TimeUnit.DAYS.toMillis(365), cpFreq);
 
@@ -285,11 +285,9 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     @Override public void onStateChanged(CheckpointState state, Runnable clo) {
         GridFutureAdapter<?> fut0 = futureFor(state);
 
-        fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture fut) {
-                if (fut.error() == null)
-                    clo.run();
-            }
+        fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut -> {
+            if (fut.error() == null)
+                clo.run();
         });
     }
 }

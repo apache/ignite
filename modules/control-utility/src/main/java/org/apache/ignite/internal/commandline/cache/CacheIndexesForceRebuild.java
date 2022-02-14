@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContai
 
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.CACHE_NAMES;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.GROUP_NAMES;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.NODE_ID;
@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IndexListCom
 /**
  * Cache subcommand that triggers indexes force rebuild.
  */
-public class CacheIndexesForceRebuild implements Command<CacheIndexesForceRebuild.Arguments> {
+public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceRebuild.Arguments> {
     /** Command parsed arguments. */
     private Arguments args;
 
@@ -83,8 +83,13 @@ public class CacheIndexesForceRebuild implements Command<CacheIndexesForceRebuil
         final UUID nodeId = args.nodeId;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            taskRes = TaskExecutor.executeTaskByNameOnNode(client, IndexForceRebuildTask.class.getName(), taskArg,
-                nodeId, clientCfg);
+            taskRes = TaskExecutor.executeTaskByNameOnNode(
+                client,
+                IndexForceRebuildTask.class.getName(),
+                taskArg,
+                nodeId,
+                clientCfg
+            );
         }
 
         printResult(taskRes, logger);
@@ -206,7 +211,7 @@ public class CacheIndexesForceRebuild implements Command<CacheIndexesForceRebuil
             IndexForceRebuildCommandArg arg = CommandArgUtils.of(nextArg, IndexForceRebuildCommandArg.class);
 
             if (arg == null)
-                throw new IllegalArgumentException("Unknown argument: " + arg.argName());
+                throw new IllegalArgumentException("Unknown argument: " + nextArg);
 
             switch (arg) {
                 case NODE_ID:

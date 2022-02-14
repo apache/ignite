@@ -51,6 +51,9 @@ public class GridRestResponse implements Externalizable {
     /** Success status. */
     private int successStatus = STATUS_SUCCESS;
 
+    /** HTTP REQUEST not allowed */
+    public static final int SERVICE_UNAVAILABLE = 503;
+
     /** Session token. */
     private byte[] sesTokBytes;
 

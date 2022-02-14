@@ -47,7 +47,7 @@ namespace ignite
                  * @param sql SQL query.
                  * @param cmd Parsed command.
                  */
-                InternalQuery(diagnostic::Diagnosable& diag, const std::string& sql, std::auto_ptr<SqlCommand> cmd) :
+                InternalQuery(diagnostic::DiagnosableAdapter& diag, const std::string& sql, std::auto_ptr<SqlCommand> cmd) :
                     Query(diag, QueryType::INTERNAL),
                     sql(sql),
                     cmd(cmd)
@@ -70,7 +70,7 @@ namespace ignite
                  */
                 virtual SqlResult::Type Execute()
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Internal error.");
+                    diag.AddStatusRecord("Internal error.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -83,7 +83,7 @@ namespace ignite
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings)
                 {
-                    (void) columnBindings;
+                   IGNITE_UNUSED(columnBindings);
 
                     return SqlResult::AI_NO_DATA;
                 }
@@ -97,8 +97,8 @@ namespace ignite
                  */
                 virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
                 {
-                    (void) columnIdx;
-                    (void) buffer;
+                    IGNITE_UNUSED(columnIdx);
+                    IGNITE_UNUSED(buffer);
 
                     return SqlResult::AI_NO_DATA;
                 }
@@ -111,18 +111,6 @@ namespace ignite
                 virtual SqlResult::Type Close()
                 {
                     return SqlResult::AI_SUCCESS;
-                }
-
-                /**
-                 * Get column metadata.
-                 *
-                 * @return Column metadata.
-                 */
-                virtual const meta::ColumnMetaVector& GetMeta() const
-                {
-                    static const meta::ColumnMetaVector empty;
-
-                    return empty;
                 }
 
                 /**

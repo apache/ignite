@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  * @deprecated Use {@link ClusterStateChangeCommand} instead.
  */
 @Deprecated
-public class DeactivateCommand implements Command<Void> {
+public class DeactivateCommand extends AbstractCommand<Void> {
     /** Cluster name. */
     private String clusterName;
 
@@ -42,7 +42,7 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
+        usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
             optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 

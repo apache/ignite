@@ -155,7 +155,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
-                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null, false);
+                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, false);
 
             if (log.isDebugEnabled())
                 log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
@@ -296,7 +296,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
                 if (recordable)
                     cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
-                        EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
+                        EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null,
                         false);
             }
         }
@@ -326,7 +326,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                     try {
                         plc.onEntryAccessed(true, e.wrapEviction());
                     }
-                    catch (RuntimeException re) {
+                    catch (RuntimeException ignore) {
                         // It seems that this exception can be ignored due to the fact that
                         // the original exception already exists and will be reported to the logger.
                     }

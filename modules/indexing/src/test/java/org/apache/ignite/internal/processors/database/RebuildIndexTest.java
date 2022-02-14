@@ -186,7 +186,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         enableCheckpoints(G.allGrids(), false);
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false, true);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME), 0, 0, false, true);
 
         node.context().resource().injectGeneric(clo);
 

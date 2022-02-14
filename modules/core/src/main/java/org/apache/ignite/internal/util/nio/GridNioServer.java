@@ -90,6 +90,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
@@ -141,6 +142,9 @@ public class GridNioServer<T> {
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
+    /** @see IgniteSystemProperties#IGNITE_IO_BALANCE_PERIOD */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
@@ -158,6 +162,12 @@ public class GridNioServer<T> {
 
     /** */
     public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
+
+    /** The name of the metric that indicates whether SSL is enabled for the connector. */
+    public static final String SSL_ENABLED_METRIC_NAME = "SslEnabled";
+
+    /** The name of the metric that provides the active TCP sessions count. */
+    public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;
@@ -416,7 +426,8 @@ public class GridNioServer<T> {
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
-        long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
+        long balancePeriod = IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, DFLT_IO_BALANCE_PERIOD);
 
         IgniteRunnable balancer0 = null;
 
@@ -446,6 +457,14 @@ public class GridNioServer<T> {
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
+
+        if (mreg != null) {
+            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
+
+            boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
+
+            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
+        }
     }
 
     /**
@@ -725,6 +744,8 @@ public class GridNioServer<T> {
             }
 
             ses0.resend(futs);
+
+            ses0.procWrite.set(true);
 
             // Wake up worker.
             ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
@@ -1087,11 +1108,15 @@ public class GridNioServer<T> {
      * Stop polling for write availability if write queue is empty.
      */
     private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
-        if (ses.writeQueue().isEmpty()) {
+        if (ses.procWrite.get()) {
             ses.procWrite.set(false);
 
-            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
         }
     }
 
@@ -1235,6 +1260,8 @@ public class GridNioServer<T> {
 
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
 
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
@@ -1391,16 +1418,7 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
+            MessageWriter writer = messageWriter(ses);
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
@@ -1566,14 +1584,18 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 assert msg != null;
 
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     pendingRequests.add(req);
@@ -1649,16 +1671,7 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
+            MessageWriter writer = messageWriter(ses);
 
             if (req == null) {
                 req = systemMessage(ses);
@@ -1729,6 +1742,25 @@ public class GridNioServer<T> {
                 buf.clear();
         }
 
+        /** */
+        @Nullable private MessageWriter messageWriter(GridSelectorNioSessionImpl ses) throws IOException {
+            if (writerFactory == null)
+                return null;
+
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
+
+            if (writer == null) {
+                try {
+                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IOException("Failed to create message writer.", e);
+                }
+            }
+
+            return writer;
+        }
+
         /**
          * @param writer Customizer of writing.
          * @param buf Buffer to write.
@@ -1747,12 +1779,16 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     onMessageWritten(ses, msg);
@@ -2222,15 +2258,21 @@ public class GridNioServer<T> {
                         if (!changeReqs.isEmpty())
                             continue;
 
-                        updateHeartbeat();
+                        blockingSectionBegin();
 
                         // Wake up every 2 seconds to check if closed.
-                        if (selector.select(2000) > 0) {
+                        int numKeys = selector.select(2000);
+
+                        blockingSectionEnd();
+
+                        if (numKeys > 0) {
                             // Walk through the ready keys collection and process network events.
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
+
+                            updateHeartbeat();
                         }
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
@@ -2289,7 +2331,7 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
+                if (ses.procWrite.get() && (key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
                 // Update timestamp to protected against false write timeout.
@@ -2926,7 +2968,7 @@ public class GridNioServer<T> {
         if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int) outboundMessagesQueueSizeMetric.value();
+        return (int)outboundMessagesQueueSizeMetric.value();
     }
 
     /**
@@ -3026,14 +3068,19 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
-                    updateHeartbeat();
+                    blockingSectionBegin();
 
                     // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0)
+                    int numKeys = selector.select(2000);
+
+                    blockingSectionEnd();
+
+                    if (numKeys > 0) {
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
-                    else
+
                         updateHeartbeat();
+                    }
 
                     if (balancer != null)
                         balancer.run();

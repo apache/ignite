@@ -111,7 +111,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testUpdatedBinaryMetadataIsPreservedOnJoinToOldCoordinator() throws Exception {
@@ -152,20 +153,21 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache0 = ignite0.cache(CACHE_NAME).withKeepBinary();
 
-        BinaryObject bObj0 = (BinaryObject) cache0.get(0);
+        BinaryObject bObj0 = (BinaryObject)cache0.get(0);
 
-        assertEquals(10, (int) bObj0.field("intField"));
+        assertEquals(10, (int)bObj0.field("intField"));
 
         cache1 = ignite1.cache(CACHE_NAME).withKeepBinary();
 
-        BinaryObject bObj1 = (BinaryObject) cache1.get(1);
+        BinaryObject bObj1 = (BinaryObject)cache1.get(1);
 
-        assertEquals(20, (int) bObj1.field("intField"));
+        assertEquals(20, (int)bObj1.field("intField"));
         assertEquals("str", bObj1.field("strField"));
     }
 
     /**
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsWrittenOnOldCoordinator() throws Exception {
@@ -202,13 +204,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache0 = ignite0.cache(CACHE_NAME).withKeepBinary();
 
-        bObj0 = (BinaryObject) cache0.get(0);
-        bObj1 = (BinaryObject) cache0.get(1);
+        bObj0 = (BinaryObject)cache0.get(0);
+        bObj1 = (BinaryObject)cache0.get(1);
 
         assertEquals("DynamicType0", binaryTypeName(bObj0));
         assertEquals("DynamicType1", binaryTypeName(bObj1));
 
-        assertEquals(10, (int) bObj0.field(DYNAMIC_INT_FIELD_NAME));
+        assertEquals(10, (int)bObj0.field(DYNAMIC_INT_FIELD_NAME));
         assertEquals("str", bObj1.field(DYNAMIC_STR_FIELD_NAME));
     }
 
@@ -220,7 +222,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * after full cluster restart it starts second (so it doesn't take the role of coordinator)
      * but metadata update is propagated to it anyway.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNewBinaryMetadataIsPropagatedToAllOutOfDataNodes() throws Exception {
@@ -267,9 +270,9 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         igniteB.active(true);
 
-        bObj1 = (BinaryObject) igniteB.cache(CACHE_NAME).withKeepBinary().get(1);
+        bObj1 = (BinaryObject)igniteB.cache(CACHE_NAME).withKeepBinary().get(1);
 
-        assertEquals(20, (int) bObj1.field(DYNAMIC_INT_FIELD_NAME));
+        assertEquals(20, (int)bObj1.field(DYNAMIC_INT_FIELD_NAME));
         assertEquals("str", bObj1.field(DYNAMIC_STR_FIELD_NAME));
     }
 
@@ -288,7 +291,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * If joining node has incompatible BinaryMetadata (e.g. when user manually copies binary_meta file),
      * coordinator detects it and fails the node providing information about conflict.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a>
+     * refer to the following JIRA for more context about the problem verified by the test.
      */
     @Test
     public void testNodeWithIncompatibleMetadataIsProhibitedToJoinTheCluster() throws Exception {
@@ -418,13 +422,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         for (int i = 0; i < nodesCnt; i++) {
             IgniteCache cache = grid(i).cache(CACHE_NAME).withKeepBinary();
 
-            BinaryObject o1 = (BinaryObject) cache.get(0);
+            BinaryObject o1 = (BinaryObject)cache.get(0);
 
             TestValue1 t1 = o1.deserialize();
 
             assertEquals(0, t1.getValue());
 
-            BinaryObject o2 = (BinaryObject) cache.get(1);
+            BinaryObject o2 = (BinaryObject)cache.get(1);
 
             TestValue2 t2 = o2.deserialize();
 
@@ -683,8 +687,11 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
     /** */
     private enum EnumType {
-        /** */ ENUM_VAL_0,
-        /** */ ENUM_VAL_1
+        /** */
+        ENUM_VAL_0,
+
+        /** */
+        ENUM_VAL_1
     }
 
     /**
@@ -700,7 +707,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer contentExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
 
@@ -711,7 +718,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer contentExaminer1 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(3);
+            BinaryObject bo = (BinaryObject)cache.get(3);
 
             int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
 
@@ -723,7 +730,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer structureExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             BinaryType type = bo.type();
 
@@ -744,7 +751,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer structureExaminer1 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             BinaryType type = bo.type();
 
@@ -764,7 +771,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer enumExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject enumBo = (BinaryObject) cache.get(4);
+            BinaryObject enumBo = (BinaryObject)cache.get(4);
 
             assertEquals(EnumType.ENUM_VAL_0.ordinal(), enumBo.enumOrdinal());
 

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -305,8 +306,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void commit() {
+        Span span = MTC.span();
+
         try (TraceSurroundings ignored =
-                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, MTC.span()))) {
+                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, span))) {
             enter();
 
             try {
@@ -325,14 +328,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         }
         finally {
-            MTC.span().end();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+        Span span = MTC.span();
+
         try (TraceSurroundings ignored =
-                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, MTC.span()))) {
+                 MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, span))) {
             enter();
 
             try {
@@ -343,14 +348,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         }
         finally {
-            MTC.span().end();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+        Span span = MTC.span();
+
         try (TraceSurroundings ignored =
-                 MTC.support(cctx.kernalContext().tracing().create(TX_CLOSE, MTC.span()))) {
+                 MTC.support(cctx.kernalContext().tracing().create(TX_CLOSE, span))) {
             enter();
 
             try {
@@ -364,14 +371,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         }
         finally {
-            MTC.span().end();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() {
+        Span span = MTC.span();
+
         try (TraceSurroundings ignored =
-                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, MTC.span()))) {
+                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, span))) {
             enter();
 
             try {
@@ -390,14 +399,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         }
         finally {
-            MTC.span().end();
+            span.end();
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+        Span span = MTC.span();
+
         try (TraceSurroundings ignored =
-                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, MTC.span()))) {
+                 MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, span))) {
             enter();
 
             try {
@@ -408,7 +419,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         }
         finally {
-            MTC.span().end();
+            span.end();
         }
     }
 

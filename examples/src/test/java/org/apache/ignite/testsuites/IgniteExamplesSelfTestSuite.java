@@ -36,6 +36,7 @@ import org.apache.ignite.examples.EncryptedCacheExampleSelfTest;
 import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
 import org.apache.ignite.examples.LifecycleExamplesSelfTest;
+import org.apache.ignite.examples.MLTutorialExamplesSelfTest;
 import org.apache.ignite.examples.MemcacheRestExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MemcacheRestExamplesSelfTest;
 import org.apache.ignite.examples.MessagingExamplesSelfTest;
@@ -43,7 +44,6 @@ import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
 import org.apache.ignite.examples.OpenCensusMetricsExporterExampleSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
-import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
@@ -70,7 +70,6 @@ import org.junit.runners.Suite;
     MonteCarloExamplesSelfTest.class,
     TaskExamplesSelfTest.class,
     SpringBeanExamplesSelfTest.class,
-    SpringDataExampleSelfTest.class,
     CheckpointExamplesSelfTest.class,
     ClusterGroupExampleSelfTest.class,
     CacheContinuousQueryExamplesSelfTest.class,
@@ -90,8 +89,9 @@ import org.junit.runners.Suite;
     CacheClientBinaryExampleTest.class,
     ComputeClientBinaryExampleTest.class,
 
-    // ML Grid.
+    // Machine Learning.
     IgniteExamplesMLTestSuite.class,
+    MLTutorialExamplesSelfTest.class,
 
     // Encryption.
     EncryptedCacheExampleSelfTest.class,

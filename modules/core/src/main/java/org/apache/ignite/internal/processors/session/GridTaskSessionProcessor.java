@@ -65,6 +65,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Creates task session.
+     *
      * @param sesId Session ID.
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
@@ -78,8 +80,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param attrs Map of attributes.
      * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
      * @param internal {@code True} in case of internal task.
-     * @param subjId Subject ID.
      * @param execName Custom executor name.
+     * @param login User who created the session, {@code null} if security is not enabled.
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
@@ -96,8 +98,9 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         Map<Object, Object> attrs,
         boolean fullSup,
         boolean internal,
-        UUID subjId,
-        @Nullable String execName) {
+        @Nullable String execName,
+        @Nullable Object login
+    ) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
                 taskNodeId,
@@ -114,8 +117,9 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 ctx,
                 false,
                 internal,
-                subjId,
-                execName);
+                execName,
+                login
+            );
         }
 
         while (true) {
@@ -139,8 +143,10 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         ctx,
                         true,
                         internal,
-                        subjId,
-                        execName));
+                        execName,
+                        login
+                    )
+                );
 
                 if (old != null)
                     ses = old;

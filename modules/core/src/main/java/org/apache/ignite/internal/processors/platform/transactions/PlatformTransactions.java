@@ -84,6 +84,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     public static final int OP_LOCAL_ACTIVE_TX = 13;
 
     /** */
+    public static final int OP_LOCAL_ACTIVE_REMOVE = 14;
+
+    /** */
     private final IgniteTransactions txs;
 
     /** Map with currently active transactions. */
@@ -204,6 +207,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 txs.resetMetrics();
 
                 return TRUE;
+
+            case OP_LOCAL_ACTIVE_REMOVE:
+                unregisterTx(val);
+
+                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);
@@ -245,7 +253,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(
+        int type,
+        BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer
+    ) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
                 TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());

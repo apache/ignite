@@ -50,7 +50,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer,Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
         ccfg.setBackups(1);
         ccfg.setName(REBALANCE_TEST_CACHE_NAME);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -119,7 +119,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
         assertTrue(fut.toString(), fut instanceof IgniteFutureImpl);
 
-        return ((IgniteFutureImpl) fut).internalFuture();
+        return ((IgniteFutureImpl)fut).internalFuture();
     }
 
     /**

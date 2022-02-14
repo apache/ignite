@@ -180,7 +180,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error());
+            finish.apply(p.id, msg.result(), msg.error());
 
             processes.remove(msg.processId());
         });
@@ -430,6 +430,41 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        END_SNAPSHOT
+        END_SNAPSHOT,
+
+        /**
+         * Cache group encyption key change prepare phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_PREPARE,
+
+        /**
+         * Cache group encyption key change perform phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_FINISH,
+
+        /**
+         * Rotate performance statistics.
+         */
+        PERFORMANCE_STATISTICS_ROTATE,
+
+        /**
+         * Cache group restore prepare phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+
+        /**
+         * Cache group restore preload phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+
+        /**
+         * Cache group restore cache start phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_START,
+
+        /**
+         * Cache group restore rollback phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
     }
 }

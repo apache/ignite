@@ -22,36 +22,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 
 /**
  * Callback that is intended to be executed after timeout on handshake.
  */
-public class HandshakeTimeoutObject<T> implements IgniteSpiTimeoutObject {
-    /** Id. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Object. */
-    private final T obj;
-
-    /** End time. */
-    private final long endTime;
+public class HandshakeTimeoutObject implements Runnable {
+    /** Object which used for connection. */
+    private final Object connectionObj;
 
     /** Done. */
     private final AtomicBoolean done = new AtomicBoolean();
 
     /**
-     * @param obj Client.
-     * @param endTime End time.
+     * @param connectionObj Client.
      */
-    public HandshakeTimeoutObject(T obj, long endTime) {
-        assert obj != null;
-        assert obj instanceof GridCommunicationClient || obj instanceof SelectableChannel;
-        assert endTime > 0;
+    public HandshakeTimeoutObject(Object connectionObj) {
+        assert connectionObj != null;
+        assert connectionObj instanceof GridCommunicationClient || connectionObj instanceof SelectableChannel;
 
-        this.obj = obj;
-        this.endTime = endTime;
+        this.connectionObj = connectionObj;
     }
 
     /**
@@ -62,28 +51,18 @@ public class HandshakeTimeoutObject<T> implements IgniteSpiTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        if (done.compareAndSet(false, true)) {
-            // Close socket - timeout occurred.
-            if (obj instanceof GridCommunicationClient)
-                ((GridCommunicationClient)obj).forceClose();
-            else
-                U.closeQuiet((AutoCloseable)obj);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long endTime() {
-        return endTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HandshakeTimeoutObject.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void run() {
+        if (done.compareAndSet(false, true)) {
+            // Close socket - timeout occurred.
+            if (connectionObj instanceof GridCommunicationClient)
+                ((GridCommunicationClient)connectionObj).forceClose();
+            else
+                U.closeQuiet((AutoCloseable)connectionObj);
+        }
     }
 }

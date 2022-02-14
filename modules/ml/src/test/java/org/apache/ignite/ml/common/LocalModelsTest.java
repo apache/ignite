@@ -170,14 +170,15 @@ public class LocalModelsTest {
             Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            ANNModelFormat load = (ANNModelFormat) exporter.load(mdlFilePath);
+            ANNModelFormat load = (ANNModelFormat)exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
 
-            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
-                .withK(load.getK())
-                .withDistanceMeasure(load.getDistanceMeasure())
-                .withWeighted(true);
+            NNClassificationModel importedMdl =
+                new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
+                    .withK(load.getK())
+                    .withDistanceMeasure(load.getDistanceMeasure())
+                    .withWeighted(true);
 
             Assert.assertEquals("", mdl, importedMdl);
 

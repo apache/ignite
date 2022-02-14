@@ -18,10 +18,10 @@
 #ifndef _IGNITE_IMPL_THIN_TRANSACTION_IMPL
 #define _IGNITE_IMPL_THIN_TRANSACTION_IMPL
 
-#include "impl/data_router.h"
 #include <ignite/common/fixed_size_array.h>
-#include "ignite/thin/transactions/transaction_consts.h"
-#include "impl/transactions/transactions_impl.h"
+#include <ignite/thin/transactions/transaction_consts.h>
+
+#include "impl/data_router.h"
 
 namespace ignite
 {
@@ -51,24 +51,30 @@ namespace ignite
                      * Constructor.
                      *
                      * @param txImpl Transactions implementation.
-                     * @param txid Transaction Id.
+                     * @param channel Channel linked to transaction.
+                     * @param txId Transaction Id.
                      * @param concurrency Transaction concurrency.
                      * @param isolation Transaction isolation.
                      * @param timeout Transaction timeout.
+                     * @param ioTimeout IO timeout for channel.
                      * @param size Number of entries participating in transaction (may be approximate).
                      */
                     TransactionImpl(
                             TransactionsImpl& txImpl,
-                            int32_t txid,
+                            SP_DataChannel channel,
+                            int32_t txId,
                             ignite::thin::transactions::TransactionConcurrency::Type concurrency,
                             ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
+                            int32_t ioTimeout,
                             int32_t size) :
+                        channel(channel),
                         txs(txImpl),
-                        txId(txid),
+                        txId(txId),
                         concurrency(concurrency),
                         isolation(isolation),
                         timeout(timeout),
+                        ioTimeout(ioTimeout),
                         txSize(size),
                         closed(false)
                     {
@@ -117,17 +123,13 @@ namespace ignite
                     /**
                      * Sets close flag to tx.
                      */
-                    void Closed();
-
-                    /**
-                     * @return Current transaction.
-                     */
-                    static SP_TransactionImpl GetCurrent();
+                    void SetClosed();
 
                     /**
                      * Starts transaction.
                      *
                      * @param txs Transactions implementation.
+                     * @param router Router to use to start transaction.
                      * @param concurrency Transaction concurrency.
                      * @param isolation Transaction isolation.
                      * @param timeout Transaction timeout.
@@ -136,27 +138,48 @@ namespace ignite
                      */
                     static SP_TransactionImpl Create(
                             TransactionsImpl& txs,
+                            SP_DataRouter& router,
                             ignite::thin::transactions::TransactionConcurrency::Type concurrency,
                             ignite::thin::transactions::TransactionIsolation::Type isolation,
                             int64_t timeout,
                             int32_t txSize,
                             ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label);
-                protected:
-                    /** Checks current thread state. */
-                    static void txThreadCheck(const TransactionImpl& tx);
 
-                    /** Completes tc and clear state from storage. */
-                    static void txThreadEnd(TransactionImpl& tx);
+                    /**
+                     * Get channel for the transaction.
+                     *
+                     * @return Channel.
+                     */
+                    SP_DataChannel GetChannel()
+                    {
+                        return channel;
+                    }
 
                 private:
+                    /** Checks current thread state. */
+                    void ThreadCheck();
+
+                    /** Completes tc and clear state from storage. */
+                    void ThreadEnd();
+
+                    /**
+                     * Synchronously send message and receive response.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    void SendTxMessage(ReqT& req, RspT& rsp);
+
+                    /** Data channel to use. */
+                    SP_DataChannel channel;
+
                     /** Transactions implementation. */
                     TransactionsImpl& txs;
 
                     /** Current transaction Id. */
                     int32_t txId;
-
-                    /** Thread local instance of the transaction. */
-                    static ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> threadTx;
 
                     /** Concurrency. */
                     int concurrency;
@@ -167,13 +190,16 @@ namespace ignite
                     /** Timeout in milliseconds. */
                     int64_t timeout;
 
+                    /** Channel io timeout. */
+                    int32_t ioTimeout;
+
                     /** Transaction size. */
                     int32_t txSize;
 
                     /** Closed flag. */
                     bool closed;
 
-                    IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
+                    IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl);
                 };
             }
         }

@@ -82,8 +82,8 @@ public class ImpurityHistogramTest {
      * @param partitions Partitions.
      */
     <T extends Histogram<BootstrappedVector, T>> void checkSums(T exp, List<T> partitions) {
-        T leftSum = partitions.stream().reduce((x,y) -> x.plus(y)).get();
-        T rightSum = partitions.stream().reduce((x,y) -> y.plus(x)).get();
+        T leftSum = partitions.stream().reduce((x, y) -> x.plus(y)).get();
+        T rightSum = partitions.stream().reduce((x, y) -> y.plus(x)).get();
         assertTrue(exp.isEqualTo(leftSum));
         assertTrue(exp.isEqualTo(rightSum));
     }

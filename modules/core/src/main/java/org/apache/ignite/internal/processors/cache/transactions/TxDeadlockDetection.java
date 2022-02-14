@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,8 +52,12 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
  * Transactions deadlock detection.
  */
 public class TxDeadlockDetection {
+    /** @see IgniteSystemProperties#IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT */
+    public static final int DFLT_TX_DEADLOCK_DETECTION_TIMEOUT = 60000;
+
     /** Deadlock detection maximum iterations. */
-    private static int deadLockTimeout = getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000);
+    private static int deadLockTimeout =
+        getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, DFLT_TX_DEADLOCK_DETECTION_TIMEOUT);
 
     /** Sequence. */
     private static final AtomicLong SEQ = new AtomicLong();

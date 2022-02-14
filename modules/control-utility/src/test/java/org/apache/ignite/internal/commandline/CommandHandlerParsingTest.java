@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -70,6 +71,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -152,8 +154,19 @@ public class CommandHandlerParsingTest {
             e.printStackTrace();
         }
 
-        assertParseArgsThrows("Value for '--check-first' property should be positive.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_FIRST.toString(), "0");
-        assertParseArgsThrows("Numeric value for '--check-through' parameter expected.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString());
+        assertParseArgsThrows(
+            "Value for '--check-first' property should be positive.",
+            CACHE.text(),
+            VALIDATE_INDEXES.text(),
+            CHECK_FIRST.toString(),
+            "0"
+        );
+        assertParseArgsThrows(
+            "Numeric value for '--check-through' parameter expected.",
+            CACHE.text(),
+            VALIDATE_INDEXES.text(),
+            CHECK_THROUGH.toString()
+        );
     }
 
     /** */
@@ -273,9 +286,17 @@ public class CommandHandlerParsingTest {
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
-                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
-                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+            ConnectionAndSslParameters args = parseArgs(asList(
+                "--keystore", "testKeystore",
+                "--keystore-password", "testKeystorePassword",
+                "--keystore-type", "testKeystoreType",
+                "--truststore", "testTruststore",
+                "--truststore-password", "testTruststorePassword",
+                "--truststore-type", "testTruststoreType",
+                "--ssl-key-algorithm", "testSSLKeyAlgorithm",
+                "--ssl-protocol", "testSSLProtocol",
+                cmd.text())
+            );
 
             assertEquals("testSSLProtocol", args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
@@ -378,6 +399,8 @@ public class CommandHandlerParsingTest {
                 args = parseArgs(asList(cmdL.text(), "ACTIVE"));
             else if (cmdL == CLUSTER_CHANGE_TAG)
                 args = parseArgs(asList(cmdL.text(), "newTagValue"));
+            else if (cmdL == WARM_UP)
+                args = parseArgs(asList(cmdL.text(), "--stop"));
             else
                 args = parseArgs(asList(cmdL.text()));
 
@@ -427,7 +450,7 @@ public class CommandHandlerParsingTest {
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -449,6 +472,14 @@ public class CommandHandlerParsingTest {
 
                 case CLUSTER_CHANGE_TAG: {
                     args = parseArgs(asList(cmdL.text(), "newTagValue", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
+                }
+
+                case WARM_UP: {
+                    args = parseArgs(asList(cmdL.text(), "--stop", "--yes"));
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
@@ -613,11 +644,14 @@ public class CommandHandlerParsingTest {
      *                 <ul>
      *                     <li>
      *                         if value is missing:
-     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                          IllegalArgumentException
+     *                          (The scope should be specified.
+     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
      *                     </li>
      *                     <li>
      *                         if unsupported value is used:
-     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                          IllegalArgumentException
+     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
      *                     </li>
      *                 </ul>
      *             </li>
@@ -631,11 +665,14 @@ public class CommandHandlerParsingTest {
      *                 <ul>
      *                     <li>
      *                         if value is missing:
-     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                          IllegalArgumentException
+     *                          (The scope should be specified.
+     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
      *                     </li>
      *                     <li>
      *                         if unsupported value is used:
-     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                          IllegalArgumentException
+     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
      *                     </li>
      *                 </ul>
      *             </li>
@@ -658,11 +695,14 @@ public class CommandHandlerParsingTest {
      *                 <ul>
      *                     <li>
      *                         if value is missing:
-     *                          IllegalArgumentException (The scope should be specified. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
+     *                          IllegalArgumentException
+     *                          (The scope should be specified.
+     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
      *                     </li>
      *                     <li>
      *                         if unsupported value is used:
-     *                          IllegalArgumentException (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
+     *                          IllegalArgumentException
+     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
      *                     </li>
      *                 </ul>
      *             </li>
@@ -680,7 +720,8 @@ public class CommandHandlerParsingTest {
      *                 <ul>
      *                     <li>
      *                          if value is missing:
-     *                              IllegalArgumentException (The sampling-rate should be specified. Decimal value between 0 and 1 should be used.)
+     *                              IllegalArgumentException
+     *                              (The sampling-rate should be specified. Decimal value between 0 and 1 should be used.)
      *                     </li>
      *                     <li>
      *                          if unsupported value is used:
@@ -697,7 +738,9 @@ public class CommandHandlerParsingTest {
      *                     </li>
      *                     <li>
      *                          if unsupported value is used:
-     *                              IllegalArgumentException (Invalid supported scope: aaa. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].)
+     *                              IllegalArgumentException
+     *                              (Invalid supported scope: aaa.
+     *                              The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].)
      *                     </li>
      *                 </ul>
      *             </li>
@@ -834,35 +877,58 @@ public class CommandHandlerParsingTest {
 
         GridTestUtils.assertThrows(
             null,
-            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "someNames", "--cache-names", "someNames")),
+            () -> parseArgs(asList(
+                "--cache", "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--group-names", "someNames",
+                "--cache-names", "someNames"
+            )),
             IllegalArgumentException.class,
             "Either --group-names or --cache-names must be specified."
         );
 
         GridTestUtils.assertThrows(
             null,
-            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names", "someNames", "--cache-names", "someMoreNames")),
+            () -> parseArgs(asList(
+                "--cache", "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--cache-names", "someNames",
+                "--cache-names", "someMoreNames"
+            )),
             IllegalArgumentException.class,
             "--cache-names arg specified twice."
         );
 
         GridTestUtils.assertThrows(
             null,
-            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "someNames", "--group-names", "someMoreNames")),
+            () -> parseArgs(asList(
+                "--cache", "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--group-names", "someNames",
+                "--group-names", "someMoreNames"
+            )),
             IllegalArgumentException.class,
             "--group-names arg specified twice."
         );
 
         GridTestUtils.assertThrows(
             null,
-            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names", "--some-other-arg")),
+            () -> parseArgs(asList(
+                "--cache", "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--group-names", "--some-other-arg"
+            )),
             IllegalArgumentException.class,
             "--group-names not specified."
         );
 
         GridTestUtils.assertThrows(
             null,
-            () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names", "--some-other-arg")),
+            () -> parseArgs(asList(
+                "--cache", "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--cache-names", "--some-other-arg"
+            )),
             IllegalArgumentException.class,
             "--cache-names not specified."
         );
@@ -937,6 +1003,29 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test verifies correctness of parsing of arguments --warm-up command.
+     */
+    @Test
+    public void testWarmUpArgs() {
+        String[][] args = {
+            {"--warm-up"},
+            {"--warm-up", "1"},
+            {"--warm-up", "stop"}
+        };
+
+        for (String[] arg : args) {
+            GridTestUtils.assertThrows(
+                null,
+                () -> parseArgs(asList(arg)),
+                IllegalArgumentException.class,
+                "--stop argument is missing."
+            );
+        }
+
+        assertNotNull(parseArgs(asList("--warm-up", "--stop")));
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -994,6 +1083,13 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.KILL ||
             cmd == CommandList.SNAPSHOT ||
             cmd == CommandList.CLUSTER_CHANGE_TAG ||
-            cmd == CommandList.METADATA;
+            cmd == CommandList.METADATA ||
+            cmd == CommandList.WARM_UP ||
+            cmd == CommandList.PROPERTY ||
+            cmd == CommandList.SYSTEM_VIEW ||
+            cmd == CommandList.METRIC ||
+            cmd == CommandList.DEFRAGMENTATION ||
+            cmd == CommandList.PERFORMANCE_STATISTICS ||
+            cmd == CommandList.CONSISTENCY;
     }
 }

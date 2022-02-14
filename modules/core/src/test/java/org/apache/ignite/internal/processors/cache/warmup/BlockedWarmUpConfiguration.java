@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.warmup;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 
 /**
- * Configuration for {@link BlockedWarmUp}.
+ * Configuration for {@link BlockedWarmUpStrategy}.
  */
-class BlockedWarmUpConfiguration implements WarmUpConfiguration {
+public class BlockedWarmUpConfiguration implements WarmUpConfiguration {
     // No-op.
 }

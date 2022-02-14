@@ -108,6 +108,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 {
                     writer.WriteLong(_hnd);
                     writer.WriteBoolean(qry.Local);
+                    writer.WriteBoolean(qry.IncludeExpired);
                     writer.WriteBoolean(_filter != null);
 
                     var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
@@ -247,6 +248,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 try
                 {
                     _nativeQry.InLongOutLong(0, 0);
+
+                    var cur = _nativeInitialQueryCursor;
+
+                    if (cur != null)
+                    {
+                        cur.Dispose();
+                    }
                 }
                 finally
                 {

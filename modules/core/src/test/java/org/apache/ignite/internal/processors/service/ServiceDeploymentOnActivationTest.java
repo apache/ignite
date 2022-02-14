@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -55,12 +53,6 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
             cfg.setServiceConfiguration(srvcCfg);
 
         return cfg;
-    }
-
-    /** */
-    @Before
-    public void check() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** {@inheritDoc} */

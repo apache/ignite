@@ -96,8 +96,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         startGrids(1);
 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            testCauseObject(1, 2, 1000, isolation, true);
-            testCauseObject(1, 2, 1000, isolation, false);
+            checkCauseObject(1, 2, 1000, isolation, true);
+            checkCauseObject(1, 2, 1000, isolation, false);
         }
     }
 
@@ -109,8 +109,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         startGrids(2);
 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            testCauseObject(2, 2, 1500, isolation, true);
-            testCauseObject(2, 2, 1500, isolation, false);
+            checkCauseObject(2, 2, 1500, isolation, true);
+            checkCauseObject(2, 2, 1500, isolation, false);
         }
     }
 
@@ -126,8 +126,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         startGrids(1);
 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            testCauseObject(1, 2, 1000, isolation, true);
-            testCauseObject(1, 2, 1000, isolation, false);
+            checkCauseObject(1, 2, 1000, isolation, true);
+            checkCauseObject(1, 2, 1000, isolation, false);
         }
     }
 
@@ -143,8 +143,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         startGrids(4);
 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            testCauseObject(2, 2, 2000, isolation, true);
-            testCauseObject(2, 2, 2000, isolation, false);
+            checkCauseObject(2, 2, 2000, isolation, true);
+            checkCauseObject(2, 2, 2000, isolation, false);
         }
     }
 
@@ -154,11 +154,17 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
      * @param timeout Timeout.
      * @param isolation TransactionIsolation.
      * @param oneOp Determines whether {@link IgniteCache#getAndPut(java.lang.Object, java.lang.Object)}
-     *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)} operations sequence.
+     *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)}
+     *              operations sequence.
      * @throws Exception If failed.
      */
-    @Test
-    public void testCauseObject(int nodes, final int keysCnt, final long timeout, final TransactionIsolation isolation, final boolean oneOp) throws Exception {
+    private void checkCauseObject(
+        int nodes,
+        final int keysCnt,
+        final long timeout,
+        final TransactionIsolation isolation,
+        final boolean oneOp
+    ) throws Exception {
         final Ignite ignite = grid(new Random().nextInt(nodes));
 
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);

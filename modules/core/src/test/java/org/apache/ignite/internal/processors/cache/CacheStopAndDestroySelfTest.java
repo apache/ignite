@@ -385,7 +385,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         dhtCache0.close();
 
         try {
-            dhtCache0.get(key);// Not affected, but can not be taken.
+            dhtCache0.get(key); // Not affected, but can not be taken.
 
             fail();
         }
@@ -394,7 +394,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(key, dhtCache1.get(key)); // Not affected.
-        assertEquals(key, dhtCache2.get(key));// Not affected.
+        assertEquals(key, dhtCache2.get(key)); // Not affected.
 
         // DHT Creation after closed.
 
@@ -426,7 +426,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         dhtCache0.close();
 
         try {
-            dhtCache0.get(key);// Can not be taken.
+            dhtCache0.get(key); // Can not be taken.
 
             fail();
         }
@@ -502,13 +502,13 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         assert cache2.get(KEY_VAL).equals(KEY_VAL);
 
-        cache2.close();// Client node.
+        cache2.close(); // Client node.
 
-        assert cache0.get(KEY_VAL).equals(KEY_VAL);// Not affected.
-        assert cache1.get(KEY_VAL).equals(KEY_VAL);// Not affected.
+        assert cache0.get(KEY_VAL).equals(KEY_VAL); // Not affected.
+        assert cache1.get(KEY_VAL).equals(KEY_VAL); // Not affected.
 
         try {
-            cache2.get(KEY_VAL);// Affected.
+            cache2.get(KEY_VAL); // Affected.
 
             assert false;
         }
@@ -638,11 +638,11 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         U.sleep(1000);
 
-        assert cache0.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
-        assert cache1.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
+        assert cache0.get(KEY_VAL).equals(KEY_VAL + 0); // Not affected.
+        assert cache1.get(KEY_VAL).equals(KEY_VAL + 0); // Not affected.
 
         try {
-            cache2.get(KEY_VAL);// Affected.
+            cache2.get(KEY_VAL); // Affected.
 
             assert false;
         }

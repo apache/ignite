@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
 /**
  * Command to change cluster state.
  */
-public class ClusterStateChangeCommand implements Command<ClusterState> {
+public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     /** Flag of forced cluster deactivation. */
     static final String FORCE_COMMAND = "--force";
 
@@ -56,7 +56,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         params.put(INACTIVE.toString(), "Deactivate cluster.");
         params.put(ACTIVE_READ_ONLY.toString(), "Activate cluster. Cache updates are denied.");
 
-        Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
+        usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
             optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 

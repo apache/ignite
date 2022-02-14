@@ -94,9 +94,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Retry because ownership changed. */
     private Integer retry;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name. */
     private int taskNameHash;
 
@@ -123,7 +120,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -138,7 +134,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         boolean addRdr,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
@@ -156,7 +151,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.addRdr = addRdr;
         this.readThrough = readThrough;
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
@@ -401,7 +395,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 Collections.singleton(key),
                 readerArgs,
                 readThrough,
-                subjId,
                 taskName,
                 expiryPlc,
                 skipVals,
@@ -428,7 +421,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 Collections.singleton(key),
                                 args,
                                 readThrough,
-                                subjId,
                                 taskName,
                                 expiryPlc,
                                 skipVals,

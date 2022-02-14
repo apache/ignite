@@ -237,7 +237,10 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
 
                 CacheConfiguration cacheCfg = cacheConfiguration(name);
 
-                cacheCfg.setCacheStoreSessionListenerFactories(new SessionListenerFactory(name + " 1"), new SessionListenerFactory(name + " 2"));
+                cacheCfg.setCacheStoreSessionListenerFactories(
+                    new SessionListenerFactory(name + " 1"),
+                    new SessionListenerFactory(name + " 2")
+                );
 
                 ignite.createCache(cacheCfg);
             }
@@ -373,6 +376,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             this.name = name;
         }
 
+        /** {@inheritDoc} */
         @Override public CacheStoreSessionListener create() {
             return new SessionListener(name);
         }
@@ -381,6 +385,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      */
     public static class Store extends CacheStoreAdapter<Integer, Integer> {
+        /** */
         public Store() {
         }
 

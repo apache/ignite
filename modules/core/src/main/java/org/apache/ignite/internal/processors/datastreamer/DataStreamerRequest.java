@@ -35,6 +35,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.IGNITE_UUID;
+
 /**
  *
  */
@@ -333,7 +335,7 @@ public class DataStreamerRequest implements Message {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
@@ -460,7 +462,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 7:
-                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
+                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;

@@ -18,11 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -53,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
  *
@@ -73,6 +75,10 @@ abstract class TcpDiscoveryImpl {
     /** How often the warning message should occur in logs to prevent log spam. */
     public static final long LOG_WARN_MSG_TIMEOUT = 60 * 60 * 1000L;
 
+    /** Debug log date formatter. */
+    private static final DateTimeFormatter DEBUG_FORMATTER =
+        DateTimeFormatter.ofPattern("[HH:mm:ss,SSS]").withZone(ZoneId.systemDefault());
+
     /** */
     protected final TcpDiscoverySpi spi;
 
@@ -92,7 +98,7 @@ abstract class TcpDiscoveryImpl {
     protected ConcurrentLinkedDeque<String> debugLogQ;
 
     /** Logging a warning message when metrics quantity exceeded a specified number. */
-    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, 500);
+    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, DFLT_DISCOVERY_METRICS_QNT_WARN);
 
     /** */
     protected long endTimeMetricsSizeProcessWait = System.currentTimeMillis();
@@ -147,7 +153,7 @@ abstract class TcpDiscoveryImpl {
         log = spi.log;
 
         if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx) spi.ignite()).context().tracing();
+            tracing = ((IgniteEx)spi.ignite()).context().tracing();
         else
             tracing = new NoopTracing();
     }
@@ -177,7 +183,7 @@ abstract class TcpDiscoveryImpl {
     protected void debugLog(@Nullable TcpDiscoveryAbstractMessage discoMsg, String msg) {
         assert debugMode;
 
-        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+        String msg0 = DEBUG_FORMATTER.format(Instant.now()) +
             '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
             "-" + locNode.internalOrder() + "] " +
             msg;

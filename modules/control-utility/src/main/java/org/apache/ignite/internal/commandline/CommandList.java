@@ -18,11 +18,16 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
+import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
+import org.apache.ignite.internal.commandline.metric.MetricCommand;
+import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 
 /**
  * High-level commands.
@@ -56,7 +61,7 @@ public enum CommandList {
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** Encryption features command. */
-    ENCRYPTION("--encryption", new EncryptionCommand()),
+    ENCRYPTION("--encryption", new EncryptionCommands()),
 
     /** Kill command. */
     KILL("--kill", new KillCommand()),
@@ -74,7 +79,31 @@ public enum CommandList {
     SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+
+    /** Warm-up command. */
+    WARM_UP("--warm-up", new WarmUpCommand()),
+
+    /** Commands to manage distributed properties. */
+    PROPERTY("--property", new PropertyCommand()),
+
+    /** Command for printing system view content. */
+    SYSTEM_VIEW("--system-view", new SystemViewCommand()),
+
+    /** Command for printing metric values. */
+    METRIC("--metric", new MetricCommand()),
+
+    /** */
+    PERSISTENCE("--persistence", new PersistenceCommand()),
+
+    /** Command to manage PDS defragmentation. */
+    DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
+
+    /** Command to manage performance statistics. */
+    PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand()),
+
+    /** Command to check/repair consistency. */
+    CONSISTENCY("--consistency", new ConsistencyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

@@ -205,8 +205,16 @@ public class MLPTrainerTest {
                 {1.0, 1.0}
             });
 
-            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnSameDS.predict(matrix).getRow(0), 1E-1);
-            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnEmptyDS.predict(matrix).getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(
+                originalMdl.predict(matrix).getRow(0),
+                updatedOnSameDS.predict(matrix).getRow(0),
+                1E-1
+            );
+            TestUtils.checkIsInEpsilonNeighbourhood(
+                originalMdl.predict(matrix).getRow(0),
+                updatedOnEmptyDS.predict(matrix).getRow(0),
+                1E-1
+            );
         }
     }
 

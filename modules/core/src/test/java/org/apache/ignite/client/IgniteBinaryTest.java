@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
@@ -26,14 +27,22 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
@@ -43,6 +52,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Ignite {@link BinaryObject} API system tests.
@@ -255,6 +266,76 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test custom binary type serializer.
+     */
+    @Test
+    public void testBinarySerializer() throws Exception {
+        BinarySerializer binSer = new BinarySerializer() {
+            @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
+                writer.writeInt("f1", ((Person)obj).getId());
+            }
+
+            @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
+                ((Person)obj).setId(reader.readInt("f1"));
+            }
+        };
+
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(Person.class.getName()).setSerializer(binSer);
+        BinaryConfiguration binCfg = new BinaryConfiguration().setTypeConfigurations(Collections.singleton(typeCfg));
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration().setBinaryConfiguration(binCfg))) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(binCfg))) {
+                IgniteCache<Integer, Person> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Person val = new Person(123, "Joe");
+
+                clientCache.put(1, val);
+
+                assertEquals(val.getId(), clientCache.get(1).getId());
+                assertNull(clientCache.get(1).getName());
+                assertEquals(val.getId(), igniteCache.get(1).getId());
+                assertNull(igniteCache.get(1).getName());
+            }
+        }
+    }
+
+    /**
+     * Test custom binary type ID mapper.
+     */
+    @Test
+    public void testBinaryIdMapper() throws Exception {
+        BinaryIdMapper idMapper = new BinaryIdMapper() {
+            @Override public int typeId(String typeName) {
+                return typeName.hashCode() % 1000 + 1000;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                return fieldName.hashCode();
+            }
+        };
+
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(Person.class.getName()).setIdMapper(idMapper);
+        BinaryConfiguration binCfg = new BinaryConfiguration().setTypeConfigurations(Collections.singleton(typeCfg));
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration().setBinaryConfiguration(binCfg))) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(binCfg))) {
+                IgniteCache<Integer, Person> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Person val = new Person(123, "Joe");
+
+                clientCache.put(1, val);
+
+                assertEquals(val, clientCache.get(1));
+                assertEquals(val, igniteCache.get(1));
+            }
+        }
+    }
+
+    /**
      * Binary Object API:
      * {@link IgniteBinary#typeId(String)}
      * {@link IgniteBinary#toBinary(Object)}
@@ -319,6 +400,29 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * The purpose of this test is to check that message which begins with the same byte as marshaller header can
+     * be correctly unmarshalled.
+     */
+    @Test
+    public void testBinaryTypeWithIdOfMarshallerHeader() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                int typeId = GridBinaryMarshaller.OBJ;
+
+                BinaryObjectImpl binObj = (BinaryObjectImpl)ignite.binary().builder(Character.toString((char)typeId))
+                        .setField("dummy", "dummy")
+                        .build();
+
+                assertEquals(typeId, binObj.typeId());
+
+                BinaryType type = client.binary().type(typeId);
+
+                assertEquals(binObj.type().typeName(), type.typeName());
+            }
+        }
+    }
+
     /** */
     private void assertBinaryTypesEqual(BinaryType exp, BinaryType actual) {
         assertEquals(exp.typeId(), actual.typeId());
@@ -353,6 +457,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
      * Enumeration for tests.
      */
     private enum Enum {
-        /** Default. */DEFAULT
+        /** Default. */
+        DEFAULT
     }
 }

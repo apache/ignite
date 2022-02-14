@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -263,8 +264,10 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onMessage(final GridNioSession ses, Message msg) {
-        MTC.span().addLog(() -> "Communication received");
-        MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
+        Span span = MTC.span();
+
+        span.addLog(() -> "Communication received");
+        span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
         ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
@@ -685,7 +688,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         for (GridNioSession ses0 : nioSrvWrapper.nio().sessions()) {
             ConnectionKey key0 = ses0.meta(CONN_IDX_META);
 
-            if (ses0.accepted() && key0 != null &&
+            if (key0 != null &&
                 key0.nodeId().equals(connKey.nodeId()) &&
                 key0.connectionIndex() == connKey.connectionIndex() &&
                 key0.connectCount() < connKey.connectCount())

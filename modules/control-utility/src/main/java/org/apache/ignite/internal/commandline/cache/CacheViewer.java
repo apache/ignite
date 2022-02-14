@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.OutputFormat;
@@ -55,7 +56,6 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 /**
  * Command to show caches on cluster.
  */
-public class CacheViewer implements Command<CacheViewer.Arguments> {
+public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String description = "Show information about caches, groups or sequences that match a regular expression. " +

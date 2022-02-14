@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
@@ -27,11 +29,14 @@ import org.junit.Test;
  * Test partition awareness of thin client on stable topology.
  */
 public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
+    /** Grids count. */
+    private static final int GRIDS_CNT = 3;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(3);
+        startGrids(GRIDS_CNT);
 
         awaitPartitionMapExchange();
     }
@@ -64,7 +69,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Test partition awareness for all applicable operation types for partitioned cache with primitive key.
      */
     @Test
-    public void testPartitionedCachePrimitiveKey() {
+    public void testPartitionedCachePrimitiveKey() throws Exception {
         testApplicableCache(PART_CACHE_NAME, i -> i);
     }
 
@@ -72,7 +77,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Test partition awareness for all applicable operation types for partitioned cache with complex key.
      */
     @Test
-    public void testPartitionedCacheComplexKey() {
+    public void testPartitionedCacheComplexKey() throws Exception {
         testApplicableCache(PART_CACHE_NAME, i -> new TestComplexKey(i, i));
     }
 
@@ -81,7 +86,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * mapped key.
      */
     @Test
-    public void testPartitionedCacheAnnotatedAffinityKey() {
+    public void testPartitionedCacheAnnotatedAffinityKey() throws Exception {
         testApplicableCache(PART_CACHE_NAME, i -> new TestAnnotatedAffinityKey(i, i));
     }
 
@@ -90,7 +95,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * mapped key.
      */
     @Test
-    public void testPartitionedCacheNotAnnotatedAffinityKey() {
+    public void testPartitionedCacheNotAnnotatedAffinityKey() throws Exception {
         testApplicableCache(PART_CACHE_NAME, i -> new TestNotAnnotatedAffinityKey(new TestComplexKey(i, i), i));
     }
 
@@ -111,6 +116,60 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         assertOpOnChannel(dfltCh, ClientOperation.CACHE_PARTITIONS);
         assertOpOnChannel(dfltCh, ClientOperation.CACHE_PUT);
+    }
+
+    /**
+     * Test affinity awareness for all applicable operation types for partitioned cache with 0 backups.
+     */
+    @Test
+    public void testPartitionedCache0Backups() throws Exception {
+        testApplicableCache(PART_CACHE_0_BACKUPS_NAME, i -> i);
+    }
+
+    /**
+     * Test affinity awareness for all applicable operation types for partitioned cache with 1 backups.
+     */
+    @Test
+    public void testPartitionedCache1Backups() throws Exception {
+        testApplicableCache(PART_CACHE_1_BACKUPS_NAME, i -> i);
+    }
+
+    /**
+     * Test affinity awareness for all applicable operation types for partitioned cache with 3 backups.
+     */
+    @Test
+    public void testPartitionedCache3Backups() throws Exception {
+        testApplicableCache(PART_CACHE_3_BACKUPS_NAME, i -> i);
+    }
+
+    /**
+     * Test scan query.
+     */
+    @Test
+    public void testScanQuery() throws IgniteCheckedException {
+        ClientCache<Object, Object> clientCache = client.cache(PART_CACHE_NAME);
+
+        // Make any operation to request partitions.
+        clientCache.get(0);
+
+        opsQueue.clear(); // Clear partitions request and get operation.
+
+        for (int i = 0; i < GRIDS_CNT; i++) {
+            int part = grid(i).affinity(PART_CACHE_NAME).primaryPartitions(grid(i).localNode())[0];
+
+            // Client doesn't have connection with grid(0).
+            TestTcpClientChannel ch = i == 0 ? dfltCh : nodeChannel(grid(i).localNode().id());
+
+            // Test scan query with specified partition.
+            clientCache.query(new ScanQuery<>().setPartition(part)).getAll();
+
+            assertOpOnChannel(ch, ClientOperation.QUERY_SCAN);
+
+            // Test scan query without specified partition.
+            clientCache.query(new ScanQuery<>()).getAll();
+
+            assertOpOnChannel(dfltCh, ClientOperation.QUERY_SCAN);
+        }
     }
 
     /**
@@ -140,7 +199,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
      */
-    private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) {
+    private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) throws Exception {
         ClientCache<Object, Object> clientCache = client.cache(cacheName);
         IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
 
@@ -159,48 +218,82 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
             opCh = affinityChannel(key, igniteCache);
 
             clientCache.put(key, key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
 
+            clientCache.putAsync(key, key).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
 
             clientCache.get(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET);
 
+            clientCache.getAsync(key).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_GET);
 
             clientCache.containsKey(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_CONTAINS_KEY);
 
+            clientCache.containsKeyAsync(key).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_CONTAINS_KEY);
 
             clientCache.replace(key, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_REPLACE);
 
+            clientCache.replaceAsync(key, i).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_REPLACE);
 
             clientCache.replace(key, i, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_REPLACE_IF_EQUALS);
 
+            clientCache.replaceAsync(key, i, i).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_REPLACE_IF_EQUALS);
 
             clientCache.remove(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_REMOVE_KEY);
 
+            clientCache.removeAsync(key).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_REMOVE_KEY);
 
             clientCache.remove(key, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_REMOVE_IF_EQUALS);
 
+            clientCache.removeAsync(key, i).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_REMOVE_IF_EQUALS);
 
             clientCache.getAndPut(key, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_PUT);
 
+            clientCache.getAndPutAsync(key, i).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_PUT);
 
             clientCache.getAndRemove(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_REMOVE);
 
+            clientCache.getAndRemoveAsync(key).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_REMOVE);
 
             clientCache.getAndReplace(key, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_REPLACE);
 
+            clientCache.getAndReplaceAsync(key, i).get();
             assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_REPLACE);
 
             clientCache.putIfAbsent(key, i);
-
             assertOpOnChannel(opCh, ClientOperation.CACHE_PUT_IF_ABSENT);
+
+            clientCache.putIfAbsentAsync(key, i).get();
+            assertOpOnChannel(opCh, ClientOperation.CACHE_PUT_IF_ABSENT);
+
+            clientCache.getAndPutIfAbsent(key, i);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_PUT_IF_ABSENT);
+
+            clientCache.getAndPutIfAbsentAsync(key, i).get();
+            assertOpOnChannel(opCh, ClientOperation.CACHE_GET_AND_PUT_IF_ABSENT);
+
+            clientCache.clear(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_CLEAR_KEY);
+
+            clientCache.clearAsync(key);
+            assertOpOnChannel(opCh, ClientOperation.CACHE_CLEAR_KEY);
         }
     }
 }

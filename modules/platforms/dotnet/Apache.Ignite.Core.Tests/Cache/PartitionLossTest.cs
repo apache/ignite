@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -220,6 +219,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Backups = 0,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync,
                 PartitionLossPolicy = policy,
+                RebalanceDelay = TimeSpan.Zero,
+                RebalanceMode = CacheRebalanceMode.Sync,
+                RebalanceThrottle = TimeSpan.Zero,
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     ExcludeNeighbors = false,
@@ -249,13 +251,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Wait for rebalance to complete.
                 var node = ignite.GetCluster().GetLocalNode();
                 Func<int, bool> isPrimary = x => affinity.IsPrimary(node, x);
-
-                while (!keys.Any(isPrimary))
-                {
-                    Thread.Sleep(10);
-                }
-
-                Thread.Sleep(100);  // Some extra wait.
+                TestUtils.WaitForTrueCondition(() => keys.Any(isPrimary));
 
                 return keys.First(isPrimary);
             }

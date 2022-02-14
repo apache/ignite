@@ -561,9 +561,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping1 = ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
 
                     return ping1 && ping2;
                 } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
@@ -1129,15 +1129,17 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(1, 1);
 
-        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
-            @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                try {
-                    Thread.sleep(1000000);
-                } catch (InterruptedException ignored) {
-                    Thread.interrupted();
+        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(
+            new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    try {
+                        Thread.sleep(1000000);
+                    }
+                    catch (InterruptedException ignored) {
+                        Thread.interrupted();
+                    }
                 }
-            }
-        });
+            });
         failClient(1);
         failServer(1);
 
@@ -1276,7 +1278,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             startClientNodes(1);
 
             assertEquals(G.ignite("server-0").cluster().localNode().id(),
-                ((TcpDiscoveryNode) G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
+                ((TcpDiscoveryNode)G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
 
             checkNodes(2, 1);
 
@@ -1460,6 +1462,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         int srvs = singleSrv ? 1 : 2;
 
         startServerNodes(srvs);
+
+        awaitPartitionMapExchange(true, true, null);
 
         afterWrite = new CIX2<TcpDiscoveryAbstractMessage, Socket>() {
             private boolean first = true;

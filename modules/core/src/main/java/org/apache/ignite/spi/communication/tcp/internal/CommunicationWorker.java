@@ -227,7 +227,9 @@ public class CommunicationWorker extends GridWorker {
 
                 GridNioRecoveryDescriptor recovery = null;
 
-                if (!(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) && client instanceof GridTcpNioCommunicationClient) {
+                if (!(cfg.usePairedConnections()
+                    && usePairedConnections(node, attrs.pairedConnection()))
+                    && client instanceof GridTcpNioCommunicationClient) {
                     recovery = nioSrvWrapper.recoveryDescs().get(new ConnectionKey(
                         node.id(), client.connectionIndex(), -1)
                     );

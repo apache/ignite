@@ -148,7 +148,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             fail("Expected exception was not thrown.");
         }
-        catch (CacheException e) {
+        catch (CacheException ignore) {
         }
 
         stopGrid(clientName);
@@ -173,7 +173,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             fail("Expected exception was not thrown.");
         }
-        catch (CacheException e) {
+        catch (CacheException ignore) {
         }
 
         stopGrid(clientName);
@@ -446,7 +446,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
                 fail("Expected exception was not thrown");
             }
-            catch (CacheException e) {
+            catch (CacheException ignore) {
             }
         }
     }
@@ -553,6 +553,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
     }
 
+    /** */
     @Test
     public void testConcurrentClientNodeJoins() throws Exception {
         final int clientCnt = 3;
@@ -609,6 +610,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(cache);
     }
 
+    /** */
     protected void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
         assert initiatorId < gridCount();
 
@@ -813,13 +815,16 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      */
     public static class Value {
+        /** */
         @QuerySqlField
         private final int fieldVal;
 
+        /** */
         public Value(int fieldVal) {
             this.fieldVal = fieldVal;
         }
 
+        /** */
         public int getValue() {
             return fieldVal;
         }

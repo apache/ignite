@@ -483,7 +483,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /**
      * @throws Exception If failed.
      */
-    @Test @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testConflictingData() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 

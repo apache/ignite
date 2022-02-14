@@ -44,7 +44,9 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorFindAndDeleteGarbageInPersistenceTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
+    @Nullable @Override protected VisorFindAndDeleteGarbageInPersistenceTaskResult reduce0(
+        List<ComputeJobResult> list
+    ) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
         Map<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> jobResults = new HashMap<>();
 
@@ -59,7 +61,9 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> job(VisorFindAndDeleteGarbageInPersistenceTaskArg arg) {
+    @Override protected VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> job(
+        VisorFindAndDeleteGarbageInPersistenceTaskArg arg
+    ) {
         return new FindAndDeleteGarbageInPersistenceJob(arg, debug);
     }
 
@@ -87,7 +91,8 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
     /**
      *
      */
-    private static class FindAndDeleteGarbageInPersistenceJob extends VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> {
+    private static class FindAndDeleteGarbageInPersistenceJob
+        extends VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -100,9 +105,11 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(@Nullable VisorFindAndDeleteGarbageInPersistenceTaskArg arg) throws IgniteException {
+        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(@Nullable VisorFindAndDeleteGarbageInPersistenceTaskArg arg)
+            throws IgniteException {
             try {
-                VisorFindAndDeleteGarbageInPersistenceClosure closure = new VisorFindAndDeleteGarbageInPersistenceClosure(arg.getGrpNames(), arg.deleteFoundGarbage());
+                VisorFindAndDeleteGarbageInPersistenceClosure closure =
+                    new VisorFindAndDeleteGarbageInPersistenceClosure(arg.getGrpNames(), arg.deleteFoundGarbage());
 
                 ignite.context().resource().injectGeneric(closure);
 

@@ -138,7 +138,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
-        "SSL key algorithm name", "SunX509", null, false, null);
+        "SSL key algorithm name", null, null, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
@@ -1088,7 +1088,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return JDBC property info object.
          */
         DriverPropertyInfo getDriverPropertyInfo() {
-            DriverPropertyInfo dpi = new DriverPropertyInfo(name, valueObject());
+            DriverPropertyInfo dpi = new DriverPropertyInfo(PROP_PREFIX + name, valueObject());
 
             dpi.choices = choices();
             dpi.required = required;

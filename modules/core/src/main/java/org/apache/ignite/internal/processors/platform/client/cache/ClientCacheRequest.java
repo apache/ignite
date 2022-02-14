@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 /**
  * Cache request.
  */
-class ClientCacheRequest extends ClientRequest {
+public class ClientCacheRequest extends ClientRequest {
     /** "Keep binary" flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 

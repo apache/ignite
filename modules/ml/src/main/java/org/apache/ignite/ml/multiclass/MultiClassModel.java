@@ -28,7 +28,8 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /** Base class for multi-classification model for set of classifiers. */
-public final class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel> {
+public final class MultiClassModel<M extends IgniteModel<Vector, Double>>
+    implements IgniteModel<Vector, Double>, Exportable<MultiClassModel> {
     /** */
     private static final long serialVersionUID = -114986533359917L;
 

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 import java.io.Serializable;
 import java.net.InetAddress;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -48,6 +49,15 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_T
 public class TcpCommunicationConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 5471893193030200809L;
+
+    /** @see #IGNITE_SELECTOR_SPINS */
+    public static final long DFLT_SELECTOR_SPINS = 0L;
+
+    /** */
+    @SystemProperty(value = "Defines how many non-blocking selector.selectNow() should be made before falling into " +
+        "selector.select(long) in NIO server. Can be set to Long.MAX_VALUE so " +
+        "selector threads will never block", type = Long.class, defaults = "" + DFLT_SELECTOR_SPINS)
+    public static final String IGNITE_SELECTOR_SPINS = "IGNITE_SELECTOR_SPINS";
 
     /** Address resolver. */
     private AddressResolver addrRslvr;
@@ -140,7 +150,7 @@ public class TcpCommunicationConfiguration implements Serializable {
      * selector.select(long)} in NIO server. Long value. Default is {@code 0}. Can be set to {@code Long.MAX_VALUE} so
      * selector threads will never block.
      */
-    private long selectorSpins = IgniteSystemProperties.getLong("IGNITE_SELECTOR_SPINS", 0L);
+    private long selectorSpins = IgniteSystemProperties.getLong(IGNITE_SELECTOR_SPINS, DFLT_SELECTOR_SPINS);
 
     /**
      *

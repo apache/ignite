@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesTask;
@@ -39,12 +40,11 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 
 /**
  * Command for check secondary indexes inline size on the different nodes.
  */
-public class CheckIndexInlineSizes implements Command<Void> {
+public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     /** Success message. */
     public static final String INDEXES_INLINE_SIZE_ARE_THE_SAME =
         "All secondary indexes have the same effective inline size on all cluster nodes.";
@@ -126,7 +126,9 @@ public class CheckIndexInlineSizes implements Command<Void> {
         log.info("");
 
         log.info("Recommendations:");
-        log.info(INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes.");
+        log.info(
+            INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes."
+        );
         log.info(INDENT + "Recreate indexes (execute DROP INDEX, CREATE INDEX commands) with different inline size.");
     }
 

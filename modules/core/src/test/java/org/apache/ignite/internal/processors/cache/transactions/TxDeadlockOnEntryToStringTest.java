@@ -101,7 +101,10 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
 
             pool.forceCloseConnection(incomingNode.localNode().id());
 
-            nearNode.configuration().getCommunicationSpi().sendMessage(incomingNode.localNode(), UUIDCollectionMessage.of(UUID.randomUUID()));
+            nearNode.configuration().getCommunicationSpi().sendMessage(
+                incomingNode.localNode(),
+                UUIDCollectionMessage.of(UUID.randomUUID())
+            );
 
             // Check
             assertTrue(GridTestUtils.waitForCondition(() -> entryPrinted.getCount() == 0, 5_000));
@@ -182,7 +185,24 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
         if (instance instanceof InboundConnectionHandler) {
             InboundConnectionHandler hnd = (InboundConnectionHandler)instance;
 
-            return (T)(new InboundConnectionHandler(null, null, null, null, null, null, null, null, null, null, null, null, null, false, null, null) {
+            return (T)(new InboundConnectionHandler(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+            ) {
                 @Override public void setNioSrvWrapper(GridNioServerWrapper nioSrvWrapper) {
                     hnd.setNioSrvWrapper(nioSrvWrapper);
                 }

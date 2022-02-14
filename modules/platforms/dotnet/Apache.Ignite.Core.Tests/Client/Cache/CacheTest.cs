@@ -94,6 +94,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests put/get with array keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetArrayKey()
+        {
+            var cache = GetClientCache<object, object>();
+
+            var key1 = new[] {1, 2};
+            var key2 = new byte[] {3, 4};
+
+            cache.Put(key1, 1);
+            cache.Put(key2, 1);
+
+            Assert.AreEqual(1, cache.Get(key1));
+            Assert.AreEqual(1, cache.Get(key2));
+        }
+
+        /// <summary>
         /// Tests the cache put / get with user data types.
         /// </summary>
         [Test]

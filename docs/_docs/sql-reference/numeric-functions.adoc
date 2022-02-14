@@ -1,0 +1,981 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Numeric Functions
+
+== ABS
+
+[source,sql]
+----
+ABS (expression)
+----
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Returns the absolute value of an expression.
+
+[discrete]
+=== Example
+Calculate an absolute value:
+
+[source,sql]
+----
+SELECT transfer_id, ABS (price) from Transfers;
+----
+
+
+== ACOS
+
+[source,sql]
+----
+ACOS (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the arc cosine. This method returns a `double`.
+
+[discrete]
+=== Example
+Get arc cos value:
+
+
+[source,sql]
+----
+SELECT acos(angle) FROM Triangles;
+----
+
+
+== ASIN
+
+[source,sql]
+----
+ASIN (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the arc sine. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculate an arc sine:
+
+
+[source,sql]
+----
+SELECT asin(angle) FROM Triangles;
+----
+
+
+== ATAN
+
+[source,sql]
+----
+ATAN (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the arc tangent. This method returns a `double`.
+
+[discrete]
+=== Example
+Get an arc tangent:
+
+
+[source,sql]
+----
+SELECT atan(angle) FROM Triangles;
+----
+
+
+== COS
+
+[source,sql]
+----
+COS (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the trigonometric cosine. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a cosine:
+
+
+[source,sql]
+----
+SELECT COS(angle) FROM Triangles;
+----
+
+
+== COSH
+
+[source,sql]
+----
+COSH (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the hyperbolic cosine. This method returns a `double`.
+
+[discrete]
+=== Example
+Get an hyperbolic cosine:
+
+
+[source,sql]
+----
+SELECT HCOS(angle) FROM Triangles;
+----
+
+
+== COT
+
+[source,sql]
+----
+COT (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the trigonometric cotangent (1/TAN(ANGLE)). This method returns a `double`.
+
+[discrete]
+=== Example
+Gets a​ trigonometric cotangent:
+
+
+[source,sql]
+----
+SELECT COT(angle) FROM Triangles;
+----
+
+
+== SIN
+
+[source,sql]
+----
+SIN (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the trigonometric sine. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a trigonometric sine:
+
+
+[source,sql]
+----
+SELECT SIN(angle) FROM Triangles;
+----
+
+
+== SINH
+
+[source,sql]
+----
+SINH (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the hyperbolic sine. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a hyperbolic sine:
+
+
+[source,sql]
+----
+SELECT SINH(angle) FROM Triangles;
+----
+
+
+== TAN
+
+[source,sql]
+----
+TAN (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the trigonometric tangent. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a trigonometric tangent:
+
+
+[source,sql]
+----
+SELECT TAN(angle) FROM Triangles;
+----
+
+
+== TANH
+
+[source,sql]
+----
+TANH (expression)
+----
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+=== Description
+Calculates the hyperbolic tangent. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a hyperbolic tangent:
+
+
+[source,sql]
+----
+SELECT TANH(angle) FROM Triangles;
+----
+
+
+== ATAN2
+
+[source,sql]
+----
+ATAN2 (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+Calculates the angle when converting the rectangular coordinates to polar coordinates. This method returns a `double`.
+
+[discrete]
+=== Example
+Get a hyperbolic tangent:
+
+
+[source,sql]
+----
+SELECT ATAN2(X, Y) FROM Triangles;
+----
+
+
+== BITAND
+
+[source,sql]
+----
+BITAND (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+The bitwise AND operation. This method returns a `long`.
+
+[discrete]
+=== Example
+
+[source,sql]
+----
+SELECT BITAND(X, Y) FROM Triangles;
+----
+
+
+== BITGET
+
+[source,sql]
+----
+BITGET (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+Returns true if and only if the first parameter has a bit set in the position specified by the second parameter. This method returns a `boolean`. The second parameter is zero-indexed; the least significant bit has position 0.
+
+[discrete]
+=== Example
+Check that 3rd bit is 1:
+
+
+[source,sql]
+----
+SELECT BITGET(X, 3) from Triangles;
+----
+
+
+== BITOR
+
+[source,sql]
+----
+BITOR (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+The bitwise OR operation. This method returns a `long`.
+
+[discrete]
+=== Example
+Calculate OR between two fields:
+
+
+[source,sql]
+----
+SELECT BITGET(X, Y) from Triangles;
+----
+
+
+== BITXOR
+
+[source,sql]
+----
+BITXOR (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+The bitwise XOR operation. This method returns a `long`.
+
+[discrete]
+=== Example
+Calculate XOR between two fields:
+
+
+[source,sql]
+----
+SELECT BITXOR(X, Y) FROM Triangles;
+----
+
+
+== MOD
+
+[source,sql]
+----
+MOD (y, x)
+----
+
+
+=== Parameters
+- `x and y` - the arguments.
+
+=== Description
+The modulo operation. This method returns a `long`.
+
+[discrete]
+=== Example
+Calculate MOD between two fields:
+
+
+[source,sql]
+----
+SELECT BITXOR(X, Y) FROM Triangles;
+----
+
+
+== CEILING
+
+[source,sql]
+----
+CEIL (expression)
+CEILING (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also Java Math.ceil. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculate a ceiling price for items:
+
+
+[source,sql]
+----
+SELECT item_id, CEILING(price) FROM Items;
+----
+
+
+== DEGREES
+
+
+[source,sql]
+----
+DEGREES (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.toDegrees`. This method returns a `double`.
+
+[discrete]
+=== Example
+Converts the argument value to degrees:
+
+
+[source,sql]
+----
+SELECT DEGREES(X) FROM Triangles;
+----
+
+
+== EXP
+
+[source,sql]
+----
+EXP (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.exp`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculates exp:
+
+
+[source,sql]
+----
+SELECT EXP(X) FROM Triangles;
+----
+
+
+== FLOOR
+
+[source,sql]
+----
+FLOOR (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.floor`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculates floor price:
+
+
+[source,sql]
+----
+SELECT FLOOR(X) FROM Items;
+----
+
+
+== LOG
+
+[source,sql]
+----
+LOG (expression)
+LN (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.log`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculates LOG:
+
+
+[source,sql]
+----
+SELECT LOG(X) from Items;
+----
+
+
+== LOG10
+
+[source,sql]
+----
+LOG10 (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.log10` (in Java 5). This method returns a `double`.
+
+[discrete]
+=== Example
+Calculate LOG10:
+
+
+[source,sql]
+----
+SELECT LOG(X) FROM Items;
+----
+
+
+== RADIANS
+
+[source,sql]
+----
+RADIANS (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also Java Math.toRadians. This method returns a double.
+
+[discrete]
+=== Example
+Calculates RADIANS:
+
+
+[source,sql]
+----
+SELECT RADIANS(X) FROM Items;
+----
+
+
+== SQRT
+
+[source,sql]
+----
+SQRT (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.sqrt`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculates SQRT:
+
+
+[source,sql]
+----
+SELECT SQRT(X) FROM Items;
+----
+
+
+== PI
+
+
+[source,sql]
+----
+PI (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.PI`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculates PI:
+
+
+[source,sql]
+----
+SELECT PI(X) FROM Items;
+----
+
+
+== POWER
+
+
+[source,sql]
+----
+POWER (X, Y)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+See also `Java Math.pow`. This method returns a `double`.
+
+[discrete]
+=== Example
+Calculate the ​power of 2:
+
+
+[source,sql]
+----
+SELECT pow(2, n) FROM Rows;
+----
+
+
+== RAND
+
+[source,sql]
+----
+{RAND | RANDOM} ([expression])
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression seeds the session's random number generator.
+
+=== Description
+Calling the function without a parameter returns the next a pseudo random number. Calling it with a parameter seeds the session's random number generator. This method returns a `double` between 0 (including) and 1 (excluding).
+
+[discrete]
+=== Example
+Gets a random number for every play:
+
+
+[source,sql]
+----
+SELECT random() FROM Play;
+----
+
+
+== RANDOM_UUID
+
+[source,sql]
+----
+{RANDOM_UUID | UUID} ()
+----
+
+
+=== Description
+Returns a new UUID with 122 pseudo random bits.
+
+[discrete]
+=== Example
+Gets random number for every Player:
+
+
+[source,sql]
+----
+SELECT UUID(),name FROM Player;
+----
+
+
+== ROUND
+
+[source,sql]
+----
+ROUND ( expression [, precision] )
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+- `precision` - the number of digits after the decimal to round to. Rounds to the nearest long if the number of digits if not set.
+
+=== Description
+Rounds to a number of digits, or to the nearest long if the number of digits if not set. This method returns a `numeric` (the same type as the input).
+
+[discrete]
+=== Example
+Convert every Player's age to an integer number:
+
+
+[source,sql]
+----
+SELECT name, ROUND(age) FROM Player;
+----
+
+
+== ROUNDMAGIC
+
+[source,sql]
+----
+ROUNDMAGIC (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+This function is good for rounding numbers, but it can be slow. It has special handling for numbers around 0. Only numbers smaller than or equal to `+/-1000000000000` are supported. The value is converted to a String internally, and then the last 4 characters are checked. '000x' becomes '0000' and '999x' becomes '999999', which is rounded automatically. This method returns a `double`.
+
+[discrete]
+=== Example
+Round every Player's age:
+
+
+[source,sql]
+----
+SELECT name, ROUNDMAGIC(AGE/3*3) FROM Player;
+----
+
+
+== SECURE_RAND
+
+[source,sql]
+----
+SECURE_RAND (int)
+----
+
+
+=== Parameters
+- `int` - specifies the number​ of digits.
+
+=== Description
+Generate a number of cryptographically secure random numbers. This method returns `bytes`.
+
+[discrete]
+=== Example
+Get a truly random number:
+
+
+[source,sql]
+----
+SELECT name, SECURE_RAND(10) FROM Player;
+----
+
+
+== SIGN
+
+[source,sql]
+----
+SIGN (expression)
+----
+
+
+=== Parameters
+- `expression` - any valid numeric expression.
+
+=== Description
+Return -1 if the value is smaller 0, 0 if zero, and otherwise 1.
+
+[discrete]
+=== Example
+Get a sign for every value:
+
+
+[source,sql]
+----
+SELECT name, SIGN(VALUE) FROM Player;
+----
+
+
+== ENCRYPT
+
+[source,sql]
+----
+ENCRYPT (algorithmString , keyBytes , dataBytes)
+----
+
+
+=== Parameters
+- `algorithmString` - sets a supported AES algorithm.
+- `keyBytes` - sets a key.
+- `dataBytes` - sets data.
+
+=== Description
+Encrypt data using a key. The supported algorithm is AES. The block size is 16 bytes. This method returns `bytes`.
+
+[discrete]
+=== Example
+Encrypt players name:
+
+
+[source,sql]
+----
+SELECT ENCRYPT('AES', '00', STRINGTOUTF8(Name)) FROM Player;
+----
+
+
+== DECRYPT
+
+[source,sql]
+----
+DECRYPT (algorithmString , keyBytes , dataBytes)
+----
+
+
+=== Parameters
+- `algorithmString` - sets a supported AES algorithm.
+- `keyBytes` - sets a key.
+- `dataBytes` - sets data.
+
+=== Description
+Decrypts data using a key. The supported algorithm is AES. The block size is 16 bytes. This method returns bytes.
+
+[discrete]
+=== Example
+Decrypt Players' names:
+
+
+[source,sql]
+----
+SELECT DECRYPT('AES', '00', '3fabb4de8f1ee2e97d7793bab2db1116'))) FROM Player;
+----
+
+
+== TRUNCATE
+
+
+[source,sql]
+----
+{TRUNC | TRUNCATE} (\{\{numeric, digitsInt} | timestamp | date | timestampString})
+----
+
+
+=== Description
+Truncates to a number of digits (to the next value closer to 0). This method returns a `double`. When used with a timestamp, truncates a timestamp to a date (day) value. When used with a date, truncates a date to a date (day) value less time part. When used with a timestamp as string, truncates a timestamp to a date (day) value.
+
+[discrete]
+=== Example
+
+[source,sql]
+----
+TRUNCATE(VALUE, 2);
+----
+
+
+== COMPRESS
+
+[source,sql]
+----
+COMPRESS(dataBytes [, algorithmString])
+----
+
+
+=== Parameters
+- `dataBytes` - data to compress.
+- `algorithmString` - an algorithm to use for compression.
+
+=== Description
+Compress the data using the specified compression algorithm. Supported algorithms are: LZF (faster but lower compression; default), and DEFLATE (higher compression). Compression does not always reduce size. Very small objects and objects with little redundancy may get larger. This method returns `bytes`.
+
+[discrete]
+=== Example
+
+[source,sql]
+----
+COMPRESS(STRINGTOUTF8('Test'))
+----
+
+
+== EXPAND
+
+[source,sql]
+----
+EXPAND(dataBytes)
+----
+
+
+=== Parameters
+- `dataBytes` - data to expand.
+
+=== Description
+Expand data that was compressed using the COMPRESS function. This method returns `bytes`.
+
+[discrete]
+=== Example
+
+[source,sql]
+----
+UTF8TOSTRING(EXPAND(COMPRESS(STRINGTOUTF8('Test'))))
+----
+
+
+== ZERO
+
+[source,sql]
+----
+ZERO()
+----
+
+
+=== Description
+Return the value 0. This function can be used even if numeric literals are disabled.
+
+[discrete]
+=== Example
+
+[source,sql]
+----
+ZERO()
+----
+

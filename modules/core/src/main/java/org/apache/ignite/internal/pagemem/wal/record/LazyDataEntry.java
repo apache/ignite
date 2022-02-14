@@ -60,6 +60,7 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param flags Flags.
      */
     public LazyDataEntry(
         GridCacheSharedContext cctx,
@@ -73,9 +74,10 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        byte flags
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
 
         this.cctx = cctx;
         this.keyType = keyType;

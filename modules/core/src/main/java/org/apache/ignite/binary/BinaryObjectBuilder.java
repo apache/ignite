@@ -82,8 +82,9 @@ public interface BinaryObjectBuilder {
      * <p>
      * Collections and maps returned from this method are modifiable.
      *
+     * @param <T> Type of the field value.
      * @param name Field name.
-     * @return Filed value.
+     * @return Field value.
      */
     public <T> T getField(String name);
 
@@ -92,6 +93,7 @@ public interface BinaryObjectBuilder {
      *
      * @param name Field name.
      * @param val Field value (cannot be {@code null}).
+     * @return {@code this} for chaining.
      * @see BinaryObject#type()
      */
     public BinaryObjectBuilder setField(String name, Object val);
@@ -104,6 +106,8 @@ public interface BinaryObjectBuilder {
      * @param name Field name.
      * @param val Field value.
      * @param type Field type.
+     * @param <T> Type of the field value.
+     * @return {@code this} for chaining.
      * @see BinaryObject#type()
      */
     public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type);
@@ -115,6 +119,7 @@ public interface BinaryObjectBuilder {
      *
      * @param name Field name.
      * @param builder Builder for object field.
+     * @return {@code this} for chaining.
      */
     public BinaryObjectBuilder setField(String name, @Nullable BinaryObjectBuilder builder);
 

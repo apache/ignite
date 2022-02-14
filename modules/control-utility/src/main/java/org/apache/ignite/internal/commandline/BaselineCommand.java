@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -37,8 +42,10 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 
 import static java.lang.Boolean.TRUE;
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -50,7 +57,7 @@ import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommand
 /**
  * Commands associated with baseline functionality.
  */
-public class BaselineCommand implements Command<BaselineArguments> {
+public class BaselineCommand extends AbstractCommand<BaselineArguments> {
     /** Arguments. */
     private BaselineArguments baselineArgs;
 
@@ -58,16 +65,17 @@ public class BaselineCommand implements Command<BaselineArguments> {
     @Override public void printUsage(Logger logger) {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
-        Command.usage(logger, "Print cluster baseline topology:", BASELINE);
-        Command.usage(logger, "Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
+        usage(logger, "Print cluster baseline topology:", BASELINE,
+            singletonMap("verbose", "Show the full list of node ips."), optional("--verbose"));
+        usage(logger, "Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger, "Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
+        usage(logger, "Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger, "Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds,
+        usage(logger, "Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds,
             optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger, "Set baseline topology based on version:", BASELINE,
+        usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
+        usage(logger, "Set baseline autoadjustment settings:", BASELINE,
             BaselineSubcommands.AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
     }
 
@@ -166,13 +174,38 @@ public class BaselineCommand implements Command<BaselineArguments> {
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
         // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
+        Function<VisorBaselineNode, String> extractFormattedAddrs = node -> {
+            Stream<String> sortedByIpHosts =
+                Optional.ofNullable(node)
+                    .map(addrs -> node.getAddrs())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .sorted(Comparator
+                        .comparing(resolvedAddr -> new VisorTaskUtils.SortableAddress(resolvedAddr.address())))
+                    .map(resolvedAddr -> {
+                        if (!resolvedAddr.hostname().equals(resolvedAddr.address()))
+                            return resolvedAddr.hostname() + "/" + resolvedAddr.address();
+                        else
+                            return resolvedAddr.address();
+                    });
+            if (verbose) {
+                String hosts = String.join(",", sortedByIpHosts.collect(Collectors.toList()));
+
+                if (!hosts.isEmpty())
+                    return ", Addresses=" + hosts;
+                else
+                    return "";
+            } else
+                return sortedByIpHosts.findFirst().map(ip -> ", Address=" + ip).orElse("");
+        };
 
         String crdStr = srvs.values().stream()
             // check for not null
             .filter(node -> node.getOrder() != null)
             .min(Comparator.comparing(VisorBaselineNode::getOrder))
             // format
-            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + extractFormattedAddrs.apply(crd) +
+                ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
         logger.info("Current topology version: " + res.getTopologyVersion() + crdStr);
@@ -190,7 +223,8 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
                 String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
 
-                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + state + order);
+                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() +
+                    extractFormattedAddrs.apply(srvNode) + state + order);
             }
 
             logger.info(DELIM);

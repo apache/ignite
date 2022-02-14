@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -27,8 +28,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.PersonBinarylizable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.resources.LoggerResource;
@@ -45,9 +50,20 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest {
+    /** */
+    private AtomicBoolean failure = new AtomicBoolean(false);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                failure.set(true);
+
+                return true;
+            }
+        });
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -241,6 +257,35 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
         }
 
         tryClose(cur);
+    }
+
+
+    /**
+     * Checks that deserialization error after client node leaves does not fail server node.
+     */
+    @Test
+    public void testFailedSerializationAfterNodeLeaves() throws Exception {
+        startGrids(1);
+
+        final int CLIENT_ID = 1;
+
+        Ignite clientNode = startClientGrid(CLIENT_ID);
+
+        IgniteCache<Integer, PersonBinarylizable> cache = clientNode.cache(DEFAULT_CACHE_NAME);
+
+        PersonBinarylizable bin = new PersonBinarylizable("1", false, true, true);
+
+        cache.query(new ScanQuery<>((k, v) -> !v.equals(bin)));
+
+        stopGrid(1);
+
+        Thread.sleep(1100);
+
+        assertNotNull(grid(0).cache(DEFAULT_CACHE_NAME));
+
+        assertFalse(failure.get());
+
+        stopGrid(0);
     }
 
     /**

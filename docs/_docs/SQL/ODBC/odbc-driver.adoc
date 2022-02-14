@@ -1,0 +1,338 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= ODBC Driver
+
+== Overview
+Ignite includes an ODBC driver that allows you both to select and to modify data stored in a distributed cache using standard SQL queries and native ODBC API.
+
+For detailed information on ODBC please refer to link:https://msdn.microsoft.com/en-us/library/ms714177.aspx[ODBC Programmer's Reference].
+
+The ODBC driver implements version 3.0 of the ODBC API.
+
+== Cluster Configuration
+
+The ODBC driver is treated as a dynamic library on Windows and a shared object on Linux. An application does not load it directly. Instead, it uses the Driver Manager API that loads and unloads ODBC drivers whenever required.
+
+Internally, the ODBC driver uses TCP to connect to a cluster. The cluster-side connection parameters can be configured via the `IgniteConfiguration.clientConnectorConfiguration` property.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="clientConnectorConfiguration">
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration"/>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+ClientConnectorConfiguration clientConnectorCfg = new ClientConnectorConfiguration();
+cfg.setClientConnectorConfiguration(clientConnectorCfg);
+
+----
+--
+
+Client connector configuration supports the following properties:
+
+[width="100%",cols="20%,60%,20%"]
+|=======================================================================
+|Parameter |Description |Default Value
+
+|`host`
+|Host name or IP address to bind to. When set to null, binding is made to `localhost`.
+|`null`
+
+|`port`
+|TCP port to bind to. If the specified port is already in use, Ignite will try to find another available port using the `portRange` property.
+|`10800`
+
+|`portRange`
+|Defines the number of ports to try to bind to. E.g. if the port is set to `10800` and `portRange` is `100`, then server will sequentially try to bind to any port from `[10800, 10900]` until it finds a free port.
+|`100`
+
+|`maxOpenCursorsPerConnection`
+|Maximum number of cursors that can be opened simultaneously for a single connection.
+|`128`
+
+|`threadPoolSize`
+|Number of request-handling threads in the thread pool.
+|`MAX(8, CPU cores)`
+
+|`socketSendBufferSize`
+|Size of the TCP socket send buffer. When set to 0, the system default value is used.
+|`0`
+
+|`socketReceiveBufferSize`
+|Size of the TCP socket receive buffer. When set to 0, the system default value is used.
+|`0`
+
+|`tcpNoDelay`
+|Whether to use the `TCP_NODELAY` option.
+|`true`
+
+|`idleTimeout`
+|Idle timeout for client connections.
+Clients will automatically be disconnected from the server after being idle for the configured timeout.
+When this parameter is set to zero or a negative value, idle timeout will be disabled.
+|`0`
+
+|`isOdbcEnabled`
+|Whether access through ODBC is enabled.
+|`true`
+
+|`isThinClientEnabled`
+|Whether access through thin client is enabled.
+|`true`
+|=======================================================================
+
+
+You can change these parameters as shown in the example below:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/odbc.xml[tags=ignite-config;!discovery,indent=0]
+----
+
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+...
+ClientConnectorConfiguration clientConnectorCfg = new ClientConnectorConfiguration();
+
+clientConnectorCfg.setHost("127.0.0.1");
+clientConnectorCfg.setPort(12345);
+clientConnectorCfg.setPortRange(2);
+clientConnectorCfg.setMaxOpenCursorsPerConnection(512);
+clientConnectorCfg.setSocketSendBufferSize(65536);
+clientConnectorCfg.setSocketReceiveBufferSize(131072);
+clientConnectorCfg.setThreadPoolSize(4);
+
+cfg.setClientConnectorConfiguration(clientConnectorCfg);
+...
+----
+--
+
+A connection that is established from the ODBC driver side to the cluster via `ClientListenerProcessor` is also configurable. Find more details on how to alter connection settings from the driver side link:SQL/ODBC/connection-string-dsn[here].
+
+== Thread-Safety
+
+The current implementation of Ignite ODBC driver only provides thread-safety at the connections level. This means that you should not access the same connection from multiple threads without additional synchronization, though you can create separate connections for every thread and use them simultaneously.
+
+== Prerequisites
+
+Apache Ignite ODBC Driver was officially tested on:
+
+[cols="1,3a"]
+|===
+|OS
+|- Windows (XP and up, both 32-bit and 64-bit versions)
+- Windows Server (2008 and up, both 32-bit and 64-bit versions)
+- Ubuntu (18.04 64-bit)
+
+|C++ compiler
+
+|MS Visual C++ (10.0 and up), g++ (4.4.0 and up)
+
+|Visual Studio
+
+|2010 and above
+|===
+
+== Building ODBC Driver
+
+Ignite is shipped with pre-built installers for both 32- and 64-bit versions of the driver for Windows.
+So if you just want to install ODBC driver on Windows, you may go straight to the <<Installing ODBC Driver>>
+section for installation instructions.
+
+For Linux, you will still need to build an ODBC driver before installing it.
+So if you are using Linux or still want to build the driver yourself for Windows, refer to the next section.
+
+=== Building on Windows
+
+To start with, install the dependencies below:
+
+* MS Visual C++ (10.0 and up), g++ (4.4.0 and up)
+* OpenSSL (32-bit or 64-bit versions)
+* CMake 3.6+
+* http://wixtoolset.org[WiX Toolset] and add it to `%Path%`.
+
+Then, perform the following:
+
+. Navigate to the `%IGNITE_HOME%\platforms\cpp` folder.
+. Build drivers and installers using the following steps:
+
+[tabs]
+--
+tab:64-bit driver[]
+[source,shell]
+----
+mkdir cmake-build-release-64
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl 64-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\amd64
+cmake --build . --target install --config Release
+----
+
+tab:32-bit driver[]
+[source,bat]
+----
+mkdir cmake-build-release-32
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl 32-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\x86
+cmake --build . --target install --config Release
+----
+--
+
+As a result, `ignite-odbc-amd64.msi` and `ignite-odbc-x86.msi` files should appear
+in `%IGNITE_HOME%\platforms\cpp\install\amd64\bin` and `%IGNITE_HOME%\platforms\cpp\install\x86\bin` directories respectively.
+
+=== Building on Linux
+
+On a Linux-based operating system, you will need to install an ODBC Driver Manager of your choice to be able
+to build and use the Ignite ODBC Driver. The ODBC Driver has been tested with link:http://www.unixodbc.org[UnixODBC].
+
+==== Prerequisites
+include::includes/cpp-odbc-linux-build-prerequisites.adoc[]
+
+
+==== Building ODBC driver
+- Create a build directory for cmake. We'll refer to it as `${CPP_BUILD_DIR}`
+- (Optional) Choose installation directory prefix (by default `/usr/local`). We'll refer to it as `${CPP_INSTALL_DIR}`
+- Build and install the driver by executing the following commands:
+
+[tabs]
+--
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+make
+sudo make install
+----
+
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+make
+sudo make install
+----
+
+--
+
+After the build process is over, you can find out where your ODBC driver has been placed by running the following command:
+
+[source,shell]
+----
+whereis libignite-odbc
+----
+
+The path should look something like: `/usr/local/lib/libignite-odbc.so`
+
+== Installing ODBC Driver
+
+In order to use ODBC driver, you need to register it in your system so that your ODBC Driver Manager will be able to locate it.
+
+=== Installing on Windows
+
+For 32-bit Windows, you should use the 32-bit version of the driver. For the
+64-bit Windows, you can use the 64-bit driver as well as the 32-bit. You may want to install both 32-bit and 64-bit drivers on 64-bit Windows to be able to use your driver from both 32-bit and 64-bit applications.
+
+==== Installing using installers
+
+NOTE: Microsoft Visual C++ 2010 Redistributable Package for 32-bit or 64-bit should be installed first.
+
+This is the easiest way and one should use it by default. Just launch the installer for the version of the driver that you need and follow the instructions:
+
+32-bit installer: `%IGNITE_HOME%\platforms\cpp\bin\odbc\ignite-odbc-x86.msi`
+64-bit installer: `%IGNITE_HOME%\platforms\cpp\bin\odbc\ignite-odbc-amd64.msi`
+
+==== Installing manually
+
+To install ODBC driver on Windows manually, you should first choose a directory on your
+file system where your driver or drivers will be located. Once you have
+chosen the location, you have to put your driver there and ensure that all driver
+dependencies can be resolved as well, i.e., they can be found either in the `%PATH%` or
+in the same directory where the driver DLL resides.
+
+After that, you have to use one of the install scripts from the following directory
+`%IGNITE_HOME%/platforms/cpp/odbc/install`. Note, that you may need OS administrator privileges to execute these scripts.
+
+[tabs]
+--
+tab:x86[]
+[source,shell]
+----
+install_x86 <absolute_path_to_32_bit_driver>
+----
+
+tab:AMD64[]
+[source,shell]
+----
+install_amd64 <absolute_path_to_64_bit_driver> [<absolute_path_to_32_bit_driver>]
+----
+
+--
+
+
+=== Installing on Linux
+
+To be able to build and install ODBC driver on Linux, you need to first install
+ODBC Driver Manager. The ODBC driver has been tested with link:http://www.unixodbc.org[UnixODBC].
+
+Once you have built the driver and performed the `make install` command, the ODBC Driver i.e. `libignite-odbc.so` will be placed in the `/usr/local/lib` folder. To install it as an ODBC driver in your Driver Manager and be able to use it, perform the following steps:
+
+- Ensure linker is able to locate all dependencies of the ODBC driver. You can check this by using `ldd` command. Assuming ODBC driver is located under `/usr/local/lib`:
++
+`ldd /usr/local/lib/libignite-odbc.so`
++
+If there are unresolved links to other libraries, you may want to add directories with these libraries to the `LD_LIBRARY_PATH`.
+
+- Edit file `${IGNITE_HOME}/platforms/cpp/odbc/install/ignite-odbc-install.ini` and ensure that Driver parameter of the Apache Ignite section points to where `libignite-odbc.so` is located.
+
+- To install the ODBC driver, use the following command:
+
+[source,shell]
+----
+odbcinst -i -d -f ${IGNITE_HOME}/platforms/cpp/odbc/install/ignite-odbc-install.ini
+----
+To perform this command, you may need root privileges.
+
+Now the Apache Ignite ODBC driver is installed and ready for use. You can connect to it and use it just like any other ODBC driver.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

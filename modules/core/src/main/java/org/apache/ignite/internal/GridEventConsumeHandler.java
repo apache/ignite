@@ -66,7 +66,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID,Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
@@ -200,7 +200,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                         notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
                         if (!notificationInProgress) {
-                            ctx.getSystemExecutorService().execute(new Runnable() {
+                            ctx.pools().getSystemExecutorService().execute(new Runnable() {
                                 @Override public void run() {
                                     if (!ctx.continuous().lockStopping())
                                         return;
@@ -426,6 +426,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                 throw e;
             }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+            }
         }
     }
 
@@ -441,11 +446,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onNodeLeft() {
         // No-op.
     }
 

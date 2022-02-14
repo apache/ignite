@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
-                
+
             var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(false, false));
 
             if (KeepBinary)
@@ -283,8 +283,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name, 
-                    method, args, PlatformType.DotNet);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
+                    method, args, PlatformType.DotNet, null);
 
                 inStream.SynchronizeOutput();
 
@@ -293,16 +293,17 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
+                IServiceCallContext unused;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
                 var writer = _marsh.StartMarshal(outStream);
-                writer.WriteString("unused");  // fake Java exception details
-                writer.WriteString("unused");  // fake Java exception details
+                writer.WriteString("unused"); // fake Java exception details
+                writer.WriteString("unused"); // fake Java exception details
 
                 outStream.SynchronizeOutput();
 
@@ -758,7 +759,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
-            
+
             var obj = new TestBinarizableClass { Prop = "PropValue" };
             var portObj = Binary.ToBinary<IBinaryObject>(obj);
 

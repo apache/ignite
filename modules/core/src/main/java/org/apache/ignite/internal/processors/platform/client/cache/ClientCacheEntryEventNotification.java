@@ -57,19 +57,19 @@ public class ClientCacheEntryEventNotification extends ClientNotification {
 
             switch (evt.getEventType()) {
                 case CREATED:
-                    writer.writeByte((byte) 0);
+                    writer.writeByte((byte)0);
                     break;
 
                 case UPDATED:
-                    writer.writeByte((byte) 1);
+                    writer.writeByte((byte)1);
                     break;
 
                 case REMOVED:
-                    writer.writeByte((byte) 2);
+                    writer.writeByte((byte)2);
                     break;
 
                 case EXPIRED:
-                    writer.writeByte((byte) 3);
+                    writer.writeByte((byte)3);
                     break;
 
                 default:

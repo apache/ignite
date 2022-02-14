@@ -18,9 +18,9 @@
 package org.apache.ignite.loadtests.communication;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -36,13 +36,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
-import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -194,8 +194,8 @@ public class GridIoManagerBenchmark {
                     try {
                         X.println("Saving results to output file: " + outputFilename);
 
-                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(
-                            new Date()), qpsAvg.get());
+                        appendLineToFile(outputFilename, "%s,%d", IgniteUtils.LONG_DATE_FMT.format(
+                            Instant.now()), qpsAvg.get());
                     }
                     catch (IOException e) {
                         X.println("Failed to record results to a file: " + e.getMessage());

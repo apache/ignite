@@ -74,7 +74,10 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
             if (!e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["))
                 e.printStackTrace();
 
-            assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
+            assertTrue(
+                e.getMessage(),
+                e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) [")
+            );
         }
     }
 
@@ -98,7 +101,7 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
                         orgCache.destroy();
                     }
                     else if (GridQueryCancelRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
-                        GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
+                        GridQueryCancelRequest req = (GridQueryCancelRequest)(gridMsg.message());
 
                         if (reqId == req.queryRequestId())
                             orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0)

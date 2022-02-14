@@ -509,7 +509,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             int c = 0;
 
             for (int idx = 0; idx < nodes; idx++) {
-                if (Arrays.binarySearch(stopNodesSorted, idx) < 0 && !aff.isPrimary(grid(idx).localNode(), i) && !aff.isBackup(grid(idx).localNode(), i))
+                if (Arrays.binarySearch(stopNodesSorted, idx) < 0
+                    && !aff.isPrimary(grid(idx).localNode(), i)
+                    && !aff.isBackup(grid(idx).localNode(), i))
                     c++;
             }
 

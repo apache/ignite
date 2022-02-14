@@ -310,7 +310,9 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @param mode Mode.
      */
-    private void doTestNoOverflowMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException, BrokenBarrierException, InterruptedException {
+    private void doTestNoOverflowMultiThreaded(
+        SegmentedRingByteBuffer.BufferMode mode
+    ) throws org.apache.ignite.IgniteCheckedException, BrokenBarrierException, InterruptedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;

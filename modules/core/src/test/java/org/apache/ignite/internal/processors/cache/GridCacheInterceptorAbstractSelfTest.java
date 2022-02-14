@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -37,6 +38,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
@@ -65,9 +67,14 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         interceptor = new Interceptor();
 
-        super.beforeTestsStarted();
+        for (Ignite ign : G.allGrids()) {
+            for (String cacheName: ign.cacheNames())
+                ign.cache(cacheName).getConfiguration(CacheConfiguration.class).setInterceptor(interceptor);
+        }
 
         awaitPartitionMapExchange();
     }
@@ -122,10 +129,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-
-        assertNotNull(interceptor);
-
-        ccfg.setInterceptor(interceptor);
 
         if (!storeEnabled()) {
             ccfg.setCacheStoreFactory(null);

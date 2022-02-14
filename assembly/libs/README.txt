@@ -72,16 +72,13 @@ All optional modules can be imported just like the core module, but with differe
 
 The following modules are available:
 - ignite-aop (for AOP-based grid-enabling)
-- ignite-aws (for seemless cluster discovery on AWS S3)
 - ignite-cassandra (for Apache Cassandra integration)
 - ignite-cloud (for Apache JClouds integration) 
-- ignite-gce (for automatic cluster discovery on Google Compute Engine)
 - ignite-hibernate (for Hibernate integration)
 - ignite-hibernate5 (for Hibernate5 integration)
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
-- ignite-kafka (for streaming messages from Apache Kafka into Ignite)
 - ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
 - ignite-mesos (for integration with Apache Mesos cluster resource manager)
