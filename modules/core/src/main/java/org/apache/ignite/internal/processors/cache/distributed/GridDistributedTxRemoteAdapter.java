@@ -37,6 +37,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -800,13 +801,28 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
+                        boolean walEnabled = false;
+
+                        // Log only there are at least one persistent or cdc enabled group.
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                            for (int i = 0; i < dataEntries.size(); i++) {
+                                CacheGroupContext grpCtx = dataEntries.get(i).get2().context().group();
+
+                                if (grpCtx.walOrCdcEnabled()) {
+                                    walEnabled = true;
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (walEnabled) {
                             // Set new update counters for data entries received from persisted tx entries.
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
-                            ptr = cctx.wal().log(new DataRecord(entriesWithCounters));
+                            ptr = cctx.cdcWal().log(new DataRecord(entriesWithCounters));
                         }
 
                         if (ptr != null)

@@ -3118,6 +3118,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             verMgr,
             mvccMgr,
             pageStoreMgr,
+            CU.isPersistenceEnabled(ctx.config()) ? walMgr : null,
             walMgr,
             walStateMgr,
             dbMgr,

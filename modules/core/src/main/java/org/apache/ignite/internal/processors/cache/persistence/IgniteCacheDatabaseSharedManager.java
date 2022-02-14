@@ -939,7 +939,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return null;
     }
 
-
     /**
      * @return Data storage metrics implementation.
      */
@@ -1140,7 +1139,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config()))
             return;
 
-        WALIterator iter = cctx.wal().replay(null, (type, ptr) -> true);
+        WALIterator iter = cctx.cdcWal().replay(null, (type, ptr) -> true);
 
         while (iter.hasNext())
             iter.next();
@@ -1150,7 +1149,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (ptr != null)
             ptr = ptr.next();
 
-        cctx.wal().resumeLogging(ptr);
+        cctx.cdcWal().resumeLogging(ptr);
     }
 
     /**

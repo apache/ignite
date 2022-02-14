@@ -114,6 +114,9 @@ public class GridCacheSharedContext<K, V> {
     /** Write ahead log manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgniteWriteAheadLogManager walMgr;
 
+    /** Write ahead log manager for CDC. {@code Null} if persistence and cdc is not enabled. */
+    @Nullable private IgniteWriteAheadLogManager cdcWalMgr;
+
     /** Write ahead log state manager. */
     private WalStateManager walStateMgr;
 
@@ -199,6 +202,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
+     * @param walMgr CDC WAL manager. {@code Null} if persistence and CDC is not enabled.
      * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param dbMgr Database manager.
@@ -220,6 +224,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         @Nullable IgnitePageStoreManager pageStoreMgr,
         @Nullable IgniteWriteAheadLogManager walMgr,
+        @Nullable IgniteWriteAheadLogManager cdcWalMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteSnapshotManager snapshotMgr,
@@ -246,6 +251,7 @@ public class GridCacheSharedContext<K, V> {
             mvccMgr,
             pageStoreMgr,
             walMgr,
+            cdcWalMgr,
             walStateMgr,
             dbMgr,
             snapshotMgr,
@@ -427,6 +433,7 @@ public class GridCacheSharedContext<K, V> {
             mvccMgr,
             pageStoreMgr,
             walMgr,
+            cdcWalMgr,
             walStateMgr,
             dbMgr,
             snapshotMgr,
@@ -477,6 +484,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         @Nullable IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        IgniteWriteAheadLogManager cdcWalMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteSnapshotManager snapshotMgr,
@@ -497,6 +505,10 @@ public class GridCacheSharedContext<K, V> {
         this.txMgr = add(mgrs, txMgr);
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.walMgr = add(mgrs, walMgr);
+
+        assert walMgr == null || walMgr == cdcWalMgr;
+
+        this.cdcWalMgr = walMgr == null ? add(mgrs, cdcWalMgr) : cdcWalMgr;
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snapshotMgr = add(mgrs, snapshotMgr);
@@ -762,6 +774,13 @@ public class GridCacheSharedContext<K, V> {
      */
     @Nullable public IgniteWriteAheadLogManager wal() {
         return walMgr;
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    @Nullable public IgniteWriteAheadLogManager cdcWal() {
+        return cdcWalMgr;
     }
 
     /**

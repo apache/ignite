@@ -29,6 +29,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -92,13 +93,16 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
+        IgniteWriteAheadLogManager walMgr = new NoOpWALManager();
+
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             cctx,
             null,
             null,
             null,
             new NoOpPageStoreManager(),
-            new NoOpWALManager(),
+            walMgr,
+            walMgr,
             null,
             new IgniteCacheDatabaseSharedManager(cctx),
             null,

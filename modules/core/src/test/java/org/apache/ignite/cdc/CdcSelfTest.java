@@ -101,9 +101,6 @@ public class CdcSelfTest extends AbstractCdcTest {
                     params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled, 8192});
                 }
 
-        params.add(new Object[] {false, WALMode.FSYNC, null, false, 0});
-        params.add(new Object[] {false, WALMode.FSYNC, null, true, 0});
-
         return params;
     }
 

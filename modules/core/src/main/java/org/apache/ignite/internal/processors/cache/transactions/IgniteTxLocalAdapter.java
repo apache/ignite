@@ -849,7 +849,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (grp.walOrCdcEnabled() &&
                                         cctx.snapshot().needTxReadLogging()) {
-                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                        ptr = cctx.cdcWal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
                                             txEntry.key(),
                                             val,

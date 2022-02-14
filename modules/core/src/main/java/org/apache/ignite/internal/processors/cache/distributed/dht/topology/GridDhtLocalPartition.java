@@ -229,7 +229,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             store = grp.offheap().createCacheDataStore(id);
 
             // Log partition creation for further crash recovery purposes.
-            if (grp.walEnabled() && !recovery)
+            if (grp.persistenceEnabled() && grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
             // Inject row cache cleaner on store creation.
@@ -1001,7 +1001,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // and repeat clearing on applying updates from WAL if the record was read.
             // It's need for atomic cache only. Transactional cache start a rebalance due to outdated counter in this case,
             // because atomic and transactional caches use different partition counters implementation.
-            if (state() == MOVING && !recoveryMode && grp.walEnabled() &&
+            if (state() == MOVING && !recoveryMode && grp.persistenceEnabled() && grp.walEnabled() &&
                 grp.config().getAtomicityMode() == ATOMIC)
                 ctx.wal().log(new PartitionClearingStartRecord(id, grp.groupId(), order));
 
