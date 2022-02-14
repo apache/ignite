@@ -37,8 +37,8 @@ public class ThinClientConfiguration {
     /** Active compute tasks per connection limit. */
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
-    /** If {@code true} sends full stack into client side. */
-    private boolean showFullStack = true;
+    /** If {@code true} sends a server exception stack trace to the client side. */
+    private boolean sendServerExcStackTraceToClient = true;
 
     /**
      * Creates thin-client configuration with all default values.
@@ -57,7 +57,7 @@ public class ThinClientConfiguration {
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
         maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
-        showFullStack = cfg.showFullStack;
+        sendServerExcStackTraceToClient = cfg.sendServerExcStackTraceToClient;
     }
 
     /**
@@ -102,17 +102,17 @@ public class ThinClientConfiguration {
     }
 
     /**
-     * @return If {@code true} sends full stack into client side.
+     * @return If {@code true} sends a server exception stack to the client side.
      */
-    public boolean showFullStackOnClientSide() {
-        return showFullStack;
+    public boolean sendServerExceptionStackTraceToClient() {
+        return sendServerExcStackTraceToClient;
     }
 
     /**
-     * @param showFullStack If {@code true} sends full stack into client side.
+     * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
      */
-    public void showFullStackOnClientSide(boolean showFullStack) {
-        this.showFullStack = showFullStack;
+    public void sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
+        this.sendServerExcStackTraceToClient = sendServerExcStackTraceToClient;
     }
 
     /** {@inheritDoc} */

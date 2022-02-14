@@ -126,7 +126,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         }
 
         if ((X.getCause(e) != null || !X.getSuppressedList(e).isEmpty())
-                && ctx.kernalContext().sqlListener().showFullStackOnClientSide())
+                && ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient())
             msg = msg + U.nl() + X.getFullStackTrace(e);
 
         return new ClientResponse(req.requestId(), status, msg);

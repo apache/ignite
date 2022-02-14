@@ -32,13 +32,13 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.DistributedThinClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -566,13 +566,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Show full stack on client side.
+     * @return If {@code true} sends a server exception stack to the client side.
      */
-    public boolean showFullStackOnClientSide() {
-        Boolean show = distrThinCfg.sendServerExceptionStackTraceToClient();
+    public boolean sendServerExceptionStackTraceToClient() {
+        Boolean send = distrThinCfg.sendServerExceptionStackTraceToClient();
 
-        return show == null ?
-            ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().showFullStackOnClientSide() : show;
+        return send == null ?
+            ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().sendServerExceptionStackTraceToClient() : send;
     }
 
     /**

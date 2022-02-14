@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
