@@ -443,13 +443,32 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReReadWhenStateWasNotStored() throws Exception {
-        IgniteEx ign = startGrid(getConfiguration("ignite-0"));
+        Supplier<IgniteEx> restart = () -> {
+            stopAllGrids(false);
 
-        ign.cluster().state(ACTIVE);
+            try {
+                IgniteEx ign = startGrid(getConfiguration("ignite-0"));
+
+                ign.cluster().state(ACTIVE);
+
+                return ign;
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        IgniteEx ign = restart.get();
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT);
+        addData(cache, 0, KEYS_CNT / 2);
+
+        ign = restart.get();
+
+        cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
         for (int i = 0; i < 3; i++) {
             UserCdcConsumer cnsmr = new UserCdcConsumer() {
