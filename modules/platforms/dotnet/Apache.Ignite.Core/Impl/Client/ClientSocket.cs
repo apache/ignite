@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 var serverIdleTimeout = TimeSpan.FromMilliseconds(
                     DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong()));
 
-                if (/*serverIdleTimeout > TimeSpan.Zero && */_heartbeatInterval > serverIdleTimeout)
+                if (serverIdleTimeout > TimeSpan.Zero && _heartbeatInterval > serverIdleTimeout)
                 {
                     _logger.Warn("Client heartbeat interval is greater than server idle timeout " +
                                  $"({_heartbeatInterval} > {serverIdleTimeout}). " +
