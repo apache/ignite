@@ -924,7 +924,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.mvccCaching().onTxFinished(this, true);
 
                 if (ptr != null)
-                    cctx.wal().flush(ptr, false);
+                    cctx.cdcWal().flush(ptr, false);
             }
             catch (Throwable ex) {
                 // We are about to initiate transaction rollback when tx has started to committing.
