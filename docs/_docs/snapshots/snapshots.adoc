@@ -73,7 +73,7 @@ are not added into the snapshot as long as those are not required for the curren
 The previous example shows the snapshot created for the cluster running on the same physical machine. Thus, the whole
 snapshot is located in a single place. While in practice, all the nodes will be running on different machines having the
 snapshot data spread across the cluster. Each node keeps a segment of the snapshot with the data belonging to this particular node.
-The link:persistence/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
+The link:snapshots/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
 ====
 
 == Configuration
@@ -155,10 +155,18 @@ See the link:tools/control-script#checking-snapshot-consistency[Control Script] 
 commands.
 
 == Restoring From Snapshot
-A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster. Both procedures are described below.
+
+A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster.
+Both procedures are described below, however, it is preferable to use the restore command from Control Script only.
 
 === Manual Snapshot Restore Procedure
-Stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
+
+The snapshot structure is similar to the layout of the Ignite Native Persistence, so for the manual snapshot restore you must
+do a snapshot restore only on the same cluster with the same node `consistentId` and on the same topology on which a snapshot
+was taken. If you need to restore a snapshot on a different cluster or on a different cluster topology use the
+link:snapshots/snapshots#automatic-snapshot-restore-procedure[Automatic Snapshot Restore Procedure].
+
+In general, stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
 
 The detailed procedure looks as follows:
 
@@ -170,18 +178,6 @@ The detailed procedure looks as follows:
     - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if it's not located under the Ignite `work` dir.
     - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
 . Restart the cluster
-
-*Restore On Cluster of Different Topology*
-
-You may want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table below explains what options are supported:
-[cols="1,1",opts="header"]
-|===
-|Condition | Description
-|N == M | The *recommended* case. Create and use the snapshot on clusters of a similar topology.
-|N < M | Start the first N nodes of the M-node cluster and apply the snapshot. Add the rest of the M-cluster nodes to
-the topology and wait while the data gets rebalanced and indexes are rebuilt.
-|N > M | Unsupported.
-|===
 
 === Automatic Snapshot Restore Procedure
 
