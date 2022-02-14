@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.AffinityKey;
+import org.apache.ignite.internal.binary.TestAffinityKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -199,7 +199,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
                 if (i % accsPerPerson == 0)
                     pers.put(pKey, new Person("pers-" + pKey));
 
-                acc.put(new AffinityKey(i, pKey), new Account(pKey, "acc-" + i));
+                acc.put(new TestAffinityKey(i, pKey), new Account(pKey, "acc-" + i));
             }
 
             if (tx != null)
@@ -246,7 +246,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     private CacheConfiguration accountCacheConfiguration(String grpName, String cacheName) {
         QueryEntity entity = new QueryEntity();
 
-        entity.setKeyType(AffinityKey.class.getName());
+        entity.setKeyType(TestAffinityKey.class.getName());
         entity.setValueType(Account.class.getName());
         entity.addQueryField("personId", Integer.class.getName(), null);
         entity.addQueryField("attr", String.class.getName(), null);

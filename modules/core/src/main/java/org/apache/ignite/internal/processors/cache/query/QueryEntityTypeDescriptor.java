@@ -271,4 +271,3 @@ public class QueryEntityTypeDescriptor {
         return S.toString(QueryEntityTypeDescriptor.class, this);
     }
 }
-

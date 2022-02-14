@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -60,7 +61,12 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     protected static CacheConfiguration<Object, TestObject> cacheCfg() {
         return new CacheConfiguration<Object, TestObject>(DEFAULT_CACHE_NAME)
             .setBackups(1)
-            .setIndexedTypes(Object.class, TestObject.class);
+            .setQueryEntities(Collections.singleton(
+                new QueryEntity()
+                    .setValueType(TestObject.class.getName())
+                    .addQueryField("name", String.class.getName(), null)
+                )
+            );
     }
 
     /** */

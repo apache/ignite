@@ -3284,7 +3284,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
             BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, true);
 
-            assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
+            assertEquals("Descriptor: " + desc, desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
         }
     }
 

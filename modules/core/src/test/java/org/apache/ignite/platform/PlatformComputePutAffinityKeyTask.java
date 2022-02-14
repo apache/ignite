@@ -26,7 +26,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.binary.AffinityKey;
+import org.apache.ignite.internal.binary.TestAffinityKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +53,7 @@ public class PlatformComputePutAffinityKeyTask extends ComputeTaskAdapter<Object
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            AffinityKey val = new AffinityKey(1, 2);
+            TestAffinityKey val = new TestAffinityKey(1, 2);
             ignite.getOrCreateCache("default").put(val, val);
 
             return null;

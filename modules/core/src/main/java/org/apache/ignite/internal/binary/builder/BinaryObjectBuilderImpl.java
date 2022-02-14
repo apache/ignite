@@ -420,7 +420,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
         else
-            newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
+            newFldTypeId = BinaryUtils.fieldTypeByClass(newVal.getClass());
 
         if (oldFldTypeName == null) {
             // It's a new field, we have to add it to metadata.
@@ -571,7 +571,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else {
             Class valCls = (val == null) ? Object.class : val.getClass();
 
-            val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(valCls), null) : val0;
+            val = val0 == null ? new BinaryValueWithType(BinaryUtils.fieldTypeByClass(valCls), null) : val0;
         }
 
         assignedValues().put(name, val);
@@ -588,7 +588,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else if (Map.class.equals(type))
             typeId = GridBinaryMarshaller.MAP;
         else
-            typeId = BinaryUtils.typeByClass(type);
+            typeId = BinaryUtils.fieldTypeByClass(type);
 
         assignedValues().put(name, new BinaryValueWithType(typeId, val));
 

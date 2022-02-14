@@ -21,14 +21,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -134,7 +133,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
                     .setKeyType(Key.class.getName())
                     .setValueType(Val.class.getName())
                     .setFields(fields)
-                    .setKeyFields(new HashSet<>(Arrays.asList("keyStr", "keyLong", "keyPojo")))
+                    .setKeyFields(new LinkedHashSet<>(Arrays.asList("keyStr", "keyLong", "keyPojo")))
                     .setIndexes(indexes)
                     .setAliases(Collections.singletonMap(QueryUtils.KEY_FIELD_NAME, "pk_id"))
             ))

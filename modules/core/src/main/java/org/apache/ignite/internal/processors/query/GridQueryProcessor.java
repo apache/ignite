@@ -148,8 +148,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
+import static org.apache.ignite.internal.binary.BinaryUtils.fieldTypeByClass;
 import static org.apache.ignite.internal.binary.BinaryUtils.fieldTypeName;
-import static org.apache.ignite.internal.binary.BinaryUtils.typeByClass;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 import static org.apache.ignite.internal.processors.query.schema.SchemaOperationException.CODE_COLUMN_EXISTS;
 
@@ -934,7 +934,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 String schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheInfo.config().getSqlSchema());
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
-                    candRes = createQueryCandidates(cacheName, schemaName, cacheInfo, schema.entities(), escape);
+                    candRes = createQueryCandidates(cacheName, schemaName, cacheInfo, schema.entities(), escape, isSql);
 
                 // Ensure that candidates has unique index names.
                 // Otherwise we will not be able to apply pending operations.
@@ -1009,7 +1009,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                     opEnableIdx.schemaName(),
                                                     cacheInfo,
                                                     opEnableIdx.entities(),
-                                                    opEnableIdx.isSqlEscape()
+                                                    opEnableIdx.isSqlEscape(),
+                                                    isSql
                                                 ).get1();
 
                                         schemaName = opEnableIdx.schemaName();
@@ -1218,7 +1219,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String schemaName,
             GridCacheContextInfo<?, ?> cacheInfo,
             Collection<QueryEntity> entities,
-            boolean escape
+            boolean escape,
+            boolean isSql
         ) throws IgniteCheckedException {
         Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
@@ -1233,7 +1235,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     cacheInfo,
                     qryEntity,
                     mustDeserializeClss,
-                    escape
+                    escape,
+                    isSql,
+                    log
                 );
 
                 cands.add(cand);
@@ -1514,7 +1518,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String binaryFieldType = nonNull(binaryType) ? binaryType.fieldTypeName(qryField.name()) : null;
 
             return isNull(binaryFieldType) ||
-                binaryFieldType.equals(fieldTypeName(typeByClass(Class.forName(qryField.typeName()))));
+                binaryFieldType.equals(fieldTypeName(fieldTypeByClass(Class.forName(qryField.typeName()))));
         }
         catch (ClassNotFoundException e) {
             throw new IgniteException(
@@ -1972,7 +1976,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                         candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
-                        op0.isSqlEscape());
+                        op0.isSqlEscape(), false);
 
                     registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
                 }

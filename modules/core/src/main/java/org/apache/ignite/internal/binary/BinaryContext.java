@@ -1456,6 +1456,32 @@ public class BinaryContext {
     }
 
     /**
+     * @param typeName Type name.
+     */
+    public boolean isSystemType(String typeName) {
+        return marshCtx.isSystemType(typeName);
+    }
+
+    /**
+     * Returns binary field type for specified type name.
+     * The difference with @link #typeId(String)} is that for custom objects it returns OBJECT type insead of
+     * typeId of the real binary type.
+     *
+     * @return {@code null} if the type cannot be defined here (binary type not registered yet and class not available).
+     */
+    public Integer fieldTypeId(String typeName) {
+        final Class<?> cls = U.classForName(typeName, null, true);
+        BinaryType type = metadata(typeId(typeName));
+
+        if (type != null)
+            return type.isEnum() ? (int)GridBinaryMarshaller.ENUM : (int)GridBinaryMarshaller.OBJ;
+        else if (cls != null)
+            return (int)BinaryUtils.fieldTypeByClass(cls);
+
+        return null;
+    }
+
+    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {

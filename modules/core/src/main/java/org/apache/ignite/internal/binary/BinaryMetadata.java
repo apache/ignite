@@ -24,12 +24,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -386,5 +388,37 @@ public class BinaryMetadata implements Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryMetadata.class, this);
+    }
+
+    /** */
+    public String prettyPrint() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("typeId=" + typeId).append("\n");
+        sb.append("typeName=" + typeName).append("\n");
+        sb.append("Fields:").append("\n");
+
+        final String INDENT = "    ";
+
+        final Map<Integer, String> fldMap = new HashMap<>();
+        fields.forEach((name, fldMeta) -> {
+            sb.append(INDENT +
+                "name=" + name +
+                ", type=" + BinaryUtils.fieldTypeName(fldMeta.typeId()) +
+                ", fieldId=" + fldMeta.fieldId()).append("\n");
+
+            fldMap.put(fldMeta.fieldId(), name);
+        });
+
+        sb.append("Schemas:").append("\n");
+
+        schemas.forEach(s ->
+            sb.append(INDENT +
+                "schemaId=" + s.schemaId() +
+                ", fields=" + Arrays.stream(s.fieldIds())
+                .mapToObj(fldMap::get)
+                .collect(Collectors.toList())).append("\n"));
+
+        return sb.toString();
     }
 }
