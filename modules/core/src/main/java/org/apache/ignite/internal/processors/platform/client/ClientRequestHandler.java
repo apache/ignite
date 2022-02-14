@@ -125,16 +125,11 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             msg = sqlState + ": " + msg;
         }
 
-        boolean fullStack = false;
+        if ((X.getCause(e) != null || !X.getSuppressedList(e).isEmpty())
+                && ctx.kernalContext().sqlListener().showFullStackOnClientSide())
+            msg = msg + U.nl() + X.getFullStackTrace(e);
 
-        if (X.getCause(e) != null || !X.getSuppressedList(e).isEmpty()) {
-            fullStack =
-                    ctx.kernalContext().sqlListener().showFullStackOnClientSide();
-        }
-
-        return new ClientResponse(req.requestId(), status, fullStack ?
-                msg + U.nl() + X.getFullStackTrace(e) :
-                msg);
+        return new ClientResponse(req.requestId(), status, msg);
     }
 
     /** {@inheritDoc} */

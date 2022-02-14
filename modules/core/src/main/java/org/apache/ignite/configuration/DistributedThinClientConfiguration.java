@@ -68,6 +68,7 @@ public class DistributedThinClientConfiguration {
 
     /**
      * @param showStack If {@code true} shows full stack trace on the client side.
+     * @return Future for update operation.
      */
     public GridFutureAdapter<?> updateThinClientSendServerStackTraceAsync(boolean showStack) throws IgniteCheckedException {
         return showStackTrace.propagateAsync(showStack);

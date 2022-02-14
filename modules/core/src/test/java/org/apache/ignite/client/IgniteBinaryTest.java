@@ -192,6 +192,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
      * Test interceptor implementation.
      */
     private static class ThinBinaryValueInterceptor extends CacheInterceptorAdapter<String, ThinBinaryValue> {
+        /** {@inheritDoc} */
         @Override public ThinBinaryValue onBeforePut(Cache.Entry<String, ThinBinaryValue> entry, ThinBinaryValue newVal) {
             return super.onBeforePut(entry, newVal);
         }
