@@ -22,7 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
@@ -63,35 +65,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -100,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -117,6 +93,9 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends AbstractPlannerTest {
+    /** */
+    private static final long PLANNER_TIMEOUT = 5_000;
+
     /**
      * @throws Exception If failed.
      */
@@ -1330,8 +1309,9 @@ public class PlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /** */
     @Test
-    public void testMultipleJoin() throws Exception {
+    public void testLongPlanningTimeout() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable t1 = new TestTable(
@@ -1345,7 +1325,6 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-
         TestTable t2 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("A", f.createJavaType(Integer.class))
@@ -1356,7 +1335,6 @@ public class PlannerTest extends AbstractPlannerTest {
                 return IgniteDistributions.broadcast();
             }
         };
-
 
         TestTable t3 = new TestTable(
             new RelDataTypeFactory.Builder(f)
@@ -1390,7 +1368,8 @@ public class PlannerTest extends AbstractPlannerTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4 ON T4.C = T3.C AND T4.A = T1.A";
+        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4" +
+            " ON T4.C = T3.C AND T4.A = T1.A";
 
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(BaseQueryContext.builder()
@@ -1399,7 +1378,7 @@ public class PlannerTest extends AbstractPlannerTest {
                     .costFactory(new IgniteCostFactory(1, 100, 1, 1))
                     .build())
                 .logger(log)
-                .plannerTimeout(15000)
+                .plannerTimeout(PLANNER_TIMEOUT)
                 .build()
             )
             .query(sql)
@@ -1416,9 +1395,13 @@ public class PlannerTest extends AbstractPlannerTest {
 
             ValidationResult validated = planner.validateAndGetTypeMetadata(sqlNode);
 
-            sqlNode = validated.sqlNode();
+            AtomicReference<IgniteRel> plan = new AtomicReference<>();
 
-            IgniteRel plan = PlannerHelper.optimize(sqlNode, planner, log);
+            GridTestUtils.assertTimeout(2 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                plan.set(PlannerHelper.optimize(validated.sqlNode(), planner, log));
+            });
+
+            assertNotNull(plan.get());
 
             new RelVisitor() {
                 @Override public void visit(
@@ -1428,13 +1411,7 @@ public class PlannerTest extends AbstractPlannerTest {
                     assertNotNull(node.getTraitSet().getTrait(IgniteConvention.INSTANCE.getTraitDef()));
                     super.visit(node, ordinal, parent);
                 }
-            }.go(plan);
-
-            assertNotNull(plan);
-
-            log.info("Plan is:" + plan.explain());
-
-            checkSplitAndSerialization(plan, publicSchema);
+            }.go(plan.get());
         }
     }
 }

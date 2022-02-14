@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -43,17 +44,24 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT;
 
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT, value = "5000")
 public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final long PLANNER_TIMEOUT = getLong(IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT, 0);
+
     /** */
     private static IgniteEx srv;
 
@@ -233,5 +241,30 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+    }
+
+    /** */
+    @Test
+    public void testLongPlanningTimeout() throws Exception {
+        sql("CREATE TABLE T1(A INT, B INT)");
+        sql("CREATE TABLE T2(A INT, C INT)");
+        sql("CREATE TABLE T3(B INT, C INT)");
+        sql("CREATE TABLE T4(A INT, C INT)");
+
+        sql("INSERT INTO T1(A, B) VALUES (1, 1)");
+        sql("INSERT INTO T2(A, C) VALUES (1, 2)");
+        sql("INSERT INTO T3(B, C) VALUES (1, 2)");
+        sql("INSERT INTO T4(A, C) VALUES (1, 2)");
+
+        String longJoinQry = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4" +
+            " ON T4.C = T3.C AND T4.A = T1.A";
+
+        AtomicReference<List<List<?>>> res = new AtomicReference<>();
+        GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+            res.set(sql(longJoinQry));
+        });
+
+        assertNotNull(res.get());
+        assertFalse(res.get().isEmpty());
     }
 }

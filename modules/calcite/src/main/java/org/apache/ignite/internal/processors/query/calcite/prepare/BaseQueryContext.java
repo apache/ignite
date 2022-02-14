@@ -257,7 +257,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return qryCancel;
     }
 
-
     /**
      * @return Planner timeout;
      */

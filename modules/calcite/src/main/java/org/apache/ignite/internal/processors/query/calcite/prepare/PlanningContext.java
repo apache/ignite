@@ -111,7 +111,6 @@ public final class PlanningContext implements Context {
         return startTs;
     }
 
-
     /**
      * @return Start timestamp in millis.
      */
