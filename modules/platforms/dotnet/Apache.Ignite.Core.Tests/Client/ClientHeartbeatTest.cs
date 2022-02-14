@@ -68,12 +68,24 @@ namespace Apache.Ignite.Core.Tests.Client
             using var client = GetClient(heartbeatInterval: IdleTimeout * 3);
 
             var logger = (ListLogger)client.GetConfiguration().Logger;
-            var logs = logger.Entries.Select(e => e.Message).ToArray();
+            var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
 
-            Assert.Contains(
+            StringAssert.Contains(
                 "Client heartbeat interval is greater than server idle timeout (00:00:06 > 00:00:02). " +
                 "Server will disconnect idle client.",
                 logs);
+        }
+
+        [Test]
+        public void TestDefaultZeroIdleTimeoutDoesNotLogWarning()
+        {
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+            using var client = GetClient(heartbeatInterval: IdleTimeout * 3, IgniteClientConfiguration.DefaultPort + 1);
+
+            var logger = (ListLogger)client.GetConfiguration().Logger;
+            var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
+
+            StringAssert.DoesNotContain("Client heartbeat interval", logs);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -97,11 +109,11 @@ namespace Apache.Ignite.Core.Tests.Client
             };
         }
 
-        private static IIgniteClient GetClient(int heartbeatInterval)
+        private static IIgniteClient GetClient(int heartbeatInterval, int port = IgniteClientConfiguration.DefaultPort)
         {
             var cfg = new IgniteClientConfiguration
             {
-                Endpoints = new List<string> { IPAddress.Loopback.ToString() },
+                Endpoints = new List<string> { $"{IPAddress.Loopback}:{port}" },
                 HeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
                 Logger = new ListLogger()
             };
