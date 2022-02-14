@@ -252,7 +252,8 @@ class ControlUtility:
     @staticmethod
     def __parse_tx_info(output):
         tx_info_pattern = re.compile(
-            "Near XID version: (?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+\\])\\n\\s+"
+            "Near XID version: "
+            "(?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+(, dataCenterId=\\d+)?\\])\\n\\s+"
             "Near XID version \\(UUID\\): (?P<xid>[^\\s]+)\\n\\s+"
             "Isolation: (?P<isolation>[^\\s]+)\\n\\s+"
             "Concurrency: (?P<concurrency>[^\\s]+)\\n\\s+"
