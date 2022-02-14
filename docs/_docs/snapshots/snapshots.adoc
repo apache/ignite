@@ -253,8 +253,9 @@ The snapshot procedure has some limitations that you should be aware of before u
 
 * Snapshotting of specific caches/tables is unsupported. You always create a full cluster snapshot.
 * Caches/tables that are not persisted in Ignite Persistence are not included into the snapshot.
-* Encrypted caches are not included in the snapshot.
+* Encrypted caches in the snapshot must be encrypted with the same master key.
 * You can have only one snapshotting operation running at a time.
+* The snapshot operation is prohibited during a master key change and/or cache group key change.
 * The snapshot procedure is interrupted if a server node leaves the cluster.
 
 If any of these limitations prevent you from using Apache Ignite, then select alternate snapshotting implementations for
