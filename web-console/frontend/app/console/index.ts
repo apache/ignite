@@ -22,15 +22,17 @@ import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
 
 
-import ConfigureState from './services/ConfigureState';
-import PageConfigure from './services/PageConfigure';
-import ConfigSelectionManager from './services/ConfigSelectionManager';
-import ConfigurationResource from './services/ConfigurationResource';
-import selectors from './store/selectors';
-import effects from './store/effects';
-import Clusters from './services/Clusters';
-import Caches from './services/Caches';
-import Models from './services/Models';
+import ConfigureState from '../configuration/services/ConfigureState';
+import PageConfigure from '../configuration/services/PageConfigure';
+import ConfigurationDownload from '../configuration/services/ConfigurationDownload';
+import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
+import SummaryZipper from '../configuration/services/SummaryZipper';
+import ConfigurationResource from '../configuration/services/ConfigurationResource';
+import selectors from '../configuration/store/selectors';
+import effects from '../configuration/store/effects';
+import Clusters from '../configuration/services/Clusters';
+import Caches from '../configuration/services/Caches';
+import Models from '../configuration/services/Models';
 import Services from './services/Services';
 
 import pageConsole from './components/page-configure';
@@ -69,12 +71,15 @@ import {
     modelsActionTypes,
     shortModelsActionTypes,
     refsReducer
-} from './store/reducer';
+} from 'app/configuration/store/reducer';
 
 import {errorState} from '../configuration/transitionHooks/errorState';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
 
-
+const JDBC_LINKS = {
+    Oracle: 'https://www.oracle.com/technetwork/database/application-development/jdbc/downloads/index.html',
+    DB2: 'http://www-01.ibm.com/support/docview.wss?uid=swg21363866'
+};
 
 registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
 
@@ -155,16 +160,17 @@ export default angular
         ConfigEffects.connect();
     }])
     .factory('configSelectionManager', ConfigSelectionManager)
-    
+    .service('IgniteSummaryZipper', SummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)
     .service('ConfigSelectors', selectors)
     .service('ConfigEffects', effects)    
     .service('PageConfigure', PageConfigure)
     .service('ConfigureState', ConfigureState)    
+    .service('ConfigurationDownload', ConfigurationDownload)
     .service('Clusters', Clusters)
     .service('Caches', Caches) 
     .service('Models', Models) 
     .service('Services', Services)       
-    //.directive('pcIsInCollection', isInCollection)    
-    //.directive('igniteUiAceTabs', uiAceTabs)
-    ;
+    .directive('pcIsInCollection', isInCollection)    
+    .directive('igniteUiAceTabs', uiAceTabs)
+    .constant('JDBC_LINKS', JDBC_LINKS);

@@ -17,8 +17,8 @@
 import get from 'lodash/get';
 import {Observable, combineLatest} from 'rxjs';
 import {pluck, switchMap, map} from 'rxjs/operators';
-import {default as ConfigureState} from '../../services/ConfigureState';
-import {default as ConfigSelectors} from '../../store/selectors';
+import {default as ConfigureState} from '../../../configuration/services/ConfigureState';
+import {default as ConfigSelectors} from '../../../configuration/store/selectors';
 import {UIRouter} from '@uirouter/angularjs';
 
 export default class PageConfigureController {

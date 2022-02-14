@@ -70,12 +70,10 @@
             <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
         </property>
 
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.console.discovery.IsolatedCommunicationSpi"/>
-        </property>
+        
 
         <property name="discoverySpi">
-            <bean class="org.apache.ignite.console.discovery.IsolatedDiscoverySpi"/>
+            <bean class="org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi"/>
         </property>
     </bean>
 </beans>

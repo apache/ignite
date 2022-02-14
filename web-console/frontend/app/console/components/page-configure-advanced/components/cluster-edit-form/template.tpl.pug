@@ -17,62 +17,7 @@ include /app/helpers/jade/mixins
 
 form(id='cluster' name='ui.inputForm' novalidate)
     .panel-group       
-        include ./templates/atomic
-        include ./templates/binary
-        include ./templates/cache-key-cfg        
-
-        //- Since ignite 2.3
-        include ./templates/client-connector
-
         
-        include ./templates/communication
-        include ./templates/connector
-        include ./templates/deployment
-
-        //- Since ignite 2.3
-        include ./templates/data-storage
-
-        
-
-        //- Since ignite 2.7
-        include ./templates/encryption
-
-        include ./templates/events
-        include ./templates/failover
-        
-        include ./templates/marshaller
-
-        //- Since ignite 2.0, deprecated in ignite 2.3
-        include ./templates/memory
-
-        include ./templates/misc
-        include ./templates/metrics
-
-        //- Since ignite 2.7
-        include ./templates/mvcc
-
-        //- Deprecated in ignite 2.1
-        include ./templates/odbc
-
-        //- Since ignite 2.1, deprecated in ignite 2.3
-        include ./templates/persistence
-
-        //- Since ignite 2.5
-        include ./templates/rebalance
-
-        //- Deprecated in ignite 2.3
-        include ./templates/sql-connector
-
-        include ./templates/service
-        
-
-        //- Removed in ignite 2.0
-        include ./templates/swap
-
-        include ./templates/thread
-        include ./templates/time
-        include ./templates/transactions
-        include ./templates/attributes
 
 .pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
     button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')

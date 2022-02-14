@@ -3,7 +3,6 @@ package org.apache.ignite.console.dto;
 import java.util.Properties;
 import java.util.UUID;
 
-import org.apache.ignite.console.websocket.TopologySnapshot;
 
 import lombok.Data;
 
@@ -14,8 +13,7 @@ import lombok.Data;
 public class DBInfoDto extends AbstractDto {
 	private UUID accId; // 用户ID	
 	private String driverCls;
-	private String jdbcUrl;
-	private String jndiName; // key
+	private String jdbcUrl;	
 	private String dbName; // 数据库名称
 	private String schemaName; // 默认的模式名称
 	private String userName;

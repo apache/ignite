@@ -47,8 +47,7 @@ import org.apache.ignite.console.agent.service.ClusterLoadDataService;
 import org.apache.ignite.console.agent.service.ClusterWriteDataService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
 import org.apache.ignite.console.agent.service.ClusterClearDataService;
-import org.apache.ignite.console.discovery.IsolatedCommunicationSpi;
-import org.apache.ignite.console.discovery.IsolatedDiscoverySpi;
+
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.IgnitionEx;
@@ -59,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -169,7 +169,7 @@ public class AgentClusterLauncher {
 
         DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
         dataStorageCfg.setMetricsEnabled(true);
-        dataStorageCfg.setStoragePath(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
+        
         dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
         dataStorageCfg.setSystemRegionMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
 
@@ -214,8 +214,7 @@ public class AgentClusterLauncher {
         IsolatedDiscoverySpi discoSpi = new IsolatedDiscoverySpi(); 
         cfg.setDiscoverySpi(discoSpi);
 
-        IsolatedCommunicationSpi commSpi = new IsolatedCommunicationSpi();
-        cfg.setCommunicationSpi(commSpi);
+        
         cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
         return cfg;

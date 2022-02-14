@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_IF_ABSENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis SET command handler.
@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        SET
+        SET,SETEXPIRE,SETNX,HSET,HSETNX
     );
 
     /** Value position in Redis message. */
@@ -96,6 +96,10 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
 
         restReq.command(CACHE_PUT);
+        GridRedisCommand cmd = msg.command();
+        if(cmd == SETNX || cmd == HSETNX) {
+        	restReq.command(CACHE_PUT_IF_ABSENT);
+        }
         restReq.cacheName(msg.cacheName());
 
         restReq.value(msg.aux(VAL_POS));

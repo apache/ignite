@@ -21,7 +21,7 @@ import {Menu} from 'app/types';
 
 import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
-import Caches from '../../../../services/Caches';
+import Caches from 'app/configuration/services/Caches';
 import FormUtilsFactory from 'app/services/FormUtils.service';
 
 export default class CacheEditFormController {

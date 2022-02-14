@@ -16,14 +16,18 @@ const cellTemplate = (state) => `
 import {UIRouter} from '@uirouter/angularjs';
 import {ShortCluster} from '../../types';
 import {IColumnDefOf} from 'ui-grid';
+import {dbPresets} from './dbPresets';
 import crudPage from './crud-list.json';
 
-export default class PageConfigureOverviewController {
+export default class PageDatasourceOverviewController {
     static $inject = [
         '$uiRouter',
         'ConfigureState',
         'DatasourceSelectors'        
     ];
+    
+    
+    
 
     constructor(
         private $uiRouter: UIRouter,
@@ -51,8 +55,15 @@ export default class PageConfigureOverviewController {
     $onInit() {
         
         this.amis = amisRequire('amis/embed');
+        let drivers = [];
+        for(let engine of dbPresets){
+            let option = {"label": engine.db, "value": engine.jdbcDriverClass}
+            drivers.push(option);
+        }
         
         let amisJSON = crudPage;
+        amisJSON.data = {};
+        amisJSON.data.drivers = drivers
         let amisScoped = this.amis.embed('#amis_root', amisJSON);
          
         

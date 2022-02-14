@@ -32,7 +32,7 @@ import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
 
-export default class PageConfigureBasicController {
+export default class PageDatasourceBasicController {
     form: ng.IFormController;
 
     static $inject = [
@@ -92,7 +92,7 @@ export default class PageConfigureBasicController {
                icon: 'checkmark'
            },
            {
-               text: 'Save and Download',
+               text: 'Save and Public',
                click: () => this.save(true),
                icon: 'download'
            }

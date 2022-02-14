@@ -28,12 +28,12 @@ const cellTemplate = (state) => `
     </div>
 `;
 
-import {default as ConfigureState} from '../../services/ConfigureState';
-import {default as ConfigSelectors} from '../../store/selectors';
-import {default as Clusters} from '../../services/Clusters';
+import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
+import {default as ConfigSelectors} from 'app/configuration/store/selectors';
+import {default as Clusters} from 'app/configuration/services/Clusters';
 
 
-import {confirmClustersRemoval} from '../../store/actionCreators';
+import {confirmClustersRemoval} from 'app/configuration/store/actionCreators';
 
 import {UIRouter} from '@uirouter/angularjs';
 import {ShortCluster} from '../../types';

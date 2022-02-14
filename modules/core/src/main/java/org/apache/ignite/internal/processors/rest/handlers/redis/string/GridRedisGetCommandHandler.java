@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.GET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis GET command handler.
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        GET
+        GET,HGET
     );
 
     /**
@@ -82,7 +82,7 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
         if (restRes.getResponse() == null) {
             // check if an atomic long with the key exists (related to incr/decr).
             IgniteAtomicLong l = ctx.grid().atomicLong(params.get(0), 0, false);
-
+            if(l==null) return GridRedisProtocolParser.nil();
             long val;
             try {
                 val = l.get();

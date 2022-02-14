@@ -95,7 +95,7 @@
         <module>modules/ml</module>
        
         <module>modules/ml/xgboost-model-parser</module>
-
+        <module>modules/ml/catboost-model-parser</module>
         
         <module>modules/elasticsearch-relay</module>
         <module>modules/mongodb-relay</module>
@@ -103,6 +103,7 @@
         
         
         <module>modules/opencensus</module>
+        <module>modules/control-utility</module>
         <module>modules/calcite</module> 
         
     </modules>
@@ -162,15 +163,7 @@
             </modules>
         </profile>
 
-        <profile>
-            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
-            <modules> <!-- sorted alphabetically -->
-                <module>modules/web-console</module>
-                <module>modules/web-console/web-agent</module>
-                
-            </modules>
-        </profile>
-
+       
         <profile>
             <id>test</id>
             <build>
@@ -239,10 +232,19 @@
                             <execution>
                                 <id>core-javadoc</id>
                                 <goals>
-                                    <goal>aggregate</goal>
+                                    <goal>aggregate-no-fork</goal>
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <!--
+                                    For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
+                                    parent configuration to -tagletpath javadoc parameter.
+                                    -->
+                                    <tagletArtifact>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>ignite-tools</artifactId>
+                                        <version>${project.version}</version>
+                                    </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
@@ -664,8 +666,7 @@
                                             <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -673,18 +674,16 @@
                                             <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
                                             <substitution expression="\1${new.ignite.version.fixed}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/configure.ac" />
-                                                <include name="**/configure.acrel" />
+                                                <include name="**/CMakeLists.txt" />
                                             </fileset>
                                         </replaceregexp>
 

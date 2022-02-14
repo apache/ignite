@@ -21,7 +21,7 @@ import _ from 'lodash';
 import {tap} from 'rxjs/operators';
 import {ShortCache} from '../../../../types';
 import {Menu} from 'app/types';
-import Clusters from '../../../../services/Clusters';
+import Clusters from 'app/configuration/services/Clusters';
 import LegacyUtils from 'app/services/LegacyUtils.service';
 
 import LegacyConfirm from 'app/services/Confirm.service';

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import {default as ConfigSelectors} from '../../../../store/selectors';
-import {default as ConfigureState} from '../../../../services/ConfigureState';
-import {advancedSaveCluster} from '../../../../store/actionCreators';
+import {default as ConfigSelectors} from 'app/configuration/store/selectors';
+import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
+import {advancedSaveCluster} from 'app/configuration/store/actionCreators';
 import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
 import {UIRouter} from '@uirouter/angularjs';
 

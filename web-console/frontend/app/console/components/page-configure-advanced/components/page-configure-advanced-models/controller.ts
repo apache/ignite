@@ -23,16 +23,16 @@ import hasIndexTemplate from './hasIndex.template.pug';
 import keyCellTemplate from './keyCell.template.pug';
 import valueCellTemplate from './valueCell.template.pug';
 
-import {removeClusterItems, advancedSaveModel} from '../../../../store/actionCreators';
+import {removeClusterItems, advancedSaveModel} from 'app/configuration/store/actionCreators';
 
-import {default as ConfigSelectors} from '../../../../store/selectors';
-import {default as ConfigureState} from '../../../../services/ConfigureState';
-import {default as Models} from '../../../../services/Models';
+import {default as ConfigSelectors} from 'app/configuration/store/selectors';
+import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
+import {default as Models} from 'app/configuration/services/Models';
 
 import {UIRouter, StateService} from '@uirouter/angularjs';
 import {ShortDomainModel, DomainModel, ShortCache} from '../../../../types';
 import {IColumnDefOf} from 'ui-grid';
-import ConfigSelectionManager from '../../../../services/ConfigSelectionManager';
+import ConfigSelectionManager from 'app/configuration/services/ConfigSelectionManager';
 
 export default class PageConfigureAdvancedModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];

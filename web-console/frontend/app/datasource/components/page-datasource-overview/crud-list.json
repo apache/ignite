@@ -7,6 +7,7 @@
     {
       "type": "button",
       "actionType": "drawer",
+      "icon": "fa fa-plus pull-left",
       "_link": "/datasource/new",
       "label": "新增数据源",
       "drawer": {
@@ -15,12 +16,13 @@
           "body": {        
             "type": "form",
             "name": "data-source-form",
-            "api": "post:https://3xsw4ap8wah59.cfc-execute.bj.baidubce.com/api/amis-mock/sample",
+            "api": "put:/api/v1/datasource",
             "body": [
               {
-                "type": "input-text",
+                "type": "select",
                 "name": "driverCls",
-                "label": "Engine",
+                "label": "驱动类",
+                "source": "${drivers}",
                 "required": true
               },
               {
@@ -30,24 +32,19 @@
                 "type": "input-text",
                 "name": "jdbcUrl",
                 "label": "jdbcUrl",
+                "description": "jdbc:dbtype://[host]:[port]/[database]",
+                "validations": {
+                   "minLength":10 
+                },
                 "required": true
               },
               {
                 "type": "divider"
-              },
-              {
-                "type": "input-text",
-                "name": "jndiName",
-                "label": "Jndi Name",
-                "required": true
-              },
-              {
-                "type": "divider"
-              },
+              },              
               {
                 "type": "input-text",
                 "name": "dbName",
-                "label": "dbName"
+                "label": "数据库名"
               },
               {
                 "type": "divider"
@@ -55,7 +52,7 @@
               {
                 "type": "input-text",
                 "name": "schemaName",
-                "label": "schemaName"
+                "label": "模式名"
               },             
               {
                 "type": "divider"
@@ -69,7 +66,7 @@
                 "type": "divider"
               },
               {
-                "type": "input-text",
+                "type": "input-password",
                 "name": "password",
                 "label": "password"
               }
@@ -105,36 +102,31 @@
         "className": "m-b-sm"
       },
       
-      "columns": [
-        {
-          "name": "engine",
-          "label": "Rendering engine",
-          "sortable": true
-        },
+      "columns": [        
         {
           "name": "id",
-          "label": "ID",
-          "width": 20,
+          "label": "UUID",          
           "sortable": true
         },
         {
-          "name": "browser",
-          "label": "Browser",
+          "name": "jdbcUrl",
+          "label": "jdbcUrl",
           "sortable": true
         },
         {
-          "name": "platform",
-          "label": "Platform(s)",
+          "name": "dbName",
+          "label": "dbName",
           "sortable": true
         },
         {
-          "name": "version",
-          "label": "Engine version"
+          "name": "schemaName",
+          "label": "schemaName",
+          "sortable": true
         },
         {
-          "name": "grade",
-          "label": "CSS grade"
-        },
+          "name": "userName",
+          "label": "userName"
+        },        
         {
           "type": "operation",
           "label": "操作",
@@ -148,14 +140,83 @@
                   "label": "查看",
                   "level": "primary",
                   "actionType": "link",
-                  "link": "/crud/${id}"
+                  "link": "/datasource/${id}/basic"
                 },
                 {
                   "type": "button",
                   "label": "修改",
                   "level": "info",
-                  "actionType": "link",
-                  "link": "/crud/${id}/edit"
+                   "icon": "fa fa-pencil",
+                   "tooltip": "编辑",
+                   "actionType": "drawer",
+                   "drawer": {
+                        "title": "修改数据源",
+                        "size": "lg",
+                        "body": {        
+                          "type": "form",
+                          "name": "data-source-form",
+                          "api": "put:/api/v1/datasource",
+                          "body": [
+                            {
+                              "type": "hidden",
+                              "name": "id"                             
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "driverCls",
+                              "label": "驱动类",
+                              "disabled": true,
+                              "required": true
+                            },
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "jdbcUrl",
+                              "label": "jdbcUrl",
+                              "description": "jdbc:dbtype://[host]:[port]/[database]",
+                              "validations": {
+                                 "minLength":10 
+                              },
+                              "required": true
+                            },
+                            {
+                              "type": "divider"
+                            },              
+                            {
+                              "type": "input-text",
+                              "name": "dbName",
+                              "label": "数据库名"
+                            },
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "schemaName",
+                              "label": "模式名"
+                            },             
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "userName",
+                              "label": "userName"
+                            },              
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-password",
+                              "name": "password",
+                              "label": "password"
+                            }
+                          ]
+                        }                     
+                  
+                  }
                 },
                 {
                   "type": "button",

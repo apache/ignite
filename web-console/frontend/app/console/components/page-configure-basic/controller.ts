@@ -24,14 +24,14 @@ import {
     removeClusterItems,
     basicSave,
     basicSaveAndDownload
-} from '../../store/actionCreators';
+} from 'app/configuration/store/actionCreators';
 
 import {Confirm} from 'app/services/Confirm.service';
 
-import ConfigureState from '../../services/ConfigureState';
-import ConfigSelectors from '../../store/selectors';
-import Caches from '../../services/Caches';
-import Clusters from '../../services/Clusters';
+import ConfigureState from '../../../configuration/services/ConfigureState';
+import ConfigSelectors from '../../../configuration/store/selectors';
+import Caches from '../../../configuration/services/Caches';
+import Clusters from '../../../configuration/services/Clusters';
 import IgniteVersion from 'app/services/Version.service';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';

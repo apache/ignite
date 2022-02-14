@@ -44,14 +44,14 @@ form(novalidate name=form)
            ng-click='$ctrl.confirmAndRestart()'
            ng-show='$ctrl.$scope.status!="started"'
         ) 
-           | Start Cluster
+           | Test Datasource
   
         button.btn-ignite.btn-ignite--link-success(
             type='button'
             ng-click='$ctrl.confirmAndStop()'
             ng-show='$ctrl.$scope.status=="started"'
         ) 
-           | Stop Cluster
+           | Disconnect Datasource
 
         button.btn-ignite.btn-ignite--link-success(
             type='button'

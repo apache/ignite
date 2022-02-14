@@ -21,7 +21,7 @@ import {default as ConfigureState} from '../../../configuration/services/Configu
 import {default as DatasourceSelectors} from '../../store/selectors';
 import {UIRouter} from '@uirouter/angularjs';
 
-export default class PageConfigureController {
+export default class PageDatasourceController {
     static $inject = ['$uiRouter', 'ConfigureState', 'DatasourceSelectors'];
 
     constructor(
@@ -43,7 +43,7 @@ export default class PageConfigureController {
         const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
 
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
-            return `${isNew ? 'Create' : 'Edit'} DataSource configuration ${isNew ? '' : `‘${get(cluster, 'name')}’`}`;
+            return `${isNew ? 'Create' : 'Edit'} DataSource configuration ${isNew ? '' : `‘${get(cluster, 'dbName')}’`}`;
         });
     }
 
