@@ -116,8 +116,9 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
         /**
          * @param searchRow Search row.
+         * @param filter Scan condition.
          */
-        IndexScan(Supplier<Row> searchRow, Predicate<Row> filter) {
+        IndexScan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
             this.searchRow = searchRow;
             this.filter = filter;
         }
