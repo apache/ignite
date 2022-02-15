@@ -1,14 +1,13 @@
 # name: test/sql/subquery/any_all/test_simple_not_in.test
 # description: Test subqueries with (NOT) IN clause
 # group: [any_all]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15584
 
 statement ok
 PRAGMA enable_verification
 
 # scalar subquery
 query I
-SELECT 1 AS one WHERE 1 IN (SELECT 1);
+SELECT 1 AS one FROM (VALUES (NULL)) WHERE 1 IN (SELECT 1);
 ----
 1
 
