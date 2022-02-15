@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].",
                 arg.GetType().FullName);
 
-            Assert.IsTrue(clientEx.Message.StartsWith(expected));
+            Assert.AreEqual(expected, clientEx.Message);
         }
 
         /// <summary>
@@ -467,8 +467,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
 
-            Assert.IsTrue(clientEx.Message.StartsWith("Failed to resolve Java class 'org.apache.ignite.platform." +
-                "PlatformComputeJavaBinarizable' in .NET [platformId=1, typeId=-422570294]."));
+            Assert.AreEqual("Failed to resolve Java class 'org.apache.ignite.platform.PlatformComputeJavaBinarizable'" +
+                            " in .NET [platformId=1, typeId=-422570294].", clientEx.Message);
         }
 
         /// <summary>

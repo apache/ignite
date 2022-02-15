@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var clientEx = (IgniteClientException)ex.GetBaseException();
 
                 Assert.AreEqual(ClientStatusCode.SecurityViolation, clientEx.StatusCode);
-                Assert.IsTrue(clientEx.Message.StartsWith("Client is not authorized to perform this operation"));
+                Assert.AreEqual("Client is not authorized to perform this operation", clientEx.Message);
             }
         }
 

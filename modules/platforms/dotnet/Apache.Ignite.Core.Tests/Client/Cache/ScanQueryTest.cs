@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }));
 
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry).GetAll());
-                Assert.IsTrue(ex.Message.StartsWith("foo"));
+                Assert.AreEqual("foo", ex.Message);
             }
         }
 #endif

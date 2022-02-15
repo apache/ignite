@@ -38,7 +38,7 @@ public class ThinClientConfiguration {
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
     /** If {@code true} sends a server exception stack trace to the client side. */
-    private boolean sendServerExcStackTraceToClient = true;
+    private boolean sendServerExcStackTraceToClient;
 
     /**
      * Creates thin-client configuration with all default values.

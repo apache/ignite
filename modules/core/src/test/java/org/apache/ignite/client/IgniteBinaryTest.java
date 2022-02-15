@@ -166,26 +166,28 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
 
                 try {
                     cache.put(1, new ThinBinaryValue());
+
+                    fail();
                 }
                 catch (Exception e) {
-                    assertTrue(X.getFullStackTrace(e).contains(castErr));
+                    assertFalse(X.getFullStackTrace(e).contains(castErr));
                 }
 
                 ClientProcessorMXBean serverMxBean =
                     getMxBean(ign.name(), "Clients", ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
-                serverMxBean.showFullStackOnClientSide(false);
+                serverMxBean.showFullStackOnClientSide(true);
 
                 try {
                     cache.put(1, new ThinBinaryValue());
-
-                    assert false;
                 }
                 catch (Exception e) {
-                    assertFalse(X.getFullStackTrace(e).contains(castErr));
+                    assertTrue(X.getFullStackTrace(e).contains(castErr));
                 }
             }
         }
+
+        assertTrue(lsnrCast.check());
     }
 
     /**
