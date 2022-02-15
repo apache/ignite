@@ -2015,6 +2015,41 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE = "IGNITE_EXPERIMENTAL_SQL_ENGINE";
 
     /**
+     * Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes",
+        type = Integer.class)
+    public static final String IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE = "IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE";
+
+    /**
+     * Calcite-based SQL engine. Batch size (count of rows) for cache modify execution nodes.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for cache modify execution nodes",
+        type = Integer.class)
+    public static final String IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE = "IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE";
+
+    /**
+     * Calcite-based SQL engine. Batch size (count of rows) for outgoing data message.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Batch size (count of rows) for outgoing data message",
+        type = Integer.class)
+    public static final String IGNITE_CALCITE_EXEC_IO_BATCH_SIZE = "IGNITE_CALCITE_EXEC_IO_BATCH_SIZE";
+
+    /**
+     * Calcite-based SQL engine. Maximum number of pending data messages for each outbox.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Maximum number of pending data messages for each outbox",
+        type = Integer.class)
+    public static final String IGNITE_CALCITE_EXEC_IO_BATCH_CNT = "IGNITE_CALCITE_EXEC_IO_BATCH_CNT";
+
+    /**
+     * Calcite-based SQL engine. Pretty print serialized to JSON plan, when sending it to remote nodes.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Pretty print serialized to JSON plan, when sending it to " +
+        "remote nodes")
+    public static final String IGNITE_CALCITE_REL_JSON_PRETTY_PRINT = "IGNITE_CALCITE_REL_JSON_PRETTY_PRINT";
+
+    /**
      * Count of rows, being processed within a single checkpoint lock when indexes are rebuilt.
      * The default value is {@link SchemaIndexCachePartitionWorker#DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE}.
      */

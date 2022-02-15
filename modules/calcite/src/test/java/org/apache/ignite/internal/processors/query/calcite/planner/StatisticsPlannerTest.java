@@ -29,12 +29,12 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.h2.value.ValueBoolean;
@@ -214,7 +214,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         assertNotNull(idxScan);
         assertEquals("TBL1_T1C8LONG", idxScan.indexName());
 
-        tbl1.setStatistics(new IgniteStatisticsImpl((GridH2Table)null));
+        tbl1.setStatistics(new IgniteStatisticsImpl((CacheTableDescriptor)null));
 
         IgniteRel phys2 = physicalPlan(sql, publicSchema);
         IgniteIndexScan idxScan2 = findFirstNode(phys2, byClass(IgniteIndexScan.class));

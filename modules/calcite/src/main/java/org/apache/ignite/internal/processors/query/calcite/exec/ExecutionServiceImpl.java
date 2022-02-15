@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -79,11 +81,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -484,8 +486,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return executePlan(insQry, dmlPlan);
         }
-        else
-            return H2Utils.zeroCursor();
+        else {
+            QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.singletonList(
+                Collections.singletonList(0L)), null, false, false);
+
+            IgniteTypeFactory typeFactory = qry.context().typeFactory();
+
+            resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
+                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+
+            return resCur;
+        }
     }
 
     /** */

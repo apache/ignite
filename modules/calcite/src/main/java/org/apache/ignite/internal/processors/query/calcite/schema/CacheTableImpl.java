@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,9 +59,6 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
-
-    /** */
-    private volatile GridH2Table tbl;
 
     /** */
     private volatile boolean idxRebuildInProgress;
@@ -94,10 +90,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
         if (statistics != null)
             return new IgniteStatisticsImpl(statistics);
 
-        if (tbl == null)
-            tbl = idx.schemaManager().dataTable(schemaName, tblName);
-
-        return new IgniteStatisticsImpl(tbl);
+        return new IgniteStatisticsImpl(desc);
     }
 
     /** {@inheritDoc} */
