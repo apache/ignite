@@ -60,6 +60,9 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
+    /** */
+    private volatile boolean idxRebuildInProgress;
+
     /**
      * @param ctx Kernal context.
      * @param desc Table descriptor.
@@ -149,6 +152,16 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public void removeIndex(String idxName) {
         indexes.remove(idxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void markIndexRebuildInProgress(boolean mark) {
+        idxRebuildInProgress = mark;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return idxRebuildInProgress;
     }
 
     /** {@inheritDoc} */

@@ -93,6 +93,22 @@ public interface SchemaChangeListener {
     public void onIndexDropped(String schemaName, String tblName, String idxName);
 
     /**
+     * Callback on index rebuild started for all indexes in the table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     */
+    public void onIndexRebuildStarted(String schemaName, String tblName);
+
+    /**
+     * Callback on index rebuild finished for all indexes in the table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     */
+    public void onIndexRebuildFinished(String schemaName, String tblName);
+
+    /**
      * Callback on function creation.
      *
      * @param schemaName Schema name.

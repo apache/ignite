@@ -2073,21 +2073,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
-        markIndexRebuild(cctx.name(), val);
-    }
-
-    /**
-     * Mark tables for index rebuild, so that their indexes are not used.
-     *
-     * @param cacheName Cache name.
-     * @param val Value.
-     */
-    private void markIndexRebuild(String cacheName, boolean val) {
-        for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cacheName)) {
-            assert tblDesc.table() != null;
-
-            tblDesc.table().markRebuildFromHashInProgress(val);
-        }
+        schemaMgr.markIndexRebuild(cctx.name(), val);
     }
 
     /**

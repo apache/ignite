@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNes
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
@@ -67,6 +68,7 @@ import org.junit.runners.Suite;
     CorrelatedSubqueryPlannerTest.class,
     JoinWithUsingPlannerTest.class,
     ProjectFilterScanMergePlannerTest.class,
+    IndexRebuildPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

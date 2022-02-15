@@ -266,6 +266,28 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
+    @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+        assert schema != null;
+
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        assert tbl != null;
+
+        tbl.markIndexRebuildInProgress(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+        assert schema != null;
+
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        assert tbl != null;
+
+        tbl.markIndexRebuildInProgress(false);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, Method method) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 

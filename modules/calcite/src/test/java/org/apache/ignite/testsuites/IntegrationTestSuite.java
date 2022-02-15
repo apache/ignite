@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CalciteEr
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
@@ -97,6 +98,7 @@ import org.junit.runners.Suite;
     UserDefinedFunctionsIntegrationTest.class,
     CorrelatesIntegrationTest.class,
     SystemViewsIntegrationTest.class,
+    IndexRebuildIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
