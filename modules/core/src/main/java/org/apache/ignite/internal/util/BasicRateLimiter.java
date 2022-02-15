@@ -108,6 +108,13 @@ public class BasicRateLimiter {
     }
 
     /**
+     * @return {@code True} if the rate is not limited.
+     */
+    public boolean isUnlimited() {
+        return unlimited;
+    }
+
+    /**
      * Acquires the given number of permits from this {@code RateLimiter}, blocking until the request
      * can be granted. Tells the amount of time slept, if any.
      *

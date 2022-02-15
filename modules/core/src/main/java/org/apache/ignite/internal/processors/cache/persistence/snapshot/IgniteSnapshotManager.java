@@ -91,6 +91,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -115,7 +116,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.LimitedFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.LimitedRateFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -131,6 +132,9 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -164,6 +168,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -203,6 +208,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
@@ -337,7 +343,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private File tmpWorkDir;
 
     /** Factory to working with delta as file storage. */
-    private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+    private volatile LimitedRateFileIOFactory ioFactory = new LimitedRateFileIOFactory(new RandomAccessFileIOFactory());
 
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
@@ -362,6 +368,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
+
+    /** Snapshot transfer rate limit in KB/s. */
+    private final DistributedIntegerProperty snapshotTransferRate = detachedIntegerProperty("snapshotTransferRate");
 
     /**
      * @param ctx Kernal context.
@@ -428,8 +437,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
 
-        if (ctx.config().getSnapshotMaxTransferRate() > 0)
-            ioFactory(new LimitedFileIOFactory(ioFactory, ctx.config().getSnapshotMaxTransferRate()));
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
+            new DistributedConfigurationLifecycleListener() {
+                @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                    snapshotTransferRate.addListener((name, oldVal, newVal) -> {
+                        if (!Objects.equals(oldVal, newVal)) {
+                            if (newVal < 0) {
+                                log.warning("The snapshot transfer rate cannot be negative, " +
+                                    "the value '" + newVal + "' is ignored.");
+
+                                return;
+                            }
+
+                            ioFactory.setRate(newVal * 1024);
+
+                            if (log.isInfoEnabled()) {
+                                log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
+                                    "has been changed from '" + oldVal + "' to '" + newVal + "' KB/s."));
+                            }
+                        }});
+
+                    dispatcher.registerProperty(snapshotTransferRate);
+                }
+
+                @Override public void onReadyToWrite() {
+                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate, 0, log);
+                }
+            }
+        );
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
@@ -1811,7 +1846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     public void ioFactory(FileIOFactory ioFactory) {
-        this.ioFactory = ioFactory;
+        this.ioFactory = new LimitedRateFileIOFactory(ioFactory);
     }
 
     /**

@@ -150,7 +150,6 @@ import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
@@ -2937,20 +2936,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             if (!cfg.getSnapshotPath().equals(IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY))
                 U.warn(log, "Setting the snapshot path has no effect on the client mode");
 
-            if (cfg.getSnapshotMaxTransferRate() != IgniteConfiguration.DFLT_SNAPSHOT_RATE_LIMIT_KBPS)
-                U.warn(log, "Setting the snapshot transfer rate limit has no effect on the client mode");
-
             return;
         }
 
         if (cfg.getSnapshotThreadPoolSize() < 1) {
             throw new IgniteCheckedException("Snapshot thread pool size minimal allowed value is 1. " +
                 "Change IgniteConfiguration.snapshotThreadPoolSize property before next start.");
-        }
-
-        if (cfg.getSnapshotMaxTransferRate() < 0) {
-            throw new IgniteCheckedException("Snapshot max transfer rate cannot be negative. " +
-                "Change IgniteConfiguration.snapshotMaxTransferRate property before next start.");
         }
     }
 
