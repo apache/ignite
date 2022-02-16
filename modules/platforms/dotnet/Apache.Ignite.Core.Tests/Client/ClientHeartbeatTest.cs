@@ -52,11 +52,15 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDoesNotDisconnectIdleClientWithHeartbeats()
         {
-            using var client = GetClient(enableHeartbeats: true, 1500);
+            using var client = GetClient(enableHeartbeats: true, heartbeatInterval: 1500);
 
             Assert.AreEqual(1500, client.GetConfiguration().DefaultHeartbeatInterval.TotalMilliseconds);
             Assert.IsTrue(client.GetConfiguration().EnableHeartbeats);
             Assert.AreEqual(1, client.GetCacheNames().Count);
+
+            StringAssert.Contains(
+                "Server-side IdleTimeout is 2000ms, using 1/3 of it as heartbeat interval: 00:00:00.6660000",
+                GetLogString(client));
 
             Thread.Sleep(IdleTimeout * 3);
 
@@ -69,11 +73,9 @@ namespace Apache.Ignite.Core.Tests.Client
             using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
             using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 1);
 
-            var logger = (ListLogger)client.GetConfiguration().Logger;
-            var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
-
-            StringAssert.Contains("Server-side IdleTimeout is not set, " +
-                                  "using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:00:30", logs);
+            StringAssert.Contains(
+                "Server-side IdleTimeout is not set, " +
+                "using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:00:30", GetLogString(client));
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -115,6 +117,13 @@ namespace Apache.Ignite.Core.Tests.Client
             }
 
             return Ignition.StartClient(cfg);
+        }
+
+        private static string GetLogString(IIgniteClient client)
+        {
+            var logger = (ListLogger)client.GetConfiguration().Logger;
+
+            return string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
         }
     }
 }
