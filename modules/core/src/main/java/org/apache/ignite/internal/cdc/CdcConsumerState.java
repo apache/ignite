@@ -30,7 +30,7 @@ import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -72,12 +72,12 @@ public class CdcConsumerState {
      *
      * @param pos WAL pointer and index of {@link DataEntry} inside {@link DataRecord}.
      */
-    public void save(T2<WALPointer, Integer> pos) throws IOException {
+    public void save(CdcState pos) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
-        buf.putLong(pos.get1().index());
-        buf.putInt(pos.get1().fileOffset());
-        buf.putInt(pos.get2());
+        buf.putLong(pos.pointer().index());
+        buf.putInt(pos.pointer().fileOffset());
+        buf.putInt(pos.entryIndex());
         buf.flip();
 
         try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
@@ -93,7 +93,7 @@ public class CdcConsumerState {
      * Loads CDC state from file.
      * @return Saved state.
      */
-    public T2<WALPointer, Integer> load() {
+    public CdcState load() {
         if (!Files.exists(state))
             return null;
 
@@ -108,11 +108,41 @@ public class CdcConsumerState {
             int offset = buf.getInt();
             int entryIdx = buf.getInt();
 
-            return new T2<>(new WALPointer(idx, offset, 0), entryIdx);
+            return new CdcState(new WALPointer(idx, offset, 0), entryIdx);
         }
         catch (IOException e) {
             throw new IgniteException("Failed to read state [file=" + state + ']', e);
         }
 
+    }
+
+    /** Сurrent offset in WAL segment and {@link DataEntry} index inside {@link DataRecord}. */
+    public static class CdcState {
+        /** WAL pointer. */
+        private final WALPointer ptr;
+
+        /** Data entry index. */
+        private final int entryIdx;
+
+        /** */
+        public CdcState(WALPointer ptr, int entryIdx) {
+            this.ptr = ptr;
+            this.entryIdx = entryIdx;
+        }
+
+        /** @return WAL pointer. */
+        public WALPointer pointer() {
+            return ptr;
+        }
+
+        /** @return {@link DataEntry} index inside {@link DataRecord}. */
+        public int entryIndex() {
+            return entryIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CdcState.class, this);
+        }
     }
 }
