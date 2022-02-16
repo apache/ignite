@@ -66,16 +66,16 @@ public class IpcSharedMemoryNativeLoaderSelfTest {
      * @throws IOException If an I/O error occurs.
      */
     private void readStreams(Process proc) throws IOException {
-        BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-
         String s;
 
-        while ((s = stdOut.readLine()) != null)
-            System.out.println("OUT>>>>>> " + s);
+        try (BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+            while ((s = stdOut.readLine()) != null)
+                System.out.println("OUT>>>>>> " + s);
+        }
 
-        BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-
-        while ((s = errOut.readLine()) != null)
-            System.out.println("ERR>>>>>> " + s);
+        try (BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+            while ((s = errOut.readLine()) != null)
+                System.out.println("ERR>>>>>> " + s);
+        }
     }
 }
