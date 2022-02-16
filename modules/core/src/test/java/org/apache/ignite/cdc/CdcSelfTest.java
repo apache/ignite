@@ -495,7 +495,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         checkWalDataRecord(srv, recCnt, entriesPerRec);
 
         // Commit each time a few events and restart.
-        for (int commitedCnt = 0; commitedCnt < totalEntries; commitedCnt += commitCnt) {
+        for (int commitedCnt = 0; commitedCnt < totalEntries;) {
             // Commit a few events and stop CDC app.
             BatchCommitConsumer batchCnsmr = new BatchCommitConsumer(commitCnt);
 
@@ -509,6 +509,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             assertTrue(batchCnsmr.stopped());
 
+            commitedCnt += commitCnt;
+
             // Restart CDC app and continue listening event since commited.
             BatchCommitConsumer cnsmr = new BatchCommitConsumer(0);
 
@@ -516,7 +518,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             IgniteInternalFuture<?> fut2 = runAsync(cdc);
 
-            waitForSize(totalEntries - commitedCnt - commitCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+            waitForSize(totalEntries - commitedCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
             fut2.cancel();
 
@@ -527,7 +529,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             keysBeforeCommit.forEach(key -> assertFalse(keysAfterCommit.contains(key)));
 
             assertEquals(commitCnt, keysBeforeCommit.size());
-            assertEquals(totalEntries - commitedCnt, keysBeforeCommit.size() + keysAfterCommit.size());
+            assertEquals(totalEntries - commitedCnt, keysAfterCommit.size());
         }
     }
 
