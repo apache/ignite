@@ -66,6 +66,11 @@ namespace Apache.Ignite.Core.Client
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
+        /// Default value for <see cref="DefaultHeartbeatInterval"/>.
+        /// </summary>
+        public static readonly TimeSpan DefaultDefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
         /// </summary>
         public IgniteClientConfiguration()
@@ -135,7 +140,8 @@ namespace Apache.Ignite.Core.Client
 
             RetryLimit = cfg.RetryLimit;
             RetryPolicy = cfg.RetryPolicy;
-            HeartbeatInterval = cfg.HeartbeatInterval;
+            EnableHeartbeats = cfg.EnableHeartbeats;
+            DefaultHeartbeatInterval = cfg.DefaultHeartbeatInterval;
         }
 
         /// <summary>
@@ -269,17 +275,28 @@ namespace Apache.Ignite.Core.Client
         public int RetryLimit { get; set; }
 
         /// <summary>
-        /// Sets the heartbeat message interval.
-        /// <para />
-        /// Default is <see cref="TimeSpan.Zero"/> - heartbeats are disabled.
+        /// Gets or sets a value indicating whether heartbeats are enabled.
         /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
         /// <para />
-        /// Can be used together with server-side idle timeout (<see cref="ClientConnectorConfiguration.IdleTimeout"/>)
-        /// to detect half-open connections on the server.
+        /// See also <see cref="DefaultHeartbeatInterval"/>.
         /// </summary>
-        public TimeSpan HeartbeatInterval { get; set; }
+        public bool EnableHeartbeats { get; set; }
+
+        /// <summary>
+        /// Sets the default heartbeat message interval to be used when it can not be determined automatically.
+        /// Client tries to retrieve <see cref="ClientConnectorConfiguration.IdleTimeout"/> from server and,
+        /// when successful, sets the heartbeat interval to IdleTimeout / 3.
+        /// When <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not set on the server,
+        /// this property value is used.
+        /// <para />
+        /// Default is <see cref="DefaultDefaultHeartbeatInterval"/>.
+        /// <para />
+        /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+        /// to keep the connection alive and detect potential half-open state.
+        /// </summary>
+        public TimeSpan DefaultHeartbeatInterval { get; set; } = DefaultDefaultHeartbeatInterval;
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

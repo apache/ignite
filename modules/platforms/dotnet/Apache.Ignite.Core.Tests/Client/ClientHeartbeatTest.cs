@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests client heartbeat functionality (<see cref="IgniteClientConfiguration.HeartbeatInterval"/>).
+    /// Tests client heartbeat functionality (<see cref="IgniteClientConfiguration.DefaultHeartbeatInterval"/>).
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
     public class ClientHeartbeatTest : ClientTestBase
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var heartbeatInterval = IdleTimeout / 4;
             using var client = GetClient(heartbeatInterval);
 
-            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().HeartbeatInterval.TotalMilliseconds);
+            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().DefaultHeartbeatInterval.TotalMilliseconds);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
             Thread.Sleep(IdleTimeout * 3);
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // Keep default client alive.
                 // ReSharper disable once PossibleLossOfFraction
-                HeartbeatInterval = TimeSpan.FromMilliseconds(IdleTimeout / 4)
+                DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(IdleTimeout / 4)
             };
         }
 
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new List<string> { $"{IPAddress.Loopback}:{port}" },
-                HeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
+                DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
                 Logger = new ListLogger()
             };
 

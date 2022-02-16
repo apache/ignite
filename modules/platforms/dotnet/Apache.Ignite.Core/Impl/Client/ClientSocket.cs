@@ -176,27 +176,24 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _features = Handshake(clientConfiguration, ServerVersion);
 
-            if (_features.HasFeature(ClientBitmaskFeature.Heartbeat) &&
-                clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
+            if (clientConfiguration.EnableHeartbeats)
             {
-                _heartbeatInterval = clientConfiguration.HeartbeatInterval;
-
-                var serverIdleTimeout = TimeSpan.FromMilliseconds(
-                    DoOutInOp(ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong()));
-
-                if (serverIdleTimeout > TimeSpan.Zero && _heartbeatInterval > serverIdleTimeout)
+                if (_features.HasFeature(ClientBitmaskFeature.Heartbeat))
                 {
-                    _logger.Warn("Client heartbeat interval is greater than server idle timeout " +
-                                 $"({_heartbeatInterval} > {serverIdleTimeout}). " +
-                                 "Server will disconnect idle client.");
-                }
+                    var serverIdleTimeoutMs = DoOutInOp(
+                        ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
 
-                _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
-                    period: TimeSpan.FromMilliseconds(-1));
-            }
-            else if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
-            {
-                _logger.Warn("Custom HeartbeatInterval is configured, but server does not support heartbeat feature.");
+                    _heartbeatInterval = serverIdleTimeoutMs > 0
+                        ? TimeSpan.FromMilliseconds((long)(serverIdleTimeoutMs / 3))
+                        : clientConfiguration.DefaultHeartbeatInterval;
+
+                    _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
+                        period: TimeSpan.FromMilliseconds(-1));
+                }
+                else
+                {
+                    _logger.Warn("Heartbeats are enabled, but server does not support heartbeat feature.");
+                }
             }
 
             // Check periodically if any request has timed out.
