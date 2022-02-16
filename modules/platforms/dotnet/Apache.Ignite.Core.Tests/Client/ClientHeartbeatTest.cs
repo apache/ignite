@@ -92,8 +92,7 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
                 // Keep default client alive.
-                // ReSharper disable once PossibleLossOfFraction
-                DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(IdleTimeout / 4)
+                EnableHeartbeats = true
             };
         }
 
