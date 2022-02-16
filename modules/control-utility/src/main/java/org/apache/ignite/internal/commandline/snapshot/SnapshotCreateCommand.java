@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.SYNC;
 
 /**
- * Snapshot create sub-command.
+ * Sub-command to create a cluster snapshot.
  */
 public class SnapshotCreateCommand extends SnapshotSubcommand {
     /** Default constructor. */
@@ -51,6 +51,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
             if (option == null)
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". ");
 
+            // The snapshot create command currently supports only one optional argument.
             assert option == SYNC;
 
             sync = true;

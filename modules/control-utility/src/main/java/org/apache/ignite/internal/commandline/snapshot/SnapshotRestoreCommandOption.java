@@ -65,7 +65,7 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
         return desc;
     }
 
-    /** {@inheritDoc} */
+    /** @return Argument name. */
     @Override public String toString() {
         return argName();
     }

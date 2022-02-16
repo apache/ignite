@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
  * Snapshot sub-command base.
  */
 public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
-    /** Snapshot argument name. */
+    /** Snapshot name argument. */
     protected static final String SNAPSHOT_NAME_ARG = "snapshot_name";
 
     /** Command argument. */

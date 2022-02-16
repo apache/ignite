@@ -23,7 +23,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 
 /**
- * Snapshot cancel sub-command.
+ * Sub-command to cancel running snapshot.
  */
 public class SnapshotCancelCommand extends SnapshotSubcommand {
     /** Default constructor. */

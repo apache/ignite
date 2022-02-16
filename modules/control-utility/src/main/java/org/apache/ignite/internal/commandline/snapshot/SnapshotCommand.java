@@ -35,12 +35,12 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
  */
 public class SnapshotCommand extends AbstractCommand<Object> {
     /** Snapshot sub-command to execute. */
-    private SnapshotSubcommands cmd;
+    private SnapshotSubcommand cmd;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try {
-            return cmd.subCommand().execute(clientCfg, log);
+            return cmd.execute(clientCfg, log);
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -52,14 +52,14 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public Object arg() {
-        return cmd == null ? null : cmd.subCommand().arg();
+        return cmd.arg();
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        cmd = SnapshotSubcommands.of(argIter.nextArg("Expected snapshot action."));
+        cmd = SnapshotSubcommands.of(argIter.nextArg("Expected snapshot action.")).subCommand();
 
-        cmd.subCommand().parseArguments(argIter);
+        cmd.parseArguments(argIter);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +70,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return cmd.subCommand().confirmationPrompt();
+        return cmd.confirmationPrompt();
     }
 
     /** {@inheritDoc} */

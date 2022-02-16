@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCom
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
 
 /**
- * Snapshot restore sub-command.
+ * Sub-command to restore snapshot.
  */
 public class SnapshotRestoreCommand extends SnapshotSubcommand {
     /** Default constructor. */

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 
 /**
- * Snapshot check sub-command.
+ * Sub-command to check snapshot.
  */
 public class SnapshotCheckCommand extends SnapshotSubcommand {
     /** Default constructor. */
@@ -35,9 +35,9 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        Object res = super.execute(clientCfg, log);
+        IdleVerifyResultV2 res = (IdleVerifyResultV2)super.execute(clientCfg, log);
 
-        ((IdleVerifyResultV2)res).print(log::info, true);
+        res.print(log::info, true);
 
         return res;
     }

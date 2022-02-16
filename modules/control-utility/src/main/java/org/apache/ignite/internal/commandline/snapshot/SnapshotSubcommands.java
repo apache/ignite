@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Set of snapshot sub-commands.
  *
  * @see SnapshotCommand
+ * @see SnapshotSubcommand
  */
 public enum SnapshotSubcommands {
     /** Sub-command to create a cluster snapshot. */
@@ -38,39 +38,39 @@ public enum SnapshotSubcommands {
     /** Sub-command to restore snapshot. */
     RESTORE(new SnapshotRestoreCommand());
 
-    /** Sub command. */
-    private final SnapshotSubcommand subcmd;
+    /** Sub-command. */
+    private final SnapshotSubcommand cmd;
 
-    /** @param subcmd Sub command. */
-    SnapshotSubcommands(SnapshotSubcommand subcmd) {
-        this.subcmd = subcmd;
+    /** @param cmd Sub-command. */
+    SnapshotSubcommands(SnapshotSubcommand cmd) {
+        this.cmd = cmd;
     }
 
     /**
-     * @param text Command text (case insensitive).
-     * @return Command for the text. {@code Null} if there is no such command.
+     * @param name Command name (case insensitive).
+     * @return Command for the specified name.
      */
-    @Nullable public static SnapshotSubcommands of(String text) {
+    public static SnapshotSubcommands of(String name) {
         SnapshotSubcommands[] cmds = values();
 
         for (SnapshotSubcommands cmd : cmds) {
-            if (cmd.subCommand().name().equalsIgnoreCase(text))
+            if (cmd.subCommand().name().equalsIgnoreCase(name))
                 return cmd;
         }
 
         throw new IllegalArgumentException(
-            "Invalid argument: " + text + ". One of " + F.asList(cmds) + " is expected.");
+            "Invalid argument: " + name + ". One of " + F.asList(cmds) + " is expected.");
     }
 
     /**
-     * @return Sub command.
+     * @return Sub-command.
      */
     public SnapshotSubcommand subCommand() {
-        return subcmd;
+        return cmd;
     }
 
-    /** {@inheritDoc} */
+    /** @return Sub-command name. */
     @Override public String toString() {
-        return subcmd.name();
+        return cmd.name();
     }
 }
