@@ -3152,7 +3152,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Cache exists.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
-        assertContains(log, testOut.toString(), "Unable to restore cache group, directory is not empty");
+        assertContains(log, testOut.toString(), "Unable to restore cache group: directory is not empty. " +
+            "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
 
         ig.cache(cacheName).destroy();
         awaitPartitionMapExchange();
