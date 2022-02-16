@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
         {
-            using var client = GetClient(heartbeatInterval: 0);
+            using var client = GetClient(enableHeartbeats: false);
 
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
@@ -51,10 +52,10 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestServerDoesNotDisconnectIdleClientWithHeartbeats()
         {
-            var heartbeatInterval = IdleTimeout / 4;
-            using var client = GetClient(heartbeatInterval);
+            using var client = GetClient(enableHeartbeats: true, 1500);
 
-            Assert.AreEqual(heartbeatInterval, client.GetConfiguration().DefaultHeartbeatInterval.TotalMilliseconds);
+            Assert.AreEqual(1500, client.GetConfiguration().DefaultHeartbeatInterval.TotalMilliseconds);
+            Assert.IsTrue(client.GetConfiguration().EnableHeartbeats);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
             Thread.Sleep(IdleTimeout * 3);
@@ -63,29 +64,21 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         [Test]
-        public void TestHeartbeatIntervalLongerThanIdleTimeoutLogsWarning()
+        public void TestDefaultZeroIdleTimeoutUsesDefaultHeartbeatInterval()
         {
-            using var client = GetClient(heartbeatInterval: IdleTimeout * 3);
+            var cfg = TestUtils.GetTestConfiguration(name: "2");
+            cfg.ClientConnectorConfiguration = new ClientConnectorConfiguration
+            {
+                IdleTimeout = TimeSpan.Zero
+            };
+
+            using var ignite = Ignition.Start(cfg);
+            using var client = GetClient(true);
 
             var logger = (ListLogger)client.GetConfiguration().Logger;
             var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
 
-            StringAssert.Contains(
-                "Client heartbeat interval is greater than server idle timeout (00:00:06 > 00:00:02). " +
-                "Server will disconnect idle client.",
-                logs);
-        }
-
-        [Test]
-        public void TestDefaultZeroIdleTimeoutDoesNotLogWarning()
-        {
-            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
-            using var client = GetClient(heartbeatInterval: IdleTimeout * 3, IgniteClientConfiguration.DefaultPort + 1);
-
-            var logger = (ListLogger)client.GetConfiguration().Logger;
-            var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
-
-            StringAssert.DoesNotContain("Client heartbeat interval", logs);
+            StringAssert.Contains("Server-side IdleTimeout is not set, using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:30:00", logs);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -109,13 +102,18 @@ namespace Apache.Ignite.Core.Tests.Client
             };
         }
 
-        private static IIgniteClient GetClient(int heartbeatInterval, int port = IgniteClientConfiguration.DefaultPort)
+        private static IIgniteClient GetClient(bool enableHeartbeats, int heartbeatInterval = 0,
+            int port = IgniteClientConfiguration.DefaultPort)
         {
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new List<string> { $"{IPAddress.Loopback}:{port}" },
+                EnableHeartbeats = enableHeartbeats,
                 DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
-                Logger = new ListLogger()
+                Logger = new ListLogger
+                {
+                    EnabledLevels = new[] { LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error }
+                }
             };
 
             return Ignition.StartClient(cfg);
